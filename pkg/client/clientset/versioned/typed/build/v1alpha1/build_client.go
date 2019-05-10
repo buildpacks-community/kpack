@@ -27,7 +27,7 @@ type BuildV1alpha1Interface interface {
 	CNBBuildsGetter
 }
 
-// BuildV1alpha1Client is used to interact with features provided by the build.projectriff.io group.
+// BuildV1alpha1Client is used to interact with features provided by the build.pivotal.io group.
 type BuildV1alpha1Client struct {
 	restClient rest.Interface
 }

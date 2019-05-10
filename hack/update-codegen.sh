@@ -34,9 +34,3 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/pivotal/build-service-system/pkg/client github.com/pivotal/build-service-system/pkg/apis \
   "build:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
-
-# Depends on generate-groups.sh to install bin/deepcopy-gen
-${GOPATH}/bin/deepcopy-gen \
-  -O zz_generated.deepcopy \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
-  -i github.com/pivotal/build-service-system/pkg/logging

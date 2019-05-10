@@ -31,9 +31,9 @@ type FakeCNBBuilds struct {
 	ns   string
 }
 
-var cnbbuildsResource = schema.GroupVersionResource{Group: "build.projectriff.io", Version: "v1alpha1", Resource: "cnbbuilds"}
+var cnbbuildsResource = schema.GroupVersionResource{Group: "build.pivotal.io", Version: "v1alpha1", Resource: "cnbbuilds"}
 
-var cnbbuildsKind = schema.GroupVersionKind{Group: "build.projectriff.io", Version: "v1alpha1", Kind: "CNBBuild"}
+var cnbbuildsKind = schema.GroupVersionKind{Group: "build.pivotal.io", Version: "v1alpha1", Kind: "CNBBuild"}
 
 // Get takes name of the cNBBuild, and returns the corresponding cNBBuild object, and an error if there is any.
 func (c *FakeCNBBuilds) Get(name string, options v1.GetOptions) (result *v1alpha1.CNBBuild, err error) {

@@ -13,8 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package fake
 
-// +k8s:deepcopy-gen=package
-// +groupName=build.pivotal.io
+import (
+	v1alpha1 "github.com/pivotal/build-service-system/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	rest "k8s.io/client-go/rest"
+	testing "k8s.io/client-go/testing"
+)
 
-package v1alpha1
+type FakeBuildV1alpha1 struct {
+	*testing.Fake
+}
+
+func (c *FakeBuildV1alpha1) CNBBuilds(namespace string) v1alpha1.CNBBuildInterface {
+	return &FakeCNBBuilds{c, namespace}
+}
+
+// RESTClient returns a RESTClient that is used to communicate
+// with API server by this client implementation.
+func (c *FakeBuildV1alpha1) RESTClient() rest.Interface {
+	var ret *rest.RESTClient
+	return ret
+}

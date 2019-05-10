@@ -42,7 +42,11 @@ var (
 )
 
 type CNBBuildSpec struct {
-	Image string `json:"image"`
+	Image          string `json:"image"`
+	Builder        string `json:"builder"`
+	ServiceAccount string `json:"serviceAccount"`
+	GitURL         string `json:"gitUrl"`
+	GitRevision    string `json:"gitRevision"`
 }
 
 type CNBBuildStatus struct {
