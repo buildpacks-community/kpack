@@ -5,16 +5,45 @@ import (
 
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
+	knv1alpha1informer "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
 	knv1alpha1lister "github.com/knative/build/pkg/client/listers/build/v1alpha1"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/kmeta"
+	v1alpha1informer "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1lister "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 )
+
+const (
+	ReconcilerName = "CNBBuilds"
+	Kind           = "CNBBuild"
+)
+
+func NewController(opt reconciler.Options, knClient knversioned.Interface, cnbinformer v1alpha1informer.CNBBuildInformer, kninformer knv1alpha1informer.BuildInformer) *controller.Impl {
+	c := &Reconciler{
+		KNClient:       knClient,
+		CNBBuildClient: opt.CNBBuildClient,
+		CNBLister:      cnbinformer.Lister(),
+		KnLister:       kninformer.Lister(),
+	}
+
+	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
+
+	cnbinformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+
+	kninformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind(Kind)),
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
+	})
+
+	return impl
+}
 
 type Reconciler struct {
 	KNClient       knversioned.Interface
@@ -30,7 +59,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	build, err := c.CNBLister.CNBBuilds(namespace).Get(buildName)
-	if err != nil {
+	if errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 	build = build.DeepCopy()
@@ -60,6 +91,9 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.CNBBuild) (
 	return c.KNClient.BuildV1alpha1().Builds(namespace).Create(&knv1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
 			Name: build.Name,
+			OwnerReferences: []v1.OwnerReference{
+				*kmeta.NewControllerRef(build),
+			},
 		},
 		Spec: knv1alpha1.BuildSpec{
 			ServiceAccountName: build.Spec.ServiceAccount,
@@ -78,15 +112,4 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.CNBBuild) (
 			},
 		},
 	})
-}
-
-func (c *Reconciler) reconcileStatus(s string, build *v1alpha1.CNBBuild, knBuild *knv1alpha1.Build) {
-	if knBuild.Status.GetCondition(knv1alpha1.BuildSucceeded).IsTrue() {
-		build.Status.Conditions = duckv1alpha1.Conditions{
-			{
-				Type:   "BuildSucceeded",
-				Status: corev1.ConditionTrue,
-			},
-		}
-	}
 }

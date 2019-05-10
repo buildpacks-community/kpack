@@ -114,14 +114,6 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  branch = "master"
-  digest = "1:3fb07f8e222402962fa190eb060608b34eddfb64562a18e2167df2de0ece85d8"
-  name = "github.com/golang/groupcache"
-  packages = ["lru"]
-  pruneopts = "NUT"
-  revision = "84a468cf14b4376def5d68c722b139b881c450a4"
-
-[[projects]]
   digest = "1:4dacf728c83400b3e9d1d3025dd3c1e93e9a1b033726d1b193dc209f3fa9cb7a"
   name = "github.com/golang/protobuf"
   packages = [
@@ -148,11 +140,10 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:d2754cafcab0d22c13541618a8029a70a8959eb3525ff201fe971637e2274cd0"
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
-    "cmp/cmpopts",
     "cmp/internal/diff",
     "cmp/internal/function",
     "cmp/internal/value",
@@ -160,13 +151,6 @@
   pruneopts = "NUT"
   revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
   version = "v0.2.0"
-
-[[projects]]
-  digest = "1:c280fbe00363f7c8db868a738b94df33586ce05c10d26578c3adf544d010eb64"
-  name = "github.com/google/go-containerregistry"
-  packages = ["pkg/name"]
-  pruneopts = "NUT"
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
 
 [[projects]]
   branch = "master"
@@ -234,6 +218,14 @@
   revision = "0a025b7e63adc15a622f29b0b2c4c3848243bbf6"
 
 [[projects]]
+  digest = "1:aaa38889f11896ee3644d77e17dc7764cc47f5f3d3b488268df2af2b52541c5f"
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "7c29201646fa3de8506f701213473dd407f19646"
+  version = "v0.3.7"
+
+[[projects]]
   digest = "1:1f2aebae7e7c856562355ec0198d8ca2fa222fb05e5b1b66632a1fce39631885"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -269,54 +261,23 @@
   version = "v0.5.0"
 
 [[projects]]
-  digest = "1:2eea3977965b3c1c9151c09a0951baff0c9328a4e1c0228cb628d5f1326603e2"
+  digest = "1:a2e8ea567b8a845a0a49387a42c291a9cc5994c2c91a4e4ebf5eb78906aab49a"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
     "changeset",
-    "configmap",
     "controller",
     "kmeta",
     "kmp",
     "logging",
     "logging/logkey",
-    "logging/testing",
     "metrics",
     "metrics/metricskey",
-    "system",
-    "system/testing",
-    "tracker",
   ]
   pruneopts = "NUT"
   revision = "916205998db9d085aaff357221b208bc89290ea5"
-
-[[projects]]
-  digest = "1:36908671831bf58d689785ad5d93cc3910b00b48f7975d62c8f3ceaec369d249"
-  name = "github.com/knative/serving"
-  packages = [
-    "pkg/apis/autoscaling",
-    "pkg/apis/autoscaling/v1alpha1",
-    "pkg/apis/config",
-    "pkg/apis/networking",
-    "pkg/apis/networking/v1alpha1",
-    "pkg/apis/serving",
-    "pkg/apis/serving/v1alpha1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
-    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
-    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
-    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
-    "pkg/client/listers/serving/v1alpha1",
-  ]
-  pruneopts = "NUT"
-  revision = "98e0f5a999ba0f69c1909a676078a22e9b8b13b9"
-  version = "v0.5.2"
 
 [[projects]]
   branch = "master"
@@ -488,7 +449,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:5ab79d2a36037de1ab2908733a2cab0c08b12f6956e3e1eab07cd1b2abf7b903"
+  digest = "1:85674ac609b704fd4e9f463553b6ffc3a3527a993ae0ba550eb56beaabdfe094"
   name = "go.uber.org/zap"
   packages = [
     ".",
@@ -496,9 +457,7 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
-    "internal/ztest",
     "zapcore",
-    "zaptest",
   ]
   pruneopts = "NUT"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
@@ -753,18 +712,16 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:119ae04ee44c5d179dcde1ee686f057cfe3fc54a7ee8484b920932a80309e88b"
+  digest = "1:b172899fc4b03d2bda3c223706822b3cf801b2a63ce4740dda0fe8206db97017"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
-    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
-    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -808,172 +765,37 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:6d7e5527f76f7bcf35fae6768e59c7af09d2cfe6d39ccd2bb84c1ca7a3173fe3"
+  digest = "1:a699d66db97044ec66b6cb6349e921fc2195856f9d730f70a9d7059fc90b67b1"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
     "dynamic",
     "dynamic/fake",
-    "informers",
-    "informers/admissionregistration",
-    "informers/admissionregistration/v1alpha1",
-    "informers/admissionregistration/v1beta1",
-    "informers/apps",
-    "informers/apps/v1",
-    "informers/apps/v1beta1",
-    "informers/apps/v1beta2",
-    "informers/autoscaling",
-    "informers/autoscaling/v1",
-    "informers/autoscaling/v2beta1",
-    "informers/autoscaling/v2beta2",
-    "informers/batch",
-    "informers/batch/v1",
-    "informers/batch/v1beta1",
-    "informers/batch/v2alpha1",
-    "informers/certificates",
-    "informers/certificates/v1beta1",
-    "informers/coordination",
-    "informers/coordination/v1beta1",
-    "informers/core",
-    "informers/core/v1",
-    "informers/events",
-    "informers/events/v1beta1",
-    "informers/extensions",
-    "informers/extensions/v1beta1",
-    "informers/internalinterfaces",
-    "informers/networking",
-    "informers/networking/v1",
-    "informers/policy",
-    "informers/policy/v1beta1",
-    "informers/rbac",
-    "informers/rbac/v1",
-    "informers/rbac/v1alpha1",
-    "informers/rbac/v1beta1",
-    "informers/scheduling",
-    "informers/scheduling/v1alpha1",
-    "informers/scheduling/v1beta1",
-    "informers/settings",
-    "informers/settings/v1alpha1",
-    "informers/storage",
-    "informers/storage/v1",
-    "informers/storage/v1alpha1",
-    "informers/storage/v1beta1",
-    "kubernetes",
-    "kubernetes/fake",
     "kubernetes/scheme",
-    "kubernetes/typed/admissionregistration/v1alpha1",
-    "kubernetes/typed/admissionregistration/v1alpha1/fake",
-    "kubernetes/typed/admissionregistration/v1beta1",
-    "kubernetes/typed/admissionregistration/v1beta1/fake",
-    "kubernetes/typed/apps/v1",
-    "kubernetes/typed/apps/v1/fake",
-    "kubernetes/typed/apps/v1beta1",
-    "kubernetes/typed/apps/v1beta1/fake",
-    "kubernetes/typed/apps/v1beta2",
-    "kubernetes/typed/apps/v1beta2/fake",
-    "kubernetes/typed/authentication/v1",
-    "kubernetes/typed/authentication/v1/fake",
-    "kubernetes/typed/authentication/v1beta1",
-    "kubernetes/typed/authentication/v1beta1/fake",
-    "kubernetes/typed/authorization/v1",
-    "kubernetes/typed/authorization/v1/fake",
-    "kubernetes/typed/authorization/v1beta1",
-    "kubernetes/typed/authorization/v1beta1/fake",
-    "kubernetes/typed/autoscaling/v1",
-    "kubernetes/typed/autoscaling/v1/fake",
-    "kubernetes/typed/autoscaling/v2beta1",
-    "kubernetes/typed/autoscaling/v2beta1/fake",
-    "kubernetes/typed/autoscaling/v2beta2",
-    "kubernetes/typed/autoscaling/v2beta2/fake",
-    "kubernetes/typed/batch/v1",
-    "kubernetes/typed/batch/v1/fake",
-    "kubernetes/typed/batch/v1beta1",
-    "kubernetes/typed/batch/v1beta1/fake",
-    "kubernetes/typed/batch/v2alpha1",
-    "kubernetes/typed/batch/v2alpha1/fake",
-    "kubernetes/typed/certificates/v1beta1",
-    "kubernetes/typed/certificates/v1beta1/fake",
-    "kubernetes/typed/coordination/v1beta1",
-    "kubernetes/typed/coordination/v1beta1/fake",
-    "kubernetes/typed/core/v1",
-    "kubernetes/typed/core/v1/fake",
-    "kubernetes/typed/events/v1beta1",
-    "kubernetes/typed/events/v1beta1/fake",
-    "kubernetes/typed/extensions/v1beta1",
-    "kubernetes/typed/extensions/v1beta1/fake",
-    "kubernetes/typed/networking/v1",
-    "kubernetes/typed/networking/v1/fake",
-    "kubernetes/typed/policy/v1beta1",
-    "kubernetes/typed/policy/v1beta1/fake",
-    "kubernetes/typed/rbac/v1",
-    "kubernetes/typed/rbac/v1/fake",
-    "kubernetes/typed/rbac/v1alpha1",
-    "kubernetes/typed/rbac/v1alpha1/fake",
-    "kubernetes/typed/rbac/v1beta1",
-    "kubernetes/typed/rbac/v1beta1/fake",
-    "kubernetes/typed/scheduling/v1alpha1",
-    "kubernetes/typed/scheduling/v1alpha1/fake",
-    "kubernetes/typed/scheduling/v1beta1",
-    "kubernetes/typed/scheduling/v1beta1/fake",
-    "kubernetes/typed/settings/v1alpha1",
-    "kubernetes/typed/settings/v1alpha1/fake",
-    "kubernetes/typed/storage/v1",
-    "kubernetes/typed/storage/v1/fake",
-    "kubernetes/typed/storage/v1alpha1",
-    "kubernetes/typed/storage/v1alpha1/fake",
-    "kubernetes/typed/storage/v1beta1",
-    "kubernetes/typed/storage/v1beta1/fake",
-    "listers/admissionregistration/v1alpha1",
-    "listers/admissionregistration/v1beta1",
-    "listers/apps/v1",
-    "listers/apps/v1beta1",
-    "listers/apps/v1beta2",
-    "listers/autoscaling/v1",
-    "listers/autoscaling/v2beta1",
-    "listers/autoscaling/v2beta2",
-    "listers/batch/v1",
-    "listers/batch/v1beta1",
-    "listers/batch/v2alpha1",
-    "listers/certificates/v1beta1",
-    "listers/coordination/v1beta1",
-    "listers/core/v1",
-    "listers/events/v1beta1",
-    "listers/extensions/v1beta1",
-    "listers/networking/v1",
-    "listers/policy/v1beta1",
-    "listers/rbac/v1",
-    "listers/rbac/v1alpha1",
-    "listers/rbac/v1beta1",
-    "listers/scheduling/v1alpha1",
-    "listers/scheduling/v1beta1",
-    "listers/settings/v1alpha1",
-    "listers/storage/v1",
-    "listers/storage/v1alpha1",
-    "listers/storage/v1beta1",
     "pkg/apis/clientauthentication",
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
-    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "testing",
-    "third_party/forked/golang/template",
+    "tools/auth",
     "tools/cache",
+    "tools/clientcmd",
     "tools/clientcmd/api",
+    "tools/clientcmd/api/latest",
+    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
-    "tools/record",
-    "tools/reference",
     "transport",
     "util/buffer",
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
+    "util/homedir",
     "util/integer",
-    "util/jsonpath",
     "util/retry",
     "util/workqueue",
   ]
@@ -1038,9 +860,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/ghodss/yaml",
-    "github.com/google/go-cmp/cmp",
-    "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/knative/build/pkg/apis/build/v1alpha1",
     "github.com/knative/build/pkg/client/clientset/versioned",
     "github.com/knative/build/pkg/client/clientset/versioned/fake",
@@ -1049,29 +868,14 @@
     "github.com/knative/build/pkg/client/listers/build/v1alpha1",
     "github.com/knative/pkg/apis",
     "github.com/knative/pkg/apis/duck/v1alpha1",
-    "github.com/knative/pkg/configmap",
     "github.com/knative/pkg/controller",
     "github.com/knative/pkg/kmeta",
-    "github.com/knative/pkg/kmp",
-    "github.com/knative/pkg/logging",
-    "github.com/knative/pkg/logging/logkey",
-    "github.com/knative/pkg/logging/testing",
-    "github.com/knative/pkg/system/testing",
-    "github.com/knative/pkg/tracker",
-    "github.com/knative/serving/pkg/apis/serving/v1alpha1",
-    "github.com/knative/serving/pkg/client/clientset/versioned",
-    "github.com/knative/serving/pkg/client/clientset/versioned/fake",
-    "github.com/knative/serving/pkg/client/listers/serving/v1alpha1",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "github.com/sclevine/spec",
     "go.uber.org/zap",
-    "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
-    "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
-    "k8s.io/apimachinery/pkg/api/meta",
-    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
@@ -1079,25 +883,15 @@
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
-    "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/dynamic/fake",
-    "k8s.io/client-go/informers",
-    "k8s.io/client-go/informers/core/v1",
-    "k8s.io/client-go/kubernetes",
-    "k8s.io/client-go/kubernetes/fake",
-    "k8s.io/client-go/kubernetes/scheme",
-    "k8s.io/client-go/kubernetes/typed/core/v1",
-    "k8s.io/client-go/listers/apps/v1",
-    "k8s.io/client-go/listers/core/v1",
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
-    "k8s.io/client-go/tools/record",
+    "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",

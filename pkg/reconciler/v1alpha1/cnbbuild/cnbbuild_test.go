@@ -3,6 +3,7 @@ package cnbbuild_test
 import (
 	"context"
 	"errors"
+	"github.com/knative/pkg/kmeta"
 	"reflect"
 	"testing"
 	"time"
@@ -63,23 +64,24 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	const buildName = "cnb-build-name"
 	const key = "some-namespace/cnb-build-name"
 
+	cnbBuild := &v1alpha1.CNBBuild{
+		TypeMeta: v1.TypeMeta{},
+		ObjectMeta: v1.ObjectMeta{
+			Name: buildName,
+		},
+		Spec: v1alpha1.CNBBuildSpec{
+			Image:          "someimage/name",
+			ServiceAccount: "someserviceaccount",
+			GitURL:         "giturl.com/git.git",
+			GitRevision:    "gitrev1234",
+			Builder:        "somebuilder/123",
+		},
+	}
+
 	when("#Reconcile", func() {
 		it.Before(func() {
-			_, err := fakeCnbBuildClient.BuildV1alpha1().CNBBuilds(namespace).Create(&v1alpha1.CNBBuild{
-				TypeMeta: v1.TypeMeta{},
-				ObjectMeta: v1.ObjectMeta{
-					Name: buildName,
-				},
-				Spec: v1alpha1.CNBBuildSpec{
-					Image:          "someimage/name",
-					ServiceAccount: "someserviceaccount",
-					GitURL:         "giturl.com/git.git",
-					GitRevision:    "gitrev1234",
-					Builder:        "somebuilder/123",
-				},
-			})
+			_, err := fakeCnbBuildClient.BuildV1alpha1().CNBBuilds(namespace).Create(cnbBuild)
 			assertNil(t, err)
-
 		})
 
 		when("a build hasn't been created", func() {
@@ -94,6 +96,9 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					ObjectMeta: v1.ObjectMeta{
 						Name:      buildName,
 						Namespace: namespace,
+						OwnerReferences: []v1.OwnerReference{
+							*kmeta.NewControllerRef(cnbBuild),
+						},
 					},
 					Spec: knv1alpha1.BuildSpec{
 						ServiceAccountName: "someserviceaccount",
@@ -116,8 +121,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("a build already created", func() {
-			it.Focus("does not create or update knative builds", func() {
-
+			it("does not create or update knative builds", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
 				assertNil(t, err)
 
@@ -209,7 +213,16 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				assertEqual(t, build.Generation, build.Status.ObservedGeneration)
 				assertEqual(t, generationToHaveObserved, build.Status.ObservedGeneration)
+			})
+		})
 
+		when("a cnb build no longer exists", func() {
+			it("does not return an error", func() {
+				err := fakeCnbBuildClient.BuildV1alpha1().CNBBuilds(namespace).Delete(buildName, &v1.DeleteOptions{})
+				assertNil(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), key)
+				assertNil(t, err)
 			})
 		})
 	})

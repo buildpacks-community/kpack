@@ -7,6 +7,7 @@ required = [
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/defaulter-gen",
   "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/client-go/tools/clientcmd",
   "k8s.io/code-generator/cmd/lister-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "github.com/knative/test-infra/scripts",

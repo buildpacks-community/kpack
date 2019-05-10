@@ -1,0 +1,10 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: CNBBuild
+metadata:
+  name: sample
+spec:
+  serviceAccount: serviceaccount
+  builder: cloudfoundry/cnb
+  image: sample/image
+  gitUrl: https://github.com/buildpack/sample-java-app.git
+  gitRevision: master
