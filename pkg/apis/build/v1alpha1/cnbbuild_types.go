@@ -51,6 +51,12 @@ type CNBBuildSpec struct {
 
 type CNBBuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
+	BuildMetadata       []CNBBuildpackMetadata `json:"buildMetadata"`
+}
+
+type CNBBuildpackMetadata struct {
+	ID      string `json:"key"`
+	Version string `json:"version"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -64,4 +70,16 @@ type CNBBuildList struct {
 
 func (*CNBBuild) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("CNBBuild")
+}
+
+func (b *CNBBuild) ServiceAccount() string {
+	return b.Spec.ServiceAccount
+}
+
+func (b *CNBBuild) RepoName() string {
+	return b.Spec.Image
+}
+
+func (b *CNBBuild) Namespace() string {
+	return b.ObjectMeta.Namespace
 }

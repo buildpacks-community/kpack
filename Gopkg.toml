@@ -22,10 +22,6 @@ required = [
   name = "github.com/knative/build"
   version = "v0.5.0"
 
-[[constraint]]
-  name = "github.com/knative/serving"
-  version = "v0.5.2"
-
 [[override]]
   name = "github.com/knative/pkg"
   # HEAD as of 2019-03-29
@@ -90,3 +86,7 @@ required = [
 [[constraint]]
   name = "github.com/sclevine/spec"
   version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/buildpack/lifecycle"
+  revision = "4134f7990be0a7cd7217c204e466b4d8f2581168"

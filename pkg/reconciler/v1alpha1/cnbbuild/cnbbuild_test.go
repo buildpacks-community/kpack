@@ -3,16 +3,17 @@ package cnbbuild_test
 import (
 	"context"
 	"errors"
-	"github.com/knative/pkg/kmeta"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/buildpack/lifecycle"
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knfake "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	knCtrl "github.com/knative/pkg/controller"
+	"github.com/knative/pkg/kmeta"
 	"github.com/sclevine/spec"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,11 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild/cnbbuildfakes"
+	"github.com/pivotal/build-service-system/pkg/registry"
 )
+
+//go:generate counterfeiter . MetadataRetriever
 
 func TestCNBBuildReconciler(t *testing.T) {
 	spec.Run(t, "CNBBuild Reconciler", testCNBBuildReconciler)
@@ -35,12 +40,15 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	cnbbuildInformer := externalversions.NewSharedInformerFactory(fakeCnbBuildClient, time.Millisecond).Build().V1alpha1().CNBBuilds()
 	knbuildInformer := knexternalversions.NewSharedInformerFactory(fakeKNClient, time.Millisecond).Build().V1alpha1().Builds()
 
+	fakeMetadataRetriever := &cnbbuildfakes.FakeMetadataRetriever{}
+
 	reconciler := syncWaitingReconciler(
 		&cnbbuild.Reconciler{
-			KNClient:       fakeKNClient,
-			CNBBuildClient: fakeCnbBuildClient,
-			CNBLister:      cnbbuildInformer.Lister(),
-			KnLister:       knbuildInformer.Lister(),
+			KNClient:          fakeKNClient,
+			CNBBuildClient:    fakeCnbBuildClient,
+			CNBLister:         cnbbuildInformer.Lister(),
+			KnLister:          knbuildInformer.Lister(),
+			MetadataRetriever: fakeMetadataRetriever,
 		},
 		cnbbuildInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
@@ -187,7 +195,6 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				)
-
 			})
 
 			it("updates the observed generation", func() {
@@ -213,6 +220,144 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				assertEqual(t, build.Generation, build.Status.ObservedGeneration)
 				assertEqual(t, generationToHaveObserved, build.Status.ObservedGeneration)
+			})
+
+			it("updates the build metadata on successful completion", func() {
+				err := reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				builtImage := registry.BuiltImage{
+					Sha:         "",
+					CompletedAt: time.Time{},
+					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
+						ID:      "1",
+						Version: "foo",
+						Layers:  nil,
+					}},
+				}
+				fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
+
+				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
+					&knv1alpha1.Build{
+						ObjectMeta: v1.ObjectMeta{
+							Name: buildName,
+						},
+						Status: knv1alpha1.BuildStatus{
+							Status: duckv1alpha1.Status{
+								Conditions: duckv1alpha1.Conditions{
+									{
+										Type:   duckv1alpha1.ConditionSucceeded,
+										Status: corev1.ConditionTrue,
+									},
+								},
+							},
+						},
+					},
+				)
+				assertNil(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				build, err := fakeCnbBuildClient.Build().CNBBuilds(namespace).Get(buildName, v1.GetOptions{})
+				assertNil(t, err)
+
+				assertEqual(t, build.Status.BuildMetadata,
+					[]v1alpha1.CNBBuildpackMetadata{{
+						ID:      "1",
+						Version: "foo",
+					}})
+
+				assertEqual(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
+				assertEqual(t, fakeMetadataRetriever.GetBuiltImageArgsForCall(0), build)
+			})
+
+			it("does not update the build metadata if the build fails", func() {
+				err := reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
+					&knv1alpha1.Build{
+						ObjectMeta: v1.ObjectMeta{
+							Name: buildName,
+						},
+						Status: knv1alpha1.BuildStatus{
+							Status: duckv1alpha1.Status{
+								Conditions: duckv1alpha1.Conditions{
+									{
+										Type:   duckv1alpha1.ConditionSucceeded,
+										Status: corev1.ConditionFalse,
+									},
+								},
+							},
+						},
+					},
+				)
+				assertNil(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				build, err := fakeCnbBuildClient.Build().CNBBuilds(namespace).Get(buildName, v1.GetOptions{})
+				assertNil(t, err)
+
+				assertEqual(t, len(build.Status.BuildMetadata), 0)
+
+				assertEqual(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 0)
+			})
+
+			it("does not update the build metadata if the build metadata has already been retrieved", func() {
+				err := reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				builtImage := registry.BuiltImage{
+					Sha:         "",
+					CompletedAt: time.Time{},
+					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
+						ID:      "1",
+						Version: "foo",
+						Layers:  nil,
+					}},
+				}
+				fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
+				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
+					&knv1alpha1.Build{
+						ObjectMeta: v1.ObjectMeta{
+							Name: buildName,
+						},
+						Status: knv1alpha1.BuildStatus{
+							Status: duckv1alpha1.Status{
+								Conditions: duckv1alpha1.Conditions{
+									{
+										Type:   duckv1alpha1.ConditionSucceeded,
+										Status: corev1.ConditionTrue,
+									},
+								},
+							},
+						},
+					},
+				)
+				assertNil(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				//subsequent call
+				err = reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
+				assertNil(t, err)
+
+				build, err := fakeCnbBuildClient.Build().CNBBuilds(namespace).Get(buildName, v1.GetOptions{})
+				assertNil(t, err)
+
+				assertEqual(t, len(build.Status.BuildMetadata), 1)
+
+				assertEqual(t, build.Status.BuildMetadata,
+					[]v1alpha1.CNBBuildpackMetadata{{
+						ID:      "1",
+						Version: "foo",
+					}})
+
+				assertEqual(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
 			})
 		})
 
