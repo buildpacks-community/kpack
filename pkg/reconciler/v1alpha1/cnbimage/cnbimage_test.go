@@ -152,7 +152,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("does not create a build when a build is running", func() {
 					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionFalse,
+						Status: corev1.ConditionUnknown,
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
@@ -167,7 +167,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
 				})
 
-				it("does create a build when the last build is no longer running", func() {
+				it("does create a build when the last build is successful", func() {
 					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
@@ -204,13 +204,27 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					})
 				})
+
+				it("does create a build when the last build is a failure", func() {
+					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, duckv1alpha1.Condition{
+						Type:   duckv1alpha1.ConditionSucceeded,
+						Status: corev1.ConditionFalse,
+					})
+
+					err := reconciler.Reconcile(context.TODO(), key)
+					assert.Nil(t, err)
+
+					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					assert.Nil(t, err)
+					assert.Equal(t, len(builds.Items), 2)
+				})
 			})
 
 			when("no new spec has been applied", func() {
 				it("does not create a new build when last build is running", func() {
 					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionFalse,
+						Status: corev1.ConditionUnknown,
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)

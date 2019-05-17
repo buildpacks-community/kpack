@@ -89,5 +89,5 @@ func (in *CNBBuild) IsRunning() bool {
 		return false
 	}
 
-	return !in.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+	return in.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
 }
