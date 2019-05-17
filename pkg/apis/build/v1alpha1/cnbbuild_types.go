@@ -51,12 +51,7 @@ type CNBBuildSpec struct {
 
 type CNBBuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	BuildMetadata       []CNBBuildpackMetadata `json:"buildMetadata"`
-}
-
-type CNBBuildpackMetadata struct {
-	ID      string `json:"key"`
-	Version string `json:"version"`
+	BuildMetadata       CNBBuildpackMetadataList `json:"buildMetadata"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -84,10 +79,10 @@ func (b *CNBBuild) Namespace() string {
 	return b.ObjectMeta.Namespace
 }
 
-func (in *CNBBuild) IsRunning() bool {
-	if in == nil {
+func (b *CNBBuild) IsRunning() bool {
+	if b == nil {
 		return false
 	}
 
-	return in.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
+	return b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
 }

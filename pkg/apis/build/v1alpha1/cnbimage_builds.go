@@ -6,13 +6,23 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (im *CNBImage) BuildNeeded(lastBuild *CNBBuild) bool {
+func (im *CNBImage) BuildNeeded(lastBuild *CNBBuild, builder *CNBBuilder) bool {
 	if lastBuild == nil {
 		return true
 	}
 
-	if im.configMatches(lastBuild) {
+	if im.configMatches(lastBuild) && builtWithBuilderBuildpacks(builder, lastBuild) {
 		return false
+	}
+
+	return true
+}
+
+func builtWithBuilderBuildpacks(builder *CNBBuilder, build *CNBBuild) bool {
+	for _, bp := range build.Status.BuildMetadata {
+		if !builder.Spec.BuilderMetadata.Include(bp) {
+			return false
+		}
 	}
 
 	return true
@@ -20,22 +30,21 @@ func (im *CNBImage) BuildNeeded(lastBuild *CNBBuild) bool {
 
 func (im *CNBImage) configMatches(build *CNBBuild) bool {
 	return im.Spec.Image == build.Spec.Image &&
-		im.Spec.Builder == build.Spec.Builder &&
 		im.Spec.GitURL == build.Spec.GitURL &&
 		im.Spec.GitRevision == build.Spec.GitRevision
 }
 
-func (im *CNBImage) CreateBuild() *CNBBuild {
+func (im *CNBImage) CreateBuild(builder *CNBBuilder) *CNBBuild {
 	return &CNBBuild{
 		ObjectMeta: v1.ObjectMeta{
-			Name: uuid.New(),
+			Name: im.Name + "-build-" + uuid.New(),
 			OwnerReferences: []v1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 		},
 		Spec: CNBBuildSpec{
 			Image:          im.Spec.Image,
-			Builder:        im.Spec.Builder,
+			Builder:        builder.Spec.Image,
 			ServiceAccount: im.Spec.ServiceAccount,
 			GitURL:         im.Spec.GitURL,
 			GitRevision:    im.Spec.GitRevision,

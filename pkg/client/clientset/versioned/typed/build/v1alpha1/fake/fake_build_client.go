@@ -29,6 +29,10 @@ func (c *FakeBuildV1alpha1) CNBBuilds(namespace string) v1alpha1.CNBBuildInterfa
 	return &FakeCNBBuilds{c, namespace}
 }
 
+func (c *FakeBuildV1alpha1) CNBBuilders(namespace string) v1alpha1.CNBBuilderInterface {
+	return &FakeCNBBuilders{c, namespace}
+}
+
 func (c *FakeBuildV1alpha1) CNBImages(namespace string) v1alpha1.CNBImageInterface {
 	return &FakeCNBImages{c, namespace}
 }

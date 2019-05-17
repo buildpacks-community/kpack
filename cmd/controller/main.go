@@ -52,20 +52,18 @@ func main() {
 		log.Fatalf("could not get kubernetes client: %s", err.Error())
 	}
 
-	stopChan := make(chan struct{})
-
 	options := reconciler.Options{
 		Logger:         logger,
 		CNBBuildClient: cnbClient,
-		StopChannel:    stopChan,
+		ResyncPeriod:   10 * time.Hour,
 	}
 
-	cnbInformerFactory := externalversions.NewSharedInformerFactory(cnbClient, 10*time.Hour)
+	cnbInformerFactory := externalversions.NewSharedInformerFactory(cnbClient, options.ResyncPeriod)
 	cnbBuildInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilds()
-
 	cnbImageInformer := cnbInformerFactory.Build().V1alpha1().CNBImages()
+	cnbBuilderInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilders()
 
-	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, 10*time.Hour)
+	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, options.ResyncPeriod)
 	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
 
 	metadataRetriever := &registry.RemoteMetadataRetriever{
@@ -79,13 +77,15 @@ func main() {
 	}
 
 	buildController := cnbbuild.NewController(options, knbuildClient, cnbBuildInformer, knBuildInformer, metadataRetriever)
-	imageController := cnbimage.NewController(options, cnbClient, cnbImageInformer, cnbBuildInformer)
+	imageController := cnbimage.NewController(options, cnbImageInformer, cnbBuildInformer, cnbBuilderInformer)
 
+	stopChan := make(chan struct{})
 	cnbInformerFactory.Start(stopChan)
 	knBuildInformerFactory.Start(stopChan)
 
 	cache.WaitForCacheSync(stopChan, cnbBuildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, cnbImageInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, cnbBuilderInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 
 	err = runGroup(

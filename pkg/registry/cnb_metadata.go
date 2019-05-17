@@ -32,16 +32,6 @@ type BuilderImageMetadata struct {
 
 type BuilderMetadata []BuilderBuildpackMetadata
 
-func (m BuilderMetadata) Include(appBuildpack lifecycle.BuildpackMetadata) bool {
-	for _, bp := range m {
-		if bp.ID == appBuildpack.ID && bp.Version == appBuildpack.Version {
-			return true
-		}
-	}
-
-	return false
-}
-
 type RemoteMetadataRetriever struct {
 	LifecycleImageFactory Factory
 }

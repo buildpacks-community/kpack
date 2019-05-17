@@ -1,6 +1,8 @@
 package reconciler
 
 import (
+	"time"
+
 	"github.com/knative/pkg/controller"
 	"go.uber.org/zap"
 
@@ -11,7 +13,7 @@ type Options struct {
 	Logger *zap.SugaredLogger
 
 	CNBBuildClient versioned.Interface
-	StopChannel    <-chan struct{}
+	ResyncPeriod   time.Duration
 }
 
 func MustNewStatsReporter(reconciler string, logger *zap.SugaredLogger) controller.StatsReporter {
@@ -20,4 +22,8 @@ func MustNewStatsReporter(reconciler string, logger *zap.SugaredLogger) controll
 		logger.Fatal("Failed to initialize the stats reporter.", zap.Error(err))
 	}
 	return stats
+}
+
+func (o Options) TrackerResyncPeriod() time.Duration {
+	return o.ResyncPeriod * 3
 }

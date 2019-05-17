@@ -1,0 +1,14 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: cnbbuilders.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: CNBBuilder
+    singular: cnbbuilder
+    plural: cnbbuilders
+  scope: Namespaced
+  subresources:
+    status: {}

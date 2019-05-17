@@ -25,6 +25,7 @@ import (
 type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CNBBuildsGetter
+	CNBBuildersGetter
 	CNBImagesGetter
 }
 
@@ -35,6 +36,10 @@ type BuildV1alpha1Client struct {
 
 func (c *BuildV1alpha1Client) CNBBuilds(namespace string) CNBBuildInterface {
 	return newCNBBuilds(c, namespace)
+}
+
+func (c *BuildV1alpha1Client) CNBBuilders(namespace string) CNBBuilderInterface {
+	return newCNBBuilders(c, namespace)
 }
 
 func (c *BuildV1alpha1Client) CNBImages(namespace string) CNBImageInterface {

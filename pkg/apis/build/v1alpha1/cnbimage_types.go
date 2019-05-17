@@ -35,7 +35,7 @@ type CNBImage struct {
 
 type CNBImageSpec struct {
 	Image          string `json:"image"`
-	Builder        string `json:"builder"`
+	BuilderRef     string `json:"builderRef"`
 	ServiceAccount string `json:"serviceAccount"`
 	GitURL         string `json:"gitUrl"`
 	GitRevision    string `json:"gitRevision"`

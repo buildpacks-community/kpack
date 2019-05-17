@@ -261,7 +261,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assertNil(t, err)
 
 				assertEqual(t, build.Status.BuildMetadata,
-					[]v1alpha1.CNBBuildpackMetadata{{
+					v1alpha1.CNBBuildpackMetadataList{{
 						ID:      "1",
 						Version: "foo",
 					}})
@@ -350,7 +350,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assertEqual(t, len(build.Status.BuildMetadata), 1)
 
 				assertEqual(t, build.Status.BuildMetadata,
-					[]v1alpha1.CNBBuildpackMetadata{{
+					v1alpha1.CNBBuildpackMetadataList{{
 						ID:      "1",
 						Version: "foo",
 					}})

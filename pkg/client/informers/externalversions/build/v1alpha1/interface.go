@@ -23,6 +23,8 @@ import (
 type Interface interface {
 	// CNBBuilds returns a CNBBuildInformer.
 	CNBBuilds() CNBBuildInformer
+	// CNBBuilders returns a CNBBuilderInformer.
+	CNBBuilders() CNBBuilderInformer
 	// CNBImages returns a CNBImageInformer.
 	CNBImages() CNBImageInformer
 }
@@ -41,6 +43,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // CNBBuilds returns a CNBBuildInformer.
 func (v *version) CNBBuilds() CNBBuildInformer {
 	return &cNBBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CNBBuilders returns a CNBBuilderInformer.
+func (v *version) CNBBuilders() CNBBuilderInformer {
+	return &cNBBuilderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CNBImages returns a CNBImageInformer.

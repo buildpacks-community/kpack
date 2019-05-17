@@ -17,4 +17,6 @@ package v1alpha1
 
 type CNBBuildExpansion interface{}
 
+type CNBBuilderExpansion interface{}
+
 type CNBImageExpansion interface{}

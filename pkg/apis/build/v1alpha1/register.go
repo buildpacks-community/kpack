@@ -51,6 +51,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CNBBuildList{},
 		&CNBImage{},
 		&CNBImageList{},
+		&CNBBuilder{},
+		&CNBBuilderList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -52,6 +52,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=build.pivotal.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("cnbbuilds"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().CNBBuilds().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("cnbbuilders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().CNBBuilders().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("cnbimages"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().CNBImages().Informer()}, nil
 
