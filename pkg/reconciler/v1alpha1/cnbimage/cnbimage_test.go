@@ -28,7 +28,7 @@ func TestCNBImageReconciler(t *testing.T) {
 func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeCnbClient := fake.NewSimpleClientset(&v1alpha1.CNBImage{}, &v1alpha1.CNBBuild{}, &v1alpha1.CNBBuilder{})
 
-	cnbInformerFactory := externalversions.NewSharedInformerFactory(fakeCnbClient, time.Millisecond)
+	cnbInformerFactory := externalversions.NewSharedInformerFactory(fakeCnbClient, time.Second)
 	cnbImageInformer := cnbInformerFactory.Build().V1alpha1().CNBImages()
 	cnbBuildInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilds()
 	cnbBuilderInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilders()

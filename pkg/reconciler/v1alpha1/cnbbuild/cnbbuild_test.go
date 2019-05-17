@@ -35,8 +35,11 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeKNClient := knfake.NewSimpleClientset(&knv1alpha1.Build{})
 	fakeCnbBuildClient := fake.NewSimpleClientset(&v1alpha1.CNBBuild{})
 
-	cnbbuildInformer := externalversions.NewSharedInformerFactory(fakeCnbBuildClient, time.Millisecond).Build().V1alpha1().CNBBuilds()
-	knbuildInformer := knexternalversions.NewSharedInformerFactory(fakeKNClient, time.Millisecond).Build().V1alpha1().Builds()
+	informerFactory := externalversions.NewSharedInformerFactory(fakeCnbBuildClient, time.Second)
+	cnbbuildInformer := informerFactory.Build().V1alpha1().CNBBuilds()
+
+	knInformerFactory := knexternalversions.NewSharedInformerFactory(fakeKNClient, time.Second)
+	knbuildInformer := knInformerFactory.Build().V1alpha1().Builds()
 
 	fakeMetadataRetriever := &cnbbuildfakes.FakeMetadataRetriever{}
 
@@ -54,12 +57,8 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	stopChan := make(chan struct{})
 
 	it.Before(func() {
-		go func() {
-			cnbbuildInformer.Informer().Run(stopChan)
-		}()
-		go func() {
-			knbuildInformer.Informer().Run(stopChan)
-		}()
+		informerFactory.Start(stopChan)
+		knInformerFactory.Start(stopChan)
 	})
 
 	it.After(func() {
