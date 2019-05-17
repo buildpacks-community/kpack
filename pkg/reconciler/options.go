@@ -12,8 +12,8 @@ import (
 type Options struct {
 	Logger *zap.SugaredLogger
 
-	CNBBuildClient versioned.Interface
-	ResyncPeriod   time.Duration
+	CNBClient    versioned.Interface
+	ResyncPeriod time.Duration
 }
 
 func MustNewStatsReporter(reconciler string, logger *zap.SugaredLogger) controller.StatsReporter {

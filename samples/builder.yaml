@@ -1,0 +1,6 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: CNBBuilder
+metadata:
+  name: sample-builder
+spec:
+  image: cloudfoundry/cnb

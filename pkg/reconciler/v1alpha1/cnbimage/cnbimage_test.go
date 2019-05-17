@@ -26,9 +26,9 @@ func TestCNBImageReconciler(t *testing.T) {
 }
 
 func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
-	fakeCnbImageClient := fake.NewSimpleClientset(&v1alpha1.CNBImage{}, &v1alpha1.CNBBuild{})
+	fakeCnbClient := fake.NewSimpleClientset(&v1alpha1.CNBImage{}, &v1alpha1.CNBBuild{}, &v1alpha1.CNBBuilder{})
 
-	cnbInformerFactory := externalversions.NewSharedInformerFactory(fakeCnbImageClient, time.Millisecond)
+	cnbInformerFactory := externalversions.NewSharedInformerFactory(fakeCnbClient, time.Millisecond)
 	cnbImageInformer := cnbInformerFactory.Build().V1alpha1().CNBImages()
 	cnbBuildInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilds()
 	cnbBuilderInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilders()
@@ -37,7 +37,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	reconciler := testhelpers.SyncWaitingReconciler(
 		&cnbimage.Reconciler{
-			CNBClient:        fakeCnbImageClient,
+			CNBClient:        fakeCnbClient,
 			CNBImageLister:   cnbImageInformer.Lister(),
 			CNBBuildLister:   cnbBuildInformer.Lister(),
 			CNBBuilderLister: cnbBuilderInformer.Lister(),
@@ -82,7 +82,9 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name: builderName,
 		},
 		Spec: v1alpha1.CNBBuilderSpec{
-			Image:           "some/builder@sha256acf123",
+			Image: "some/builder@sha256acf123",
+		},
+		Status: v1alpha1.CNBBuilderStatus{
 			BuilderMetadata: defaultBuildMetadata,
 		},
 	}
@@ -90,7 +92,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		cnbInformerFactory.Start(stopChan)
 
-		_, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilders(namespace).Create(cnbBuilder)
+		_, err := fakeCnbClient.BuildV1alpha1().CNBBuilders(namespace).Create(cnbBuilder)
 		assert.Nil(t, err)
 	})
 
@@ -101,7 +103,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		when("new image", func() {
 			it.Before(func() {
-				_, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Create(cnbImage)
+				_, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Create(cnbImage)
 				assert.Nil(t, err)
 			})
 
@@ -109,7 +111,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				err := reconciler.Reconcile(context.TODO(), key)
 				assert.Nil(t, err)
 
-				build, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+				build, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 				assert.Nil(t, err)
 				assert.Equal(t, len(build.Items), 1)
 
@@ -131,7 +133,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						GitRevision:    "revision",
 					},
 				})
-				updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+				updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 				assert.Equal(t, updatedImage.Status.LastBuildRef, buildName)
 			})
@@ -140,7 +142,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				err := reconciler.Reconcile(context.TODO(), key)
 				assert.Nil(t, err)
 
-				updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+				updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 				assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
 			})
@@ -149,7 +151,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				err := reconciler.Reconcile(context.TODO(), key)
 				assert.Nil(t, err)
 
-				updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+				updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 
 				gvk := cnbBuilder.GetGroupVersionKind()
@@ -166,7 +168,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("a build has already been created", func() {
 			it.Before(func() {
-				_, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Create(cnbImage)
+				_, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Create(cnbImage)
 				assert.Nil(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
@@ -177,10 +179,10 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				const newGeneration int64 = 2
 
 				it.Before(func() {
-					image, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+					image, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 					assert.Nil(t, err)
 
-					_, err = fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Update(&v1alpha1.CNBImage{
+					_, err = fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Update(&v1alpha1.CNBImage{
 						ObjectMeta: v1.ObjectMeta{
 							Name:       imageName,
 							Generation: newGeneration,
@@ -198,7 +200,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("does not create a build when a build is running", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, nil, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, nil, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionUnknown,
 					})
@@ -206,17 +208,17 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 
-					updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+					updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
 				})
 
 				it("does create a build when the last build is successful", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
 					})
@@ -224,15 +226,15 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 2)
 
-					updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+					updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, updatedImage.Status.ObservedGeneration, newGeneration)
 
-					newBuild, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
+					newBuild, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, newBuild, &v1alpha1.CNBBuild{
 						TypeMeta: v1.TypeMeta{},
@@ -254,7 +256,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("does create a build when the last build is a failure", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, nil, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, nil, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionFalse,
 					})
@@ -262,7 +264,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 2)
 				})
@@ -270,12 +272,14 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			when("referenced builder has been updated", func() {
 				it.Before(func() {
-					_, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilders(namespace).Update(&v1alpha1.CNBBuilder{
+					_, err := fakeCnbClient.BuildV1alpha1().CNBBuilders(namespace).Update(&v1alpha1.CNBBuilder{
 						ObjectMeta: v1.ObjectMeta{
 							Name: builderName,
 						},
 						Spec: v1alpha1.CNBBuilderSpec{
 							Image: "some/builder@sha256:newsha",
+						},
+						Status: v1alpha1.CNBBuilderStatus{
 							BuilderMetadata: []v1alpha1.CNBBuildpackMetadata{
 								{
 									ID:      "new.buildpack",
@@ -288,7 +292,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("does not create a build when a build is running", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, nil, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, nil, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionUnknown,
 					})
@@ -296,13 +300,13 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 
 				it("does create a build when the last build is no longer running", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
 					})
@@ -310,14 +314,14 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 2)
 
-					updatedImage, err := fakeCnbImageClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
+					updatedImage, err := fakeCnbClient.BuildV1alpha1().CNBImages(namespace).Get(imageName, v1.GetOptions{})
 					assert.Nil(t, err)
 
-					newBuild, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
+					newBuild, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, newBuild, &v1alpha1.CNBBuild{
 						TypeMeta: v1.TypeMeta{},
@@ -341,7 +345,7 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			when("no new spec has been applied", func() {
 				it("does not create a new build when last build is running", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, nil, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, nil, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionUnknown,
 					})
@@ -349,13 +353,13 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 
 				it("does not create a build when the last build is no longer running", func() {
-					updateStatusOfLastBuild(t, fakeCnbImageClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
+					updateStatusOfLastBuild(t, fakeCnbClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
 						Type:   duckv1alpha1.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
 					})
@@ -363,12 +367,17 @@ func testCNBImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					err := reconciler.Reconcile(context.TODO(), key)
 					assert.Nil(t, err)
 
-					builds, err := fakeCnbImageClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
+					builds, err := fakeCnbClient.BuildV1alpha1().CNBBuilds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 			})
 
+		})
+
+		it("does not return error on nonexistent image", func() {
+			err := reconciler.Reconcile(context.TODO(), "not/found")
+			assert.Nil(t, err)
 		})
 	})
 }

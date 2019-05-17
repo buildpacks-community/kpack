@@ -19,12 +19,12 @@ type CNBBuilder struct {
 }
 
 type CNBBuilderSpec struct {
-	Image           string                   `json:"image"`
-	BuilderMetadata CNBBuildpackMetadataList `json:"builderMetadata"`
+	Image string `json:"image"`
 }
 
 type CNBBuilderStatus struct {
 	duckv1alpha1.Status `json:",inline"`
+	BuilderMetadata     CNBBuildpackMetadataList `json:"builderMetadata"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

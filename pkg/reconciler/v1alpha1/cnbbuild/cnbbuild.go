@@ -34,7 +34,7 @@ type MetadataRetriever interface {
 func NewController(opt reconciler.Options, knClient knversioned.Interface, cnbinformer v1alpha1informer.CNBBuildInformer, kninformer knv1alpha1informer.BuildInformer, metadataRetriever MetadataRetriever) *controller.Impl {
 	c := &Reconciler{
 		KNClient:          knClient,
-		CNBBuildClient:    opt.CNBBuildClient,
+		CNBClient:         opt.CNBClient,
 		CNBLister:         cnbinformer.Lister(),
 		KnLister:          kninformer.Lister(),
 		MetadataRetriever: metadataRetriever,
@@ -54,7 +54,7 @@ func NewController(opt reconciler.Options, knClient knversioned.Interface, cnbin
 
 type Reconciler struct {
 	KNClient          knversioned.Interface
-	CNBBuildClient    versioned.Interface
+	CNBClient         versioned.Interface
 	CNBLister         v1alpha1lister.CNBBuildLister
 	KnLister          knv1alpha1lister.BuildLister
 	MetadataRetriever MetadataRetriever
@@ -96,7 +96,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	build.Status.Conditions = knBuild.Status.Conditions
 	build.Status.ObservedGeneration = build.Generation
 
-	_, err = c.CNBBuildClient.BuildV1alpha1().CNBBuilds(namespace).UpdateStatus(build)
+	_, err = c.CNBClient.BuildV1alpha1().CNBBuilds(namespace).UpdateStatus(build)
 	if err != nil {
 		return err
 	}

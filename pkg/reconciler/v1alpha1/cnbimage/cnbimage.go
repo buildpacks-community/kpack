@@ -21,7 +21,7 @@ const (
 
 func NewController(opt reconciler.Options, cnbImageInformer v1alpha1informers.CNBImageInformer, cnbBuildInformer v1alpha1informers.CNBBuildInformer, cnbBuilderInformer v1alpha1informers.CNBBuilderInformer) *controller.Impl {
 	c := &Reconciler{
-		CNBClient:        opt.CNBBuildClient,
+		CNBClient:        opt.CNBClient,
 		CNBImageLister:   cnbImageInformer.Lister(),
 		CNBBuildLister:   cnbBuildInformer.Lister(),
 		CNBBuilderLister: cnbBuilderInformer.Lister(),

@@ -43,7 +43,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	reconciler := testhelpers.SyncWaitingReconciler(
 		&cnbbuild.Reconciler{
 			KNClient:          fakeKNClient,
-			CNBBuildClient:    fakeCnbBuildClient,
+			CNBClient:         fakeCnbBuildClient,
 			CNBLister:         cnbbuildInformer.Lister(),
 			KnLister:          knbuildInformer.Lister(),
 			MetadataRetriever: fakeMetadataRetriever,

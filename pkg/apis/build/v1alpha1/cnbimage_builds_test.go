@@ -48,7 +48,7 @@ func testCNBImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: "cnb-image-name",
 		},
-		Spec: v1alpha1.CNBBuilderSpec{
+		Status: v1alpha1.CNBBuilderStatus{
 			BuilderMetadata: []v1alpha1.CNBBuildpackMetadata{
 				{ID: "buildpack.matches", Version: "1"},
 			},
@@ -87,7 +87,7 @@ func testCNBImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		when("Builder Metadata changes", func() {
 
 			it("false if builder has additional unused buildpack metadata", func() {
-				builder.Spec.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
+				builder.Status.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
 					{ID: "buildpack.matches", Version: "1"},
 					{ID: "buildpack.unused", Version: "unused"},
 				}
@@ -96,7 +96,7 @@ func testCNBImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder metadata has different buildpack from used buildpack", func() {
-				builder.Spec.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
+				builder.Status.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
 					{ID: "buildpack.matches", Version: "NEW_VERSION"},
 					{ID: "buildpack.different", Version: "different"},
 				}
@@ -106,7 +106,7 @@ func testCNBImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder does not have all most recent used buildpacks and is not currently building", func() {
-				builder.Spec.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
+				builder.Status.BuilderMetadata = []v1alpha1.CNBBuildpackMetadata{
 					{ID: "buildpack.only.new.buildpacks", Version: "1"},
 					{ID: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 				}

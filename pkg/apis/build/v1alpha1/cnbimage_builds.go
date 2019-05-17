@@ -20,7 +20,7 @@ func (im *CNBImage) BuildNeeded(lastBuild *CNBBuild, builder *CNBBuilder) bool {
 
 func builtWithBuilderBuildpacks(builder *CNBBuilder, build *CNBBuild) bool {
 	for _, bp := range build.Status.BuildMetadata {
-		if !builder.Spec.BuilderMetadata.Include(bp) {
+		if !builder.Status.BuilderMetadata.Include(bp) {
 			return false
 		}
 	}

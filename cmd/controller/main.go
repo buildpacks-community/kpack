@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/pivotal/build-service-system/pkg/registry"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,7 +20,9 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuilder"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbimage"
+	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 const (
@@ -53,9 +54,9 @@ func main() {
 	}
 
 	options := reconciler.Options{
-		Logger:         logger,
-		CNBBuildClient: cnbClient,
-		ResyncPeriod:   10 * time.Hour,
+		Logger:       logger,
+		CNBClient:    cnbClient,
+		ResyncPeriod: 10 * time.Hour,
 	}
 
 	cnbInformerFactory := externalversions.NewSharedInformerFactory(cnbClient, options.ResyncPeriod)
@@ -78,6 +79,7 @@ func main() {
 
 	buildController := cnbbuild.NewController(options, knbuildClient, cnbBuildInformer, knBuildInformer, metadataRetriever)
 	imageController := cnbimage.NewController(options, cnbImageInformer, cnbBuildInformer, cnbBuilderInformer)
+	builderController := cnbbuilder.NewController(options, cnbBuilderInformer, metadataRetriever)
 
 	stopChan := make(chan struct{})
 	cnbInformerFactory.Start(stopChan)
@@ -94,6 +96,9 @@ func main() {
 		},
 		func(done <-chan struct{}) error {
 			return buildController.Run(routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return builderController.Run(routinesPerController, done)
 		},
 	)
 	if err != nil {
