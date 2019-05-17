@@ -2,7 +2,6 @@ package cnbbuild_test
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -12,16 +11,15 @@ import (
 	knfake "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	knCtrl "github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmeta"
 	"github.com/sclevine/spec"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild/cnbbuildfakes"
 	"github.com/pivotal/build-service-system/pkg/registry"
@@ -42,7 +40,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	fakeMetadataRetriever := &cnbbuildfakes.FakeMetadataRetriever{}
 
-	reconciler := syncWaitingReconciler(
+	reconciler := testhelpers.SyncWaitingReconciler(
 		&cnbbuild.Reconciler{
 			KNClient:          fakeKNClient,
 			CNBBuildClient:    fakeCnbBuildClient,
@@ -392,22 +390,4 @@ func assertNil(t *testing.T, obj interface{}) {
 	if obj != nil {
 		t.Fatalf("Unexpected %+v", obj)
 	}
-}
-
-func syncWaitingReconciler(reconciler knCtrl.Reconciler, hasSynced ...func() bool) knCtrl.Reconciler {
-	return &waitingInformerDecorator{reconciler, hasSynced}
-}
-
-type waitingInformerDecorator struct {
-	reconciler knCtrl.Reconciler
-	hasSynced  []func() bool
-}
-
-func (c *waitingInformerDecorator) Reconcile(ctx context.Context, key string) error {
-	for _, synced := range c.hasSynced {
-		if ok := cache.WaitForCacheSync(make(<-chan struct{}), synced); !ok {
-			return errors.New("couldn't sync")
-		}
-	}
-	return c.reconciler.Reconcile(ctx, key)
 }

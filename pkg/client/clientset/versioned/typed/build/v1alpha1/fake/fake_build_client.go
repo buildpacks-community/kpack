@@ -29,6 +29,10 @@ func (c *FakeBuildV1alpha1) CNBBuilds(namespace string) v1alpha1.CNBBuildInterfa
 	return &FakeCNBBuilds{c, namespace}
 }
 
+func (c *FakeBuildV1alpha1) CNBImages(namespace string) v1alpha1.CNBImageInterface {
+	return &FakeCNBImages{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeBuildV1alpha1) RESTClient() rest.Interface {

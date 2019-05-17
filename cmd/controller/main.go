@@ -6,20 +6,22 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
+	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
-	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbimage"
 )
 
 const (
@@ -35,7 +37,7 @@ func main() {
 
 	clusterConfig, err := retrieveLocalConfiguration()
 
-	buildClient, err := versioned.NewForConfig(clusterConfig)
+	cnbClient, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
 		log.Fatalf("could not get CNBBuild client: %s", err.Error())
 	}
@@ -54,12 +56,14 @@ func main() {
 
 	options := reconciler.Options{
 		Logger:         logger,
-		CNBBuildClient: buildClient,
+		CNBBuildClient: cnbClient,
 		StopChannel:    stopChan,
 	}
 
-	cnbBuildInformerFactory := externalversions.NewSharedInformerFactory(buildClient, 10*time.Hour)
-	cnbbuildInformer := cnbBuildInformerFactory.Build().V1alpha1().CNBBuilds()
+	cnbInformerFactory := externalversions.NewSharedInformerFactory(cnbClient, 10*time.Hour)
+	cnbBuildInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilds()
+
+	cnbImageInformer := cnbInformerFactory.Build().V1alpha1().CNBImages()
 
 	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, 10*time.Hour)
 	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
@@ -74,16 +78,26 @@ func main() {
 		},
 	}
 
-	ctrlr := cnbbuild.NewController(options, knbuildClient, cnbbuildInformer, knBuildInformer, metadataRetriever)
+	buildController := cnbbuild.NewController(options, knbuildClient, cnbBuildInformer, knBuildInformer, metadataRetriever)
+	imageController := cnbimage.NewController(options, cnbClient, cnbImageInformer, cnbBuildInformer)
 
-	cnbBuildInformerFactory.Start(stopChan)
+	cnbInformerFactory.Start(stopChan)
 	knBuildInformerFactory.Start(stopChan)
 
-	cache.WaitForCacheSync(stopChan, cnbbuildInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, cnbBuildInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, cnbImageInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 
-	if runErr := ctrlr.Run(routinesPerController, stopChan); runErr != nil {
-		logger.Fatalw("Error running controller", zap.Error(runErr))
+	err = runGroup(
+		func(done <-chan struct{}) error {
+			return imageController.Run(routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return buildController.Run(routinesPerController, done)
+		},
+	)
+	if err != nil {
+		logger.Fatalw("Error running controller", zap.Error(err))
 	}
 }
 
@@ -105,4 +119,25 @@ func retrieveLocalConfiguration() (*rest.Config, error) {
 
 func homeDir() string {
 	return os.Getenv("HOME")
+}
+
+type doneFunc func(done <-chan struct{}) error
+
+func runGroup(fns ...doneFunc) error {
+	var wg sync.WaitGroup
+	wg.Add(len(fns))
+
+	done := make(chan struct{})
+	result := make(chan error, len(fns))
+	for _, fn := range fns {
+		go func(fn doneFunc) {
+			defer wg.Done()
+			result <- fn(done)
+		}(fn)
+	}
+
+	defer close(result)
+	defer wg.Wait()
+	defer close(done)
+	return <-result
 }

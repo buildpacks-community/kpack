@@ -17,9 +17,7 @@
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	"github.com/knative/pkg/kmeta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -27,21 +25,15 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type CNBBuild struct {
+type CNBImage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CNBBuildSpec   `json:"spec"`
-	Status CNBBuildStatus `json:"status"`
+	Spec   CNBImageSpec   `json:"spec"`
+	Status CNBImageStatus `json:"status"`
 }
 
-var (
-	_ apis.Validatable   = (*CNBBuild)(nil)
-	_ apis.Defaultable   = (*CNBBuild)(nil)
-	_ kmeta.OwnerRefable = (*CNBBuild)(nil)
-)
-
-type CNBBuildSpec struct {
+type CNBImageSpec struct {
 	Image          string `json:"image"`
 	Builder        string `json:"builder"`
 	ServiceAccount string `json:"serviceAccount"`
@@ -49,45 +41,20 @@ type CNBBuildSpec struct {
 	GitRevision    string `json:"gitRevision"`
 }
 
-type CNBBuildStatus struct {
+type CNBImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	BuildMetadata       []CNBBuildpackMetadata `json:"buildMetadata"`
-}
-
-type CNBBuildpackMetadata struct {
-	ID      string `json:"key"`
-	Version string `json:"version"`
+	LastBuildRef        string `json:"lastBuildRef"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type CNBBuildList struct {
+type CNBImageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []CNBBuild `json:"items"`
+	Items []CNBImage `json:"items"`
 }
 
-func (*CNBBuild) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("CNBBuild")
-}
-
-func (b *CNBBuild) ServiceAccount() string {
-	return b.Spec.ServiceAccount
-}
-
-func (b *CNBBuild) RepoName() string {
-	return b.Spec.Image
-}
-
-func (b *CNBBuild) Namespace() string {
-	return b.ObjectMeta.Namespace
-}
-
-func (in *CNBBuild) IsRunning() bool {
-	if in == nil {
-		return false
-	}
-
-	return !in.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+func (*CNBImage) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("CNBImage")
 }

@@ -22,3 +22,11 @@ type CNBBuildListerExpansion interface{}
 // CNBBuildNamespaceListerExpansion allows custom methods to be added to
 // CNBBuildNamespaceLister.
 type CNBBuildNamespaceListerExpansion interface{}
+
+// CNBImageListerExpansion allows custom methods to be added to
+// CNBImageLister.
+type CNBImageListerExpansion interface{}
+
+// CNBImageNamespaceListerExpansion allows custom methods to be added to
+// CNBImageNamespaceLister.
+type CNBImageNamespaceListerExpansion interface{}
