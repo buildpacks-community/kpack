@@ -1,12 +1,13 @@
 package registry_test
 
 import (
-	"github.com/pivotal/build-service-system/pkg/registry"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 func TestMatch(t *testing.T) {
@@ -14,14 +15,6 @@ func TestMatch(t *testing.T) {
 }
 
 func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
-	var (
-		Expect func(interface{}, ...interface{}) GomegaAssertion
-	)
-
-	it.Before(func() {
-		Expect = NewGomegaWithT(t).Expect
-	})
-
 	when("#Match", func() {
 		for _, regFormat := range []string{
 			// Allow naked domains
@@ -37,25 +30,25 @@ func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 		} {
 			it("matches format "+regFormat, func() {
 				reference, err := name.ParseReference("reg.io/some/name", name.WeakValidation)
-				Expect(err).NotTo(HaveOccurred())
+				assert.NoError(t, err)
 
-				Expect(registry.Match(reference.Context().Registry, regFormat)).To(BeTrue())
+				assert.True(t, registry.Match(reference.Context().Registry, regFormat))
 			})
 
 			it("does not match other registries with "+regFormat, func() {
 				reference, err := name.ParseReference("gcr.io/some/name", name.WeakValidation)
-				Expect(err).NotTo(HaveOccurred())
+				assert.NoError(t, err)
 
-				Expect(registry.Match(reference.Context().Registry, regFormat)).To(BeFalse())
+				assert.False(t, registry.Match(reference.Context().Registry, regFormat))
 			})
 		}
 
 		it("matches on dockerhub references", func() {
 			reference, err := name.ParseReference("some/name", name.WeakValidation)
-			Expect(err).NotTo(HaveOccurred())
+			assert.NoError(t, err)
 
-			Expect(registry.Match(reference.Context().Registry, "http://index.docker.io")).To(BeTrue())
-			Expect(registry.Match(reference.Context().Registry, "index.docker.io")).To(BeTrue())
+			assert.True(t, registry.Match(reference.Context().Registry, "http://index.docker.io"))
+			assert.True(t, registry.Match(reference.Context().Registry, "index.docker.io"))
 		})
 	})
 }

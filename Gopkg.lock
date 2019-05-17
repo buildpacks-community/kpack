@@ -440,27 +440,6 @@
   version = "1.0.1"
 
 [[projects]]
-  digest = "1:6bc9eee358de51d995955be7609ed71c946ede28498f1d918456f74c1a1a8953"
-  name = "github.com/onsi/gomega"
-  packages = [
-    ".",
-    "format",
-    "internal/assertion",
-    "internal/asyncassertion",
-    "internal/oraclematcher",
-    "internal/testingtsupport",
-    "matchers",
-    "matchers/support/goraph/bipartitegraph",
-    "matchers/support/goraph/edge",
-    "matchers/support/goraph/node",
-    "matchers/support/goraph/util",
-    "types",
-  ]
-  pruneopts = "NUT"
-  revision = "90e289841c1ed79b7a598a7cd9959750cb5e89e2"
-  version = "v1.5.0"
-
-[[projects]]
   digest = "1:e0cc8395ea893c898ff5eb0850f4d9851c1f57c78c232304a026379a47a552d0"
   name = "github.com/opencontainers/go-digest"
   packages = ["."]
@@ -661,14 +640,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a0343fd3fbf5c1fa3e8ff3690d12cae3cb301a031efa530c8b3e355a2be6a719"
+  digest = "1:8501acfe2f964fa45d1138a78931a0a6ac3839abb75cb534f8258dc7ab7ee4a5"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
-    "html",
-    "html/atom",
-    "html/charset",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -719,29 +695,17 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8a12cbc891b7130d3f660f8a309e5c0b083f831e6ac38cdaa1f12e63c12d6bea"
+  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
-    "encoding",
-    "encoding/charmap",
-    "encoding/htmlindex",
-    "encoding/internal",
-    "encoding/internal/identifier",
-    "encoding/japanese",
-    "encoding/korean",
-    "encoding/simplifiedchinese",
-    "encoding/traditionalchinese",
-    "encoding/unicode",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
-    "internal/utf8internal",
     "language",
-    "runes",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -1153,7 +1117,6 @@
     "github.com/knative/pkg/tracker",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
-    "github.com/onsi/gomega",
     "github.com/pborman/uuid",
     "github.com/pkg/errors",
     "github.com/sclevine/spec",

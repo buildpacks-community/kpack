@@ -3,18 +3,19 @@ package registry_test
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/pivotal/build-service-system/pkg/registry"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes/fake"
+	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 func TestSecretKeychainFactory(t *testing.T) {
@@ -27,18 +28,10 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeClient *fake.Clientset
-
-		testNamespace = "namespace"
-
-		Expect          func(interface{}, ...interface{}) GomegaAssertion
+		testNamespace   = "namespace"
 		keychainFactory *registry.SecretKeychainFactory
+		fakeClient      = fake.NewSimpleClientset(&v1.Secret{})
 	)
-
-	it.Before(func() {
-		Expect = NewGomegaWithT(t).Expect
-		fakeClient = fake.NewSimpleClientset(&v1.Secret{})
-	})
 
 	when("SecretKeychainFactory", func() {
 		it.Before(func() {
@@ -50,7 +43,7 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 					registry.NewRegistryUser("https://godoker.reg.com", "foobar", "foobar321"),
 					registry.NewRegistryUser("https://redhook.port", "brooklyn", "nothip"),
 				})
-			Expect(err).NotTo(HaveOccurred())
+			assert.NoError(t, err)
 		})
 
 		when("#NewImage", func() {
@@ -58,25 +51,26 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace})
 
 				reference, err := name.ParseReference("redhook.port/name", name.WeakValidation)
-				Expect(err).NotTo(HaveOccurred())
+				assert.NoError(t, err)
 
 				authenticator, err := keychain.Resolve(reference.Context().Registry)
-				Expect(err).NotTo(HaveOccurred())
+				assert.NoError(t, err)
 
 				encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", "brooklyn", "nothip")))
-				value := fmt.Sprintf("Basic %s", encoded)
 
-				Expect(authenticator.Authorization()).To(Equal(value))
+				auth, err := authenticator.Authorization()
+				assert.NoError(t, err)
+				assert.Equal(t, auth, fmt.Sprintf("Basic %s", encoded))
 			})
 
 			it("returns an error if no credentials are provided for the registry", func() {
 				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace})
 
 				reference, err := name.ParseReference("notareal.reg/name", name.WeakValidation)
-				Expect(err).NotTo(HaveOccurred())
+				assert.NoError(t, err)
 
 				_, err = keychain.Resolve(reference.Context().Registry)
-				Expect(err).To(MatchError("credentials not found for: notareal.reg"))
+				assert.Error(t, err, "credentials not found for: notareal.reg")
 
 			})
 
@@ -85,12 +79,12 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 					keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: "", namespace: testNamespace})
 
 					reference, err := name.ParseReference("notareal.reg/name", name.WeakValidation)
-					Expect(err).NotTo(HaveOccurred())
+					assert.NoError(t, err)
 
 					authenticator, err := keychain.Resolve(reference.Context().Registry)
-					Expect(err).NotTo(HaveOccurred())
+					assert.NoError(t, err)
 
-					Expect(authenticator).To(Equal(authn.Anonymous))
+					assert.Equal(t, authenticator, authn.Anonymous)
 				})
 			})
 		})
