@@ -44,6 +44,7 @@ type CNBImageSpec struct {
 type CNBImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	LastBuildRef        string `json:"lastBuildRef"`
+	BuildCounter        int32  `json:"buildCounter"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

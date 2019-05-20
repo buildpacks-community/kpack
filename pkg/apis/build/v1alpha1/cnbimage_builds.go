@@ -1,9 +1,16 @@
 package v1alpha1
 
 import (
+	"strconv"
+
 	"github.com/knative/pkg/kmeta"
 	"github.com/pborman/uuid"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	BuildNumberLabel = "cnbimage.build.pivotal.io/buildNumber"
+	ImageLabel       = "cnbimage.build.pivotal.io/image"
 )
 
 func (im *CNBImage) BuildNeeded(lastBuild *CNBBuild, builder *CNBBuilder) bool {
@@ -40,6 +47,10 @@ func (im *CNBImage) CreateBuild(builder *CNBBuilder) *CNBBuild {
 			Name: im.Name + "-build-" + uuid.New(),
 			OwnerReferences: []v1.OwnerReference{
 				*kmeta.NewControllerRef(im),
+			},
+			Labels: map[string]string{
+				BuildNumberLabel: strconv.Itoa(int(im.Status.BuildCounter + 1)),
+				ImageLabel:       im.Name,
 			},
 		},
 		Spec: CNBBuildSpec{

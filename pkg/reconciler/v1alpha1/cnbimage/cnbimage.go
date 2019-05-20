@@ -2,10 +2,15 @@ package cnbimage
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/tracker"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -93,6 +98,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		if err != nil {
 			return err
 		}
+		image.Status.BuildCounter = image.Status.BuildCounter + 1
 	} else {
 		build = lastBuild
 	}
@@ -108,9 +114,35 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) fetchLastBuild(image *v1alpha1.CNBImage) (*v1alpha1.CNBBuild, error) {
-	cnbImage, err := c.CNBBuildLister.CNBBuilds(image.Namespace).Get(image.Status.LastBuildRef)
-	if errors.IsNotFound(err) {
-		return nil, nil
+	currentBuildNumber := strconv.Itoa(currentBuildNumber(image))
+	currentBuildNumberReq, err := labels.NewRequirement(v1alpha1.BuildNumberLabel, selection.GreaterThan, []string{currentBuildNumber})
+	if err != nil {
+		return nil, err
 	}
-	return cnbImage, err
+
+	imageNameReq, err := labels.NewRequirement(v1alpha1.ImageLabel, selection.DoubleEquals, []string{image.Name})
+	if err != nil {
+		return nil, err
+	}
+
+	cnbBuilds, err := c.CNBBuildLister.CNBBuilds(image.Namespace).List(labels.NewSelector().Add(*currentBuildNumberReq).Add(*imageNameReq))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cnbBuilds) == 0 {
+		return nil, nil
+	} else if len(cnbBuilds) > 1 || cnbBuilds[0].Name != image.Status.LastBuildRef {
+		return nil, fmt.Errorf("warning: image %s status not up to date", image.Name) //what error type should we use?
+	}
+
+	return cnbBuilds[0], err
+}
+
+func currentBuildNumber(image *v1alpha1.CNBImage) int {
+	buildNumber := int(image.Status.BuildCounter - 1)
+	if buildNumber < 0 {
+		return 0
+	}
+	return buildNumber
 }
