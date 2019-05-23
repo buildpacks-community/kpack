@@ -49,7 +49,7 @@ func (im *CNBImage) CreateBuild(builder *CNBBuilder) *CNBBuild {
 				*kmeta.NewControllerRef(im),
 			},
 			Labels: map[string]string{
-				BuildNumberLabel: im.generateBuildName(),
+				BuildNumberLabel: im.nextBuildNumber(),
 				ImageLabel:       im.Name,
 			},
 		},
