@@ -115,4 +115,23 @@ func testCNBImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
+
+	when("#CreateBuild", func() {
+		it("generates a build name with build number", func() {
+			image.Name = "imageName"
+
+			build := image.CreateBuild(builder)
+
+			assert.Contains(t, build.Name, "imageName-build-1-")
+		})
+
+		it("generates a build name less than 64 characters", func() {
+			image.Name = "long-image-name-1234567890-1234567890-1234567890-1234567890-1234567890"
+
+			build := image.CreateBuild(builder)
+
+			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
+			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
+		})
+	})
 }

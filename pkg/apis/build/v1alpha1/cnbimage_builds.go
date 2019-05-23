@@ -44,12 +44,12 @@ func (im *CNBImage) configMatches(build *CNBBuild) bool {
 func (im *CNBImage) CreateBuild(builder *CNBBuilder) *CNBBuild {
 	return &CNBBuild{
 		ObjectMeta: v1.ObjectMeta{
-			Name: im.Name + "-build-" + uuid.New(),
+			Name: im.generateBuildName(),
 			OwnerReferences: []v1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 			Labels: map[string]string{
-				BuildNumberLabel: strconv.Itoa(int(im.Status.BuildCounter + 1)),
+				BuildNumberLabel: im.generateBuildName(),
 				ImageLabel:       im.Name,
 			},
 		},
@@ -61,4 +61,17 @@ func (im *CNBImage) CreateBuild(builder *CNBBuilder) *CNBBuild {
 			GitRevision:    im.Spec.GitRevision,
 		},
 	}
+}
+
+func (im *CNBImage) nextBuildNumber() string {
+	return strconv.Itoa(int(im.Status.BuildCounter + 1))
+}
+
+func (im *CNBImage) generateBuildName() string {
+	name := im.Name + "-build-" + im.nextBuildNumber() + "-" + uuid.New()
+	if len(name) > 64 {
+		return name[:63]
+	}
+
+	return name
 }
