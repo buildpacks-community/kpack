@@ -223,8 +223,9 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/cnb-build-name")
 				assert.Nil(t, err)
 
+				const sha = "sha:1234567"
 				builtImage := registry.BuiltImage{
-					Sha:         "",
+					SHA:         sha,
 					CompletedAt: time.Time{},
 					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
 						ID:      "1",
@@ -264,6 +265,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						ID:      "1",
 						Version: "foo",
 					}})
+				assert.Equal(t, build.Status.SHA, sha)
 
 				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
 				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageArgsForCall(0), build)
@@ -308,7 +310,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Nil(t, err)
 
 				builtImage := registry.BuiltImage{
-					Sha:         "",
+					SHA:         "",
 					CompletedAt: time.Time{},
 					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
 						ID:      "1",

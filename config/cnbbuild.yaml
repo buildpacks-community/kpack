@@ -12,3 +12,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  additionalPrinterColumns:
+  - name: SHA
+    type: string
+    JSONPath: ".status.SHA"

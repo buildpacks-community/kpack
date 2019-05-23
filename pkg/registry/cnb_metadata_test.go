@@ -64,7 +64,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 
 				assert.Equal(t, result.CompletedAt, createdAtTime)
-				assert.Equal(t, result.Sha, "expected-image-digest")
+				assert.Equal(t, result.SHA, "expected-image-digest")
 				assert.Equal(t, mockFactory.NewRemoteArgsForCall(0), fakeImageRef)
 			})
 		})

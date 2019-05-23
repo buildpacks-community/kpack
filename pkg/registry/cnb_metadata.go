@@ -86,14 +86,14 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref ImageRef) (BuiltImage, error
 	}
 
 	return BuiltImage{
-		Sha:               digest,
+		SHA:               digest,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: metadata.Buildpacks,
 	}, nil
 }
 
 type BuiltImage struct {
-	Sha               string
+	SHA               string
 	CompletedAt       time.Time
 	BuildpackMetadata []lifecycle.BuildpackMetadata
 }

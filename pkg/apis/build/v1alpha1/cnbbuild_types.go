@@ -52,6 +52,7 @@ type CNBBuildSpec struct {
 type CNBBuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildMetadata       CNBBuildpackMetadataList `json:"buildMetadata"`
+	SHA                 string                   `json:"SHA"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
