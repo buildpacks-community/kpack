@@ -3,8 +3,7 @@ kind: CNBImage
 metadata:
   name: sample
 spec:
-  serviceAccount: serviceaccount
-  builder: cloudfoundry/cnb
-  image: sample/image
+  builder: sample-builder
+  image: registry.default.svc.cluster.local:5000/sample/image
   gitUrl: https://github.com/buildpack/sample-java-app.git
   gitRevision: master

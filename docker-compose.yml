@@ -1,0 +1,8 @@
+version: '3'
+services:
+  public-registry:
+    image: registry:2
+    environment:
+      REGISTRY_NOTIFICATIONS_ENDPOINTS: "- name: build-service\n  url: http://host.docker.internal:8080/v1/docker/notification\n  timeout: 5s\n  threshold: 8\n  backoff: 10s"
+    ports:
+    - "5000:5000"

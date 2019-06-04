@@ -2,6 +2,7 @@ package cnbbuild
 
 import (
 	"context"
+	"fmt"
 
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
@@ -10,8 +11,9 @@ import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmeta"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -106,10 +108,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.CNBBuild) (*knv1alpha1.Build, error) {
+	const userId = 1000
+	const groupId = 1000
+	const cacheDirName = "empty-dir"
+	const layersDirName = "layers-dir"
 	return c.KNClient.BuildV1alpha1().Builds(namespace).Create(&knv1alpha1.Build{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: build.Name,
-			OwnerReferences: []v1.OwnerReference{
+			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(build),
 			},
 		},
@@ -121,11 +127,162 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.CNBBuild) (
 					Revision: build.Spec.GitRevision,
 				},
 			},
-			Template: &knv1alpha1.TemplateInstantiationSpec{
-				Name: "buildpacks-cnb",
-				Arguments: []knv1alpha1.ArgumentSpec{
-					{Name: "IMAGE", Value: build.Spec.Image},
-					{Name: "BUILDER_IMAGE", Value: build.Spec.Builder},
+			Steps: []corev1.Container{
+				{
+					Name:    "prepare",
+					Image:   "alpine",
+					Command: []string{"/bin/sh"},
+					Args: []string{
+						"-c",
+						fmt.Sprintf(`chown -R "%d:%d" "/builder/home" &&
+chown -R "%d:%d" /layers &&
+chown -R "%d:%d" /cache &&
+chown -R "%d:%d" /workspace`,
+							userId, groupId,
+							userId, groupId,
+							userId, groupId,
+							userId, groupId,
+						),
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+						{
+							Name: cacheDirName,
+							MountPath: "/cache",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "detect",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/detector"},
+					Args: []string{
+						"-app=/workspace",
+						"-group=/layers/group.toml",
+						"-plan=/layers/plan.toml",
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "restore",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/restorer"},
+					Args: []string{
+						"-group=/layers/group.toml",
+						"-layers=/layers",
+						"-path=/cache",
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+						{
+							Name: cacheDirName,
+							MountPath: "/cache",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "analyze",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/analyzer"},
+					Args: []string{
+						"-layers=/layers",
+						"-helpers=false",
+						"-group=/layers/group.toml",
+						build.Spec.Image,
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "build",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/builder"},
+					Args: []string{
+						"-layers=/layers",
+						"-app=/workspace",
+						"-group=/layers/group.toml",
+						"-plan=/layers/plan.toml",
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "export",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/exporter"},
+					Args: []string{
+						"-layers=/layers",
+						"-helpers=false",
+						"-app=/workspace",
+						"-group=/layers/group.toml",
+						build.Spec.Image,
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+				{
+					Name:    "cache",
+					Image:   build.Spec.Builder,
+					Command: []string{"/lifecycle/cacher"},
+					Args: []string{
+						"-group=/layers/group.toml",
+						"-layers=/layers",
+						"-path=/cache",
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      layersDirName,
+							MountPath: "/layers",
+						},
+						{
+							Name: cacheDirName,
+							MountPath: "/cache",
+						},
+					},
+					ImagePullPolicy: "Always",
+				},
+			},
+			Volumes: []corev1.Volume{
+				{
+					Name:         cacheDirName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				{
+					Name: layersDirName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
 				},
 			},
 		},

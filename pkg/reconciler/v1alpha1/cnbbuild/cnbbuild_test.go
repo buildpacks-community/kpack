@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildpack/lifecycle"
+	lcyclemd "github.com/buildpack/lifecycle/metadata"
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knfake "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
@@ -13,6 +13,7 @@ import (
 	"github.com/knative/pkg/kmeta"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -97,31 +98,24 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				build, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
 				assert.Nil(t, err)
 
-				assert.Equal(t, build, &knv1alpha1.Build{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      buildName,
-						Namespace: namespace,
-						OwnerReferences: []v1.OwnerReference{
-							*kmeta.NewControllerRef(cnbBuild),
-						},
-					},
-					Spec: knv1alpha1.BuildSpec{
-						ServiceAccountName: "someserviceaccount",
-						Source: &knv1alpha1.SourceSpec{
-							Git: &knv1alpha1.GitSourceSpec{
-								Url:      "giturl.com/git.git",
-								Revision: "gitrev1234",
-							},
-						},
-						Template: &knv1alpha1.TemplateInstantiationSpec{
-							Name: "buildpacks-cnb",
-							Arguments: []knv1alpha1.ArgumentSpec{
-								{Name: "IMAGE", Value: "someimage/name"},
-								{Name: "BUILDER_IMAGE", Value: "somebuilder/123"},
-							},
-						},
+				assert.Equal(t, build.ObjectMeta, v1.ObjectMeta{
+					Name:      buildName,
+					Namespace: namespace,
+					OwnerReferences: []v1.OwnerReference{
+						*kmeta.NewControllerRef(cnbBuild),
 					},
 				})
+				assert.Equal(t, build.Spec.ServiceAccountName, "someserviceaccount")
+				assert.Equal(t, build.Spec.Source, &knv1alpha1.SourceSpec{
+					Git: &knv1alpha1.GitSourceSpec{
+						Url:      "giturl.com/git.git",
+						Revision: "gitrev1234",
+					},
+				})
+				assert.Nil(t, build.Spec.Template)
+				require.Len(t, build.Spec.Steps, 7)
+				assert.Equal(t, build.Spec.Steps[1].Image, "somebuilder/123")
+				assert.Contains(t, build.Spec.Steps[5].Args, "someimage/name")
 			})
 		})
 
@@ -227,7 +221,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				builtImage := registry.BuiltImage{
 					SHA:         sha,
 					CompletedAt: time.Time{},
-					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
+					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
 						ID:      "1",
 						Version: "foo",
 						Layers:  nil,
@@ -312,7 +306,7 @@ func testCNBBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				builtImage := registry.BuiltImage{
 					SHA:         "",
 					CompletedAt: time.Time{},
-					BuildpackMetadata: []lifecycle.BuildpackMetadata{{
+					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
 						ID:      "1",
 						Version: "foo",
 						Layers:  nil,

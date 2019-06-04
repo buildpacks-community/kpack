@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/buildpack/lifecycle"
+	lcyclemd "github.com/buildpack/lifecycle/metadata"
 	"github.com/google/go-containerregistry/pkg/authn"
 )
 
@@ -64,12 +64,12 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref ImageRef) (BuiltImage, error
 	}
 
 	var metadataJSON string
-	metadataJSON, err = img.Label(lifecycle.MetadataLabel)
+	metadataJSON, err = img.Label(lcyclemd.AppMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	var metadata lifecycle.AppImageMetadata
+	var metadata lcyclemd.AppImageMetadata
 	err = json.Unmarshal([]byte(metadataJSON), &metadata)
 	if err != nil {
 		return BuiltImage{}, err
@@ -95,7 +95,7 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref ImageRef) (BuiltImage, error
 type BuiltImage struct {
 	SHA               string
 	CompletedAt       time.Time
-	BuildpackMetadata []lifecycle.BuildpackMetadata
+	BuildpackMetadata []lcyclemd.BuildpackMetadata
 }
 
 type ImageRef interface {

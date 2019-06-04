@@ -12,6 +12,7 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "github.com/knative/test-infra/scripts",
   "github.com/knative/test-infra/tools/dep-collector",
+  "github.com/buildpack/imgutil",
 ]
 
 [[override]]
@@ -33,8 +34,8 @@ required = [
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  # HEAD as of 2019-02-06
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
+  # HEAD as of 2019-06-04
+  revision = "1c6c7f61e8a5402b606c3c6db169fdcd1b0712b7"
 
 [[override]]
   name = "k8s.io/api"
@@ -89,7 +90,7 @@ required = [
 
 [[constraint]]
   name = "github.com/buildpack/lifecycle"
-  revision = "4134f7990be0a7cd7217c204e466b4d8f2581168"
+  version = "0.2.1"
 
 [[constraint]]
   name = "github.com/stretchr/testify"

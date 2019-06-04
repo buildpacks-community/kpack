@@ -3,7 +3,7 @@ package registry_test
 import (
 	"testing"
 
-	"github.com/buildpack/lifecycle/image/fakes"
+	"github.com/buildpack/imgutil/fakes"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
@@ -23,7 +23,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	when("RemoteMetadataRetriever", func() {
 		when("retrieving from a builder image", func() {
 			it("gets buildpacks from a local image", func() {
-				fakeImage := fakes.NewImage(t, "packs/samples:v3alpha2", "topLayerSha", "digest")
+				fakeImage := fakes.NewImage("packs/samples:v3alpha2", "topLayerSha", "digest")
 				err := fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
@@ -43,7 +43,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 		when("GetBuiltImage", func() {
 			it("retrieves the metadata from the registry", func() {
-				fakeImage := fakes.NewImage(t, "packs/samples:v3alpha2", "topLayerSha", "expected-image-digest")
+				fakeImage := fakes.NewImage("packs/samples:v3alpha2", "topLayerSha", "expected-image-digest")
 				err := fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 

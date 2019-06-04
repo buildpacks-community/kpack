@@ -25,14 +25,6 @@
   version = "v0.8.0"
 
 [[projects]]
-  digest = "1:5d72bbcc9c8667b11c3dc3cbe681c5a6f71e5096744c0bf7726ab5c6425d5dc4"
-  name = "github.com/BurntSushi/toml"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
-  version = "v0.3.1"
-
-[[projects]]
   digest = "1:2be791e7b333ff7c06f8fb3dc18a7d70580e9399dbdffd352621d067ff260b6e"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -87,18 +79,23 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
-  digest = "1:7c36f8becaf629b22337f7f847345c658b325b88255200045a96a4fca104f4a4"
-  name = "github.com/buildpack/lifecycle"
+  branch = "master"
+  digest = "1:20f05457203f2e0481598873b6b9c79cf2f47c689197c719b87c8add10c1f49f"
+  name = "github.com/buildpack/imgutil"
   packages = [
     ".",
-    "archive",
-    "cmd",
-    "image",
-    "image/auth",
-    "image/fakes",
+    "fakes",
   ]
   pruneopts = "NUT"
-  revision = "4134f7990be0a7cd7217c204e466b4d8f2581168"
+  revision = "4a2138287c60c7ef87274f5ab85caca0d11fad34"
+
+[[projects]]
+  digest = "1:3a02c0ca8e22c35ed65f25b7039f0129401ab7cd91937e08c4c551f5b1edf3ce"
+  name = "github.com/buildpack/lifecycle"
+  packages = ["metadata"]
+  pruneopts = "NUT"
+  revision = "af8b71578ed91303834ef57a7e3568ce3081f153"
+  version = "v0.2.1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -240,7 +237,7 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:52610c3a37b7348f83eae8eb96b3dcd3e0be61be5dfba4ad7545dd64c511a4fe"
+  digest = "1:476ba1ddf3f2329d3677f84c2b5e7d3635465ec5d85bc70050cbead931dda760"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -258,7 +255,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
+  revision = "1c6c7f61e8a5402b606c3c6db169fdcd1b0712b7"
 
 [[projects]]
   branch = "master"
@@ -568,9 +565,12 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:42e8c2456d7ec0f31e182c20022e74324c4da2cb3bd9069ff9b131fe33466308"
+  digest = "1:85adecf1dbfae5769cc62a8bcea6498f8e9f0e2452e4e6686eb36fa4428a5a6e"
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = [
+    "assert",
+    "require",
+  ]
   pruneopts = "NUT"
   revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
   version = "v1.3.0"
@@ -1099,11 +1099,16 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buildpack/lifecycle",
-    "github.com/buildpack/lifecycle/image",
-    "github.com/buildpack/lifecycle/image/fakes",
+    "github.com/buildpack/imgutil",
+    "github.com/buildpack/imgutil/fakes",
+    "github.com/buildpack/lifecycle/metadata",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
+    "github.com/google/go-containerregistry/pkg/v1",
+    "github.com/google/go-containerregistry/pkg/v1/mutate",
+    "github.com/google/go-containerregistry/pkg/v1/random",
+    "github.com/google/go-containerregistry/pkg/v1/remote",
+    "github.com/google/go-containerregistry/pkg/v1/remote/transport",
     "github.com/knative/build/pkg/apis/build/v1alpha1",
     "github.com/knative/build/pkg/client/clientset/versioned",
     "github.com/knative/build/pkg/client/clientset/versioned/fake",
@@ -1121,6 +1126,7 @@
     "github.com/pkg/errors",
     "github.com/sclevine/spec",
     "github.com/stretchr/testify/assert",
+    "github.com/stretchr/testify/require",
     "go.uber.org/zap",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
@@ -1129,6 +1135,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/apimachinery/pkg/selection",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets/types",
