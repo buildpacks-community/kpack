@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -12,7 +10,6 @@ import (
 	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -29,14 +26,23 @@ const (
 	routinesPerController = 2
 )
 
+var (
+	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+)
+
 func main() {
+	flag.Parse()
 	devLogger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("Couldn't create logger: %s", err)
 	}
 	logger := devLogger.Sugar()
 
-	clusterConfig, err := retrieveLocalConfiguration()
+	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+	if err != nil {
+		logger.Fatalf("Error building kubeconfig: %v", err)
+	}
 
 	cnbClient, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
@@ -104,26 +110,6 @@ func main() {
 	if err != nil {
 		logger.Fatalw("Error running controller", zap.Error(err))
 	}
-}
-
-func retrieveLocalConfiguration() (*rest.Config, error) {
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-	// use the current context in kubeconfig
-	clusterConfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	return clusterConfig, err
-}
-
-func homeDir() string {
-	return os.Getenv("HOME")
 }
 
 type doneFunc func(done <-chan struct{}) error

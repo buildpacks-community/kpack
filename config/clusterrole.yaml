@@ -1,0 +1,41 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: build-service-system-admin
+rules:
+- apiGroups:
+  - build.knative.dev
+  resources:
+  - builds
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
+- apiGroups:
+  - build.pivotal.io
+  resources:
+  - cnbbuilds
+  - cnbbuilds/status
+  - cnbimages
+  - cnbimages/status
+  - cnbbuilders
+  - cnbbuilders/status
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - serviceaccounts
+  verbs:
+  - get

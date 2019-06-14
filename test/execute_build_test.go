@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -39,35 +37,6 @@ spec:
 )
 
 func TestExecuteBuild(t *testing.T) {
-	controllerPath := os.Getenv("CONTROLLER_PATH")
-	if controllerPath == "" {
-		tmpDir, err := ioutil.TempDir("", "controller.binary.")
-		if err != nil {
-			t.Fatal(err)
-		}
-		controllerPath = filepath.Join(tmpDir, "controller")
-		if runtime.GOOS == "windows" {
-			controllerPath = controllerPath + ".exe"
-		}
-		command := exec.Command("go", "build", "-o", controllerPath, "../controller/")
-		command.Dir = "../cmd/controller/"
-		if txt, err := command.CombinedOutput(); err != nil {
-			t.Fatal("building controller:\n", string(txt), err)
-		}
-		defer os.RemoveAll(tmpDir)
-	}
-
-	err := os.Setenv("PATH", os.Getenv("PATH")+":"+filepath.Base(controllerPath))
-	require.NoError(t, err)
-
-	t.Log("Starting the controller")
-	cmd := exec.Command(controllerPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Start()
-	require.NoError(t, err)
-	defer cmd.Process.Kill()
-
 	spec.Run(t, "ExecuteBuild", testExecuteBuild, spec.Sequential())
 }
 
@@ -94,9 +63,6 @@ func testExecuteBuild(t *testing.T, when spec.G, it spec.S) {
 			_, err = builderConfig.WriteString(fmt.Sprintf(builderYaml, cfg.builder))
 			require.NoError(t, err)
 
-			t.Log("Apply all the CRDs")
-			applyCRDs(t)
-
 			t.Log("Create the builder configuration")
 			applyConfig(t, builderConfig.Name())
 			defer deleteConfig(t, builderConfig.Name())
@@ -109,12 +75,6 @@ func testExecuteBuild(t *testing.T, when spec.G, it spec.S) {
 			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 2*time.Minute)
 		})
 	})
-}
-
-func applyCRDs(t *testing.T) {
-	out, err := exec.Command("kubectl", "apply", "-f", "./testdata/config/").CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
 }
 
 func applyConfig(t *testing.T, filePath string) {

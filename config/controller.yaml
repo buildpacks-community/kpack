@@ -1,0 +1,21 @@
+#@ load("@ytt:data", "data")
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: build-service-system-controller
+  namespace: build-service-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: build-service-system-controller
+  template:
+    metadata:
+      labels:
+        app: build-service-system-controller
+    spec:
+      serviceAccountName: controller
+      containers:
+      - name: controller
+        image: #@ data.values.controller_image
