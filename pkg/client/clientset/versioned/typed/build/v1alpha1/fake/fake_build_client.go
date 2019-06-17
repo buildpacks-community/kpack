@@ -25,16 +25,16 @@ type FakeBuildV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeBuildV1alpha1) CNBBuilds(namespace string) v1alpha1.CNBBuildInterface {
-	return &FakeCNBBuilds{c, namespace}
+func (c *FakeBuildV1alpha1) Builds(namespace string) v1alpha1.BuildInterface {
+	return &FakeBuilds{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) CNBBuilders(namespace string) v1alpha1.CNBBuilderInterface {
-	return &FakeCNBBuilders{c, namespace}
+func (c *FakeBuildV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface {
+	return &FakeBuilders{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) CNBImages(namespace string) v1alpha1.CNBImageInterface {
-	return &FakeCNBImages{c, namespace}
+func (c *FakeBuildV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
+	return &FakeImages{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

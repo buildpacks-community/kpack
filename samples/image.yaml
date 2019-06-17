@@ -1,5 +1,5 @@
 apiVersion: build.pivotal.io/v1alpha1
-kind: CNBImage
+kind: Image
 metadata:
   name: sample
 spec:

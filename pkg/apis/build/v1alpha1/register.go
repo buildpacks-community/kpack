@@ -47,12 +47,12 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&CNBBuild{},
-		&CNBBuildList{},
-		&CNBImage{},
-		&CNBImageList{},
-		&CNBBuilder{},
-		&CNBBuilderList{},
+		&Build{},
+		&BuildList{},
+		&Image{},
+		&ImageList{},
+		&Builder{},
+		&BuilderList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

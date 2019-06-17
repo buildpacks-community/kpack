@@ -15,26 +15,26 @@
  */
 package v1alpha1
 
-// CNBBuildListerExpansion allows custom methods to be added to
-// CNBBuildLister.
-type CNBBuildListerExpansion interface{}
+// BuildListerExpansion allows custom methods to be added to
+// BuildLister.
+type BuildListerExpansion interface{}
 
-// CNBBuildNamespaceListerExpansion allows custom methods to be added to
-// CNBBuildNamespaceLister.
-type CNBBuildNamespaceListerExpansion interface{}
+// BuildNamespaceListerExpansion allows custom methods to be added to
+// BuildNamespaceLister.
+type BuildNamespaceListerExpansion interface{}
 
-// CNBBuilderListerExpansion allows custom methods to be added to
-// CNBBuilderLister.
-type CNBBuilderListerExpansion interface{}
+// BuilderListerExpansion allows custom methods to be added to
+// BuilderLister.
+type BuilderListerExpansion interface{}
 
-// CNBBuilderNamespaceListerExpansion allows custom methods to be added to
-// CNBBuilderNamespaceLister.
-type CNBBuilderNamespaceListerExpansion interface{}
+// BuilderNamespaceListerExpansion allows custom methods to be added to
+// BuilderNamespaceLister.
+type BuilderNamespaceListerExpansion interface{}
 
-// CNBImageListerExpansion allows custom methods to be added to
-// CNBImageLister.
-type CNBImageListerExpansion interface{}
+// ImageListerExpansion allows custom methods to be added to
+// ImageLister.
+type ImageListerExpansion interface{}
 
-// CNBImageNamespaceListerExpansion allows custom methods to be added to
-// CNBImageNamespaceLister.
-type CNBImageNamespaceListerExpansion interface{}
+// ImageNamespaceListerExpansion allows custom methods to be added to
+// ImageNamespaceLister.
+type ImageNamespaceListerExpansion interface{}

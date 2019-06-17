@@ -1,5 +1,5 @@
 apiVersion: build.pivotal.io/v1alpha1
-kind: CNBBuilder
+kind: Builder
 metadata:
   name: sample-builder
 spec:

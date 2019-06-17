@@ -18,12 +18,12 @@ rules:
 - apiGroups:
   - build.pivotal.io
   resources:
-  - cnbbuilds
-  - cnbbuilds/status
-  - cnbimages
-  - cnbimages/status
-  - cnbbuilders
-  - cnbbuilders/status
+  - builds
+  - builds/status
+  - images
+  - images/status
+  - builders
+  - builders/status
   verbs:
   - get
   - list

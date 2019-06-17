@@ -16,9 +16,9 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuild"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbbuilder"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/cnbimage"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
@@ -44,9 +44,9 @@ func main() {
 		logger.Fatalf("Error building kubeconfig: %v", err)
 	}
 
-	cnbClient, err := versioned.NewForConfig(clusterConfig)
+	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Fatalf("could not get CNBBuild client: %s", err.Error())
+		log.Fatalf("could not get Build client: %s", err.Error())
 	}
 
 	knbuildClient, err := knversioned.NewForConfig(clusterConfig)
@@ -61,14 +61,14 @@ func main() {
 
 	options := reconciler.Options{
 		Logger:       logger,
-		CNBClient:    cnbClient,
+		Client:       client,
 		ResyncPeriod: 10 * time.Hour,
 	}
 
-	cnbInformerFactory := externalversions.NewSharedInformerFactory(cnbClient, options.ResyncPeriod)
-	cnbBuildInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilds()
-	cnbImageInformer := cnbInformerFactory.Build().V1alpha1().CNBImages()
-	cnbBuilderInformer := cnbInformerFactory.Build().V1alpha1().CNBBuilders()
+	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
+	buildInformer := informerFactory.Build().V1alpha1().Builds()
+	imageInformer := informerFactory.Build().V1alpha1().Images()
+	builderInformer := informerFactory.Build().V1alpha1().Builders()
 
 	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, options.ResyncPeriod)
 	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
@@ -83,17 +83,17 @@ func main() {
 		},
 	}
 
-	buildController := cnbbuild.NewController(options, knbuildClient, cnbBuildInformer, knBuildInformer, metadataRetriever)
-	imageController := cnbimage.NewController(options, cnbImageInformer, cnbBuildInformer, cnbBuilderInformer)
-	builderController := cnbbuilder.NewController(options, cnbBuilderInformer, metadataRetriever)
+	buildController := build.NewController(options, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
+	imageController := image.NewController(options, imageInformer, buildInformer, builderInformer)
+	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 
 	stopChan := make(chan struct{})
-	cnbInformerFactory.Start(stopChan)
+	informerFactory.Start(stopChan)
 	knBuildInformerFactory.Start(stopChan)
 
-	cache.WaitForCacheSync(stopChan, cnbBuildInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, cnbImageInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, cnbBuilderInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 
 	err = runGroup(

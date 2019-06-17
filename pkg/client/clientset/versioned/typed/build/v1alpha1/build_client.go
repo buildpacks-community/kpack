@@ -24,9 +24,9 @@ import (
 
 type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	CNBBuildsGetter
-	CNBBuildersGetter
-	CNBImagesGetter
+	BuildsGetter
+	BuildersGetter
+	ImagesGetter
 }
 
 // BuildV1alpha1Client is used to interact with features provided by the build.pivotal.io group.
@@ -34,16 +34,16 @@ type BuildV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *BuildV1alpha1Client) CNBBuilds(namespace string) CNBBuildInterface {
-	return newCNBBuilds(c, namespace)
+func (c *BuildV1alpha1Client) Builds(namespace string) BuildInterface {
+	return newBuilds(c, namespace)
 }
 
-func (c *BuildV1alpha1Client) CNBBuilders(namespace string) CNBBuilderInterface {
-	return newCNBBuilders(c, namespace)
+func (c *BuildV1alpha1Client) Builders(namespace string) BuilderInterface {
+	return newBuilders(c, namespace)
 }
 
-func (c *BuildV1alpha1Client) CNBImages(namespace string) CNBImageInterface {
-	return newCNBImages(c, namespace)
+func (c *BuildV1alpha1Client) Images(namespace string) ImageInterface {
+	return newImages(c, namespace)
 }
 
 // NewForConfig creates a new BuildV1alpha1Client for the given config.

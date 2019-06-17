@@ -27,7 +27,7 @@ func newClients() (*clients, error) {
 		return nil, err
 	}
 
-	cnbClient, err := versioned.NewForConfig(clusterConfig)
+	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -38,12 +38,12 @@ func newClients() (*clients, error) {
 	}
 
 	return &clients{
-		cnbClient: cnbClient,
+		client:    client,
 		k8sClient: k8sClient,
 	}, nil
 }
 
 type clients struct {
-	cnbClient versioned.Interface
+	client    versioned.Interface
 	k8sClient v1.CoreV1Interface
 }

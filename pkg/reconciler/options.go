@@ -12,7 +12,7 @@ import (
 type Options struct {
 	Logger *zap.SugaredLogger
 
-	CNBClient    versioned.Interface
+	Client       versioned.Interface
 	ResyncPeriod time.Duration
 }
 

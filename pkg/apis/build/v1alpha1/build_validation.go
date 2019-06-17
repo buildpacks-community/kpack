@@ -12,13 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package build
+package v1alpha1
 
-const (
-	GroupName = "build.pivotal.io"
+import (
+	"context"
 
-	BuildLabelKey = GroupName + "/build"
+	"github.com/knative/pkg/apis"
 )
+
+func (a *Build) Validate(ctx context.Context) *apis.FieldError {
+	return nil
+}
+
+func (as *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
+	return nil
+}

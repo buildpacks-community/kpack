@@ -21,12 +21,12 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// CNBBuilds returns a CNBBuildInformer.
-	CNBBuilds() CNBBuildInformer
-	// CNBBuilders returns a CNBBuilderInformer.
-	CNBBuilders() CNBBuilderInformer
-	// CNBImages returns a CNBImageInformer.
-	CNBImages() CNBImageInformer
+	// Builds returns a BuildInformer.
+	Builds() BuildInformer
+	// Builders returns a BuilderInformer.
+	Builders() BuilderInformer
+	// Images returns a ImageInformer.
+	Images() ImageInformer
 }
 
 type version struct {
@@ -40,17 +40,17 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// CNBBuilds returns a CNBBuildInformer.
-func (v *version) CNBBuilds() CNBBuildInformer {
-	return &cNBBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Builds returns a BuildInformer.
+func (v *version) Builds() BuildInformer {
+	return &buildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// CNBBuilders returns a CNBBuilderInformer.
-func (v *version) CNBBuilders() CNBBuilderInformer {
-	return &cNBBuilderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Builders returns a BuilderInformer.
+func (v *version) Builders() BuilderInformer {
+	return &builderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// CNBImages returns a CNBImageInformer.
-func (v *version) CNBImages() CNBImageInformer {
-	return &cNBImageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Images returns a ImageInformer.
+func (v *version) Images() ImageInformer {
+	return &imageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

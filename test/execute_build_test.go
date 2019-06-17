@@ -97,21 +97,21 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			_, err = clients.cnbClient.BuildV1alpha1().CNBBuilders(testNamespace).Create(&v1alpha1.CNBBuilder{
+			_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: builderName,
 				},
-				Spec: v1alpha1.CNBBuilderSpec{
+				Spec: v1alpha1.BuilderSpec{
 					Image: builderImage,
 				},
 			})
 			require.NoError(t, err)
 
-			_, err = clients.cnbClient.BuildV1alpha1().CNBImages(testNamespace).Create(&v1alpha1.CNBImage{
+			_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: imageName,
 				},
-				Spec: v1alpha1.CNBImageSpec{
+				Spec: v1alpha1.ImageSpec{
 					Image:          cfg.imageTag,
 					BuilderRef:     builderName,
 					ServiceAccount: serviceAccountName,
