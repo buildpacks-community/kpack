@@ -1,101 +1,130 @@
 package test
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/buildpack/imgutil"
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 )
 
-const (
-	fixtureBuilderLocation = "cloudfoundry/cnb"
-	imageYmlFormat         = `---
-apiVersion: build.pivotal.io/v1alpha1
-kind: CNBImage
-metadata:
-  name: "%s"
-spec:
-  image: %s
-  builderRef: "build-service-builder"
-  gitUrl: "https://github.com/habitat-sh/sample-node-app"
-  gitRevision: "master"`
-	builderYaml = `---
-apiVersion: build.pivotal.io/v1alpha1
-kind: CNBBuilder
-metadata:
-  name: "build-service-builder"
-spec:
-  image: %s`
-)
-
-func TestExecuteBuild(t *testing.T) {
-	spec.Run(t, "ExecuteBuild", testExecuteBuild, spec.Sequential())
+func TestCreateImage(t *testing.T) {
+	spec.Run(t, "CreateImage", testCreateImage, spec.Sequential())
 }
 
-func testExecuteBuild(t *testing.T, when spec.G, it spec.S) {
+func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var cfg config
+	var clients *clients
+
+	const (
+		testNamespace      = "test-build-service-system"
+		dockerSecret       = "docker-secret"
+		imageName          = "test-image"
+		builderName        = "build-service-builder"
+		serviceAccountName = "image-service-account"
+		builderImage       = "cloudfoundry/cnb:bionic"
+	)
+
 	it.Before(func() {
 		cfg = loadConfig(t)
-		updateBuilderImageWithTag(t, cfg.builder, "bionic")
+
+		var err error
+		clients, err = newClients()
+		require.NoError(t, err)
+
+		_, err = clients.k8sClient.Namespaces().Create(&v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testNamespace,
+			},
+		})
+		require.NoError(t, err)
 	})
 
-	when("all is good", func() {
-		it("creates new image", func() {
-			imageConfig, err := ioutil.TempFile("", "image.yml")
-			require.NoError(t, err)
-			defer os.Remove(imageConfig.Name())
+	it.After(func() {
+		deleteImageTag(t, cfg.imageTag)
 
-			imageName := "acceptance-test-" + randString(5)
-			_, err = imageConfig.WriteString(fmt.Sprintf(imageYmlFormat, imageName, cfg.imageTag))
+		err := clients.k8sClient.Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
+		require.NoError(t, err)
+	})
+
+	when("an image is applied", func() {
+		it("builds an initial image", func() {
+			require.False(t, imageExists(t, cfg.imageTag)())
+
+			reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 			require.NoError(t, err)
-			builderConfig, err := ioutil.TempFile("", "builder.yml")
-			defer os.Remove(builderConfig.Name())
+			auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
 			require.NoError(t, err)
 
-			_, err = builderConfig.WriteString(fmt.Sprintf(builderYaml, cfg.builder))
+			basicAuth, err := auth.Authorization()
 			require.NoError(t, err)
 
-			t.Log("Create the builder configuration")
-			applyConfig(t, builderConfig.Name())
-			defer deleteConfig(t, builderConfig.Name())
+			username, password, ok := parseBasicAuth(basicAuth)
+			require.True(t, ok)
 
-			t.Log("Create image that will be built")
-			applyConfig(t, imageConfig.Name())
-			defer deleteConfig(t, imageConfig.Name())
+			_, err = clients.k8sClient.Secrets(testNamespace).Create(&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: dockerSecret,
+					Annotations: map[string]string{
+						"build.knative.dev/docker-0": reference.Context().RegistryStr(),
+					},
+				},
+				StringData: map[string]string{
+					"username": username,
+					"password": password,
+				},
+				Type: v1.SecretTypeBasicAuth,
+			})
+			require.NoError(t, err)
+
+			_, err = clients.k8sClient.ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: serviceAccountName,
+				},
+				Secrets: []v1.ObjectReference{
+					{
+						Name: dockerSecret,
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			_, err = clients.cnbClient.BuildV1alpha1().CNBBuilders(testNamespace).Create(&v1alpha1.CNBBuilder{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: builderName,
+				},
+				Spec: v1alpha1.CNBBuilderSpec{
+					Image: builderImage,
+				},
+			})
+			require.NoError(t, err)
+
+			_, err = clients.cnbClient.BuildV1alpha1().CNBImages(testNamespace).Create(&v1alpha1.CNBImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: imageName,
+				},
+				Spec: v1alpha1.CNBImageSpec{
+					Image:          cfg.imageTag,
+					BuilderRef:     builderName,
+					ServiceAccount: serviceAccountName,
+					GitURL:         "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+					GitRevision:    "master",
+				},
+			})
+			require.NoError(t, err)
 
 			t.Logf("Waiting for image '%s' to be created", cfg.imageTag)
-			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 2*time.Minute)
+			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 1*time.Minute)
 		})
 	})
-}
-
-func applyConfig(t *testing.T, filePath string) {
-	out, err := exec.Command("kubectl", "apply", "-f", filePath).CombinedOutput()
-	t.Log(string(out))
-	assert.NoError(t, err)
-}
-func deleteConfig(t *testing.T, filePath string) {
-	out, err := exec.Command("kubectl", "delete", "-f", filePath).CombinedOutput()
-	t.Log(string(out))
-	assert.NoError(t, err)
-}
-
-func updateBuilderImageWithTag(t *testing.T, builder string, tag string) {
-	remoteImage, err := imgutil.NewRemoteImage(fixtureBuilderLocation+":"+tag, authn.DefaultKeychain)
-	require.NoError(t, err)
-
-	remoteImage.Rename(builder)
-
-	_, err = remoteImage.Save()
-	require.NoError(t, err)
 }
 
 func imageExists(t *testing.T, name string) func() bool {
@@ -120,16 +149,13 @@ func imageSha(t *testing.T, name string) (string, bool) {
 	return digest, found
 }
 
-func eventually(t *testing.T, fun func() bool, interval time.Duration, duration time.Duration) {
-	endTime := time.Now().Add(duration)
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for currentTime := range ticker.C {
-		if endTime.Before(currentTime) {
-			t.Fatal("time is up")
-		}
-		if fun() {
-			return
-		}
-	}
+func deleteImageTag(t *testing.T, deleteImageTag string) {
+	reference, err := name.ParseReference(deleteImageTag, name.WeakValidation)
+	require.NoError(t, err)
+
+	authenticator, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
+	require.NoError(t, err)
+
+	err = remote.Delete(reference, remote.WithAuth(authenticator))
+	require.NoError(t, err)
 }
