@@ -1,47 +1,85 @@
 # Build Service System
 
-## Install
+Experimental Build Service CRDs.
 
-To create CRDs:
+## Setup
+
+Access to a Kubernetes cluster is needed in order to install the build service system controllers.
+
 ```bash
-kubectl apply -f ./config/
+kubectl cluster-info # ensure you have access to a cluster
+./hack/apply.sh <IMAGE/NAME> # <IMAGE/NAME> is a writable and publicly accessible location 
 ```
 
-## Test locally
+### Creating an Image Resource
 
-Setup minikube
-In case you have a minikube cluster already running, tear it down first.
-```bash
-minikube delete
+1. Create a builder resource. This resource tracks a builder on registry and will rebuild images when the builder has updated buildpacks. 
+```yaml
+apiVersion: build.pivotal.io/v1alpha1
+kind: Builder
+metadata:
+  name: sample-builder
+spec:
+  image: cloudfoundry/cnb:bionic
+``` 
+2. Create a service account with access to push to the desired docker registry. The example below is for a registry on gcr. Check out [Knative's documentation](https://knative.dev/docs/build/auth/) for more info. 
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-user-pass
+  annotations:
+    build.knative.dev/docker-0: gcr.io 
+type: kubernetes.io/basic-auth
+stringData:
+  username: <username>
+  password: <password>
 ```
 
-Start a minikube cluster on Mac
-```bash
-minikube start --memory=4096 --cpus=4 --vm-driver=hyperkit --bootstrapper=kubeadm --insecure-registry "registry.default.svc.cluster.local:5000"
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-account
+secrets:
+  - name: basic-user-pass
+```
+ 
+3. Apply an image configuration to the cluster.  
+
+```yaml
+apiVersion: build.pivotal.io/v1alpha1
+kind: Image
+metadata:
+  name: sample-image
+spec:
+  serviceAccount: service-account 
+  builder: sample-builder
+  image: gcr.io/project-name/app 
+  source:
+    git:
+      url: https://github.com/buildpack/sample-java-app.git
+      revision: master
 ```
 
-Start a minikube cluster on Linux
-```bash
-minikube start --memory=4096 --cpus=4 --vm-driver=kvm2 --bootstrapper=kubeadm --insecure-registry "registry.default.svc.cluster.local:5000"
-sudo ifconfig lo:0 192.168.64.1
+4.  See the builds for the image 
+
+```builds
+kubectl get cnbbuilds # before the first builds completes you will see a pending status
+---------------
+NAME                          SHA   SUCCEEDED   REASON
+test-image-build-1-ea3e6fa9         Unknown     Pending
+
 ```
 
-Update `/etc/hosts` by adding the name registry.default.svc.cluster.local on the same line as the entry for localhost. It should look something like this:
-```bash
-##
-127.0.0.1       localhost registry.default.svc.cluster.local
-255.255.255.255 broadcasthost
-::1             localhost
-```
+After a build has completed you will be able to see the built digest
 
-Update the minikube `/etc/hosts` with the host ip for registry.default.svc.cluster.local
- ```bash
-minikube ssh \
-"echo \"192.168.64.1       registry.default.svc.cluster.local\" \
-| sudo tee -a  /etc/hosts"
-```
+### Running Tests
 
-To execute the tests:
+* To run the e2e tests the build service system must be installed and running on a cluster
+* The IMAGE_REGISTRY environment variable must point at a registry with local write access 
+
 ```bash
-go test -v ./...
+IMAGE_REGISTRY=gcr.io/<some-project> go test ./...
 ```
