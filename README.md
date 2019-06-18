@@ -55,7 +55,7 @@ metadata:
   name: sample-image
 spec:
   serviceAccount: service-account 
-  builder: sample-builder
+  builderRef: sample-builder
   image: gcr.io/project-name/app 
   source:
     git:
