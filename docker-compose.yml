@@ -1,6 +1,0 @@
-version: '3'
-services:
-  public-registry:
-    image: registry:2
-    ports:
-    - "5000:5000"
