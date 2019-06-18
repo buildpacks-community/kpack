@@ -130,7 +130,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 			Steps: []corev1.Container{
 				{
 					Name:    "prepare",
-					Image:   "alpine",
+					Image:   build.Spec.Builder,
 					Command: []string{"/bin/sh"},
 					Args: []string{
 						"-c",
