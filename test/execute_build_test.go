@@ -115,8 +115,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Image:          cfg.imageTag,
 					BuilderRef:     builderName,
 					ServiceAccount: serviceAccountName,
-					GitURL:         "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-					GitRevision:    "master",
+					Source: v1alpha1.Source{
+						Git: v1alpha1.Git{
+							URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+							Revision: "master",
+						},
+					},
 				},
 			})
 			require.NoError(t, err)

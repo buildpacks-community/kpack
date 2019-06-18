@@ -68,8 +68,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Image:          "some/image",
 			ServiceAccount: "service-account",
 			BuilderRef:     builderName,
-			GitURL:         "https://some.git/url",
-			GitRevision:    "revision",
+			Source: v1alpha1.Source{
+				Git: v1alpha1.Git{
+					URL:      "https://some.git/url",
+					Revision: "revision",
+				},
+			},
 		},
 	}
 
@@ -136,8 +140,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						Image:          "some/image",
 						Builder:        "some/builder@sha256acf123",
 						ServiceAccount: "service-account",
-						GitURL:         "https://some.git/url",
-						GitRevision:    "revision",
+						Source: v1alpha1.Source{
+							Git: v1alpha1.Git{
+								URL:      "https://some.git/url",
+								Revision: "revision",
+							},
+						},
 					},
 				})
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
@@ -226,8 +234,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "different/image",
 							ServiceAccount: "different/service-account",
 							BuilderRef:     builderName,
-							GitURL:         "https://different.git/url",
-							GitRevision:    "differentrevision",
+							Source: v1alpha1.Source{
+								Git: v1alpha1.Git{
+									URL:      "https://different.git/url",
+									Revision: "differentrevision",
+								},
+							},
 						},
 						Status: img.Status, // fake client overwrites status :(
 					})
@@ -288,8 +300,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "different/image",
 							ServiceAccount: "different/service-account",
 							Builder:        "some/builder@sha256acf123",
-							GitURL:         "https://different.git/url",
-							GitRevision:    "differentrevision",
+							Source: v1alpha1.Source{
+								Git: v1alpha1.Git{
+									URL:      "https://different.git/url",
+									Revision: "differentrevision",
+								},
+							},
 						},
 					})
 				})
@@ -379,8 +395,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "some/image",
 							Builder:        "some/builder@sha256:newsha",
 							ServiceAccount: "service-account",
-							GitURL:         "https://some.git/url",
-							GitRevision:    "revision",
+							Source: v1alpha1.Source{
+								Git: v1alpha1.Git{
+									URL:      "https://some.git/url",
+									Revision: "revision",
+								},
+							},
 						},
 					})
 				})

@@ -37,8 +37,7 @@ func builtWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 
 func (im *Image) configMatches(build *Build) bool {
 	return im.Spec.Image == build.Spec.Image &&
-		im.Spec.GitURL == build.Spec.GitURL &&
-		im.Spec.GitRevision == build.Spec.GitRevision
+		im.Spec.Source == build.Spec.Source
 }
 
 func (im *Image) CreateBuild(builder *Builder) *Build {
@@ -57,8 +56,7 @@ func (im *Image) CreateBuild(builder *Builder) *Build {
 			Image:          im.Spec.Image,
 			Builder:        builder.Spec.Image,
 			ServiceAccount: im.Spec.ServiceAccount,
-			GitURL:         im.Spec.GitURL,
-			GitRevision:    im.Spec.GitRevision,
+			Source:         im.Spec.Source,
 		},
 	}
 }

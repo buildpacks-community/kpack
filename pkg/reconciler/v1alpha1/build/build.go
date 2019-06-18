@@ -123,8 +123,8 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 			ServiceAccountName: build.Spec.ServiceAccount,
 			Source: &knv1alpha1.SourceSpec{
 				Git: &knv1alpha1.GitSourceSpec{
-					Url:      build.Spec.GitURL,
-					Revision: build.Spec.GitRevision,
+					Url:      build.Spec.Source.Git.URL,
+					Revision: build.Spec.Source.Git.Revision,
 				},
 			},
 			Steps: []corev1.Container{

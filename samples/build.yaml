@@ -6,5 +6,7 @@ spec:
   serviceAccount: serviceaccount
   builder: cloudfoundry/cnb
   image: sample/image
-  gitUrl: https://github.com/buildpack/sample-java-app.git
-  gitRevision: master
+  source:
+    git:
+      url: https://github.com/buildpack/sample-java-app.git
+      revision: master

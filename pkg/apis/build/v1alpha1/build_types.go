@@ -45,8 +45,7 @@ type BuildSpec struct {
 	Image          string `json:"image"`
 	Builder        string `json:"builder"`
 	ServiceAccount string `json:"serviceAccount"`
-	GitURL         string `json:"gitUrl"`
-	GitRevision    string `json:"gitRevision"`
+	Source         Source `json:"source"`
 }
 
 type BuildStatus struct {

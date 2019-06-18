@@ -37,8 +37,7 @@ type ImageSpec struct {
 	Image          string `json:"image"`
 	BuilderRef     string `json:"builderRef"`
 	ServiceAccount string `json:"serviceAccount"`
-	GitURL         string `json:"gitUrl"`
-	GitRevision    string `json:"gitRevision"`
+	Source         Source `json:"source"`
 }
 
 type ImageStatus struct {

@@ -79,9 +79,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Image:          "someimage/name",
 			ServiceAccount: "someserviceaccount",
-			GitURL:         "giturl.com/git.git",
-			GitRevision:    "gitrev1234",
 			Builder:        "somebuilder/123",
+			Source: v1alpha1.Source{
+				Git: v1alpha1.Git{
+					URL:      "giturl.com/git.git",
+					Revision: "gitrev1234",
+				},
+			},
 		},
 	}
 
@@ -133,8 +137,12 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Spec: v1alpha1.BuildSpec{
 						Image:          "updatedsomeimage/name",
 						ServiceAccount: "updatedsomeserviceaccount",
-						GitURL:         "updatedgiturl.com/git.git",
-						GitRevision:    "updated1234",
+						Source: v1alpha1.Source{
+							Git: v1alpha1.Git{
+								URL:      "updatedgiturl.com/git.git",
+								Revision: "updated1234",
+							},
+						},
 					},
 				})
 				require.Nil(t, err)

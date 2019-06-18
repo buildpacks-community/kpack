@@ -21,8 +21,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Image:          "some/image",
 			ServiceAccount: "some/service-account",
 			BuilderRef:     "some/builder",
-			GitURL:         "https://some.git/url",
-			GitRevision:    "revision",
+			Source: v1alpha1.Source{
+				Git: v1alpha1.Git{
+					URL:      "https://some.git/url",
+					Revision: "revision",
+				},
+			},
 		},
 	}
 
@@ -34,8 +38,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Image:          "some/image",
 			Builder:        "some/builder",
 			ServiceAccount: "some/serviceaccount",
-			GitURL:         "https://some.git/url",
-			GitRevision:    "revision",
+			Source: v1alpha1.Source{
+				Git: v1alpha1.Git{
+					URL:      "https://some.git/url",
+					Revision: "revision",
+				},
+			},
 		},
 		Status: v1alpha1.BuildStatus{
 			BuildMetadata: []v1alpha1.BuildpackMetadata{
@@ -67,13 +75,13 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different GitURL", func() {
-			build.Spec.GitURL = "different"
+			build.Spec.Source.Git.URL = "different"
 
 			assert.True(t, image.BuildNeeded(build, builder))
 		})
 
 		it("true for different GitRevision", func() {
-			build.Spec.GitRevision = "different"
+			build.Spec.Source.Git.Revision = "different"
 
 			assert.True(t, image.BuildNeeded(build, builder))
 		})
