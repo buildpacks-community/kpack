@@ -45,6 +45,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeMetadataRetriever := &buildfakes.FakeMetadataRetriever{}
 
 	reconciler := testhelpers.SyncWaitingReconciler(
+		informerFactory,
 		&build.Reconciler{
 			KNClient:          fakeKNClient,
 			Client:            fakeBuildClient,

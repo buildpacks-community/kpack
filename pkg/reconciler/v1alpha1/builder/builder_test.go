@@ -32,6 +32,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
 
 	reconciler := testhelpers.SyncWaitingReconciler(
+		informerFactory,
 		&builder.Reconciler{
 			Client:            fakeClient,
 			BuilderLister:     builderInformer.Lister(),

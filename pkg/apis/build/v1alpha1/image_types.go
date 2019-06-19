@@ -34,10 +34,12 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Image          string `json:"image"`
-	BuilderRef     string `json:"builderRef"`
-	ServiceAccount string `json:"serviceAccount"`
-	Source         Source `json:"source"`
+	Image                    string `json:"image"`
+	BuilderRef               string `json:"builderRef"`
+	ServiceAccount           string `json:"serviceAccount"`
+	Source                   Source `json:"source"`
+	FailedBuildHistoryLimit  *int64 `json:"failedBuildHistoryLimit"`
+	SuccessBuildHistoryLimit *int64 `json:"successBuildHistoryLimit"`
 }
 
 type ImageStatus struct {

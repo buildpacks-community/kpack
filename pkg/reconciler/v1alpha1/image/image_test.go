@@ -3,22 +3,28 @@ package image_test
 import (
 	"context"
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
 	alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
+
+	knCtrl "github.com/knative/pkg/controller"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	v1build "github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
 )
 
@@ -27,28 +33,30 @@ func TestImageReconciler(t *testing.T) {
 }
 
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
-	fakeClient := fake.NewSimpleClientset(&v1alpha1.Image{}, &v1alpha1.Build{}, &v1alpha1.Builder{})
-
-	informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
-	imageInformer := informerFactory.Build().V1alpha1().Images()
-	buildInformer := informerFactory.Build().V1alpha1().Builds()
-	builderInformer := informerFactory.Build().V1alpha1().Builders()
+	fakeClient := fake.NewSimpleClientset(&v1alpha1.Image{}, &v1alpha1.Builder{})
 
 	fakeTracker := fakeTracker{}
 
-	reconciler := testhelpers.SyncWaitingReconciler(
-		&image.Reconciler{
-			Client:        fakeClient,
-			ImageLister:   imageInformer.Lister(),
-			BuildLister:   buildInformer.Lister(),
-			BuilderLister: builderInformer.Lister(),
-			Tracker:       fakeTracker,
-		},
-		imageInformer.Informer().HasSynced,
-		buildInformer.Informer().HasSynced,
-		builderInformer.Informer().HasSynced,
-	)
-	stopChan := make(chan struct{})
+	reconciler := testhelpers.RebuildingReconciler(func() knCtrl.Reconciler {
+		informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
+		imageInformer := informerFactory.Build().V1alpha1().Images()
+		buildInformer := informerFactory.Build().V1alpha1().Builds()
+		builderInformer := informerFactory.Build().V1alpha1().Builders()
+
+		return testhelpers.SyncWaitingReconciler(
+			informerFactory,
+			&image.Reconciler{
+				Client:        fakeClient,
+				ImageLister:   imageInformer.Lister(),
+				BuildLister:   buildInformer.Lister(),
+				BuilderLister: builderInformer.Lister(),
+				Tracker:       fakeTracker,
+			},
+			imageInformer.Informer().HasSynced,
+			buildInformer.Informer().HasSynced,
+			builderInformer.Informer().HasSynced,
+		)
+	})
 
 	const (
 		imageName                = "image-name"
@@ -57,8 +65,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		key                      = "some-namespace/image-name"
 		originalGeneration int64 = 1
 	)
+	var (
+		failedBuildHistoryLimit  int64 = 4
+		successBuildHistoryLimit int64 = 4
+	)
 
-	Image := &v1alpha1.Image{
+	image := &v1alpha1.Image{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
@@ -74,6 +86,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "revision",
 				},
 			},
+			FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
+			SuccessBuildHistoryLimit: &successBuildHistoryLimit,
 		},
 	}
 
@@ -84,7 +98,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	Builder := &v1alpha1.Builder{
+	builder := &v1alpha1.Builder{
 		ObjectMeta: v1.ObjectMeta{
 			Name: builderName,
 		},
@@ -97,20 +111,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it.Before(func() {
-		informerFactory.Start(stopChan)
-
-		_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(Builder)
+		_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
 		assert.Nil(t, err)
-	})
-
-	it.After(func() {
-		close(stopChan)
 	})
 
 	when("#Reconcile", func() {
 		when("new image", func() {
 			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(Image)
+				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
 				assert.Nil(t, err)
 			})
 
@@ -129,7 +137,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						Name:      buildName,
 						Namespace: namespace,
 						OwnerReferences: []v1.OwnerReference{
-							*kmeta.NewControllerRef(Image),
+							*kmeta.NewControllerRef(image),
 						},
 						Labels: map[string]string{
 							v1alpha1.BuildNumberLabel: "1",
@@ -154,7 +162,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("is not affected by other images", func() {
-				differentImage := Image.DeepCopy()
+				differentImage := image.DeepCopy()
 				differentImage.Name = "Different-Name"
 
 				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(differentImage)
@@ -197,7 +205,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 
-				gvk := Builder.GetGroupVersionKind()
+				gvk := builder.GetGroupVersionKind()
 				isTracking := fakeTracker.IsTracking(corev1.ObjectReference{
 					APIVersion: gvk.GroupVersion().String(),
 					Kind:       gvk.Kind,
@@ -211,7 +219,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("a build has already been created", func() {
 			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(Image)
+				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
 				assert.Nil(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
@@ -240,6 +248,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Revision: "differentrevision",
 								},
 							},
+							FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
+							SuccessBuildHistoryLimit: &successBuildHistoryLimit,
 						},
 						Status: img.Status, // fake client overwrites status :(
 					})
@@ -289,7 +299,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Name:      updatedImage.Status.LastBuildRef,
 							Namespace: namespace,
 							OwnerReferences: []v1.OwnerReference{
-								*kmeta.NewControllerRef(Image),
+								*kmeta.NewControllerRef(image),
 							},
 							Labels: map[string]string{
 								v1alpha1.BuildNumberLabel: "2",
@@ -384,7 +394,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Name:      updatedImage.Status.LastBuildRef,
 							Namespace: namespace,
 							OwnerReferences: []v1.OwnerReference{
-								*kmeta.NewControllerRef(Image),
+								*kmeta.NewControllerRef(image),
 							},
 							Labels: map[string]string{
 								v1alpha1.BuildNumberLabel: "2",
@@ -440,7 +450,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("an image status is not up to date", func() {
 			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(Image)
+				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
 				assert.Nil(t, err)
 			})
 
@@ -459,7 +469,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Nil(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
-				assert.EqualError(t, err, fmt.Sprintf("warning: image %s status not up to date", imageName))
+				assert.Error(t, err, fmt.Sprintf("warning: image %s status not up to date", imageName))
 
 				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
 				assert.Nil(t, err)
@@ -468,25 +478,112 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("failed builds have exceeded the failedHistoryLimit", func() {
+			var firstBuild *v1alpha1.Build
+
+			it.Before(func() {
+				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
+				require.Nil(t, err)
+
+				for i := int64(0); i < failedBuildHistoryLimit+1; i++ {
+					build := image.CreateBuild(builder)
+					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
+					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
+					require.Nil(t, err)
+
+					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
+						Type:   duckv1alpha1.ConditionSucceeded,
+						Status: corev1.ConditionFalse,
+					})
+					if firstBuild == nil {
+						firstBuild = build
+					}
+					image.Status.BuildCounter++
+					image.Status.LastBuildRef = build.Name
+					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
+					assert.Nil(t, err)
+				}
+			})
+
+			it("removes failed builds over the limit", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				buildList, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
+				require.NoError(t, err)
+
+				require.Len(t, buildList.Items, int(failedBuildHistoryLimit))
+
+				_, err = fakeClient.BuildV1alpha1().Builds(namespace).Get(firstBuild.Name, v1.GetOptions{})
+				require.Error(t, err, "not found")
+			})
+
+		})
+
+		when("success builds have exceeded the successHistoryLimit", func() {
+			var firstBuild *v1alpha1.Build
+			it.Before(func() {
+				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
+				require.Nil(t, err)
+
+				for i := int64(0); i < successBuildHistoryLimit+1; i++ {
+					build := image.CreateBuild(builder)
+					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
+					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
+					require.Nil(t, err)
+
+					if firstBuild == nil {
+						firstBuild = build
+					}
+
+					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
+						Type:   duckv1alpha1.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					})
+
+					image.Status.BuildCounter++
+					image.Status.LastBuildRef = build.Name
+					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
+					assert.Nil(t, err)
+				}
+			})
+
+			it("removes success builds over the limit", func() {
+
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				buildList, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
+				require.NoError(t, err)
+
+				require.Len(t, buildList.Items, int(successBuildHistoryLimit))
+
+				_, err = fakeClient.BuildV1alpha1().Builds(namespace).Get(firstBuild.Name, v1.GetOptions{})
+				require.Error(t, err, "not found")
+			})
+		})
+
 		it("does not return error on nonexistent image", func() {
 			err := reconciler.Reconcile(context.TODO(), "not/found")
 			assert.Nil(t, err)
 		})
+
 	})
 }
 
-func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, namespace string, buildMetadata v1alpha1.BuildpackMetadataList, condition duckv1alpha1.Condition) {
+func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, namespace string, buildMetadata v1alpha1.BuildpackMetadataList, condition duckv1alpha1.Condition) v1alpha1.Build {
 	build, err := fakeImageClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
 	assert.Nil(t, err)
-	assert.Equal(t, len(build.Items), 1)
+	var itemList []*v1alpha1.Build
+	for _, value := range build.Items {
+		itemList = append(itemList, &value)
+	}
+	sort.Sort(v1build.ByCreationTimestamp(itemList))
 
-	lastBuild := build.Items[0]
+	lastBuild := itemList[len(itemList)-1]
 	_, err = fakeImageClient.BuildV1alpha1().Builds(namespace).UpdateStatus(&v1alpha1.Build{
-		ObjectMeta: v1.ObjectMeta{
-			Name:   lastBuild.Name,
-			Labels: lastBuild.Labels,
-		},
-		Spec: lastBuild.Spec, //fake client overwrites spec :(
+		ObjectMeta: lastBuild.ObjectMeta,
+		Spec:       lastBuild.Spec, // fake client overwrites spec :(
 		Status: v1alpha1.BuildStatus{
 			Status: alpha1.Status{
 				Conditions: alpha1.Conditions{
@@ -497,6 +594,7 @@ func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, name
 		},
 	})
 	assert.Nil(t, err)
+	return *lastBuild
 }
 
 type fakeTracker map[corev1.ObjectReference]map[string]struct{}
