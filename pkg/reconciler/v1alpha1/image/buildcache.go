@@ -9,6 +9,10 @@ import (
 )
 
 func MakeBuildCache(image *v1alpha1.Image) (*corev1.PersistentVolumeClaim, error) {
+	if image.Spec.CacheSize == nil {
+		return nil, nil
+	}
+
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: image.CacheName(),
