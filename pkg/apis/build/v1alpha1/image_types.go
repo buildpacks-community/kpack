@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -34,18 +35,20 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Image                    string `json:"image"`
-	BuilderRef               string `json:"builderRef"`
-	ServiceAccount           string `json:"serviceAccount"`
-	Source                   Source `json:"source"`
-	FailedBuildHistoryLimit  *int64 `json:"failedBuildHistoryLimit"`
-	SuccessBuildHistoryLimit *int64 `json:"successBuildHistoryLimit"`
+	Image                    string             `json:"image"`
+	BuilderRef               string             `json:"builderRef"`
+	ServiceAccount           string             `json:"serviceAccount"`
+	Source                   Source             `json:"source"`
+	CacheSize                *resource.Quantity `json:"cacheSize,omitempty"`
+	FailedBuildHistoryLimit  *int64             `json:"failedBuildHistoryLimit"`
+	SuccessBuildHistoryLimit *int64             `json:"successBuildHistoryLimit"`
 }
 
 type ImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	LastBuildRef        string `json:"lastBuildRef"`
 	BuildCounter        int32  `json:"buildCounter"`
+	BuildCacheName      string `json:"buildCacheName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -59,4 +62,13 @@ type ImageList struct {
 
 func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Image")
+}
+
+func (im *Image) CacheName() string {
+	name := im.Name + "-cache"
+	if len(name) > 64 {
+		return name[len(name)-64:]
+	}
+
+	return name
 }

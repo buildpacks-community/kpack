@@ -14,7 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
@@ -35,6 +38,11 @@ func TestImageReconciler(t *testing.T) {
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeClient := fake.NewSimpleClientset(&v1alpha1.Image{}, &v1alpha1.Builder{})
 
+	k8sfakeClient := k8sfake.NewSimpleClientset(&corev1.PersistentVolumeClaim{})
+	k8sInformerFactory := informers.NewSharedInformerFactory(k8sfakeClient, time.Second)
+	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
+	pvcLister := pvcInformer.Lister()
+
 	fakeTracker := fakeTracker{}
 
 	reconciler := testhelpers.RebuildingReconciler(func() knCtrl.Reconciler {
@@ -46,10 +54,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		return testhelpers.SyncWaitingReconciler(
 			informerFactory,
 			&image.Reconciler{
+				K8sClient:     k8sfakeClient,
 				Client:        fakeClient,
 				ImageLister:   imageInformer.Lister(),
 				BuildLister:   buildInformer.Lister(),
 				BuilderLister: builderInformer.Lister(),
+				PvcLister:     pvcLister,
 				Tracker:       fakeTracker,
 			},
 			imageInformer.Informer().HasSynced,
@@ -86,10 +96,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "revision",
 				},
 			},
+			CacheSize:                &resource.Quantity{Format: "1.5"},
 			FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
 			SuccessBuildHistoryLimit: &successBuildHistoryLimit,
 		},
 	}
+
+	stopChan := make(chan struct{})
 
 	defaultBuildMetadata := v1alpha1.BuildpackMetadataList{
 		{
@@ -111,8 +124,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it.Before(func() {
+		k8sInformerFactory.Start(stopChan)
 		_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
 		assert.Nil(t, err)
+	})
+
+	it.After(func() {
+		close(stopChan)
 	})
 
 	when("#Reconcile", func() {
@@ -122,7 +140,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Nil(t, err)
 			})
 
-			it("creates an initial Build", func() {
+			it("creates an initial Build with a cache", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
 				assert.Nil(t, err)
 
@@ -131,7 +149,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, len(build.Items), 1)
 
 				buildName := build.Items[0].ObjectMeta.Name
-				assert.Equal(t, build.Items[0], v1alpha1.Build{
+				assert.Equal(t, v1alpha1.Build{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      buildName,
@@ -148,6 +166,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						Image:          "some/image",
 						Builder:        "some/builder@sha256acf123",
 						ServiceAccount: "service-account",
+						CacheName:      imageName + "-cache",
 						Source: v1alpha1.Source{
 							Git: v1alpha1.Git{
 								URL:      "https://some.git/url",
@@ -155,7 +174,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-				})
+				}, build.Items[0])
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 				assert.Equal(t, updatedImage.Status.LastBuildRef, buildName)
@@ -196,6 +215,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
 				assert.Nil(t, err)
 				assert.Equal(t, updatedImage.Status.BuildCounter, int32(1))
+			})
+
+			it("creates a cache for the build", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				_, err = k8sfakeClient.CoreV1().PersistentVolumeClaims(namespace).Get(image.CacheName(), v1.GetOptions{})
+				require.NoError(t, err)
 			})
 
 			it("tracks the builder", func() {
@@ -248,6 +275,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Revision: "differentrevision",
 								},
 							},
+							CacheSize:                image.Spec.CacheSize,
 							FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
 							SuccessBuildHistoryLimit: &successBuildHistoryLimit,
 						},
@@ -285,7 +313,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
 					assert.Nil(t, err)
-					assert.Equal(t, len(builds.Items), 2)
+					assert.Equal(t, 2, len(builds.Items))
 
 					updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
 					assert.Nil(t, err)
@@ -310,6 +338,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "different/image",
 							ServiceAccount: "different/service-account",
 							Builder:        "some/builder@sha256acf123",
+							CacheName:      imageName+"-cache",
 							Source: v1alpha1.Source{
 								Git: v1alpha1.Git{
 									URL:      "https://different.git/url",
@@ -405,6 +434,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "some/image",
 							Builder:        "some/builder@sha256:newsha",
 							ServiceAccount: "service-account",
+							CacheName:      imageName+"-cache",
 							Source: v1alpha1.Source{
 								Git: v1alpha1.Git{
 									URL:      "https://some.git/url",

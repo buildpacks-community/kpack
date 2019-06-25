@@ -21,6 +21,7 @@
 package v1alpha1
 
 import (
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -326,6 +327,15 @@ func (in *ImageList) DeepCopyObject() runtime.Object {
 func (in *ImageSpec) DeepCopyInto(out *ImageSpec) {
 	*out = *in
 	out.Source = in.Source
+	if in.CacheSize != nil {
+		in, out := &in.CacheSize, &out.CacheSize
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(resource.Quantity)
+			**out = (*in).DeepCopy()
+		}
+	}
 	if in.FailedBuildHistoryLimit != nil {
 		in, out := &in.FailedBuildHistoryLimit, &out.FailedBuildHistoryLimit
 		if *in == nil {

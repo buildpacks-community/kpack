@@ -273,10 +273,8 @@ chown -R "%d:%d" /workspace`,
 			},
 			Volumes: []corev1.Volume{
 				{
-					Name: cacheDirName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
+					Name:         cacheDirName,
+					VolumeSource: c.createCacheVolume(build),
 				},
 				{
 					Name: layersDirName,
@@ -287,6 +285,17 @@ chown -R "%d:%d" /workspace`,
 			},
 		},
 	})
+}
+func (c *Reconciler) createCacheVolume(build *v1alpha1.Build) corev1.VolumeSource {
+	if build.Spec.CacheName != "" {
+		return corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: build.Spec.CacheName},
+		}
+	} else {
+		return corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		}
+	}
 }
 
 func buildMetadataFromBuiltImage(image registry.BuiltImage) []v1alpha1.BuildpackMetadata {

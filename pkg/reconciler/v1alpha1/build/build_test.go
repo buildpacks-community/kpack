@@ -73,7 +73,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		key       = "some-namespace/build-name"
 	)
 
-	Build := &v1alpha1.Build{
+	build := &v1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
 			Name: buildName,
 		},
@@ -87,48 +87,70 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
+			CacheName: "some-cache-name",
 		},
 	}
 
 	when("#Reconcile", func() {
 		it.Before(func() {
-			_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Create(Build)
-			require.Nil(t, err)
+			_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Create(build)
+			require.NoError(t, err)
 		})
 
 		when("a build hasn't been created", func() {
-			it("creates a knative build", func() {
+			it("creates a knative build with a persistent volume cache", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				build, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
 
-				assert.Equal(t, build.ObjectMeta, v1.ObjectMeta{
+				assert.Equal(t, knbuild.ObjectMeta, v1.ObjectMeta{
 					Name:      buildName,
 					Namespace: namespace,
 					OwnerReferences: []v1.OwnerReference{
-						*kmeta.NewControllerRef(Build),
+						*kmeta.NewControllerRef(build),
 					},
 				})
-				assert.Equal(t, build.Spec.ServiceAccountName, "someserviceaccount")
-				assert.Equal(t, build.Spec.Source, &knv1alpha1.SourceSpec{
+				assert.Equal(t, knbuild.Spec.ServiceAccountName, "someserviceaccount")
+				assert.Equal(t, knbuild.Spec.Source, &knv1alpha1.SourceSpec{
 					Git: &knv1alpha1.GitSourceSpec{
 						Url:      "giturl.com/git.git",
 						Revision: "gitrev1234",
 					},
 				})
-				assert.Nil(t, build.Spec.Template)
-				require.Len(t, build.Spec.Steps, 7)
-				assert.Equal(t, build.Spec.Steps[1].Image, "somebuilder/123")
-				assert.Contains(t, build.Spec.Steps[5].Args, "someimage/name")
+				assert.Nil(t, knbuild.Spec.Template)
+				require.Len(t, knbuild.Spec.Steps, 7)
+				assert.Equal(t, knbuild.Spec.Steps[1].Image, "somebuilder/123")
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
+				require.Len(t, knbuild.Spec.Volumes, 2)
+				assert.Equal(t, corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
+				}, knbuild.Spec.Volumes[0].VolumeSource)
+			})
+
+			it("when cache name is empty, creates a knative build with no cache", func() {
+				build.Spec.CacheName = ""
+				_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(build)
+				require.NoError(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+
+				require.Len(t, knbuild.Spec.Volumes, 2)
+				assert.Equal(t, corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				}, knbuild.Spec.Volumes[0].VolumeSource)
 			})
 		})
 
 		when("a build already created", func() {
 			it("does not create or update knative builds", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				_, err = fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(&v1alpha1.Build{
 					TypeMeta: v1.TypeMeta{},
@@ -146,22 +168,22 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				build, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
 
-				assert.NotEqual(t, build.Spec.ServiceAccountName, "updatedsomeserviceaccount")
-				assert.NotEqual(t, build.Spec.Source.Git.Url, "updatedgiturl.com/git.git")
-				assert.NotEqual(t, build.Spec.Source.Git.Revision, "updated1234")
+				assert.NotEqual(t, knbuild.Spec.ServiceAccountName, "updatedsomeserviceaccount")
+				assert.NotEqual(t, knbuild.Spec.Source.Git.Url, "updatedgiturl.com/git.git")
+				assert.NotEqual(t, knbuild.Spec.Source.Git.Revision, "updated1234")
 			})
 
 			it("updates the build with the status of knative build", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
 					&knv1alpha1.Build{
@@ -180,13 +202,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, build.Status.Conditions,
 					duckv1alpha1.Conditions{
@@ -200,7 +222,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates the observed generation", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				const generationToHaveObserved int64 = 1234
 
@@ -211,13 +233,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						Generation: generationToHaveObserved,
 					},
 				})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, build.Generation, build.Status.ObservedGeneration)
 				assert.Equal(t, generationToHaveObserved, build.Status.ObservedGeneration)
@@ -225,7 +247,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates the build metadata on successful completion", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				const sha = "sha:1234567"
 				builtImage := registry.BuiltImage{
@@ -256,13 +278,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, build.Status.BuildMetadata,
 					v1alpha1.BuildpackMetadataList{{
@@ -277,7 +299,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("does not update the build metadata if the build fails", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
 					&knv1alpha1.Build{
@@ -296,13 +318,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, len(build.Status.BuildMetadata), 0)
 
@@ -311,7 +333,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("does not update the build metadata if the build metadata has already been retrieved", func() {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				builtImage := registry.BuiltImage{
 					SHA:         "",
@@ -340,17 +362,17 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				//subsequent call
+				// subsequent call
 				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, len(build.Status.BuildMetadata), 1)
 
@@ -367,10 +389,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		when("a build no longer exists", func() {
 			it("does not return an error", func() {
 				err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Delete(buildName, &v1.DeleteOptions{})
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			})
 		})
 	})

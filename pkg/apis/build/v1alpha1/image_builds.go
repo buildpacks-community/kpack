@@ -57,6 +57,7 @@ func (im *Image) CreateBuild(builder *Builder) *Build {
 			Builder:        builder.Spec.Image,
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         im.Spec.Source,
+			CacheName:      im.Status.BuildCacheName,
 		},
 	}
 }

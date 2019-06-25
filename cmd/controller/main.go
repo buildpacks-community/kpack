@@ -9,7 +9,8 @@ import (
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
 	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -54,7 +55,7 @@ func main() {
 		log.Fatalf("could not get Knative Build client: %s", err.Error())
 	}
 
-	k8sClient, err := v1.NewForConfig(clusterConfig)
+	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
 		log.Fatalf("could not get kubernetes client: %s", err.Error())
 	}
@@ -73,18 +74,21 @@ func main() {
 	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, options.ResyncPeriod)
 	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
 
+	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
+	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
+
 	metadataRetriever := &registry.RemoteMetadataRetriever{
 		LifecycleImageFactory: &registry.ImageFactory{
 			KeychainFactory: &registry.SecretKeychainFactory{
 				SecretManager: &registry.SecretManager{
-					Client: k8sClient,
+					Client: k8sClient.CoreV1(),
 				},
 			},
 		},
 	}
 
 	buildController := build.NewController(options, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
-	imageController := image.NewController(options, imageInformer, buildInformer, builderInformer)
+	imageController := image.NewController(options, imageInformer, buildInformer, builderInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 
 	stopChan := make(chan struct{})

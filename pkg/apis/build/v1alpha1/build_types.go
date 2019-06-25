@@ -46,6 +46,7 @@ type BuildSpec struct {
 	Builder        string `json:"builder"`
 	ServiceAccount string `json:"serviceAccount"`
 	Source         Source `json:"source"`
+	CacheName      string `json:"cacheName"`
 }
 
 type BuildStatus struct {
