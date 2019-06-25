@@ -37,9 +37,10 @@ const (
 	buildHistoryDefaultLimit = 10
 )
 
-func NewController(opt reconciler.Options, imageInformer v1alpha1informers.ImageInformer, buildInformer v1alpha1informers.BuildInformer, builderInformer v1alpha1informers.BuilderInformer, pvcInformer coreinformers.PersistentVolumeClaimInformer, ) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, imageInformer v1alpha1informers.ImageInformer, buildInformer v1alpha1informers.BuildInformer, builderInformer v1alpha1informers.BuilderInformer, pvcInformer coreinformers.PersistentVolumeClaimInformer, ) *controller.Impl {
 	c := &Reconciler{
 		Client:        opt.Client,
+		K8sClient:     k8sClient,
 		ImageLister:   imageInformer.Lister(),
 		BuildLister:   buildInformer.Lister(),
 		BuilderLister: builderInformer.Lister(),

@@ -88,7 +88,7 @@ func main() {
 	}
 
 	buildController := build.NewController(options, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
-	imageController := image.NewController(options, imageInformer, buildInformer, builderInformer, pvcInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 
 	stopChan := make(chan struct{})
