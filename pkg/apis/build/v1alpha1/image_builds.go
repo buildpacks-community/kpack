@@ -5,6 +5,8 @@ import (
 
 	"github.com/knative/pkg/kmeta"
 	"github.com/pborman/uuid"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -60,6 +62,36 @@ func (im *Image) CreateBuild(builder *Builder) *Build {
 			CacheName:      im.Status.BuildCacheName,
 		},
 	}
+}
+
+func (im *Image) NeedCache() bool {
+	return im.Spec.CacheSize != nil
+}
+
+func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
+	if !im.NeedCache() {
+		return nil
+	}
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      im.CacheName(),
+			Namespace: im.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(im),
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *im.Spec.CacheSize,
+				},
+			},
+		},
+	}
+
+	return pvc
 }
 
 func (im *Image) nextBuildNumber() string {

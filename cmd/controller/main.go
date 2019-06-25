@@ -93,12 +93,14 @@ func main() {
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
+	k8sInformerFactory.Start(stopChan)
 	knBuildInformerFactory.Start(stopChan)
 
 	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
 
 	err = runGroup(
 		func(done <-chan struct{}) error {

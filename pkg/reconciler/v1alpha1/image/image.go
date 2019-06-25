@@ -37,7 +37,7 @@ const (
 	buildHistoryDefaultLimit = 10
 )
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, imageInformer v1alpha1informers.ImageInformer, buildInformer v1alpha1informers.BuildInformer, builderInformer v1alpha1informers.BuilderInformer, pvcInformer coreinformers.PersistentVolumeClaimInformer, ) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, imageInformer v1alpha1informers.ImageInformer, buildInformer v1alpha1informers.BuildInformer, builderInformer v1alpha1informers.BuilderInformer, pvcInformer coreinformers.PersistentVolumeClaimInformer) *controller.Impl {
 	c := &Reconciler{
 		Client:        opt.Client,
 		K8sClient:     k8sClient,
@@ -116,15 +116,19 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	var build *v1alpha1.Build
 	if image.BuildNeeded(lastBuild, builder) {
-		buildCache, err := c.retrieveCache(ctx, image)
-		if err != nil {
-			return err
-		}
+		if image.NeedCache() {
+			buildCache, err := c.retrieveCache(ctx, image)
+			if err != nil {
+				return err
+			}
 
-		if buildCache == nil {
-			image.Status.BuildCacheName = ""
+			if buildCache == nil {
+				image.Status.BuildCacheName = ""
+			} else {
+				image.Status.BuildCacheName = buildCache.Name
+			}
 		} else {
-			image.Status.BuildCacheName = buildCache.Name
+				image.Status.BuildCacheName = ""
 		}
 
 		build, err = c.Client.BuildV1alpha1().Builds(image.Namespace).Create(image.CreateBuild(builder))
@@ -154,10 +158,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) retrieveCache(ctx context.Context, image *v1alpha1.Image) (*corev1.PersistentVolumeClaim, error) {
 	buildCache, err := c.PvcLister.PersistentVolumeClaims(image.Namespace).Get(image.Status.BuildCacheName)
 	if errors.IsNotFound(err) {
-		buildCache, err = MakeBuildCache(image)
-		if err != nil {
-			return nil, fmt.Errorf("failed creating image cache option: %s", err)
+		if !image.NeedCache() {
+			return nil, nil
 		}
+
+		buildCache = image.MakeBuildCache()
 		if buildCache == nil {
 			return nil, nil
 		}
@@ -179,10 +184,7 @@ func (c *Reconciler) retrieveCache(ctx context.Context, image *v1alpha1.Image) (
 
 func (c *Reconciler) reconcileBuildCache(ctx context.Context, image *v1alpha1.Image, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
 	logger := logging.FromContext(ctx)
-	desiredBuildCache, err := MakeBuildCache(image)
-	if err != nil {
-		return nil, err
-	}
+	desiredBuildCache := image.MakeBuildCache()
 
 	if desiredBuildCache == nil {
 		return nil, c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Delete(buildCache.Name, &v1.DeleteOptions{

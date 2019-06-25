@@ -65,6 +65,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			imageInformer.Informer().HasSynced,
 			buildInformer.Informer().HasSynced,
 			builderInformer.Informer().HasSynced,
+			pvcInformer.Informer().HasSynced,
 		)
 	})
 
@@ -126,7 +127,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		k8sInformerFactory.Start(stopChan)
 		_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 
 	it.After(func() {
@@ -137,16 +138,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		when("new image", func() {
 			it.Before(func() {
 				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			})
 
 			it("creates an initial Build with a cache", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				assert.Nil(t, err)
-				assert.Equal(t, len(build.Items), 1)
+				require.NoError(t, err)
+				require.Equal(t, len(build.Items), 1)
 
 				buildName := build.Items[0].ObjectMeta.Name
 				assert.Equal(t, v1alpha1.Build{
@@ -176,7 +177,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				}, build.Items[0])
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, updatedImage.Status.LastBuildRef, buildName)
 			})
 
@@ -185,35 +186,35 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				differentImage.Name = "Different-Name"
 
 				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(differentImage)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				err = reconciler.Reconcile(context.TODO(), namespace+"/Different-Name")
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{
 					LabelSelector: "image.build.pivotal.io/image=" + imageName,
 				})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, len(build.Items), 1)
 			})
 
 			it("updates the observed generation with the new spec", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
 			})
 
 			it("updates the build count", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, updatedImage.Status.BuildCounter, int32(1))
 			})
 
@@ -227,10 +228,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("tracks the builder", func() {
 				err := reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				gvk := builder.GetGroupVersionKind()
 				isTracking := fakeTracker.IsTracking(corev1.ObjectReference{
@@ -247,10 +248,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		when("a build has already been created", func() {
 			it.Before(func() {
 				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			})
 
 			when("a new spec is applied", func() {
@@ -258,7 +259,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				it.Before(func() {
 					img, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					_, err = fakeClient.BuildV1alpha1().Images(namespace).Update(&v1alpha1.Image{
 						ObjectMeta: v1.ObjectMeta{
@@ -281,7 +282,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 						Status: img.Status, // fake client overwrites status :(
 					})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 				})
 
 				it("does not create a build when a build is running", func() {
@@ -291,14 +292,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 
 					updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
 				})
 
@@ -309,18 +310,18 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, 2, len(builds.Items))
 
 					updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, updatedImage.Status.ObservedGeneration, newGeneration)
 
 					newBuild, err := fakeClient.BuildV1alpha1().Builds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, newBuild, &v1alpha1.Build{
 						TypeMeta: v1.TypeMeta{},
 						ObjectMeta: v1.ObjectMeta{
@@ -338,7 +339,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "different/image",
 							ServiceAccount: "different/service-account",
 							Builder:        "some/builder@sha256acf123",
-							CacheName:      imageName+"-cache",
+							CacheName:      imageName + "-cache",
 							Source: v1alpha1.Source{
 								Git: v1alpha1.Git{
 									URL:      "https://different.git/url",
@@ -356,10 +357,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 2)
 				})
 			})
@@ -382,7 +383,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 				})
 
 				it("does not create a build when a build is running", func() {
@@ -392,10 +393,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 
@@ -406,17 +407,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 2)
 
 					updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					newBuild, err := fakeClient.BuildV1alpha1().Builds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, newBuild, &v1alpha1.Build{
 						TypeMeta: v1.TypeMeta{},
 						ObjectMeta: v1.ObjectMeta{
@@ -434,7 +435,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Image:          "some/image",
 							Builder:        "some/builder@sha256:newsha",
 							ServiceAccount: "service-account",
-							CacheName:      imageName+"-cache",
+							CacheName:      imageName + "-cache",
 							Source: v1alpha1.Source{
 								Git: v1alpha1.Git{
 									URL:      "https://some.git/url",
@@ -454,10 +455,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 
@@ -468,10 +469,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					err := reconciler.Reconcile(context.TODO(), key)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, len(builds.Items), 1)
 				})
 			})
@@ -481,7 +482,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		when("an image status is not up to date", func() {
 			it.Before(func() {
 				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			})
 
 			it("does not create duplicate builds", func() {
@@ -496,13 +497,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Spec:   v1alpha1.BuildSpec{},
 					Status: v1alpha1.BuildStatus{},
 				})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				err = reconciler.Reconcile(context.TODO(), key)
 				assert.Error(t, err, fmt.Sprintf("warning: image %s status not up to date", imageName))
 
 				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				assert.Equal(t, len(build.Items), 1)
 			})
@@ -531,7 +532,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					image.Status.BuildCounter++
 					image.Status.LastBuildRef = build.Name
 					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 				}
 			})
 
@@ -574,7 +575,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					image.Status.BuildCounter++
 					image.Status.LastBuildRef = build.Name
 					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 				}
 			})
 
@@ -595,7 +596,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("does not return error on nonexistent image", func() {
 			err := reconciler.Reconcile(context.TODO(), "not/found")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 		})
 
 	})
@@ -603,11 +604,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, namespace string, buildMetadata v1alpha1.BuildpackMetadataList, condition duckv1alpha1.Condition) v1alpha1.Build {
 	build, err := fakeImageClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	var itemList []*v1alpha1.Build
 	for _, value := range build.Items {
 		itemList = append(itemList, &value)
 	}
+	require.NotEmpty(t, itemList)
 	sort.Sort(v1build.ByCreationTimestamp(itemList))
 
 	lastBuild := itemList[len(itemList)-1]
@@ -623,7 +625,7 @@ func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, name
 			BuildMetadata: buildMetadata,
 		},
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	return *lastBuild
 }
 
