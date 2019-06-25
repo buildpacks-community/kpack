@@ -11,6 +11,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -107,6 +108,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
+			cacheSize := resource.MustParse("1Gi")
 			_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: imageName,
@@ -121,6 +123,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Revision: "master",
 						},
 					},
+					CacheSize: &cacheSize,
 				},
 			})
 			require.NoError(t, err)

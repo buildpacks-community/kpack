@@ -39,3 +39,15 @@ rules:
   - serviceaccounts
   verbs:
   - get
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch

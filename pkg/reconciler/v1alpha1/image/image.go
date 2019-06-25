@@ -159,7 +159,7 @@ func (c *Reconciler) retrieveCache(ctx context.Context, image *v1alpha1.Image) (
 			return nil, fmt.Errorf("failed creating image cache option: %s", err)
 		}
 		if buildCache == nil {
-			return buildCache, nil
+			return nil, nil
 		}
 
 		buildCache, err = c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Create(buildCache)
