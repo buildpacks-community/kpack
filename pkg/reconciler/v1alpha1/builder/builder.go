@@ -11,6 +11,7 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
@@ -21,7 +22,7 @@ const (
 )
 
 type MetadataRetriever interface {
-	GetBuilderBuildpacks(repo registry.ImageRef) (registry.BuilderMetadata, error)
+	GetBuilderBuildpacks(repo registry.ImageRef) (cnb.BuilderMetadata, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -71,7 +72,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return err
 }
 
-func transform(in registry.BuilderMetadata) v1alpha1.BuildpackMetadataList {
+func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {
 	out := make(v1alpha1.BuildpackMetadataList, 0, len(in))
 
 	for _, m := range in {

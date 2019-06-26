@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
@@ -28,8 +30,9 @@ const (
 )
 
 var (
-	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig     = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+	masterURL      = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	buildInitImage = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
 )
 
 func main() {
@@ -77,7 +80,7 @@ func main() {
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
 
-	metadataRetriever := &registry.RemoteMetadataRetriever{
+	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		LifecycleImageFactory: &registry.ImageFactory{
 			KeychainFactory: &registry.SecretKeychainFactory{
 				SecretManager: &registry.SecretManager{
@@ -87,7 +90,7 @@ func main() {
 		},
 	}
 
-	buildController := build.NewController(options, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
+	buildController := build.NewController(build.Options{Options: options, BuildInitImage: *buildInitImage}, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 

@@ -4,29 +4,30 @@ package buildfakes
 import (
 	"sync"
 
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 type FakeMetadataRetriever struct {
-	GetBuiltImageStub        func(registry.ImageRef) (registry.BuiltImage, error)
+	GetBuiltImageStub        func(registry.ImageRef) (cnb.BuiltImage, error)
 	getBuiltImageMutex       sync.RWMutex
 	getBuiltImageArgsForCall []struct {
 		arg1 registry.ImageRef
 	}
 	getBuiltImageReturns struct {
-		result1 registry.BuiltImage
+		result1 cnb.BuiltImage
 		result2 error
 	}
 	getBuiltImageReturnsOnCall map[int]struct {
-		result1 registry.BuiltImage
+		result1 cnb.BuiltImage
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImage(arg1 registry.ImageRef) (registry.BuiltImage, error) {
+func (fake *FakeMetadataRetriever) GetBuiltImage(arg1 registry.ImageRef) (cnb.BuiltImage, error) {
 	fake.getBuiltImageMutex.Lock()
 	ret, specificReturn := fake.getBuiltImageReturnsOnCall[len(fake.getBuiltImageArgsForCall)]
 	fake.getBuiltImageArgsForCall = append(fake.getBuiltImageArgsForCall, struct {
@@ -50,7 +51,7 @@ func (fake *FakeMetadataRetriever) GetBuiltImageCallCount() int {
 	return len(fake.getBuiltImageArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageCalls(stub func(registry.ImageRef) (registry.BuiltImage, error)) {
+func (fake *FakeMetadataRetriever) GetBuiltImageCalls(stub func(registry.ImageRef) (cnb.BuiltImage, error)) {
 	fake.getBuiltImageMutex.Lock()
 	defer fake.getBuiltImageMutex.Unlock()
 	fake.GetBuiltImageStub = stub
@@ -63,28 +64,28 @@ func (fake *FakeMetadataRetriever) GetBuiltImageArgsForCall(i int) registry.Imag
 	return argsForCall.arg1
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageReturns(result1 registry.BuiltImage, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuiltImageReturns(result1 cnb.BuiltImage, result2 error) {
 	fake.getBuiltImageMutex.Lock()
 	defer fake.getBuiltImageMutex.Unlock()
 	fake.GetBuiltImageStub = nil
 	fake.getBuiltImageReturns = struct {
-		result1 registry.BuiltImage
+		result1 cnb.BuiltImage
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageReturnsOnCall(i int, result1 registry.BuiltImage, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuiltImageReturnsOnCall(i int, result1 cnb.BuiltImage, result2 error) {
 	fake.getBuiltImageMutex.Lock()
 	defer fake.getBuiltImageMutex.Unlock()
 	fake.GetBuiltImageStub = nil
 	if fake.getBuiltImageReturnsOnCall == nil {
 		fake.getBuiltImageReturnsOnCall = make(map[int]struct {
-			result1 registry.BuiltImage
+			result1 cnb.BuiltImage
 			result2 error
 		})
 	}
 	fake.getBuiltImageReturnsOnCall[i] = struct {
-		result1 registry.BuiltImage
+		result1 cnb.BuiltImage
 		result2 error
 	}{result1, result2}
 }

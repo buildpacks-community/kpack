@@ -4,29 +4,30 @@ package builderfakes
 import (
 	"sync"
 
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 type FakeMetadataRetriever struct {
-	GetBuilderBuildpacksStub        func(registry.ImageRef) (registry.BuilderMetadata, error)
+	GetBuilderBuildpacksStub        func(registry.ImageRef) (cnb.BuilderMetadata, error)
 	getBuilderBuildpacksMutex       sync.RWMutex
 	getBuilderBuildpacksArgsForCall []struct {
 		arg1 registry.ImageRef
 	}
 	getBuilderBuildpacksReturns struct {
-		result1 registry.BuilderMetadata
+		result1 cnb.BuilderMetadata
 		result2 error
 	}
 	getBuilderBuildpacksReturnsOnCall map[int]struct {
-		result1 registry.BuilderMetadata
+		result1 cnb.BuilderMetadata
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderBuildpacks(arg1 registry.ImageRef) (registry.BuilderMetadata, error) {
+func (fake *FakeMetadataRetriever) GetBuilderBuildpacks(arg1 registry.ImageRef) (cnb.BuilderMetadata, error) {
 	fake.getBuilderBuildpacksMutex.Lock()
 	ret, specificReturn := fake.getBuilderBuildpacksReturnsOnCall[len(fake.getBuilderBuildpacksArgsForCall)]
 	fake.getBuilderBuildpacksArgsForCall = append(fake.getBuilderBuildpacksArgsForCall, struct {
@@ -50,7 +51,7 @@ func (fake *FakeMetadataRetriever) GetBuilderBuildpacksCallCount() int {
 	return len(fake.getBuilderBuildpacksArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderBuildpacksCalls(stub func(registry.ImageRef) (registry.BuilderMetadata, error)) {
+func (fake *FakeMetadataRetriever) GetBuilderBuildpacksCalls(stub func(registry.ImageRef) (cnb.BuilderMetadata, error)) {
 	fake.getBuilderBuildpacksMutex.Lock()
 	defer fake.getBuilderBuildpacksMutex.Unlock()
 	fake.GetBuilderBuildpacksStub = stub
@@ -63,28 +64,28 @@ func (fake *FakeMetadataRetriever) GetBuilderBuildpacksArgsForCall(i int) regist
 	return argsForCall.arg1
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderBuildpacksReturns(result1 registry.BuilderMetadata, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuilderBuildpacksReturns(result1 cnb.BuilderMetadata, result2 error) {
 	fake.getBuilderBuildpacksMutex.Lock()
 	defer fake.getBuilderBuildpacksMutex.Unlock()
 	fake.GetBuilderBuildpacksStub = nil
 	fake.getBuilderBuildpacksReturns = struct {
-		result1 registry.BuilderMetadata
+		result1 cnb.BuilderMetadata
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderBuildpacksReturnsOnCall(i int, result1 registry.BuilderMetadata, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuilderBuildpacksReturnsOnCall(i int, result1 cnb.BuilderMetadata, result2 error) {
 	fake.getBuilderBuildpacksMutex.Lock()
 	defer fake.getBuilderBuildpacksMutex.Unlock()
 	fake.GetBuilderBuildpacksStub = nil
 	if fake.getBuilderBuildpacksReturnsOnCall == nil {
 		fake.getBuilderBuildpacksReturnsOnCall = make(map[int]struct {
-			result1 registry.BuilderMetadata
+			result1 cnb.BuilderMetadata
 			result2 error
 		})
 	}
 	fake.getBuilderBuildpacksReturnsOnCall[i] = struct {
-		result1 registry.BuilderMetadata
+		result1 cnb.BuilderMetadata
 		result2 error
 	}{result1, result2}
 }

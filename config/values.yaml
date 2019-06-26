@@ -1,3 +1,4 @@
 #@data/values
 ---
 controller_image: gcr.io/controller
+build_init_image: gcr.io/build-init

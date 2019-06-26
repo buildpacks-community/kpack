@@ -1,4 +1,4 @@
-package registry_test
+package cnb_test
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/registry"
 	"github.com/pivotal/build-service-system/pkg/registry/registryfakes"
 )
@@ -17,7 +18,7 @@ func TestMetadataRetriever(t *testing.T) {
 
 func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	var (
-		mockFactory = &registryfakes.FakeFactory{}
+		mockFactory = &registryfakes.FakeRemoteImageFactory{}
 	)
 
 	when("RemoteMetadataRetriever", func() {
@@ -30,7 +31,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				imageRef := registry.NewNoAuthImageRef("test-repo-name")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
-				subject := registry.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
+				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
 				metadata, err := subject.GetBuilderBuildpacks(imageRef)
 				assert.NoError(t, err)
 
@@ -50,7 +51,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				fakeImageRef := registry.NewNoAuthImageRef("packs/samples:v3alpha2")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
-				subject := registry.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
+				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
 
 				result, err := subject.GetBuiltImage(fakeImageRef)
 				assert.NoError(t, err)

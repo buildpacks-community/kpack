@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder/builderfakes"
@@ -74,7 +75,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
 			assert.Nil(t, err)
 
-			fakeMetadataRetriever.GetBuilderBuildpacksReturns(registry.BuilderMetadata{
+			fakeMetadataRetriever.GetBuilderBuildpacksReturns(cnb.BuilderMetadata{
 				{
 					ID:      "buildpack.version",
 					Version: "version",

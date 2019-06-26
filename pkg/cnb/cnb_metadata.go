@@ -1,25 +1,15 @@
-package registry
+package cnb
 
 import (
 	"encoding/json"
 	"time"
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
-	"github.com/google/go-containerregistry/pkg/authn"
+	
+	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 const BuilderMetadataLabel = "io.buildpacks.builder.metadata"
-
-type RemoteImage interface {
-	CreatedAt() (time.Time, error)
-	Digest() (string, error)
-	Label(labelName string) (string, error)
-}
-
-//go:generate counterfeiter . Factory
-type Factory interface {
-	NewRemote(imageRef ImageRef) (RemoteImage, error)
-}
 
 type BuilderBuildpackMetadata struct {
 	ID      string `json:"id"`
@@ -33,10 +23,10 @@ type BuilderImageMetadata struct {
 type BuilderMetadata []BuilderBuildpackMetadata
 
 type RemoteMetadataRetriever struct {
-	LifecycleImageFactory Factory
+	LifecycleImageFactory registry.RemoteImageFactory
 }
 
-func (r *RemoteMetadataRetriever) GetBuilderBuildpacks(repo ImageRef) (BuilderMetadata, error) {
+func (r *RemoteMetadataRetriever) GetBuilderBuildpacks(repo registry.ImageRef) (BuilderMetadata, error) {
 	img, err := r.LifecycleImageFactory.NewRemote(repo)
 	if err != nil {
 		return nil, err
@@ -57,7 +47,7 @@ func (r *RemoteMetadataRetriever) GetBuilderBuildpacks(repo ImageRef) (BuilderMe
 	return metadata.Buildpacks, nil
 }
 
-func (r *RemoteMetadataRetriever) GetBuiltImage(ref ImageRef) (BuiltImage, error) {
+func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltImage, error) {
 	img, err := r.LifecycleImageFactory.NewRemote(ref)
 	if err != nil {
 		return BuiltImage{}, err
@@ -96,34 +86,4 @@ type BuiltImage struct {
 	SHA               string
 	CompletedAt       time.Time
 	BuildpackMetadata []lcyclemd.BuildpackMetadata
-}
-
-type ImageRef interface {
-	ServiceAccount() string
-	Namespace() string
-	RepoName() string
-}
-
-type noAuthImageRef struct {
-	repoName string
-}
-
-func NewNoAuthImageRef(repoName string) *noAuthImageRef {
-	return &noAuthImageRef{repoName: repoName}
-}
-
-func (na *noAuthImageRef) RepoName() string {
-	return na.repoName
-}
-
-func (noAuthImageRef) ServiceAccount() string {
-	return ""
-}
-
-func (noAuthImageRef) Namespace() string {
-	return ""
-}
-
-type KeychainFactory interface {
-	KeychainForImageRef(ImageRef) authn.Keychain
 }

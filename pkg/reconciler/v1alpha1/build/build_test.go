@@ -20,10 +20,10 @@ import (
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build/buildfakes"
-	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 //go:generate counterfeiter . MetadataRetriever
@@ -52,6 +52,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Lister:            buildInformer.Lister(),
 			KnLister:          knbuildInformer.Lister(),
 			MetadataRetriever: fakeMetadataRetriever,
+			BuildInitImage:    "some/build-init-image",
 		},
 		buildInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
@@ -121,6 +122,15 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.Nil(t, knbuild.Spec.Template)
 				require.Len(t, knbuild.Spec.Steps, 7)
+				assert.Equal(t, knbuild.Spec.Steps[0].Image, "some/build-init-image")
+				assert.Len(t, knbuild.Spec.Steps[0].Env, 1)
+				assert.Equal(t, knbuild.Spec.Steps[0].Env[0], corev1.EnvVar{
+					Name:  "BUILDER",
+					Value: "somebuilder/123",
+				})
+				const root int64 = 0
+				assert.Equal(t, *knbuild.Spec.Steps[0].SecurityContext.RunAsUser, root)
+				assert.Equal(t, *knbuild.Spec.Steps[0].SecurityContext.RunAsGroup, root)
 				assert.Equal(t, knbuild.Spec.Steps[1].Image, "somebuilder/123")
 				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
 				require.Len(t, knbuild.Spec.Volumes, 2)
@@ -250,7 +260,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				const sha = "sha:1234567"
-				builtImage := registry.BuiltImage{
+				builtImage := cnb.BuiltImage{
 					SHA:         sha,
 					CompletedAt: time.Time{},
 					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
@@ -335,7 +345,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
 				require.NoError(t, err)
 
-				builtImage := registry.BuiltImage{
+				builtImage := cnb.BuiltImage{
 					SHA:         "",
 					CompletedAt: time.Time{},
 					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{

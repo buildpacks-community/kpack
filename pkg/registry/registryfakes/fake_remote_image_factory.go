@@ -7,7 +7,7 @@ import (
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
-type FakeFactory struct {
+type FakeRemoteImageFactory struct {
 	NewRemoteStub        func(registry.ImageRef) (registry.RemoteImage, error)
 	newRemoteMutex       sync.RWMutex
 	newRemoteArgsForCall []struct {
@@ -25,7 +25,7 @@ type FakeFactory struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeFactory) NewRemote(arg1 registry.ImageRef) (registry.RemoteImage, error) {
+func (fake *FakeRemoteImageFactory) NewRemote(arg1 registry.ImageRef) (registry.RemoteImage, error) {
 	fake.newRemoteMutex.Lock()
 	ret, specificReturn := fake.newRemoteReturnsOnCall[len(fake.newRemoteArgsForCall)]
 	fake.newRemoteArgsForCall = append(fake.newRemoteArgsForCall, struct {
@@ -43,26 +43,26 @@ func (fake *FakeFactory) NewRemote(arg1 registry.ImageRef) (registry.RemoteImage
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeFactory) NewRemoteCallCount() int {
+func (fake *FakeRemoteImageFactory) NewRemoteCallCount() int {
 	fake.newRemoteMutex.RLock()
 	defer fake.newRemoteMutex.RUnlock()
 	return len(fake.newRemoteArgsForCall)
 }
 
-func (fake *FakeFactory) NewRemoteCalls(stub func(registry.ImageRef) (registry.RemoteImage, error)) {
+func (fake *FakeRemoteImageFactory) NewRemoteCalls(stub func(registry.ImageRef) (registry.RemoteImage, error)) {
 	fake.newRemoteMutex.Lock()
 	defer fake.newRemoteMutex.Unlock()
 	fake.NewRemoteStub = stub
 }
 
-func (fake *FakeFactory) NewRemoteArgsForCall(i int) registry.ImageRef {
+func (fake *FakeRemoteImageFactory) NewRemoteArgsForCall(i int) registry.ImageRef {
 	fake.newRemoteMutex.RLock()
 	defer fake.newRemoteMutex.RUnlock()
 	argsForCall := fake.newRemoteArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeFactory) NewRemoteReturns(result1 registry.RemoteImage, result2 error) {
+func (fake *FakeRemoteImageFactory) NewRemoteReturns(result1 registry.RemoteImage, result2 error) {
 	fake.newRemoteMutex.Lock()
 	defer fake.newRemoteMutex.Unlock()
 	fake.NewRemoteStub = nil
@@ -72,7 +72,7 @@ func (fake *FakeFactory) NewRemoteReturns(result1 registry.RemoteImage, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeFactory) NewRemoteReturnsOnCall(i int, result1 registry.RemoteImage, result2 error) {
+func (fake *FakeRemoteImageFactory) NewRemoteReturnsOnCall(i int, result1 registry.RemoteImage, result2 error) {
 	fake.newRemoteMutex.Lock()
 	defer fake.newRemoteMutex.Unlock()
 	fake.NewRemoteStub = nil
@@ -88,7 +88,7 @@ func (fake *FakeFactory) NewRemoteReturnsOnCall(i int, result1 registry.RemoteIm
 	}{result1, result2}
 }
 
-func (fake *FakeFactory) Invocations() map[string][][]interface{} {
+func (fake *FakeRemoteImageFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newRemoteMutex.RLock()
@@ -100,7 +100,7 @@ func (fake *FakeFactory) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeFactory) recordInvocation(key string, args []interface{}) {
+func (fake *FakeRemoteImageFactory) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -112,4 +112,4 @@ func (fake *FakeFactory) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ registry.Factory = new(FakeFactory)
+var _ registry.RemoteImageFactory = new(FakeRemoteImageFactory)

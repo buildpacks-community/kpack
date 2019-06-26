@@ -2,8 +2,7 @@ package build
 
 import (
 	"context"
-	"fmt"
-
+	
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
 	knv1alpha1informer "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
@@ -20,6 +19,7 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	v1alpha1informer "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1lister "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
@@ -30,16 +30,22 @@ const (
 )
 
 type MetadataRetriever interface {
-	GetBuiltImage(repoName registry.ImageRef) (registry.BuiltImage, error)
+	GetBuiltImage(repoName registry.ImageRef) (cnb.BuiltImage, error)
 }
 
-func NewController(opt reconciler.Options, knClient knversioned.Interface, informer v1alpha1informer.BuildInformer, kninformer knv1alpha1informer.BuildInformer, metadataRetriever MetadataRetriever) *controller.Impl {
+type Options struct {
+	reconciler.Options
+	BuildInitImage string
+}
+
+func NewController(opt Options, knClient knversioned.Interface, informer v1alpha1informer.BuildInformer, kninformer knv1alpha1informer.BuildInformer, metadataRetriever MetadataRetriever) *controller.Impl {
 	c := &Reconciler{
 		KNClient:          knClient,
 		Client:            opt.Client,
 		Lister:            informer.Lister(),
 		KnLister:          kninformer.Lister(),
 		MetadataRetriever: metadataRetriever,
+		BuildInitImage:    opt.BuildInitImage,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
@@ -60,6 +66,7 @@ type Reconciler struct {
 	Lister            v1alpha1lister.BuildLister
 	KnLister          knv1alpha1lister.BuildLister
 	MetadataRetriever MetadataRetriever
+	BuildInitImage    string
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -108,10 +115,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*knv1alpha1.Build, error) {
-	const userId = 1000
-	const groupId = 1000
 	const cacheDirName = "empty-dir"
 	const layersDirName = "layers-dir"
+	var root int64 = 0
 	return c.KNClient.BuildV1alpha1().Builds(namespace).Create(&knv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: build.Name,
@@ -129,25 +135,22 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 			},
 			Steps: []corev1.Container{
 				{
-					Name:    "prepare",
-					Image:   "alpine",
-					Command: []string{"/bin/sh"},
-					Args: []string{
-						"-c",
-						fmt.Sprintf(`chown -R "%d:%d" "/builder/home" &&
-chown -R "%d:%d" /layers &&
-chown -R "%d:%d" /cache &&
-chown -R "%d:%d" /workspace`,
-							userId, groupId,
-							userId, groupId,
-							userId, groupId,
-							userId, groupId,
-						),
+					Name:  "prepare",
+					Image: c.BuildInitImage,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:  &root,
+						RunAsGroup: &root,
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "BUILDER",
+							Value: build.Spec.Builder,
+						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
-							MountPath: "/layers",
+							MountPath: "/layersDir", //layers is already in buildpack built image
 						},
 						{
 							Name:      cacheDirName,
@@ -298,7 +301,7 @@ func (c *Reconciler) createCacheVolume(build *v1alpha1.Build) corev1.VolumeSourc
 	}
 }
 
-func buildMetadataFromBuiltImage(image registry.BuiltImage) []v1alpha1.BuildpackMetadata {
+func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetadata {
 	buildpackMetadata := make([]v1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
 		buildpackMetadata = append(buildpackMetadata, v1alpha1.BuildpackMetadata{

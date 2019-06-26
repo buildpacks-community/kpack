@@ -1,0 +1,3 @@
+go:
+  import-path: github.com/pivotal/build-service-system
+  targets: ["./cmd/controller"]

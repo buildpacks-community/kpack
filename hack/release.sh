@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 
+cd $(dirname "${BASH_SOURCE[0]}")/..
+
 if [ -z "$2" ]; then
   echo "Usage: ./hack/release.sh <controller/image> <release.yml>"
   exit 0
 fi
 
-controller_image=$1
-release_yml=$2
+source hack/common.sh
 
-cd $(dirname "${BASH_SOURCE[0]}")/..
+docker_repo=$1
+controller_image=${docker_repo}/controller
+build_init_image=${docker_repo}/build-init
 
-pack build ${controller_image} --builder heroku/buildpacks --publish | tee pack-output
+pack_build ${controller_image} "./cmd/controller"
+controller_image=${resolved_image_name}
 
-resolved_image_name=$(cat pack-output | grep "\*\*\* Image" | cut -d " " -f 4)
-rm pack-output
+pack_build ${build_init_image} "./cmd/build-init"
+build_init_image=${resolved_image_name}
 
-ytt -f config/.  -v controller_image="${resolved_image_name}" > ${release_yml}
+ytt -f config/. -v controller_image=${controller_image} -v build_init_image=${build_init_image} > ${release_yml}
