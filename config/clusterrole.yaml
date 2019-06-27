@@ -49,3 +49,4 @@ rules:
   - create
   - update
   - delete
+  - watch
