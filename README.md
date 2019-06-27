@@ -2,7 +2,16 @@
 
 Experimental Build Service CRDs.
 
-## Setup
+## Pre requirements
+
+- Kubernetes cluster
+- KNative 0.5 installed
+
+## Install
+
+- Use the most recent github release.
+
+## Local Development Install
 
 Access to a Kubernetes cluster is needed in order to install the build service system controllers.
 
@@ -56,7 +65,10 @@ metadata:
 spec:
   serviceAccount: service-account 
   builderRef: sample-builder
-  image: gcr.io/project-name/app 
+  image: gcr.io/project-name/app
+  cacheSize: "1.5Gi"
+  failedBuildHistoryLimit: 5
+  successBuildHistoryLimit: 5
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
