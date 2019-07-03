@@ -392,7 +392,7 @@
   version = "0.5"
 
 [[projects]]
-  digest = "1:2feaa66dd68975cc15637f4c39f2452d714e1f2feb8cfca5225514d4b1a8005d"
+  digest = "1:3a5f74d96cee6e094702734970ec83ba30779cf0d90bcd5dbe5746b09bceb1c3"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
@@ -409,8 +409,8 @@
     "pkg/client/listers/build/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "4fc8663ff9c48a66c52684b2e4cdf06ec83117c8"
-  version = "v0.5.0"
+  revision = "0ff6554186913895288555b640b6af03173a2495"
+  version = "v0.7.0"
 
 [[projects]]
   digest = "1:3d85c3a3e2404d2d7c2a33d7e46b348e0eae8f999acf4f01603b691451e960bf"
