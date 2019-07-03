@@ -129,7 +129,7 @@ func (im *Image) generateImageNames(buildNumber string) []string {
 	if tagName == "latest-" {
 		tagName = ""
 	}
-	return []string{tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
+	return []string{tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
 }
 
 func (im *Image) generateBuildName() string {
