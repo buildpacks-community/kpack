@@ -21,12 +21,11 @@ required = [
 
 [[constraint]]
   name = "github.com/knative/build"
-  version = "v0.5.0"
+  version = "v0.7.0"
 
 [[override]]
   name = "github.com/knative/pkg"
-  # HEAD as of 2019-03-29
-  revision = "916205998db9d085aaff357221b208bc89290ea5"
+  branch = "release-0.7"
 
 [[override]]
   name = "go.uber.org/zap"
@@ -103,3 +102,9 @@ required = [
 [[override]]
   name = "golang.org/x/net"
   revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
+
+[[override]]
+  name = "contrib.go.opencensus.io/exporter/stackdriver"
+  # HEAD as of 2019-02-11
+  # Needed because this includes a fix to support Stackdriver built-in metrics
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"

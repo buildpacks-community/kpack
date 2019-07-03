@@ -32,7 +32,7 @@ func NewController(opt reconciler.Options, builderInformer v1alpha1informers.Bui
 		BuilderLister:     builderInformer.Lister(),
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
+	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 

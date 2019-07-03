@@ -48,7 +48,7 @@ func NewController(opt Options, knClient knversioned.Interface, informer v1alpha
 		BuildInitImage:    opt.BuildInitImage,
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
+	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 

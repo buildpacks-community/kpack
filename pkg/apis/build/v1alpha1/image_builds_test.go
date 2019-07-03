@@ -176,11 +176,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("#CreateBuild", func() {
+	when("#Build", func() {
 		it("generates a build name with build number", func() {
 			image.Name = "imageName"
 
-			build := image.CreateBuild(sourceResolver, builder)
+			build := image.Build(sourceResolver, builder)
 
 			assert.Contains(t, build.Name, "imageName-build-1-")
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
@@ -190,21 +190,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("with excludes additional images names when explicitly disabled", func() {
 			image.Spec.Image = "imagename/foo:test"
 			image.Spec.DisableAdditionalImageNames = true
-			build := image.CreateBuild(sourceResolver, builder)
+			build := image.Build(sourceResolver, builder)
 			require.Len(t, build.Spec.AdditionalImageNames, 0)
 		})
 
 		when("generates additional image names for a provided build number", func() {
 			it("with tag prefix if image name has a tag", func() {
 				image.Spec.Image = "gcr.io/imagename/foo:test"
-				build := image.CreateBuild(sourceResolver, builder)
+				build := image.Build(sourceResolver, builder)
 				require.Len(t, build.Spec.AdditionalImageNames, 1)
 				require.Regexp(t, "gcr.io/imagename/foo:test-b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
 			})
 
 			it("without tag prefix if image name has no provided tag", func() {
 				image.Spec.Image = "gcr.io/imagename/notags"
-				build := image.CreateBuild(sourceResolver, builder)
+				build := image.Build(sourceResolver, builder)
 
 				require.Len(t, build.Spec.AdditionalImageNames, 1)
 				require.Regexp(t, "gcr.io/imagename/notags:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
@@ -212,7 +212,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			it("without tag prefix if image name has the tag 'latest' provided", func() {
 				image.Spec.Image = "gcr.io/imagename/tagged:latest"
-				build := image.CreateBuild(sourceResolver, builder)
+				build := image.Build(sourceResolver, builder)
 
 				require.Len(t, build.Spec.AdditionalImageNames, 1)
 				require.Regexp(t, "gcr.io/imagename/tagged:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
@@ -222,7 +222,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("generates a build name less than 64 characters", func() {
 			image.Name = "long-image-name-1234567890-1234567890-1234567890-1234567890-1234567890"
 
-			build := image.CreateBuild(sourceResolver, builder)
+			build := image.Build(sourceResolver, builder)
 
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)

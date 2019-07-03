@@ -14,15 +14,14 @@
   version = "v0.34.0"
 
 [[projects]]
-  digest = "1:b73244f6a5ab381f938bfd2d831c57eeea884b0fab333126cc175914ec82dec5"
+  digest = "1:b6eb7c2538ec2999a072c0e372a18d7b7e3aedac249f26e159586fa5f892909f"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
     ".",
     "monitoredresource",
   ]
   pruneopts = "NUT"
-  revision = "2b7f4fc93daf5ec3048fa4fc1c15573466711a17"
-  version = "v0.8.0"
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[projects]]
   digest = "1:2be791e7b333ff7c06f8fb3dc18a7d70580e9399dbdffd352621d067ff260b6e"
@@ -104,6 +103,18 @@
   pruneopts = "NUT"
   revision = "af8b71578ed91303834ef57a7e3568ce3081f153"
   version = "v0.2.1"
+
+[[projects]]
+  digest = "1:fa965c1fd0f17153f608037e109e62104058bc1d08d44849867795fd306fa8b8"
+  name = "github.com/census-instrumentation/opencensus-proto"
+  packages = [
+    "gen-go/agent/common/v1",
+    "gen-go/metrics/v1",
+    "gen-go/resource/v1",
+  ]
+  pruneopts = "NUT"
+  revision = "7f2434bc10da710debe5c4315ed6d4df454b4024"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -221,6 +232,14 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
+  branch = "master"
+  digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  pruneopts = "NUT"
+  revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
+
+[[projects]]
   digest = "1:4dacf728c83400b3e9d1d3025dd3c1e93e9a1b033726d1b193dc209f3fa9cb7a"
   name = "github.com/golang/protobuf"
   packages = [
@@ -247,17 +266,17 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  digest = "1:bf40199583e5143d1472fc34d10d6f4b69d97572142acf343b3e43136da40823"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/internal/diff",
+    "cmp/internal/flags",
     "cmp/internal/function",
     "cmp/internal/value",
   ]
   pruneopts = "NUT"
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
   digest = "1:476ba1ddf3f2329d3677f84c2b5e7d3635465ec5d85bc70050cbead931dda760"
@@ -392,7 +411,7 @@
   version = "0.5"
 
 [[projects]]
-  digest = "1:2feaa66dd68975cc15637f4c39f2452d714e1f2feb8cfca5225514d4b1a8005d"
+  digest = "1:3a5f74d96cee6e094702734970ec83ba30779cf0d90bcd5dbe5746b09bceb1c3"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
@@ -409,16 +428,18 @@
     "pkg/client/listers/build/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "4fc8663ff9c48a66c52684b2e4cdf06ec83117c8"
-  version = "v0.5.0"
+  revision = "0ff6554186913895288555b640b6af03173a2495"
+  version = "v0.7.0"
 
 [[projects]]
-  digest = "1:3d85c3a3e2404d2d7c2a33d7e46b348e0eae8f999acf4f01603b691451e960bf"
+  branch = "release-0.7"
+  digest = "1:ad4d10ee0cc0758d70b9cb205b1e9462ff79a6e285ceae1cd2afe232f64ccd9b"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
     "changeset",
     "controller",
     "kmeta",
@@ -430,7 +451,7 @@
     "tracker",
   ]
   pruneopts = "NUT"
-  revision = "916205998db9d085aaff357221b208bc89290ea5"
+  revision = "d82505e6c5b4ce46562d6c242be0e706791f35bd"
 
 [[projects]]
   branch = "master"
@@ -1079,16 +1100,18 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:34380339c9c5aac3f538287f796cddb4c5a61140a7cfb7c9de24ae4bb3372318"
+  digest = "1:58293c3a67fbca0336cd3cc2140dfe630545694452cf73980d2e4b6e6ce2660c"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
+    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
+    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -1133,7 +1156,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:3a49a39291b166676ad2604a86a540951f138aad8fb65449e79913e5237b7b50"
+  digest = "1:07be043078c2dc2ee33e81278b264a84f364c6d711811d2932aa42212fc4f2ae"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1294,6 +1317,7 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
+    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",

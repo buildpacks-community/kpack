@@ -55,7 +55,7 @@ func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 	return true
 }
 
-func (im *Image) CreateBuild(sourceResolver *SourceResolver, builder *Builder) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build {
 	nextBuildNumber := im.nextBuildNumber()
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -69,10 +69,10 @@ func (im *Image) CreateBuild(sourceResolver *SourceResolver, builder *Builder) *
 			},
 		},
 		Spec: BuildSpec{
-			Image:                im.Spec.Image,
-			Builder:              builder.Spec.Image,
-			ServiceAccount:       im.Spec.ServiceAccount,
-			Source:               Source{
+			Image:          im.Spec.Image,
+			Builder:        builder.Spec.Image,
+			ServiceAccount: im.Spec.ServiceAccount,
+			Source: Source{
 				Git: Git{
 					URL:      sourceResolver.Status.ResolvedSource.Git.URL,
 					Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
@@ -88,7 +88,7 @@ func (im *Image) NeedCache() bool {
 	return im.Spec.CacheSize != nil
 }
 
-func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
+func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      im.CacheName(),
@@ -104,6 +104,25 @@ func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
 					corev1.ResourceStorage: *im.Spec.CacheSize,
 				},
 			},
+		},
+	}
+}
+
+func (im *Image) SourceResolverName() string {
+	return kmeta.ChildName(im.Name, "-source")
+}
+
+func (im *Image) SourceResolver() *SourceResolver {
+	return &SourceResolver{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: im.SourceResolverName(),
+			OwnerReferences: []metav1.OwnerReference{ // untested. Test me please :)
+				*kmeta.NewControllerRef(im),
+			},
+		},
+		Spec: SourceResolverSpec{
+			ServiceAccount: im.Spec.ServiceAccount,
+			Source:         im.Spec.Source,
 		},
 	}
 }

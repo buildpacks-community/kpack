@@ -637,7 +637,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.Nil(t, err)
 
 				for i := int64(0); i < failedBuildHistoryLimit+1; i++ {
-					build := image.CreateBuild(resolvedSourceResolverForImage(image), builder)
+					build := image.Build(resolvedSourceResolverForImage(image), builder)
 					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
 					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
 					require.Nil(t, err)
@@ -678,7 +678,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.Nil(t, err)
 
 				for i := int64(0); i < successBuildHistoryLimit+1; i++ {
-					build := image.CreateBuild(resolvedSourceResolverForImage(image), builder)
+					build := image.Build(resolvedSourceResolverForImage(image), builder)
 					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
 					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
 					require.Nil(t, err)

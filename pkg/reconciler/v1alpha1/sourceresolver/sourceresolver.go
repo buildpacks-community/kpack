@@ -32,7 +32,7 @@ func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1inform
 		GitKeychain:          gitKeychain,
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
+	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
 	sourceResolverInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 

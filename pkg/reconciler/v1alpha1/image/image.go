@@ -8,7 +8,6 @@ import (
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/tracker"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -52,7 +51,7 @@ func NewController(opt reconciler.Options,
 		PvcLister:            pvcInformer.Lister(),
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, opt.Logger))
+	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
 	imageInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
@@ -147,7 +146,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	var build *v1alpha1.Build
 	if image.BuildNeeded(sourceResolver, lastBuild, builder) {
-		build, err = c.Client.BuildV1alpha1().Builds(image.Namespace).Create(image.CreateBuild(sourceResolver, builder))
+		build, err = c.Client.BuildV1alpha1().Builds(image.Namespace).Create(image.Build(sourceResolver, builder))
 		if err != nil {
 			return fmt.Errorf("failed creating build: %s", err)
 		}
@@ -172,22 +171,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.SourceResolver, error) {
-	name := reconciler.ChildName(image.Name, "-source")
+	desiredSourceResolver := image.SourceResolver()
 
-	desiredSourceResolver := &v1alpha1.SourceResolver{
-		ObjectMeta: v1.ObjectMeta{
-			Name: name,
-			OwnerReferences: []v1.OwnerReference{ //untested. Test me please :)
-				*kmeta.NewControllerRef(image),
-			},
-		},
-		Spec: v1alpha1.SourceResolverSpec{
-			ServiceAccount: image.Spec.ServiceAccount,
-			Source:         image.Spec.Source,
-		},
-	}
-
-	sourceResolver, err := c.SourceResolverLister.SourceResolvers(image.Namespace).Get(name)
+	sourceResolver, err := c.SourceResolverLister.SourceResolvers(image.Namespace).Get(image.SourceResolverName())
 	if err != nil && !errors.IsNotFound(err) {
 		return sourceResolver, err
 	} else if errors.IsNotFound(err) {
@@ -221,7 +207,7 @@ func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (*corev1.Persist
 		}) //please test me :(
 	}
 
-	desiredBuildCache := image.MakeBuildCache()
+	desiredBuildCache := image.BuildCache()
 
 	buildCache, err := c.PvcLister.PersistentVolumeClaims(image.Namespace).Get(image.Status.BuildCacheName)
 	if err != nil && !errors.IsNotFound(err) {
