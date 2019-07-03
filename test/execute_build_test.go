@@ -130,6 +130,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					CacheSize: &cacheSize,
+					DisableAdditionalImageNames: true,
 				},
 			})
 			require.NoError(t, err)

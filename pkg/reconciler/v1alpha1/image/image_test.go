@@ -100,9 +100,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "revision",
 				},
 			},
-			CacheSize:                &quantity,
-			FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
-			SuccessBuildHistoryLimit: &successBuildHistoryLimit,
+			CacheSize:                   &quantity,
+			FailedBuildHistoryLimit:     &failedBuildHistoryLimit,
+			SuccessBuildHistoryLimit:    &successBuildHistoryLimit,
+			DisableAdditionalImageNames: true,
 		},
 	}
 
@@ -311,9 +312,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Revision: "differentrevision",
 								},
 							},
-							CacheSize:                &newQuantity,
-							FailedBuildHistoryLimit:  &failedBuildHistoryLimit,
-							SuccessBuildHistoryLimit: &successBuildHistoryLimit,
+							CacheSize:                   &newQuantity,
+							FailedBuildHistoryLimit:     &failedBuildHistoryLimit,
+							SuccessBuildHistoryLimit:    &successBuildHistoryLimit,
+							DisableAdditionalImageNames: true,
 						},
 						Status: img.Status, // fake client overwrites status :(
 					})

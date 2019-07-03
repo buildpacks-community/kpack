@@ -7,7 +7,8 @@ import (
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/require"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -184,6 +185,38 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, build.Name, "imageName-build-1-")
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
 			assert.Contains(t, build.Spec.Source.Git.Revision, "revision")
+		})
+
+		it("with excludes additional images names when explicitly disabled", func() {
+			image.Spec.Image = "imagename/foo:test"
+			image.Spec.DisableAdditionalImageNames = true
+			build := image.CreateBuild(sourceResolver, builder)
+			require.Len(t, build.Spec.AdditionalImageNames, 0)
+		})
+
+		when("generates additional image names for a provided build number", func() {
+			it("with tag prefix if image name has a tag", func() {
+				image.Spec.Image = "imagename/foo:test"
+				build := image.CreateBuild(sourceResolver, builder)
+				require.Len(t, build.Spec.AdditionalImageNames, 1)
+				require.Regexp(t, "imagename/foo:test-b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+			})
+
+			it("without tag prefix if image name has no provided tag", func() {
+				image.Spec.Image = "imagename/notags"
+				build := image.CreateBuild(sourceResolver, builder)
+
+				require.Len(t, build.Spec.AdditionalImageNames, 1)
+				require.Regexp(t, "imagename/notags:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+			})
+
+			it("without tag prefix if image name has the tag 'latest' provided", func() {
+				image.Spec.Image = "imagename/tagged:latest"
+				build := image.CreateBuild(sourceResolver, builder)
+
+				require.Len(t, build.Spec.AdditionalImageNames, 1)
+				require.Regexp(t, "imagename/tagged:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+			})
 		})
 
 		it("generates a build name less than 64 characters", func() {

@@ -35,13 +35,14 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Image                    string             `json:"image"`
-	BuilderRef               string             `json:"builderRef"`
-	ServiceAccount           string             `json:"serviceAccount"`
-	Source                   Source             `json:"source"`
-	CacheSize                *resource.Quantity `json:"cacheSize,omitempty"`
-	FailedBuildHistoryLimit  *int64             `json:"failedBuildHistoryLimit"`
-	SuccessBuildHistoryLimit *int64             `json:"successBuildHistoryLimit"`
+	Image                       string             `json:"image"`
+	BuilderRef                  string             `json:"builderRef"`
+	ServiceAccount              string             `json:"serviceAccount"`
+	Source                      Source             `json:"source"`
+	CacheSize                   *resource.Quantity `json:"cacheSize,omitempty"`
+	FailedBuildHistoryLimit     *int64             `json:"failedBuildHistoryLimit"`
+	SuccessBuildHistoryLimit    *int64             `json:"successBuildHistoryLimit"`
+	DisableAdditionalImageNames bool               `json:"disableAdditionalImageNames"`
 }
 
 type ImageStatus struct {

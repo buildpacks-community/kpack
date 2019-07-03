@@ -30,7 +30,7 @@ func (in *Build) DeepCopyInto(out *Build) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
 	return
 }
@@ -92,6 +92,11 @@ func (in *BuildList) DeepCopyObject() runtime.Object {
 func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 	*out = *in
 	out.Source = in.Source
+	if in.AdditionalImageNames != nil {
+		in, out := &in.AdditionalImageNames, &out.AdditionalImageNames
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

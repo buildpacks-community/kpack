@@ -237,13 +237,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					Name:    "export",
 					Image:   build.Spec.Builder,
 					Command: []string{"/lifecycle/exporter"},
-					Args: []string{
-						"-layers=/layers",
-						"-helpers=false",
-						"-app=/workspace",
-						"-group=/layers/group.toml",
-						build.Spec.Image,
-					},
+					Args:    buildExporterArgs(build),
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
@@ -289,6 +283,18 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 		},
 	})
 }
+
+func buildExporterArgs(build *v1alpha1.Build) []string {
+	args := []string{
+		"-layers=/layers",
+		"-helpers=false",
+		"-app=/workspace",
+		"-group=/layers/group.toml",
+		build.Spec.Image,}
+	args = append(args, build.Spec.AdditionalImageNames...)
+	return args
+}
+
 func (c *Reconciler) createCacheVolume(build *v1alpha1.Build) corev1.VolumeSource {
 	if build.Spec.CacheName != "" {
 		return corev1.VolumeSource{

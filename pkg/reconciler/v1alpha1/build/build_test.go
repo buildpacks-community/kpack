@@ -88,7 +88,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName: "some-cache-name",
+			CacheName:            "some-cache-name",
+			AdditionalImageNames: []string{"someimage/name:tag2", "someimage/name:tag3"},
 		},
 	}
 
@@ -137,6 +138,30 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, corev1.VolumeSource{
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
 				}, knbuild.Spec.Volumes[0].VolumeSource)
+			})
+
+			it("creates a knative build with multiple image names on the export step", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name:tag2")
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name:tag3")
+			})
+
+			it("creates a knative build with only one image name on the export step", func() {
+				build.Spec.AdditionalImageNames = nil
+				_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(build)
+				require.NoError(t, err)
+
+				err = reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
 			})
 
 			it("when cache name is empty, creates a knative build with no cache", func() {

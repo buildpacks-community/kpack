@@ -1,12 +1,15 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/knative/pkg/kmeta"
 	"github.com/pborman/uuid"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -53,28 +56,30 @@ func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 }
 
 func (im *Image) CreateBuild(sourceResolver *SourceResolver, builder *Builder) *Build {
+	nextBuildNumber := im.nextBuildNumber()
 	return &Build{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: im.generateBuildName(),
-			OwnerReferences: []v1.OwnerReference{
+			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 			Labels: map[string]string{
-				BuildNumberLabel: im.nextBuildNumber(),
+				BuildNumberLabel: nextBuildNumber,
 				ImageLabel:       im.Name,
 			},
 		},
 		Spec: BuildSpec{
-			Image:          im.Spec.Image,
-			Builder:        builder.Spec.Image,
-			ServiceAccount: im.Spec.ServiceAccount,
-			Source: Source{
+			Image:                im.Spec.Image,
+			Builder:              builder.Spec.Image,
+			ServiceAccount:       im.Spec.ServiceAccount,
+			Source:               Source{
 				Git: Git{
 					URL:      sourceResolver.Status.ResolvedSource.Git.URL,
 					Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
 				},
 			},
-			CacheName: im.Status.BuildCacheName,
+			CacheName:            im.Status.BuildCacheName,
+			AdditionalImageNames: im.generateImageNames(nextBuildNumber),
 		},
 	}
 }
@@ -85,10 +90,10 @@ func (im *Image) NeedCache() bool {
 
 func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      im.CacheName(),
 			Namespace: im.Namespace,
-			OwnerReferences: []v1.OwnerReference{
+			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 		},
@@ -105,6 +110,26 @@ func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
 
 func (im *Image) nextBuildNumber() string {
 	return strconv.Itoa(int(im.Status.BuildCounter + 1))
+}
+
+func (im *Image) generateImageNames(buildNumber string) []string {
+	if im.Spec.DisableAdditionalImageNames {
+		return nil
+	}
+	now := time.Now()
+
+	tag, err := name.NewTag(im.Spec.Image, name.WeakValidation)
+	if err != nil {
+		// We assume that if the Image Name cannot be parsed the image will not be successfully built
+		// in this case we can just ignore any additional image names
+		return nil
+	}
+
+	tagName := tag.TagStr() + "-"
+	if tagName == "latest-" {
+		tagName = ""
+	}
+	return []string{tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
 }
 
 func (im *Image) generateBuildName() string {
