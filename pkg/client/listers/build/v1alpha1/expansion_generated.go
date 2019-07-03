@@ -38,3 +38,11 @@ type ImageListerExpansion interface{}
 // ImageNamespaceListerExpansion allows custom methods to be added to
 // ImageNamespaceLister.
 type ImageNamespaceListerExpansion interface{}
+
+// SourceResolverListerExpansion allows custom methods to be added to
+// SourceResolverLister.
+type SourceResolverListerExpansion interface{}
+
+// SourceResolverNamespaceListerExpansion allows custom methods to be added to
+// SourceResolverNamespaceLister.
+type SourceResolverNamespaceListerExpansion interface{}

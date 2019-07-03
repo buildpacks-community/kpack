@@ -27,6 +27,8 @@ type Interface interface {
 	Builders() BuilderInformer
 	// Images returns a ImageInformer.
 	Images() ImageInformer
+	// SourceResolvers returns a SourceResolverInformer.
+	SourceResolvers() SourceResolverInformer
 }
 
 type version struct {
@@ -53,4 +55,9 @@ func (v *version) Builders() BuilderInformer {
 // Images returns a ImageInformer.
 func (v *version) Images() ImageInformer {
 	return &imageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SourceResolvers returns a SourceResolverInformer.
+func (v *version) SourceResolvers() SourceResolverInformer {
+	return &sourceResolverInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

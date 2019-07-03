@@ -18,10 +18,12 @@ import (
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/cnb"
+	"github.com/pivotal/build-service-system/pkg/git"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
+	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
@@ -73,6 +75,7 @@ func main() {
 	buildInformer := informerFactory.Build().V1alpha1().Builds()
 	imageInformer := informerFactory.Build().V1alpha1().Images()
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
+	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 
 	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, options.ResyncPeriod)
 	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
@@ -91,8 +94,9 @@ func main() {
 	}
 
 	buildController := build.NewController(build.Options{Options: options, BuildInitImage: *buildInitImage}, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, pvcInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
+	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, &git.RemoteGitResolver{}, git.NewK8sGitKeychain(k8sClient))
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -102,8 +106,22 @@ func main() {
 	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
+
+	pollingSourceInformerChan := make(chan string)
+	poller := git.Poller{
+		Logger:     logger,
+		Reconciler: sourceResolverController.Reconciler,
+		PollChan:   pollingSourceInformerChan,
+	}
+
+	sourceResolverPollingEnqueuer := &git.SourceResolverEnqueuer{
+		Frequency:            time.Minute,
+		SourceResolverLister: sourceResolverInformer.Lister(),
+		PollChan:             pollingSourceInformerChan,
+	}
 
 	err = runGroup(
 		func(done <-chan struct{}) error {
@@ -114,6 +132,15 @@ func main() {
 		},
 		func(done <-chan struct{}) error {
 			return builderController.Run(routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return sourceResolverController.Run(routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return poller.Run(done)
+		},
+		func(done <-chan struct{}) error {
+			return sourceResolverPollingEnqueuer.Run(done)
 		},
 	)
 	if err != nil {

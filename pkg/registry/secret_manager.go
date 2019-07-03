@@ -6,6 +6,8 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
 type SecretManager struct {
@@ -14,22 +16,21 @@ type SecretManager struct {
 
 const KnativeRegistryUrl = "build.knative.dev/docker-0"
 
-func (m *SecretManager) secretForServiceAccountAndRegistry(serviceAccount, namespace string, reg name.Registry) (*RegistryUser, error) {
+func (m *SecretManager) secretForServiceAccountAndRegistry(serviceAccount, namespace string, reg name.Registry) (*secret.URLAndUser, error) {
 	sa, err := m.Client.ServiceAccounts(namespace).Get(serviceAccount, meta_v1.GetOptions{})
-
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	secret, err := m.secretForServiceAccount(sa, reg, namespace)
+	secretForServiceAccount, err := m.secretForServiceAccount(sa, reg, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if secret == nil {
+	if secretForServiceAccount == nil {
 		return nil, errors.Errorf("credentials not found for: %s", reg)
 	}
-	registryUser := NewRegistryUser(reg.RegistryStr(), string(secret.Data["username"]), string(secret.Data["password"]))
+	registryUser := secret.NewURLAndUser(reg.RegistryStr(), string(secretForServiceAccount.Data["username"]), string(secretForServiceAccount.Data["password"]))
 	return &registryUser, nil
 }
 

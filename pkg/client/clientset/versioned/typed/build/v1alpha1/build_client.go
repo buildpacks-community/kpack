@@ -27,6 +27,7 @@ type BuildV1alpha1Interface interface {
 	BuildsGetter
 	BuildersGetter
 	ImagesGetter
+	SourceResolversGetter
 }
 
 // BuildV1alpha1Client is used to interact with features provided by the build.pivotal.io group.
@@ -44,6 +45,10 @@ func (c *BuildV1alpha1Client) Builders(namespace string) BuilderInterface {
 
 func (c *BuildV1alpha1Client) Images(namespace string) ImageInterface {
 	return newImages(c, namespace)
+}
+
+func (c *BuildV1alpha1Client) SourceResolvers(namespace string) SourceResolverInterface {
+	return newSourceResolvers(c, namespace)
 }
 
 // NewForConfig creates a new BuildV1alpha1Client for the given config.

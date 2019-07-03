@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	
+
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 

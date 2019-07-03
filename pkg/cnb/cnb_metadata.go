@@ -5,7 +5,7 @@ import (
 	"time"
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
-	
+
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 

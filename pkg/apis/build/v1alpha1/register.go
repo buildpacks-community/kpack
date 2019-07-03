@@ -53,6 +53,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ImageList{},
 		&Builder{},
 		&BuilderList{},
+		&SourceResolver{},
+		&SourceResolverList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

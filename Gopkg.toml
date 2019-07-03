@@ -96,6 +96,10 @@ required = [
   name = "github.com/stretchr/testify"
   version = "1.3.0"
 
-[metadata.heroku]
-  root-package = "github.com/pivotal/build-service-system/"
-  install = [ "./cmd/controller" ]
+[[constraint]]
+  name = "gopkg.in/src-d/go-git.v4"
+  version = "4.12.0"
+
+[[override]]
+  name = "golang.org/x/net"
+  revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"

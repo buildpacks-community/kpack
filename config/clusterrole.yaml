@@ -24,6 +24,8 @@ rules:
   - images/status
   - builders
   - builders/status
+  - sourceresolvers
+  - sourceresolvers/status
   verbs:
   - get
   - list

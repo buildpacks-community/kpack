@@ -2,7 +2,7 @@ package build
 
 import (
 	"context"
-	
+
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
 	knv1alpha1informer "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"

@@ -87,3 +87,11 @@ func (b *Build) IsRunning() bool {
 
 	return b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
 }
+
+func (b *Build) BuildRef() string {
+	if b == nil {
+		return ""
+	}
+
+	return b.GetName()
+}

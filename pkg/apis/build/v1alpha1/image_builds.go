@@ -6,7 +6,6 @@ import (
 	"github.com/knative/pkg/kmeta"
 	"github.com/pborman/uuid"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,19 +14,35 @@ const (
 	ImageLabel       = "image.build.pivotal.io/image"
 )
 
-func (im *Image) BuildNeeded(lastBuild *Build, builder *Builder) bool {
+func (im *Image) BuildNeeded(sourceResolver *SourceResolver, lastBuild *Build, builder *Builder) bool {
+	if !sourceResolver.Ready() {
+		return false
+	}
+
 	if lastBuild == nil {
 		return true
 	}
 
-	if im.configMatches(lastBuild) && builtWithBuilderBuildpacks(builder, lastBuild) {
+	if im.lastBuildMatchesDesiredBuild(sourceResolver, lastBuild) && lastBuildBuiltWithBuilderBuildpacks(builder, lastBuild) {
 		return false
 	}
 
 	return true
 }
 
-func builtWithBuilderBuildpacks(builder *Builder, build *Build) bool {
+func (im *Image) lastBuildMatchesDesiredBuild(sourceResolver *SourceResolver, build *Build) bool {
+	if sourceResolver.Status.ResolvedSource.Git.URL != build.Spec.Source.Git.URL {
+		return false
+	}
+
+	if sourceResolver.Status.ResolvedSource.Git.Revision != build.Spec.Source.Git.Revision {
+		return false
+	}
+
+	return im.Spec.Image == build.Spec.Image
+}
+
+func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 	for _, bp := range build.Status.BuildMetadata {
 		if !builder.Status.BuilderMetadata.Include(bp) {
 			return false
@@ -37,12 +52,7 @@ func builtWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 	return true
 }
 
-func (im *Image) configMatches(build *Build) bool {
-	return im.Spec.Image == build.Spec.Image &&
-		im.Spec.Source == build.Spec.Source
-}
-
-func (im *Image) CreateBuild(builder *Builder) *Build {
+func (im *Image) CreateBuild(sourceResolver *SourceResolver, builder *Builder) *Build {
 	return &Build{
 		ObjectMeta: v1.ObjectMeta{
 			Name: im.generateBuildName(),
@@ -58,8 +68,13 @@ func (im *Image) CreateBuild(builder *Builder) *Build {
 			Image:          im.Spec.Image,
 			Builder:        builder.Spec.Image,
 			ServiceAccount: im.Spec.ServiceAccount,
-			Source:         im.Spec.Source,
-			CacheName:      im.Status.BuildCacheName,
+			Source: Source{
+				Git: Git{
+					URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+					Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+				},
+			},
+			CacheName: im.Status.BuildCacheName,
 		},
 	}
 }
@@ -69,15 +84,11 @@ func (im *Image) NeedCache() bool {
 }
 
 func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
-	if !im.NeedCache() {
-		return nil
-	}
-
-	pvc := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
+	return &corev1.PersistentVolumeClaim{
+		ObjectMeta: v1.ObjectMeta{
 			Name:      im.CacheName(),
 			Namespace: im.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
+			OwnerReferences: []v1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 		},
@@ -90,8 +101,6 @@ func (im *Image) MakeBuildCache() *corev1.PersistentVolumeClaim {
 			},
 		},
 	}
-
-	return pvc
 }
 
 func (im *Image) nextBuildNumber() string {

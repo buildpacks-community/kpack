@@ -16,6 +16,7 @@ import (
 	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
 func TestSecretKeychainFactory(t *testing.T) {
@@ -39,9 +40,9 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory = &registry.SecretKeychainFactory{secretMgr}
 
 			err := saveSecrets(fakeClient.CoreV1(), testNamespace, serviceAccountName,
-				[]registry.RegistryUser{
-					registry.NewRegistryUser("https://godoker.reg.com", "foobar", "foobar321"),
-					registry.NewRegistryUser("https://redhook.port", "brooklyn", "nothip"),
+				[]secret.URLAndUser{
+					secret.NewURLAndUser("https://godoker.reg.com", "foobar", "foobar321"),
+					secret.NewURLAndUser("https://redhook.port", "brooklyn", "nothip"),
 				})
 			assert.NoError(t, err)
 		})
@@ -91,7 +92,7 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-func saveSecrets(coreV1 v12.CoreV1Interface, namespace, serviceAccount string, users []registry.RegistryUser) error {
+func saveSecrets(coreV1 v12.CoreV1Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
 	secrets := []v1.ObjectReference{}
 
 	for _, user := range users {
