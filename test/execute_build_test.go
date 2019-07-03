@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/buildpack/imgutil"
@@ -43,6 +44,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients()
 		require.NoError(t, err)
 
+		err = clients.k8sClient.Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
+		require.True(t, err == nil || errors.IsNotFound(err))
+
 		_, err = clients.k8sClient.Namespaces().Create(&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testNamespace,
@@ -53,9 +57,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 	it.After(func() {
 		deleteImageTag(t, cfg.imageTag)
-
-		err := clients.k8sClient.Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
-		require.NoError(t, err)
 	})
 
 	when("an image is applied", func() {
