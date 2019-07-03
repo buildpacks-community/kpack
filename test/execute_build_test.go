@@ -46,6 +46,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		err = clients.k8sClient.Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
 		require.True(t, err == nil || errors.IsNotFound(err))
+		if err == nil {
+			time.Sleep(5 * time.Second)
+		}
 
 		_, err = clients.k8sClient.Namespaces().Create(&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
