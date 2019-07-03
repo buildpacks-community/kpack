@@ -38,7 +38,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			return false, nil, nil
 		})
 
-		err := testhelpers.SaveSecrets(fakeClient.CoreV1(), "some-namespace", serviceAccount, []secret.URLAndUser{
+		err := testhelpers.SaveGitSecrets(fakeClient, "some-namespace", serviceAccount, []secret.URLAndUser{
 			{
 				URL:      "https://github.com",
 				Username: "saved-username",

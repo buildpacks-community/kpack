@@ -3,21 +3,37 @@ package registry
 import (
 	"encoding/base64"
 	"fmt"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	k8sclient "k8s.io/client-go/kubernetes"
+
+	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
+const KnativeRegistryUrl = "build.knative.dev/docker-0"
+
 type SecretKeychainFactory struct {
-	SecretManager *SecretManager
+	secretManager *secret.SecretManager
+}
+
+func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory {
+	return &SecretKeychainFactory{
+		secretManager: &secret.SecretManager{
+			Client:        client,
+			AnnotationKey: KnativeRegistryUrl,
+			Matcher:       registryMatcher{},
+		},
+	}
 }
 
 type serviceAccountKeychain struct {
 	imageRef      ImageRef
-	secretManager *SecretManager
+	secretManager *secret.SecretManager
 }
 
 func (k *serviceAccountKeychain) Resolve(reg name.Registry) (authn.Authenticator, error) {
-	creds, err := k.secretManager.secretForServiceAccountAndRegistry(k.imageRef.ServiceAccount(), k.imageRef.Namespace(), reg)
+	creds, err := k.secretManager.SecretForServiceAccountAndURL(k.imageRef.ServiceAccount(), k.imageRef.Namespace(), reg.RegistryStr())
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +52,7 @@ func (f *SecretKeychainFactory) KeychainForImageRef(ref ImageRef) authn.Keychain
 		return &anonymousKeychain{}
 	}
 
-	return &serviceAccountKeychain{imageRef: ref, secretManager: f.SecretManager}
+	return &serviceAccountKeychain{imageRef: ref, secretManager: f.secretManager}
 }
 
 type anonymousKeychain struct {

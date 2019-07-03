@@ -2,6 +2,7 @@ package secret
 
 import (
 	"fmt"
+
 	"k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +20,7 @@ type Matcher interface {
 	Match(url, annotatedUrl string) bool
 }
 
-func (m *SecretManager) SecretForServiceAccountAndUrl(serviceAccount, namespace string, url string) (*URLAndUser, error) {
+func (m *SecretManager) SecretForServiceAccountAndURL(serviceAccount, namespace string, url string) (*URLAndUser, error) {
 	sa, err := m.Client.CoreV1().ServiceAccounts(namespace).Get(serviceAccount, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, err

@@ -28,7 +28,7 @@ func (k *K8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 		return AnonymousAuth{}, nil
 	}
 
-	creds, err := k.secretManager.SecretForServiceAccountAndUrl(serviceAccount, namespace, git.URL)
+	creds, err := k.secretManager.SecretForServiceAccountAndURL(serviceAccount, namespace, git.URL)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}

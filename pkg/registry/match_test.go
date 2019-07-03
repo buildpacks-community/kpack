@@ -1,13 +1,10 @@
-package registry_test
+package registry
 
 import (
 	"testing"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 func TestMatch(t *testing.T) {
@@ -29,26 +26,17 @@ func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 			"http://reg.io/v2/",
 		} {
 			it("matches format "+regFormat, func() {
-				reference, err := name.ParseReference("reg.io/some/name", name.WeakValidation)
-				assert.NoError(t, err)
-
-				assert.True(t, registry.Match(reference.Context().Registry, regFormat))
+				assert.True(t, registryMatcher{}.Match("reg.io", regFormat))
 			})
 
 			it("does not match other registries with "+regFormat, func() {
-				reference, err := name.ParseReference("gcr.io/some/name", name.WeakValidation)
-				assert.NoError(t, err)
-
-				assert.False(t, registry.Match(reference.Context().Registry, regFormat))
+				assert.False(t, registryMatcher{}.Match("gcr.io", regFormat))
 			})
 		}
 
 		it("matches on dockerhub references", func() {
-			reference, err := name.ParseReference("some/name", name.WeakValidation)
-			assert.NoError(t, err)
-
-			assert.True(t, registry.Match(reference.Context().Registry, "http://index.docker.io"))
-			assert.True(t, registry.Match(reference.Context().Registry, "index.docker.io"))
+			assert.True(t, registryMatcher{}.Match("index.docker.io", "http://index.docker.io"))
+			assert.True(t, registryMatcher{}.Match("index.docker.io", "index.docker.io"))
 		})
 	})
 }

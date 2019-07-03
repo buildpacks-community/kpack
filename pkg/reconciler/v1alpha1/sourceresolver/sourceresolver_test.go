@@ -93,7 +93,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("requests resolved git with the source config and the auth", func() {
-			err := secrettesthelpers.SaveSecrets(k8sFakeClient.CoreV1(), namespace, serviceAccount, []secret.URLAndUser{
+			err := secrettesthelpers.SaveGitSecrets(k8sFakeClient, namespace, serviceAccount, []secret.URLAndUser{
 				{
 					URL:      "github.com",
 					Username: "some-username",

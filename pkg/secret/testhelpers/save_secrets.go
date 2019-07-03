@@ -4,20 +4,28 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
+	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
-func SaveSecrets(coreV1 v12.CoreV1Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
+func SaveGitSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
+	return saveSecrets(client, namespace, serviceAccount, users, "build.knative.dev/git-0")
+}
+
+func SaveDockerSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
+	return saveSecrets(client, namespace, serviceAccount, users, "build.knative.dev/docker-0")
+}
+
+func saveSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser, annotationKey string) error {
 	secrets := []v1.ObjectReference{}
 
 	for _, user := range users {
-		secret, err := coreV1.Secrets(namespace).Create(&v1.Secret{
+		secret, err := client.CoreV1().Secrets(namespace).Create(&v1.Secret{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: string(uuid.NewUUID()),
 				Annotations: map[string]string{
-					"build.knative.dev/git-0": user.URL,
+					annotationKey: user.URL,
 				},
 			},
 			Data: map[string][]byte{
@@ -35,7 +43,7 @@ func SaveSecrets(coreV1 v12.CoreV1Interface, namespace, serviceAccount string, u
 		})
 	}
 
-	_, err := coreV1.ServiceAccounts(namespace).Create(&v1.ServiceAccount{
+	_, err := client.CoreV1().ServiceAccounts(namespace).Create(&v1.ServiceAccount{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: serviceAccount,
 		},

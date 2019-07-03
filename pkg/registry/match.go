@@ -2,7 +2,6 @@ package registry
 
 import (
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/name"
 )
 
 var registryDomains = []string{
@@ -18,12 +17,14 @@ var registryDomains = []string{
 	"http://%s/v2/",
 }
 
-func Match(parsedRegistry name.Registry, registry string) bool {
+type registryMatcher struct {
+}
+
+func (r registryMatcher) Match(parsedRegistry, registry string) bool {
 	for _, format := range registryDomains {
-		if fmt.Sprintf(format, parsedRegistry.RegistryStr()) == registry {
+		if fmt.Sprintf(format, parsedRegistry) == registry {
 			return true
 		}
 	}
-
 	return false
 }

@@ -85,11 +85,7 @@ func main() {
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		LifecycleImageFactory: &registry.ImageFactory{
-			KeychainFactory: &registry.SecretKeychainFactory{
-				SecretManager: &registry.SecretManager{
-					Client: k8sClient.CoreV1(),
-				},
-			},
+			KeychainFactory: registry.NewSecretKeychainFactory(k8sClient),
 		},
 	}
 

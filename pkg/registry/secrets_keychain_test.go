@@ -10,13 +10,11 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes/fake"
-	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/pivotal/build-service-system/pkg/registry"
 	"github.com/pivotal/build-service-system/pkg/secret"
+	secrethelper "github.com/pivotal/build-service-system/pkg/secret/testhelpers"
 )
 
 func TestSecretKeychainFactory(t *testing.T) {
@@ -36,10 +34,9 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	when("SecretKeychainFactory", func() {
 		it.Before(func() {
-			secretMgr := &registry.SecretManager{Client: fakeClient.CoreV1()}
-			keychainFactory = &registry.SecretKeychainFactory{secretMgr}
+			keychainFactory = registry.NewSecretKeychainFactory(fakeClient)
 
-			err := saveSecrets(fakeClient.CoreV1(), testNamespace, serviceAccountName,
+			err := secrethelper.SaveDockerSecrets(fakeClient, testNamespace, serviceAccountName,
 				[]secret.URLAndUser{
 					secret.NewURLAndUser("https://godoker.reg.com", "foobar", "foobar321"),
 					secret.NewURLAndUser("https://redhook.port", "brooklyn", "nothip"),
@@ -90,41 +87,6 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
-}
-
-func saveSecrets(coreV1 v12.CoreV1Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
-	secrets := []v1.ObjectReference{}
-
-	for _, user := range users {
-		secret, err := coreV1.Secrets(namespace).Create(&v1.Secret{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: string(uuid.NewUUID()),
-				Annotations: map[string]string{
-					registry.KnativeRegistryUrl: user.URL,
-				},
-			},
-			Data: map[string][]byte{
-				"username": []byte(user.Username),
-				"password": []byte(user.Password),
-			},
-			Type: v1.SecretTypeBasicAuth,
-		})
-		if err != nil {
-			return err
-		}
-
-		secrets = append(secrets, v1.ObjectReference{
-			Name: secret.Name,
-		})
-	}
-
-	_, err := coreV1.ServiceAccounts(namespace).Create(&v1.ServiceAccount{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: serviceAccount,
-		},
-		Secrets: secrets,
-	})
-	return err
 }
 
 type fakeImageRef struct {
