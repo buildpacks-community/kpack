@@ -132,7 +132,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			t.Logf("Waiting for image '%s' to be created", cfg.imageTag)
-			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 1*time.Minute)
+			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 5*time.Minute)
 		})
 	})
 }
