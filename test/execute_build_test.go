@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"github.com/buildpack/imgutil"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
