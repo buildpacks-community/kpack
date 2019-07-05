@@ -66,9 +66,10 @@ func main() {
 	}
 
 	options := reconciler.Options{
-		Logger:       logger,
-		Client:       client,
-		ResyncPeriod: 10 * time.Hour,
+		Logger:           logger,
+		Client:           client,
+		ResyncPeriod:     10 * time.Hour,
+		PollingFrequency: 1 * time.Minute,
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
@@ -106,19 +107,6 @@ func main() {
 	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
 
-	pollingSourceInformerChan := make(chan string)
-	poller := git.Poller{
-		Logger:     logger,
-		Reconciler: sourceResolverController.Reconciler,
-		PollChan:   pollingSourceInformerChan,
-	}
-
-	sourceResolverPollingEnqueuer := &git.SourceResolverEnqueuer{
-		Frequency:            time.Minute,
-		SourceResolverLister: sourceResolverInformer.Lister(),
-		PollChan:             pollingSourceInformerChan,
-	}
-
 	err = runGroup(
 		func(done <-chan struct{}) error {
 			return imageController.Run(routinesPerController, done)
@@ -130,13 +118,7 @@ func main() {
 			return builderController.Run(routinesPerController, done)
 		},
 		func(done <-chan struct{}) error {
-			return sourceResolverController.Run(routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return poller.Run(done)
-		},
-		func(done <-chan struct{}) error {
-			return sourceResolverPollingEnqueuer.Run(done)
+			return sourceResolverController.Run(2*routinesPerController, done)
 		},
 	)
 	if err != nil {
