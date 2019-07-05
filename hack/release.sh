@@ -2,6 +2,10 @@
 
 cd $(dirname "${BASH_SOURCE[0]}")/..
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 if [ -z "$2" ]; then
   echo "Usage: ./hack/release.sh <registry> <release.yml>"
   exit 0
