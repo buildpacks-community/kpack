@@ -5,7 +5,7 @@ Experimental Build Service CRDs.
 ## Pre requirements
 
 - Kubernetes cluster
-- KNative 0.5 installed
+- KNative 0.7 installed
 
 ## Install
 
