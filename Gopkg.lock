@@ -97,12 +97,12 @@
   revision = "4a2138287c60c7ef87274f5ab85caca0d11fad34"
 
 [[projects]]
-  digest = "1:3a02c0ca8e22c35ed65f25b7039f0129401ab7cd91937e08c4c551f5b1edf3ce"
+  digest = "1:cba73182e2f7de542825d4d982f84338558bc319dd33a7cda927b4626ad89022"
   name = "github.com/buildpack/lifecycle"
   packages = ["metadata"]
   pruneopts = "NUT"
-  revision = "af8b71578ed91303834ef57a7e3568ce3081f153"
-  version = "v0.2.1"
+  revision = "a927d830e69e5cd2f207ea69cd99034cb34c5302"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:fa965c1fd0f17153f608037e109e62104058bc1d08d44849867795fd306fa8b8"

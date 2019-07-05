@@ -89,7 +89,7 @@ required = [
 
 [[constraint]]
   name = "github.com/buildpack/lifecycle"
-  version = "0.2.1"
+  version = "0.3.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
