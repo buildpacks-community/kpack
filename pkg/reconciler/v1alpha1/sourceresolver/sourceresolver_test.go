@@ -35,6 +35,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 	k8sFakeClient := k8sfake.NewSimpleClientset()
 
 	fakeGitResolver := &sourceresolverfakes.FakeGitResolver{}
+	fakeEnqueuer := &sourceresolverfakes.FakeEnqueuer{}
 
 	reconciler := testhelpers.RebuildingReconciler(func() knCtrl.Reconciler {
 		informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
@@ -47,6 +48,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				Client:               fakeClient,
 				GitResolver:          fakeGitResolver,
 				SourceResolverLister: sourceResolverInformer.Lister(),
+				Enqueuer:             fakeEnqueuer,
 			},
 			sourceResolverInformer.Informer().HasSynced,
 		)
@@ -152,6 +154,13 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				assert.True(t, resolver.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue())
 				assert.True(t, resolver.Status.GetCondition(v1alpha1.ActivePolling).IsFalse())
 			})
+
+			it("does not enqueue subsequent processing", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				require.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
+			})
 		})
 
 		when("a branch is the source", func() {
@@ -174,6 +183,23 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.True(t, resolver.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue())
 				assert.True(t, resolver.Status.GetCondition(v1alpha1.ActivePolling).IsTrue())
+			})
+
+			it("enqueues source resolvers for subsequent processing", func() {
+				fakeGitResolver.ResolveReturns(v1alpha1.ResolvedGitSource{
+					URL:      "https://github.com/build-me",
+					Revision: "1234",
+					Type:     v1alpha1.Branch,
+				}, nil)
+
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				require.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
+				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
+				require.NoError(t, err)
+
+				require.Equal(t, resolver, fakeEnqueuer.EnqueueArgsForCall(0))
 			})
 		})
 

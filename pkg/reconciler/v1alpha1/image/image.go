@@ -9,6 +9,7 @@ import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/tracker"
+	perrors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -297,7 +298,7 @@ func (c *Reconciler) fetchLastBuild(image *v1alpha1.Image) (*v1alpha1.Build, err
 
 	builds, err := c.BuildLister.Builds(image.Namespace).List(labels.NewSelector().Add(*currentBuildNumberReq).Add(*imageNameReq))
 	if err != nil {
-		return nil, fmt.Errorf("list builds: %s", err)
+		return nil, perrors.WithStack(err)
 	}
 
 	if len(builds) == 0 {

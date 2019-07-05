@@ -26,22 +26,33 @@ type GitResolver interface {
 
 func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1informers.SourceResolverInformer, gitResolver GitResolver, gitKeychain git.GitKeychain) *controller.Impl {
 	c := &Reconciler{
-		Client:               opt.Client,
-		SourceResolverLister: sourceResolverInformer.Lister(),
 		GitResolver:          gitResolver,
 		GitKeychain:          gitKeychain,
+		Client:               opt.Client,
+		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+
+	c.Enqueuer = &workQueueEnqueuer{
+		enqueueAfter: impl.EnqueueAfter,
+		delay:        opt.PollingFrequency,
+	}
 
 	sourceResolverInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	return impl
 }
 
+//go:generate counterfeiter . Enqueuer
+type Enqueuer interface {
+	Enqueue(*v1alpha1.SourceResolver) error
+}
+
 type Reconciler struct {
 	GitResolver GitResolver
 	GitKeychain git.GitKeychain
+	Enqueuer    Enqueuer
 
 	Client               versioned.Interface
 	SourceResolverLister v1alpha1listers.SourceResolverLister
@@ -73,6 +84,13 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	sourceResolver.ResolvedGitSource(resolvedGitSource)
 	sourceResolver.Status.ObservedGeneration = sourceResolver.Generation
+
+	if sourceResolver.PollingReady() {
+		err := c.Enqueuer.Enqueue(sourceResolver)
+		if err != nil {
+			return err
+		}
+	}
 
 	return c.updateStatus(sourceResolver)
 }
