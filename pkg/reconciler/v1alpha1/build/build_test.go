@@ -151,6 +151,24 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name:tag3")
 			})
 
+			it("creates a knative build with analyzed path on analyze", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+				assert.Contains(t, knbuild.Spec.Steps[3].Args, "-analyzed=/layers/analyzed.toml")
+			})
+
+			it("creates a knative build with analyzed path on export", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+				assert.Contains(t, knbuild.Spec.Steps[5].Args, "-analyzed=/layers/analyzed.toml")
+			})
+
 			it("creates a knative build with only one image name on the export step", func() {
 				build.Spec.AdditionalImageNames = nil
 				_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(build)

@@ -205,6 +205,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 						"-layers=/layers",
 						"-helpers=false",
 						"-group=/layers/group.toml",
+						"-analyzed=/layers/analyzed.toml",
 						build.Spec.Image,
 					},
 					VolumeMounts: []corev1.VolumeMount{
@@ -290,6 +291,7 @@ func buildExporterArgs(build *v1alpha1.Build) []string {
 		"-helpers=false",
 		"-app=/workspace",
 		"-group=/layers/group.toml",
+		"-analyzed=/layers/analyzed.toml",
 		build.Spec.Image,}
 	args = append(args, build.Spec.AdditionalImageNames...)
 	return args
