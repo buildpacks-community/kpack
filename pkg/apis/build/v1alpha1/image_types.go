@@ -43,6 +43,7 @@ type ImageSpec struct {
 	FailedBuildHistoryLimit     *int64             `json:"failedBuildHistoryLimit"`
 	SuccessBuildHistoryLimit    *int64             `json:"successBuildHistoryLimit"`
 	DisableAdditionalImageNames bool               `json:"disableAdditionalImageNames"`
+	EnvVars                     map[string]string  `json:"envVars"`
 }
 
 type ImageStatus struct {

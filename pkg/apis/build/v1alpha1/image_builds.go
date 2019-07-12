@@ -71,6 +71,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build 
 		Spec: BuildSpec{
 			Image:          im.Spec.Image,
 			Builder:        builder.Spec.Image,
+			EnvVars:        im.Spec.EnvVars,
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source: Source{
 				Git: Git{

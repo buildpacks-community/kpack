@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"encoding/json"
 
 	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
@@ -117,7 +118,13 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*knv1alpha1.Build, error) {
 	const cacheDirName = "empty-dir"
 	const layersDirName = "layers-dir"
+	const platformDir = "platform-dir"
 	var root int64 = 0
+	buf, err := json.Marshal(build.Spec.EnvVars)
+	if err != nil {
+		return nil, err
+	}
+	envVars := string(buf)
 	return c.KNClient.BuildV1alpha1().Builds(namespace).Create(&knv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: build.Name,
@@ -146,6 +153,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 							Name:  "BUILDER",
 							Value: build.Spec.Builder,
 						},
+						{
+							Name:  "PLATFORM_ENV_VARS",
+							Value: envVars,
+						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{
@@ -155,6 +166,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 						{
 							Name:      cacheDirName,
 							MountPath: "/cache",
+						},
+						{
+							Name:      platformDir,
+							MountPath: "/platform",
 						},
 					},
 					ImagePullPolicy: "Always",
@@ -172,6 +187,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 						{
 							Name:      layersDirName,
 							MountPath: "/layers",
+						},
+						{
+							Name:      platformDir,
+							MountPath: "/platform",
 						},
 					},
 					ImagePullPolicy: "Always",
@@ -231,6 +250,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 							Name:      layersDirName,
 							MountPath: "/layers",
 						},
+						{
+							Name:      platformDir,
+							MountPath: "/platform",
+						},
 					},
 					ImagePullPolicy: "Always",
 				},
@@ -276,6 +299,12 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 				},
 				{
 					Name: layersDirName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				{
+					Name: platformDir,
 					VolumeSource: corev1.VolumeSource{
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},

@@ -82,6 +82,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Image:          "someimage/name",
 			ServiceAccount: "someserviceaccount",
 			Builder:        "somebuilder/123",
+			EnvVars: map[string]string{
+				"keyA": "valueA",
+				"keyB": "valueB",
+			},
 			Source: v1alpha1.Source{
 				Git: v1alpha1.Git{
 					URL:      "giturl.com/git.git",
@@ -124,7 +128,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Nil(t, knbuild.Spec.Template)
 				require.Len(t, knbuild.Spec.Steps, 7)
 				assert.Equal(t, knbuild.Spec.Steps[0].Image, "some/build-init-image")
-				assert.Len(t, knbuild.Spec.Steps[0].Env, 1)
+				assert.Len(t, knbuild.Spec.Steps[0].Env, 2)
 				assert.Equal(t, knbuild.Spec.Steps[0].Env[0], corev1.EnvVar{
 					Name:  "BUILDER",
 					Value: "somebuilder/123",
@@ -134,7 +138,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, *knbuild.Spec.Steps[0].SecurityContext.RunAsGroup, root)
 				assert.Equal(t, knbuild.Spec.Steps[1].Image, "somebuilder/123")
 				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
-				require.Len(t, knbuild.Spec.Volumes, 2)
+				require.Len(t, knbuild.Spec.Volumes, 3)
 				assert.Equal(t, corev1.VolumeSource{
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
 				}, knbuild.Spec.Volumes[0].VolumeSource)
@@ -193,10 +197,39 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
 				require.NoError(t, err)
 
-				require.Len(t, knbuild.Spec.Volumes, 2)
+				require.Len(t, knbuild.Spec.Volumes, 3)
 				assert.Equal(t, corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{},
 				}, knbuild.Spec.Volumes[0].VolumeSource)
+			})
+
+			it("passes through build time env vars and platform volume", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+
+				require.Len(t, knbuild.Spec.Steps[0].Env, 2)
+				assert.JSONEq(t, `{"keyA": "valueA", "keyB": "valueB"}`, knbuild.Spec.Steps[0].Env[1].Value)
+
+				// init
+				require.Len(t, knbuild.Spec.Steps[0].VolumeMounts, 3)
+				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].Name, "platform-dir")
+				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].MountPath, "/platform")
+
+				// detect
+				require.Len(t, knbuild.Spec.Steps[1].VolumeMounts, 2)
+				assert.Equal(t, knbuild.Spec.Steps[1].VolumeMounts[1].Name, "platform-dir")
+				assert.Equal(t, knbuild.Spec.Steps[1].VolumeMounts[1].MountPath, "/platform")
+
+				// build
+				require.Len(t, knbuild.Spec.Steps[4].VolumeMounts, 2)
+				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].Name, "platform-dir")
+				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].MountPath, "/platform")
+				
+				require.Len(t, knbuild.Spec.Volumes, 3)
+				assert.Equal(t, knbuild.Spec.Volumes[2].Name, "platform-dir")
 			})
 		})
 
