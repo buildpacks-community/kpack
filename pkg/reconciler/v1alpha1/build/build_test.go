@@ -82,9 +82,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Image:          "someimage/name",
 			ServiceAccount: "someserviceaccount",
 			Builder:        "somebuilder/123",
-			EnvVars: map[string]string{
-				"keyA": "valueA",
-				"keyB": "valueB",
+			Env: []corev1.EnvVar{
+				{Name: "keyA", Value: "valueA"},
+				{Name: "keyB", Value: "valueB"},
 			},
 			Source: v1alpha1.Source{
 				Git: v1alpha1.Git{
@@ -211,7 +211,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				require.Len(t, knbuild.Spec.Steps[0].Env, 2)
-				assert.JSONEq(t, `{"keyA": "valueA", "keyB": "valueB"}`, knbuild.Spec.Steps[0].Env[1].Value)
+				assert.JSONEq(t, `[{"name": "keyA", "value": "valueA"}, {"name": "keyB", "value": "valueB"}]`, knbuild.Spec.Steps[0].Env[1].Value)
 
 				// init
 				require.Len(t, knbuild.Spec.Steps[0].VolumeMounts, 3)
@@ -227,7 +227,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.Len(t, knbuild.Spec.Steps[4].VolumeMounts, 2)
 				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].Name, "platform-dir")
 				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].MountPath, "/platform")
-				
+
 				require.Len(t, knbuild.Spec.Volumes, 3)
 				assert.Equal(t, knbuild.Spec.Volumes[2].Name, "platform-dir")
 			})

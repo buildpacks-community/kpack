@@ -120,7 +120,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 	const layersDirName = "layers-dir"
 	const platformDir = "platform-dir"
 	var root int64 = 0
-	buf, err := json.Marshal(build.Spec.EnvVars)
+	buf, err := json.Marshal(build.Spec.Env)
 	if err != nil {
 		return nil, err
 	}

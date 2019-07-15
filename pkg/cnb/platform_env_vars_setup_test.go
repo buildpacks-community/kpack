@@ -32,7 +32,7 @@ func testPlatformEnvVarsSetup(t *testing.T, when spec.G, it spec.S) {
 
 	when("#setup", func() {
 		it("writes all env var files to the platform dir", func() {
-			err := cnb.SetupPlatformEnvVars(testVolume, `{"keyA": "valueA", "keyB": "valueB", "keyC": "valueC"}`)
+			err := cnb.SetupPlatformEnvVars(testVolume, `[{"name": "keyA", "value": "valueA"}, {"name": "keyB", "value": "valueB"}, {"name": "keyC", "value": "valueC"}]`)
 			require.NoError(t, err)
 
 			checkEnvVar(t, testVolume, "keyA", "valueA")

@@ -8,7 +8,7 @@ import (
 )
 
 func SetupPlatformEnvVars(dir, envVarsJSON string) error {
-	var envVars map[string]string
+	var envVars []envVariable
 	err := json.Unmarshal([]byte(envVarsJSON), &envVars)
 	if err != nil {
 		return err
@@ -18,12 +18,17 @@ func SetupPlatformEnvVars(dir, envVarsJSON string) error {
 	if err != nil {
 		return err
 	}
-	
-	for key, value := range envVars {
-		err = ioutil.WriteFile(path.Join(folder, key), []byte(value), os.ModePerm)
+
+	for _, envVar := range envVars {
+		err = ioutil.WriteFile(path.Join(folder, envVar.Name), []byte(envVar.Value), os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+type envVariable struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
