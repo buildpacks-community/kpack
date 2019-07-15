@@ -25,6 +25,18 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Image:          "some/image",
 			ServiceAccount: "some/service-account",
 			BuilderRef:     "some/builder",
+			Build: v1alpha1.ImageBuild{
+				Env: []v1.EnvVar{
+					{
+						Name:  "keyA",
+						Value: "ValueA",
+					},
+					{
+						Name:  "keyB",
+						Value: "ValueB",
+					},
+				},
+			},
 		},
 	}
 
@@ -226,6 +238,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
+		})
+
+		it("adds the env vars to the build spec", func() {
+			build := image.Build(sourceResolver, builder)
+
+			assert.Equal(t, image.Spec.Build.Env, build.Spec.Env)
 		})
 	})
 }

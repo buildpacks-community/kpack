@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,6 +44,11 @@ type ImageSpec struct {
 	FailedBuildHistoryLimit     *int64             `json:"failedBuildHistoryLimit"`
 	SuccessBuildHistoryLimit    *int64             `json:"successBuildHistoryLimit"`
 	DisableAdditionalImageNames bool               `json:"disableAdditionalImageNames"`
+	Build                       ImageBuild         `json:"build"`
+}
+
+type ImageBuild struct {
+	Env []corev1.EnvVar `json:"env"`
 }
 
 type ImageStatus struct {

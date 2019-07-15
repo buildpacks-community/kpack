@@ -20,6 +20,7 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -42,12 +43,13 @@ var (
 )
 
 type BuildSpec struct {
-	Image                string   `json:"image"`
-	Builder              string   `json:"builder"`
-	ServiceAccount       string   `json:"serviceAccount"`
-	Source               Source   `json:"source"`
-	CacheName            string   `json:"cacheName"`
-	AdditionalImageNames []string `json:"additionalImageNames"`
+	Image                string          `json:"image"`
+	Builder              string          `json:"builder"`
+	ServiceAccount       string          `json:"serviceAccount"`
+	Source               Source          `json:"source"`
+	CacheName            string          `json:"cacheName"`
+	AdditionalImageNames []string        `json:"additionalImageNames"`
+	Env                  []corev1.EnvVar `json:"env"`
 }
 
 type BuildStatus struct {
