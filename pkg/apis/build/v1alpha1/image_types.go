@@ -44,7 +44,11 @@ type ImageSpec struct {
 	FailedBuildHistoryLimit     *int64             `json:"failedBuildHistoryLimit"`
 	SuccessBuildHistoryLimit    *int64             `json:"successBuildHistoryLimit"`
 	DisableAdditionalImageNames bool               `json:"disableAdditionalImageNames"`
-	Env                         []corev1.EnvVar    `json:env`
+	Build                       ImageBuild         `json:"build"`
+}
+
+type ImageBuild struct {
+	Env []corev1.EnvVar `json:"env"`
 }
 
 type ImageStatus struct {

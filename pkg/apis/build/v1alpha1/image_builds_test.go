@@ -25,14 +25,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Image:          "some/image",
 			ServiceAccount: "some/service-account",
 			BuilderRef:     "some/builder",
-			Env: []v1.EnvVar {
-				{
-					Name: "keyA",
-					Value: "ValueA",
-				},
-				{
-					Name: "keyB",
-					Value: "ValueB",
+			Build: v1alpha1.ImageBuild{
+				Env: []v1.EnvVar{
+					{
+						Name:  "keyA",
+						Value: "ValueA",
+					},
+					{
+						Name:  "keyB",
+						Value: "ValueB",
+					},
 				},
 			},
 		},
@@ -241,7 +243,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("adds the env vars to the build spec", func() {
 			build := image.Build(sourceResolver, builder)
 
-			assert.Equal(t, image.Spec.Env, build.Spec.Env)
+			assert.Equal(t, image.Spec.Build.Env, build.Spec.Env)
 		})
 	})
 }
