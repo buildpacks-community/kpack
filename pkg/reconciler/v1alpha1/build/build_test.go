@@ -77,6 +77,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	build := &v1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
 			Name: buildName,
+			Labels: map[string]string{
+				"some/label": "to-pass-through",
+			},
 		},
 		Spec: v1alpha1.BuildSpec{
 			Image:          "someimage/name",
@@ -116,6 +119,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Namespace: namespace,
 					OwnerReferences: []v1.OwnerReference{
 						*kmeta.NewControllerRef(build),
+					},
+					Labels: map[string]string{
+						"some/label": "to-pass-through",
 					},
 				})
 				assert.Equal(t, knbuild.Spec.ServiceAccountName, "someserviceaccount")
