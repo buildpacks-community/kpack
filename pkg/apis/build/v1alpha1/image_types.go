@@ -54,7 +54,7 @@ type ImageBuild struct {
 type ImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	LastBuildRef        string `json:"lastBuildRef"`
-	BuildCounter        int32  `json:"buildCounter"`
+	BuildCounter        int64  `json:"buildCounter"`
 	BuildCacheName      string `json:"buildCacheName"`
 }
 
@@ -69,13 +69,4 @@ type ImageList struct {
 
 func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Image")
-}
-
-func (im *Image) CacheName() string {
-	name := im.Name + "-cache"
-	if len(name) > 64 {
-		return name[len(name)-64:]
-	}
-
-	return name
 }

@@ -321,7 +321,7 @@ func buildExporterArgs(build *v1alpha1.Build) []string {
 		"-app=/workspace",
 		"-group=/layers/group.toml",
 		"-analyzed=/layers/analyzed.toml",
-		build.Spec.Image,}
+		build.Spec.Image}
 	args = append(args, build.Spec.AdditionalImageNames...)
 	return args
 }

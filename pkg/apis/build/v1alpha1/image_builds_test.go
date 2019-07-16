@@ -194,7 +194,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			build := image.Build(sourceResolver, builder)
 
-			assert.Contains(t, build.Name, "imageName-build-1-")
+			assert.Contains(t, build.GenerateName, "imageName-build-1-")
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
 			assert.Contains(t, build.Spec.Source.Git.Revision, "revision")
 		})
