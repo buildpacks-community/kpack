@@ -68,7 +68,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if err != nil {
 		return err
 	}
-	builder.DeepCopy()
+	builder = builder.DeepCopy()
 
 	metadata, err := c.MetadataRetriever.GetBuilderBuildpacks(registry.NewNoAuthImageRef(builder.Spec.Image))
 	if err != nil {
