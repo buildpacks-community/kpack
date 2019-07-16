@@ -185,12 +185,13 @@ func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.S
 		}
 	}
 
-	if equality.Semantic.DeepEqual(desiredSourceResolver.Spec, sourceResolver.Spec) {
+	if sourceResolversEqual(desiredSourceResolver, sourceResolver) {
 		return sourceResolver, nil
 	}
 
 	sourceResolver = sourceResolver.DeepCopy()
 	sourceResolver.Spec = desiredSourceResolver.Spec
+	sourceResolver.Labels = desiredSourceResolver.Labels
 	return c.Client.BuildV1alpha1().SourceResolvers(image.Namespace).Update(sourceResolver)
 }
 
@@ -220,7 +221,7 @@ func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (*corev1.Persist
 		}
 	}
 
-	if equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) {
+	if buildCacheEqual(desiredBuildCache, buildCache) {
 		return buildCache, nil
 	}
 
@@ -300,4 +301,14 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Image) error {
 
 	_, err = c.Client.BuildV1alpha1().Images(desired.Namespace).UpdateStatus(desired)
 	return err
+}
+
+func sourceResolversEqual(desiredSourceResolver *v1alpha1.SourceResolver, sourceResolver *v1alpha1.SourceResolver) bool {
+	return equality.Semantic.DeepEqual(desiredSourceResolver.Spec, sourceResolver.Spec) &&
+		equality.Semantic.DeepEqual(desiredSourceResolver.Labels, sourceResolver.Labels)
+}
+
+func buildCacheEqual(desiredBuildCache *corev1.PersistentVolumeClaim, buildCache *corev1.PersistentVolumeClaim) bool {
+	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
+		equality.Semantic.DeepEqual(desiredBuildCache.Labels, buildCache.Labels)
 }

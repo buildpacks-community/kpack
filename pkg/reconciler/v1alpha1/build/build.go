@@ -131,6 +131,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(build),
 			},
+			Labels: build.Labels,
 		},
 		Spec: knv1alpha1.BuildSpec{
 			ServiceAccountName: build.Spec.ServiceAccount,

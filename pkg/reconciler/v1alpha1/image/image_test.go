@@ -34,12 +34,14 @@ func TestImageReconciler(t *testing.T) {
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	const (
-		imageName                = "image-name"
-		builderName              = "builder-name"
-		serviceAccount           = "service-account"
-		namespace                = "some-namespace"
-		key                      = "some-namespace/image-name"
-		originalGeneration int64 = 0
+		imageName                    = "image-name"
+		builderName                  = "builder-name"
+		serviceAccount               = "service-account"
+		namespace                    = "some-namespace"
+		key                          = "some-namespace/image-name"
+		someLabelKey                 = "some/label"
+		someValueToPassThrough       = "to-pass-through"
+		originalGeneration     int64 = 0
 	)
 	var (
 		fakeTracker = fakeTracker{}
@@ -76,6 +78,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      imageName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				someLabelKey: someValueToPassThrough,
+			},
 		},
 		Spec: v1alpha1.ImageSpec{
 			Image:          "some/image",
@@ -189,6 +194,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
+								Labels: map[string]string{
+									someLabelKey: someValueToPassThrough,
+								},
 							},
 							Spec: v1alpha1.SourceResolverSpec{
 								ServiceAccount: image.Spec.ServiceAccount,
@@ -221,6 +229,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      image.SourceResolverName(),
 								Namespace: namespace,
+								Labels: map[string]string{
+									someLabelKey: someValueToPassThrough,
+								},
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
 							},
 							Spec: v1alpha1.SourceResolverSpec{
 								ServiceAccount: "old-account",
@@ -240,6 +254,49 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: metav1.ObjectMeta{
 									Name:      image.SourceResolverName(),
 									Namespace: namespace,
+									Labels: map[string]string{
+										someLabelKey: someValueToPassThrough,
+									},
+									OwnerReferences: []metav1.OwnerReference{
+										*kmeta.NewControllerRef(image),
+									},
+								},
+								Spec: v1alpha1.SourceResolverSpec{
+									ServiceAccount: image.Spec.ServiceAccount,
+									Source:         image.Spec.Source,
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("updates source resolver if labels change", func() {
+				sourceResolver := image.SourceResolver()
+
+				extraLabelImage := image.DeepCopy()
+				extraLabelImage.Labels["another/label"] = "label"
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						extraLabelImage,
+						builder,
+						sourceResolver,
+					},
+					WantErr: false,
+					WantUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.SourceResolver{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      image.SourceResolverName(),
+									Namespace: namespace,
+									OwnerReferences: []metav1.OwnerReference{
+										*kmeta.NewControllerRef(image),
+									},
+									Labels: map[string]string{
+										someLabelKey:    someValueToPassThrough,
+										"another/label": "label",
+									},
 								},
 								Spec: v1alpha1.SourceResolverSpec{
 									ServiceAccount: image.Spec.ServiceAccount,
@@ -273,6 +330,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									someLabelKey: someValueToPassThrough,
 								},
 							},
 							Spec: corev1.PersistentVolumeClaimSpec{
@@ -337,6 +397,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: v1.ObjectMeta{
 								Name:      imageCacheName,
 								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
 							},
 							Spec: corev1.PersistentVolumeClaimSpec{
 								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -355,12 +418,63 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: v1.ObjectMeta{
 									Name:      imageCacheName,
 									Namespace: namespace,
+									Labels: map[string]string{
+										someLabelKey: someValueToPassThrough,
+									},
+									OwnerReferences: []metav1.OwnerReference{
+										*kmeta.NewControllerRef(image),
+									},
 								},
 								Spec: corev1.PersistentVolumeClaimSpec{
 									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 									Resources: corev1.ResourceRequirements{
 										Requests: corev1.ResourceList{
 											corev1.ResourceStorage: newCacheSize,
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("updates build cache if desired labels change", func() {
+				var imageCacheName = image.CacheName()
+				image.Spec.CacheSize = &cacheSize
+				image.Status.BuildCacheName = imageCacheName
+				cache := image.BuildCache()
+
+				extraLabelImage := image.DeepCopy()
+				extraLabelImage.Labels["another/label"] = "label"
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						extraLabelImage,
+						extraLabelImage.SourceResolver(),
+						builder,
+						cache,
+					},
+					WantErr: false,
+					WantUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &corev1.PersistentVolumeClaim{
+								ObjectMeta: v1.ObjectMeta{
+									Name: imageCacheName,
+									OwnerReferences: []metav1.OwnerReference{
+										*kmeta.NewControllerRef(image),
+									},
+									Namespace: namespace,
+									Labels: map[string]string{
+										someLabelKey:    someValueToPassThrough,
+										"another/label": "label",
+									},
+								},
+								Spec: corev1.PersistentVolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.ResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceStorage: cacheSize,
 										},
 									},
 								},
@@ -446,6 +560,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "1",
 									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -505,6 +620,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "1",
 									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -597,6 +713,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -694,6 +811,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -807,6 +925,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
