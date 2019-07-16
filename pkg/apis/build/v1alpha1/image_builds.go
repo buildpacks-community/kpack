@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/knative/pkg/kmeta"
-	"github.com/pborman/uuid"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -59,7 +58,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build 
 	nextBuildNumber := im.nextBuildNumber()
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: im.generateBuildName(),
+			GenerateName: im.generateBuildName(),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
@@ -83,6 +82,10 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build 
 			AdditionalImageNames: im.generateImageNames(nextBuildNumber),
 		},
 	}
+}
+
+func (im *Image) CacheName() string {
+	return kmeta.ChildName(im.Name, "-cache")
 }
 
 func (im *Image) NeedCache() bool {
@@ -116,7 +119,8 @@ func (im *Image) SourceResolverName() string {
 func (im *Image) SourceResolver() *SourceResolver {
 	return &SourceResolver{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: im.SourceResolverName(),
+			Name:      im.SourceResolverName(),
+			Namespace: im.Namespace,
 			OwnerReferences: []metav1.OwnerReference{ // untested. Test me please :)
 				*kmeta.NewControllerRef(im),
 			},
@@ -153,10 +157,5 @@ func (im *Image) generateImageNames(buildNumber string) []string {
 }
 
 func (im *Image) generateBuildName() string {
-	name := im.Name + "-build-" + im.nextBuildNumber() + "-" + uuid.New()
-	if len(name) > 64 {
-		return name[:63]
-	}
-
-	return name
+	return im.Name + "-build-" + im.nextBuildNumber() + "-"
 }

@@ -1,31 +1,29 @@
 package image_test
 
 import (
-	"context"
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
-	alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	knCtrl "github.com/knative/pkg/controller"
+	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmeta"
+	rtesting "github.com/knative/pkg/reconciler/testing"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/tools/cache"
+	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
-	v1build "github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
 )
 
@@ -34,41 +32,6 @@ func TestImageReconciler(t *testing.T) {
 }
 
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
-	fakeClient := fake.NewSimpleClientset(&v1alpha1.Image{}, &v1alpha1.Builder{})
-
-	k8sfakeClient := k8sfake.NewSimpleClientset(&corev1.PersistentVolumeClaim{})
-	k8sInformerFactory := informers.NewSharedInformerFactory(k8sfakeClient, time.Second)
-	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
-	pvcLister := pvcInformer.Lister()
-
-	fakeTracker := fakeTracker{}
-
-	reconciler := testhelpers.RebuildingReconciler(func() knCtrl.Reconciler {
-		informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
-		imageInformer := informerFactory.Build().V1alpha1().Images()
-		buildInformer := informerFactory.Build().V1alpha1().Builds()
-		builderInformer := informerFactory.Build().V1alpha1().Builders()
-		sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
-
-		return testhelpers.SyncWaitingReconciler(
-			informerFactory,
-			&image.Reconciler{
-				K8sClient:            k8sfakeClient,
-				Client:               fakeClient,
-				ImageLister:          imageInformer.Lister(),
-				BuildLister:          buildInformer.Lister(),
-				BuilderLister:        builderInformer.Lister(),
-				SourceResolverLister: sourceResolverInformer.Lister(),
-				PvcLister:            pvcLister,
-				Tracker:              fakeTracker,
-			},
-			imageInformer.Informer().HasSynced,
-			buildInformer.Informer().HasSynced,
-			builderInformer.Informer().HasSynced,
-			sourceResolverInformer.Informer().HasSynced,
-			pvcInformer.Informer().HasSynced,
-		)
-	})
 
 	const (
 		imageName                = "image-name"
@@ -76,19 +39,43 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		serviceAccount           = "service-account"
 		namespace                = "some-namespace"
 		key                      = "some-namespace/image-name"
-		originalGeneration int64 = 1
+		originalGeneration int64 = 0
 	)
 	var (
-		failedBuildHistoryLimit  int64 = 4
-		successBuildHistoryLimit int64 = 4
-		quantity                       = resource.MustParse("1.5")
+		fakeTracker = fakeTracker{}
 	)
+
+	rt := testhelpers.ReconcilerTester(t,
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+			listers := testhelpers.NewListers(row.Objects)
+
+			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
+			k8sfakeClient := k8sfake.NewSimpleClientset(listers.GetKubeObjects()...)
+
+			eventRecorder := record.NewFakeRecorder(10)
+			actionRecorderList := rtesting.ActionRecorderList{fakeClient, k8sfakeClient}
+			eventList := rtesting.EventList{Recorder: eventRecorder}
+
+			r := &image.Reconciler{
+				Client:               fakeClient,
+				ImageLister:          listers.GetImageLister(),
+				BuildLister:          listers.GetBuildLister(),
+				BuilderLister:        listers.GetBuilderLister(),
+				SourceResolverLister: listers.GetSourceResolverLister(),
+				PvcLister:            listers.GetPersistentVolumeClaimLister(),
+				Tracker:              fakeTracker,
+				K8sClient:            k8sfakeClient,
+			}
+
+			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
+
+			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
+		})
 
 	image := &v1alpha1.Image{
 		ObjectMeta: v1.ObjectMeta{
-			Name:       imageName,
-			Namespace:  namespace,
-			Generation: originalGeneration,
+			Name:      imageName,
+			Namespace: namespace,
 		},
 		Spec: v1alpha1.ImageSpec{
 			Image:          "some/image",
@@ -97,331 +84,514 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Source: v1alpha1.Source{
 				Git: v1alpha1.Git{
 					URL:      "https://some.git/url",
-					Revision: "revision",
+					Revision: "1234567",
 				},
 			},
-			CacheSize:                   &quantity,
-			FailedBuildHistoryLimit:     &failedBuildHistoryLimit,
-			SuccessBuildHistoryLimit:    &successBuildHistoryLimit,
 			DisableAdditionalImageNames: true,
 		},
-	}
-
-	stopChan := make(chan struct{})
-
-	defaultBuildMetadata := v1alpha1.BuildpackMetadataList{
-		{
-			ID:      "buildpack.version",
-			Version: "version",
+		Status: v1alpha1.ImageStatus{
+			Status: duckv1alpha1.Status{
+				ObservedGeneration: originalGeneration,
+			},
 		},
 	}
 
 	builder := &v1alpha1.Builder{
 		ObjectMeta: v1.ObjectMeta{
-			Name: builderName,
+			Name:      builderName,
+			Namespace: namespace,
 		},
 		Spec: v1alpha1.BuilderSpec{
 			Image: "some/builder@sha256acf123",
 		},
 		Status: v1alpha1.BuilderStatus{
-			BuilderMetadata: defaultBuildMetadata,
+			BuilderMetadata: v1alpha1.BuildpackMetadataList{
+				{
+					ID:      "buildpack.version",
+					Version: "version",
+				},
+			},
 		},
 	}
 
-	it.Before(func() {
-		k8sInformerFactory.Start(stopChan)
-		_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
-		require.NoError(t, err)
-	})
+	when("Reconcile", func() {
+		it("updates observed generation after processing an update", func() {
+			const updatedGeneration int64 = 1
+			image.ObjectMeta.Generation = updatedGeneration
 
-	it.After(func() {
-		close(stopChan)
-	})
-
-	when("#Reconcile", func() {
-		when("new image", func() {
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.NoError(t, err)
-			})
-
-			it("creates a source resolver for the image", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				list, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-
-				require.Len(t, list.Items, 1)
-
-				sourceResolver := list.Items[0]
-				require.Equal(t, sourceResolver.Spec, v1alpha1.SourceResolverSpec{
-					ServiceAccount: serviceAccount,
-					Source: v1alpha1.Source{
-						Git: v1alpha1.Git{
-							URL:      "https://some.git/url",
-							Revision: "revision",
-						},
-					},
-				})
-			})
-
-			it("updates the observed generation with the new spec", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
-			})
-
-			it("creates a cache for the build", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				_, err = k8sfakeClient.CoreV1().PersistentVolumeClaims(namespace).Get(image.CacheName(), v1.GetOptions{})
-				require.NoError(t, err)
-			})
-
-			it("tracks the builder", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				gvk := builder.GetGroupVersionKind()
-				isTracking := fakeTracker.IsTracking(corev1.ObjectReference{
-					APIVersion: gvk.GroupVersion().String(),
-					Kind:       gvk.Kind,
-					Namespace:  namespace,
-					Name:       builderName,
-				}, updatedImage)
-
-				assert.True(t, isTracking)
-			})
-
-			it("does not schedule builds until a source resolver has completed", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-				require.Len(t, build.Items, 0)
-			})
-		})
-
-		when("source has resolved for a new image", func() {
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolveImageSource(t, fakeClient, namespace)
-			})
-
-			it("creates an initial Build with a cache", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-				require.Equal(t, len(build.Items), 1)
-
-				buildName := build.Items[0].ObjectMeta.Name
-				assert.Equal(t, v1alpha1.Build{
-					TypeMeta: v1.TypeMeta{},
-					ObjectMeta: v1.ObjectMeta{
-						Name:      buildName,
-						Namespace: namespace,
-						OwnerReferences: []v1.OwnerReference{
-							*kmeta.NewControllerRef(image),
-						},
-						Labels: map[string]string{
-							v1alpha1.BuildNumberLabel: "1",
-							v1alpha1.ImageLabel:       imageName,
-						},
-					},
-					Spec: v1alpha1.BuildSpec{
-						Image:          "some/image",
-						Builder:        "some/builder@sha256acf123",
-						ServiceAccount: "service-account",
-						CacheName:      imageName + "-cache",
-						Source: v1alpha1.Source{
-							Git: v1alpha1.Git{
-								URL:      "https://some.git/url",
-								Revision: "revision",
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					image,
+					builder,
+					unresolvedSourceResolver(image),
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Image{
+							ObjectMeta: image.ObjectMeta,
+							Spec:       image.Spec,
+							Status: v1alpha1.ImageStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: updatedGeneration,
+								},
+								LastBuildRef:   "",
+								BuildCounter:   0,
+								BuildCacheName: "",
 							},
 						},
 					},
-				}, build.Items[0])
-				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Equal(t, updatedImage.Status.LastBuildRef, buildName)
-			})
-
-			it("updates the build count", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Equal(t, updatedImage.Status.BuildCounter, int32(1))
+				},
 			})
 		})
 
-		when("a build has already been created", func() {
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.NoError(t, err)
+		it("does not update status if there is no status update", func() {
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					image,
+					builder,
+					unresolvedSourceResolver(image),
+				},
+				WantErr: false,
+			})
+		})
 
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolveImageSource(t, fakeClient, namespace)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
+		it("tracks builder for image", func() {
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					image,
+					builder,
+					unresolvedSourceResolver(image),
+				},
+				WantErr: false,
 			})
 
-			when("a new spec is applied", func() {
-				const newGeneration int64 = 2
+			require.True(t, fakeTracker.IsTracking(builder.Ref(), image))
+		})
 
-				var newQuantity = resource.MustParse("2")
-
-				var updatedImage *v1alpha1.Image
-
-				it.Before(func() {
-					img, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					require.NoError(t, err)
-
-					updatedImage, err = fakeClient.BuildV1alpha1().Images(namespace).Update(&v1alpha1.Image{
-						ObjectMeta: v1.ObjectMeta{
-							Name:       imageName,
-							Generation: newGeneration,
-						},
-						Spec: v1alpha1.ImageSpec{
-							Image:          "different/image",
-							ServiceAccount: "different/service-account",
-							BuilderRef:     builderName,
-							Source: v1alpha1.Source{
-								Git: v1alpha1.Git{
-									URL:      "https://different.git/url",
-									Revision: "differentrevision",
+		when("reconciling source resolvers", func() {
+			it("creates a source resolver if not created", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.SourceResolver{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.SourceResolverName(),
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
 								},
 							},
-							CacheSize:                   &newQuantity,
-							FailedBuildHistoryLimit:     &failedBuildHistoryLimit,
-							SuccessBuildHistoryLimit:    &successBuildHistoryLimit,
-							DisableAdditionalImageNames: true,
-						},
-						Status: img.Status, // fake client overwrites status :(
-					})
-					require.NoError(t, err)
-				})
-
-				it("updates the image's source resolver", func() {
-					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
-					})
-
-					err := reconciler.Reconcile(context.TODO(), key)
-					require.NoError(t, err)
-
-					list, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).List(v1.ListOptions{})
-					require.NoError(t, err)
-					require.Len(t, list.Items, 1)
-
-					sourceResolver := list.Items[0]
-					require.Equal(t, sourceResolver.Spec, v1alpha1.SourceResolverSpec{
-						ServiceAccount: "different/service-account",
-						Source: v1alpha1.Source{
-							Git: v1alpha1.Git{
-								URL:      "https://different.git/url",
-								Revision: "differentrevision",
+							Spec: v1alpha1.SourceResolverSpec{
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source:         image.Spec.Source,
 							},
 						},
-					})
+					},
 				})
+			})
 
-				when("image source resolved", func() {
-					it.Before(func() {
-						sourceResolvers, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).List(v1.ListOptions{})
-						require.NoError(t, err)
-						require.Len(t, sourceResolvers.Items, 1)
-						resolver := sourceResolvers.Items[0]
+			it("does not create a source resolver if already created", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						image.SourceResolver(),
+					},
+					WantErr: false,
+				})
+			})
 
-						_, err = fakeClient.BuildV1alpha1().SourceResolvers(namespace).UpdateStatus(&v1alpha1.SourceResolver{
-							ObjectMeta: resolver.ObjectMeta,
-							Spec:       resolver.Spec, // fake client overwrites spec :(
-							Status: v1alpha1.SourceResolverStatus{
-								Status: alpha1.Status{
-									Conditions: alpha1.Conditions{
+			it("updates source resolver if configuration changed", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						&v1alpha1.SourceResolver{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.SourceResolverName(),
+								Namespace: namespace,
+							},
+							Spec: v1alpha1.SourceResolverSpec{
+								ServiceAccount: "old-account",
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      "old-url",
+										Revision: "old-revision",
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.SourceResolver{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      image.SourceResolverName(),
+									Namespace: namespace,
+								},
+								Spec: v1alpha1.SourceResolverSpec{
+									ServiceAccount: image.Spec.ServiceAccount,
+									Source:         image.Spec.Source,
+								},
+							},
+						},
+					},
+				})
+			})
+		})
+
+		when("reconciling build caches", func() {
+			cacheSize := resource.MustParse("1.5")
+
+			it("creates a cache if requested", func() {
+				image.Spec.CacheSize = &cacheSize
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						image.SourceResolver(),
+						builder,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&corev1.PersistentVolumeClaim{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.CacheName(),
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+							},
+							Spec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: cacheSize,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "",
+									BuildCounter:   0,
+									BuildCacheName: image.CacheName(),
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("does not create a cache if a cache already exists", func() {
+				image.Spec.CacheSize = &cacheSize
+				image.Status.BuildCacheName = image.CacheName()
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						image.SourceResolver(),
+						image.BuildCache(),
+						builder,
+					},
+					WantErr: false,
+				})
+			})
+
+			it("updates build cache if desired configuration changed", func() {
+				var imageCacheName = image.CacheName()
+
+				image.Status.BuildCacheName = imageCacheName
+				newCacheSize := resource.MustParse("2.5")
+				image.Spec.CacheSize = &newCacheSize
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						image.SourceResolver(),
+						builder,
+						&corev1.PersistentVolumeClaim{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      imageCacheName,
+								Namespace: namespace,
+							},
+							Spec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: cacheSize,
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &corev1.PersistentVolumeClaim{
+								ObjectMeta: v1.ObjectMeta{
+									Name:      imageCacheName,
+									Namespace: namespace,
+								},
+								Spec: corev1.PersistentVolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.ResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceStorage: newCacheSize,
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("deletes a cache if already exists and not requested", func() {
+				image.Status.BuildCacheName = image.CacheName()
+				image.Spec.CacheSize = nil
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image.SourceResolver(),
+						&corev1.PersistentVolumeClaim{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.CacheName(),
+								Namespace: image.Namespace,
+							},
+						},
+						image,
+						builder,
+					},
+					WantErr: false,
+					WantDeletes: []clientgotesting.DeleteActionImpl{
+						{
+							Name: image.CacheName(),
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "",
+									BuildCounter:   0,
+									BuildCacheName: "",
+								},
+							},
+						},
+					},
+				})
+			})
+		})
+
+		when("reconciling builds", func() {
+			it("does not schedule a build if the source resolver is not ready", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						unresolvedSourceResolver(image),
+					},
+					WantErr: false,
+				})
+			})
+
+			it("schedules a build if no build has been scheduled", func() {
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-1-",
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "image-name-build-1-00001", //GenerateNameReactor
+									BuildCounter:   1,
+									BuildCacheName: "",
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build with a desired build cache", func() {
+				cacheSize := resource.MustParse("2.5")
+				image.Spec.CacheSize = &cacheSize
+				image.Status.BuildCacheName = image.CacheName()
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						image.BuildCache(),
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-1-",
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+								CacheName: image.CacheName(),
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "image-name-build-1-00001", //GenerateNameReactor
+									BuildCounter:   1,
+									BuildCacheName: image.CacheName(),
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build if the previous build does not match source", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LastBuildRef = "image-name-build-100001"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-1-00001",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: "old-service-account",
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      "out-of-date-git-url",
+										Revision: "out-of-date-git-revision",
+									},
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionReady,
+											Type:   duckv1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
 								},
-								ResolvedSource: v1alpha1.ResolvedSource{
-									Git: v1alpha1.ResolvedGitSource{
-										URL:      updatedImage.Spec.Source.Git.URL,
-										Revision: updatedImage.Spec.Source.Git.Revision,
-										Type:     v1alpha1.Commit,
-									},
-								},
 							},
-						})
-						require.NoError(t, err)
-
-					})
-
-					it("does not create a build when a build is running", func() {
-						updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-							Type:   duckv1alpha1.ConditionSucceeded,
-							Status: corev1.ConditionUnknown,
-						})
-
-						err := reconciler.Reconcile(context.TODO(), key)
-						require.NoError(t, err)
-
-						builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, len(builds.Items), 1)
-
-						updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, updatedImage.Status.ObservedGeneration, originalGeneration)
-					})
-
-					it("does create a build when the last build is successful", func() {
-						updateStatusOfLastBuild(t, fakeClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
-							Type:   duckv1alpha1.ConditionSucceeded,
-							Status: corev1.ConditionTrue,
-						})
-
-						err := reconciler.Reconcile(context.TODO(), key)
-						require.NoError(t, err)
-
-						builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, 2, len(builds.Items))
-
-						updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, updatedImage.Status.ObservedGeneration, newGeneration)
-
-						newBuild, err := fakeClient.BuildV1alpha1().Builds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, newBuild, &v1alpha1.Build{
-							TypeMeta: v1.TypeMeta{},
-							ObjectMeta: v1.ObjectMeta{
-								Name:      updatedImage.Status.LastBuildRef,
-								Namespace: namespace,
-								OwnerReferences: []v1.OwnerReference{
+						},
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-2-",
+								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
@@ -430,416 +600,485 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Image:          "different/image",
-								ServiceAccount: "different/service-account",
-								Builder:        "some/builder@sha256acf123",
-								CacheName:      imageName + "-cache",
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: v1alpha1.Git{
-										URL:      "https://different.git/url",
-										Revision: "differentrevision",
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
 									},
 								},
 							},
-						})
-					})
-
-					it("does create a build when the last build is a failure", func() {
-						updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-							Type:   duckv1alpha1.ConditionSucceeded,
-							Status: corev1.ConditionFalse,
-						})
-
-						err := reconciler.Reconcile(context.TODO(), key)
-						require.NoError(t, err)
-
-						builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-						require.NoError(t, err)
-						assert.Equal(t, len(builds.Items), 2)
-					})
-
-					it("updates the image's volume cache", func() {
-						updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-							Type:   duckv1alpha1.ConditionSucceeded,
-							Status: corev1.ConditionTrue,
-						})
-
-						err := reconciler.Reconcile(context.TODO(), key)
-						require.NoError(t, err)
-
-						list, err := k8sfakeClient.CoreV1().PersistentVolumeClaims(namespace).List(v1.ListOptions{})
-						require.NoError(t, err)
-						require.Len(t, list.Items, 1)
-
-						sourceResolver := list.Items[0]
-						require.Equal(t, sourceResolver.Spec, corev1.PersistentVolumeClaimSpec{
-							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceStorage: newQuantity,
-								},
-							},
-						})
-					})
-				})
-
-			})
-
-			when("referenced builder has been updated", func() {
-				it.Before(func() {
-					_, err := fakeClient.BuildV1alpha1().Builders(namespace).Update(&v1alpha1.Builder{
-						ObjectMeta: v1.ObjectMeta{
-							Name: builderName,
 						},
-						Spec: v1alpha1.BuilderSpec{
-							Image: "some/builder@sha256:newsha",
-						},
-						Status: v1alpha1.BuilderStatus{
-							BuilderMetadata: []v1alpha1.BuildpackMetadata{
-								{
-									ID:      "new.buildpack",
-									Version: "version",
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
+									BuildCounter:   2,
+									BuildCacheName: "",
 								},
 							},
 						},
-					})
-					require.NoError(t, err)
-				})
-
-				it("does not create a build when a build is running", func() {
-					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionUnknown,
-					})
-
-					err := reconciler.Reconcile(context.TODO(), key)
-					require.NoError(t, err)
-
-					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					require.NoError(t, err)
-					assert.Equal(t, len(builds.Items), 1)
-				})
-
-				it("does create a build when the last build is no longer running", func() {
-					updateStatusOfLastBuild(t, fakeClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
-					})
-
-					err := reconciler.Reconcile(context.TODO(), key)
-					require.NoError(t, err)
-
-					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					require.NoError(t, err)
-					assert.Equal(t, len(builds.Items), 2)
-
-					updatedImage, err := fakeClient.BuildV1alpha1().Images(namespace).Get(imageName, v1.GetOptions{})
-					require.NoError(t, err)
-
-					newBuild, err := fakeClient.BuildV1alpha1().Builds(namespace).Get(updatedImage.Status.LastBuildRef, v1.GetOptions{})
-					require.NoError(t, err)
-					assert.Equal(t, newBuild, &v1alpha1.Build{
-						TypeMeta: v1.TypeMeta{},
-						ObjectMeta: v1.ObjectMeta{
-							Name:      updatedImage.Status.LastBuildRef,
-							Namespace: namespace,
-							OwnerReferences: []v1.OwnerReference{
-								*kmeta.NewControllerRef(image),
-							},
-							Labels: map[string]string{
-								v1alpha1.BuildNumberLabel: "2",
-								v1alpha1.ImageLabel:       imageName,
-							},
-						},
-						Spec: v1alpha1.BuildSpec{
-							Image:          "some/image",
-							Builder:        "some/builder@sha256:newsha",
-							ServiceAccount: "service-account",
-							CacheName:      imageName + "-cache",
-							Source: v1alpha1.Source{
-								Git: v1alpha1.Git{
-									URL:      "https://some.git/url",
-									Revision: "revision",
-								},
-							},
-						},
-					})
-				})
-			})
-
-			when("no new spec has been applied", func() {
-				it("does not create a new build when last build is running", func() {
-					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionUnknown,
-					})
-
-					err := reconciler.Reconcile(context.TODO(), key)
-					require.NoError(t, err)
-
-					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					require.NoError(t, err)
-					assert.Equal(t, len(builds.Items), 1)
-				})
-
-				it("does not create a build when the last build is no longer running", func() {
-					updateStatusOfLastBuild(t, fakeClient, namespace, defaultBuildMetadata, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
-					})
-
-					err := reconciler.Reconcile(context.TODO(), key)
-					require.NoError(t, err)
-
-					builds, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-					require.NoError(t, err)
-					assert.Equal(t, len(builds.Items), 1)
-				})
-			})
-
-		})
-
-		when("an image status is not up to date", func() {
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.NoError(t, err)
-			})
-
-			it("does not create duplicate builds", func() {
-				_, err := fakeClient.BuildV1alpha1().Builds(namespace).Create(&v1alpha1.Build{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "gotprocessed-beforeimage-saved",
-						Labels: map[string]string{
-							v1alpha1.BuildNumberLabel: "1",
-							v1alpha1.ImageLabel:       imageName,
-						},
 					},
-					Spec:   v1alpha1.BuildSpec{},
-					Status: v1alpha1.BuildStatus{},
 				})
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				assert.Error(t, err, fmt.Sprintf("warning: image %s status not up to date", imageName))
-
-				build, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, len(build.Items), 1)
-			})
-		})
-
-		when("failed builds have exceeded the failedHistoryLimit", func() {
-			var firstBuild *v1alpha1.Build
-
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.Nil(t, err)
-
-				for i := int64(0); i < failedBuildHistoryLimit+1; i++ {
-					build := image.Build(resolvedSourceResolverForImage(image), builder)
-					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
-					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
-					require.Nil(t, err)
-
-					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionFalse,
-					})
-					if firstBuild == nil {
-						firstBuild = build
-					}
-					image.Status.BuildCounter++
-					image.Status.LastBuildRef = build.Name
-					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
-					require.NoError(t, err)
-				}
 			})
 
-			it("removes failed builds over the limit", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
+			it("schedules a build when source resolver is updated", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LastBuildRef = "image-name-build-1-00001"
 
-				buildList, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-
-				require.Len(t, buildList.Items, int(failedBuildHistoryLimit))
-
-				_, err = fakeClient.BuildV1alpha1().Builds(namespace).Get(firstBuild.Name, v1.GetOptions{})
-				require.Error(t, err, "not found")
-			})
-
-		})
-
-		when("success builds have exceeded the successHistoryLimit", func() {
-			var firstBuild *v1alpha1.Build
-			it.Before(func() {
-				_, err := fakeClient.BuildV1alpha1().Images(namespace).Create(image)
-				require.Nil(t, err)
-
-				for i := int64(0); i < successBuildHistoryLimit+1; i++ {
-					build := image.Build(resolvedSourceResolverForImage(image), builder)
-					build.ObjectMeta.CreationTimestamp = v1.NewTime(time.Now().Add(time.Duration(i) * time.Minute))
-					_, err = fakeClient.BuildV1alpha1().Builds(namespace).Create(build)
-					require.Nil(t, err)
-
-					if firstBuild == nil {
-						firstBuild = build
-					}
-
-					updateStatusOfLastBuild(t, fakeClient, namespace, nil, duckv1alpha1.Condition{
-						Type:   duckv1alpha1.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
-					})
-
-					image.Status.BuildCounter++
-					image.Status.LastBuildRef = build.Name
-					_, err = fakeClient.BuildV1alpha1().Images(namespace).UpdateStatus(image)
-					require.NoError(t, err)
-				}
-			})
-
-			it("removes success builds over the limit", func() {
-
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				buildList, err := fakeClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-				require.NoError(t, err)
-
-				require.Len(t, buildList.Items, int(successBuildHistoryLimit))
-
-				_, err = fakeClient.BuildV1alpha1().Builds(namespace).Get(firstBuild.Name, v1.GetOptions{})
-				require.Error(t, err, "not found")
-			})
-		})
-
-		it("does not return error on nonexistent image", func() {
-			err := reconciler.Reconcile(context.TODO(), "not/found")
-			require.NoError(t, err)
-		})
-
-	})
-}
-
-func resolveImageSource(t *testing.T, fakeClient *fake.Clientset, namespace string) {
-	sourceResolvers, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).List(v1.ListOptions{})
-	require.NoError(t, err)
-	require.Len(t, sourceResolvers.Items, 1)
-	resolver := sourceResolvers.Items[0]
-
-	_, err = fakeClient.BuildV1alpha1().SourceResolvers(namespace).UpdateStatus(&v1alpha1.SourceResolver{
-		ObjectMeta: resolver.ObjectMeta,
-		Spec:       resolver.Spec, // fake client overwrites spec :(
-		Status: v1alpha1.SourceResolverStatus{
-			Status: alpha1.Status{
-				Conditions: alpha1.Conditions{
-					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				},
-			},
-			ResolvedSource: v1alpha1.ResolvedSource{
-				Git: v1alpha1.ResolvedGitSource{
-					URL:      resolver.Spec.Source.Git.URL,
-					Revision: resolver.Spec.Source.Git.Revision,
-					Type:     v1alpha1.Commit,
-				},
-			},
-		},
-	})
-	require.NoError(t, err)
-}
-
-func updateStatusOfLastBuild(t *testing.T, fakeImageClient *fake.Clientset, namespace string, buildMetadata v1alpha1.BuildpackMetadataList, condition duckv1alpha1.Condition) v1alpha1.Build {
-	build, err := fakeImageClient.BuildV1alpha1().Builds(namespace).List(v1.ListOptions{})
-	require.NoError(t, err)
-	var itemList []*v1alpha1.Build
-	for _, value := range build.Items {
-		itemList = append(itemList, &value)
-	}
-	require.NotEmpty(t, itemList)
-	sort.Sort(v1build.ByCreationTimestamp(itemList))
-
-	lastBuild := itemList[len(itemList)-1]
-	_, err = fakeImageClient.BuildV1alpha1().Builds(namespace).UpdateStatus(&v1alpha1.Build{
-		ObjectMeta: lastBuild.ObjectMeta,
-		Spec:       lastBuild.Spec, // fake client overwrites spec :(
-		Status: v1alpha1.BuildStatus{
-			Status: alpha1.Status{
-				Conditions: alpha1.Conditions{
-					condition,
-				},
-			},
-			BuildMetadata: buildMetadata,
-		},
-	})
-	require.NoError(t, err)
-	return *lastBuild
-}
-
-func resolvedSourceResolverForImage(image *v1alpha1.Image) *v1alpha1.SourceResolver {
-	return &v1alpha1.SourceResolver{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "some--name",
-		},
-		Spec: v1alpha1.SourceResolverSpec{
-			ServiceAccount: image.Spec.ServiceAccount,
-			Source:         image.Spec.Source,
-		},
-		Status: v1alpha1.SourceResolverStatus{
-			Status: alpha1.Status{
-				Conditions: alpha1.Conditions{
-					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				},
-			},
-			ResolvedSource: v1alpha1.ResolvedSource{
-				Git: v1alpha1.ResolvedGitSource{
+				sourceResolver := image.SourceResolver()
+				sourceResolver.ResolvedGitSource(v1alpha1.ResolvedGitSource{
 					URL:      image.Spec.Source.Git.URL,
-					Revision: image.Spec.Source.Git.Revision,
-					Type:     v1alpha1.Commit,
+					Revision: "new-commit",
+					Type:     v1alpha1.Branch,
+				})
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-1-00001",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      image.Spec.Source.Git.URL,
+										Revision: image.Spec.Source.Git.Revision,
+									},
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-2-",
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "2",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
+									BuildCounter:   2,
+									BuildCacheName: "",
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build when the builder buildpacks are updated", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LastBuildRef = "image-name-build-1-00001"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						&v1alpha1.Builder{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      builderName,
+								Namespace: namespace,
+							},
+							Spec: v1alpha1.BuilderSpec{
+								Image: "some/builder@sha256acf123",
+							},
+							Status: v1alpha1.BuilderStatus{
+								BuilderMetadata: v1alpha1.BuildpackMetadataList{
+									{
+										ID:      "io.buildpack",
+										Version: "newversion",
+									},
+								},
+							},
+						},
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-1-00001",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								BuildMetadata: v1alpha1.BuildpackMetadataList{
+									{
+										ID:      "io.buildpack",
+										Version: "oldversion",
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-2-",
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "2",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+									},
+									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
+									BuildCounter:   2,
+									BuildCacheName: "",
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("does not schedule a build if the previous build is running", func() {
+				image.Generation = 2
+				image.Status.BuildCounter = 1
+				image.Status.LastBuildRef = "image-name-build-1"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-100001",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: "old-service-account",
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      "out-of-date-git-url",
+										Revision: "out-of-date-git-revision",
+									},
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionUnknown,
+										},
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+				})
+			})
+
+			it("does not schedule a build if the previous build spec matches the current desired spec", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LastBuildRef = "image-name-build-1"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.Status.LastBuildRef,
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Image:          image.Spec.Image,
+								Builder:        builder.Spec.Image,
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.Source{
+									Git: v1alpha1.Git{
+										URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+										Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+									},
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+				})
+			})
+
+			when("reconciling old builds", func() {
+
+				it("deletes a failed build if more than the limit", func() {
+					image.Spec.FailedBuildHistoryLimit = limit(4)
+					image.Status.LastBuildRef = "image-name-build-5"
+					image.Status.BuildCounter = 5
+					sourceResolver := resolvedSourceResolver(image)
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: runtimeObjects(
+							failedBuilds(image, sourceResolver, 5),
+							image,
+							builder,
+							sourceResolver,
+						),
+						WantErr: false,
+						WantDeletes: []clientgotesting.DeleteActionImpl{
+							{
+								ActionImpl: clientgotesting.ActionImpl{
+									Namespace:   "blah",
+									Verb:        "",
+									Resource:    schema.GroupVersionResource{},
+									Subresource: "",
+								},
+								Name: image.Name + "-build-1", //first-build
+							},
+						},
+					})
+				})
+
+				it("deletes a successful build if more than the limit", func() {
+					image.Spec.SuccessBuildHistoryLimit = limit(4)
+					image.Status.LastBuildRef = "image-name-build-5"
+					image.Status.BuildCounter = 5
+					sourceResolver := resolvedSourceResolver(image)
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: runtimeObjects(
+							successfulBuilds(image, sourceResolver, 5),
+							image,
+							builder,
+							sourceResolver,
+						),
+						WantErr: false,
+						WantDeletes: []clientgotesting.DeleteActionImpl{
+							{
+								ActionImpl: clientgotesting.ActionImpl{
+									Namespace:   "blah",
+									Verb:        "",
+									Resource:    schema.GroupVersionResource{},
+									Subresource: "",
+								},
+								Name: image.Name + "-build-1", //first-build
+							},
+						},
+					})
+				})
+			})
+		})
+	})
+}
+
+func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
+	sr := image.SourceResolver()
+	sr.ResolvedGitSource(v1alpha1.ResolvedGitSource{
+		URL:      image.Spec.Source.Git.URL + "-resolved",
+		Revision: image.Spec.Source.Git.Revision + "-resolved",
+		Type:     v1alpha1.Branch,
+	})
+	return sr
+}
+
+func unresolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
+	return image.SourceResolver()
+}
+
+func failedBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
+	return builds(image, sourceResolver, count, duckv1alpha1.Condition{
+		Type:   duckv1alpha1.ConditionSucceeded,
+		Status: corev1.ConditionFalse,
+	})
+}
+
+func successfulBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
+	return builds(image, sourceResolver, count, duckv1alpha1.Condition{
+		Type:   duckv1alpha1.ConditionSucceeded,
+		Status: corev1.ConditionTrue,
+	})
+}
+
+func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int, condition duckv1alpha1.Condition) []runtime.Object {
+	var builds []runtime.Object
+
+	for i := 1; i <= count; i++ {
+		builds = append(builds, &v1alpha1.Build{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-build-%d", image.Name, i),
+				Namespace: image.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					*kmeta.NewControllerRef(image),
+				},
+				Labels: map[string]string{
+					v1alpha1.BuildNumberLabel: fmt.Sprintf("%d", i),
+					v1alpha1.ImageLabel:       image.Name,
+				},
+				CreationTimestamp: metav1.NewTime(time.Now().Add(time.Duration(i) * time.Minute)),
+			},
+			Spec: v1alpha1.BuildSpec{
+				Image:          image.Spec.Image,
+				Builder:        "some/builder",
+				ServiceAccount: image.Spec.ServiceAccount,
+				Source: v1alpha1.Source{
+					Git: v1alpha1.Git{
+						URL:      sourceResolver.Status.ResolvedSource.Git.URL,
+						Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
+					},
 				},
 			},
-		},
+			Status: v1alpha1.BuildStatus{
+				Status: duckv1alpha1.Status{
+					Conditions: duckv1alpha1.Conditions{
+						condition,
+					},
+				},
+			},
+		})
 	}
+
+	return builds
 }
 
-type fakeTracker map[corev1.ObjectReference]map[string]struct{}
-
-func (f fakeTracker) Track(ref corev1.ObjectReference, obj interface{}) error {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		return err
-	}
-
-	_, ok := f[ref]
-	if !ok {
-		f[ref] = map[string]struct{}{}
-	}
-
-	f[ref][key] = struct{}{}
-	return nil
+func runtimeObjects(objects []runtime.Object, additional ...runtime.Object) []runtime.Object {
+	return append(objects, additional...)
 }
 
-func (fakeTracker) OnChanged(obj interface{}) {
-	panic("I should not be called in tests")
-}
-
-func (f fakeTracker) IsTracking(ref corev1.ObjectReference, obj interface{}) bool {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		return false
-	}
-
-	trackingObs, ok := f[ref]
-	if !ok {
-		return false
-	}
-	_, ok = trackingObs[key]
-
-	return ok
+func limit(limit int64) *int64 {
+	return &limit
 }

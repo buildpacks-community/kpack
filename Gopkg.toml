@@ -102,6 +102,10 @@ required = [
 [[override]]
   name = "golang.org/x/net"
   revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
+  
+[[override]]
+  name = "github.com/buildpack/imgutil"
+  revision = "4a2138287c60c7ef87274f5ab85caca0d11fad34"
 
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
