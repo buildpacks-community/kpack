@@ -66,10 +66,11 @@ func main() {
 	}
 
 	options := reconciler.Options{
-		Logger:           logger,
-		Client:           client,
-		ResyncPeriod:     10 * time.Hour,
-		PollingFrequency: 1 * time.Minute,
+		Logger:                  logger,
+		Client:                  client,
+		ResyncPeriod:            10 * time.Hour,
+		SourcePollingFrequency:  1 * time.Minute,
+		BuilderPollingFrequency: 1 * time.Minute,
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)

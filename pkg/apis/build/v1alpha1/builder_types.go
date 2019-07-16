@@ -19,8 +19,16 @@ type Builder struct {
 }
 
 type BuilderSpec struct {
-	Image string `json:"image"`
+	Image        string              `json:"image"`
+	UpdatePolicy BuilderUpdatePolicy `json:"updatePolicy"`
 }
+
+type BuilderUpdatePolicy string
+
+const (
+	Polling  BuilderUpdatePolicy = "polling"
+	External BuilderUpdatePolicy = "external"
+)
 
 type BuilderStatus struct {
 	duckv1alpha1.Status `json:",inline"`

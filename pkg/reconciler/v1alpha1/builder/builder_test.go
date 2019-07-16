@@ -7,6 +7,7 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -31,6 +32,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
+	fakeEnqueuer := &builderfakes.FakeEnqueuer{}
 
 	reconciler := testhelpers.SyncWaitingReconciler(
 		informerFactory,
@@ -38,6 +40,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Client:            fakeClient,
 			BuilderLister:     builderInformer.Lister(),
 			MetadataRetriever: fakeMetadataRetriever,
+			Enqueuer:          fakeEnqueuer,
 		},
 		builderInformer.Informer().HasSynced,
 	)
@@ -73,7 +76,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		it.Before(func() {
 			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
-			assert.Nil(t, err)
+			require.Nil(t, err)
 
 			fakeMetadataRetriever.GetBuilderBuildpacksReturns(cnb.BuilderMetadata{
 				{
@@ -110,6 +113,35 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, err)
 
 			assert.Equal(t, builder.Status.ObservedGeneration, initalGeneration)
+		})
+
+		it("schedule next polling when update policy is not set", func() {
+			err := reconciler.Reconcile(context.TODO(), key)
+			assert.Nil(t, err)
+
+			assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
+		})
+
+		it("does schedule polling when update policy is set to polling", func() {
+			builder.Spec.UpdatePolicy = v1alpha1.Polling
+			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Update(builder)
+			require.Nil(t, err)
+
+			err = reconciler.Reconcile(context.TODO(), key)
+			require.Nil(t, err)
+
+			assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
+		})
+
+		it("does not schedule polling when update policy is set to external", func() {
+			builder.Spec.UpdatePolicy = v1alpha1.Webhook
+			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Update(builder)
+			require.Nil(t, err)
+
+			err = reconciler.Reconcile(context.TODO(), key)
+			require.Nil(t, err)
+
+			assert.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
 		})
 
 		it("does not return error on nonexistent builder", func() {
