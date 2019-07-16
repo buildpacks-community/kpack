@@ -34,15 +34,26 @@ func NewController(opt reconciler.Options, builderInformer v1alpha1informers.Bui
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
+	c.Enqueuer = &workQueueEnqueuer{
+		enqueueAfter: impl.EnqueueAfter,
+		delay:        opt.BuilderPollingFrequency,
+	}
+
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	return impl
+}
+
+//go:generate counterfeiter . Enqueuer
+type Enqueuer interface {
+	Enqueue(*v1alpha1.Builder) error
 }
 
 type Reconciler struct {
 	Client            versioned.Interface
 	MetadataRetriever MetadataRetriever
 	BuilderLister     v1alpha1Listers.BuilderLister
+	Enqueuer          Enqueuer
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -68,7 +79,13 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	builder.Status.ObservedGeneration = builder.Generation
 
 	_, err = c.Client.BuildV1alpha1().Builders(namespace).UpdateStatus(builder)
+	if err != nil {
+		return err
+	}
 
+	if builder.Spec.UpdatePolicy != v1alpha1.External {
+		err = c.Enqueuer.Enqueue(builder)
+	}
 	return err
 }
 

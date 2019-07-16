@@ -4,3 +4,4 @@ metadata:
   name: sample-builder
 spec:
   image: cloudfoundry/cnb:bionic
+  updatePolicy: polling

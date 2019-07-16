@@ -36,7 +36,7 @@ func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1inform
 
 	c.Enqueuer = &workQueueEnqueuer{
 		enqueueAfter: impl.EnqueueAfter,
-		delay:        opt.PollingFrequency,
+		delay:        opt.SourcePollingFrequency,
 	}
 
 	sourceResolverInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))

@@ -11,9 +11,10 @@ import (
 type Options struct {
 	Logger *zap.SugaredLogger
 
-	Client           versioned.Interface
-	ResyncPeriod     time.Duration
-	PollingFrequency time.Duration
+	Client                  versioned.Interface
+	ResyncPeriod            time.Duration
+	SourcePollingFrequency  time.Duration
+	BuilderPollingFrequency time.Duration
 }
 
 func (o Options) TrackerResyncPeriod() time.Duration {
