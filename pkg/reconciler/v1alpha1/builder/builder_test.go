@@ -203,6 +203,23 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
 		})
 
+		when("buildpack metadata did not change", func() {
+			it("does not update the status", func() {
+				builder.Status.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+					{
+						ID:      "buildpack.version",
+						Version: "version",
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: false,
+				})
+			})
+		})
+
 		it("does not return error on nonexistent builder", func() {
 			rt.Test(rtesting.TableRow{
 				Key:     key,

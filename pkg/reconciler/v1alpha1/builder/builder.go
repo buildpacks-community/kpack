@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/knative/pkg/controller"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
@@ -78,7 +79,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	builder.Status.BuilderMetadata = transform(metadata)
 	builder.Status.ObservedGeneration = builder.Generation
 
-	_, err = c.Client.BuildV1alpha1().Builders(namespace).UpdateStatus(builder)
+	err = c.updateStatus(builder)
 	if err != nil {
 		return err
 	}
@@ -86,6 +87,20 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if builder.Spec.UpdatePolicy != v1alpha1.External {
 		err = c.Enqueuer.Enqueue(builder)
 	}
+	return err
+}
+
+func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
+	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
+	if err != nil {
+		return err
+	}
+
+	if equality.Semantic.DeepEqual(desired.Status.BuilderMetadata, original.Status.BuilderMetadata) {
+		return nil
+	}
+
+	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 
