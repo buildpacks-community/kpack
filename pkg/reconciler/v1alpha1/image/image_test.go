@@ -2,6 +2,7 @@ package image_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -440,12 +441,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
+								Namespace:    namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "1",
 									v1alpha1.ImageLabel:       imageName,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -499,12 +504,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
+								Namespace:    namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "1",
 									v1alpha1.ImageLabel:       imageName,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -591,12 +600,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
+								Namespace:    namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -659,6 +672,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									v1alpha1.BuildNumberLabel: "1",
 									v1alpha1.ImageLabel:       imageName,
 								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonCommit,
+								},
 							},
 							Spec: v1alpha1.BuildSpec{
 								Image:          image.Spec.Image,
@@ -688,12 +704,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
+								Namespace:    namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonCommit,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -801,12 +821,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
+								Namespace:    namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
 									v1alpha1.BuildNumberLabel: "2",
 									v1alpha1.ImageLabel:       imageName,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonBuildpack,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
