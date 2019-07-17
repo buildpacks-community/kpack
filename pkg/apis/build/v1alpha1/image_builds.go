@@ -3,45 +3,53 @@ package v1alpha1
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	BuildNumberLabel = "image.build.pivotal.io/buildNumber"
 	ImageLabel       = "image.build.pivotal.io/image"
+
+	BuildReasonAnnotation = "image.build.pivotal.io/reason"
+	BuildReasonConfig     = "CONFIG"
+	BuildReasonCommit     = "COMMIT"
+	BuildReasonBuildpack  = "BUILDPACK"
 )
 
-func (im *Image) BuildNeeded(sourceResolver *SourceResolver, lastBuild *Build, builder *Builder) bool {
+func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder *Builder) ([]string, bool) {
 	if !sourceResolver.Ready() {
-		return false
+		return []string{}, false
 	}
 
 	if lastBuild == nil {
-		return true
+		return []string{BuildReasonConfig}, true
 	}
 
-	if im.lastBuildMatchesDesiredBuild(sourceResolver, lastBuild) && lastBuildBuiltWithBuilderBuildpacks(builder, lastBuild) {
-		return false
+	if im.Spec.Image != lastBuild.Spec.Image {
+		return []string{BuildReasonConfig}, true
 	}
 
-	return true
-}
-
-func (im *Image) lastBuildMatchesDesiredBuild(sourceResolver *SourceResolver, build *Build) bool {
-	if sourceResolver.Status.ResolvedSource.Git.URL != build.Spec.Source.Git.URL {
-		return false
+	var reasons []string
+	if sourceResolver.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL || !equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) {
+		reasons = append(reasons, BuildReasonConfig)
 	}
 
-	if sourceResolver.Status.ResolvedSource.Git.Revision != build.Spec.Source.Git.Revision {
-		return false
+	if sourceResolver.Status.ResolvedSource.Git.Revision != lastBuild.Spec.Source.Git.Revision {
+		reasons = append(reasons, BuildReasonCommit)
 	}
 
-	return im.Spec.Image == build.Spec.Image
+	if !lastBuildBuiltWithBuilderBuildpacks(builder, lastBuild) {
+		reasons = append(reasons, BuildReasonBuildpack)
+	}
+
+	return reasons, len(reasons) > 0
 }
 
 func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
@@ -54,17 +62,21 @@ func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 	return true
 }
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build {
-	nextBuildNumber := im.nextBuildNumber()
+func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons []string, nextBuildNumber int64) *Build {
+	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: im.generateBuildName(),
+			Namespace:    im.Namespace,
+			GenerateName: im.generateBuildName(buildNumber),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
 			Labels: map[string]string{
-				BuildNumberLabel: nextBuildNumber,
+				BuildNumberLabel: buildNumber,
 				ImageLabel:       im.Name,
+			},
+			Annotations: map[string]string{
+				BuildReasonAnnotation: strings.Join(reasons, ","),
 			},
 		},
 		Spec: BuildSpec{
@@ -79,7 +91,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder *Builder) *Build 
 				},
 			},
 			CacheName:            im.Status.BuildCacheName,
-			AdditionalImageNames: im.generateImageNames(nextBuildNumber),
+			AdditionalImageNames: im.generateImageNames(buildNumber),
 		},
 	}
 }
@@ -132,10 +144,6 @@ func (im *Image) SourceResolver() *SourceResolver {
 	}
 }
 
-func (im *Image) nextBuildNumber() string {
-	return strconv.Itoa(int(im.Status.BuildCounter + 1))
-}
-
 func (im *Image) generateImageNames(buildNumber string) []string {
 	if im.Spec.DisableAdditionalImageNames {
 		return nil
@@ -156,6 +164,6 @@ func (im *Image) generateImageNames(buildNumber string) []string {
 	return []string{tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
 }
 
-func (im *Image) generateBuildName() string {
-	return im.Name + "-build-" + im.nextBuildNumber() + "-"
+func (im *Image) generateBuildName(buildNumber string) string {
+	return im.Name + "-build-" + buildNumber + "-"
 }

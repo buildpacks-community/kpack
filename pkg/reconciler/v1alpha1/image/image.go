@@ -3,7 +3,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/tracker"
@@ -106,10 +105,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if err != nil {
 		return fmt.Errorf("failed fetching last build: %s", err)
 	}
-	image.Status.BuildCounter, err = buildCounter(lastBuild)
-	if err != nil {
-		return err
-	}
 
 	if lastBuild.IsRunning() {
 		return nil
@@ -141,35 +136,26 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		image.Status.BuildCacheName = buildCache.Name
 	}
 
-	var build *v1alpha1.Build
-	if image.BuildNeeded(sourceResolver, lastBuild, builder) {
-		build, err = c.Client.BuildV1alpha1().Builds(image.Namespace).Create(image.Build(sourceResolver, builder))
-		if err != nil {
-			return fmt.Errorf("failed creating build: %s", err)
-		}
-		image.Status.BuildCounter = image.Status.BuildCounter + 1
-	} else {
-		build = lastBuild
+	buildApplier, err := image.ReconcileBuild(lastBuild, sourceResolver, builder)
+	if err != nil {
+		return err
 	}
 
-	image.Status.LastBuildRef = build.BuildRef()
-	image.Status.ObservedGeneration = image.Generation
+	reconciledBuild, err := buildApplier.Apply(c)
+	if err != nil {
+		return err
+	}
+
+	image.Status.LastBuildRef = reconciledBuild.Build.BuildRef()
+	image.Status.BuildCounter = reconciledBuild.BuildCounter
 
 	err = c.deleteOldBuilds(namespace, image)
 	if err != nil {
 		return fmt.Errorf("failed deleting build: %s", err)
 	}
 
+	image.Status.ObservedGeneration = image.Generation
 	return c.updateStatus(image)
-}
-
-func buildCounter(build *v1alpha1.Build) (int64, error) {
-	if build == nil {
-		return 0, nil
-	}
-
-	buildNumber := build.Labels[v1alpha1.BuildNumberLabel]
-	return strconv.ParseInt(buildNumber, 10, 64)
 }
 
 func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.SourceResolver, error) {
@@ -300,4 +286,8 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Image) error {
 
 	_, err = c.Client.BuildV1alpha1().Images(desired.Namespace).UpdateStatus(desired)
 	return err
+}
+
+func (c *Reconciler) CreateBuild(build *v1alpha1.Build) (*v1alpha1.Build, error) {
+	return c.Client.BuildV1alpha1().Builds(build.Namespace()).Create(build)
 }
