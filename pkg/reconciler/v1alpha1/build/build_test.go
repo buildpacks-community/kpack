@@ -214,7 +214,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				assert.JSONEq(t, `[{"name": "keyA", "value": "valueA"}, {"name": "keyB", "value": "valueB"}]`, knbuild.Spec.Steps[0].Env[1].Value)
 
 				// init
-				require.Len(t, knbuild.Spec.Steps[0].VolumeMounts, 3)
+				require.Len(t, knbuild.Spec.Steps[0].VolumeMounts, 4)
 				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].Name, "platform-dir")
 				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].MountPath, "/platform")
 
