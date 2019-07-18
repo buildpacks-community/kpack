@@ -43,13 +43,14 @@ var (
 )
 
 type BuildSpec struct {
-	Image                string          `json:"image"`
-	Builder              string          `json:"builder"`
-	ServiceAccount       string          `json:"serviceAccount"`
-	Source               Source          `json:"source"`
-	CacheName            string          `json:"cacheName"`
-	AdditionalImageNames []string        `json:"additionalImageNames"`
-	Env                  []corev1.EnvVar `json:"env"`
+	Image                string                      `json:"image"`
+	Builder              string                      `json:"builder"`
+	ServiceAccount       string                      `json:"serviceAccount"`
+	Source               Source                      `json:"source"`
+	CacheName            string                      `json:"cacheName"`
+	AdditionalImageNames []string                    `json:"additionalImageNames"`
+	Env                  []corev1.EnvVar             `json:"env"`
+	Resources            corev1.ResourceRequirements `json:"resources"`
 }
 
 type BuildStatus struct {

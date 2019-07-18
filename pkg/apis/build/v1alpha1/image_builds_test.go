@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -107,7 +108,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("false for no changes", func() {
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("true for different image", func() {
@@ -115,7 +116,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
-			assert.Len(t, reasons, 1)
+			require.Len(t, reasons, 1)
 			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 
@@ -124,7 +125,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
-			assert.Len(t, reasons, 1)
+			require.Len(t, reasons, 1)
 			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 
@@ -133,7 +134,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
-			assert.Len(t, reasons, 1)
+			require.Len(t, reasons, 1)
 			assert.Contains(t, reasons, BuildReasonCommit)
 		})
 
@@ -147,7 +148,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("false if source resolver has not resolved", func() {
@@ -156,7 +157,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("false if source resolver has not resolved and there is no previous build", func() {
@@ -165,7 +166,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(nil, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("false if source resolver has not processed current generation", func() {
@@ -175,7 +176,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("false for different ServiceAccount", func() {
@@ -183,7 +184,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
-			assert.Len(t, reasons, 0)
+			require.Len(t, reasons, 0)
 		})
 
 		it("true if build env changes", func() {
@@ -193,7 +194,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
-			assert.Len(t, reasons, 1)
+			require.Len(t, reasons, 1)
 			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 
@@ -208,7 +209,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
-			assert.Len(t, reasons, 1)
+			require.Len(t, reasons, 1)
 		})
 
 		when("Builder Metadata changes", func() {
@@ -221,7 +222,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 				assert.False(t, needed)
-				assert.Len(t, reasons, 0)
+				require.Len(t, reasons, 0)
 			})
 
 			it("true if builder metadata has different buildpack from used buildpack", func() {
@@ -232,7 +233,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 				assert.True(t, needed)
-				assert.Len(t, reasons, 1)
+				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonBuildpack)
 			})
 
@@ -244,7 +245,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 				assert.True(t, needed)
-				assert.Len(t, reasons, 1)
+				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonBuildpack)
 			})
 
@@ -254,10 +255,39 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 				assert.True(t, needed)
-				assert.Len(t, reasons, 2)
+				require.Len(t, reasons, 2)
 				assert.Contains(t, reasons, BuildReasonConfig)
 				assert.Contains(t, reasons, BuildReasonCommit)
 			})
+		})
+
+		it("true if build resources change", func() {
+			build.Spec.Resources = v1.ResourceRequirements{
+				Limits: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("2"),
+					v1.ResourceMemory: resource.MustParse("256M"),
+				},
+				Requests: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("1"),
+					v1.ResourceMemory: resource.MustParse("128M"),
+				},
+			}
+
+			image.Spec.Build.Resources = v1.ResourceRequirements{
+				Limits: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("3"),
+					v1.ResourceMemory: resource.MustParse("512M"),
+				},
+				Requests: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("2"),
+					v1.ResourceMemory: resource.MustParse("256M"),
+				},
+			}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 	})
 
@@ -323,6 +353,23 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			build := image.build(sourceResolver, builder, []string{BuildReasonConfig, BuildReasonCommit}, 1)
 
 			assert.Equal(t, "CONFIG,COMMIT", build.Annotations[BuildReasonAnnotation])
+		})
+
+		it("adds build resources", func() {
+			image.Spec.Build.Resources = v1.ResourceRequirements{
+				Limits: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("2"),
+					v1.ResourceMemory: resource.MustParse("256M"),
+				},
+				Requests: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("1"),
+					v1.ResourceMemory: resource.MustParse("128M"),
+				},
+			}
+
+			build := image.build(sourceResolver, builder, []string{BuildReasonConfig}, 1)
+
+			assert.Equal(t, image.Spec.Build.Resources, build.Spec.Resources)
 		})
 	})
 }

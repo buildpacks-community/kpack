@@ -158,6 +158,7 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 							Value: envVars,
 						},
 					},
+					Resources: build.Spec.Resources,
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
@@ -175,9 +176,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "detect",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/detector"},
+					Name:      "detect",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/detector"},
 					Args: []string{
 						"-app=/workspace",
 						"-group=/layers/group.toml",
@@ -196,9 +198,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "restore",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/restorer"},
+					Name:      "restore",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/restorer"},
 					Args: []string{
 						"-group=/layers/group.toml",
 						"-layers=/layers",
@@ -217,9 +220,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "analyze",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/analyzer"},
+					Name:      "analyze",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/analyzer"},
 					Args: []string{
 						"-layers=/layers",
 						"-helpers=false",
@@ -236,9 +240,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "build",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/builder"},
+					Name:      "build",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/builder"},
 					Args: []string{
 						"-layers=/layers",
 						"-app=/workspace",
@@ -258,10 +263,11 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "export",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/exporter"},
-					Args:    buildExporterArgs(build),
+					Name:      "export",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/exporter"},
+					Args:      buildExporterArgs(build),
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
@@ -271,9 +277,10 @@ func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*kn
 					ImagePullPolicy: "Always",
 				},
 				{
-					Name:    "cache",
-					Image:   build.Spec.Builder,
-					Command: []string{"/lifecycle/cacher"},
+					Name:      "cache",
+					Image:     build.Spec.Builder,
+					Resources: build.Spec.Resources,
+					Command:   []string{"/lifecycle/cacher"},
 					Args: []string{
 						"-group=/layers/group.toml",
 						"-layers=/layers",
