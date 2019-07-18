@@ -37,7 +37,9 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 	}
 
 	var reasons []string
-	if sourceResolver.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL || !equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) {
+	if sourceResolver.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL ||
+		!equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) ||
+		!equality.Semantic.DeepEqual(im.Spec.Build.Resources, lastBuild.Spec.Resources) {
 		reasons = append(reasons, BuildReasonConfig)
 	}
 
@@ -83,6 +85,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 			Image:          im.Spec.Image,
 			Builder:        builder.Spec.Image,
 			Env:            im.Spec.Build.Env,
+			Resources:      im.Spec.Build.Resources,
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source: Source{
 				Git: Git{

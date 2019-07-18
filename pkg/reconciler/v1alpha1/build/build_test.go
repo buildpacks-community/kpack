@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -88,6 +89,16 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
+			},
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("2"),
+					corev1.ResourceMemory: resource.MustParse("256M"),
+				},
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("1"),
+					corev1.ResourceMemory: resource.MustParse("128M"),
+				},
 			},
 			Source: v1alpha1.Source{
 				Git: v1alpha1.Git{
@@ -236,6 +247,18 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				require.Len(t, knbuild.Spec.Volumes, 3)
 				assert.Equal(t, knbuild.Spec.Volumes[2].Name, "platform-dir")
+			})
+
+			it("passes through build resources", func() {
+				err := reconciler.Reconcile(context.TODO(), key)
+				require.NoError(t, err)
+
+				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
+				require.NoError(t, err)
+
+				for _, kb := range knbuild.Spec.Steps {
+					assert.Equal(t, build.Spec.Resources, kb.Resources)
+				}
 			})
 		})
 

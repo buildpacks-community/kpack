@@ -48,7 +48,8 @@ type ImageSpec struct {
 }
 
 type ImageBuild struct {
-	Env []corev1.EnvVar `json:"env"`
+	Env       []corev1.EnvVar             `json:"env"`
+	Resources corev1.ResourceRequirements `json:"resources"`
 }
 
 type ImageStatus struct {

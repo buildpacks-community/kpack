@@ -102,6 +102,7 @@ func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	in.Resources.DeepCopyInto(&out.Resources)
 	return
 }
 
@@ -326,6 +327,7 @@ func (in *ImageBuild) DeepCopyInto(out *ImageBuild) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	in.Resources.DeepCopyInto(&out.Resources)
 	return
 }
 
