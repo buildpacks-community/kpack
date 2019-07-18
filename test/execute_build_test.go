@@ -117,11 +117,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			cacheSize := resource.MustParse("1Gi")
 			expectedResources := v1.ResourceRequirements{
 				Limits: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("2"),
+					v1.ResourceCPU:    resource.MustParse("100m"),
 					v1.ResourceMemory: resource.MustParse("1G"),
 				},
 				Requests: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("1"),
+					v1.ResourceCPU:    resource.MustParse("50m"),
 					v1.ResourceMemory: resource.MustParse("512M"),
 				},
 			}
