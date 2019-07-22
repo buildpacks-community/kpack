@@ -3,7 +3,6 @@ package image
 import (
 	"sort"
 
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	v1alpha1build "github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -21,9 +20,9 @@ func newBuildList(builds []*v1alpha1.Build) (buildList, error) {
 	buildList := buildList{}
 
 	for _, build := range builds {
-		if build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() {
+		if build.IsSuccess() {
 			buildList.successfulBuilds = append(buildList.successfulBuilds, build)
-		} else if build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsFalse() {
+		} else if build.IsFailure() {
 			buildList.failedBuilds = append(buildList.failedBuilds, build)
 		}
 	}

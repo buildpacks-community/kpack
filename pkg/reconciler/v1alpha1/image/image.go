@@ -148,6 +148,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	image.Status.LastBuildRef = reconciledBuild.Build.BuildRef()
 	image.Status.BuildCounter = reconciledBuild.BuildCounter
+	if lastBuild.IsSuccess() {
+		image.Status.LastBuiltImage = lastBuild.BuiltImage()
+	}
 
 	err = c.deleteOldBuilds(namespace, image)
 	if err != nil {
@@ -271,7 +274,6 @@ func (c *Reconciler) fetchLastBuild(image *v1alpha1.Image) (*v1alpha1.Build, err
 	if err != nil {
 		return nil, err
 	}
-
 	return builds.lastBuild, nil
 }
 
