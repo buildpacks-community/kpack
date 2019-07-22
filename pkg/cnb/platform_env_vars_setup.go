@@ -14,7 +14,7 @@ func SetupPlatformEnvVars(dir, envVarsJSON string) error {
 		return err
 	}
 	folder := path.Join(dir, "env")
-	err = os.Mkdir(folder, os.ModePerm)
+	err = os.MkdirAll(folder, os.ModePerm)
 	if err != nil {
 		return err
 	}
