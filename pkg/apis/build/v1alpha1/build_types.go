@@ -99,3 +99,28 @@ func (b *Build) BuildRef() string {
 
 	return b.GetName()
 }
+
+func (b *Build) BuiltImage() string {
+	if b == nil {
+		return ""
+	}
+	if !b.IsSuccess() {
+		return ""
+	}
+
+	return b.Spec.Image + "@" + b.Status.SHA
+}
+
+func (b *Build) IsSuccess() bool {
+	if b == nil {
+		return false
+	}
+	return b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+}
+
+func (b *Build) IsFailure() bool {
+	if b == nil {
+		return false
+	}
+	return b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsFalse()
+}
