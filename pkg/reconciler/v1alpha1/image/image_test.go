@@ -142,7 +142,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: updatedGeneration,
 								},
-								LastBuildRef:   "",
+								LatestBuildRef: "",
 								BuildCounter:   0,
 								BuildCacheName: "",
 							},
@@ -355,7 +355,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "",
+									LatestBuildRef: "",
 									BuildCounter:   0,
 									BuildCacheName: image.CacheName(),
 								},
@@ -517,7 +517,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "",
+									LatestBuildRef: "",
 									BuildCounter:   0,
 									BuildCacheName: "",
 								},
@@ -590,7 +590,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-1-00001", //GenerateNameReactor
+									LatestBuildRef: "image-name-build-1-00001", //GenerateNameReactor
 									BuildCounter:   1,
 									BuildCacheName: "",
 								},
@@ -655,7 +655,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-1-00001", //GenerateNameReactor
+									LatestBuildRef: "image-name-build-1-00001", //GenerateNameReactor
 									BuildCounter:   1,
 									BuildCacheName: image.CacheName(),
 								},
@@ -667,7 +667,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build if the previous build does not match source", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-100001"
+				image.Status.LatestBuildRef = "image-name-build-100001"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -752,8 +752,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastImage:      "some/image@sha256:ad3f454c",
+									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
+									LatestImage:    "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -765,7 +765,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build when source resolver is updated", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-1-00001"
+				image.Status.LatestBuildRef = "image-name-build-1-00001"
 
 				sourceResolver := image.SourceResolver()
 				sourceResolver.ResolvedGitSource(v1alpha1.ResolvedGitSource{
@@ -859,8 +859,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastImage:      "some/image@sha256:ad3f454c",
+									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
+									LatestImage:    "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -872,7 +872,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build when the builder buildpacks are updated", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-1-00001"
+				image.Status.LatestBuildRef = "image-name-build-1-00001"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -979,8 +979,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastImage:      "some/image@sha256:ad3f454c",
+									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
+									LatestImage:    "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -993,7 +993,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			it("does not schedule a build if the previous build is running", func() {
 				image.Generation = 2
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-1"
+				image.Status.LatestBuildRef = "image-name-build-1"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1043,8 +1043,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("does not schedule a build if the previous build spec matches the current desired spec", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-1"
-				image.Status.LastImage = "some/image@sha256:ad3f454c"
+				image.Status.LatestBuildRef = "image-name-build-1"
+				image.Status.LatestImage = "some/image@sha256:ad3f454c"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1055,7 +1055,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&v1alpha1.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.Status.LastBuildRef,
+								Name:      image.Status.LatestBuildRef,
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1097,7 +1097,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				it("deletes a failed build if more than the limit", func() {
 					image.Spec.FailedBuildHistoryLimit = limit(4)
-					image.Status.LastBuildRef = "image-name-build-5"
+					image.Status.LatestBuildRef = "image-name-build-5"
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1126,8 +1126,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				it("deletes a successful build if more than the limit", func() {
 					image.Spec.SuccessBuildHistoryLimit = limit(4)
-					image.Status.LastBuildRef = "image-name-build-5"
-					image.Status.LastImage = "some/image@sha256:ad3f454c"
+					image.Status.LatestBuildRef = "image-name-build-5"
+					image.Status.LatestImage = "some/image@sha256:ad3f454c"
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1157,8 +1157,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates the last successful build on the image when the last build is successful", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LastBuildRef = "image-name-build-1"
-				image.Status.LastImage = "some/image@some-old-sha"
+				image.Status.LatestBuildRef = "image-name-build-1"
+				image.Status.LatestImage = "some/image@some-old-sha"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1179,8 +1179,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 									},
-									LastBuildRef:   "image-name-build-1",
-									LastImage:      "some/image@sha256:ad3f454c",
+									LatestBuildRef: "image-name-build-1",
+									LatestImage:    "some/image@sha256:ad3f454c",
 									BuildCounter:   1,
 									BuildCacheName: "",
 								},

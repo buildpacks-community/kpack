@@ -54,8 +54,8 @@ type ImageBuild struct {
 
 type ImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	LastBuildRef        string `json:"lastBuildRef"`
-	LastImage           string `json:"lastImage"`
+	LatestBuildRef      string `json:"latestBuildRef"`
+	LatestImage         string `json:"latestImage"`
 	BuildCounter        int64  `json:"buildCounter"`
 	BuildCacheName      string `json:"buildCacheName"`
 }
