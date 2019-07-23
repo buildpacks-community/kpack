@@ -99,6 +99,14 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 	}
 }
 
+func (im *Image) latestForImage(build *Build) string {
+	latestImage := im.Status.LatestImage
+	if build.IsSuccess() {
+		latestImage = build.BuiltImage()
+	}
+	return latestImage
+}
+
 func (im *Image) CacheName() string {
 	return kmeta.ChildName(im.Name, "-cache")
 }
