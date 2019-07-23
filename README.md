@@ -87,6 +87,26 @@ test-image-build-1-ea3e6fa9         Unknown     Pending
 
 After a build has completed you will be able to see the built digest
 
+### Tailing Logs from Builds
+
+Use the log tailing utility in `cmd/logs`
+
+```bash
+go build ./cmd/logs
+```
+
+The logs tool allows you to view the logs for all builds for an image: 
+
+```bash
+logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME>
+```
+
+To view logs from a specific build use the build flag:  
+
+```bash
+logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME> -build <BUILD-NUMBER>
+```
+
 ### Running Tests
 
 * To run the e2e tests the build service system must be installed and running on a cluster
