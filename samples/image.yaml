@@ -3,7 +3,7 @@ kind: Image
 metadata:
   name: sample
 spec:
-  builder: sample-builder
+  builderRef: sample-builder
   image: registry.default.svc.cluster.local:5000/sample/image
   source:
     git:
