@@ -700,7 +700,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "some-sha",
+								SHA: "sha256:ad3f454c",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -753,7 +753,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastBuiltImage: "some/image@some-sha",
+									LastImage:      "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -807,7 +807,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "some-sha",
+								SHA: "sha256:ad3f454c",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -860,7 +860,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastBuiltImage: "some/image@some-sha",
+									LastImage:      "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -921,7 +921,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "some-sha",
+								SHA: "sha256:ad3f454c",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -980,7 +980,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LastBuildRef:   "image-name-build-2-00001", //GenerateNameReactor
-									LastBuiltImage: "some/image@some-sha",
+									LastImage:      "some/image@sha256:ad3f454c",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -1044,7 +1044,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			it("does not schedule a build if the previous build spec matches the current desired spec", func() {
 				image.Status.BuildCounter = 1
 				image.Status.LastBuildRef = "image-name-build-1"
-				image.Status.LastBuiltImage = "some/image@some-sha"
+				image.Status.LastImage = "some/image@sha256:ad3f454c"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1077,7 +1077,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "some-sha",
+								SHA: "sha256:ad3f454c",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -1127,7 +1127,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("deletes a successful build if more than the limit", func() {
 					image.Spec.SuccessBuildHistoryLimit = limit(4)
 					image.Status.LastBuildRef = "image-name-build-5"
-					image.Status.LastBuiltImage = "some/image@some-sha"
+					image.Status.LastImage = "some/image@sha256:ad3f454c"
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1158,7 +1158,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			it("updates the last successful build on the image when the last build is successful", func() {
 				image.Status.BuildCounter = 1
 				image.Status.LastBuildRef = "image-name-build-1"
-				image.Status.LastBuiltImage = "some/image@some-old-sha"
+				image.Status.LastImage = "some/image@some-old-sha"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1180,7 +1180,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LastBuildRef:   "image-name-build-1",
-									LastBuiltImage: "some/image@some-sha",
+									LastImage:      "some/image@sha256:ad3f454c",
 									BuildCounter:   1,
 									BuildCacheName: "",
 								},
@@ -1250,7 +1250,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 				},
 			},
 			Status: v1alpha1.BuildStatus{
-				SHA: "some-sha",
+				SHA: "sha256:ad3f454c",
 				Status: duckv1alpha1.Status{
 					Conditions: duckv1alpha1.Conditions{
 						condition,
