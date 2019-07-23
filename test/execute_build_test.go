@@ -1,6 +1,9 @@
 package test
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,6 +21,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/logs"
 )
 
 func TestCreateImage(t *testing.T) {
@@ -44,13 +48,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients()
 		require.NoError(t, err)
 
-		err = clients.k8sClient.Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
+		err = clients.k8sClient.CoreV1().Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
 		require.True(t, err == nil || errors.IsNotFound(err))
 		if err == nil {
 			time.Sleep(10 * time.Second)
 		}
 
-		_, err = clients.k8sClient.Namespaces().Create(&v1.Namespace{
+		_, err = clients.k8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testNamespace,
 			},
@@ -77,7 +81,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			username, password, ok := parseBasicAuth(basicAuth)
 			require.True(t, ok)
 
-			_, err = clients.k8sClient.Secrets(testNamespace).Create(&v1.Secret{
+			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: dockerSecret,
 					Annotations: map[string]string{
@@ -92,7 +96,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			_, err = clients.k8sClient.ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+			_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: serviceAccountName,
 				},
@@ -148,10 +152,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			logTail := &bytes.Buffer{}
+			go func() {
+				err = logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, imageName, "1", testNamespace)
+				require.NoError(t, err)
+			}()
+
 			t.Logf("Waiting for image '%s' to be created", cfg.imageTag)
 			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 5*time.Minute)
 
-			podList, err := clients.k8sClient.Pods(testNamespace).List(metav1.ListOptions{})
+			assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", cfg.imageTag))
+
+			podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{})
 			require.NoError(t, err)
 			require.Len(t, podList.Items, 1)
 			pod := podList.Items[0]

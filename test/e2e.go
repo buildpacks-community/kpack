@@ -5,7 +5,7 @@ import (
 	"os/user"
 	"path"
 
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
@@ -32,7 +32,7 @@ func newClients() (*clients, error) {
 		return nil, err
 	}
 
-	k8sClient, err := v1.NewForConfig(clusterConfig)
+	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -45,5 +45,5 @@ func newClients() (*clients, error) {
 
 type clients struct {
 	client    versioned.Interface
-	k8sClient v1.CoreV1Interface
+	k8sClient kubernetes.Interface
 }
