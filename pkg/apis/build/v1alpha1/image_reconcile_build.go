@@ -50,10 +50,7 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 	if err != nil {
 		return nil, err
 	}
-	latestImage := im.Status.LatestImage
-	if latestBuild.IsSuccess() {
-		latestImage = latestBuild.BuiltImage()
-	}
+	latestImage := im.latestForImage(latestBuild)
 
 	if reasons, needed := im.buildNeeded(latestBuild, resolver, builder); needed {
 		nextBuildNumber := currentBuildNumber + 1
