@@ -1,7 +1,7 @@
 package cnb_test
 
 import (
-	"github.com/pivotal/build-service-system/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"

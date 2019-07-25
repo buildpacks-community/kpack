@@ -19,7 +19,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/pivotal/build-service-system/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	v1alpha1 "github.com/pivotal/build-service-beam/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

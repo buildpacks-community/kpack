@@ -14,13 +14,13 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder/builderfakes"
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/testhelpers"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/builder"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/builder/builderfakes"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 //go:generate counterfeiter . MetadataRetriever

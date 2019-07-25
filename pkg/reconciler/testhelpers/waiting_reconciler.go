@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	knCtrl "github.com/knative/pkg/controller"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-beam/pkg/client/informers/externalversions"
 	"k8s.io/client-go/tools/cache"
 )
 

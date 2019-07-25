@@ -3,9 +3,9 @@ package cnb_test
 import (
 	"fmt"
 	"github.com/buildpack/imgutil/fakes"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/registry"
-	"github.com/pivotal/build-service-system/pkg/registry/registryfakes"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/registry/registryfakes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"

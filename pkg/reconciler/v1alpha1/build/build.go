@@ -16,13 +16,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
-	v1alpha1informer "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1lister "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/reconciler"
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned"
+	v1alpha1informer "github.com/pivotal/build-service-beam/pkg/client/informers/externalversions/build/v1alpha1"
+	v1alpha1lister "github.com/pivotal/build-service-beam/pkg/client/listers/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/reconciler"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 const (

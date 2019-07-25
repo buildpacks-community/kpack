@@ -2,8 +2,8 @@ package git
 
 import (
 	"fmt"
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/secret"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/secret"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"net/url"

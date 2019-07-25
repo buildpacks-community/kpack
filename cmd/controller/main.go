@@ -15,16 +15,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/git"
-	"github.com/pivotal/build-service-system/pkg/reconciler"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver"
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned"
+	"github.com/pivotal/build-service-beam/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/git"
+	"github.com/pivotal/build-service-beam/pkg/reconciler"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/build"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/builder"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/image"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/sourceresolver"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 const (

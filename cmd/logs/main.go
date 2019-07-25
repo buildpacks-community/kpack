@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/pivotal/build-service-system/pkg/logs"
+	"github.com/pivotal/build-service-beam/pkg/logs"
 )
 
 var (

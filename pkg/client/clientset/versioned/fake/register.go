@@ -19,7 +19,7 @@
 package fake
 
 import (
-	buildv1alpha1 "github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	buildv1alpha1 "github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

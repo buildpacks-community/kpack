@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: build-service-system-controller-admin
+  name: build-service-controller-admin
 subjects:
   - kind: ServiceAccount
     name: controller
     namespace: build-service-system
 roleRef:
   kind: ClusterRole
-  name: build-service-system-admin
+  name: build-service-admin
   apiGroup: rbac.authorization.k8s.io

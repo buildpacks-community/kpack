@@ -4,8 +4,8 @@ package sourceresolverfakes
 import (
 	"sync"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/sourceresolver"
 )
 
 type FakeEnqueuer struct {

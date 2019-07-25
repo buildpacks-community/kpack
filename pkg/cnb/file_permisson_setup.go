@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 type chowner interface {

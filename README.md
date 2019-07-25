@@ -1,6 +1,10 @@
-# Build Service System
+# beam - Build Service CRD
 
-Experimental Build Service CRDs.
+Experimental Build Service CRDs. 
+
+#### What is beam?
+
+beam is a set of kubernetes custom resources (CRDs) that enable Build Service. These resources provide a mechanism to control build service through an extension of the Kubernetes API.    
 
 ## Pre requirements
 

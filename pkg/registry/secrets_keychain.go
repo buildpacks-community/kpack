@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/build-service-system/pkg/secret"
+	"github.com/pivotal/build-service-beam/pkg/secret"
 )
 
 const KnativeRegistryUrl = "build.knative.dev/docker-0"

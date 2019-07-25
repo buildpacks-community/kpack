@@ -13,15 +13,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
-	"github.com/pivotal/build-service-system/pkg/git"
-	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver/sourceresolverfakes"
-	"github.com/pivotal/build-service-system/pkg/secret"
-	secrettesthelpers "github.com/pivotal/build-service-system/pkg/secret/testhelpers"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/build-service-beam/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-beam/pkg/git"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/testhelpers"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/sourceresolver"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/sourceresolver/sourceresolverfakes"
+	"github.com/pivotal/build-service-beam/pkg/secret"
+	secrettesthelpers "github.com/pivotal/build-service-beam/pkg/secret/testhelpers"
 )
 
 func TestSourceResolver(t *testing.T) {

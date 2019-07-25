@@ -7,9 +7,9 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/registry"
-	"github.com/pivotal/build-service-system/pkg/registry/registryfakes"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/registry/registryfakes"
 )
 
 func TestMetadataRetriever(t *testing.T) {

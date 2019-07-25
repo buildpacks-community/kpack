@@ -18,13 +18,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build/buildfakes"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/build-service-beam/pkg/client/informers/externalversions"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/testhelpers"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/build"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/build/buildfakes"
 )
 
 //go:generate counterfeiter . MetadataRetriever

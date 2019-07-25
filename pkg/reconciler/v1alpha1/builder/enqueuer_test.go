@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
 )
 
 func TestEnqueueAfter(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/build-service-system/pkg/secret"
+	"github.com/pivotal/build-service-beam/pkg/secret"
 )
 
 func SaveGitSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {

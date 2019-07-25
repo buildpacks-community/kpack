@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 var (

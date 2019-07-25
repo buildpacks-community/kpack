@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
-	build "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build"
-	internalinterfaces "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/pivotal/build-service-beam/pkg/client/clientset/versioned"
+	build "github.com/pivotal/build-service-beam/pkg/client/informers/externalversions/build"
+	internalinterfaces "github.com/pivotal/build-service-beam/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

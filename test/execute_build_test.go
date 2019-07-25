@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/logs"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/logs"
 )
 
 func TestCreateImage(t *testing.T) {
@@ -33,7 +33,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var clients *clients
 
 	const (
-		testNamespace      = "test-build-service-system"
+		testNamespace      = "test-build-service-beam"
 		dockerSecret       = "docker-secret"
 		imageName          = "test-image"
 		builderName        = "build-service-builder"

@@ -9,10 +9,10 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8sTesting "k8s.io/client-go/testing"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/git"
-	"github.com/pivotal/build-service-system/pkg/secret"
-	"github.com/pivotal/build-service-system/pkg/secret/testhelpers"
+	"github.com/pivotal/build-service-beam/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-beam/pkg/git"
+	"github.com/pivotal/build-service-beam/pkg/secret"
+	"github.com/pivotal/build-service-beam/pkg/secret/testhelpers"
 )
 
 func Test(t *testing.T) {

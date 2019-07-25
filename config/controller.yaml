@@ -3,17 +3,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: build-service-system-controller
+  name: build-service-controller
   namespace: build-service-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: build-service-system-controller
+      app: build-service-controller
   template:
     metadata:
       labels:
-        app: build-service-system-controller
+        app: build-service-controller
     spec:
       serviceAccountName: controller
       containers:

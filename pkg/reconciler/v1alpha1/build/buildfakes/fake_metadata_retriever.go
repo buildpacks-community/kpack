@@ -4,9 +4,9 @@ package buildfakes
 import (
 	"sync"
 
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/build-service-beam/pkg/cnb"
+	"github.com/pivotal/build-service-beam/pkg/reconciler/v1alpha1/build"
+	"github.com/pivotal/build-service-beam/pkg/registry"
 )
 
 type FakeMetadataRetriever struct {

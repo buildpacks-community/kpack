@@ -19,8 +19,8 @@
 package build
 
 import (
-	v1alpha1 "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
-	internalinterfaces "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/pivotal/build-service-beam/pkg/client/informers/externalversions/build/v1alpha1"
+	internalinterfaces "github.com/pivotal/build-service-beam/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

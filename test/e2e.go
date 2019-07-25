@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
+	"github.com/pivotal/build-service-beam/pkg/client/clientset/versioned"
 )
 
 func newClients() (*clients, error) {

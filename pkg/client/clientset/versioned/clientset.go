@@ -19,7 +19,7 @@
 package versioned
 
 import (
-	buildv1alpha1 "github.com/pivotal/build-service-system/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	buildv1alpha1 "github.com/pivotal/build-service-beam/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
