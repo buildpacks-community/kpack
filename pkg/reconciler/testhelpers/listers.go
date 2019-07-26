@@ -69,3 +69,7 @@ func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister
 func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolumeClaimLister {
 	return corev1listers.NewPersistentVolumeClaimLister(l.indexerFor(&corev1.PersistentVolumeClaim{}))
 }
+
+func (l *Listers) GetPodLister() corev1listers.PodLister {
+	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
+}

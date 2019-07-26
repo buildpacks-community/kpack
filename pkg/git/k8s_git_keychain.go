@@ -13,12 +13,10 @@ type K8sGitKeychain struct {
 	secretManager secret.SecretManager
 }
 
-const gitKNativeKey = "build.knative.dev/git-0"
-
 func NewK8sGitKeychain(k8sClient k8sclient.Interface) *K8sGitKeychain {
 	return &K8sGitKeychain{secretManager: secret.SecretManager{
 		Client:        k8sClient,
-		AnnotationKey: gitKNativeKey,
+		AnnotationKey: v1alpha1.GITSecretAnnotationPrefix,
 		Matcher:       gitUrlMatcher{},
 	}}
 }
