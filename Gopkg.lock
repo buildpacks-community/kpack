@@ -412,27 +412,6 @@
   version = "0.5"
 
 [[projects]]
-  digest = "1:3a5f74d96cee6e094702734970ec83ba30779cf0d90bcd5dbe5746b09bceb1c3"
-  name = "github.com/knative/build"
-  packages = [
-    "pkg/apis/build",
-    "pkg/apis/build/v1alpha1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/build/v1alpha1",
-    "pkg/client/clientset/versioned/typed/build/v1alpha1/fake",
-    "pkg/client/informers/externalversions",
-    "pkg/client/informers/externalversions/build",
-    "pkg/client/informers/externalversions/build/v1alpha1",
-    "pkg/client/informers/externalversions/internalinterfaces",
-    "pkg/client/listers/build/v1alpha1",
-  ]
-  pruneopts = "NUT"
-  revision = "0ff6554186913895288555b640b6af03173a2495"
-  version = "v0.7.0"
-
-[[projects]]
   branch = "release-0.7"
   digest = "1:ef42452c3d83cbda11af548a8f37b826835c42d0517e020fa02646e4055c9f20"
   name = "github.com/knative/pkg"
@@ -1439,12 +1418,6 @@
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
-    "github.com/knative/build/pkg/apis/build/v1alpha1",
-    "github.com/knative/build/pkg/client/clientset/versioned",
-    "github.com/knative/build/pkg/client/clientset/versioned/fake",
-    "github.com/knative/build/pkg/client/informers/externalversions",
-    "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1",
-    "github.com/knative/build/pkg/client/listers/build/v1alpha1",
     "github.com/knative/pkg/apis",
     "github.com/knative/pkg/apis/duck/v1alpha1",
     "github.com/knative/pkg/controller",

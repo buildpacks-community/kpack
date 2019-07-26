@@ -2,18 +2,15 @@ package build
 
 import (
 	"context"
-	"encoding/json"
 
-	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
-	knv1alpha1informer "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
-	knv1alpha1lister "github.com/knative/build/pkg/client/listers/build/v1alpha1"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1Informers "k8s.io/client-go/informers/core/v1"
+	k8sclient "k8s.io/client-go/kubernetes"
+	v1Listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -34,26 +31,25 @@ type MetadataRetriever interface {
 	GetBuiltImage(repoName registry.ImageRef) (cnb.BuiltImage, error)
 }
 
-type Options struct {
-	reconciler.Options
-	BuildInitImage string
+type PodGenerator interface {
+	Generate(*v1alpha1.Build) (*corev1.Pod, error)
 }
 
-func NewController(opt Options, knClient knversioned.Interface, informer v1alpha1informer.BuildInformer, kninformer knv1alpha1informer.BuildInformer, metadataRetriever MetadataRetriever) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
-		KNClient:          knClient,
 		Client:            opt.Client,
-		Lister:            informer.Lister(),
-		KnLister:          kninformer.Lister(),
+		K8sClient:         k8sClient,
 		MetadataRetriever: metadataRetriever,
-		BuildInitImage:    opt.BuildInitImage,
+		Lister:            informer.Lister(),
+		PodLister:         podInformer.Lister(),
+		PodGenerator:      podGenerator,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
-	kninformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	podInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind(Kind)),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
@@ -62,12 +58,12 @@ func NewController(opt Options, knClient knversioned.Interface, informer v1alpha
 }
 
 type Reconciler struct {
-	KNClient          knversioned.Interface
 	Client            versioned.Interface
 	Lister            v1alpha1lister.BuildLister
-	KnLister          knv1alpha1lister.BuildLister
 	MetadataRetriever MetadataRetriever
-	BuildInitImage    string
+	K8sClient         k8sclient.Interface
+	PodLister         v1Listers.PodLister
+	PodGenerator      PodGenerator
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -84,17 +80,16 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	build = build.DeepCopy()
 
-	knBuild, err := c.KnLister.Builds(namespace).Get(buildName)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	} else if errors.IsNotFound(err) {
-		knBuild, err = c.createKNBuild(namespace, build)
-		if err != nil {
-			return err
-		}
+	if build.Finished() {
+		return nil
 	}
 
-	if knBuild.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() && !build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() {
+	pod, err := c.reconcileBuildPod(build)
+	if err != nil {
+		return err
+	}
+
+	if build.MetadataReady(pod) {
 		image, err := c.MetadataRetriever.GetBuiltImage(build)
 		if err != nil {
 			return err
@@ -104,246 +99,88 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		build.Status.SHA = image.SHA
 	}
 
-	build.Status.Conditions = knBuild.Status.Conditions
+	build.Status.PodName = pod.Name
+	build.Status.StepStates = stepStates(pod)
+	build.Status.StepsCompleted = stepCompleted(pod)
+	build.Status.Conditions = conditionForPod(pod)
+
 	build.Status.ObservedGeneration = build.Generation
 
-	_, err = c.Client.BuildV1alpha1().Builds(namespace).UpdateStatus(build)
+	return c.updateStatus(build)
+}
+
+func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
+	pod, err := c.PodLister.Pods(build.Namespace()).Get(build.PodName())
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	} else if errors.IsNotFound(err) {
+		podConfig, err := c.PodGenerator.Generate(build)
+		if err != nil {
+			return nil, err
+		}
+		return c.K8sClient.CoreV1().Pods(build.Namespace()).Create(podConfig)
+	}
+
+	return pod, nil
+}
+
+func conditionForPod(pod *corev1.Pod) duckv1alpha1.Conditions {
+	switch pod.Status.Phase {
+	case corev1.PodSucceeded:
+		return duckv1alpha1.Conditions{
+			{
+				Type:   duckv1alpha1.ConditionSucceeded,
+				Status: corev1.ConditionTrue,
+			},
+		}
+	case corev1.PodFailed:
+		return duckv1alpha1.Conditions{
+			{
+				Type:   duckv1alpha1.ConditionSucceeded,
+				Status: corev1.ConditionFalse,
+			},
+		}
+	default:
+		return duckv1alpha1.Conditions{
+			{
+				Type:   duckv1alpha1.ConditionSucceeded,
+				Status: corev1.ConditionUnknown,
+			},
+		}
+	}
+
+}
+
+func stepStates(pod *corev1.Pod) []corev1.ContainerState {
+	states := make([]corev1.ContainerState, 0, len(pod.Status.InitContainerStatuses))
+	for _, s := range pod.Status.InitContainerStatuses {
+		states = append(states, s.State)
+	}
+	return states
+}
+
+func stepCompleted(pod *corev1.Pod) []string {
+	completed := make([]string, 0, len(pod.Status.InitContainerStatuses))
+	for _, s := range pod.Status.InitContainerStatuses {
+		if s.State.Terminated != nil {
+			completed = append(completed, s.Name)
+		}
+	}
+	return completed
+}
+
+func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
+	original, err := c.Lister.Builds(desired.Namespace()).Get(desired.Name)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (c *Reconciler) createKNBuild(namespace string, build *v1alpha1.Build) (*knv1alpha1.Build, error) {
-	const cacheDirName = "empty-dir"
-	const layersDirName = "layers-dir"
-	const platformDir = "platform-dir"
-	var root int64 = 0
-	buf, err := json.Marshal(build.Spec.Env)
-	if err != nil {
-		return nil, err
+	if equality.Semantic.DeepEqual(original.Status, desired.Status) {
+		return nil
 	}
-	envVars := string(buf)
-	return c.KNClient.BuildV1alpha1().Builds(namespace).Create(&knv1alpha1.Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: build.Name,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(build),
-			},
-			Labels: build.Labels,
-		},
-		Spec: knv1alpha1.BuildSpec{
-			ServiceAccountName: build.Spec.ServiceAccount,
-			Source: &knv1alpha1.SourceSpec{
-				Git: &knv1alpha1.GitSourceSpec{
-					Url:      build.Spec.Source.Git.URL,
-					Revision: build.Spec.Source.Git.Revision,
-				},
-			},
-			Steps: []corev1.Container{
-				{
-					Name:  "prepare",
-					Image: c.BuildInitImage,
-					SecurityContext: &corev1.SecurityContext{
-						RunAsUser:  &root,
-						RunAsGroup: &root,
-					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  "BUILDER",
-							Value: build.Spec.Builder,
-						},
-						{
-							Name:  "PLATFORM_ENV_VARS",
-							Value: envVars,
-						},
-					},
-					Resources: build.Spec.Resources,
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layersDir", //layers is already in buildpack built image
-						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "detect",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/detector"},
-					Args: []string{
-						"-app=/workspace",
-						"-group=/layers/group.toml",
-						"-plan=/layers/plan.toml",
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "restore",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/restorer"},
-					Args: []string{
-						"-group=/layers/group.toml",
-						"-layers=/layers",
-						"-path=/cache",
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "analyze",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/analyzer"},
-					Args: []string{
-						"-layers=/layers",
-						"-helpers=false",
-						"-group=/layers/group.toml",
-						"-analyzed=/layers/analyzed.toml",
-						build.Spec.Image,
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "build",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/builder"},
-					Args: []string{
-						"-layers=/layers",
-						"-app=/workspace",
-						"-group=/layers/group.toml",
-						"-plan=/layers/plan.toml",
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "export",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/exporter"},
-					Args:      buildExporterArgs(build),
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-				{
-					Name:      "cache",
-					Image:     build.Spec.Builder,
-					Resources: build.Spec.Resources,
-					Command:   []string{"/lifecycle/cacher"},
-					Args: []string{
-						"-group=/layers/group.toml",
-						"-layers=/layers",
-						"-path=/cache",
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
-					},
-					ImagePullPolicy: "Always",
-				},
-			},
-			Volumes: []corev1.Volume{
-				{
-					Name:         cacheDirName,
-					VolumeSource: c.createCacheVolume(build),
-				},
-				{
-					Name: layersDirName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-				{
-					Name: platformDir,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-			},
-		},
-	})
-}
 
-func buildExporterArgs(build *v1alpha1.Build) []string {
-	args := []string{
-		"-layers=/layers",
-		"-helpers=false",
-		"-app=/workspace",
-		"-group=/layers/group.toml",
-		"-analyzed=/layers/analyzed.toml",
-		build.Spec.Image}
-	args = append(args, build.Spec.AdditionalImageNames...)
-	return args
-}
-
-func (c *Reconciler) createCacheVolume(build *v1alpha1.Build) corev1.VolumeSource {
-	if build.Spec.CacheName != "" {
-		return corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: build.Spec.CacheName},
-		}
-	} else {
-		return corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		}
-	}
+	_, err = c.Client.BuildV1alpha1().Builds(desired.Namespace()).UpdateStatus(desired)
+	return err
 }
 
 func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetadata {

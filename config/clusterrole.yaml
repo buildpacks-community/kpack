@@ -4,18 +4,6 @@ metadata:
   name: build-service-system-admin
 rules:
 - apiGroups:
-  - build.knative.dev
-  resources:
-  - builds
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - patch
-  - watch
-- apiGroups:
   - build.pivotal.io
   resources:
   - builds
@@ -45,6 +33,7 @@ rules:
   - ""
   resources:
   - persistentvolumeclaims
+  - pods
   verbs:
   - get
   - list

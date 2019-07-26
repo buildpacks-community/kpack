@@ -5,7 +5,6 @@ Experimental Build Service CRDs.
 ## Pre requirements
 
 - Kubernetes cluster
-- KNative 0.7 installed
 
 ## Install
 
@@ -31,7 +30,7 @@ metadata:
 spec:
   image: cloudfoundry/cnb:bionic
 ``` 
-2. Create a service account with access to push to the desired docker registry. The example below is for a registry on gcr. Check out [Knative's documentation](https://knative.dev/docs/build/auth/) for more info. 
+2. Create a service account with access to push to the desired docker registry. The example below is for a registry on gcr. 
 
 ```yaml
 apiVersion: v1
@@ -39,7 +38,7 @@ kind: Secret
 metadata:
   name: basic-user-pass
   annotations:
-    build.knative.dev/docker-0: gcr.io 
+    build.pivotal.io/docker: gcr.io 
 type: kubernetes.io/basic-auth
 stringData:
   username: <username>

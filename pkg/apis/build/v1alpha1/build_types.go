@@ -55,8 +55,11 @@ type BuildSpec struct {
 
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	BuildMetadata       BuildpackMetadataList `json:"buildMetadata"`
-	SHA                 string                `json:"SHA"`
+	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
+	SHA                 string                  `json:"SHA"`
+	PodName             string                  `json:"podName"`
+	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
+	StepsCompleted      []string                `json:"stepsCompleted",omitempty`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -123,4 +126,17 @@ func (b *Build) IsFailure() bool {
 		return false
 	}
 	return b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsFalse()
+}
+
+func (b *Build) PodName() string {
+	return kmeta.ChildName(b.Name, "-build-pod")
+}
+
+func (b *Build) MetadataReady(pod *corev1.Pod) bool {
+	return !b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() &&
+		pod.Status.Phase == "Succeeded"
+}
+
+func (b *Build) Finished() bool {
+	return !b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
 }
