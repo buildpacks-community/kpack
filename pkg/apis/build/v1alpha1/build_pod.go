@@ -14,6 +14,12 @@ const (
 	SecretPathName               = "/var/build-secrets/%s"
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
+
+	cacheDirName  = "empty-dir"
+	layersDirName = "layers-dir"
+	platformDir   = "platform-dir"
+	homeDir       = "home-dir"
+	workspaceDir  = "workspace-dir"
 )
 
 type BuildPodConfig struct {
@@ -23,13 +29,34 @@ type BuildPodConfig struct {
 	NopImage       string
 }
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev1.Pod, error) {
-	const cacheDirName = "empty-dir"
-	const layersDirName = "layers-dir"
-	const platformDir = "platform-dir"
+var (
+	workspaceVolume = corev1.VolumeMount{
+		Name:      workspaceDir,
+		MountPath: "/workspace",
+	}
+	homeVolume = corev1.VolumeMount{
+		Name:      homeDir,
+		MountPath: "/builder/home",
+	}
+	platformVolume = corev1.VolumeMount{
+		Name:      platformDir,
+		MountPath: "/platform",
+	}
+	cacheVolume = corev1.VolumeMount{
+		Name:      cacheDirName,
+		MountPath: "/cache",
+	}
+	layersVolume = corev1.VolumeMount{
+		Name:      layersDirName,
+		MountPath: "/layers",
+	}
+	homeEnv = corev1.EnvVar{
+		Name:  "HOME",
+		Value: "/builder/home",
+	}
+)
 
-	const homeDir = "home-dir"
-	const workspaceDir = "workspace-dir"
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev1.Pod, error) {
 
 	var root int64 = 0
 
@@ -39,14 +66,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}
 	envVars := string(buf)
 
-	homeDirVolume := corev1.VolumeMount{
-		Name:      homeDir,
-		MountPath: "/builder/home",
-	}
-	workspaceVolume := corev1.VolumeMount{
-		Name:      workspaceDir,
-		MountPath: "/workspace",
-	}
 	volumes := []corev1.Volume{
 		{
 			Name:         cacheDirName,
@@ -101,7 +120,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				{
 					Name:            "nop",
 					Image:           config.NopImage,
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 			},
 			InitContainers: []corev1.Container{
@@ -109,8 +128,8 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					Name:            "creds-init",
 					Image:           config.CredsInitImage,
 					Args:            secretArgs,
-					ImagePullPolicy: "IfNotPresent",
-					VolumeMounts:    append(secretVolumeMounts, homeDirVolume), //home volume
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					VolumeMounts:    append(secretVolumeMounts, homeVolume), //home volume
 					Env: []corev1.EnvVar{
 						{
 							Name:  "HOME",
@@ -128,19 +147,15 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						b.Spec.Source.Git.Revision,
 					},
 					Env: []corev1.EnvVar{
-						{
-							Name:  "HOME",
-							Value: "/builder/home",
-						},
+						homeEnv,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace", //does this need to be in /workspace
 					VolumeMounts: []corev1.VolumeMount{
 						workspaceVolume,
-						homeDirVolume,
+						homeVolume,
 					},
 				},
-
 				{
 					Name:  "prepare",
 					Image: config.BuildInitImage,
@@ -157,10 +172,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 							Name:  "PLATFORM_ENV_VARS",
 							Value: envVars,
 						},
-						{
-							Name:  "HOME",
-							Value: "/builder/home",
-						},
+						homeEnv,
 					},
 					Resources: b.Spec.Resources,
 					VolumeMounts: []corev1.VolumeMount{
@@ -168,18 +180,12 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 							Name:      layersDirName,
 							MountPath: "/layersDir", //layers is already in buildpack built image
 						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
+						cacheVolume,
+						platformVolume,
 						workspaceVolume,
-						homeDirVolume,
+						homeVolume,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "detect",
@@ -192,17 +198,11 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						"-plan=/layers/plan.toml",
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
+						layersVolume,
+						platformVolume,
 						workspaceVolume,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "restore",
@@ -215,16 +215,10 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						"-path=/cache",
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
+						layersVolume,
+						cacheVolume,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "analyze",
@@ -239,20 +233,14 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						b.Spec.Image,
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
+						layersVolume,
 						workspaceVolume,
-						homeDirVolume,
+						homeVolume,
 					},
 					Env: []corev1.EnvVar{
-						{
-							Name:  "HOME",
-							Value: "/builder/home",
-						},
+						homeEnv,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "build",
@@ -266,17 +254,11 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						"-plan=/layers/plan.toml",
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      platformDir,
-							MountPath: "/platform",
-						},
+						layersVolume,
+						platformVolume,
 						workspaceVolume,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "export",
@@ -285,20 +267,14 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					Command:   []string{"/lifecycle/exporter"},
 					Args:      buildExporterArgs(b),
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
+						layersVolume,
 						workspaceVolume,
-						homeDirVolume,
+						homeVolume,
 					},
 					Env: []corev1.EnvVar{
-						{
-							Name:  "HOME",
-							Value: "/builder/home",
-						},
+						homeEnv,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "cache",
@@ -311,16 +287,10 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						"-path=/cache",
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layers",
-						},
-						{
-							Name:      cacheDirName,
-							MountPath: "/cache",
-						},
+						layersVolume,
+						cacheVolume,
 					},
-					ImagePullPolicy: "IfNotPresent",
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 			},
 			ServiceAccountName: b.Spec.ServiceAccount,
