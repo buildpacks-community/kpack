@@ -46,34 +46,18 @@ kubectl cluster-info # ensure you have access to a cluster
     ```
 
 3. Create a secret for pull access from the desired git repository. The example below is for a github repository.
-
-    * Using ssh:
-        ```yaml
-        apiVersion: v1
-        kind: Secret
-        metadata:
-          name: git-ssh-key
-          annotations:
-            build.pivotal.io/git: https://github.com
-        type: kubernetes.io/ssh-auth
-        data:
-          ssh-privatekey: <base64 encoded>
-          known_hosts: <base64 encoded>
-        ```
- 
-    * Using basic auth:
-        ```yaml
-        apiVersion: v1
-        kind: Secret
-        metadata:
-          name: basic-git-user-pass
-          annotations:
-            build.pivotal.io/git: https://github.com
-        type: kubernetes.io/basic-auth
-        stringData:
-          username: <username>
-          password: <password>
-        ```
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: basic-git-user-pass
+      annotations:
+        build.pivotal.io/git: https://github.com
+    type: kubernetes.io/basic-auth
+    stringData:
+      username: <username>
+      password: <password>
+    ```
 
 4. Create a service account that uses the docker registry secret and the git repository secret.
     ```yaml
@@ -83,10 +67,7 @@ kubectl cluster-info # ensure you have access to a cluster
       name: service-account
     secrets:
       - name: basic-docker-user-pass
-      # Include one of the aforementioned git repository secrets
       - name: basic-git-user-pass
-      # Or
-      - name: git-ssh-key
     ```
 
 5. Apply an image configuration to the cluster.

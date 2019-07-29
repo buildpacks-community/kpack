@@ -16,7 +16,7 @@ const (
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
 
-	cacheDirName  = "empty-dir"
+	cacheDirName  = "cache-dir"
 	layersDirName = "layers-dir"
 	platformDir   = "platform-dir"
 	homeDir       = "home-dir"

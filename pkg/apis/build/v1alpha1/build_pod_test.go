@@ -324,7 +324,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, pod.Spec.Volumes, 5)
 			assert.Equal(t, corev1.Volume{
-				Name: "empty-dir",
+				Name: "cache-dir",
 				VolumeSource: corev1.VolumeSource{
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
 				},
@@ -338,7 +338,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, pod.Spec.Volumes, 5)
 			assert.Equal(t, corev1.Volume{
-				Name: "empty-dir",
+				Name: "cache-dir",
 				VolumeSource: corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{},
 				},
