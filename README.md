@@ -22,67 +22,101 @@ kubectl cluster-info # ensure you have access to a cluster
 ### Creating an Image Resource
 
 1. Create a builder resource. This resource tracks a builder on registry and will rebuild images when the builder has updated buildpacks. 
-```yaml
-apiVersion: build.pivotal.io/v1alpha1
-kind: Builder
-metadata:
-  name: sample-builder
-spec:
-  image: cloudfoundry/cnb:bionic
-``` 
-2. Create a service account with access to push to the desired docker registry. The example below is for a registry on gcr. 
+    ```yaml
+    apiVersion: build.pivotal.io/v1alpha1
+    kind: Builder
+    metadata:
+      name: sample-builder
+    spec:
+      image: cloudfoundry/cnb:bionic
+    ```
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: basic-user-pass
-  annotations:
-    build.pivotal.io/docker: gcr.io 
-type: kubernetes.io/basic-auth
-stringData:
-  username: <username>
-  password: <password>
-```
+2. Create a secret for push access to the desired docker registry. The example below is for a registry on gcr.
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: basic-docker-user-pass
+      annotations:
+        build.pivotal.io/docker: gcr.io
+    type: kubernetes.io/basic-auth
+    stringData:
+      username: <username>
+      password: <password>
+    ```
 
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: service-account
-secrets:
-  - name: basic-user-pass
-```
+3. Create a secret for pull access from the desired git repository. The example below is for a github repository.
+
+    * Using ssh:
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: git-ssh-key
+          annotations:
+            build.pivotal.io/git: https://github.com
+        type: kubernetes.io/ssh-auth
+        data:
+          ssh-privatekey: <base64 encoded>
+          known_hosts: <base64 encoded>
+        ```
  
-3. Apply an image configuration to the cluster.  
+    * Using basic auth:
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: basic-git-user-pass
+          annotations:
+            build.pivotal.io/git: https://github.com
+        type: kubernetes.io/basic-auth
+        stringData:
+          username: <username>
+          password: <password>
+        ```
 
-```yaml
-apiVersion: build.pivotal.io/v1alpha1
-kind: Image
-metadata:
-  name: sample-image
-spec:
-  serviceAccount: service-account 
-  builderRef: sample-builder
-  image: gcr.io/project-name/app
-  cacheSize: "1.5Gi"
-  failedBuildHistoryLimit: 5
-  successBuildHistoryLimit: 5
-  source:
-    git:
-      url: https://github.com/buildpack/sample-java-app.git
-      revision: master
-```
+4. Create a service account that uses the docker registry secret and the git repository secret.
+    ```yaml
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: service-account
+    secrets:
+      - name: basic-docker-user-pass
+      # Include one of the aforementioned git repository secrets
+      - name: basic-git-user-pass
+      # Or
+      - name: git-ssh-key
+    ```
 
-4.  See the builds for the image 
+5. Apply an image configuration to the cluster.
+    ```yaml
+    apiVersion: build.pivotal.io/v1alpha1
+    kind: Image
+    metadata:
+      name: sample-image
+    spec:
+      serviceAccount: service-account
+      builderRef: sample-builder
+      image: gcr.io/project-name/app
+      cacheSize: "1.5Gi"
+      failedBuildHistoryLimit: 5
+      successBuildHistoryLimit: 5
+      source:
+        git:
+          url: https://github.com/buildpack/sample-java-app.git
+          revision: master
+    ```
 
-```builds
-kubectl get cnbbuilds # before the first builds completes you will see a pending status
----------------
-NAME                          SHA   SUCCEEDED   REASON
-test-image-build-1-ea3e6fa9         Unknown     Pending
+6.  See the builds for the image
 
-```
+    ```builds
+    kubectl get cnbbuilds # before the first builds completes you will see a pending status
+    ---------------
+    NAME                          SHA   SUCCEEDED   REASON
+    test-image-build-1-ea3e6fa9         Unknown     Pending
+
+    ```
 
 After a build has completed you will be able to see the built digest
 
@@ -111,6 +145,6 @@ logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME> -build <BUILD-NUMBER>
 * To run the e2e tests the build service system must be installed and running on a cluster
 * The IMAGE_REGISTRY environment variable must point at a registry with local write access 
 
-```bash
-IMAGE_REGISTRY=gcr.io/<some-project> go test ./...
-```
+    ```bash
+    IMAGE_REGISTRY=gcr.io/<some-project> go test ./...
+    ```

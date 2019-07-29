@@ -2,3 +2,6 @@
 ---
 controller_image: gcr.io/controller
 build_init_image: gcr.io/build-init
+git_init_image: gcr.io/cf-build-service-dev-219913/git-init@sha256:a0b587d97503ccce2109dcaa1462ff62be040388baeb3425507b300b9ecb3b86
+cred_init_image: gcr.io/pivotal-knative/github.com/knative/build/cmd/creds-init@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895
+nop_init_image: gcr.io/pivotal-knative/github.com/knative/build/cmd/nop@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,38 +67,8 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}
 	envVars := string(buf)
 
-	volumes := []corev1.Volume{
-		{
-			Name:         cacheDirName,
-			VolumeSource: b.cacheVolume(),
-		},
-		{
-			Name: layersDirName,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		},
-		{
-			Name: homeDir,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		},
-		{
-			Name: workspaceDir,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		},
-
-		{
-			Name: platformDir,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		},
-	}
-	secretVolumes, secretVolumeMounts, secretArgs, err := b.secretVolumesArgs(secrets)
+	volumes := b.setupVolumes()
+	secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +100,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					Image:           config.CredsInitImage,
 					Args:            secretArgs,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					VolumeMounts:    append(secretVolumeMounts, homeVolume), //home volume
+					VolumeMounts:    append(secretVolumeMounts, homeVolume),
 					Env: []corev1.EnvVar{
 						{
 							Name:  "HOME",
@@ -138,8 +109,8 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					},
 				},
 				{
-					Name:  "git-init",          //todo move from build-service?
-					Image: config.GitInitImage, // image
+					Name:  "git-init",
+					Image: config.GitInitImage,
 					Args: []string{
 						"-url",
 						b.Spec.Source.Git.URL,
@@ -150,7 +121,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						homeEnv,
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					WorkingDir:      "/workspace", //does this need to be in /workspace
+					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
 						workspaceVolume,
 						homeVolume,
@@ -178,7 +149,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
-							MountPath: "/layersDir", //layers is already in buildpack built image
+							MountPath: "/layersDir",
 						},
 						cacheVolume,
 						platformVolume,
@@ -327,7 +298,7 @@ func isBuildServiceSecret(secret corev1.Secret) bool {
 	return secret.Annotations[GITSecretAnnotationPrefix] != "" || secret.Annotations[DOCKERSecretAnnotationPrefix] != ""
 }
 
-func (b *Build) secretVolumesArgs(secrets []corev1.Secret) ([]corev1.Volume, []corev1.VolumeMount, []string, error) {
+func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret) ([]corev1.Volume, []corev1.VolumeMount, []string, error) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
@@ -363,4 +334,38 @@ func (b *Build) secretVolumesArgs(secrets []corev1.Secret) ([]corev1.Volume, []c
 		args = append(args, fmt.Sprintf("-basic-%s=%s=%s", secretType, secret.Name, annotatedUrl))
 	}
 	return volumes, volumeMounts, args, nil
+}
+
+func (b *Build) setupVolumes() []corev1.Volume {
+	return []corev1.Volume{
+		{
+			Name:         cacheDirName,
+			VolumeSource: b.cacheVolume(),
+		},
+		{
+			Name: layersDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: homeDir,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: workspaceDir,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+
+		{
+			Name: platformDir,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+	}
 }
