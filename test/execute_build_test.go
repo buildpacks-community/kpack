@@ -85,7 +85,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: dockerSecret,
 					Annotations: map[string]string{
-						"build.knative.dev/docker-0": reference.Context().RegistryStr(),
+						"build.pivotal.io/docker": reference.Context().RegistryStr(),
 					},
 				},
 				StringData: map[string]string{

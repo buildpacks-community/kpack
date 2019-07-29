@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	knversioned "github.com/knative/build/pkg/client/clientset/versioned"
-	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	"go.uber.org/zap"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/buildpod"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/cnb"
@@ -32,9 +32,13 @@ const (
 )
 
 var (
-	kubeconfig     = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	masterURL      = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+
 	buildInitImage = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	gitInitImage   = flag.String("git-init-image", os.Getenv("GIT_INIT_IMAGE"), "The image used to fetch git source")
+	credInitImage  = flag.String("cred-init-image", os.Getenv("CRED_INIT_IMAGE"), "The image used to setup build credentials")
+	nopImage       = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
 )
 
 func main() {
@@ -53,11 +57,6 @@ func main() {
 	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
 		log.Fatalf("could not get Build client: %s", err.Error())
-	}
-
-	knbuildClient, err := knversioned.NewForConfig(clusterConfig)
-	if err != nil {
-		log.Fatalf("could not get Knative Build client: %s", err.Error())
 	}
 
 	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
@@ -79,11 +78,9 @@ func main() {
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 
-	knBuildInformerFactory := knexternalversions.NewSharedInformerFactory(knbuildClient, options.ResyncPeriod)
-	knBuildInformer := knBuildInformerFactory.Build().V1alpha1().Builds()
-
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
+	podInformer := k8sInformerFactory.Core().V1().Pods()
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		LifecycleImageFactory: &registry.ImageFactory{
@@ -91,7 +88,17 @@ func main() {
 		},
 	}
 
-	buildController := build.NewController(build.Options{Options: options, BuildInitImage: *buildInitImage}, knbuildClient, buildInformer, knBuildInformer, metadataRetriever)
+	buildpodGenerator := &buildpod.Generator{
+		BuildPodConfig: v1alpha1.BuildPodConfig{
+			BuildInitImage: *buildInitImage,
+			GitInitImage:   *gitInitImage,
+			CredsInitImage: *credInitImage,
+			NopImage:       *nopImage,
+		},
+		K8sClient: k8sClient,
+	}
+
+	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, &git.RemoteGitResolver{}, git.NewK8sGitKeychain(k8sClient))
@@ -99,14 +106,13 @@ func main() {
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
 	k8sInformerFactory.Start(stopChan)
-	knBuildInformerFactory.Start(stopChan)
 
 	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, knBuildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, podInformer.Informer().HasSynced)
 
 	err = runGroup(
 		func(done <-chan struct{}) error {

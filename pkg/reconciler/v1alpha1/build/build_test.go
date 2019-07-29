@@ -1,26 +1,28 @@
 package build_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
-	knv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	knfake "github.com/knative/build/pkg/client/clientset/versioned/fake"
-	knexternalversions "github.com/knative/build/pkg/client/informers/externalversions"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmeta"
+	rtesting "github.com/knative/pkg/reconciler/testing"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
 	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/build"
@@ -34,57 +36,58 @@ func TestBuildReconciler(t *testing.T) {
 }
 
 func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
-	fakeKNClient := knfake.NewSimpleClientset(&knv1alpha1.Build{})
-	fakeBuildClient := fake.NewSimpleClientset(&v1alpha1.Build{})
-
-	informerFactory := externalversions.NewSharedInformerFactory(fakeBuildClient, time.Second)
-	buildInformer := informerFactory.Build().V1alpha1().Builds()
-
-	knInformerFactory := knexternalversions.NewSharedInformerFactory(fakeKNClient, time.Second)
-	knbuildInformer := knInformerFactory.Build().V1alpha1().Builds()
-
-	fakeMetadataRetriever := &buildfakes.FakeMetadataRetriever{}
-
-	reconciler := testhelpers.SyncWaitingReconciler(
-		informerFactory,
-		&build.Reconciler{
-			KNClient:          fakeKNClient,
-			Client:            fakeBuildClient,
-			Lister:            buildInformer.Lister(),
-			KnLister:          knbuildInformer.Lister(),
-			MetadataRetriever: fakeMetadataRetriever,
-			BuildInitImage:    "some/build-init-image",
-		},
-		buildInformer.Informer().HasSynced,
-		knbuildInformer.Informer().HasSynced,
-	)
-	stopChan := make(chan struct{})
-
-	it.Before(func() {
-		informerFactory.Start(stopChan)
-		knInformerFactory.Start(stopChan)
-	})
-
-	it.After(func() {
-		close(stopChan)
-	})
 
 	const (
-		namespace = "some-namespace"
-		buildName = "build-name"
-		key       = "some-namespace/build-name"
+		namespace                = "some-namespace"
+		buildName                = "build-name"
+		key                      = "some-namespace/build-name"
+		serviceAccountName       = "someserviceaccount"
+		originalGeneration int64 = 1
 	)
+
+	var (
+		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
+	)
+
+	podGenerator := &testPodGenerator{}
+
+	rt := testhelpers.ReconcilerTester(t,
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+			listers := testhelpers.NewListers(row.Objects)
+
+			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
+			k8sfakeClient := k8sfake.NewSimpleClientset(listers.GetKubeObjects()...)
+
+			eventRecorder := record.NewFakeRecorder(10)
+			actionRecorderList := rtesting.ActionRecorderList{fakeClient, k8sfakeClient}
+			eventList := rtesting.EventList{Recorder: eventRecorder}
+
+			r := &build.Reconciler{
+				K8sClient:         k8sfakeClient,
+				Client:            fakeClient,
+				Lister:            listers.GetBuildLister(),
+				PodLister:         listers.GetPodLister(),
+				MetadataRetriever: fakeMetadataRetriever,
+				PodGenerator:      podGenerator,
+			}
+
+			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
+
+			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
+		})
 
 	build := &v1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
-			Name: buildName,
+			Name:      buildName,
+			Namespace: namespace,
 			Labels: map[string]string{
 				"some/label": "to-pass-through",
 			},
+			Generation: originalGeneration,
 		},
 		Spec: v1alpha1.BuildSpec{
 			Image:          "someimage/name",
-			ServiceAccount: "someserviceaccount",
+			ServiceAccount: serviceAccountName,
 			Builder:        "somebuilder/123",
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
@@ -112,403 +115,620 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-		it.Before(func() {
-			_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Create(build)
+		it("schedules a pod to execute the build", func() {
+			buildPod, err := podGenerator.Generate(build)
 			require.NoError(t, err)
-		})
 
-		when("a build hasn't been created", func() {
-			it("creates a knative build with a persistent volume cache", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, knbuild.ObjectMeta, v1.ObjectMeta{
-					Name:      buildName,
-					Namespace: namespace,
-					OwnerReferences: []v1.OwnerReference{
-						*kmeta.NewControllerRef(build),
-					},
-					Labels: map[string]string{
-						"some/label": "to-pass-through",
-					},
-				})
-				assert.Equal(t, knbuild.Spec.ServiceAccountName, "someserviceaccount")
-				assert.Equal(t, knbuild.Spec.Source, &knv1alpha1.SourceSpec{
-					Git: &knv1alpha1.GitSourceSpec{
-						Url:      "giturl.com/git.git",
-						Revision: "gitrev1234",
-					},
-				})
-				assert.Nil(t, knbuild.Spec.Template)
-				require.Len(t, knbuild.Spec.Steps, 7)
-				assert.Equal(t, knbuild.Spec.Steps[0].Image, "some/build-init-image")
-				assert.Len(t, knbuild.Spec.Steps[0].Env, 2)
-				assert.Equal(t, knbuild.Spec.Steps[0].Env[0], corev1.EnvVar{
-					Name:  "BUILDER",
-					Value: "somebuilder/123",
-				})
-				const root int64 = 0
-				assert.Equal(t, *knbuild.Spec.Steps[0].SecurityContext.RunAsUser, root)
-				assert.Equal(t, *knbuild.Spec.Steps[0].SecurityContext.RunAsGroup, root)
-				assert.Equal(t, knbuild.Spec.Steps[1].Image, "somebuilder/123")
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
-				require.Len(t, knbuild.Spec.Volumes, 3)
-				assert.Equal(t, corev1.VolumeSource{
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
-				}, knbuild.Spec.Volumes[0].VolumeSource)
-			})
-
-			it("creates a knative build with multiple image names on the export step", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name:tag2")
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name:tag3")
-			})
-
-			it("creates a knative build with analyzed path on analyze", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Contains(t, knbuild.Spec.Steps[3].Args, "-analyzed=/layers/analyzed.toml")
-			})
-
-			it("creates a knative build with analyzed path on export", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "-analyzed=/layers/analyzed.toml")
-			})
-
-			it("creates a knative build with only one image name on the export step", func() {
-				build.Spec.AdditionalImageNames = nil
-				_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(build)
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Contains(t, knbuild.Spec.Steps[5].Args, "someimage/name")
-			})
-
-			it("when cache name is empty, creates a knative build with no cache", func() {
-				build.Spec.CacheName = ""
-				_, err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(build)
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				require.Len(t, knbuild.Spec.Volumes, 3)
-				assert.Equal(t, corev1.VolumeSource{
-					EmptyDir: &corev1.EmptyDirVolumeSource{},
-				}, knbuild.Spec.Volumes[0].VolumeSource)
-			})
-
-			it("passes through build time env vars and platform volume", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				require.Len(t, knbuild.Spec.Steps[0].Env, 2)
-				assert.JSONEq(t, `[{"name": "keyA", "value": "valueA"}, {"name": "keyB", "value": "valueB"}]`, knbuild.Spec.Steps[0].Env[1].Value)
-
-				// init
-				require.Len(t, knbuild.Spec.Steps[0].VolumeMounts, 3)
-				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].Name, "platform-dir")
-				assert.Equal(t, knbuild.Spec.Steps[0].VolumeMounts[2].MountPath, "/platform")
-
-				// detect
-				require.Len(t, knbuild.Spec.Steps[1].VolumeMounts, 2)
-				assert.Equal(t, knbuild.Spec.Steps[1].VolumeMounts[1].Name, "platform-dir")
-				assert.Equal(t, knbuild.Spec.Steps[1].VolumeMounts[1].MountPath, "/platform")
-
-				// build
-				require.Len(t, knbuild.Spec.Steps[4].VolumeMounts, 2)
-				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].Name, "platform-dir")
-				assert.Equal(t, knbuild.Spec.Steps[4].VolumeMounts[1].MountPath, "/platform")
-
-				require.Len(t, knbuild.Spec.Volumes, 3)
-				assert.Equal(t, knbuild.Spec.Volumes[2].Name, "platform-dir")
-			})
-
-			it("passes through build resources", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				for _, kb := range knbuild.Spec.Steps {
-					assert.Equal(t, build.Spec.Resources, kb.Resources)
-				}
-			})
-		})
-
-		when("a build already created", func() {
-			it("does not create or update knative builds", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				_, err = fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(&v1alpha1.Build{
-					TypeMeta: v1.TypeMeta{},
-					ObjectMeta: v1.ObjectMeta{
-						Name: buildName,
-					},
-					Spec: v1alpha1.BuildSpec{
-						Image:          "updatedsomeimage/name",
-						ServiceAccount: "updatedsomeserviceaccount",
-						Source: v1alpha1.Source{
-							Git: v1alpha1.Git{
-								URL:      "updatedgiturl.com/git.git",
-								Revision: "updated1234",
-							},
-						},
-					},
-				})
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				knbuild, err := fakeKNClient.BuildV1alpha1().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.NotEqual(t, knbuild.Spec.ServiceAccountName, "updatedsomeserviceaccount")
-				assert.NotEqual(t, knbuild.Spec.Source.Git.Url, "updatedgiturl.com/git.git")
-				assert.NotEqual(t, knbuild.Spec.Source.Git.Revision, "updated1234")
-			})
-
-			it("updates the build with the status of knative build", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
-					&knv1alpha1.Build{
-						ObjectMeta: v1.ObjectMeta{
-							Name: buildName,
-						},
-						Status: knv1alpha1.BuildStatus{
-							Status: duckv1alpha1.Status{
-								Conditions: duckv1alpha1.Conditions{
-									{
-										Type:   duckv1alpha1.ConditionSucceeded,
-										Status: corev1.ConditionTrue,
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+				},
+				WantErr: false,
+				WantCreates: []runtime.Object{
+					buildPod,
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionUnknown,
+										},
 									},
 								},
+								PodName: "build-name-build-pod",
 							},
 						},
 					},
-				)
-				require.NoError(t, err)
+				},
+			})
+		})
 
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
+		it("does not schedule a build if already created", func() {
+			buildPod, err := podGenerator.Generate(build)
+			require.NoError(t, err)
 
-				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+					buildPod,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionUnknown,
+										},
+									},
+								},
+								PodName: "build-name-build-pod",
+							},
+						},
+					},
+				},
+			})
+		})
 
-				assert.Equal(t, build.Status.Conditions,
-					duckv1alpha1.Conditions{
+		it("updates observed generation when processing an update", func() {
+			buildPod, err := podGenerator.Generate(build)
+			require.NoError(t, err)
+			build.Generation = 3
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+					buildPod,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: 3,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionUnknown,
+										},
+									},
+								},
+								PodName: "build-name-build-pod",
+							},
+						},
+					},
+				},
+			})
+		})
+
+		it("does not update status if there is no update", func() {
+			buildPod, err := podGenerator.Generate(build)
+			require.NoError(t, err)
+
+			build.Status = v1alpha1.BuildStatus{
+				Status: duckv1alpha1.Status{
+					ObservedGeneration: 1,
+					Conditions: duckv1alpha1.Conditions{
 						{
 							Type:   duckv1alpha1.ConditionSucceeded,
-							Status: corev1.ConditionTrue,
+							Status: corev1.ConditionUnknown,
 						},
 					},
-				)
-			})
+				},
+				PodName: buildPod.Name,
+			}
 
-			it("updates the observed generation", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+					buildPod,
+				},
+				WantErr: false,
+			})
+		})
+
+		when("pod executing", func() {
+			it("updates the status with the status of the pod", func() {
+				pod, err := podGenerator.Generate(build)
 				require.NoError(t, err)
 
-				const generationToHaveObserved int64 = 1234
+				startTime := time.Now()
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "step-1",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID",
+							},
+						},
+					},
+					{
+						Name: "step-2",
+						State: corev1.ContainerState{
+							Running: &corev1.ContainerStateRunning{
+								StartedAt: v1.Time{Time: startTime},
+							},
+						},
+					},
+					{
+						Name: "step-3",
+						State: corev1.ContainerState{
+							Waiting: &corev1.ContainerStateWaiting{
+								Reason:  "Waiting",
+								Message: "My Turn",
+							},
+						},
+					},
+				}
 
-				_, err = fakeBuildClient.BuildV1alpha1().Builds(namespace).Update(&v1alpha1.Build{
-					TypeMeta: v1.TypeMeta{},
-					ObjectMeta: v1.ObjectMeta{
-						Name:       buildName,
-						Generation: generationToHaveObserved,
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						build,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Build{
+								ObjectMeta: build.ObjectMeta,
+								Spec:       build.Spec,
+								Status: v1alpha1.BuildStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionUnknown,
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									StepStates: []corev1.ContainerState{
+										{
+
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     "Message",
+												ContainerID: "container.ID",
+											},
+										},
+										{
+											Running: &corev1.ContainerStateRunning{
+												StartedAt: v1.Time{Time: startTime},
+											},
+										},
+										{
+											Waiting: &corev1.ContainerStateWaiting{
+												Reason:  "Waiting",
+												Message: "My Turn",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"step-1",
+									},
+								},
+							},
+						},
 					},
 				})
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, build.Generation, build.Status.ObservedGeneration)
-				assert.Equal(t, generationToHaveObserved, build.Status.ObservedGeneration)
 			})
+		})
 
-			it("updates the build metadata on successful completion", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
+		when("pod succeeded", func() {
+			const sha = "sha:1234567"
+			builtImage := cnb.BuiltImage{
+				SHA:         sha,
+				CompletedAt: time.Now(),
+				BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
+					ID:      "io.buildpack.executed",
+					Version: "1.1",
+				}},
+			}
+			fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
+
+			it("sets the build status to Succeeded", func() {
+				pod, err := podGenerator.Generate(build)
 				require.NoError(t, err)
-
-				const sha = "sha:1234567"
-				builtImage := cnb.BuiltImage{
-					SHA:         sha,
-					CompletedAt: time.Time{},
-					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
-						ID:      "1",
-						Version: "foo",
-						Layers:  nil,
-					}},
-				}
-				fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
-
-				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
-					&knv1alpha1.Build{
-						ObjectMeta: v1.ObjectMeta{
-							Name: buildName,
+				pod.Status.Phase = corev1.PodSucceeded
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "step-1",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID",
+							},
 						},
-						Status: knv1alpha1.BuildStatus{
-							Status: duckv1alpha1.Status{
-								Conditions: duckv1alpha1.Conditions{
-									{
-										Type:   duckv1alpha1.ConditionSucceeded,
-										Status: corev1.ConditionTrue,
+					},
+					{
+						Name: "step-2",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID2",
+							},
+						},
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						build,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Build{
+								ObjectMeta: build.ObjectMeta,
+								Spec:       build.Spec,
+								Status: v1alpha1.BuildStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									BuildMetadata: v1alpha1.BuildpackMetadataList{{
+										ID:      "io.buildpack.executed",
+										Version: "1.1",
+									}},
+									SHA: "sha:1234567",
+									StepStates: []corev1.ContainerState{
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     "Message",
+												ContainerID: "container.ID",
+											},
+										},
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     "Message",
+												ContainerID: "container.ID2",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"step-1",
+										"step-2",
 									},
 								},
 							},
 						},
 					},
-				)
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, build.Status.BuildMetadata,
-					v1alpha1.BuildpackMetadataList{{
-						ID:      "1",
-						Version: "foo",
-					}})
-				assert.Equal(t, build.Status.SHA, sha)
+				})
 
 				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
-				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageArgsForCall(0), build)
 			})
 
-			it("does not update the build metadata if the build fails", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
+			it("does not fetch metadata if already retrieved", func() {
+				pod, err := podGenerator.Generate(build)
 				require.NoError(t, err)
-
-				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
-					&knv1alpha1.Build{
-						ObjectMeta: v1.ObjectMeta{
-							Name: buildName,
-						},
-						Status: knv1alpha1.BuildStatus{
-							Status: duckv1alpha1.Status{
-								Conditions: duckv1alpha1.Conditions{
-									{
-										Type:   duckv1alpha1.ConditionSucceeded,
-										Status: corev1.ConditionFalse,
-									},
-								},
+				pod.Status.Phase = corev1.PodSucceeded
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "step-1",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID",
 							},
 						},
 					},
-				)
-				require.NoError(t, err)
+					{
+						Name: "step-2",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID2",
+							},
+						},
+					},
+				}
 
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, len(build.Status.BuildMetadata), 0)
-
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								BuildMetadata: v1alpha1.BuildpackMetadataList{{
+									ID:      "io.buildpack.previouslyfetched",
+									Version: "1.1",
+								}},
+								PodName: "build-name-build-pod",
+								SHA:     "sha:previouslyfetched",
+								StepStates: []corev1.ContainerState{
+									{
+										Terminated: &corev1.ContainerStateTerminated{
+											ExitCode:    0,
+											Reason:      "Terminated",
+											Message:     "Message",
+											ContainerID: "container.ID",
+										},
+									},
+									{
+										Waiting: nil,
+										Running: nil,
+										Terminated: &corev1.ContainerStateTerminated{
+											ExitCode:    0,
+											Reason:      "Terminated",
+											Message:     "Message",
+											ContainerID: "container.ID2",
+										},
+									},
+								},
+								StepsCompleted: []string{
+									"step-1",
+									"step-2", //todo realistic names
+								},
+							},
+						},
+						pod,
+					},
+					WantErr: false,
+				})
 				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 0)
 			})
 
-			it("does not update the build metadata if the build metadata has already been retrieved", func() {
-				err := reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				builtImage := cnb.BuiltImage{
-					SHA:         "",
-					CompletedAt: time.Time{},
-					BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
-						ID:      "1",
-						Version: "foo",
-						Layers:  nil,
-					}},
-				}
-				fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
-				_, err = fakeKNClient.BuildV1alpha1().Builds(namespace).UpdateStatus(
-					&knv1alpha1.Build{
-						ObjectMeta: v1.ObjectMeta{
-							Name: buildName,
-						},
-						Status: knv1alpha1.BuildStatus{
-							Status: duckv1alpha1.Status{
-								Conditions: duckv1alpha1.Conditions{
+			it("does not recreate pods if build has finished", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								BuildMetadata: v1alpha1.BuildpackMetadataList{{
+									ID:      "io.buildpack.previouslyfetched",
+									Version: "1.1",
+								}},
+								PodName: "build-name-build-pod",
+								SHA:     "sha:previouslyfetched",
+								StepStates: []corev1.ContainerState{
 									{
-										Type:   duckv1alpha1.ConditionSucceeded,
-										Status: corev1.ConditionTrue,
+										Terminated: &corev1.ContainerStateTerminated{
+											ExitCode:    0,
+											Reason:      "Terminated",
+											Message:     "Message",
+											ContainerID: "container.ID",
+										},
+									},
+									{
+										Terminated: &corev1.ContainerStateTerminated{
+											ExitCode:    0,
+											Reason:      "Terminated",
+											Message:     "Message",
+											ContainerID: "container.ID2",
+										},
+									},
+								},
+								StepsCompleted: []string{
+									"step-1",
+									"step-2",
+								},
+							},
+						},
+					},
+					WantErr: false,
+				})
+			})
+
+		})
+
+		when("pod failed", func() {
+			it("sets the build status to Failed", func() {
+				pod, err := podGenerator.Generate(build)
+				require.NoError(t, err)
+				pod.Status.Phase = corev1.PodFailed
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "step-1",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    1,
+								Reason:      "Terminated",
+								Message:     "Errors",
+								ContainerID: "container.ID",
+							},
+						},
+					},
+					{
+						Name: "step-2",
+						State: corev1.ContainerState{
+							Waiting: &corev1.ContainerStateWaiting{
+								Reason:  "Waiting",
+								Message: "My Turn",
+							},
+						},
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						build,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Build{
+								ObjectMeta: build.ObjectMeta,
+								Spec:       build.Spec,
+								Status: v1alpha1.BuildStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionFalse,
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									StepStates: []corev1.ContainerState{
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    1,
+												Reason:      "Terminated",
+												Message:     "Errors",
+												ContainerID: "container.ID",
+											},
+										},
+										{
+											Waiting: &corev1.ContainerStateWaiting{
+												Reason:  "Waiting",
+												Message: "My Turn",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"step-1",
 									},
 								},
 							},
 						},
 					},
-				)
-				require.NoError(t, err)
+				})
+			})
 
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				// subsequent call
-				err = reconciler.Reconcile(context.TODO(), "some-namespace/build-name")
-				require.NoError(t, err)
-
-				build, err := fakeBuildClient.Build().Builds(namespace).Get(buildName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, len(build.Status.BuildMetadata), 1)
-
-				assert.Equal(t, build.Status.BuildMetadata,
-					v1alpha1.BuildpackMetadataList{{
-						ID:      "1",
-						Version: "foo",
-					}})
-
-				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
+			it("does not recreate pods if build has finished", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionFalse,
+										},
+									},
+								},
+								PodName: "build-name-build-pod",
+								StepStates: []corev1.ContainerState{
+									{
+										Terminated: &corev1.ContainerStateTerminated{
+											ExitCode:    1,
+											Reason:      "Terminated",
+											Message:     "Errors",
+											ContainerID: "container.ID",
+										},
+									},
+									{
+										Waiting: &corev1.ContainerStateWaiting{
+											Reason:  "Waiting",
+											Message: "My Turn",
+										},
+									},
+								},
+								StepsCompleted: []string{
+									"step-1",
+								},
+							},
+						},
+					},
+					WantErr: false,
+				})
 			})
 		})
 
-		when("a build no longer exists", func() {
-			it("does not return an error", func() {
-				err := fakeBuildClient.BuildV1alpha1().Builds(namespace).Delete(buildName, &v1.DeleteOptions{})
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-			})
-		})
 	})
+}
+
+type testPodGenerator struct {
+}
+
+func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
+	return &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      build.PodName(),
+			Namespace: build.Namespace(),
+			Labels:    build.Labels,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(build),
+			},
+		},
+		Spec: corev1.PodSpec{
+			InitContainers: []corev1.Container{
+				{
+					Name: "step-1",
+				},
+				{
+					Name: "step-2",
+				},
+				{
+					Name: "step-3",
+				},
+			},
+		},
+	}, nil
 }

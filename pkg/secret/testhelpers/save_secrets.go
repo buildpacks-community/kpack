@@ -6,15 +6,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	k8sclient "k8s.io/client-go/kubernetes"
 
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
 func SaveGitSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
-	return saveSecrets(client, namespace, serviceAccount, users, "build.knative.dev/git-0")
+	return saveSecrets(client, namespace, serviceAccount, users, v1alpha1.GITSecretAnnotationPrefix)
 }
 
 func SaveDockerSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser) error {
-	return saveSecrets(client, namespace, serviceAccount, users, "build.knative.dev/docker-0")
+	return saveSecrets(client, namespace, serviceAccount, users, v1alpha1.DOCKERSecretAnnotationPrefix)
 }
 
 func saveSecrets(client k8sclient.Interface, namespace, serviceAccount string, users []secret.URLAndUser, annotationKey string) error {

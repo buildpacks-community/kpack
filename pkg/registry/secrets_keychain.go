@@ -8,10 +8,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	k8sclient "k8s.io/client-go/kubernetes"
 
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/secret"
 )
-
-const KnativeRegistryUrl = "build.knative.dev/docker-0"
 
 type SecretKeychainFactory struct {
 	secretManager *secret.SecretManager
@@ -21,7 +20,7 @@ func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory
 	return &SecretKeychainFactory{
 		secretManager: &secret.SecretManager{
 			Client:        client,
-			AnnotationKey: KnativeRegistryUrl,
+			AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix,
 			Matcher:       registryMatcher{},
 		},
 	}
