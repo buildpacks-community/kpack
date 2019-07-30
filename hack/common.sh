@@ -3,7 +3,7 @@
 function pack_build() {
     image=$1
     target=$2
-    builder="gcr.io/cf-build-service-dev-219913/go-builder"
+    builder="cloudfoundry/cnb:bionic"
 
     pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish --clear-cache | tee pack-output
 
