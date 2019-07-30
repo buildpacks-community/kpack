@@ -15,3 +15,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  additionalPrinterColumns:
+  - name: LatestImage
+    type: string
+    JSONPath: ".status.latestImage"
