@@ -3,11 +3,13 @@ package build
 import (
 	"context"
 
+	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1Informers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 	v1Listers "k8s.io/client-go/listers/core/v1"
@@ -129,15 +131,17 @@ func conditionForPod(pod *corev1.Pod) duckv1alpha1.Conditions {
 	case corev1.PodSucceeded:
 		return duckv1alpha1.Conditions{
 			{
-				Type:   duckv1alpha1.ConditionSucceeded,
-				Status: corev1.ConditionTrue,
+				Type:               duckv1alpha1.ConditionSucceeded,
+				Status:             corev1.ConditionTrue,
+				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	case corev1.PodFailed:
 		return duckv1alpha1.Conditions{
 			{
-				Type:   duckv1alpha1.ConditionSucceeded,
-				Status: corev1.ConditionFalse,
+				Type:               duckv1alpha1.ConditionSucceeded,
+				Status:             corev1.ConditionFalse,
+				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	default:
