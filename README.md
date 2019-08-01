@@ -77,9 +77,9 @@ kubectl cluster-info # ensure you have access to a cluster
     metadata:
       name: sample-image
     spec:
+      tag: gcr.io/project-name/app
       serviceAccount: service-account
       builderRef: sample-builder
-      image: gcr.io/project-name/app
       cacheSize: "1.5Gi"
       failedBuildHistoryLimit: 5
       successBuildHistoryLimit: 5

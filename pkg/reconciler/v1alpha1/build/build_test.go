@@ -86,7 +86,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: originalGeneration,
 		},
 		Spec: v1alpha1.BuildSpec{
-			Image:          "someimage/name",
+			Tag:            "someimage/name",
 			ServiceAccount: serviceAccountName,
 			Builder:        "somebuilder/123",
 			Env: []corev1.EnvVar{

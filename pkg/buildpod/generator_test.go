@@ -97,7 +97,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Name: "simple-build",
 				},
 				Spec: v1alpha1.BuildSpec{
-					Image:          "image/name",
+					Tag:            "image/name",
 					Builder:        "builder/name",
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.Source{

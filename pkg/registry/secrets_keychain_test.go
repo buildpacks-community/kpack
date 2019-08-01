@@ -98,7 +98,7 @@ func (f *fakeImageRef) Namespace() string {
 	return f.namespace
 }
 
-func (f *fakeImageRef) RepoName() string {
+func (f *fakeImageRef) Tag() string {
 	return "NOT-NEEDED"
 }
 

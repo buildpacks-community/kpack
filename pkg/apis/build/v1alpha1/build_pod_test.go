@@ -46,7 +46,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: v1alpha1.BuildSpec{
-			Image:          "someimage/name",
+			Tag:            "someimage/name",
 			ServiceAccount: serviceAccount,
 			Builder:        builderImage,
 			Env: []corev1.EnvVar{
@@ -254,7 +254,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-helpers=false",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
-				build.Spec.Image,
+				build.Spec.Tag,
 			}, pod.Spec.InitContainers[5].Args)
 		})
 
@@ -288,7 +288,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-app=/workspace",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
-				build.Spec.Image,
+				build.Spec.Tag,
 				"someimage/name:tag2",
 				"someimage/name:tag3",
 			}, pod.Spec.InitContainers[7].Args)

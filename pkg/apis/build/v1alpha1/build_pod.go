@@ -201,7 +201,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						"-helpers=false",
 						"-group=/layers/group.toml",
 						"-analyzed=/layers/analyzed.toml",
-						b.Spec.Image,
+						b.Spec.Tag,
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						layersVolume,
@@ -277,7 +277,7 @@ func buildExporterArgs(build *Build) []string {
 		"-app=/workspace",
 		"-group=/layers/group.toml",
 		"-analyzed=/layers/analyzed.toml",
-		build.Spec.Image}
+		build.Spec.Tag}
 	args = append(args, build.Spec.AdditionalImageNames...)
 	return args
 }

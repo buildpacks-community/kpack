@@ -36,7 +36,7 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Image                       string             `json:"image"`
+	Tag                         string             `json:"tag"`
 	BuilderRef                  string             `json:"builderRef"`
 	ServiceAccount              string             `json:"serviceAccount"`
 	Source                      Source             `json:"source"`
