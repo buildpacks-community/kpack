@@ -4,7 +4,7 @@ metadata:
   name: sample
 spec:
   builderRef: sample-builder
-  image: registry.default.svc.cluster.local:5000/sample/image
+  tag: registry.default.svc.cluster.local:5000/sample/image
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

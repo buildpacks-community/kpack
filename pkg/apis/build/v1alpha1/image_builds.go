@@ -32,7 +32,7 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		return []string{BuildReasonConfig}, true
 	}
 
-	if im.Spec.Image != lastBuild.Spec.Image {
+	if im.Spec.Tag != lastBuild.Spec.Tag {
 		return []string{BuildReasonConfig}, true
 	}
 
@@ -82,7 +82,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 			},
 		},
 		Spec: BuildSpec{
-			Image:          im.Spec.Image,
+			Tag:            im.Spec.Tag,
 			Builder:        builder.Spec.Image,
 			Env:            im.Spec.Build.Env,
 			Resources:      im.Spec.Build.Resources,
@@ -163,7 +163,7 @@ func (im *Image) generateImageNames(buildNumber string) []string {
 	}
 	now := time.Now()
 
-	tag, err := name.NewTag(im.Spec.Image, name.WeakValidation)
+	tag, err := name.NewTag(im.Spec.Tag, name.WeakValidation)
 	if err != nil {
 		// We assume that if the Image Name cannot be parsed the image will not be successfully built
 		// in this case we can just ignore any additional image names

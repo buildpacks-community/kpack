@@ -5,7 +5,7 @@ metadata:
 spec:
   serviceAccount: serviceaccount
   builder: cloudfoundry/cnb
-  image: sample/image
+  tag: sample/image
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

@@ -13,8 +13,8 @@ type ImageFactory struct {
 }
 
 func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remote, err := imgutil.NewRemoteImage(imageRef.RepoName(), f.KeychainFactory.KeychainForImageRef(imageRef))
-	return remote, errors.Wrapf(err, "could not create remote image from ref %s", imageRef.RepoName())
+	remote, err := imgutil.NewRemoteImage(imageRef.Tag(), f.KeychainFactory.KeychainForImageRef(imageRef))
+	return remote, errors.Wrapf(err, "could not create remote image from ref %s", imageRef.Tag())
 }
 
 type KeychainFactory interface {
@@ -24,7 +24,7 @@ type KeychainFactory interface {
 type ImageRef interface {
 	ServiceAccount() string
 	Namespace() string
-	RepoName() string
+	Tag() string
 }
 
 type noAuthImageRef struct {
@@ -35,7 +35,7 @@ func NewNoAuthImageRef(repoName string) *noAuthImageRef {
 	return &noAuthImageRef{repoName: repoName}
 }
 
-func (na *noAuthImageRef) RepoName() string {
+func (na *noAuthImageRef) Tag() string {
 	return na.repoName
 }
 

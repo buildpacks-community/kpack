@@ -134,7 +134,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Name: imageName,
 				},
 				Spec: v1alpha1.ImageSpec{
-					Image:          cfg.imageTag,
+					Tag:            cfg.imageTag,
 					BuilderRef:     builderName,
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.Source{

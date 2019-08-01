@@ -43,7 +43,7 @@ var (
 )
 
 type BuildSpec struct {
-	Image                string                      `json:"image"`
+	Tag                  string                      `json:"tag"`
 	Builder              string                      `json:"builder"`
 	ServiceAccount       string                      `json:"serviceAccount"`
 	Source               Source                      `json:"source"`
@@ -79,8 +79,8 @@ func (b *Build) ServiceAccount() string {
 	return b.Spec.ServiceAccount
 }
 
-func (b *Build) RepoName() string {
-	return b.Spec.Image
+func (b *Build) Tag() string {
+	return b.Spec.Tag
 }
 
 func (b *Build) Namespace() string {
@@ -111,7 +111,7 @@ func (b *Build) BuiltImage() string {
 		return ""
 	}
 
-	return b.Spec.Image + "@" + b.Status.SHA
+	return b.Spec.Tag + "@" + b.Status.SHA
 }
 
 func (b *Build) IsSuccess() bool {
