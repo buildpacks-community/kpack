@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/blob"
 	"github.com/pivotal/build-service-system/pkg/buildpod"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
@@ -35,10 +36,10 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	buildInitImage = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	gitInitImage   = flag.String("git-init-image", os.Getenv("GIT_INIT_IMAGE"), "The image used to fetch git source")
-	credInitImage  = flag.String("cred-init-image", os.Getenv("CRED_INIT_IMAGE"), "The image used to setup build credentials")
-	nopImage       = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
+	buildInitImage  = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	sourceInitImage = flag.String("source-init-image", os.Getenv("SOURCE_INIT_IMAGE"), "The image used to fetch the app source")
+	credInitImage   = flag.String("cred-init-image", os.Getenv("CRED_INIT_IMAGE"), "The image used to setup build credentials")
+	nopImage        = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
 )
 
 func main() {
@@ -90,18 +91,21 @@ func main() {
 
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: v1alpha1.BuildPodConfig{
-			BuildInitImage: *buildInitImage,
-			GitInitImage:   *gitInitImage,
-			CredsInitImage: *credInitImage,
-			NopImage:       *nopImage,
+			BuildInitImage:  *buildInitImage,
+			SourceInitImage: *sourceInitImage,
+			CredsInitImage:  *credInitImage,
+			NopImage:        *nopImage,
 		},
 		K8sClient: k8sClient,
 	}
 
+	gitResolver := git.NewResolver(k8sClient)
+	blobResolver := &blob.Resolver{}
+
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
-	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, &git.RemoteGitResolver{}, git.NewK8sGitKeychain(k8sClient))
+	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)

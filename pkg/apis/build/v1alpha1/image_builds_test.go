@@ -52,7 +52,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			ResolvedSource: ResolvedSource{
-				Git: ResolvedGitSource{
+				Git: &ResolvedGitSource{
 					URL:      "https://some.git/url",
 					Revision: "revision",
 					Type:     Commit,
@@ -70,7 +70,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Builder:        "some/builder",
 			ServiceAccount: "some/serviceaccount",
 			Source: Source{
-				Git: Git{
+				Git: &Git{
 					URL:      "https://some.git/url",
 					Revision: "revision",
 				},
@@ -136,6 +136,26 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.True(t, needed)
 			require.Len(t, reasons, 1)
 			assert.Contains(t, reasons, BuildReasonCommit)
+		})
+
+		it("true for different BlobURL", func() {
+			build.Spec.Source = Source{
+				Git: nil,
+				Blob: &Blob{
+					URL: "some-url",
+				},
+			}
+			sourceResolver.Status.ResolvedSource = ResolvedSource{
+				Git: nil,
+				Blob: &ResolvedBlobSource{
+					URL: "different",
+				},
+			}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 
 		it("false if source resolver is not ready", func() {
@@ -298,8 +318,26 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			build := image.build(sourceResolver, builder, []string{}, 27)
 
 			assert.Contains(t, build.GenerateName, "imageName-build-27-")
+		})
+
+		it("sets git url and git revision when image source is git", func() {
+			build := image.build(sourceResolver, builder, []string{}, 27)
+
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
 			assert.Contains(t, build.Spec.Source.Git.Revision, "revision")
+			assert.Nil(t, build.Spec.Source.Blob)
+		})
+
+		it("sets blob url when image source is blob", func() {
+			sourceResolver.Status.ResolvedSource = ResolvedSource{
+				Blob: &ResolvedBlobSource{
+					URL: "https://some.place/blob.jar",
+				},
+			}
+			build := image.build(sourceResolver, builder, []string{}, 27)
+
+			assert.Nil(t, build.Spec.Source.Git)
+			assert.Equal(t, build.Spec.Source.Blob.URL, "https://some.place/blob.jar")
 		})
 
 		it("with excludes additional images names when explicitly disabled", func() {

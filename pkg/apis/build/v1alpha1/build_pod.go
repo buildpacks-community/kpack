@@ -24,10 +24,10 @@ const (
 )
 
 type BuildPodConfig struct {
-	GitInitImage   string
-	BuildInitImage string
-	CredsInitImage string
-	NopImage       string
+	SourceInitImage string
+	BuildInitImage  string
+	CredsInitImage  string
+	NopImage        string
 }
 
 var (
@@ -109,17 +109,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					},
 				},
 				{
-					Name:  "git-init",
-					Image: config.GitInitImage,
-					Args: []string{
-						"-url",
-						b.Spec.Source.Git.URL,
-						"-revision",
-						b.Spec.Source.Git.Revision,
-					},
-					Env: []corev1.EnvVar{
-						homeEnv,
-					},
+					Name:            "source-init",
+					Image:           config.SourceInitImage,
+					Env:             buildSourceInitEnvVars(b),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
@@ -268,6 +260,29 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 			Volumes:            volumes,
 		},
 	}, nil
+}
+
+func buildSourceInitEnvVars(build *Build) []corev1.EnvVar {
+	if build.Spec.Source.IsGit() {
+		return []corev1.EnvVar{
+			{
+				Name:  "GIT_URL",
+				Value: build.Spec.Source.Git.URL,
+			},
+			{
+				Name:  "GIT_REVISION",
+				Value: build.Spec.Source.Git.Revision,
+			},
+			homeEnv,
+		}
+	}
+	return []corev1.EnvVar{
+		{
+			Name:  "BLOB_URL",
+			Value: build.Spec.Source.Blob.URL,
+		},
+		homeEnv,
+	}
 }
 
 func buildExporterArgs(build *Build) []string {

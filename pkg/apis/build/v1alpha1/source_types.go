@@ -1,7 +1,16 @@
 package v1alpha1
 
 type Source struct {
-	Git Git `json:"git"`
+	Git  *Git  `json:"git,omitempty"`
+	Blob *Blob `json:"blob,omitempty"`
+}
+
+func (s Source) IsGit() bool {
+	return s.Git != nil
+}
+
+func (s Source) IsBlob() bool {
+	return s.Blob != nil
 }
 
 type Git struct {
@@ -9,8 +18,13 @@ type Git struct {
 	Revision string `json:"revision"`
 }
 
+type Blob struct {
+	URL string `json:"url"`
+}
+
 type ResolvedSource struct {
-	Git ResolvedGitSource `json:"git"`
+	Git  *ResolvedGitSource  `json:"git,omitempty"`
+	Blob *ResolvedBlobSource `json:"blob,omitempty"`
 }
 
 const (
@@ -34,4 +48,8 @@ func (gs *ResolvedGitSource) IsUnknown() bool {
 
 func (gs *ResolvedGitSource) IsPollable() bool {
 	return gs.Type != Commit && gs.Type != Unknown
+}
+
+type ResolvedBlobSource struct {
+	URL string `json:"url"`
 }

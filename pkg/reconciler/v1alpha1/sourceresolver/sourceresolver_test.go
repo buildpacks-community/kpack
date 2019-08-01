@@ -1,27 +1,25 @@
 package sourceresolver_test
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	knCtrl "github.com/knative/pkg/controller"
+	"github.com/knative/pkg/controller"
+	rtesting "github.com/knative/pkg/reconciler/testing"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/client/informers/externalversions"
-	"github.com/pivotal/build-service-system/pkg/git"
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/sourceresolver/sourceresolverfakes"
-	"github.com/pivotal/build-service-system/pkg/secret"
-	secrettesthelpers "github.com/pivotal/build-service-system/pkg/secret/testhelpers"
 )
 
 func TestSourceResolver(t *testing.T) {
@@ -29,226 +27,363 @@ func TestSourceResolver(t *testing.T) {
 }
 
 func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
-	fakeClient := fake.NewSimpleClientset()
-	callCounter := &testhelpers.CallCounter{}
-	fakeClient.PrependReactor("*", "sourceresolvers", callCounter.Reactor)
-	k8sFakeClient := k8sfake.NewSimpleClientset()
-
-	fakeGitResolver := &sourceresolverfakes.FakeGitResolver{}
-	fakeEnqueuer := &sourceresolverfakes.FakeEnqueuer{}
-
-	reconciler := testhelpers.RebuildingReconciler(func() knCtrl.Reconciler {
-		informerFactory := externalversions.NewSharedInformerFactory(fakeClient, time.Second)
-		sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
-
-		return testhelpers.SyncWaitingReconciler(
-			informerFactory,
-			&sourceresolver.Reconciler{
-				GitKeychain:          git.NewK8sGitKeychain(k8sFakeClient),
-				Client:               fakeClient,
-				GitResolver:          fakeGitResolver,
-				SourceResolverLister: sourceResolverInformer.Lister(),
-				Enqueuer:             fakeEnqueuer,
-			},
-			sourceResolverInformer.Informer().HasSynced,
-		)
-	})
-
 	const (
 		sourceResolverName       = "source-resolver-name"
 		namespace                = "some-namespace"
 		key                      = "some-namespace/source-resolver-name"
-		originalGeneration int64 = 1
+		originalGeneration int64 = 0
 		serviceAccount           = "serviceAccount"
 	)
 
-	sourceResolver := &v1alpha1.SourceResolver{
-		ObjectMeta: v1.ObjectMeta{
-			Name:       sourceResolverName,
-			Namespace:  namespace,
-			Generation: originalGeneration,
-		},
-		Spec: v1alpha1.SourceResolverSpec{
-			ServiceAccount: serviceAccount,
-			Source: v1alpha1.Source{
-				Git: v1alpha1.Git{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-				},
-			},
-		},
-	}
+	fakeGitResolver := &sourceresolverfakes.FakeResolver{}
+	fakeBlobResolver := &sourceresolverfakes.FakeResolver{}
+	fakeEnqueuer := &sourceresolverfakes.FakeEnqueuer{}
+
+	rt := testhelpers.ReconcilerTester(t,
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+			listers := testhelpers.NewListers(row.Objects)
+
+			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
+			k8sfakeClient := k8sfake.NewSimpleClientset(listers.GetKubeObjects()...)
+
+			eventRecorder := record.NewFakeRecorder(10)
+			actionRecorderList := rtesting.ActionRecorderList{fakeClient, k8sfakeClient}
+			eventList := rtesting.EventList{Recorder: eventRecorder}
+
+			r := &sourceresolver.Reconciler{
+				GitResolver:          fakeGitResolver,
+				BlobResolver:         fakeBlobResolver,
+				Enqueuer:             fakeEnqueuer,
+				Client:               fakeClient,
+				SourceResolverLister: listers.GetSourceResolverLister(),
+			}
+
+			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
+
+			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
+		})
 
 	when("#Reconcile", func() {
-		it.Before(func() {
-			_, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Create(sourceResolver)
-			require.NoError(t, err)
-		})
-
-		it("updates the observed generation", func() {
-			err := reconciler.Reconcile(context.TODO(), key)
-			require.NoError(t, err)
-
-			resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-			require.NoError(t, err)
-			assert.Equal(t, resolver.Status.ObservedGeneration, originalGeneration)
-		})
-
-		it("requests resolved git with the source config and the auth", func() {
-			err := secrettesthelpers.SaveGitSecrets(k8sFakeClient, namespace, serviceAccount, []secret.URLAndUser{
-				{
-					URL:      "github.com",
-					Username: "some-username",
-					Password: "some-password",
+		when("a git based source config", func() {
+			sourceResolver := &v1alpha1.SourceResolver{
+				ObjectMeta: v1.ObjectMeta{
+					Name:       sourceResolverName,
+					Namespace:  namespace,
+					Generation: originalGeneration,
 				},
-			})
-			require.NoError(t, err)
+				Spec: v1alpha1.SourceResolverSpec{
+					ServiceAccount: serviceAccount,
+					Source: v1alpha1.Source{
+						Git: &v1alpha1.Git{
+							URL:      "https://github.com/build-me",
+							Revision: "1234",
+						},
+					},
+				},
+			}
 
-			err = reconciler.Reconcile(context.TODO(), key)
-			require.NoError(t, err)
+			resolvedSource := v1alpha1.ResolvedSource{
+				Git: &v1alpha1.ResolvedGitSource{
+					URL:      "https://example.com/something",
+					Revision: "abcdef",
+					Type:     v1alpha1.Branch,
+				},
+			}
 
-			require.Equal(t, fakeGitResolver.ResolveCallCount(), 1)
-			auth, sourceArg := fakeGitResolver.ResolveArgsForCall(0)
-			require.Equal(t, auth, git.BasicAuth{
-				Username: "some-username",
-				Password: "some-password",
+			fakeGitResolver.ResolveReturns(resolvedSource, nil)
+
+			it("updates the observed generation", func() {
+				sourceResolver := resolvedSourceResolver(sourceResolver, resolvedSource)
+				sourceResolver.Generation = 2
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						sourceResolver,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.SourceResolver{
+								ObjectMeta: sourceResolver.ObjectMeta,
+								Spec:       sourceResolver.Spec,
+								Status: v1alpha1.SourceResolverStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 2,
+										Conditions:         sourceResolver.Status.Conditions,
+									},
+									ResolvedSource: sourceResolver.Status.ResolvedSource,
+								},
+							},
+						},
+					},
+				})
 			})
-			require.Equal(t, sourceArg, v1alpha1.Git{
-				URL:      "https://github.com/build-me",
-				Revision: "1234",
+
+			it("does not unnecessarily update the resource", func() {
+				sourceResolver := resolvedSourceResolver(sourceResolver, resolvedSource)
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						sourceResolver,
+					},
+					WantErr: false,
+				})
+			})
+
+			when("a branch is the source", func() {
+				resolvedSource := v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Branch,
+					},
+				}
+
+				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+
+				it("resolves git with the resolved source resolver", func() {
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+							{
+								Object: &v1alpha1.SourceResolver{
+									ObjectMeta: sourceResolver.ObjectMeta,
+									Spec:       sourceResolver.Spec,
+									Status: v1alpha1.SourceResolverStatus{
+										Status: duckv1alpha1.Status{
+											ObservedGeneration: originalGeneration,
+											Conditions: duckv1alpha1.Conditions{
+												{
+													Type:   duckv1alpha1.ConditionReady,
+													Status: corev1.ConditionTrue,
+												},
+												{
+													Type:   v1alpha1.ActivePolling,
+													Status: corev1.ConditionTrue,
+												},
+											},
+										},
+										ResolvedSource: v1alpha1.ResolvedSource{
+											Git: &v1alpha1.ResolvedGitSource{
+												URL:      "https://example.com/something",
+												Revision: "abcdef",
+												Type:     v1alpha1.Branch,
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+
+					enquedSourceResolver := fakeEnqueuer.EnqueueArgsForCall(0)
+					require.Equal(t, sourceResolver.Name, enquedSourceResolver.Name)
+					require.Equal(t, sourceResolver.Namespace, enquedSourceResolver.Namespace)
+				})
+			})
+
+			when("a specific commit sha is the source", func() {
+				resolvedSource := v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Commit,
+					},
+				}
+
+				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+
+				it("reconciles to ready and not active polling", func() {
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+							{
+								Object: &v1alpha1.SourceResolver{
+									ObjectMeta: sourceResolver.ObjectMeta,
+									Spec:       sourceResolver.Spec,
+									Status: v1alpha1.SourceResolverStatus{
+										Status: duckv1alpha1.Status{
+											ObservedGeneration: originalGeneration,
+											Conditions: duckv1alpha1.Conditions{
+												{
+													Type:   duckv1alpha1.ConditionReady,
+													Status: corev1.ConditionTrue,
+												},
+												{
+													Type:   v1alpha1.ActivePolling,
+													Status: corev1.ConditionFalse,
+												},
+											},
+										},
+										ResolvedSource: v1alpha1.ResolvedSource{
+											Git: &v1alpha1.ResolvedGitSource{
+												URL:      "https://example.com/something",
+												Revision: "abcdef",
+												Type:     v1alpha1.Commit,
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+
+					require.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
+				})
+			})
+
+			when("git resolves to unknown", func() {
+				resolvedSource := v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Unknown,
+					},
+				}
+
+				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+
+				it("saves unknown when source has not previously resolved", func() {
+					sourceResolver.Generation = 1
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+							{
+								Object: &v1alpha1.SourceResolver{
+									ObjectMeta: sourceResolver.ObjectMeta,
+									Spec:       sourceResolver.Spec,
+									Status: v1alpha1.SourceResolverStatus{
+										Status: duckv1alpha1.Status{
+											ObservedGeneration: 1,
+											Conditions: duckv1alpha1.Conditions{
+												{
+													Type:   duckv1alpha1.ConditionReady,
+													Status: corev1.ConditionTrue,
+												},
+												{
+													Type:   v1alpha1.ActivePolling,
+													Status: corev1.ConditionFalse,
+												},
+											},
+										},
+										ResolvedSource: v1alpha1.ResolvedSource{
+											Git: &v1alpha1.ResolvedGitSource{
+												URL:      "https://example.com/something",
+												Revision: "abcdef",
+												Type:     v1alpha1.Unknown,
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+				})
+
+				it("ignores unknown when source has been previously resolved", func() {
+					alreadyResolvedSource := v1alpha1.ResolvedSource{
+						Git: &v1alpha1.ResolvedGitSource{
+							URL:      "https://example.com/something",
+							Revision: "abcdef",
+							Type:     v1alpha1.Commit,
+						},
+					}
+
+					alreadyResolvedSourceResolver := sourceResolver.DeepCopy()
+					alreadyResolvedSourceResolver = resolvedSourceResolver(alreadyResolvedSourceResolver, alreadyResolvedSource)
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+					})
+				})
 			})
 		})
 
-		it("does not unnecessarily update the resource", func() {
-			err := reconciler.Reconcile(context.TODO(), key)
-			require.NoError(t, err)
-			err = reconciler.Reconcile(context.TODO(), key)
-			require.NoError(t, err)
-			err = reconciler.Reconcile(context.TODO(), key)
-			require.NoError(t, err)
+		when("a blob based source config", func() {
+			sourceResolver := &v1alpha1.SourceResolver{
+				ObjectMeta: v1.ObjectMeta{
+					Name:       sourceResolverName,
+					Namespace:  namespace,
+					Generation: originalGeneration,
+				},
+				Spec: v1alpha1.SourceResolverSpec{
+					ServiceAccount: serviceAccount,
+					Source: v1alpha1.Source{
+						Blob: &v1alpha1.Blob{
+							URL: "https://some-blobstore.example.com/some-blob",
+						},
+					},
+				},
+			}
 
-			require.Equal(t, callCounter.UpdateCalls(), 1)
-		})
+			resolvedSource := v1alpha1.ResolvedSource{
+				Blob: &v1alpha1.ResolvedBlobSource{
+					URL: "https://some-blobstore.example.com/some-blob",
+				},
+			}
 
-		when("a specific commit sha is the source", func() {
-			it.Before(func() {
-				fakeGitResolver.ResolveReturns(v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-					Type:     v1alpha1.Commit,
-				}, nil)
-
-			})
+			fakeBlobResolver.ResolveReturns(resolvedSource, nil)
 
 			it("reconciles to ready and not active polling", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Equal(t, resolver.Status.ResolvedSource.Git, v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-					Type:     v1alpha1.Commit,
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						sourceResolver,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.SourceResolver{
+								ObjectMeta: sourceResolver.ObjectMeta,
+								Spec:       sourceResolver.Spec,
+								Status: v1alpha1.SourceResolverStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   v1alpha1.ActivePolling,
+												Status: corev1.ConditionFalse,
+											},
+										},
+									},
+									ResolvedSource: v1alpha1.ResolvedSource{
+										Blob: &v1alpha1.ResolvedBlobSource{
+											URL: "https://some-blobstore.example.com/some-blob",
+										},
+									},
+								},
+							},
+						},
+					},
 				})
-				assert.True(t, resolver.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue())
-				assert.True(t, resolver.Status.GetCondition(v1alpha1.ActivePolling).IsFalse())
-			})
-
-			it("does not enqueue subsequent processing", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				require.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
-			})
-		})
-
-		when("a branch is the source", func() {
-			it("reconciles to ready and active polling", func() {
-				fakeGitResolver.ResolveReturns(v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-					Type:     v1alpha1.Branch,
-				}, nil)
-
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-				require.NoError(t, err)
-				assert.Equal(t, resolver.Status.ResolvedSource.Git, v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-					Type:     v1alpha1.Branch,
-				})
-				assert.True(t, resolver.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue())
-				assert.True(t, resolver.Status.GetCondition(v1alpha1.ActivePolling).IsTrue())
-			})
-
-			it("enqueues source resolvers for subsequent processing", func() {
-				fakeGitResolver.ResolveReturns(v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "1234",
-					Type:     v1alpha1.Branch,
-				}, nil)
-
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				require.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
-				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				require.Equal(t, resolver, fakeEnqueuer.EnqueueArgsForCall(0))
-			})
-		})
-
-		when("git resolves to unknown", func() {
-			it.Before(func() {
-				fakeGitResolver.ResolveReturns(v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "flaky-branch",
-					Type:     v1alpha1.Unknown,
-				}, nil)
-			})
-
-			it("saves unknown when source has not previously resolved", func() {
-				err := reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, resolver.Status.ResolvedSource.Git, v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "flaky-branch",
-					Type:     v1alpha1.Unknown,
-				})
-			})
-
-			it("ignores unknown when source has been previously resolved", func() {
-				alreadyResolvedSourceResolver := sourceResolver.DeepCopy()
-				alreadyResolvedSourceResolver.Status.ObservedGeneration = originalGeneration
-				alreadyResolvedSourceResolver.ResolvedGitSource(v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "real-commit",
-					Type:     v1alpha1.Branch,
-				})
-				_, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).UpdateStatus(alreadyResolvedSourceResolver)
-				require.NoError(t, err)
-
-				err = reconciler.Reconcile(context.TODO(), key)
-				require.NoError(t, err)
-
-				resolver, err := fakeClient.BuildV1alpha1().SourceResolvers(namespace).Get(sourceResolverName, v1.GetOptions{})
-				require.NoError(t, err)
-
-				assert.Equal(t, v1alpha1.ResolvedGitSource{
-					URL:      "https://github.com/build-me",
-					Revision: "real-commit",
-					Type:     v1alpha1.Branch,
-				}, resolver.Status.ResolvedSource.Git)
 			})
 		})
 	})
+}
+
+func resolvedSourceResolver(sourceResolver *v1alpha1.SourceResolver, resolvedSource v1alpha1.ResolvedSource) *v1alpha1.SourceResolver {
+	sourceResolver.ResolvedGitSource(resolvedSource.Git)
+	return sourceResolver
 }

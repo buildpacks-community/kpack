@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -31,11 +32,11 @@ func TestCreateImage(t *testing.T) {
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var cfg config
 	var clients *clients
+	var totalImagesCreated = 1
 
 	const (
 		testNamespace      = "test-build-service-system"
 		dockerSecret       = "docker-secret"
-		imageName          = "test-image"
 		builderName        = "build-service-builder"
 		serviceAccountName = "image-service-account"
 		builderImage       = "cloudfoundry/cnb:bionic"
@@ -63,12 +64,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		deleteImageTag(t, cfg.imageTag)
+		for i := 1; i < totalImagesCreated; i++ {
+			deleteImageTag(t, cfg.imageTag+"-"+strconv.Itoa(i))
+		}
 	})
 
 	when("an image is applied", func() {
 		it("builds an initial image", func() {
-			require.False(t, imageExists(t, cfg.imageTag)())
+			require.False(t, imageExists(t, cfg.imageTag+"-1")(), "image with tag 1 need to be removed")
+			require.False(t, imageExists(t, cfg.imageTag+"-2")(), "image with tag 2 need to be removed")
 
 			reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 			require.NoError(t, err)
@@ -119,6 +123,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			cacheSize := resource.MustParse("1Gi")
+
 			expectedResources := v1.ResourceRequirements{
 				Limits: v1.ResourceList{
 					v1.ResourceCPU:    resource.MustParse("100m"),
@@ -129,54 +134,73 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					v1.ResourceMemory: resource.MustParse("512M"),
 				},
 			}
-			_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: imageName,
+
+			imageConfigs := map[string]v1alpha1.Source{
+				"test-git-image": {
+					Git: &v1alpha1.Git{
+						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+						Revision: "master",
+					},
 				},
-				Spec: v1alpha1.ImageSpec{
-					Tag:            cfg.imageTag,
-					BuilderRef:     builderName,
-					ServiceAccount: serviceAccountName,
-					Source: v1alpha1.Source{
-						Git: v1alpha1.Git{
-							URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-							Revision: "master",
+				"test-blob-image": {
+					Blob: &v1alpha1.Blob{
+						URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+					},
+				},
+			}
+
+			for imageName, imageSource := range imageConfigs {
+				_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: imageName,
+					},
+					Spec: v1alpha1.ImageSpec{
+						Tag:                       cfg.imageTag + "-" + strconv.Itoa(totalImagesCreated),
+						BuilderRef:                  builderName,
+						ServiceAccount:              serviceAccountName,
+						Source:                      imageSource,
+						CacheSize:                   &cacheSize,
+						DisableAdditionalImageNames: true,
+						Build: v1alpha1.ImageBuild{
+							Resources: expectedResources,
 						},
 					},
-					CacheSize:                   &cacheSize,
-					DisableAdditionalImageNames: true,
-					Build: v1alpha1.ImageBuild{
-						Resources: expectedResources,
-					},
-				},
-			})
-			require.NoError(t, err)
-
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			logTail := &bytes.Buffer{}
-			go func() {
-				err = logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, imageName, "1", testNamespace)
+				})
 				require.NoError(t, err)
-			}()
 
-			t.Logf("Waiting for image '%s' to be created", cfg.imageTag)
-			eventually(t, imageExists(t, cfg.imageTag), 5*time.Second, 5*time.Minute)
-
-			assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", cfg.imageTag))
-
-			podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{})
-			require.NoError(t, err)
-			require.Len(t, podList.Items, 1)
-			pod := podList.Items[0]
-			for i, container := range pod.Spec.InitContainers {
-				if i < 2 {
-					continue // skip the knative default containers
-				}
-				assert.Equal(t, expectedResources, container.Resources)
+				validateImageCreate(t, clients, totalImagesCreated, imageName, testNamespace, cfg, expectedResources)
+				totalImagesCreated++
 			}
 		})
 	})
+}
+
+func validateImageCreate(t *testing.T, clients *clients, numberExpectedPods int, imageName, testNamespace string, cfg config, expectedResources v1.ResourceRequirements) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	logTail := &bytes.Buffer{}
+	go func() {
+		err := logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, imageName, "1", testNamespace)
+		require.NoError(t, err)
+	}()
+
+	t.Logf("Waiting for image '%s' to be created", cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods))
+	eventually(t, imageExists(t, cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods)), 5*time.Second, 5*time.Minute)
+
+	assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods)))
+
+	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{})
+	require.NoError(t, err)
+
+	require.Len(t, podList.Items, numberExpectedPods)
+	pod := podList.Items[numberExpectedPods-1]
+
+	for i, container := range pod.Spec.InitContainers {
+		if i < 2 {
+			continue // skip the non-build containers
+		}
+		assert.Equal(t, expectedResources, container.Resources)
+	}
 }
 
 func imageExists(t *testing.T, name string) func() bool {

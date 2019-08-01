@@ -37,13 +37,14 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 	}
 
 	var reasons []string
-	if sourceResolver.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL ||
+
+	if sourceResolver.GitURLChanged(lastBuild) || sourceResolver.BlobChanged(lastBuild) ||
 		!equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) ||
 		!equality.Semantic.DeepEqual(im.Spec.Build.Resources, lastBuild.Spec.Resources) {
 		reasons = append(reasons, BuildReasonConfig)
 	}
 
-	if sourceResolver.Status.ResolvedSource.Git.Revision != lastBuild.Spec.Source.Git.Revision {
+	if sourceResolver.GitRevisionChanged(lastBuild) {
 		reasons = append(reasons, BuildReasonCommit)
 	}
 
@@ -82,17 +83,12 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 			},
 		},
 		Spec: BuildSpec{
-			Tag:            im.Spec.Tag,
-			Builder:        builder.Spec.Image,
-			Env:            im.Spec.Build.Env,
-			Resources:      im.Spec.Build.Resources,
-			ServiceAccount: im.Spec.ServiceAccount,
-			Source: Source{
-				Git: Git{
-					URL:      sourceResolver.Status.ResolvedSource.Git.URL,
-					Revision: sourceResolver.Status.ResolvedSource.Git.Revision,
-				},
-			},
+			Tag:                  im.Spec.Tag,
+			Builder:              builder.Spec.Image,
+			Env:                  im.Spec.Build.Env,
+			Resources:            im.Spec.Build.Resources,
+			ServiceAccount:       im.Spec.ServiceAccount,
+			Source:               sourceResolver.desiredSource(),
 			CacheName:            im.Status.BuildCacheName,
 			AdditionalImageNames: im.generateImageNames(buildNumber),
 		},

@@ -104,7 +104,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			Source: v1alpha1.Source{
-				Git: v1alpha1.Git{
+				Git: &v1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},

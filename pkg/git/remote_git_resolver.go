@@ -11,39 +11,35 @@ import (
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 )
 
-type GitKeychain interface {
-	Resolve(namespace, serviceAccount string, git v1alpha1.Git) (Auth, error)
+const defaultRemote = "origin"
+
+type auth interface {
+	auth() transport.AuthMethod
 }
 
-type BasicAuth struct {
+type basicAuth struct {
 	Username string
 	Password string
 }
 
-func (b BasicAuth) auth() transport.AuthMethod {
+func (b basicAuth) auth() transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: b.Username,
 		Password: b.Password,
 	}
 }
 
-type AnonymousAuth struct {
+type anonymousAuth struct {
 }
 
-func (AnonymousAuth) auth() transport.AuthMethod {
+func (anonymousAuth) auth() transport.AuthMethod {
 	return nil
 }
 
-type Auth interface {
-	auth() transport.AuthMethod
+type remoteGitResolver struct {
 }
 
-type RemoteGitResolver struct {
-}
-
-const defaultRemote = "origin"
-
-func (*RemoteGitResolver) Resolve(auth Auth, gitSource v1alpha1.Git) (v1alpha1.ResolvedGitSource, error) {
+func (*remoteGitResolver) Resolve(auth auth, gitSource v1alpha1.Git) (v1alpha1.ResolvedSource, error) {
 	repo := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{gitSource.URL},
@@ -52,28 +48,31 @@ func (*RemoteGitResolver) Resolve(auth Auth, gitSource v1alpha1.Git) (v1alpha1.R
 		Auth: auth.auth(),
 	})
 	if err != nil {
-		return v1alpha1.ResolvedGitSource{
-			URL:      gitSource.URL,
-			Revision: gitSource.Revision, //maybe
-			Type:     v1alpha1.Unknown,
-		}, nil
+		return v1alpha1.ResolvedSource{
+			Git: &v1alpha1.ResolvedGitSource{
+				URL:      gitSource.URL,
+				Revision: gitSource.Revision, // maybe
+				Type:     v1alpha1.Unknown,
+			}}, nil
 	}
 
 	for _, ref := range references {
 		if string(ref.Name().Short()) == gitSource.Revision {
-			return v1alpha1.ResolvedGitSource{
-				URL:      gitSource.URL,
-				Revision: ref.Hash().String(),
-				Type:     sourceType(ref),
-			}, nil
+			return v1alpha1.ResolvedSource{
+				Git: &v1alpha1.ResolvedGitSource{
+					URL:      gitSource.URL,
+					Revision: ref.Hash().String(),
+					Type:     sourceType(ref),
+				}}, nil
 		}
 	}
 
-	return v1alpha1.ResolvedGitSource{
-		URL:      gitSource.URL,
-		Revision: gitSource.Revision,
-		Type:     v1alpha1.Commit,
-	}, nil
+	return v1alpha1.ResolvedSource{
+		Git: &v1alpha1.ResolvedGitSource{
+			URL:      gitSource.URL,
+			Revision: gitSource.Revision,
+			Type:     v1alpha1.Commit,
+		}}, nil
 }
 
 func sourceType(reference *plumbing.Reference) v1alpha1.GitSourceKind {

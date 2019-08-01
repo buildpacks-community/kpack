@@ -55,7 +55,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 			Resources: resources,
 			Source: v1alpha1.Source{
-				Git: v1alpha1.Git{
+				Git: &v1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
@@ -97,10 +97,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 	config := v1alpha1.BuildPodConfig{
-		GitInitImage:   "git/init:image",
-		BuildInitImage: "build/init:image",
-		CredsInitImage: "creds/init:image",
-		NopImage:       "no/op:image",
+		SourceInitImage: "git/init:image",
+		BuildInitImage:  "build/init:image",
+		CredsInitImage:  "creds/init:image",
+		NopImage:        "no/op:image",
 	}
 
 	when("BuildPod", func() {
@@ -133,7 +133,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Len(t, pod.Spec.InitContainers, len([]string{
 				"creds-init",
-				"git-init",
+				"source-init",
 				"prepare",
 				"detect",
 				"restore",
@@ -170,18 +170,48 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.InitContainers[0].VolumeMounts)
 		})
 
-		it("configures git init with the build's source", func() {
+		it("configures source init with the git source", func() {
 			pod, err := build.BuildPod(config, secrets)
 			require.NoError(t, err)
 
-			assert.Equal(t, pod.Spec.InitContainers[1].Name, "git-init")
-			assert.Equal(t, pod.Spec.InitContainers[1].Image, config.GitInitImage)
-			assert.Equal(t, pod.Spec.InitContainers[1].Args, []string{
-				"-url",
-				build.Spec.Source.Git.URL,
-				"-revision",
-				build.Spec.Source.Git.Revision,
-			})
+			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
+			assert.Equal(t, []corev1.EnvVar{
+				{
+					Name:  "GIT_URL",
+					Value: build.Spec.Source.Git.URL,
+				},
+				{
+					Name:  "GIT_REVISION",
+					Value: build.Spec.Source.Git.Revision,
+				},
+				{
+					Name:  "HOME",
+					Value: "/builder/home",
+				},
+			}, pod.Spec.InitContainers[1].Env)
+		})
+
+		it("configures source init with the blob source", func() {
+			build.Spec.Source.Git = nil
+			build.Spec.Source.Blob = &v1alpha1.Blob{
+				URL: "https://some-blobstore.example.com/some-blob",
+			}
+			pod, err := build.BuildPod(config, secrets)
+			require.NoError(t, err)
+
+			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
+			assert.Equal(t, []corev1.EnvVar{
+				{
+					Name:  "BLOB_URL",
+					Value: "https://some-blobstore.example.com/some-blob",
+				},
+				{
+					Name:  "HOME",
+					Value: "/builder/home",
+				},
+			}, pod.Spec.InitContainers[1].Env)
 		})
 
 		it("configures prepare step with the build setup", func() {
@@ -311,7 +341,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			for _, container := range pod.Spec.InitContainers {
-				if container.Name != "creds-init" && container.Name != "git-init" && container.Name != "prepare" {
+				if container.Name != "creds-init" && container.Name != "source-init" && container.Name != "prepare" {
 					assert.Equal(t, builderImage, container.Image, fmt.Sprintf("image on container '%s'", container.Name))
 					assert.Equal(t, resources, container.Resources, fmt.Sprintf("resources on container '%s'", container.Name))
 				}
