@@ -7,6 +7,7 @@ function pack_build() {
 
     pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish --clear-cache | tee pack-output
 
-    resolved_image_name=$(cat pack-output | grep "\*\*\* Image" | cut -d " " -f 4)
+    docker pull ${image}
+    resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
     rm pack-output
 }
