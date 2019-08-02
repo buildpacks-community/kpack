@@ -2,16 +2,18 @@ package sourceresolver
 
 import (
 	"context"
+	"errors"
+
 	"github.com/knative/pkg/controller"
+	"k8s.io/apimachinery/pkg/api/equality"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1listers "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/git"
 	"github.com/pivotal/build-service-system/pkg/reconciler"
-	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -19,15 +21,16 @@ const (
 	Kind           = "SourceResolver"
 )
 
-//go:generate counterfeiter . GitResolver
-type GitResolver interface {
-	Resolve(auth git.Auth, gitSource v1alpha1.Git) (v1alpha1.ResolvedGitSource, error)
+//go:generate counterfeiter . Resolver
+type Resolver interface {
+	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSource, error)
+	CanResolve(*v1alpha1.SourceResolver) bool
 }
 
-func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1informers.SourceResolverInformer, gitResolver GitResolver, gitKeychain git.GitKeychain) *controller.Impl {
+func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1informers.SourceResolverInformer, gitResolver Resolver, blobResolver Resolver) *controller.Impl {
 	c := &Reconciler{
 		GitResolver:          gitResolver,
-		GitKeychain:          gitKeychain,
+		BlobResolver:         blobResolver,
 		Client:               opt.Client,
 		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
@@ -50,10 +53,9 @@ type Enqueuer interface {
 }
 
 type Reconciler struct {
-	GitResolver GitResolver
-	GitKeychain git.GitKeychain
-	Enqueuer    Enqueuer
-
+	GitResolver          Resolver
+	BlobResolver         Resolver
+	Enqueuer             Enqueuer
 	Client               versioned.Interface
 	SourceResolverLister v1alpha1listers.SourceResolverLister
 }
@@ -65,25 +67,24 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	sourceResolver, err := c.SourceResolverLister.SourceResolvers(namespace).Get(sourceResolverName)
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 	sourceResolver = sourceResolver.DeepCopy()
 
-	auth, err := c.GitKeychain.Resolve(namespace, sourceResolver.Spec.ServiceAccount, sourceResolver.Spec.Source.Git)
+	sourceReconciler, err := c.sourceReconciler(sourceResolver)
 	if err != nil {
 		return err
 	}
 
-	resolvedGitSource, err := c.GitResolver.Resolve(auth, sourceResolver.Spec.Source.Git)
+	resolvedSource, err := sourceReconciler.Resolve(sourceResolver)
 	if err != nil {
 		return err
 	}
 
-	sourceResolver.ResolvedGitSource(resolvedGitSource)
-	sourceResolver.Status.ObservedGeneration = sourceResolver.Generation
+	sourceResolver.ResolvedSource(resolvedSource)
 
 	if sourceResolver.PollingReady() {
 		err := c.Enqueuer.Enqueue(sourceResolver)
@@ -92,7 +93,17 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		}
 	}
 
+	sourceResolver.Status.ObservedGeneration = sourceResolver.Generation
 	return c.updateStatus(sourceResolver)
+}
+
+func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (Resolver, error) {
+	if c.GitResolver.CanResolve(sourceResolver) {
+		return c.GitResolver, nil
+	} else if c.BlobResolver.CanResolve(sourceResolver) {
+		return c.BlobResolver, nil
+	}
+	return nil, errors.New("invalid source type")
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {

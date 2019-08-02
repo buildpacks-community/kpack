@@ -1,4 +1,4 @@
-package git_test
+package git
 
 import (
 	"testing"
@@ -10,7 +10,6 @@ import (
 	k8sTesting "k8s.io/client-go/testing"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/git"
 	"github.com/pivotal/build-service-system/pkg/secret"
 	"github.com/pivotal/build-service-system/pkg/secret/testhelpers"
 )
@@ -24,9 +23,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 
 	var (
 		fakeClient = fake.NewSimpleClientset()
-		keychain   = git.NewK8sGitKeychain(
-			fakeClient,
-		)
+		keychain   = newK8sGitKeychain(fakeClient)
 	)
 
 	it.Before(func() {
@@ -61,7 +58,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, git.BasicAuth{
+			require.Equal(t, auth, basicAuth{
 				Username: "saved-username",
 				Password: "saved-password",
 			})
@@ -74,7 +71,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, git.BasicAuth{
+			require.Equal(t, auth, basicAuth{
 				Username: "noschemegit-username",
 				Password: "noschemegit-password",
 			})
@@ -87,7 +84,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, git.AnonymousAuth{})
+			require.Equal(t, auth, anonymousAuth{})
 		})
 
 		it("returns anonymous auth for an empty service account", func() {
@@ -97,7 +94,7 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, git.AnonymousAuth{})
+			require.Equal(t, auth, anonymousAuth{})
 		})
 	})
 }

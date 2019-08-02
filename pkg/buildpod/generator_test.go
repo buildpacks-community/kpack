@@ -82,10 +82,10 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it("returns pod config with secrets on build's service account", func() {
 
 			buildPodConfig := v1alpha1.BuildPodConfig{
-				GitInitImage:   "git/init:image",
-				BuildInitImage: "build/init:image",
-				CredsInitImage: "creds/init:image",
-				NopImage:       "no/op:image",
+				SourceInitImage: "source/init:image",
+				BuildInitImage:  "build/init:image",
+				CredsInitImage:  "creds/init:image",
+				NopImage:        "no/op:image",
 			}
 			generator := &buildpod.Generator{
 				BuildPodConfig: buildPodConfig,
@@ -101,7 +101,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Builder:        "builder/name",
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.Source{
-						Git: v1alpha1.Git{
+						Git: &v1alpha1.Git{
 							URL:      "http://www.google.com",
 							Revision: "master",
 						},

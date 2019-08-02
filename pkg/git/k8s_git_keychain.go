@@ -2,28 +2,30 @@ package git
 
 import (
 	"fmt"
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/secret"
+	"net/url"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
-	"net/url"
+
+	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/build-service-system/pkg/secret"
 )
 
-type K8sGitKeychain struct {
+type k8sGitKeychain struct {
 	secretManager secret.SecretManager
 }
 
-func NewK8sGitKeychain(k8sClient k8sclient.Interface) *K8sGitKeychain {
-	return &K8sGitKeychain{secretManager: secret.SecretManager{
+func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
+	return &k8sGitKeychain{secretManager: secret.SecretManager{
 		Client:        k8sClient,
 		AnnotationKey: v1alpha1.GITSecretAnnotationPrefix,
 		Matcher:       gitUrlMatcher{},
 	}}
 }
 
-func (k *K8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (Auth, error) {
+func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (auth, error) {
 	if serviceAccount == "" {
-		return AnonymousAuth{}, nil
+		return anonymousAuth{}, nil
 	}
 
 	creds, err := k.secretManager.SecretForServiceAccountAndURL(serviceAccount, namespace, git.URL)
@@ -31,10 +33,10 @@ func (k *K8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 		return nil, err
 	}
 	if k8serrors.IsNotFound(err) {
-		return AnonymousAuth{}, nil
+		return anonymousAuth{}, nil
 	}
 
-	return BasicAuth{Username: creds.Username, Password: creds.Password}, nil
+	return basicAuth{Username: creds.Username, Password: creds.Password}, nil
 
 }
 

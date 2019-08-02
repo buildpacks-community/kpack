@@ -1,4 +1,4 @@
-package git_test
+package git
 
 import (
 	"testing"
@@ -9,7 +9,6 @@ import (
 	fixtures "gopkg.in/src-d/go-git-fixtures.v3"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/git"
 )
 
 func TestRemoteGitResolver(t *testing.T) {
@@ -29,19 +28,20 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns type commit", func() {
 				repo := fixtures.Basic().One()
 
-				gitResolver := &git.RemoteGitResolver{}
+				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(git.AnonymousAuth{}, v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
 					URL:      repo.URL,
 					Revision: nonHEADCommit,
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedGitSource{
-					URL:      repo.URL,
-					Revision: nonHEADCommit,
-					Type:     v1alpha1.Commit,
-				})
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      repo.URL,
+						Revision: nonHEADCommit,
+						Type:     v1alpha1.Commit,
+					}})
 			})
 		})
 
@@ -49,19 +49,20 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns branch with resolved commit", func() {
 				repo := fixtures.Basic().One()
 
-				gitResolver := &git.RemoteGitResolver{}
+				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(git.AnonymousAuth{}, v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
 					URL:      repo.URL,
 					Revision: "master",
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedGitSource{
-					URL:      repo.URL,
-					Revision: fixtureHEADMasterCommit,
-					Type:     v1alpha1.Branch,
-				})
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      repo.URL,
+						Revision: fixtureHEADMasterCommit,
+						Type:     v1alpha1.Branch,
+					}})
 			})
 		})
 
@@ -69,19 +70,20 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns tag with resolved commit", func() {
 				repo := fixtures.ByTag("tags").One()
 
-				gitResolver := &git.RemoteGitResolver{}
+				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(git.AnonymousAuth{}, v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
 					URL:      repo.URL,
 					Revision: tag,
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedGitSource{
-					URL:      repo.URL,
-					Revision: tagCommit,
-					Type:     v1alpha1.Tag,
-				})
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      repo.URL,
+						Revision: tagCommit,
+						Type:     v1alpha1.Tag,
+					}})
 			})
 		})
 
@@ -89,9 +91,9 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns an unknown type", func() {
 				repo := fixtures.ByTag("tags").One()
 
-				gitResolver := &git.RemoteGitResolver{}
+				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(git.BasicAuth{
+				resolvedGitSource, err := gitResolver.Resolve(basicAuth{
 					Username: "notgonna",
 					Password: "work",
 				}, v1alpha1.Git{
@@ -100,11 +102,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{Git: &v1alpha1.ResolvedGitSource{
 					URL:      repo.URL,
 					Revision: tag,
 					Type:     v1alpha1.Unknown,
-				})
+				}})
 			})
 		})
 	})
