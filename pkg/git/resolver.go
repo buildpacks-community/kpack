@@ -26,3 +26,7 @@ func (g *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.Re
 
 	return g.remoteGitResolver.Resolve(auth, *sourceResolver.Spec.Source.Git)
 }
+
+func (g *Resolver) CanResolve(sourceResolver *v1alpha1.SourceResolver) bool {
+	return sourceResolver.IsGit()
+}

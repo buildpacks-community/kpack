@@ -155,7 +155,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: imageName,
 					},
 					Spec: v1alpha1.ImageSpec{
-						Tag:                       cfg.imageTag + "-" + strconv.Itoa(totalImagesCreated),
+						Tag:                         cfg.imageTag + "-" + strconv.Itoa(totalImagesCreated),
 						BuilderRef:                  builderName,
 						ServiceAccount:              serviceAccountName,
 						Source:                      imageSource,

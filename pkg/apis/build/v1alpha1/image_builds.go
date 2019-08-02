@@ -38,7 +38,7 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 
 	var reasons []string
 
-	if sourceResolver.GitURLChanged(lastBuild) || sourceResolver.BlobChanged(lastBuild) ||
+	if sourceResolver.ConfigChanged(lastBuild) ||
 		!equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) ||
 		!equality.Semantic.DeepEqual(im.Spec.Build.Resources, lastBuild.Spec.Resources) {
 		reasons = append(reasons, BuildReasonConfig)

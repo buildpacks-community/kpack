@@ -91,6 +91,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			fakeGitResolver.ResolveReturns(resolvedSource, nil)
+			fakeGitResolver.CanResolveReturns(true)
 
 			it("updates the observed generation", func() {
 				sourceResolver := resolvedSourceResolver(sourceResolver, resolvedSource)
@@ -142,6 +143,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+				fakeGitResolver.CanResolveReturns(true)
 
 				it("resolves git with the resolved source resolver", func() {
 					rt.Test(rtesting.TableRow{
@@ -182,6 +184,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 						},
 					})
 
+					require.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
 					enquedSourceResolver := fakeEnqueuer.EnqueueArgsForCall(0)
 					require.Equal(t, sourceResolver.Name, enquedSourceResolver.Name)
 					require.Equal(t, sourceResolver.Namespace, enquedSourceResolver.Namespace)
@@ -198,6 +201,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+				fakeGitResolver.CanResolveReturns(true)
 
 				it("reconciles to ready and not active polling", func() {
 					rt.Test(rtesting.TableRow{
@@ -252,6 +256,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
+				fakeGitResolver.CanResolveReturns(true)
 
 				it("saves unknown when source has not previously resolved", func() {
 					sourceResolver.Generation = 1
@@ -341,6 +346,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			fakeBlobResolver.ResolveReturns(resolvedSource, nil)
+			fakeBlobResolver.CanResolveReturns(true)
 
 			it("reconciles to ready and not active polling", func() {
 				rt.Test(rtesting.TableRow{

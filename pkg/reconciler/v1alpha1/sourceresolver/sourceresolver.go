@@ -2,10 +2,11 @@ package sourceresolver
 
 import (
 	"context"
+	"errors"
 
 	"github.com/knative/pkg/controller"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -23,6 +24,7 @@ const (
 //go:generate counterfeiter . Resolver
 type Resolver interface {
 	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSource, error)
+	CanResolve(*v1alpha1.SourceResolver) bool
 }
 
 func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1informers.SourceResolverInformer, gitResolver Resolver, blobResolver Resolver) *controller.Impl {
@@ -65,28 +67,24 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	sourceResolver, err := c.SourceResolverLister.SourceResolvers(namespace).Get(sourceResolverName)
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 	sourceResolver = sourceResolver.DeepCopy()
 
-	if sourceResolver.IsGit() {
-		resolvedSource, err := c.GitResolver.Resolve(sourceResolver)
-		if err != nil {
-			return err
-		}
-
-		sourceResolver.ResolvedGitSource(resolvedSource.Git)
-	} else if sourceResolver.IsBlob() {
-		resolvedSource, err := c.BlobResolver.Resolve(sourceResolver)
-		if err != nil {
-			return err
-		}
-
-		sourceResolver.ResolvedBlobSource(resolvedSource.Blob)
+	sourceReconciler, err := c.sourceReconciler(sourceResolver)
+	if err != nil {
+		return err
 	}
+
+	resolvedSource, err := sourceReconciler.Resolve(sourceResolver)
+	if err != nil {
+		return err
+	}
+
+	sourceResolver.ResolvedSource(resolvedSource)
 
 	if sourceResolver.PollingReady() {
 		err := c.Enqueuer.Enqueue(sourceResolver)
@@ -97,6 +95,15 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	sourceResolver.Status.ObservedGeneration = sourceResolver.Generation
 	return c.updateStatus(sourceResolver)
+}
+
+func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (Resolver, error) {
+	if c.GitResolver.CanResolve(sourceResolver) {
+		return c.GitResolver, nil
+	} else if c.BlobResolver.CanResolve(sourceResolver) {
+		return c.BlobResolver, nil
+	}
+	return nil, errors.New("invalid source type")
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {

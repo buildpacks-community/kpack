@@ -7,6 +7,14 @@ import (
 
 const ActivePolling = "ActivePolling"
 
+func (sr *SourceResolver) ResolvedSource(resolvedSource ResolvedSource) {
+	if resolvedSource.Git != nil {
+		sr.ResolvedGitSource(resolvedSource.Git)
+	} else if resolvedSource.Blob != nil {
+		sr.ResolvedBlobSource(resolvedSource.Blob)
+	}
+}
+
 func (sr *SourceResolver) ResolvedGitSource(resolvedGitSource *ResolvedGitSource) {
 	if resolvedGitSource.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
 		return
@@ -63,7 +71,11 @@ func (sr SourceResolver) IsBlob() bool {
 	return sr.Spec.Source.Blob != nil
 }
 
-func (sr SourceResolver) GitURLChanged(lastBuild *Build) bool {
+func (sr SourceResolver) ConfigChanged(lastBuild *Build) bool {
+	return sr.gitURLChanged(lastBuild) || sr.blobChanged(lastBuild)
+}
+
+func (sr SourceResolver) gitURLChanged(lastBuild *Build) bool {
 	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL
 }
 
@@ -71,7 +83,7 @@ func (sr SourceResolver) GitRevisionChanged(lastBuild *Build) bool {
 	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.Revision != lastBuild.Spec.Source.Git.Revision
 }
 
-func (sr SourceResolver) BlobChanged(lastBuild *Build) bool {
+func (sr SourceResolver) blobChanged(lastBuild *Build) bool {
 	return sr.Status.ResolvedSource.Blob != nil && sr.Status.ResolvedSource.Blob.URL != lastBuild.Spec.Source.Blob.URL
 }
 
