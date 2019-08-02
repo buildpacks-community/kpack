@@ -20,3 +20,6 @@ spec:
   - name: SHA
     type: string
     JSONPath: ".status.SHA"
+  - name: Succeeded
+    type: string
+    JSONPath: #@ ".status.conditions[?(@.type==\"Succeeded\")].status"

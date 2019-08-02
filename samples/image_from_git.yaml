@@ -1,0 +1,35 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: Image
+metadata:
+  name: sample-1
+spec:
+  builderRef: sample-builder
+  tag: sample/image-from-git
+  source:
+    git:
+      url: https://github.com/buildpack/sample-java-app.git
+      revision: master
+---
+apiVersion: build.pivotal.io/v1alpha1
+kind: Image
+metadata:
+  name: sample-2
+spec:
+  builderRef: sample-builder
+  tag: sample/image-from-git-specific-sha
+  source:
+    git:
+      url: https://github.com/buildpack/sample-java-app.git
+      revision: 0eccc6c2f01d9f055087ebbf03526ed0623e014a
+---
+apiVersion: build.pivotal.io/v1alpha1
+kind: Image
+metadata:
+  name: sample-3
+spec:
+  builderRef: sample-builder
+  tag: sample/image-from-git-tag
+  source:
+    git:
+      url: https://github.com/buildpack/sample-java-app.git
+      revision: sample-0.0.1

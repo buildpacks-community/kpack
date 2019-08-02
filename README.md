@@ -71,6 +71,9 @@ kubectl cluster-info # ensure you have access to a cluster
     ```
 
 5. Apply an image configuration to the cluster.
+
+    If you would like to build an image from a git repo:
+ 
     ```yaml
     apiVersion: build.pivotal.io/v1alpha1
     kind: Image
@@ -80,22 +83,63 @@ kubectl cluster-info # ensure you have access to a cluster
       tag: gcr.io/project-name/app
       serviceAccount: service-account
       builderRef: sample-builder
-      cacheSize: "1.5Gi"
-      failedBuildHistoryLimit: 5
-      successBuildHistoryLimit: 5
+      cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
+      failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
+      successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
       source:
         git:
           url: https://github.com/buildpack/sample-java-app.git
           revision: master
+      build: # Optional
+        env:
+          - name: BP_JAVA_VERSION
+            value: 8.*
+        resources:
+          limits:
+            cpu: 100m
+            memory: 1G
+          requests:
+            cpu: 50m
+            memory: 512M
+    ```
+
+    If you would like to build an image from an hosted zip or jar:
+ 
+    ```yaml
+    apiVersion: build.pivotal.io/v1alpha1
+    kind: Image
+    metadata:
+      name: sample-image
+    spec:
+      tag: gcr.io/project-name/app
+      serviceAccount: service-account
+      builderRef: sample-builder
+      cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
+      failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
+      successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
+      source:
+        blob:
+          url: https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
+      build: # Optional
+        env:
+          - name: BP_JAVA_VERSION
+            value: 8.*
+        resources:
+          limits:
+            cpu: 100m
+            memory: 1G
+          requests:
+            cpu: 50m
+            memory: 512M
     ```
 
 6.  See the builds for the image
 
     ```builds
-    kubectl get cnbbuilds # before the first builds completes you will see a pending status
+    kubectl get cnbbuilds # before the first builds completes you will see a unknown (building) status
     ---------------
-    NAME                          SHA   SUCCEEDED   REASON
-    test-image-build-1-ea3e6fa9         Unknown     Pending
+    NAME                          SHA   SUCCEEDED
+    test-image-build-1-ea3e6fa9         Unknown  
 
     ```
 
