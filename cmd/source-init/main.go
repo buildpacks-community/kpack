@@ -95,40 +95,40 @@ func downloadBlob(dir string, logger *log.Logger) {
 		logger.Fatal(err.Error())
 	}
 
-	zr, err := zip.OpenReader(file.Name())
+	zipReader, err := zip.OpenReader(file.Name())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	defer zr.Close()
+	defer zipReader.Close()
 
-	for _, file := range zr.File {
-		fpath := filepath.Join(dir, file.Name)
+	for _, file := range zipReader.File {
+		filePath := filepath.Join(dir, file.Name)
 		if file.FileInfo().IsDir() {
-			err := os.MkdirAll(fpath, file.Mode())
+			err := os.MkdirAll(filePath, file.Mode())
 			if err != nil {
 				logger.Fatal(err.Error())
 			}
 			continue
 		}
 
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 			logger.Fatal(err.Error())
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 
-		rc, err := file.Open()
+		srcFile, err := file.Open()
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 
-		_, err = io.Copy(outFile, rc)
+		_, err = io.Copy(outFile, srcFile)
 
 		outFile.Close()
-		rc.Close()
+		srcFile.Close()
 
 		if err != nil {
 			logger.Fatal(err.Error())

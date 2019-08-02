@@ -82,7 +82,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it("returns pod config with secrets on build's service account", func() {
 
 			buildPodConfig := v1alpha1.BuildPodConfig{
-				SourceInitImage: "git/init:image",
+				SourceInitImage: "source/init:image",
 				BuildInitImage:  "build/init:image",
 				CredsInitImage:  "creds/init:image",
 				NopImage:        "no/op:image",
