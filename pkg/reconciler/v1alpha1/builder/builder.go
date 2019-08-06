@@ -2,9 +2,11 @@ package builder
 
 import (
 	"context"
-
-	"github.com/knative/pkg/controller"
 	"k8s.io/apimachinery/pkg/api/equality"
+
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/controller"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
@@ -22,8 +24,9 @@ const (
 	Kind           = "Builder"
 )
 
+//go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderBuildpacks(repo registry.ImageRef) (cnb.BuilderMetadata, error)
+	GetBuilderImage(repo registry.ImageRef) (cnb.BuilderImage, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -71,13 +74,24 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	metadata, err := c.MetadataRetriever.GetBuilderBuildpacks(registry.NewNoAuthImageRef(builder.Spec.Image))
+	builderImage, err := c.MetadataRetriever.GetBuilderImage(registry.NewNoAuthImageRef(builder.Spec.Image))
 	if err != nil {
 		return err
 	}
 
-	builder.Status.BuilderMetadata = transform(metadata)
-	builder.Status.ObservedGeneration = builder.Generation
+	builder.Status = v1alpha1.BuilderStatus{
+		Status: duckv1alpha1.Status{
+			ObservedGeneration: builder.Generation,
+			Conditions: duckv1alpha1.Conditions{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
+		LatestImage:     builderImage.Identifier,
+	}
 
 	err = c.updateStatus(builder)
 	if err != nil {

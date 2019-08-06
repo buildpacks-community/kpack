@@ -341,9 +341,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("pod succeeded", func() {
-			const sha = "sha:1234567"
+			const identifier = "someimage/name@sha256:1234567"
 			builtImage := cnb.BuiltImage{
-				SHA:         sha,
+				Identifier:  identifier,
 				CompletedAt: time.Now(),
 				BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
 					ID:      "io.buildpack.executed",
@@ -408,7 +408,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										ID:      "io.buildpack.executed",
 										Version: "1.1",
 									}},
-									SHA: "sha:1234567",
+									LatestImage: identifier,
 									StepStates: []corev1.ContainerState{
 										{
 											Terminated: &corev1.ContainerStateTerminated{
@@ -489,8 +489,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
-								PodName: "build-name-build-pod",
-								SHA:     "sha:previouslyfetched",
+								PodName:     "build-name-build-pod",
+								LatestImage: "previously/fetched@sha256:abcd",
 								StepStates: []corev1.ContainerState{
 									{
 										Terminated: &corev1.ContainerStateTerminated{
@@ -545,8 +545,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
-								PodName: "build-name-build-pod",
-								SHA:     "sha:previouslyfetched",
+								PodName:     "build-name-build-pod",
+								LatestImage: "previously/fetched@sha256:abcd",
 								StepStates: []corev1.ContainerState{
 									{
 										Terminated: &corev1.ContainerStateTerminated{

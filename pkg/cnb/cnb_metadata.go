@@ -20,31 +20,44 @@ type BuilderImageMetadata struct {
 	Buildpacks []BuilderBuildpackMetadata `json:"buildpacks"`
 }
 
+type BuilderImage struct {
+	BuilderBuildpackMetadata BuilderMetadata
+	Identifier               string
+}
+
 type BuilderMetadata []BuilderBuildpackMetadata
 
 type RemoteMetadataRetriever struct {
 	LifecycleImageFactory registry.RemoteImageFactory
 }
 
-func (r *RemoteMetadataRetriever) GetBuilderBuildpacks(repo registry.ImageRef) (BuilderMetadata, error) {
+func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (BuilderImage, error) {
 	img, err := r.LifecycleImageFactory.NewRemote(repo)
 	if err != nil {
-		return nil, err
+		return BuilderImage{}, err
 	}
 
 	var metadataJSON string
 	metadataJSON, err = img.Label(BuilderMetadataLabel)
 	if err != nil {
-		return nil, err
+		return BuilderImage{}, err
 	}
 
 	var metadata BuilderImageMetadata
 	err = json.Unmarshal([]byte(metadataJSON), &metadata)
 	if err != nil {
-		return nil, err
+		return BuilderImage{}, err
 	}
 
-	return metadata.Buildpacks, nil
+	identifier, err := img.Identifier()
+	if err != nil {
+		return BuilderImage{}, err
+	}
+
+	return BuilderImage{
+		BuilderBuildpackMetadata: metadata.Buildpacks,
+		Identifier:               identifier.String(),
+	}, nil
 }
 
 func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltImage, error) {
@@ -70,20 +83,20 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltIma
 		return BuiltImage{}, err
 	}
 
-	digest, err := img.Digest()
+	identifier, err := img.Identifier()
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	return BuiltImage{
-		SHA:               digest,
+		Identifier:        identifier.String(),
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: metadata.Buildpacks,
 	}, nil
 }
 
 type BuiltImage struct {
-	SHA               string
+	Identifier        string
 	CompletedAt       time.Time
 	BuildpackMetadata []lcyclemd.BuildpackMetadata
 }

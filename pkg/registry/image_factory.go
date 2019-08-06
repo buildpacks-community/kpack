@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/buildpack/imgutil"
+	"github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 )
@@ -13,7 +14,7 @@ type ImageFactory struct {
 }
 
 func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remote, err := imgutil.NewRemoteImage(imageRef.Tag(), f.KeychainFactory.KeychainForImageRef(imageRef))
+	remote, err := remote.NewImage(imageRef.Tag(), authn.DefaultKeychain, remote.FromBaseImage(imageRef.Tag()))
 	return remote, errors.Wrapf(err, "could not create remote image from ref %s", imageRef.Tag())
 }
 
@@ -49,7 +50,7 @@ func (noAuthImageRef) Namespace() string {
 
 type RemoteImage interface {
 	CreatedAt() (time.Time, error)
-	Digest() (string, error)
+	Identifier() (imgutil.Identifier, error)
 	Label(labelName string) (string, error)
 	Env(key string) (string, error)
 }

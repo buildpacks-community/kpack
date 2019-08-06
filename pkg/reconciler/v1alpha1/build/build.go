@@ -98,7 +98,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		}
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
-		build.Status.SHA = image.SHA
+		build.Status.LatestImage = image.Identifier
 	}
 
 	build.Status.PodName = pod.Name

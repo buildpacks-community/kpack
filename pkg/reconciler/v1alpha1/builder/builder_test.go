@@ -9,6 +9,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -22,8 +23,6 @@ import (
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder/builderfakes"
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
-
-//go:generate counterfeiter . MetadataRetriever
 
 func TestBuildReconciler(t *testing.T) {
 	spec.Run(t, "Builder Reconciler", testBuilderReconciler)
@@ -55,11 +54,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	const (
-		builderName            = "builder-name"
-		namespace              = "some-namespace"
-		key                    = "some-namespace/builder-name"
-		imageName              = "some/builder@sha256acf123"
-		initalGeneration int64 = 1
+		builderName             = "builder-name"
+		namespace               = "some-namespace"
+		key                     = "some-namespace/builder-name"
+		imageName               = "some/builder"
+		builderIdentifier       = "some/builder@sha256:resolved-builder-digest"
+		initalGeneration  int64 = 1
 	)
 
 	builder := &v1alpha1.Builder{
@@ -78,11 +78,14 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
 			require.Nil(t, err)
 
-			fakeMetadataRetriever.GetBuilderBuildpacksReturns(cnb.BuilderMetadata{
-				{
-					ID:      "buildpack.version",
-					Version: "version",
+			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
+				BuilderBuildpackMetadata: cnb.BuilderMetadata{
+					{
+						ID:      "buildpack.version",
+						Version: "version",
+					},
 				},
+				Identifier: builderIdentifier,
 			}, nil)
 		})
 
@@ -99,6 +102,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.BuilderStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: 1,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
 								},
 								BuilderMetadata: []v1alpha1.BuildpackMetadata{
 									{
@@ -106,14 +115,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										Version: "version",
 									},
 								},
+								LatestImage: builderIdentifier,
 							},
 						},
 					},
 				},
 			})
 
-			require.Equal(t, fakeMetadataRetriever.GetBuilderBuildpacksCallCount(), 1)
-			assert.Equal(t, fakeMetadataRetriever.GetBuilderBuildpacksArgsForCall(0), registry.NewNoAuthImageRef(imageName))
+			require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
+			assert.Equal(t, fakeMetadataRetriever.GetBuilderImageArgsForCall(0), registry.NewNoAuthImageRef(imageName))
 		})
 
 		it("schedule next polling when update policy is not set", func() {
@@ -129,6 +139,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.BuilderStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: 1,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
 								},
 								BuilderMetadata: []v1alpha1.BuildpackMetadata{
 									{
@@ -136,6 +152,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										Version: "version",
 									},
 								},
+								LatestImage: builderIdentifier,
 							},
 						},
 					},
@@ -158,6 +175,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.BuilderStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: 1,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
 								},
 								BuilderMetadata: []v1alpha1.BuildpackMetadata{
 									{
@@ -165,6 +188,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										Version: "version",
 									},
 								},
+								LatestImage: builderIdentifier,
 							},
 						},
 					},
@@ -187,6 +211,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.BuilderStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: 1,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
 								},
 								BuilderMetadata: []v1alpha1.BuildpackMetadata{
 									{
@@ -194,6 +224,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										Version: "version",
 									},
 								},
+								LatestImage: builderIdentifier,
 							},
 						},
 					},

@@ -108,13 +108,22 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Namespace: namespace,
 		},
 		Spec: v1alpha1.BuilderSpec{
-			Image: "some/builder@sha256acf123",
+			Image: "some/builder",
 		},
 		Status: v1alpha1.BuilderStatus{
+			LatestImage: "some/builder@sha256acf123",
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
 					ID:      "buildpack.version",
 					Version: "version",
+				},
+			},
+			Status: duckv1alpha1.Status{
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
 				},
 			},
 		},
@@ -541,6 +550,18 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
+			it("does not schedule a build if the builder is not ready", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						notReadyBuilder(builder),
+						resolvedSourceResolver(image),
+					},
+					WantErr: false,
+				})
+			})
+
 			it("schedules a build if no build has been scheduled", func() {
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -570,7 +591,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -634,7 +655,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -690,7 +711,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -700,7 +721,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "sha256:ad3f454c",
+								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -732,7 +753,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -753,7 +774,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
-									LatestImage:    "some/image@sha256:ad3f454c",
+									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -797,7 +818,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -807,7 +828,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "sha256:ad3f454c",
+								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -839,7 +860,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -860,7 +881,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
-									LatestImage:    "some/image@sha256:ad3f454c",
+									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -873,6 +894,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			it("schedules a build when the builder buildpacks are updated", func() {
 				image.Status.BuildCounter = 1
 				image.Status.LatestBuildRef = "image-name-build-1-00001"
+				const updatedBuilderImage = "some/builder@sha256:updated"
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -885,9 +907,18 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Namespace: namespace,
 							},
 							Spec: v1alpha1.BuilderSpec{
-								Image: "some/builder@sha256acf123",
+								Image: "some/builder",
 							},
 							Status: v1alpha1.BuilderStatus{
+								Status: duckv1alpha1.Status{
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:   duckv1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								LatestImage: updatedBuilderImage,
 								BuilderMetadata: v1alpha1.BuildpackMetadataList{
 									{
 										ID:      "io.buildpack",
@@ -911,7 +942,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -921,7 +952,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "sha256:ad3f454c",
+								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -959,7 +990,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        updatedBuilderImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -980,7 +1011,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
-									LatestImage:    "some/image@sha256:ad3f454c",
+									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
 									BuildCacheName: "",
 								},
@@ -1016,7 +1047,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -1067,7 +1098,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Spec.Image,
+								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.Source{
 									Git: &v1alpha1.Git{
@@ -1077,7 +1108,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								SHA: "sha256:ad3f454c",
+								LatestImage: image.Status.LatestImage,
 								Status: duckv1alpha1.Status{
 									Conditions: duckv1alpha1.Conditions{
 										{
@@ -1127,7 +1158,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("deletes a successful build if more than the limit", func() {
 					image.Spec.SuccessBuildHistoryLimit = limit(4)
 					image.Status.LatestBuildRef = "image-name-build-5"
-					image.Status.LatestImage = "some/image@sha256:ad3f454c"
+					image.Status.LatestImage = "some/image@sha256:build-5"
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1180,7 +1211,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 									},
 									LatestBuildRef: "image-name-build-1",
-									LatestImage:    "some/image@sha256:ad3f454c",
+									LatestImage:    "some/image@sha256:build-1",
 									BuildCounter:   1,
 									BuildCacheName: "",
 								},
@@ -1205,6 +1236,11 @@ func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 
 func unresolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 	return image.SourceResolver()
+}
+
+func notReadyBuilder(builder *v1alpha1.Builder) runtime.Object {
+	builder.Status.Conditions = duckv1alpha1.Conditions{}
+	return builder
 }
 
 func failedBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
@@ -1250,7 +1286,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 				},
 			},
 			Status: v1alpha1.BuildStatus{
-				SHA: "sha256:ad3f454c",
+				LatestImage: fmt.Sprintf("%s@sha256:build-%d", image.Spec.Tag, i),
 				Status: duckv1alpha1.Status{
 					Conditions: duckv1alpha1.Conditions{
 						condition,
