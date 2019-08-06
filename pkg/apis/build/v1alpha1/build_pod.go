@@ -111,6 +111,10 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				{
 					Name:            "source-init",
 					Image:           config.SourceInitImage,
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser:  &root,
+						RunAsGroup: &root,
+					},
 					Env:             buildSourceInitEnvVars(b),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",

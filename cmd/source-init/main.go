@@ -48,14 +48,17 @@ func main() {
 
 	logger := log.New(os.Stdout, "source-init:", log.Lshortfile)
 
-	usr, err := user.Current()
+	usr, err := user.Current() // The user should be root to be able to read .git-credentials and .gitconfig
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = os.Symlink("/builder/home/.ssh", filepath.Join(usr.HomeDir, ".ssh"))
-	if err != nil {
-		logger.Fatalf("Unexpected error creating symlink: %v", err)
+	symlinks := []string{".ssh", ".git-credentials", ".gitconfig"}
+	for _, path := range symlinks {
+		err = os.Symlink("/builder/home/"+path, filepath.Join(usr.HomeDir, path))
+		if err != nil {
+			logger.Fatalf("Unexpected error creating symlink: %v", err)
+		}
 	}
 
 	dir, err := os.Getwd()
