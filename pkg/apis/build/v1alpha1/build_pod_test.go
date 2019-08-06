@@ -175,6 +175,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsUser)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsGroup)
 			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
 			assert.Equal(t, []corev1.EnvVar{
 				{
@@ -201,6 +203,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsUser)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsGroup)
 			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
 			assert.Equal(t, []corev1.EnvVar{
 				{
