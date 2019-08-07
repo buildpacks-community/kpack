@@ -6,9 +6,11 @@ import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	rtesting "github.com/knative/pkg/reconciler/testing"
+	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -23,15 +25,12 @@ import (
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
-//go:generate counterfeiter . MetadataRetriever
-
 func TestBuildReconciler(t *testing.T) {
 	spec.Run(t, "Builder Reconciler", testBuilderReconciler)
 }
 
 func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeMetadataRetriever := &builderfakes.FakeMetadataRetriever{}
-	fakeClient := fake.NewSimpleClientset(&v1alpha1.Builder{})
 
 	fakeEnqueuer := &builderfakes.FakeEnqueuer{}
 
@@ -55,11 +54,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	const (
-		builderName            = "builder-name"
-		namespace              = "some-namespace"
-		key                    = "some-namespace/builder-name"
-		imageName              = "some/builder@sha256acf123"
-		initalGeneration int64 = 1
+		builderName             = "builder-name"
+		namespace               = "some-namespace"
+		key                     = "some-namespace/builder-name"
+		imageName               = "some/builder"
+		builderIdentifier       = "some/builder@sha256:resolved-builder-digest"
+		initalGeneration  int64 = 1
 	)
 
 	builder := &v1alpha1.Builder{
@@ -74,142 +74,181 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-		it.Before(func() {
-			_, err := fakeClient.BuildV1alpha1().Builders(namespace).Create(builder)
-			require.Nil(t, err)
 
-			fakeMetadataRetriever.GetBuilderBuildpacksReturns(cnb.BuilderMetadata{
-				{
-					ID:      "buildpack.version",
-					Version: "version",
-				},
-			}, nil)
-		})
-
-		it("fetches the metadata for the configured builder", func() {
-			rt.Test(rtesting.TableRow{
-				Key:     key,
-				Objects: []runtime.Object{builder},
-				WantErr: false,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-					{
-						Object: &v1alpha1.Builder{
-							ObjectMeta: builder.ObjectMeta,
-							Spec:       builder.Spec,
-							Status: v1alpha1.BuilderStatus{
-								Status: duckv1alpha1.Status{
-									ObservedGeneration: 1,
-								},
-								BuilderMetadata: []v1alpha1.BuildpackMetadata{
-									{
-										ID:      "buildpack.version",
-										Version: "version",
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-
-			require.Equal(t, fakeMetadataRetriever.GetBuilderBuildpacksCallCount(), 1)
-			assert.Equal(t, fakeMetadataRetriever.GetBuilderBuildpacksArgsForCall(0), registry.NewNoAuthImageRef(imageName))
-		})
-
-		it("schedule next polling when update policy is not set", func() {
-			rt.Test(rtesting.TableRow{
-				Key:     key,
-				Objects: []runtime.Object{builder},
-				WantErr: false,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-					{
-						Object: &v1alpha1.Builder{
-							ObjectMeta: builder.ObjectMeta,
-							Spec:       builder.Spec,
-							Status: v1alpha1.BuilderStatus{
-								Status: duckv1alpha1.Status{
-									ObservedGeneration: 1,
-								},
-								BuilderMetadata: []v1alpha1.BuildpackMetadata{
-									{
-										ID:      "buildpack.version",
-										Version: "version",
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-			assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
-		})
-
-		it("does schedule polling when update policy is set to polling", func() {
-			builder.Spec.UpdatePolicy = v1alpha1.Polling
-			rt.Test(rtesting.TableRow{
-				Key:     key,
-				Objects: []runtime.Object{builder},
-				WantErr: false,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-					{
-						Object: &v1alpha1.Builder{
-							ObjectMeta: builder.ObjectMeta,
-							Spec:       builder.Spec,
-							Status: v1alpha1.BuilderStatus{
-								Status: duckv1alpha1.Status{
-									ObservedGeneration: 1,
-								},
-								BuilderMetadata: []v1alpha1.BuildpackMetadata{
-									{
-										ID:      "buildpack.version",
-										Version: "version",
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-			assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
-		})
-
-		it("does not schedule polling when update policy is set to external", func() {
-			builder.Spec.UpdatePolicy = v1alpha1.External
-			rt.Test(rtesting.TableRow{
-				Key:     key,
-				Objects: []runtime.Object{builder},
-				WantErr: false,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-					{
-						Object: &v1alpha1.Builder{
-							ObjectMeta: builder.ObjectMeta,
-							Spec:       builder.Spec,
-							Status: v1alpha1.BuilderStatus{
-								Status: duckv1alpha1.Status{
-									ObservedGeneration: 1,
-								},
-								BuilderMetadata: []v1alpha1.BuildpackMetadata{
-									{
-										ID:      "buildpack.version",
-										Version: "version",
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-
-			assert.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
-		})
-
-		when("buildpack metadata did not change", func() {
-			it("does not update the status", func() {
-				builder.Status.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+		when("metadata is available", func() {
+			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
+				BuilderBuildpackMetadata: cnb.BuilderMetadata{
 					{
 						ID:      "buildpack.version",
 						Version: "version",
 					},
+				},
+				Identifier: builderIdentifier,
+			}, nil)
+
+			it("saves metadata to the status", func() {
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Builder{
+								ObjectMeta: builder.ObjectMeta,
+								Spec:       builder.Spec,
+								Status: v1alpha1.BuilderStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									BuilderMetadata: []v1alpha1.BuildpackMetadata{
+										{
+											ID:      "buildpack.version",
+											Version: "version",
+										},
+									},
+									LatestImage: builderIdentifier,
+								},
+							},
+						},
+					},
+				})
+
+				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
+				assert.Equal(t, fakeMetadataRetriever.GetBuilderImageArgsForCall(0), registry.NewNoAuthImageRef(imageName))
+			})
+
+			it("schedule next polling when update policy is not set", func() {
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Builder{
+								ObjectMeta: builder.ObjectMeta,
+								Spec:       builder.Spec,
+								Status: v1alpha1.BuilderStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									BuilderMetadata: []v1alpha1.BuildpackMetadata{
+										{
+											ID:      "buildpack.version",
+											Version: "version",
+										},
+									},
+									LatestImage: builderIdentifier,
+								},
+							},
+						},
+					},
+				})
+				assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
+			})
+
+			it("does schedule polling when update policy is set to polling", func() {
+				builder.Spec.UpdatePolicy = v1alpha1.Polling
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Builder{
+								ObjectMeta: builder.ObjectMeta,
+								Spec:       builder.Spec,
+								Status: v1alpha1.BuilderStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									BuilderMetadata: []v1alpha1.BuildpackMetadata{
+										{
+											ID:      "buildpack.version",
+											Version: "version",
+										},
+									},
+									LatestImage: builderIdentifier,
+								},
+							},
+						},
+					},
+				})
+				assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
+			})
+
+			it("does not schedule polling when update policy is set to external", func() {
+				builder.Spec.UpdatePolicy = v1alpha1.External
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Builder{
+								ObjectMeta: builder.ObjectMeta,
+								Spec:       builder.Spec,
+								Status: v1alpha1.BuilderStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									BuilderMetadata: []v1alpha1.BuildpackMetadata{
+										{
+											ID:      "buildpack.version",
+											Version: "version",
+										},
+									},
+									LatestImage: builderIdentifier,
+								},
+							},
+						},
+					},
+				})
+
+				assert.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
+			})
+
+			it("does not update the status with no status change", func() {
+				builder.Status = v1alpha1.BuilderStatus{
+					Status: duckv1alpha1.Status{
+						ObservedGeneration: builder.Generation,
+						Conditions: duckv1alpha1.Conditions{
+							{
+								Type:   duckv1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
+							},
+						},
+					},
+					BuilderMetadata: []v1alpha1.BuildpackMetadata{
+						{
+							ID:      "buildpack.version",
+							Version: "version",
+						},
+					},
+					LatestImage: builderIdentifier,
 				}
 
 				rt.Test(rtesting.TableRow{
@@ -224,6 +263,41 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key:     key,
 				WantErr: false,
+			})
+		})
+
+		when("metadata is not available", func() {
+			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{}, errors.New("unavailable metadata"))
+
+			it("saves not ready to the builder status", func() {
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					Objects: []runtime.Object{builder},
+					WantErr: true,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Builder{
+								ObjectMeta: builder.ObjectMeta,
+								Spec:       builder.Spec,
+								Status: v1alpha1.BuilderStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionFalse,
+											},
+										},
+									},
+									BuilderMetadata: nil,
+									LatestImage:     "",
+								},
+							},
+						},
+					},
+				})
+
+				assert.Zero(t, fakeEnqueuer.EnqueueCallCount())
 			})
 		})
 	})

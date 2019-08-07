@@ -4,8 +4,11 @@ import (
 	"testing"
 
 	"github.com/buildpack/imgutil/fakes"
+	"github.com/buildpack/imgutil/remote"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pivotal/build-service-system/pkg/cnb"
 	"github.com/pivotal/build-service-system/pkg/registry"
@@ -24,31 +27,42 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	when("RemoteMetadataRetriever", func() {
 		when("retrieving from a builder image", func() {
 			it("gets buildpacks from a local image", func() {
-				fakeImage := fakes.NewImage("packs/samples:v3alpha2", "topLayerSha", "digest")
-				err := fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
+				digest, err := name.NewDigest("builder/image:tag@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
+				require.NoError(t, err)
+				fakeImage := fakes.NewImage("builder/image:tag", "topLayerSha", remote.DigestIdentifier{
+					Digest: digest,
+				})
+				err = fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
 				imageRef := registry.NewNoAuthImageRef("test-repo-name")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
 				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
-				metadata, err := subject.GetBuilderBuildpacks(imageRef)
+				builderImage, err := subject.GetBuilderImage(imageRef)
 				assert.NoError(t, err)
 
-				assert.Len(t, metadata, 1)
-				assert.Equal(t, metadata[0].ID, "test.id")
-				assert.Equal(t, metadata[0].Version, "1.2.3")
+				require.Len(t, builderImage.BuilderBuildpackMetadata, 1)
+				assert.Equal(t, builderImage.BuilderBuildpackMetadata[0].ID, "test.id")
+				assert.Equal(t, builderImage.BuilderBuildpackMetadata[0].Version, "1.2.3")
 				assert.Equal(t, mockFactory.NewRemoteArgsForCall(0), imageRef)
+
+				assert.Equal(t, "index.docker.io/builder/image@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895", builderImage.Identifier)
 			})
 		})
 
 		when("GetBuiltImage", func() {
 			it("retrieves the metadata from the registry", func() {
-				fakeImage := fakes.NewImage("packs/samples:v3alpha2", "topLayerSha", "expected-image-digest")
-				err := fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
+				digest, err := name.NewDigest("built/image:tag@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
+				require.NoError(t, err)
+
+				fakeImage := fakes.NewImage("built/image:tag", "topLayerSha", remote.DigestIdentifier{
+					Digest: digest,
+				})
+				err = fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
-				fakeImageRef := registry.NewNoAuthImageRef("packs/samples:v3alpha2")
+				fakeImageRef := registry.NewNoAuthImageRef("built/image:tag")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
 				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
@@ -65,7 +79,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 
 				assert.Equal(t, result.CompletedAt, createdAtTime)
-				assert.Equal(t, result.SHA, "expected-image-digest")
+				assert.Equal(t, result.Identifier, "index.docker.io/built/image@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
 				assert.Equal(t, mockFactory.NewRemoteArgsForCall(0), fakeImageRef)
 			})
 		})

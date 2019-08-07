@@ -24,14 +24,6 @@
   revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[projects]]
-  digest = "1:2be791e7b333ff7c06f8fb3dc18a7d70580e9399dbdffd352621d067ff260b6e"
-  name = "github.com/Microsoft/go-winio"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "1a8911d1ed007260465c3bfbbc785ac6915a0bb8"
-  version = "v0.4.12"
-
-[[projects]]
   branch = "master"
   digest = "1:c3e9dc7218d3339c0f7a8abfadfa34077a28b953cb09df3231ec70da93a1e33f"
   name = "github.com/alcortesm/tgz"
@@ -87,14 +79,15 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:20f05457203f2e0481598873b6b9c79cf2f47c689197c719b87c8add10c1f49f"
+  digest = "1:5cece0cbb34eacee32a60ade179899b9175793ff2aa42e5d217140a8f01925a8"
   name = "github.com/buildpack/imgutil"
   packages = [
     ".",
     "fakes",
+    "remote",
   ]
   pruneopts = "NUT"
-  revision = "4a2138287c60c7ef87274f5ab85caca0d11fad34"
+  revision = "1f31ed20483a84a33484db37c125df7778692ed6"
 
 [[projects]]
   digest = "1:cba73182e2f7de542825d4d982f84338558bc319dd33a7cda927b4626ad89022"
@@ -123,62 +116,6 @@
   pruneopts = "NUT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
-
-[[projects]]
-  digest = "1:4ddc17aeaa82cb18c5f0a25d7c253a10682f518f4b2558a82869506eec223d76"
-  name = "github.com/docker/distribution"
-  packages = [
-    "digestset",
-    "reference",
-  ]
-  pruneopts = "NUT"
-  revision = "2461543d988979529609e8cb6fca9ca190dc48da"
-  version = "v2.7.1"
-
-[[projects]]
-  digest = "1:b68599a3121a71063743f22a860c840e13eb3ba7a8dffdb57edb0507b19f5fbe"
-  name = "github.com/docker/docker"
-  packages = [
-    "api/types",
-    "api/types/blkiodev",
-    "api/types/container",
-    "api/types/events",
-    "api/types/filters",
-    "api/types/mount",
-    "api/types/network",
-    "api/types/reference",
-    "api/types/registry",
-    "api/types/strslice",
-    "api/types/swarm",
-    "api/types/time",
-    "api/types/versions",
-    "api/types/volume",
-    "client",
-    "pkg/tlsconfig",
-  ]
-  pruneopts = "NUT"
-  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
-  version = "v1.13.1"
-
-[[projects]]
-  digest = "1:2a47f7eb1a2c30428d1ee6808cb66d4deb17e68a3e55d696f03c8068552ba5e8"
-  name = "github.com/docker/go-connections"
-  packages = [
-    "nat",
-    "sockets",
-    "tlsconfig",
-  ]
-  pruneopts = "NUT"
-  revision = "7395e3f8aa162843a74ed6d48e79627d9792ac55"
-  version = "v0.4.0"
-
-[[projects]]
-  digest = "1:97176fe8a268479a527d08df458c269dc27abf59c1643807d4e36398cbd9ef2d"
-  name = "github.com/docker/go-units"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "519db1ee28dcc9fd2474ae59fca29a810482bfb1"
-  version = "v0.4.0"
 
 [[projects]]
   digest = "1:b498b36dbb2b306d1c5205ee5236c9e60352be8f9eea9bf08186723a9f75b4f3"
@@ -285,14 +222,14 @@
     "pkg/authn",
     "pkg/name",
     "pkg/v1",
-    "pkg/v1/empty",
-    "pkg/v1/mutate",
     "pkg/v1/partial",
-    "pkg/v1/random",
     "pkg/v1/remote",
-    "pkg/v1/remote/transport",
+    "pkg/v1/mutate",
+    "pkg/v1/empty",
+    "pkg/v1/random",
     "pkg/v1/stream",
     "pkg/v1/tarball",
+    "pkg/v1/remote/transport",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
@@ -505,14 +442,6 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
-
-[[projects]]
-  digest = "1:e0cc8395ea893c898ff5eb0850f4d9851c1f57c78c232304a026379a47a552d0"
-  name = "github.com/opencontainers/go-digest"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
-  version = "v1.0.0-rc1"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -1412,6 +1341,7 @@
   input-imports = [
     "github.com/buildpack/imgutil",
     "github.com/buildpack/imgutil/fakes",
+    "github.com/buildpack/imgutil/remote",
     "github.com/buildpack/lifecycle/metadata",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",

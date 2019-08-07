@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -97,10 +98,22 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 		},
+		Spec: BuilderSpec{
+			Image: "some/builder",
+		},
 		Status: BuilderStatus{
+			Status: duckv1alpha1.Status{
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
 			BuilderMetadata: []BuildpackMetadata{
 				{ID: "buildpack.matches", Version: "1"},
 			},
+			LatestImage: "some/builder@sha256:builder-digest",
 		},
 	}
 
@@ -165,6 +178,45 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					Type:   duckv1alpha1.ConditionReady,
 					Status: v1.ConditionFalse,
 				}}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("false if builder has not processed", func() {
+			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			builder.Status.Conditions = nil
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("false if builder is not ready", func() {
+			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			builder.Status.Conditions = []duckv1alpha1.Condition{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: v1.ConditionFalse,
+				},
+			}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("false if builder has not processed current generation", func() {
+			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			builder.ObjectMeta.Generation = 2
+			builder.Status.ObservedGeneration = 1
+			builder.Status.Conditions = []duckv1alpha1.Condition{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: v1.ConditionTrue,
+				},
+			}
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.False(t, needed)
@@ -318,6 +370,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			build := image.build(sourceResolver, builder, []string{}, 27)
 
 			assert.Contains(t, build.GenerateName, "imageName-build-27-")
+		})
+
+		it("sets builder to be the Builder's resolved latestImage", func() {
+			image.Name = "imageName"
+
+			build := image.build(sourceResolver, builder, []string{}, 27)
+
+			assert.Equal(t, "some/builder@sha256:builder-digest", build.Spec.Builder)
 		})
 
 		it("sets git url and git revision when image source is git", func() {

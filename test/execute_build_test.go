@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildpack/imgutil"
+	imgremote "github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -209,7 +209,7 @@ func imageExists(t *testing.T, name string) func() bool {
 }
 
 func imageSha(t *testing.T, name string) (string, bool) {
-	remoteImage, err := imgutil.NewRemoteImage(name, authn.DefaultKeychain)
+	remoteImage, err := imgremote.NewImage(name, authn.DefaultKeychain)
 	require.NoError(t, err)
 
 	found := remoteImage.Found()
@@ -217,10 +217,10 @@ func imageSha(t *testing.T, name string) (string, bool) {
 		return "", found
 	}
 
-	digest, err := remoteImage.Digest()
+	digest, err := remoteImage.Identifier()
 	require.NoError(t, err)
 
-	return digest, found
+	return digest.String(), found
 }
 
 func deleteImageTag(t *testing.T, deleteImageTag string) {

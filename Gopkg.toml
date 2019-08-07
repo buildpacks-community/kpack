@@ -101,7 +101,7 @@ required = [
   
 [[override]]
   name = "github.com/buildpack/imgutil"
-  revision = "4a2138287c60c7ef87274f5ab85caca0d11fad34"
+  revision = "1f31ed20483a84a33484db37c125df7778692ed6"
 
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"

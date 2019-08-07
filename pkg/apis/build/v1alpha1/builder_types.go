@@ -33,6 +33,7 @@ const (
 type BuilderStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata"`
+	LatestImage         string                `json:"latestImage"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -56,7 +56,7 @@ type BuildSpec struct {
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
-	SHA                 string                  `json:"SHA"`
+	LatestImage         string                  `json:"latestImage"`
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
 	StepsCompleted      []string                `json:"stepsCompleted",omitempty`
@@ -111,7 +111,7 @@ func (b *Build) BuiltImage() string {
 		return ""
 	}
 
-	return b.Spec.Tag + "@" + b.Status.SHA
+	return b.Status.LatestImage
 }
 
 func (b *Build) IsSuccess() bool {

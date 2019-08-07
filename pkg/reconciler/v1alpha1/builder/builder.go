@@ -2,9 +2,11 @@ package builder
 
 import (
 	"context"
-
-	"github.com/knative/pkg/controller"
 	"k8s.io/apimachinery/pkg/api/equality"
+
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/controller"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
@@ -22,8 +24,9 @@ const (
 	Kind           = "Builder"
 )
 
+//go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderBuildpacks(repo registry.ImageRef) (cnb.BuilderMetadata, error)
+	GetBuilderImage(repo registry.ImageRef) (cnb.BuilderImage, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -71,23 +74,29 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	metadata, err := c.MetadataRetriever.GetBuilderBuildpacks(registry.NewNoAuthImageRef(builder.Spec.Image))
+	reconciledResult := c.reconcileBuilderStatus(builder)
+
+	err = c.updateStatus(reconciledResult.builder)
 	if err != nil {
 		return err
 	}
 
-	builder.Status.BuilderMetadata = transform(metadata)
-	builder.Status.ObservedGeneration = builder.Generation
-
-	err = c.updateStatus(builder)
-	if err != nil {
-		return err
-	}
-
-	if builder.Spec.UpdatePolicy != v1alpha1.External {
+	if reconciledResult.reEnqueue() {
 		err = c.Enqueuer.Enqueue(builder)
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	return reconciledResult.err
+}
+
+type reconciledBuilderResult struct {
+	builder *v1alpha1.Builder
+	err     error
+}
+
+func (r reconciledBuilderResult) reEnqueue() bool {
+	return r.builder.Spec.UpdatePolicy != v1alpha1.External && r.err == nil
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
@@ -96,12 +105,53 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return err
 	}
 
-	if equality.Semantic.DeepEqual(desired.Status.BuilderMetadata, original.Status.BuilderMetadata) {
+	if equality.Semantic.DeepEqual(desired.Status, original.Status) { //this is a bug :(
 		return nil
 	}
 
 	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
 	return err
+}
+
+func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconciledBuilderResult {
+	builderImage, err := c.MetadataRetriever.GetBuilderImage(registry.NewNoAuthImageRef(builder.Spec.Image))
+	if err != nil {
+		builder.Status = v1alpha1.BuilderStatus{
+			Status: duckv1alpha1.Status{
+				ObservedGeneration: builder.Generation,
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionFalse,
+					},
+				},
+			},
+		}
+
+		return reconciledBuilderResult{
+			builder: builder,
+			err:     err,
+		}
+
+	}
+
+	builder.Status = v1alpha1.BuilderStatus{
+		Status: duckv1alpha1.Status{
+			ObservedGeneration: builder.Generation,
+			Conditions: duckv1alpha1.Conditions{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
+		LatestImage:     builderImage.Identifier,
+	}
+
+	return reconciledBuilderResult{
+		builder: builder,
+	}
 }
 
 func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {

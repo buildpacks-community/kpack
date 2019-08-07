@@ -28,6 +28,10 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		return []string{}, false
 	}
 
+	if !builder.Ready() {
+		return []string{}, false
+	}
+
 	if lastBuild == nil {
 		return []string{BuildReasonConfig}, true
 	}
@@ -84,7 +88,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 		},
 		Spec: BuildSpec{
 			Tag:                  im.Spec.Tag,
-			Builder:              builder.Spec.Image,
+			Builder:              builder.Status.LatestImage,
 			Env:                  im.Spec.Build.Env,
 			Resources:            im.Spec.Build.Resources,
 			ServiceAccount:       im.Spec.ServiceAccount,
