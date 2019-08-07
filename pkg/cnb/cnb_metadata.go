@@ -11,13 +11,13 @@ import (
 
 const BuilderMetadataLabel = "io.buildpacks.builder.metadata"
 
-type BuilderBuildpackMetadata struct {
+type BuildpackMetadata struct {
 	ID      string `json:"id"`
 	Version string `json:"version"`
 }
 
 type BuilderImageMetadata struct {
-	Buildpacks []BuilderBuildpackMetadata `json:"buildpacks"`
+	Buildpacks []BuildpackMetadata `json:"buildpacks"`
 }
 
 type BuilderImage struct {
@@ -25,7 +25,7 @@ type BuilderImage struct {
 	Identifier               string
 }
 
-type BuilderMetadata []BuilderBuildpackMetadata
+type BuilderMetadata []BuildpackMetadata
 
 type RemoteMetadataRetriever struct {
 	LifecycleImageFactory registry.RemoteImageFactory
