@@ -207,6 +207,22 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			require.Len(t, reasons, 0)
 		})
 
+		it("false if builder has not processed current generation", func() {
+			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			builder.ObjectMeta.Generation = 2
+			builder.Status.ObservedGeneration = 1
+			builder.Status.Conditions = []duckv1alpha1.Condition{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: v1.ConditionTrue,
+				},
+			}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
 		it("false if source resolver has not resolved", func() {
 			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
 			sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}

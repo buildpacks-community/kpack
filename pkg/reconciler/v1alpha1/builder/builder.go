@@ -74,9 +74,65 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	builderImage, err := c.MetadataRetriever.GetBuilderImage(registry.NewNoAuthImageRef(builder.Spec.Image))
+	reconciledResult := c.reconcileBuilderStatus(builder)
+
+	err = c.updateStatus(reconciledResult.builder)
 	if err != nil {
 		return err
+	}
+
+	if reconciledResult.reEnqueue() {
+		err = c.Enqueuer.Enqueue(builder)
+		if err != nil {
+			return err
+		}
+	}
+	return reconciledResult.err
+}
+
+type reconciledBuilderResult struct {
+	builder *v1alpha1.Builder
+	err     error
+}
+
+func (r reconciledBuilderResult) reEnqueue() bool {
+	return r.builder.Spec.UpdatePolicy != v1alpha1.External && r.err == nil
+}
+
+func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
+	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
+	if err != nil {
+		return err
+	}
+
+	if equality.Semantic.DeepEqual(desired.Status, original.Status) { //this is a bug :(
+		return nil
+	}
+
+	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
+	return err
+}
+
+func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconciledBuilderResult {
+	builderImage, err := c.MetadataRetriever.GetBuilderImage(registry.NewNoAuthImageRef(builder.Spec.Image))
+	if err != nil {
+		builder.Status = v1alpha1.BuilderStatus{
+			Status: duckv1alpha1.Status{
+				ObservedGeneration: builder.Generation,
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionFalse,
+					},
+				},
+			},
+		}
+
+		return reconciledBuilderResult{
+			builder: builder,
+			err:     err,
+		}
+
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
@@ -93,29 +149,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		LatestImage:     builderImage.Identifier,
 	}
 
-	err = c.updateStatus(builder)
-	if err != nil {
-		return err
+	return reconciledBuilderResult{
+		builder: builder,
 	}
-
-	if builder.Spec.UpdatePolicy != v1alpha1.External {
-		err = c.Enqueuer.Enqueue(builder)
-	}
-	return err
-}
-
-func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
-	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return err
-	}
-
-	if equality.Semantic.DeepEqual(desired.Status.BuilderMetadata, original.Status.BuilderMetadata) {
-		return nil
-	}
-
-	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
-	return err
 }
 
 func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {

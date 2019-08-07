@@ -5,5 +5,6 @@ import (
 )
 
 func (b *Builder) Ready() bool {
-	return b.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue()
+	return b.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() &&
+		(b.Generation == b.Status.ObservedGeneration)
 }
