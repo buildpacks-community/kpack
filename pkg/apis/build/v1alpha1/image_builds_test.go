@@ -171,6 +171,24 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, reasons, BuildReasonConfig)
 		})
 
+		it("true for different RegistryImage", func() {
+			build.Spec.Source = Source{
+				Registry: &Registry{
+					Image: "some-image",
+				},
+			}
+			sourceResolver.Status.ResolvedSource = ResolvedSource{
+				Registry: &ResolvedRegistrySource{
+					Image: "different",
+				},
+			}
+
+			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonConfig)
+		})
+
 		it("false if source resolver is not ready", func() {
 			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
 			sourceResolver.Status.Conditions = []duckv1alpha1.Condition{
@@ -285,7 +303,6 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("Builder Metadata changes", func() {
-
 			it("false if builder has additional unused buildpack metadata", func() {
 				builder.Status.BuilderMetadata = []BuildpackMetadata{
 					{ID: "buildpack.matches", Version: "1"},
@@ -386,6 +403,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
 			assert.Contains(t, build.Spec.Source.Git.Revision, "revision")
 			assert.Nil(t, build.Spec.Source.Blob)
+			assert.Nil(t, build.Spec.Source.Registry)
 		})
 
 		it("sets blob url when image source is blob", func() {
@@ -397,7 +415,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			build := image.build(sourceResolver, builder, []string{}, 27)
 
 			assert.Nil(t, build.Spec.Source.Git)
+			assert.Nil(t, build.Spec.Source.Registry)
 			assert.Equal(t, build.Spec.Source.Blob.URL, "https://some.place/blob.jar")
+		})
+
+		it("sets registry image when image source is registry", func() {
+			sourceResolver.Status.ResolvedSource = ResolvedSource{
+				Registry: &ResolvedRegistrySource{
+					Image: "some-registry.io/some-image",
+				},
+			}
+			build := image.build(sourceResolver, builder, []string{}, 27)
+
+			assert.Nil(t, build.Spec.Source.Git)
+			assert.Nil(t, build.Spec.Source.Blob)
+			assert.Equal(t, build.Spec.Source.Registry.Image, "some-registry.io/some-image")
 		})
 
 		it("with excludes additional images names when explicitly disabled", func() {

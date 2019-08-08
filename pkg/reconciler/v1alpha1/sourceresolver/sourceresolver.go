@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/knative/pkg/controller"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/knative/pkg/controller"
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
@@ -27,10 +27,17 @@ type Resolver interface {
 	CanResolve(*v1alpha1.SourceResolver) bool
 }
 
-func NewController(opt reconciler.Options, sourceResolverInformer v1alpha1informers.SourceResolverInformer, gitResolver Resolver, blobResolver Resolver) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
+	gitResolver Resolver,
+	blobResolver Resolver,
+	registryResolver Resolver,
+) *controller.Impl {
 	c := &Reconciler{
 		GitResolver:          gitResolver,
 		BlobResolver:         blobResolver,
+		RegistryResolver:     registryResolver,
 		Client:               opt.Client,
 		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
@@ -55,6 +62,7 @@ type Enqueuer interface {
 type Reconciler struct {
 	GitResolver          Resolver
 	BlobResolver         Resolver
+	RegistryResolver     Resolver
 	Enqueuer             Enqueuer
 	Client               versioned.Interface
 	SourceResolverLister v1alpha1listers.SourceResolverLister
@@ -102,6 +110,8 @@ func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (
 		return c.GitResolver, nil
 	} else if c.BlobResolver.CanResolve(sourceResolver) {
 		return c.BlobResolver, nil
+	} else if c.RegistryResolver.CanResolve(sourceResolver) {
+		return c.RegistryResolver, nil
 	}
 	return nil, errors.New("invalid source type")
 }

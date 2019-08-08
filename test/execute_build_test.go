@@ -145,6 +145,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 					},
 				},
+				"test-registry-image": {
+					Registry: &v1alpha1.Registry{
+						Image: "gcr.io/cf-build-service-public/testing/beam/source@sha256:36ce5ac0f2e9b115d46153d7e7709e234a1936bf7071938e91b4bfd1c9e010c6",
+					},
+				},
 			}
 
 			for imageName, imageSource := range imageConfigs {

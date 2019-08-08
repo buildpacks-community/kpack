@@ -12,6 +12,8 @@ func (sr *SourceResolver) ResolvedSource(resolvedSource ResolvedSource) {
 		sr.ResolvedGitSource(resolvedSource.Git)
 	} else if resolvedSource.Blob != nil {
 		sr.ResolvedBlobSource(resolvedSource.Blob)
+	} else if resolvedSource.Registry != nil {
+		sr.ResolvedRegistrySource(resolvedSource.Registry)
 	}
 }
 
@@ -54,6 +56,20 @@ func (sr *SourceResolver) ResolvedBlobSource(resolvedBlobSource *ResolvedBlobSou
 	})
 }
 
+func (sr *SourceResolver) ResolvedRegistrySource(resolvedRegistrySource *ResolvedRegistrySource) {
+	sr.Status.ResolvedSource.Registry = resolvedRegistrySource
+
+	sr.Status.Conditions = []duckv1alpha1.Condition{{
+		Type:   duckv1alpha1.ConditionReady,
+		Status: corev1.ConditionTrue,
+	}}
+
+	sr.Status.Conditions = append(sr.Status.Conditions, duckv1alpha1.Condition{
+		Type:   ActivePolling,
+		Status: corev1.ConditionFalse,
+	})
+}
+
 func (sr *SourceResolver) PollingReady() bool {
 	return sr.Status.GetCondition(ActivePolling).IsTrue()
 }
@@ -71,8 +87,12 @@ func (sr SourceResolver) IsBlob() bool {
 	return sr.Spec.Source.Blob != nil
 }
 
+func (sr SourceResolver) IsRegistry() bool {
+	return sr.Spec.Source.Registry != nil
+}
+
 func (sr SourceResolver) ConfigChanged(lastBuild *Build) bool {
-	return sr.gitURLChanged(lastBuild) || sr.blobChanged(lastBuild)
+	return sr.gitURLChanged(lastBuild) || sr.blobChanged(lastBuild) || sr.registryChanged(lastBuild)
 }
 
 func (sr SourceResolver) gitURLChanged(lastBuild *Build) bool {
@@ -87,6 +107,10 @@ func (sr SourceResolver) blobChanged(lastBuild *Build) bool {
 	return sr.Status.ResolvedSource.Blob != nil && sr.Status.ResolvedSource.Blob.URL != lastBuild.Spec.Source.Blob.URL
 }
 
+func (sr SourceResolver) registryChanged(lastBuild *Build) bool {
+	return sr.Status.ResolvedSource.Registry != nil && sr.Status.ResolvedSource.Registry.Image != lastBuild.Spec.Source.Registry.Image
+}
+
 func (sr SourceResolver) desiredSource() Source {
 	if sr.Status.ResolvedSource.Git != nil {
 		return Source{
@@ -95,10 +119,16 @@ func (sr SourceResolver) desiredSource() Source {
 				Revision: sr.Status.ResolvedSource.Git.Revision,
 			},
 		}
-	} else {
+	} else if sr.Status.ResolvedSource.Blob != nil {
 		return Source{
 			Blob: &Blob{
 				URL: sr.Status.ResolvedSource.Blob.URL,
+			},
+		}
+	} else {
+		return Source{
+			Registry: &Registry{
+				Image: sr.Status.ResolvedSource.Registry.Image,
 			},
 		}
 	}

@@ -37,6 +37,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 
 	fakeGitResolver := &sourceresolverfakes.FakeResolver{}
 	fakeBlobResolver := &sourceresolverfakes.FakeResolver{}
+	fakeRegistryResolver := &sourceresolverfakes.FakeResolver{}
 	fakeEnqueuer := &sourceresolverfakes.FakeEnqueuer{}
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -53,6 +54,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			r := &sourceresolver.Reconciler{
 				GitResolver:          fakeGitResolver,
 				BlobResolver:         fakeBlobResolver,
+				RegistryResolver:     fakeRegistryResolver,
 				Enqueuer:             fakeEnqueuer,
 				Client:               fakeClient,
 				SourceResolverLister: listers.GetSourceResolverLister(),
@@ -377,6 +379,71 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 									ResolvedSource: v1alpha1.ResolvedSource{
 										Blob: &v1alpha1.ResolvedBlobSource{
 											URL: "https://some-blobstore.example.com/some-blob",
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+		})
+
+		when("a registry based source config", func() {
+			sourceResolver := &v1alpha1.SourceResolver{
+				ObjectMeta: v1.ObjectMeta{
+					Name:       sourceResolverName,
+					Namespace:  namespace,
+					Generation: originalGeneration,
+				},
+				Spec: v1alpha1.SourceResolverSpec{
+					ServiceAccount: serviceAccount,
+					Source: v1alpha1.Source{
+						Registry: &v1alpha1.Registry{
+							Image: "some-registry.io/some-image@sha256:abcdef123456",
+						},
+					},
+				},
+			}
+
+			resolvedSource := v1alpha1.ResolvedSource{
+				Registry: &v1alpha1.ResolvedRegistrySource{
+					Image: "some-registry.io/some-image@sha256:abcdef123456",
+				},
+			}
+
+			fakeRegistryResolver.ResolveReturns(resolvedSource, nil)
+			fakeRegistryResolver.CanResolveReturns(true)
+
+			it("reconciles to ready and not active polling", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						sourceResolver,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.SourceResolver{
+								ObjectMeta: sourceResolver.ObjectMeta,
+								Spec:       sourceResolver.Spec,
+								Status: v1alpha1.SourceResolverStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   v1alpha1.ActivePolling,
+												Status: corev1.ConditionFalse,
+											},
+										},
+									},
+									ResolvedSource: v1alpha1.ResolvedSource{
+										Registry: &v1alpha1.ResolvedRegistrySource{
+											Image: "some-registry.io/some-image@sha256:abcdef123456",
 										},
 									},
 								},

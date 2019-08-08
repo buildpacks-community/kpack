@@ -109,8 +109,8 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					},
 				},
 				{
-					Name:            "source-init",
-					Image:           config.SourceInitImage,
+					Name:  "source-init",
+					Image: config.SourceInitImage,
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser:  &root,
 						RunAsGroup: &root,
@@ -279,13 +279,22 @@ func buildSourceInitEnvVars(build *Build) []corev1.EnvVar {
 			},
 			homeEnv,
 		}
-	}
-	return []corev1.EnvVar{
-		{
-			Name:  "BLOB_URL",
-			Value: build.Spec.Source.Blob.URL,
-		},
-		homeEnv,
+	} else if build.Spec.Source.IsBlob() {
+		return []corev1.EnvVar{
+			{
+				Name:  "BLOB_URL",
+				Value: build.Spec.Source.Blob.URL,
+			},
+			homeEnv,
+		}
+	} else {
+		return []corev1.EnvVar{
+			{
+				Name:  "REGISTRY_IMAGE",
+				Value: build.Spec.Source.Registry.Image,
+			},
+			homeEnv,
+		}
 	}
 }
 

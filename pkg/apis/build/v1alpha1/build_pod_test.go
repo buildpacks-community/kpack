@@ -218,6 +218,31 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.InitContainers[1].Env)
 		})
 
+		it("configures source init with the registry source", func() {
+			build.Spec.Source.Git = nil
+			build.Spec.Source.Blob = nil
+			build.Spec.Source.Registry = &v1alpha1.Registry{
+				Image: "some-registry.io/some-image",
+			}
+			pod, err := build.BuildPod(config, secrets)
+			require.NoError(t, err)
+
+			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsUser)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsGroup)
+			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
+			assert.Equal(t, []corev1.EnvVar{
+				{
+					Name:  "REGISTRY_IMAGE",
+					Value: "some-registry.io/some-image",
+				},
+				{
+					Name:  "HOME",
+					Value: "/builder/home",
+				},
+			}, pod.Spec.InitContainers[1].Env)
+		})
+
 		it("configures prepare step with the build setup", func() {
 			pod, err := build.BuildPod(config, secrets)
 			require.NoError(t, err)

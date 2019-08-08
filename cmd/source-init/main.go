@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
 	"flag"
@@ -13,12 +14,16 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 var (
-	gitURL      = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
-	gitRevision = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD")
-	blobURL     = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	gitURL        = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
+	gitRevision   = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
+	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 )
 
 func run(logger *log.Logger, cmd string, args ...string) {
@@ -70,9 +75,84 @@ func main() {
 		checkoutGitSource(dir, logger)
 	} else if *blobURL != "" {
 		downloadBlob(dir, logger)
+	} else if *registryImage != "" {
+		fetchImage(dir, logger)
 	} else {
-		logger.Fatal("no git url or blob url provided")
+		logger.Fatal("no git url, blob url, or registry image provided")
 	}
+}
+
+func fetchImage(dir string, logger *log.Logger) {
+	ref, err := name.ParseReference(*registryImage, name.WeakValidation)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	img, err := remote.Image(ref)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	// TODO
+	//manifest, err := img.Manifest()
+	//if err != nil {
+	//	logger.Fatal(err)
+	//}
+
+	//if manifest.Annotations["something"] != "other-thing" {
+	//	logger.Fatal("you blew it")
+	//}
+
+	layers, err := img.Layers()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if len(layers) != 1 {
+		logger.Fatal("you still blew it")
+	}
+
+	reader, err := layers[0].Uncompressed()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer reader.Close()
+
+	tarReader := tar.NewReader(reader)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			logger.Fatal(err)
+		}
+
+		filePath := filepath.Join(dir, header.Name)
+		if header.FileInfo().IsDir() {
+			err := os.MkdirAll(filePath, header.FileInfo().Mode())
+			if err != nil {
+				logger.Fatal(err.Error())
+			}
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+			logger.Fatal(err.Error())
+		}
+
+		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+
+		_, err = io.Copy(outFile, tarReader)
+		outFile.Close()
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+	logger.Printf("Successfully pulled %s in path %q", *registryImage, dir)
 }
 
 func downloadBlob(dir string, logger *log.Logger) {

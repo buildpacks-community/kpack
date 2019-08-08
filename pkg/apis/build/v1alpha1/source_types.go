@@ -1,8 +1,9 @@
 package v1alpha1
 
 type Source struct {
-	Git  *Git  `json:"git,omitempty"`
-	Blob *Blob `json:"blob,omitempty"`
+	Git      *Git      `json:"git,omitempty"`
+	Blob     *Blob     `json:"blob,omitempty"`
+	Registry *Registry `json:"registry,omitempty"`
 }
 
 func (s Source) IsGit() bool {
@@ -11,6 +12,10 @@ func (s Source) IsGit() bool {
 
 func (s Source) IsBlob() bool {
 	return s.Blob != nil
+}
+
+func (s Source) IsRegistry() bool {
+	return s.Registry != nil
 }
 
 type Git struct {
@@ -22,9 +27,14 @@ type Blob struct {
 	URL string `json:"url"`
 }
 
+type Registry struct {
+	Image string `json:"image"`
+}
+
 type ResolvedSource struct {
-	Git  *ResolvedGitSource  `json:"git,omitempty"`
-	Blob *ResolvedBlobSource `json:"blob,omitempty"`
+	Git      *ResolvedGitSource      `json:"git,omitempty"`
+	Blob     *ResolvedBlobSource     `json:"blob,omitempty"`
+	Registry *ResolvedRegistrySource `json:"registry,omitempty"`
 }
 
 const (
@@ -52,4 +62,8 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 
 type ResolvedBlobSource struct {
 	URL string `json:"url"`
+}
+
+type ResolvedRegistrySource struct {
+	Image string `json:"image"`
 }
