@@ -222,14 +222,14 @@
     "pkg/authn",
     "pkg/name",
     "pkg/v1",
-    "pkg/v1/partial",
-    "pkg/v1/remote",
-    "pkg/v1/mutate",
     "pkg/v1/empty",
+    "pkg/v1/mutate",
+    "pkg/v1/partial",
     "pkg/v1/random",
+    "pkg/v1/remote",
+    "pkg/v1/remote/transport",
     "pkg/v1/stream",
     "pkg/v1/tarball",
-    "pkg/v1/remote/transport",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
@@ -934,7 +934,7 @@
   version = "v3.5.0"
 
 [[projects]]
-  digest = "1:1937e641604f1f52e225f9496037ff6aa20d5c25a87eb94623826456367f9f14"
+  digest = "1:dccfd140a36fe95e670b90aa33f96d9fdeec5dc38031f15db25cdccd60e7465e"
   name = "gopkg.in/src-d/go-git.v4"
   packages = [
     ".",
@@ -980,8 +980,8 @@
     "utils/merkletrie/noder",
   ]
   pruneopts = "NUT"
-  revision = "6241d0e70427cb0db4ca00182717af88f638268c"
-  version = "v4.13.0"
+  revision = "0d1a009cbb604db18be960db5f1525b99a55d727"
+  version = "v4.13.1"
 
 [[projects]]
   digest = "1:b233ad4ec87ac916e7bf5e678e98a2cb9e8b52f6de6ad3e11834fc7a71b8e3bf"
