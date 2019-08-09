@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const ActivePolling = "ActivePolling"
@@ -108,7 +109,9 @@ func (sr SourceResolver) blobChanged(lastBuild *Build) bool {
 }
 
 func (sr SourceResolver) registryChanged(lastBuild *Build) bool {
-	return sr.Status.ResolvedSource.Registry != nil && sr.Status.ResolvedSource.Registry.Image != lastBuild.Spec.Source.Registry.Image
+	return sr.Status.ResolvedSource.Registry != nil &&
+		(sr.Status.ResolvedSource.Registry.Image != lastBuild.Spec.Source.Registry.Image ||
+			!equality.Semantic.DeepEqual(sr.Status.ResolvedSource.Registry.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets))
 }
 
 func (sr SourceResolver) desiredSource() Source {
@@ -128,7 +131,8 @@ func (sr SourceResolver) desiredSource() Source {
 	} else {
 		return Source{
 			Registry: &Registry{
-				Image: sr.Status.ResolvedSource.Registry.Image,
+				Image:            sr.Status.ResolvedSource.Registry.Image,
+				ImagePullSecrets: sr.Status.ResolvedSource.Registry.ImagePullSecrets,
 			},
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"flag"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"io"
 	"io/ioutil"
 	"log"
@@ -66,6 +67,28 @@ func main() {
 		}
 	}
 
+	err = os.MkdirAll(filepath.Join(usr.HomeDir, ".docker"), os.ModePerm)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if fileExists("/imagePullSecrets/.dockerconfigjson", logger) {
+		err := os.Symlink("/imagePullSecrets/.dockerconfigjson", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	} else if fileExists("/builder/home/.docker/config.json", logger) {
+		err := os.Symlink("/builder/home/.docker/config.json", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+
+	err = os.Setenv("DOCKER_CONFIG", filepath.Join(usr.HomeDir, ".docker"))
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	dir, err := os.Getwd()
 	if err != nil {
 		logger.Fatal("Failed to get current dir", err)
@@ -88,7 +111,7 @@ func fetchImage(dir string, logger *log.Logger) {
 		logger.Fatal(err)
 	}
 
-	img, err := remote.Image(ref)
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -109,7 +132,7 @@ func fetchImage(dir string, logger *log.Logger) {
 	}
 
 	if len(layers) != 1 {
-		logger.Fatal("you still blew it")
+		logger.Fatal("only single layer images are currently supported")
 	}
 
 	reader, err := layers[0].Uncompressed()
@@ -234,4 +257,16 @@ func checkoutGitSource(dir string, logger *log.Logger) {
 		run(logger, "git", "reset", "--hard", "FETCH_HEAD")
 	}
 	logger.Printf("Successfully cloned %q @ %q in path %q", *gitURL, *gitRevision, dir)
+}
+
+func fileExists(file string, logger *log.Logger) bool {
+	_, err := os.Stat(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		logger.Fatal(err.Error())
+	}
+
+	return true
 }

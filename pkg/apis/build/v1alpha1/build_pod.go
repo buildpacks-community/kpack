@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-
+	
 	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +16,12 @@ const (
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
 
-	cacheDirName  = "cache-dir"
-	layersDirName = "layers-dir"
-	platformDir   = "platform-dir"
-	homeDir       = "home-dir"
-	workspaceDir  = "workspace-dir"
+	cacheDirName            = "cache-dir"
+	layersDirName           = "layers-dir"
+	platformDir             = "platform-dir"
+	homeDir                 = "home-dir"
+	workspaceDir            = "workspace-dir"
+	imagePullSecretsDirName = "image-pull-secrets-dir"
 )
 
 type BuildPodConfig struct {
@@ -54,6 +55,11 @@ var (
 	homeEnv = corev1.EnvVar{
 		Name:  "HOME",
 		Value: "/builder/home",
+	}
+	imagePullSecretsVolume = corev1.VolumeMount{
+		Name:      imagePullSecretsDirName,
+		MountPath: "/imagePullSecrets",
+		ReadOnly:  true,
 	}
 )
 
@@ -119,6 +125,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
+						imagePullSecretsVolume,
 						workspaceVolume,
 						homeVolume,
 					},
@@ -365,7 +372,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret) ([]corev1.Vol
 }
 
 func (b *Build) setupVolumes() []corev1.Volume {
-	return []corev1.Volume{
+	volumes := []corev1.Volume{
 		{
 			Name:         cacheDirName,
 			VolumeSource: b.cacheVolume(),
@@ -388,7 +395,6 @@ func (b *Build) setupVolumes() []corev1.Volume {
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
 		},
-
 		{
 			Name: platformDir,
 			VolumeSource: corev1.VolumeSource{
@@ -396,4 +402,25 @@ func (b *Build) setupVolumes() []corev1.Volume {
 			},
 		},
 	}
+
+	// TODO : pull into a function
+	if b.Spec.Source.IsRegistry() && len(b.Spec.Source.Registry.ImagePullSecrets) > 0 {
+		volumes = append(volumes, corev1.Volume{
+			Name: imagePullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: b.Spec.Source.Registry.ImagePullSecrets[0],
+				},
+			},
+		})
+	} else {
+		volumes = append(volumes, corev1.Volume{
+			Name: imagePullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+	}
+
+	return volumes
 }

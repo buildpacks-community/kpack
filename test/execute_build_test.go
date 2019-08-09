@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"strconv"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	imgremote "github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,11 +35,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var totalImagesCreated = 1
 
 	const (
-		testNamespace      = "test-build-service-system"
+		testNamespace      = "test"
 		dockerSecret       = "docker-secret"
 		builderName        = "build-service-builder"
 		serviceAccountName = "image-service-account"
 		builderImage       = "cloudfoundry/cnb:bionic"
+		imagePullSecret    = "image-pull-secret"
 	)
 
 	it.Before(func() {
@@ -73,9 +74,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		it("builds an initial image", func() {
 			require.False(t, imageExists(t, cfg.imageTag+"-1")(), "image with tag 1 need to be removed")
 			require.False(t, imageExists(t, cfg.imageTag+"-2")(), "image with tag 2 need to be removed")
+			require.False(t, imageExists(t, cfg.imageTag+"-3")(), "image with tag 3 need to be removed")
 
 			reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 			require.NoError(t, err)
+
 			auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
 			require.NoError(t, err)
 
@@ -97,6 +100,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					"password": password,
 				},
 				Type: v1.SecretTypeBasicAuth,
+			})
+			require.NoError(t, err)
+
+			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: imagePullSecret,
+				},
+				Data: nil,
+				StringData: map[string]string{
+					v1.DockerConfigJsonKey: `{ "auths": { "https://index.docker.io/v1/": { "auth": "cGl2b3RhbGFzaHdpbjpwaW5rdmlldzg3IQ==" } } }`,
+				},
+				Type: v1.SecretTypeDockerConfigJson,
 			})
 			require.NoError(t, err)
 

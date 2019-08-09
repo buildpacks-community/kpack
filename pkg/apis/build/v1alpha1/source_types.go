@@ -28,7 +28,8 @@ type Blob struct {
 }
 
 type Registry struct {
-	Image string `json:"image"`
+	Image            string   `json:"image"`
+	ImagePullSecrets []string `json:"imagePullSecrets"`
 }
 
 type ResolvedSource struct {
@@ -65,5 +66,6 @@ type ResolvedBlobSource struct {
 }
 
 type ResolvedRegistrySource struct {
-	Image string `json:"image"`
+	Image            string   `json:"image"`
+	ImagePullSecrets []string `json:"imagePullSecrets"`
 }

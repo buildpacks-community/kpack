@@ -12,7 +12,6 @@ import (
 type SourceResolver struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
 	Spec   SourceResolverSpec   `json:"spec"`
 	Status SourceResolverStatus `json:"status"`
 }
@@ -24,7 +23,6 @@ type SourceResolverSpec struct {
 
 type SourceResolverStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-
 	ResolvedSource ResolvedSource `json:"resolvedSource"`
 }
 
@@ -33,7 +31,6 @@ type SourceResolverStatus struct {
 type SourceResolverList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-
 	Items []SourceResolver `json:"items"`
 }
 
