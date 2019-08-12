@@ -391,6 +391,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
+									BuildCacheName: image.CacheName(),
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionUnknown(),
