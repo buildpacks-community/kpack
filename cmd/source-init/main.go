@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
@@ -121,11 +122,14 @@ func fetchImage(dir string, logger *log.Logger) {
 		logger.Fatal(err)
 	}
 
-	if len(layers) != 1 {
-		logger.Fatal("only single layer images are currently supported")
+	for _, layer := range layers {
+		fetchLayer(layer, logger, dir)
 	}
+	logger.Printf("Successfully pulled %s in path %q", *registryImage, dir)
+}
 
-	reader, err := layers[0].Uncompressed()
+func fetchLayer(layer v1.Layer, logger *log.Logger, dir string) {
+	reader, err := layer.Uncompressed()
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -165,7 +169,6 @@ func fetchImage(dir string, logger *log.Logger) {
 			logger.Fatal(err.Error())
 		}
 	}
-	logger.Printf("Successfully pulled %s in path %q", *registryImage, dir)
 }
 
 func downloadBlob(dir string, logger *log.Logger) {
