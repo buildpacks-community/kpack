@@ -1,9 +1,10 @@
 package v1alpha1
 
 import (
+	"strconv"
+
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"strconv"
 )
 
 func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder *Builder) (BuildApplier, error) {
