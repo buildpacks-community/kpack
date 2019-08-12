@@ -189,6 +189,37 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			require.True(t, fakeTracker.IsTracking(builder.Ref(), image))
 		})
 
+		it("sets condition not ready for non-existent builder", func() {
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					image,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Image{
+							ObjectMeta: image.ObjectMeta,
+							Spec:       image.Spec,
+							Status: v1alpha1.ImageStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:    duckv1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Reason:  "BuilderNotFound",
+											Message: "Unable to find builder builder-name.",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+		})
+
 		when("reconciling source resolvers", func() {
 			it("creates a source resolver if not created", func() {
 				rt.Test(rtesting.TableRow{

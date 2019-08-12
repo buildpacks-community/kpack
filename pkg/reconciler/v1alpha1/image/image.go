@@ -17,6 +17,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/build/v1alpha1"
@@ -99,35 +100,47 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if err != nil {
 		return fmt.Errorf("failed attempting to fetch image with name %s: %s", imageName, err)
 	}
-	image = image.DeepCopy()
 
-	lastBuild, err := c.fetchLastBuild(image)
-	if err != nil {
-		return fmt.Errorf("failed fetching last build: %s", err)
-	}
-
-	if lastBuild.IsRunning() {
-		return nil
-	}
-
-	sourceResolver, err := c.reconcileSourceResolver(image)
+	image, err = c.reconcileImage(image.DeepCopy())
 	if err != nil {
 		return err
 	}
 
-	builder, err := c.BuilderLister.Builders(namespace).Get(image.Spec.BuilderRef)
-	if err != nil {
-		return fmt.Errorf("failed fetching builder: %s", err)
+	return c.updateStatus(image)
+}
+
+func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, error) {
+	builder, err := c.BuilderLister.Builders(image.Namespace).Get(image.Spec.BuilderRef)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	} else if errors.IsNotFound(err) {
+		image.Status.Conditions = image.BuilderNotFound()
+		image.Status.ObservedGeneration = image.Generation
+		return image, nil
 	}
 
 	err = c.Tracker.Track(builder.Ref(), image)
 	if err != nil {
-		return fmt.Errorf("failed setting tracker for builder: %s", err)
+		return nil, err
+	}
+
+	lastBuild, err := c.fetchLastBuild(image)
+	if err != nil {
+		return nil, err
+	}
+
+	if lastBuild.IsRunning() {
+		return image, nil
+	}
+
+	sourceResolver, err := c.reconcileSourceResolver(image)
+	if err != nil {
+		return nil, err
 	}
 
 	buildCache, err := c.reconcileBuildCache(image)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if buildCache == nil {
@@ -138,26 +151,21 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	buildApplier, err := image.ReconcileBuild(lastBuild, sourceResolver, builder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	reconciledBuild, err := buildApplier.Apply(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	image.Status.LatestBuildRef = reconciledBuild.Build.BuildRef()
 	image.Status.BuildCounter = reconciledBuild.BuildCounter
 	image.Status.LatestImage = reconciledBuild.LatestImage
 	image.Status.Conditions = reconciledBuild.Conditions
-
-	err = c.deleteOldBuilds(namespace, image)
-	if err != nil {
-		return fmt.Errorf("failed deleting build: %s", err)
-	}
-
 	image.Status.ObservedGeneration = image.Generation
-	return c.updateStatus(image)
+
+	return image, c.deleteOldBuilds(image)
 }
 
 func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.SourceResolver, error) {
@@ -219,7 +227,7 @@ func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (*corev1.Persist
 	return c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Update(existing)
 }
 
-func (c *Reconciler) deleteOldBuilds(namespace string, image *v1alpha1.Image) error {
+func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	builds, err := c.fetchAllBuilds(image)
 	if err != nil {
 		return fmt.Errorf("failed fetching all builds for image: %s", err)
@@ -228,7 +236,7 @@ func (c *Reconciler) deleteOldBuilds(namespace string, image *v1alpha1.Image) er
 	if builds.NumberFailedBuilds() > limitOrDefault(image.Spec.FailedBuildHistoryLimit, buildHistoryDefaultLimit) {
 		oldestFailedBuild := builds.OldestFailure()
 
-		err := c.Client.BuildV1alpha1().Builds(namespace).Delete(oldestFailedBuild.Name, &v1.DeleteOptions{})
+		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &v1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting failed build: %s", err)
 		}
@@ -237,7 +245,7 @@ func (c *Reconciler) deleteOldBuilds(namespace string, image *v1alpha1.Image) er
 	if builds.NumberSuccessfulBuilds() > limitOrDefault(image.Spec.SuccessBuildHistoryLimit, buildHistoryDefaultLimit) {
 		oldestSuccess := builds.OldestSuccess()
 
-		err := c.Client.BuildV1alpha1().Builds(namespace).Delete(oldestSuccess.Name, &v1.DeleteOptions{})
+		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &v1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting successful build: %s", err)
 		}
