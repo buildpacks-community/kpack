@@ -96,12 +96,12 @@ func (sr SourceResolver) ConfigChanged(lastBuild *Build) bool {
 	return sr.gitURLChanged(lastBuild) || sr.blobChanged(lastBuild) || sr.registryChanged(lastBuild)
 }
 
-func (sr SourceResolver) gitURLChanged(lastBuild *Build) bool {
-	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL
-}
-
 func (sr SourceResolver) GitRevisionChanged(lastBuild *Build) bool {
 	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.Revision != lastBuild.Spec.Source.Git.Revision
+}
+
+func (sr SourceResolver) gitURLChanged(lastBuild *Build) bool {
+	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL
 }
 
 func (sr SourceResolver) blobChanged(lastBuild *Build) bool {

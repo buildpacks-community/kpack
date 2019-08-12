@@ -12,8 +12,8 @@ import (
 type SourceResolver struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec   SourceResolverSpec   `json:"spec"`
-	Status SourceResolverStatus `json:"status"`
+	Spec              SourceResolverSpec   `json:"spec"`
+	Status            SourceResolverStatus `json:"status"`
 }
 
 type SourceResolverSpec struct {
@@ -23,7 +23,7 @@ type SourceResolverSpec struct {
 
 type SourceResolverStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	ResolvedSource ResolvedSource `json:"resolvedSource"`
+	ResolvedSource      ResolvedSource `json:"resolvedSource"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -31,7 +31,7 @@ type SourceResolverStatus struct {
 type SourceResolverList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items []SourceResolver `json:"items"`
+	Items           []SourceResolver `json:"items"`
 }
 
 func (*SourceResolver) GetGroupVersionKind() schema.GroupVersionKind {

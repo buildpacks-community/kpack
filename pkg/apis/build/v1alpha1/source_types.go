@@ -38,14 +38,14 @@ type ResolvedSource struct {
 	Registry *ResolvedRegistrySource `json:"registry,omitempty"`
 }
 
+type GitSourceKind string
+
 const (
 	Unknown GitSourceKind = "Unknown"
 	Branch  GitSourceKind = "Branch"
 	Tag     GitSourceKind = "Tag"
 	Commit  GitSourceKind = "Commit"
 )
-
-type GitSourceKind string
 
 type ResolvedGitSource struct {
 	URL      string        `json:"url"`

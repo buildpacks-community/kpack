@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"flag"
-	"github.com/google/go-containerregistry/pkg/authn"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
@@ -115,16 +115,6 @@ func fetchImage(dir string, logger *log.Logger) {
 	if err != nil {
 		logger.Fatal(err)
 	}
-
-	// TODO
-	//manifest, err := img.Manifest()
-	//if err != nil {
-	//	logger.Fatal(err)
-	//}
-
-	//if manifest.Annotations["something"] != "other-thing" {
-	//	logger.Fatal("you blew it")
-	//}
 
 	layers, err := img.Layers()
 	if err != nil {
