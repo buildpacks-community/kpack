@@ -14,7 +14,7 @@ type ImageFactory struct {
 }
 
 func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remote, err := remote.NewImage(imageRef.Tag(), authn.DefaultKeychain, remote.FromBaseImage(imageRef.Tag()))
+	remote, err := remote.NewImage(imageRef.Tag(), f.KeychainFactory.KeychainForImageRef(imageRef), remote.FromBaseImage(imageRef.Tag()))
 	return remote, errors.Wrapf(err, "could not create remote image from ref %s", imageRef.Tag())
 }
 
