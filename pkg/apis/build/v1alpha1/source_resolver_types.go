@@ -17,17 +17,16 @@ type SourceResolver struct {
 }
 
 type SourceResolverSpec struct {
-	ServiceAccount string `json:"serviceAccount"`
-	Source         Source `json:"source"`
+	ServiceAccount string       `json:"serviceAccount"`
+	Source         SourceConfig `json:"source"`
 }
 
 type SourceResolverStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	ResolvedSource      ResolvedSource `json:"resolvedSource"`
+	Source              ResolvedSourceConfig `json:"source"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 type SourceResolverList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

@@ -103,8 +103,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					corev1.ResourceMemory: resource.MustParse("128M"),
 				},
 			},
-			Source: v1alpha1.Source{
-				Git: &v1alpha1.Git{
+			Source: v1alpha1.ResolvedSourceConfig{
+				Git: &v1alpha1.ResolvedGitSource{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},

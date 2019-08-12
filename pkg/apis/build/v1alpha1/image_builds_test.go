@@ -52,7 +52,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			ResolvedSource: ResolvedSource{
+			Source: ResolvedSourceConfig{
 				Git: &ResolvedGitSource{
 					URL:      "https://some.git/url",
 					Revision: "revision",
@@ -70,8 +70,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Tag:            "some/image",
 			Builder:        "some/builder",
 			ServiceAccount: "some/serviceaccount",
-			Source: Source{
-				Git: &Git{
+			Source: ResolvedSourceConfig{
+				Git: &ResolvedGitSource{
 					URL:      "https://some.git/url",
 					Revision: "revision",
 				},
@@ -134,7 +134,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different GitURL", func() {
-			sourceResolver.Status.ResolvedSource.Git.URL = "different"
+			sourceResolver.Status.Source.Git.URL = "different"
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
@@ -143,7 +143,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different GitRevision", func() {
-			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+			sourceResolver.Status.Source.Git.Revision = "different"
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 			assert.True(t, needed)
@@ -152,13 +152,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different BlobURL", func() {
-			build.Spec.Source = Source{
-				Git: nil,
-				Blob: &Blob{
+			build.Spec.Source = ResolvedSourceConfig{
+				Blob: &ResolvedBlobSource{
 					URL: "some-url",
 				},
 			}
-			sourceResolver.Status.ResolvedSource = ResolvedSource{
+			sourceResolver.Status.Source = ResolvedSourceConfig{
 				Git: nil,
 				Blob: &ResolvedBlobSource{
 					URL: "different",
@@ -172,12 +171,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different RegistryImage", func() {
-			build.Spec.Source = Source{
-				Registry: &Registry{
+			build.Spec.Source = ResolvedSourceConfig{
+				Registry: &ResolvedRegistrySource{
 					Image: "some-image",
 				},
 			}
-			sourceResolver.Status.ResolvedSource = ResolvedSource{
+			sourceResolver.Status.Source = ResolvedSourceConfig{
 				Registry: &ResolvedRegistrySource{
 					Image: "different",
 				},
@@ -190,7 +189,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if source resolver is not ready", func() {
-			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+			sourceResolver.Status.Source.Git.Revision = "different"
 			sourceResolver.Status.Conditions = []duckv1alpha1.Condition{
 				{
 					Type:   duckv1alpha1.ConditionReady,
@@ -203,7 +202,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if builder has not processed", func() {
-			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			sourceResolver.Status.Source.Git.URL = "some-change"
 			builder.Status.Conditions = nil
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
@@ -212,7 +211,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if builder is not ready", func() {
-			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			sourceResolver.Status.Source.Git.URL = "some-change"
 			builder.Status.Conditions = []duckv1alpha1.Condition{
 				{
 					Type:   duckv1alpha1.ConditionReady,
@@ -226,7 +225,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if builder has not processed current generation", func() {
-			sourceResolver.Status.ResolvedSource.Git.URL = "some-change"
+			sourceResolver.Status.Source.Git.URL = "some-change"
 			builder.ObjectMeta.Generation = 2
 			builder.Status.ObservedGeneration = 1
 			builder.Status.Conditions = []duckv1alpha1.Condition{
@@ -242,7 +241,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if source resolver has not resolved", func() {
-			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+			sourceResolver.Status.Source.Git.Revision = "different"
 			sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
 
 			reasons, needed := image.buildNeeded(build, sourceResolver, builder)
@@ -251,7 +250,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if source resolver has not resolved and there is no previous build", func() {
-			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+			sourceResolver.Status.Source.Git.Revision = "different"
 			sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
 
 			reasons, needed := image.buildNeeded(nil, sourceResolver, builder)
@@ -260,7 +259,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if source resolver has not processed current generation", func() {
-			sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+			sourceResolver.Status.Source.Git.Revision = "different"
 			sourceResolver.ObjectMeta.Generation = 2
 			sourceResolver.Status.ObservedGeneration = 1
 
@@ -339,8 +338,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if both config and commit have changed", func() {
-				sourceResolver.Status.ResolvedSource.Git.URL = "different"
-				sourceResolver.Status.ResolvedSource.Git.Revision = "different"
+				sourceResolver.Status.Source.Git.URL = "different"
+				sourceResolver.Status.Source.Git.Revision = "different"
 
 				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
 				assert.True(t, needed)
@@ -407,7 +406,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets blob url when image source is blob", func() {
-			sourceResolver.Status.ResolvedSource = ResolvedSource{
+			sourceResolver.Status.Source = ResolvedSourceConfig{
 				Blob: &ResolvedBlobSource{
 					URL: "https://some.place/blob.jar",
 				},
@@ -420,7 +419,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets registry image when image source is registry", func() {
-			sourceResolver.Status.ResolvedSource = ResolvedSource{
+			sourceResolver.Status.Source = ResolvedSourceConfig{
 				Registry: &ResolvedRegistrySource{
 					Image: "some-registry.io/some-image",
 				},

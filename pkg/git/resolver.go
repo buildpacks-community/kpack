@@ -21,7 +21,7 @@ func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 func (g *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSource, error) {
 	auth, err := g.gitKeychain.Resolve(sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount, *sourceResolver.Spec.Source.Git)
 	if err != nil {
-		return v1alpha1.ResolvedSource{}, err
+		return nil, err
 	}
 
 	return g.remoteGitResolver.Resolve(auth, *sourceResolver.Spec.Source.Git)

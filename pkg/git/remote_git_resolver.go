@@ -48,31 +48,28 @@ func (*remoteGitResolver) Resolve(auth auth, gitSource v1alpha1.Git) (v1alpha1.R
 		Auth: auth.auth(),
 	})
 	if err != nil {
-		return v1alpha1.ResolvedSource{
-			Git: &v1alpha1.ResolvedGitSource{
-				URL:      gitSource.URL,
-				Revision: gitSource.Revision, // maybe
-				Type:     v1alpha1.Unknown,
-			}}, nil
+		return &v1alpha1.ResolvedGitSource{
+			URL:      gitSource.URL,
+			Revision: gitSource.Revision, // maybe
+			Type:     v1alpha1.Unknown,
+		}, nil
 	}
 
 	for _, ref := range references {
 		if string(ref.Name().Short()) == gitSource.Revision {
-			return v1alpha1.ResolvedSource{
-				Git: &v1alpha1.ResolvedGitSource{
-					URL:      gitSource.URL,
-					Revision: ref.Hash().String(),
-					Type:     sourceType(ref),
-				}}, nil
+			return &v1alpha1.ResolvedGitSource{
+				URL:      gitSource.URL,
+				Revision: ref.Hash().String(),
+				Type:     sourceType(ref),
+			}, nil
 		}
 	}
 
-	return v1alpha1.ResolvedSource{
-		Git: &v1alpha1.ResolvedGitSource{
-			URL:      gitSource.URL,
-			Revision: gitSource.Revision,
-			Type:     v1alpha1.Commit,
-		}}, nil
+	return &v1alpha1.ResolvedGitSource{
+		URL:      gitSource.URL,
+		Revision: gitSource.Revision,
+		Type:     v1alpha1.Commit,
+	}, nil
 }
 
 func sourceType(reference *plumbing.Reference) v1alpha1.GitSourceKind {

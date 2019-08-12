@@ -148,7 +148,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			imageConfigs := map[string]v1alpha1.Source{
+			imageConfigs := map[string]v1alpha1.SourceConfig{
 				"test-git-image": {
 					Git: &v1alpha1.Git{
 						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",

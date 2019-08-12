@@ -121,7 +121,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						RunAsUser:  &root,
 						RunAsGroup: &root,
 					},
-					Env:             buildSourceInitEnvVars(b),
+					Env:             b.Spec.Source.ResolvedSource().BuildEnvVars(),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
@@ -273,38 +273,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}, nil
 }
 
-func buildSourceInitEnvVars(build *Build) []corev1.EnvVar {
-	if build.Spec.Source.IsGit() {
-		return []corev1.EnvVar{
-			{
-				Name:  "GIT_URL",
-				Value: build.Spec.Source.Git.URL,
-			},
-			{
-				Name:  "GIT_REVISION",
-				Value: build.Spec.Source.Git.Revision,
-			},
-			homeEnv,
-		}
-	} else if build.Spec.Source.IsBlob() {
-		return []corev1.EnvVar{
-			{
-				Name:  "BLOB_URL",
-				Value: build.Spec.Source.Blob.URL,
-			},
-			homeEnv,
-		}
-	} else {
-		return []corev1.EnvVar{
-			{
-				Name:  "REGISTRY_IMAGE",
-				Value: build.Spec.Source.Registry.Image,
-			},
-			homeEnv,
-		}
-	}
-}
-
 func buildExporterArgs(build *Build) []string {
 	args := []string{
 		"-layers=/layers",
@@ -403,24 +371,5 @@ func (b *Build) setupVolumes() []corev1.Volume {
 		},
 	}
 
-	// TODO : pull into a function
-	if b.Spec.Source.IsRegistry() && len(b.Spec.Source.Registry.ImagePullSecrets) > 0 {
-		volumes = append(volumes, corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: b.Spec.Source.Registry.ImagePullSecrets[0],
-				},
-			},
-		})
-	} else {
-		volumes = append(volumes, corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		})
-	}
-
-	return volumes
+	return append(volumes, b.Spec.Source.ResolvedSource().ImagePullSecretsVolume())
 }

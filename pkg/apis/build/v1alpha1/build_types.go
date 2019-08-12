@@ -46,7 +46,7 @@ type BuildSpec struct {
 	Tag                  string                      `json:"tag"`
 	Builder              string                      `json:"builder"`
 	ServiceAccount       string                      `json:"serviceAccount"`
-	Source               Source                      `json:"source"`
+	Source               ResolvedSourceConfig        `json:"source"`
 	CacheName            string                      `json:"cacheName"`
 	AdditionalImageNames []string                    `json:"additionalImageNames"`
 	Env                  []corev1.EnvVar             `json:"env"`
