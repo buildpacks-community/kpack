@@ -98,6 +98,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		Status: v1alpha1.ImageStatus{
 			Status: duckv1alpha1.Status{
 				ObservedGeneration: originalGeneration,
+				Conditions:         conditionUnknown(),
 			},
 		},
 	}
@@ -150,10 +151,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.ImageStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: updatedGeneration,
+									Conditions:         conditionUnknown(),
 								},
-								LatestBuildRef: "",
-								BuildCounter:   0,
-								BuildCacheName: "",
 							},
 						},
 					},
@@ -185,6 +184,37 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.True(t, fakeTracker.IsTracking(builder.Ref(), image))
+		})
+
+		it("sets condition not ready for non-existent builder", func() {
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					image,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Image{
+							ObjectMeta: image.ObjectMeta,
+							Spec:       image.Spec,
+							Status: v1alpha1.ImageStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:    duckv1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Reason:  "BuilderNotFound",
+											Message: "Unable to find builder builder-name.",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
 		})
 
 		when("reconciling source resolvers", func() {
@@ -361,12 +391,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
+									BuildCacheName: image.CacheName(),
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
-									LatestBuildRef: "",
-									BuildCounter:   0,
-									BuildCacheName: image.CacheName(),
 								},
 							},
 						},
@@ -525,10 +554,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
-									LatestBuildRef: "",
-									BuildCounter:   0,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -610,10 +637,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
 									LatestBuildRef: "image-name-build-1-00001", //GenerateNameReactor
 									BuildCounter:   1,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -675,6 +702,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionUnknown,
+											},
+										},
 									},
 									LatestBuildRef: "image-name-build-1-00001", //GenerateNameReactor
 									BuildCounter:   1,
@@ -772,11 +805,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -879,11 +912,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -1009,11 +1042,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions:         conditionUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", //GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:   2,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -1076,6 +1109,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				image.Status.BuildCounter = 1
 				image.Status.LatestBuildRef = "image-name-build-1"
 				image.Status.LatestImage = "some/image@sha256:ad3f454c"
+				image.Status.Conditions = conditionReady()
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1129,6 +1163,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("deletes a failed build if more than the limit", func() {
 					image.Spec.FailedBuildHistoryLimit = limit(4)
 					image.Status.LatestBuildRef = "image-name-build-5"
+					image.Status.Conditions = conditionNotReady()
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1159,6 +1194,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					image.Spec.SuccessBuildHistoryLimit = limit(4)
 					image.Status.LatestBuildRef = "image-name-build-5"
 					image.Status.LatestImage = "some/image@sha256:build-5"
+					image.Status.Conditions = conditionReady()
 					image.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(image)
 
@@ -1209,11 +1245,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
 									},
 									LatestBuildRef: "image-name-build-1",
 									LatestImage:    "some/image@sha256:build-1",
 									BuildCounter:   1,
-									BuildCacheName: "",
 								},
 							},
 						},
@@ -1305,4 +1346,31 @@ func runtimeObjects(objects []runtime.Object, additional ...runtime.Object) []ru
 
 func limit(limit int64) *int64 {
 	return &limit
+}
+
+func conditionUnknown() duckv1alpha1.Conditions {
+	return duckv1alpha1.Conditions{
+		{
+			Type:   duckv1alpha1.ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}
+}
+
+func conditionReady() duckv1alpha1.Conditions {
+	return duckv1alpha1.Conditions{
+		{
+			Type:   duckv1alpha1.ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}
+}
+
+func conditionNotReady() duckv1alpha1.Conditions {
+	return duckv1alpha1.Conditions{
+		{
+			Type:   duckv1alpha1.ConditionReady,
+			Status: corev1.ConditionFalse,
+		},
+	}
 }

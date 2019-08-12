@@ -289,8 +289,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 									},
-									BuilderMetadata: nil,
-									LatestImage:     "",
 								},
 							},
 						},
