@@ -149,6 +149,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	image.Status.LatestBuildRef = reconciledBuild.Build.BuildRef()
 	image.Status.BuildCounter = reconciledBuild.BuildCounter
 	image.Status.LatestImage = reconciledBuild.LatestImage
+	image.Status.Conditions = reconciledBuild.Conditions
 
 	err = c.deleteOldBuilds(namespace, image)
 	if err != nil {
