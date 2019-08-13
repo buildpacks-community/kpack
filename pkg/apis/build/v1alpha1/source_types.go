@@ -120,13 +120,13 @@ type ResolvedSourceConfig struct {
 }
 
 
-func (r ResolvedSourceConfig) ResolvedSource() ResolvedSource {
-	if r.Git != nil {
-		return r.Git
-	} else if r.Blob != nil {
-		return r.Blob
-	} else if r.Registry != nil {
-		return r.Registry
+func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
+	if sc.Git != nil {
+		return sc.Git
+	} else if sc.Blob != nil {
+		return sc.Blob
+	} else if sc.Registry != nil {
+		return sc.Registry
 	}
 	return nil
 }
