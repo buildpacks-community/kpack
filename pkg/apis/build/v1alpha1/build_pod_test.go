@@ -54,8 +54,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				{Name: "keyB", Value: "valueB"},
 			},
 			Resources: resources,
-			Source: v1alpha1.ResolvedSourceConfig{
-				Git: &v1alpha1.ResolvedGitSource{
+			Source: v1alpha1.SourceConfig{
+				Git: &v1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
@@ -196,7 +196,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("configures source init with the blob source", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &v1alpha1.ResolvedBlobSource{
+			build.Spec.Source.Blob = &v1alpha1.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
 			pod, err := build.BuildPod(config, secrets)
@@ -221,7 +221,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures source init with the registry source and empty imagePullSecrets when not provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &v1alpha1.ResolvedRegistrySource{
+			build.Spec.Source.Registry = &v1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 			}
 			pod, err := build.BuildPod(config, secrets)
@@ -249,7 +249,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures source init with the registry source and a secret volume when is imagePullSecrets provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &v1alpha1.ResolvedRegistrySource{
+			build.Spec.Source.Registry = &v1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 				ImagePullSecrets: []string{
 					"foo",

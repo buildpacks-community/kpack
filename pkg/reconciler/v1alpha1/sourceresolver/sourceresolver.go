@@ -23,7 +23,7 @@ const (
 
 //go:generate counterfeiter . Resolver
 type Resolver interface {
-	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSource, error)
+	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
 	CanResolve(*v1alpha1.SourceResolver) bool
 }
 

@@ -121,7 +121,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						RunAsUser:  &root,
 						RunAsGroup: &root,
 					},
-					Env:             b.Spec.Source.ResolvedSource().BuildEnvVars(),
+					Env:             b.BuildEnvVars(),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
@@ -371,5 +371,5 @@ func (b *Build) setupVolumes() []corev1.Volume {
 		},
 	}
 
-	return append(volumes, b.Spec.Source.ResolvedSource().ImagePullSecretsVolume())
+	return append(volumes, b.ImagePullSecretsVolume())
 }

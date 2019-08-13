@@ -70,8 +70,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Tag:            "some/image",
 			Builder:        "some/builder",
 			ServiceAccount: "some/serviceaccount",
-			Source: ResolvedSourceConfig{
-				Git: &ResolvedGitSource{
+			Source: SourceConfig{
+				Git: &Git{
 					URL:      "https://some.git/url",
 					Revision: "revision",
 				},
@@ -152,8 +152,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different BlobURL", func() {
-			build.Spec.Source = ResolvedSourceConfig{
-				Blob: &ResolvedBlobSource{
+			build.Spec.Source = SourceConfig{
+				Blob: &Blob{
 					URL: "some-url",
 				},
 			}
@@ -171,8 +171,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true for different RegistryImage", func() {
-			build.Spec.Source = ResolvedSourceConfig{
-				Registry: &ResolvedRegistrySource{
+			build.Spec.Source = SourceConfig{
+				Registry: &Registry{
 					Image: "some-image",
 				},
 			}

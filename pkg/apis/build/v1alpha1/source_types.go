@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
@@ -12,18 +11,106 @@ type SourceConfig struct {
 	Registry *Registry `json:"registry,omitempty"`
 }
 
+func (sc *SourceConfig) Source() Source {
+	if sc.Git != nil {
+		return sc.Git
+	} else if sc.Blob != nil {
+		return sc.Blob
+	} else if sc.Registry != nil {
+		return sc.Registry
+	}
+	return nil
+}
+
+type Source interface {
+	BuildEnvVars() []corev1.EnvVar
+	ImagePullSecretsVolume() corev1.Volume
+}
+
 type Git struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
+}
+
+func (g *Git) BuildEnvVars() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "GIT_URL",
+			Value: g.URL,
+		},
+		{
+			Name:  "GIT_REVISION",
+			Value: g.Revision,
+		},
+		homeEnv,
+	}
+}
+
+func (in *Git) ImagePullSecretsVolume() corev1.Volume {
+	return corev1.Volume{
+		Name: imagePullSecretsDirName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
 }
 
 type Blob struct {
 	URL string `json:"url"`
 }
 
+func (b *Blob) ImagePullSecretsVolume() corev1.Volume {
+	return corev1.Volume{
+		Name: imagePullSecretsDirName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+}
+
+func (b *Blob) BuildEnvVars() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "BLOB_URL",
+			Value: b.URL,
+		},
+		homeEnv,
+	}
+}
+
 type Registry struct {
 	Image            string   `json:"image"`
 	ImagePullSecrets []string `json:"imagePullSecrets"`
+}
+
+func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
+	if len(r.ImagePullSecrets) > 0 {
+		return corev1.Volume{
+			Name: imagePullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: r.ImagePullSecrets[0],
+				},
+			},
+		}
+	} else {
+		return corev1.Volume{
+			Name: imagePullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		}
+	}
+}
+
+func (r *Registry) BuildEnvVars() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "REGISTRY_IMAGE",
+			Value: r.Image,
+		},
+		homeEnv,
+	}
 }
 
 type ResolvedSourceConfig struct {
@@ -32,13 +119,16 @@ type ResolvedSourceConfig struct {
 	Registry *ResolvedRegistrySource `json:"registry,omitempty"`
 }
 
+
 func (r ResolvedSourceConfig) ResolvedSource() ResolvedSource {
 	if r.Git != nil {
 		return r.Git
 	} else if r.Blob != nil {
 		return r.Blob
+	} else if r.Registry != nil {
+		return r.Registry
 	}
-	return r.Registry
+	return nil
 }
 
 type ResolvedSource interface {
@@ -46,8 +136,7 @@ type ResolvedSource interface {
 	IsPollable() bool
 	ConfigChanged(lastBuild *Build) bool
 	RevisionChanged(lastBuild *Build) bool
-	BuildEnvVars() []corev1.EnvVar
-	ImagePullSecretsVolume() corev1.Volume
+	SourceConfig() SourceConfig
 }
 
 type GitSourceKind string
@@ -65,26 +154,12 @@ type ResolvedGitSource struct {
 	Type     GitSourceKind `json:"type"`
 }
 
-func (gs *ResolvedGitSource) ImagePullSecretsVolume() corev1.Volume {
-	return corev1.Volume{
-		Name: imagePullSecretsDirName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
+func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
+	return SourceConfig{
+		Git: &Git{
+			URL:      gs.URL,
+			Revision: gs.Revision,
 		},
-	}
-}
-
-func (gs *ResolvedGitSource) BuildEnvVars() []v1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "GIT_URL",
-			Value: gs.URL,
-		},
-		{
-			Name:  "GIT_REVISION",
-			Value: gs.Revision,
-		},
-		homeEnv,
 	}
 }
 
@@ -97,47 +172,30 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 }
 
 func (gs *ResolvedGitSource) ConfigChanged(lastBuild *Build) bool {
-	// return gs != nil && gs.URL != lastBuild.Spec.Source.Git.URL
-	if gs == nil {
-		return false
+	if lastBuild.Spec.Source.Git == nil {
+		return true
 	}
-	if lastBuild.Spec.Source.Git != nil {
-		return gs.URL != lastBuild.Spec.Source.Git.URL
-	}
-	return true
+
+	return gs.URL != lastBuild.Spec.Source.Git.URL
 }
 
 func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
-	// return gs != nil && gs.Revision != lastBuild.Spec.Source.Git.Revision
-	if gs == nil {
-		return false
+	if lastBuild.Spec.Source.Git == nil {
+		return true
 	}
-	if lastBuild.Spec.Source.Git != nil {
-		return gs.Revision != lastBuild.Spec.Source.Git.Revision
-	}
-	return true
+
+	return gs.Revision != lastBuild.Spec.Source.Git.Revision
 }
 
 type ResolvedBlobSource struct {
 	URL string `json:"url"`
 }
 
-func (bs *ResolvedBlobSource) ImagePullSecretsVolume() corev1.Volume {
-	return corev1.Volume{
-		Name: imagePullSecretsDirName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
+func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
+	return SourceConfig{
+		Blob: &Blob{
+			URL: bs.URL,
 		},
-	}
-}
-
-func (bs *ResolvedBlobSource) BuildEnvVars() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "BLOB_URL",
-			Value: bs.URL,
-		},
-		homeEnv,
 	}
 }
 
@@ -150,14 +208,10 @@ func (bs *ResolvedBlobSource) IsPollable() bool {
 }
 
 func (bs *ResolvedBlobSource) ConfigChanged(lastBuild *Build) bool {
-	// return bs != nil && bs.URL != lastBuild.Spec.Source.Blob.URL
-	if bs == nil {
-		return false
+	if lastBuild.Spec.Source.Blob == nil {
+		return true
 	}
-	if lastBuild.Spec.Source.Blob != nil {
-		return bs.URL != lastBuild.Spec.Source.Blob.URL
-	}
-	return true
+	return bs.URL != lastBuild.Spec.Source.Blob.URL
 }
 
 func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
@@ -169,33 +223,12 @@ type ResolvedRegistrySource struct {
 	ImagePullSecrets []string `json:"imagePullSecrets"`
 }
 
-func (rs *ResolvedRegistrySource) ImagePullSecretsVolume() corev1.Volume {
-	if len(rs.ImagePullSecrets) > 0 {
-		return corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: rs.ImagePullSecrets[0],
-				},
-			},
-		}
-	} else {
-		return corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		}
-	}
-}
-
-func (rs *ResolvedRegistrySource) BuildEnvVars() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "REGISTRY_IMAGE",
-			Value: rs.Image,
+func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {
+	return SourceConfig{
+		Registry: &Registry{
+			Image:            rs.Image,
+			ImagePullSecrets: rs.ImagePullSecrets,
 		},
-		homeEnv,
 	}
 }
 
@@ -208,14 +241,11 @@ func (rs *ResolvedRegistrySource) IsPollable() bool {
 }
 
 func (rs *ResolvedRegistrySource) ConfigChanged(lastBuild *Build) bool {
-	// return rs != nil && (rs.Image != lastBuild.Spec.Source.Registry.Image || !equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets))
-	if rs == nil {
-		return false
+	if lastBuild.Spec.Source.Registry == nil {
+		return true
 	}
-	if lastBuild.Spec.Source.Registry != nil {
-		return rs.Image != lastBuild.Spec.Source.Registry.Image || !equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets)
-	}
-	return true
+
+	return rs.Image != lastBuild.Spec.Source.Registry.Image || !equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets)
 }
 
 func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {

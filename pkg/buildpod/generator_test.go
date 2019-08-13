@@ -100,8 +100,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Tag:            "image/name",
 					Builder:        "builder/name",
 					ServiceAccount: serviceAccountName,
-					Source: v1alpha1.ResolvedSourceConfig{
-						Git: &v1alpha1.ResolvedGitSource{
+					Source: v1alpha1.SourceConfig{
+						Git: &v1alpha1.Git{
 							URL:      "http://www.google.com",
 							Revision: "master",
 						},

@@ -593,11 +593,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -658,11 +657,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 								CacheName: image.CacheName(),
@@ -715,11 +713,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: "old-service-account",
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      "out-of-date-git-url",
 										Revision: "out-of-date-git-revision",
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -758,11 +755,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -793,10 +789,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				image.Status.LatestBuildRef = "image-name-build-1-00001"
 
 				sourceResolver := image.SourceResolver()
-				sourceResolver.ResolvedSource(&v1alpha1.ResolvedGitSource{
-					URL:      image.Spec.Source.Git.URL,
-					Revision: "new-commit",
-					Type:     v1alpha1.Branch,
+				sourceResolver.ResolvedSource(v1alpha1.ResolvedSourceConfig{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      image.Spec.Source.Git.URL,
+						Revision: "new-commit",
+						Type:     v1alpha1.Branch,
+					},
 				})
 
 				rt.Test(rtesting.TableRow{
@@ -824,11 +822,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      image.Spec.Source.Git.URL,
 										Revision: image.Spec.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -867,11 +864,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -950,11 +946,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -999,11 +994,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        updatedBuilderImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
-										Type:     v1alpha1.Branch,
 									},
 								},
 							},
@@ -1057,8 +1051,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: "old-service-account",
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      "out-of-date-git-url",
 										Revision: "out-of-date-git-revision",
 									},
@@ -1108,8 +1102,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tag:            image.Spec.Tag,
 								Builder:        builder.Status.LatestImage,
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: v1alpha1.ResolvedSourceConfig{
-									Git: &v1alpha1.ResolvedGitSource{
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -1234,10 +1228,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 	sr := image.SourceResolver()
-	sr.ResolvedSource(&v1alpha1.ResolvedGitSource{
-		URL:      image.Spec.Source.Git.URL + "-resolved",
-		Revision: image.Spec.Source.Git.Revision + "-resolved",
-		Type:     v1alpha1.Branch,
+	sr.ResolvedSource(v1alpha1.ResolvedSourceConfig{
+		Git: &v1alpha1.ResolvedGitSource{
+			URL:      image.Spec.Source.Git.URL + "-resolved",
+			Revision: image.Spec.Source.Git.Revision + "-resolved",
+			Type:     v1alpha1.Branch,
+		},
 	})
 	return sr
 }
@@ -1286,8 +1282,8 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 				Tag:            image.Spec.Tag,
 				Builder:        "some/builder",
 				ServiceAccount: image.Spec.ServiceAccount,
-				Source: v1alpha1.ResolvedSourceConfig{
-					Git: &v1alpha1.ResolvedGitSource{
+				Source: v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
 						URL:      sourceResolver.Status.Source.Git.URL,
 						Revision: sourceResolver.Status.Source.Git.Revision,
 					},

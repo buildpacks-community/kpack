@@ -18,10 +18,10 @@ func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 	}
 }
 
-func (g *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSource, error) {
+func (g *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error) {
 	auth, err := g.gitKeychain.Resolve(sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount, *sourceResolver.Spec.Source.Git)
 	if err != nil {
-		return nil, err
+		return v1alpha1.ResolvedSourceConfig{}, err
 	}
 
 	return g.remoteGitResolver.Resolve(auth, *sourceResolver.Spec.Source.Git)

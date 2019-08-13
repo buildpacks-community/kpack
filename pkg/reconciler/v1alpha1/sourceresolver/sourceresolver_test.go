@@ -84,10 +84,12 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			resolvedSource := &v1alpha1.ResolvedGitSource{
-				URL:      "https://example.com/something",
-				Revision: "abcdef",
-				Type:     v1alpha1.Branch,
+			resolvedSource := v1alpha1.ResolvedSourceConfig{
+				Git: &v1alpha1.ResolvedGitSource{
+					URL:      "https://example.com/something",
+					Revision: "abcdef",
+					Type:     v1alpha1.Branch,
+				},
 			}
 
 			fakeGitResolver.ResolveReturns(resolvedSource, nil)
@@ -134,10 +136,12 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a branch is the source", func() {
-				resolvedSource := &v1alpha1.ResolvedGitSource{
-					URL:      "https://example.com/something",
-					Revision: "abcdef",
-					Type:     v1alpha1.Branch,
+				resolvedSource := v1alpha1.ResolvedSourceConfig{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Branch,
+					},
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
@@ -190,10 +194,12 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a specific commit sha is the source", func() {
-				resolvedSource := &v1alpha1.ResolvedGitSource{
-					URL:      "https://example.com/something",
-					Revision: "abcdef",
-					Type:     v1alpha1.Commit,
+				resolvedSource := v1alpha1.ResolvedSourceConfig{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Commit,
+					},
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
@@ -243,10 +249,12 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("git resolves to unknown", func() {
-				resolvedSource := &v1alpha1.ResolvedGitSource{
-					URL:      "https://example.com/something",
-					Revision: "abcdef",
-					Type:     v1alpha1.Unknown,
+				resolvedSource := v1alpha1.ResolvedSourceConfig{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      "https://example.com/something",
+						Revision: "abcdef",
+						Type:     v1alpha1.Unknown,
+					},
 				}
 
 				fakeGitResolver.ResolveReturns(resolvedSource, nil)
@@ -295,10 +303,12 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("ignores unknown when source has been previously resolved", func() {
-					alreadyResolvedSource := &v1alpha1.ResolvedGitSource{
-						URL:      "https://example.com/something",
-						Revision: "abcdef",
-						Type:     v1alpha1.Commit,
+					alreadyResolvedSource := v1alpha1.ResolvedSourceConfig{
+						Git: &v1alpha1.ResolvedGitSource{
+							URL:      "https://example.com/something",
+							Revision: "abcdef",
+							Type:     v1alpha1.Commit,
+						},
 					}
 
 					alreadyResolvedSourceResolver := sourceResolver.DeepCopy()
@@ -331,8 +341,10 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			resolvedSource := &v1alpha1.ResolvedBlobSource{
-				URL: "https://some-blobstore.example.com/some-blob",
+			resolvedSource := v1alpha1.ResolvedSourceConfig{
+				Blob: &v1alpha1.ResolvedBlobSource{
+					URL: "https://some-blobstore.example.com/some-blob",
+				},
 			}
 
 			fakeBlobResolver.ResolveReturns(resolvedSource, nil)
@@ -394,8 +406,10 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			resolvedSource := &v1alpha1.ResolvedRegistrySource{
-				Image: "some-registry.io/some-image@sha256:abcdef123456",
+			resolvedSource := v1alpha1.ResolvedSourceConfig{
+				Registry: &v1alpha1.ResolvedRegistrySource{
+					Image: "some-registry.io/some-image@sha256:abcdef123456",
+				},
 			}
 
 			fakeRegistryResolver.ResolveReturns(resolvedSource, nil)
@@ -442,7 +456,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-func resolvedSourceResolver(sourceResolver *v1alpha1.SourceResolver, resolvedSource v1alpha1.ResolvedSource) *v1alpha1.SourceResolver {
+func resolvedSourceResolver(sourceResolver *v1alpha1.SourceResolver, resolvedSource v1alpha1.ResolvedSourceConfig) *v1alpha1.SourceResolver {
 	sourceResolver.ResolvedSource(resolvedSource)
 	return sourceResolver
 }

@@ -7,19 +7,14 @@ import (
 
 const ActivePolling = "ActivePolling"
 
-func (sr *SourceResolver) ResolvedSource(resolvedSourceInterface ResolvedSource) {
-	if resolvedSourceInterface.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
+func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
+	resolvedSource := config.ResolvedSource()
+
+	if resolvedSource.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
 		return
 	}
 
-	switch resolvedSource := resolvedSourceInterface.(type) {
-	case *ResolvedGitSource:
-		sr.Status.Source.Git = resolvedSource
-	case *ResolvedBlobSource:
-		sr.Status.Source.Blob = resolvedSource
-	case *ResolvedRegistrySource:
-		sr.Status.Source.Registry = resolvedSource
-	}
+	sr.Status.Source = config
 
 	sr.Status.Conditions = []duckv1alpha1.Condition{{
 		Type:   duckv1alpha1.ConditionReady,
@@ -27,13 +22,21 @@ func (sr *SourceResolver) ResolvedSource(resolvedSourceInterface ResolvedSource)
 	}}
 
 	pollingStatus := corev1.ConditionFalse
-	if resolvedSourceInterface.IsPollable() {
+	if resolvedSource.IsPollable() {
 		pollingStatus = corev1.ConditionTrue
 	}
 	sr.Status.Conditions = append(sr.Status.Conditions, duckv1alpha1.Condition{
 		Type:   ActivePolling,
 		Status: pollingStatus,
 	})
+}
+
+func (sr *SourceResolver) ConfigChanged(lastBuild *Build) bool {
+	return sr.Status.Source.ResolvedSource().ConfigChanged(lastBuild)
+}
+
+func (sr *SourceResolver) RevisionChanged(lastBuild *Build) bool {
+	return sr.Status.Source.ResolvedSource().RevisionChanged(lastBuild)
 }
 
 func (sr *SourceResolver) PollingReady() bool {
@@ -55,4 +58,8 @@ func (sr SourceResolver) IsBlob() bool {
 
 func (sr SourceResolver) IsRegistry() bool {
 	return sr.Spec.Source.Registry != nil
+}
+
+func (st *SourceResolver) SourceConfig() SourceConfig {
+	return st.Status.Source.ResolvedSource().SourceConfig()
 }
