@@ -16,11 +16,12 @@ const (
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
 
-	cacheDirName  = "cache-dir"
-	layersDirName = "layers-dir"
-	platformDir   = "platform-dir"
-	homeDir       = "home-dir"
-	workspaceDir  = "workspace-dir"
+	cacheDirName            = "cache-dir"
+	layersDirName           = "layers-dir"
+	platformDir             = "platform-dir"
+	homeDir                 = "home-dir"
+	workspaceDir            = "workspace-dir"
+	imagePullSecretsDirName = "image-pull-secrets-dir"
 )
 
 type BuildPodConfig struct {
@@ -54,6 +55,11 @@ var (
 	homeEnv = corev1.EnvVar{
 		Name:  "HOME",
 		Value: "/builder/home",
+	}
+	imagePullSecretsVolume = corev1.VolumeMount{
+		Name:      imagePullSecretsDirName,
+		MountPath: "/imagePullSecrets",
+		ReadOnly:  true,
 	}
 )
 
@@ -109,16 +115,17 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					},
 				},
 				{
-					Name:            "source-init",
-					Image:           config.SourceInitImage,
+					Name:  "source-init",
+					Image: config.SourceInitImage,
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser:  &root,
 						RunAsGroup: &root,
 					},
-					Env:             buildSourceInitEnvVars(b),
+					Env:             b.BuildEnvVars(),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
+						imagePullSecretsVolume,
 						workspaceVolume,
 						homeVolume,
 					},
@@ -266,29 +273,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}, nil
 }
 
-func buildSourceInitEnvVars(build *Build) []corev1.EnvVar {
-	if build.Spec.Source.IsGit() {
-		return []corev1.EnvVar{
-			{
-				Name:  "GIT_URL",
-				Value: build.Spec.Source.Git.URL,
-			},
-			{
-				Name:  "GIT_REVISION",
-				Value: build.Spec.Source.Git.Revision,
-			},
-			homeEnv,
-		}
-	}
-	return []corev1.EnvVar{
-		{
-			Name:  "BLOB_URL",
-			Value: build.Spec.Source.Blob.URL,
-		},
-		homeEnv,
-	}
-}
-
 func buildExporterArgs(build *Build) []string {
 	args := []string{
 		"-layers=/layers",
@@ -356,7 +340,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret) ([]corev1.Vol
 }
 
 func (b *Build) setupVolumes() []corev1.Volume {
-	return []corev1.Volume{
+	volumes := []corev1.Volume{
 		{
 			Name:         cacheDirName,
 			VolumeSource: b.cacheVolume(),
@@ -379,7 +363,6 @@ func (b *Build) setupVolumes() []corev1.Volume {
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
 		},
-
 		{
 			Name: platformDir,
 			VolumeSource: corev1.VolumeSource{
@@ -387,4 +370,6 @@ func (b *Build) setupVolumes() []corev1.Volume {
 			},
 		},
 	}
+
+	return append(volumes, b.ImagePullSecretsVolume())
 }

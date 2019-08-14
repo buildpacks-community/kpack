@@ -7,51 +7,36 @@ import (
 
 const ActivePolling = "ActivePolling"
 
-func (sr *SourceResolver) ResolvedSource(resolvedSource ResolvedSource) {
-	if resolvedSource.Git != nil {
-		sr.ResolvedGitSource(resolvedSource.Git)
-	} else if resolvedSource.Blob != nil {
-		sr.ResolvedBlobSource(resolvedSource.Blob)
-	}
-}
+func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
+	resolvedSource := config.ResolvedSource()
 
-func (sr *SourceResolver) ResolvedGitSource(resolvedGitSource *ResolvedGitSource) {
-	if resolvedGitSource.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
+	if resolvedSource.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
 		return
 	}
 
-	sr.Status.ResolvedSource.Git = resolvedGitSource
+	sr.Status.Source = config
 
 	sr.Status.Conditions = []duckv1alpha1.Condition{{
 		Type:   duckv1alpha1.ConditionReady,
 		Status: corev1.ConditionTrue,
 	}}
 
-	if resolvedGitSource.IsPollable() {
-		sr.Status.Conditions = append(sr.Status.Conditions, duckv1alpha1.Condition{
-			Type:   ActivePolling,
-			Status: corev1.ConditionTrue,
-		})
-	} else {
-		sr.Status.Conditions = append(sr.Status.Conditions, duckv1alpha1.Condition{
-			Type:   ActivePolling,
-			Status: corev1.ConditionFalse,
-		})
+	pollingStatus := corev1.ConditionFalse
+	if resolvedSource.IsPollable() {
+		pollingStatus = corev1.ConditionTrue
 	}
-}
-
-func (sr *SourceResolver) ResolvedBlobSource(resolvedBlobSource *ResolvedBlobSource) {
-	sr.Status.ResolvedSource.Blob = resolvedBlobSource
-
-	sr.Status.Conditions = []duckv1alpha1.Condition{{
-		Type:   duckv1alpha1.ConditionReady,
-		Status: corev1.ConditionTrue,
-	}}
-
 	sr.Status.Conditions = append(sr.Status.Conditions, duckv1alpha1.Condition{
 		Type:   ActivePolling,
-		Status: corev1.ConditionFalse,
+		Status: pollingStatus,
 	})
+}
+
+func (sr *SourceResolver) ConfigChanged(lastBuild *Build) bool {
+	return sr.Status.Source.ResolvedSource().ConfigChanged(lastBuild)
+}
+
+func (sr *SourceResolver) RevisionChanged(lastBuild *Build) bool {
+	return sr.Status.Source.ResolvedSource().RevisionChanged(lastBuild)
 }
 
 func (sr *SourceResolver) PollingReady() bool {
@@ -71,35 +56,10 @@ func (sr SourceResolver) IsBlob() bool {
 	return sr.Spec.Source.Blob != nil
 }
 
-func (sr SourceResolver) ConfigChanged(lastBuild *Build) bool {
-	return sr.gitURLChanged(lastBuild) || sr.blobChanged(lastBuild)
+func (sr SourceResolver) IsRegistry() bool {
+	return sr.Spec.Source.Registry != nil
 }
 
-func (sr SourceResolver) gitURLChanged(lastBuild *Build) bool {
-	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.URL != lastBuild.Spec.Source.Git.URL
-}
-
-func (sr SourceResolver) GitRevisionChanged(lastBuild *Build) bool {
-	return sr.Status.ResolvedSource.Git != nil && sr.Status.ResolvedSource.Git.Revision != lastBuild.Spec.Source.Git.Revision
-}
-
-func (sr SourceResolver) blobChanged(lastBuild *Build) bool {
-	return sr.Status.ResolvedSource.Blob != nil && sr.Status.ResolvedSource.Blob.URL != lastBuild.Spec.Source.Blob.URL
-}
-
-func (sr SourceResolver) desiredSource() Source {
-	if sr.Status.ResolvedSource.Git != nil {
-		return Source{
-			Git: &Git{
-				URL:      sr.Status.ResolvedSource.Git.URL,
-				Revision: sr.Status.ResolvedSource.Git.Revision,
-			},
-		}
-	} else {
-		return Source{
-			Blob: &Blob{
-				URL: sr.Status.ResolvedSource.Blob.URL,
-			},
-		}
-	}
+func (st *SourceResolver) SourceConfig() SourceConfig {
+	return st.Status.Source.ResolvedSource().SourceConfig()
 }

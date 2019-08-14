@@ -46,7 +46,7 @@ type BuildSpec struct {
 	Tag                  string                      `json:"tag"`
 	Builder              string                      `json:"builder"`
 	ServiceAccount       string                      `json:"serviceAccount"`
-	Source               Source                      `json:"source"`
+	Source               SourceConfig                `json:"source"`
 	CacheName            string                      `json:"cacheName"`
 	AdditionalImageNames []string                    `json:"additionalImageNames"`
 	Env                  []corev1.EnvVar             `json:"env"`
@@ -139,4 +139,12 @@ func (b *Build) MetadataReady(pod *corev1.Pod) bool {
 
 func (b *Build) Finished() bool {
 	return !b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
+}
+
+func (b *Build) BuildEnvVars() []corev1.EnvVar {
+	return b.Spec.Source.Source().BuildEnvVars()
+}
+
+func (b *Build) ImagePullSecretsVolume() corev1.Volume {
+	return b.Spec.Source.Source().ImagePullSecretsVolume()
 }

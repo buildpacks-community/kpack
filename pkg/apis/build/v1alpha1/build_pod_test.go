@@ -54,7 +54,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				{Name: "keyB", Value: "valueB"},
 			},
 			Resources: resources,
-			Source: v1alpha1.Source{
+			Source: v1alpha1.SourceConfig{
 				Git: &v1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
@@ -218,6 +218,66 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.InitContainers[1].Env)
 		})
 
+		it("configures source init with the registry source and empty imagePullSecrets when not provided", func() {
+			build.Spec.Source.Git = nil
+			build.Spec.Source.Blob = nil
+			build.Spec.Source.Registry = &v1alpha1.Registry{
+				Image: "some-registry.io/some-image",
+			}
+			pod, err := build.BuildPod(config, secrets)
+			require.NoError(t, err)
+
+			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsUser)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsGroup)
+			assert.Len(t, pod.Spec.InitContainers[1].VolumeMounts, 3)
+			assert.Equal(t, "image-pull-secrets-dir", pod.Spec.InitContainers[1].VolumeMounts[0].Name)
+			assert.NotNil(t, *pod.Spec.Volumes[5].EmptyDir)
+			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
+			assert.Equal(t, []corev1.EnvVar{
+				{
+					Name:  "REGISTRY_IMAGE",
+					Value: "some-registry.io/some-image",
+				},
+				{
+					Name:  "HOME",
+					Value: "/builder/home",
+				},
+			}, pod.Spec.InitContainers[1].Env)
+		})
+
+		it("configures source init with the registry source and a secret volume when is imagePullSecrets provided", func() {
+			build.Spec.Source.Git = nil
+			build.Spec.Source.Blob = nil
+			build.Spec.Source.Registry = &v1alpha1.Registry{
+				Image: "some-registry.io/some-image",
+				ImagePullSecrets: []string{
+					"foo",
+				},
+			}
+			pod, err := build.BuildPod(config, secrets)
+			require.NoError(t, err)
+
+			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsUser)
+			assert.Equal(t, int64(0), *pod.Spec.InitContainers[1].SecurityContext.RunAsGroup)
+			assert.Len(t, pod.Spec.InitContainers[1].VolumeMounts, 3)
+			assert.Equal(t, "image-pull-secrets-dir", pod.Spec.InitContainers[1].VolumeMounts[0].Name)
+			require.NotNil(t, *pod.Spec.Volumes[5].Secret)
+			assert.Equal(t, "foo", pod.Spec.Volumes[5].Secret.SecretName)
+			assert.Equal(t, config.SourceInitImage, pod.Spec.InitContainers[1].Image)
+			assert.Equal(t, []corev1.EnvVar{
+				{
+					Name:  "REGISTRY_IMAGE",
+					Value: "some-registry.io/some-image",
+				},
+				{
+					Name:  "HOME",
+					Value: "/builder/home",
+				},
+			}, pod.Spec.InitContainers[1].Env)
+		})
+
 		it("configures prepare step with the build setup", func() {
 			pod, err := build.BuildPod(config, secrets)
 			require.NoError(t, err)
@@ -356,7 +416,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			pod, err := build.BuildPod(config, nil)
 			require.NoError(t, err)
 
-			require.Len(t, pod.Spec.Volumes, 5)
+			require.Len(t, pod.Spec.Volumes, 6)
 			assert.Equal(t, corev1.Volume{
 				Name: "cache-dir",
 				VolumeSource: corev1.VolumeSource{
@@ -370,7 +430,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			pod, err := build.BuildPod(config, nil)
 			require.NoError(t, err)
 
-			require.Len(t, pod.Spec.Volumes, 5)
+			require.Len(t, pod.Spec.Volumes, 6)
 			assert.Equal(t, corev1.Volume{
 				Name: "cache-dir",
 				VolumeSource: corev1.VolumeSource{

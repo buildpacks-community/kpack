@@ -39,7 +39,7 @@ func (anonymousAuth) auth() transport.AuthMethod {
 type remoteGitResolver struct {
 }
 
-func (*remoteGitResolver) Resolve(auth auth, gitSource v1alpha1.Git) (v1alpha1.ResolvedSource, error) {
+func (*remoteGitResolver) Resolve(auth auth, gitSource v1alpha1.Git) (v1alpha1.ResolvedSourceConfig, error) {
 	repo := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{gitSource.URL},
@@ -48,31 +48,34 @@ func (*remoteGitResolver) Resolve(auth auth, gitSource v1alpha1.Git) (v1alpha1.R
 		Auth: auth.auth(),
 	})
 	if err != nil {
-		return v1alpha1.ResolvedSource{
+		return v1alpha1.ResolvedSourceConfig{
 			Git: &v1alpha1.ResolvedGitSource{
 				URL:      gitSource.URL,
 				Revision: gitSource.Revision, // maybe
 				Type:     v1alpha1.Unknown,
-			}}, nil
+			},
+		}, nil
 	}
 
 	for _, ref := range references {
 		if string(ref.Name().Short()) == gitSource.Revision {
-			return v1alpha1.ResolvedSource{
+			return v1alpha1.ResolvedSourceConfig{
 				Git: &v1alpha1.ResolvedGitSource{
 					URL:      gitSource.URL,
 					Revision: ref.Hash().String(),
 					Type:     sourceType(ref),
-				}}, nil
+				},
+			}, nil
 		}
 	}
 
-	return v1alpha1.ResolvedSource{
+	return v1alpha1.ResolvedSourceConfig{
 		Git: &v1alpha1.ResolvedGitSource{
 			URL:      gitSource.URL,
 			Revision: gitSource.Revision,
 			Type:     v1alpha1.Commit,
-		}}, nil
+		},
+	}, nil
 }
 
 func sourceType(reference *plumbing.Reference) v1alpha1.GitSourceKind {

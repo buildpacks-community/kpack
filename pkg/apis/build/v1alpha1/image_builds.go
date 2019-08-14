@@ -48,7 +48,7 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		reasons = append(reasons, BuildReasonConfig)
 	}
 
-	if sourceResolver.GitRevisionChanged(lastBuild) {
+	if sourceResolver.RevisionChanged(lastBuild) {
 		reasons = append(reasons, BuildReasonCommit)
 	}
 
@@ -92,7 +92,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 			Env:                  im.Spec.Build.Env,
 			Resources:            im.Spec.Build.Resources,
 			ServiceAccount:       im.Spec.ServiceAccount,
-			Source:               sourceResolver.desiredSource(),
+			Source:               sourceResolver.SourceConfig(),
 			CacheName:            im.Status.BuildCacheName,
 			AdditionalImageNames: im.generateImageNames(buildNumber),
 		},

@@ -36,12 +36,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
 						Type:     v1alpha1.Commit,
-					}})
+					},
+				})
 			})
 		})
 
@@ -57,12 +58,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: fixtureHEADMasterCommit,
 						Type:     v1alpha1.Branch,
-					}})
+					},
+				})
 			})
 		})
 
@@ -78,12 +80,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: tagCommit,
 						Type:     v1alpha1.Tag,
-					}})
+					},
+				})
 			})
 		})
 
@@ -102,11 +105,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSource{Git: &v1alpha1.ResolvedGitSource{
-					URL:      repo.URL,
-					Revision: tag,
-					Type:     v1alpha1.Unknown,
-				}})
+				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
+					Git: &v1alpha1.ResolvedGitSource{
+						URL:      repo.URL,
+						Revision: tag,
+						Type:     v1alpha1.Unknown,
+					},
+				})
 			})
 		})
 	})

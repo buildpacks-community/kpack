@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
 	"flag"
@@ -13,12 +14,18 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 var (
-	gitURL      = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
-	gitRevision = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD")
-	blobURL     = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	gitURL        = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
+	gitRevision   = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
+	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 )
 
 func run(logger *log.Logger, cmd string, args ...string) {
@@ -61,6 +68,28 @@ func main() {
 		}
 	}
 
+	err = os.MkdirAll(filepath.Join(usr.HomeDir, ".docker"), os.ModePerm)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if fileExists("/imagePullSecrets/.dockerconfigjson", logger) {
+		err := os.Symlink("/imagePullSecrets/.dockerconfigjson", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	} else if fileExists("/builder/home/.docker/config.json", logger) {
+		err := os.Symlink("/builder/home/.docker/config.json", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+
+	err = os.Setenv("DOCKER_CONFIG", filepath.Join(usr.HomeDir, ".docker"))
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	dir, err := os.Getwd()
 	if err != nil {
 		logger.Fatal("Failed to get current dir", err)
@@ -70,8 +99,75 @@ func main() {
 		checkoutGitSource(dir, logger)
 	} else if *blobURL != "" {
 		downloadBlob(dir, logger)
+	} else if *registryImage != "" {
+		fetchImage(dir, logger)
 	} else {
-		logger.Fatal("no git url or blob url provided")
+		logger.Fatal("no git url, blob url, or registry image provided")
+	}
+}
+
+func fetchImage(dir string, logger *log.Logger) {
+	ref, err := name.ParseReference(*registryImage, name.WeakValidation)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	layers, err := img.Layers()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	for _, layer := range layers {
+		fetchLayer(layer, logger, dir)
+	}
+	logger.Printf("Successfully pulled %s in path %q", *registryImage, dir)
+}
+
+func fetchLayer(layer v1.Layer, logger *log.Logger, dir string) {
+	reader, err := layer.Uncompressed()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer reader.Close()
+
+	tarReader := tar.NewReader(reader)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			logger.Fatal(err)
+		}
+
+		filePath := filepath.Join(dir, header.Name)
+		if header.FileInfo().IsDir() {
+			err := os.MkdirAll(filePath, header.FileInfo().Mode())
+			if err != nil {
+				logger.Fatal(err.Error())
+			}
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+			logger.Fatal(err.Error())
+		}
+
+		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+
+		_, err = io.Copy(outFile, tarReader)
+		outFile.Close()
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 }
 
@@ -154,4 +250,16 @@ func checkoutGitSource(dir string, logger *log.Logger) {
 		run(logger, "git", "reset", "--hard", "FETCH_HEAD")
 	}
 	logger.Printf("Successfully cloned %q @ %q in path %q", *gitURL, *gitRevision, dir)
+}
+
+func fileExists(file string, logger *log.Logger) bool {
+	_, err := os.Stat(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		logger.Fatal(err.Error())
+	}
+
+	return true
 }
