@@ -36,10 +36,10 @@ func TestBuildReconciler(t *testing.T) {
 }
 
 func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
-
 	const (
 		namespace                = "some-namespace"
 		buildName                = "build-name"
+		builderName              = "builder-name"
 		key                      = "some-namespace/build-name"
 		serviceAccountName       = "someserviceaccount"
 		originalGeneration int64 = 1
@@ -69,12 +69,36 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				PodLister:         listers.GetPodLister(),
 				MetadataRetriever: fakeMetadataRetriever,
 				PodGenerator:      podGenerator,
+				BuilderLister:     listers.GetBuilderLister(),
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
 
 			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
 		})
+
+	builder := &v1alpha1.Builder{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      builderName,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.BuilderSpec{
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{Name: "some-image-secret"},
+			},
+		},
+		Status: v1alpha1.BuilderStatus{
+			Status: duckv1alpha1.Status{
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+			LatestImage: "somebuilder/123@sha256:12334563ad",
+		},
+	}
 
 	build := &v1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
@@ -88,7 +112,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tag:            "someimage/name",
 			ServiceAccount: serviceAccountName,
-			Builder:        "somebuilder/123",
+			BuilderRef:     builderName,
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -116,12 +140,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		it("schedules a pod to execute the build", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(build, builder)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 				},
 				WantErr: false,
@@ -152,12 +177,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not schedule a build if already created", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(build, builder)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -185,14 +211,76 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		it("does not schedule the build if builder is not found", func() {
+			buildPod, err := podGenerator.Generate(build, builder)
+			require.NoError(t, err)
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+					buildPod,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: duckv1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: duckv1alpha1.Conditions{
+										{
+											Type:    duckv1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Reason:  v1alpha1.BuilderNotFound,
+											Message: "Unable to find builder builder-name.",
+										},
+										{
+											Type:   duckv1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionFalse,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+		})
+
+		it("does not schedule the build if builder failed to resolved", func() {
+			builder.Status.LatestImage = ""
+			builder.Status.Conditions = []duckv1alpha1.Condition{
+				{
+					Type:   duckv1alpha1.ConditionReady,
+					Status: corev1.ConditionFalse,
+				},
+			}
+			buildPod, err := podGenerator.Generate(build, builder)
+			require.NoError(t, err)
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					builder,
+					build,
+					buildPod,
+				},
+				WantErr: true,
+			})
+		})
+
 		it("updates observed generation when processing an update", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(build, builder)
 			require.NoError(t, err)
 			build.Generation = 3
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -221,7 +309,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update status if there is no update", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(build, builder)
 			require.NoError(t, err)
 
 			build.Status = v1alpha1.BuildStatus{
@@ -240,6 +328,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -249,7 +338,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("pod executing", func() {
 			it("updates the status with the status of the pod", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(build, builder)
 				require.NoError(t, err)
 
 				startTime := time.Now()
@@ -287,6 +376,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -353,7 +443,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
 
 			it("sets the build status to Succeeded", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(build, builder)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -384,6 +474,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -408,6 +499,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										ID:      "io.buildpack.executed",
 										Version: "1.1",
 									}},
+									Builder:     "somebuilder/123@sha256:12334563ad",
 									LatestImage: identifier,
 									StepStates: []corev1.ContainerState{
 										{
@@ -441,7 +533,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not fetch metadata if already retrieved", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(build, builder)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -472,6 +564,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -528,6 +621,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -580,7 +674,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("pod failed", func() {
 			it("sets the build status to Failed", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(build, builder)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodFailed
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -609,6 +703,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -659,6 +754,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -706,7 +802,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 type testPodGenerator struct {
 }
 
-func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
+func (testPodGenerator) Generate(build *v1alpha1.Build, builder *v1alpha1.Builder) (*corev1.Pod, error) {
 	return &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: v1.ObjectMeta{
@@ -729,6 +825,7 @@ func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
 					Name: "step-3",
 				},
 			},
+			ImagePullSecrets: builder.Spec.ImagePullSecrets,
 		},
 	}, nil
 }

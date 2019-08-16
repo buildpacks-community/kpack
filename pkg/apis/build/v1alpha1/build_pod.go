@@ -16,12 +16,13 @@ const (
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
 
-	cacheDirName            = "cache-dir"
-	layersDirName           = "layers-dir"
-	platformDir             = "platform-dir"
-	homeDir                 = "home-dir"
-	workspaceDir            = "workspace-dir"
-	imagePullSecretsDirName = "image-pull-secrets-dir"
+	cacheDirName              = "cache-dir"
+	layersDirName             = "layers-dir"
+	platformDir               = "platform-dir"
+	homeDir                   = "home-dir"
+	workspaceDir              = "workspace-dir"
+	imagePullSecretsDirName   = "image-pull-secrets-dir"
+	builderPullSecretsDirName = "builder-pull-secrets-dir"
 )
 
 type BuildPodConfig struct {
@@ -61,9 +62,14 @@ var (
 		MountPath: "/imagePullSecrets",
 		ReadOnly:  true,
 	}
+	builderPullSecretsVolume = corev1.VolumeMount{
+		Name:      builderPullSecretsDirName,
+		MountPath: "/builderPullSecrets",
+		ReadOnly:  true,
+	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev1.Pod, error) {
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder *Builder) (*corev1.Pod, error) {
 
 	var root int64 = 0
 
@@ -73,7 +79,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}
 	envVars := string(buf)
 
-	volumes := b.setupVolumes()
+	volumes := append(b.setupVolumes(), getBuilderSecretVolume(builder))
 	secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets)
 	if err != nil {
 		return nil, err
@@ -85,6 +91,8 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 		MountPath: sourceVolume.MountPath,
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
 	}
+
+	builderImage := builder.Status.LatestImage
 
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -146,7 +154,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					Env: []corev1.EnvVar{
 						{
 							Name:  "BUILDER",
-							Value: b.Spec.Builder,
+							Value: builderImage,
 						},
 						{
 							Name:  "PLATFORM_ENV_VARS",
@@ -164,12 +172,13 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 						platformVolume,
 						workspaceVolume,
 						homeVolume,
+						builderPullSecretsVolume,
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
 					Name:      "detect",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/detector"},
 					Args: []string{
@@ -186,7 +195,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				},
 				{
 					Name:      "restore",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/restorer"},
 					Args: []string{
@@ -202,7 +211,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				},
 				{
 					Name:      "analyze",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/analyzer"},
 					Args: []string{
@@ -224,7 +233,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				},
 				{
 					Name:      "build",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/builder"},
 					Args: []string{
@@ -242,7 +251,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				},
 				{
 					Name:      "export",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/exporter"},
 					Args:      buildExporterArgs(b),
@@ -258,7 +267,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 				},
 				{
 					Name:      "cache",
-					Image:     b.Spec.Builder,
+					Image:     builderImage,
 					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/cacher"},
 					Args: []string{
@@ -275,6 +284,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 			},
 			ServiceAccountName: b.Spec.ServiceAccount,
 			Volumes:            volumes,
+			ImagePullSecrets:   builder.Spec.ImagePullSecrets,
 		},
 	}, nil
 }
@@ -342,6 +352,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret) ([]corev1.Vol
 
 		args = append(args, fmt.Sprintf("-basic-%s=%s=%s", secretType, secret.Name, annotatedUrl))
 	}
+
 	return volumes, volumeMounts, args, nil
 }
 
@@ -378,4 +389,24 @@ func (b *Build) setupVolumes() []corev1.Volume {
 	}
 
 	return append(volumes, b.ImagePullSecretsVolume())
+}
+
+func getBuilderSecretVolume(builder *Builder) corev1.Volume {
+	if builder.HasSecret() {
+		return corev1.Volume{
+			Name: builderPullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: builder.SecretName(),
+				},
+			},
+		}
+	} else {
+		return corev1.Volume{
+			Name: builderPullSecretsDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		}
+	}
 }

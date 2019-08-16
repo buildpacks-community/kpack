@@ -618,7 +618,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -682,7 +682,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -744,7 +744,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -786,7 +786,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -853,7 +853,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -895,7 +895,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -977,7 +977,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1025,7 +1025,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        updatedBuilderImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1082,7 +1082,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1134,7 +1134,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								BuilderRef:     image.Spec.BuilderRef,
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1321,7 +1321,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 			},
 			Spec: v1alpha1.BuildSpec{
 				Tag:            image.Spec.Tag,
-				Builder:        "some/builder",
+				BuilderRef:     "some/builder",
 				ServiceAccount: image.Spec.ServiceAccount,
 				Source: v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{

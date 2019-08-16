@@ -46,7 +46,7 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 
 		when("#NewImage", func() {
 			it("returns a keychain that provides auth credentials", func() {
-				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace})
+				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace, hasSecret: true})
 
 				reference, err := name.ParseReference("redhook.port/name", name.WeakValidation)
 				assert.NoError(t, err)
@@ -62,7 +62,7 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error if no credentials are provided for the registry", func() {
-				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace})
+				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: serviceAccountName, namespace: testNamespace, hasSecret: true})
 
 				reference, err := name.ParseReference("notareal.reg/name", name.WeakValidation)
 				assert.NoError(t, err)
@@ -72,18 +72,16 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 
 			})
 
-			when("service account is empty", func() {
-				it("returns anonymous auth", func() {
-					keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: "", namespace: testNamespace})
+			it("returns anonymous auth if does not have a secret", func() {
+				keychain := keychainFactory.KeychainForImageRef(&fakeImageRef{serviceAccountName: "asd", namespace: testNamespace, hasSecret: false})
 
-					reference, err := name.ParseReference("notareal.reg/name", name.WeakValidation)
-					assert.NoError(t, err)
+				reference, err := name.ParseReference("notareal.reg/name", name.WeakValidation)
+				assert.NoError(t, err)
 
-					authenticator, err := keychain.Resolve(reference.Context().Registry)
-					assert.NoError(t, err)
+				authenticator, err := keychain.Resolve(reference.Context().Registry)
+				assert.NoError(t, err)
 
-					assert.Equal(t, authenticator, authn.Anonymous)
-				})
+				assert.Equal(t, authenticator, authn.Anonymous)
 			})
 		})
 	})
@@ -92,6 +90,7 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 type fakeImageRef struct {
 	serviceAccountName string
 	namespace          string
+	hasSecret          bool
 }
 
 func (f *fakeImageRef) Namespace() string {
@@ -104,4 +103,8 @@ func (f *fakeImageRef) Tag() string {
 
 func (f *fakeImageRef) ServiceAccount() string {
 	return f.serviceAccountName
+}
+
+func (f *fakeImageRef) HasSecret() bool {
+	return f.hasSecret
 }

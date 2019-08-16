@@ -6,9 +6,10 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1Informers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
@@ -34,16 +35,17 @@ type MetadataRetriever interface {
 }
 
 type PodGenerator interface {
-	Generate(*v1alpha1.Build) (*corev1.Pod, error)
+	Generate(*v1alpha1.Build, *v1alpha1.Builder) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, builderInformer v1alpha1informer.BuilderInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
 		MetadataRetriever: metadataRetriever,
 		Lister:            informer.Lister(),
 		PodLister:         podInformer.Lister(),
+		BuilderLister:     builderInformer.Lister(),
 		PodGenerator:      podGenerator,
 	}
 
@@ -64,6 +66,7 @@ type Reconciler struct {
 	Lister            v1alpha1lister.BuildLister
 	MetadataRetriever MetadataRetriever
 	K8sClient         k8sclient.Interface
+	BuilderLister     v1alpha1lister.BuilderLister
 	PodLister         v1Listers.PodLister
 	PodGenerator      PodGenerator
 }
@@ -75,7 +78,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	build, err := c.Lister.Builds(namespace).Get(buildName)
-	if errors.IsNotFound(err) {
+	if k8s_errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
@@ -86,7 +89,19 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	pod, err := c.reconcileBuildPod(build)
+	builder, err := c.BuilderLister.Builders(build.Namespace()).Get(build.Spec.BuilderRef)
+	if err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	} else if k8s_errors.IsNotFound(err) {
+		build.Status.Conditions = build.BuilderNotFound()
+		build.Status.ObservedGeneration = build.Generation
+		c.updateStatus(build)
+		return nil
+	} else if !builder.Ready() {
+		return errors.New("Builder not ready")
+	}
+
+	pod, err := c.reconcileBuildPod(build, builder)
 	if err != nil {
 		return err
 	}
@@ -99,6 +114,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
+		build.Status.Builder = builder.Status.LatestImage
 	}
 
 	build.Status.PodName = pod.Name
@@ -111,12 +127,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(build)
 }
 
-func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
+func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build, builder *v1alpha1.Builder) (*corev1.Pod, error) {
 	pod, err := c.PodLister.Pods(build.Namespace()).Get(build.PodName())
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
-	} else if errors.IsNotFound(err) {
-		podConfig, err := c.PodGenerator.Generate(build)
+	} else if k8s_errors.IsNotFound(err) {
+		podConfig, err := c.PodGenerator.Generate(build, builder)
 		if err != nil {
 			return nil, err
 		}

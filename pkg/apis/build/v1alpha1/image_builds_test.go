@@ -25,7 +25,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Spec: ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
-			BuilderRef:     "some/builder",
+			BuilderRef:     "builder-name",
 			Build: ImageBuild{
 				Env: []v1.EnvVar{
 					{
@@ -61,7 +61,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: BuildSpec{
 			Tag:            "some/image",
-			Builder:        "some/builder",
+			BuilderRef:     "builder-name",
 			ServiceAccount: "some/serviceaccount",
 			Env: []v1.EnvVar{
 				{
@@ -83,7 +83,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 	builder := &Builder{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "image-name",
+			Name: "builder-name",
 		},
 		Spec: BuilderSpec{
 			Image: "some/builder",
@@ -452,7 +452,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			build := image.build(sourceResolver, builder, []string{}, 27)
 
-			assert.Equal(t, "some/builder@sha256:builder-digest", build.Spec.Builder)
+			assert.Equal(t, builder.Name, build.Spec.BuilderRef)
 		})
 
 		it("sets git url and git revision when image source is git", func() {

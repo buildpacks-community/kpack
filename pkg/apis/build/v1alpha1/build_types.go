@@ -44,7 +44,7 @@ var (
 
 type BuildSpec struct {
 	Tag                  string                      `json:"tag"`
-	Builder              string                      `json:"builder"`
+	BuilderRef           string                      `json:"builderRef"`
 	ServiceAccount       string                      `json:"serviceAccount"`
 	Source               SourceConfig                `json:"source"`
 	CacheName            string                      `json:"cacheName"`
@@ -60,6 +60,7 @@ type BuildStatus struct {
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
 	StepsCompleted      []string                `json:"stepsCompleted",omitempty`
+	Builder             string                  `json:"builder"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -81,6 +82,10 @@ func (b *Build) ServiceAccount() string {
 
 func (b *Build) Tag() string {
 	return b.Spec.Tag
+}
+
+func (b *Build) HasSecret() bool {
+	return true
 }
 
 func (b *Build) Namespace() string {

@@ -79,6 +79,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 
+		builder := &v1alpha1.Builder{}
+
 		it("returns pod config with secrets on build's service account", func() {
 
 			buildPodConfig := v1alpha1.BuildPodConfig{
@@ -98,7 +100,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 				Spec: v1alpha1.BuildSpec{
 					Tag:            "image/name",
-					Builder:        "builder/name",
+					BuilderRef:     "builder/name",
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.SourceConfig{
 						Git: &v1alpha1.Git{
@@ -128,13 +130,13 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}
-			pod, err := generator.Generate(build)
+			pod, err := generator.Generate(build, builder)
 			require.NoError(t, err)
 
 			expectedPod, err := build.BuildPod(buildPodConfig, []corev1.Secret{
 				*gitSecret,
 				*dockerSecret,
-			})
+			}, builder)
 			require.NoError(t, err)
 			require.Equal(t, expectedPod, pod)
 		})

@@ -14,12 +14,12 @@ type Generator struct {
 	K8sClient      k8sclient.Interface
 }
 
-func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
+func (g *Generator) Generate(build *v1alpha1.Build, builder *v1alpha1.Builder) (*v1.Pod, error) {
 	secrets, err := g.getBuildSecrets(build)
 	if err != nil {
 		return nil, err
 	}
-	return build.BuildPod(g.BuildPodConfig, secrets)
+	return build.BuildPod(g.BuildPodConfig, secrets, builder)
 }
 
 func (g *Generator) getBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, error) {
