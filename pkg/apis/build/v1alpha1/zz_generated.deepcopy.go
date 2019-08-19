@@ -507,7 +507,7 @@ func (in *Registry) DeepCopyInto(out *Registry) {
 	*out = *in
 	if in.ImagePullSecrets != nil {
 		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
-		*out = make([]string, len(*in))
+		*out = make([]v1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
 	return
@@ -560,7 +560,7 @@ func (in *ResolvedRegistrySource) DeepCopyInto(out *ResolvedRegistrySource) {
 	*out = *in
 	if in.ImagePullSecrets != nil {
 		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
-		*out = make([]string, len(*in))
+		*out = make([]v1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
 	return

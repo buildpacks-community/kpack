@@ -283,8 +283,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Source.Blob = nil
 			build.Spec.Source.Registry = &v1alpha1.Registry{
 				Image: "some-registry.io/some-image",
-				ImagePullSecrets: []string{
-					"foo",
+				ImagePullSecrets: []corev1.LocalObjectReference{
+					{Name: "foo"},
 				},
 			}
 			pod, err := build.BuildPod(config, secrets, builder)
