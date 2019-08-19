@@ -18,29 +18,6 @@ type Builder struct {
 	Status BuilderStatus `json:"status"`
 }
 
-func (b *Builder) ServiceAccount() string {
-	return ""
-}
-
-func (b *Builder) Namespace() string {
-	return b.ObjectMeta.Namespace
-}
-
-func (b *Builder) Tag() string {
-	return b.Spec.Image
-}
-
-func (b *Builder) HasSecret() bool {
-	return len(b.Spec.ImagePullSecrets) > 0
-}
-
-func (b *Builder) SecretName() string {
-	if b.HasSecret() {
-		return b.Spec.ImagePullSecrets[0].Name
-	}
-	return ""
-}
-
 type BuilderSpec struct {
 	Image            string                    `json:"image"`
 	UpdatePolicy     BuilderUpdatePolicy       `json:"updatePolicy"`

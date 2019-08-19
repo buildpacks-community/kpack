@@ -5,6 +5,7 @@ import (
 	"time"
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
+	"github.com/pkg/errors"
 
 	"github.com/pivotal/build-service-system/pkg/registry"
 )
@@ -34,24 +35,24 @@ type RemoteMetadataRetriever struct {
 func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (BuilderImage, error) {
 	img, err := r.LifecycleImageFactory.NewRemote(repo)
 	if err != nil {
-		return BuilderImage{}, err
+		return BuilderImage{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
 	var metadataJSON string
 	metadataJSON, err = img.Label(BuilderMetadataLabel)
 	if err != nil {
-		return BuilderImage{}, err
+		return BuilderImage{}, errors.Wrap(err, "builder image metadata label not present")
 	}
 
 	var metadata BuilderImageMetadata
 	err = json.Unmarshal([]byte(metadataJSON), &metadata)
 	if err != nil {
-		return BuilderImage{}, err
+		return BuilderImage{}, errors.Wrap(err, "unsupported builder metadata structure")
 	}
 
 	identifier, err := img.Identifier()
 	if err != nil {
-		return BuilderImage{}, err
+		return BuilderImage{}, errors.Wrap(err, "failed to retrieve builder image SHA")
 	}
 
 	return BuilderImage{

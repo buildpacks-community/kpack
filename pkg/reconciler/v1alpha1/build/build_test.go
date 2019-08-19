@@ -232,14 +232,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObservedGeneration: originalGeneration,
 									Conditions: duckv1alpha1.Conditions{
 										{
-											Type:    duckv1alpha1.ConditionReady,
+											Type:    duckv1alpha1.ConditionSucceeded,
 											Status:  corev1.ConditionFalse,
 											Reason:  v1alpha1.BuilderNotFound,
 											Message: "Unable to find builder builder-name.",
-										},
-										{
-											Type:   duckv1alpha1.ConditionSucceeded,
-											Status: corev1.ConditionFalse,
 										},
 									},
 								},

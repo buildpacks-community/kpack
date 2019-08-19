@@ -79,7 +79,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 	}
 	envVars := string(buf)
 
-	volumes := append(b.setupVolumes(), getBuilderSecretVolume(builder))
+	volumes := append(b.setupVolumes(), builder.getBuilderSecretVolume())
 	secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets)
 	if err != nil {
 		return nil, err
@@ -389,24 +389,4 @@ func (b *Build) setupVolumes() []corev1.Volume {
 	}
 
 	return append(volumes, b.ImagePullSecretsVolume())
-}
-
-func getBuilderSecretVolume(builder *Builder) corev1.Volume {
-	if builder.HasSecret() {
-		return corev1.Volume{
-			Name: builderPullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: builder.SecretName(),
-				},
-			},
-		}
-	} else {
-		return corev1.Volume{
-			Name: builderPullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		}
-	}
 }

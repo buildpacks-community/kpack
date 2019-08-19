@@ -3,7 +3,6 @@ package builder
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -132,7 +131,7 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconcile
 
 		return reconciledBuilderResult{
 			builder: builder,
-			err:     errors.Wrap(err, "unable to retrieve metadata"),
+			err:     err,
 		}
 
 	}
