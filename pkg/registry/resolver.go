@@ -1,6 +1,6 @@
 package registry
 
-import "github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+import "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 
 type Resolver struct {
 }

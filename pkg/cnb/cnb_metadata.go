@@ -6,7 +6,7 @@ import (
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
 
-	"github.com/pivotal/build-service-system/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const BuilderMetadataLabel = "io.buildpacks.builder.metadata"

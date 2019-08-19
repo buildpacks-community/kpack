@@ -1,14 +1,15 @@
 package cnb_test
 
 import (
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/require"
+
+	"github.com/pivotal/kpack/pkg/cnb"
 )
 
 func TestPlatformEnvVarsSetup(t *testing.T) {

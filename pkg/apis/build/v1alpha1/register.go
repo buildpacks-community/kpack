@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build"
+	"github.com/pivotal/kpack/pkg/apis/build"
 )
 
 // SchemeGroupVersion is group version used to register these objects

@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
 
 type Options struct {

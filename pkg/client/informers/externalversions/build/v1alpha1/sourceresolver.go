@@ -21,10 +21,10 @@ package v1alpha1
 import (
 	time "time"
 
-	buildv1alpha1 "github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	versioned "github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/pivotal/build-service-system/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
