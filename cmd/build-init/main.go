@@ -38,11 +38,6 @@ func main() {
 		if err != nil {
 			logger.Fatal(err)
 		}
-	} else if fileExists("/builder/home/.docker/config.json", logger) {
-		err := os.Symlink("/builder/home/.docker/config.json", filepath.Join(usr.HomeDir, ".docker/config.json"))
-		if err != nil {
-			logger.Fatal(err)
-		}
 	}
 
 	err = os.Setenv("DOCKER_CONFIG", filepath.Join(usr.HomeDir, ".docker"))
