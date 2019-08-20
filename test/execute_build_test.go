@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
-
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 
 	imgremote "github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -34,7 +31,6 @@ func TestCreateImage(t *testing.T) {
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var cfg config
 	var clients *clients
-	var totalImagesCreated = 1
 
 	const (
 		testNamespace      = "test"
@@ -48,7 +44,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		cfg = loadConfig(t)
 
 		var err error
-		clients, err = newClients()
+		clients, err = newClients(t)
 		require.NoError(t, err)
 
 		err = clients.k8sClient.CoreV1().Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
@@ -66,17 +62,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		for i := 1; i < totalImagesCreated; i++ {
-			deleteImageTag(t, cfg.imageTag+"-"+strconv.Itoa(i))
+		for _, tag := range cfg.generatedImageNames {
+			deleteImageTag(t, tag)
 		}
 	})
 
 	when("an image is applied", func() {
 		it("builds an initial image", func() {
-			require.False(t, imageExists(t, cfg.imageTag+"-1")(), fmt.Sprintf("image with tag %s-1 need to be removed", cfg.imageTag))
-			require.False(t, imageExists(t, cfg.imageTag+"-2")(), fmt.Sprintf("image with tag %s-2 need to be removed", cfg.imageTag))
-			require.False(t, imageExists(t, cfg.imageTag+"-3")(), fmt.Sprintf("image with tag %s-3 need to be removed", cfg.imageTag))
-
 			reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 			require.NoError(t, err)
 
@@ -157,12 +149,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			for imageName, imageSource := range imageConfigs {
+				imageTag := cfg.newImageTag()
 				_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: imageName,
 					},
 					Spec: v1alpha1.ImageSpec{
-						Tag:                         cfg.imageTag + "-" + strconv.Itoa(totalImagesCreated),
+						Tag:                         imageTag,
 						BuilderRef:                  builderName,
 						ServiceAccount:              serviceAccountName,
 						Source:                      imageSource,
@@ -175,14 +168,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				validateImageCreate(t, clients, totalImagesCreated, imageName, testNamespace, cfg, expectedResources)
-				totalImagesCreated++
+				validateImageCreate(t, clients, imageTag, imageName, testNamespace, expectedResources)
 			}
 		})
 	})
 }
 
-func validateImageCreate(t *testing.T, clients *clients, numberExpectedPods int, imageName, testNamespace string, cfg config, expectedResources v1.ResourceRequirements) {
+func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, testNamespace string, expectedResources v1.ResourceRequirements) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	logTail := &bytes.Buffer{}
@@ -191,16 +183,18 @@ func validateImageCreate(t *testing.T, clients *clients, numberExpectedPods int,
 		require.NoError(t, err)
 	}()
 
-	t.Logf("Waiting for image '%s' to be created", cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods))
-	eventually(t, imageExists(t, cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods)), 5*time.Second, 5*time.Minute)
+	t.Logf("Waiting for image '%s' to be created", imageTag)
+	eventually(t, imageExists(t, imageTag), 5*time.Second, 5*time.Minute)
 
-	assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", cfg.imageTag+"-"+strconv.Itoa(numberExpectedPods)))
+	assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", imageTag))
 
-	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{})
+	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+	})
 	require.NoError(t, err)
 
-	require.Len(t, podList.Items, numberExpectedPods)
-	pod := podList.Items[numberExpectedPods-1]
+	require.Len(t, podList.Items, 1)
+	pod := podList.Items[0]
 
 	for i, container := range pod.Spec.InitContainers {
 		if i < 2 {

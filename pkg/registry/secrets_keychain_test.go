@@ -93,6 +93,10 @@ type fakeImageRef struct {
 	hasSecret          bool
 }
 
+func (f *fakeImageRef) SecretName() string {
+	return ""
+}
+
 func (f *fakeImageRef) Namespace() string {
 	return f.namespace
 }

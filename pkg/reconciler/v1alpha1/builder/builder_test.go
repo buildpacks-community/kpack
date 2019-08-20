@@ -73,7 +73,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-
 		when("metadata is available", func() {
 			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
 				BuilderBuildpackMetadata: cnb.BuilderMetadata{
@@ -120,7 +119,11 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
-				assert.Equal(t, testBuilder, fakeMetadataRetriever.GetBuilderImageArgsForCall(0))
+				assert.Equal(t, &v1alpha1.BuilderImage{
+					Image:            builder.Spec.Image,
+					ImagePullSecrets: nil,
+					BuilderNamespace: builder.Namespace,
+				}, fakeMetadataRetriever.GetBuilderImageArgsForCall(0))
 			})
 
 			it("schedule next polling when update policy is not set", func() {

@@ -4,38 +4,54 @@ import (
 	"flag"
 	"os/user"
 	"path"
+	"sync"
+	"testing"
 
+	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
 )
 
-func newClients() (*clients, error) {
-	var defaultKubeconfig string
+var (
+	setup             sync.Once
+	defaultKubeconfig string
+	client            *versioned.Clientset
+	k8sClient         *kubernetes.Clientset
+	clusterConfig     *rest.Config
+	err               error
+)
+
+func newClients(t *testing.T) (*clients, error) {
+
 	if usr, err := user.Current(); err == nil {
 		defaultKubeconfig = path.Join(usr.HomeDir, ".kube/config")
 	}
 
-	kubeconfig := flag.String("kubeconfig", defaultKubeconfig, "Path to a kubeconfig. Only required if out-of-cluster.")
-	masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	setup.Do(func() {
+		kubeconfig := flag.String("kubeconfig", defaultKubeconfig, "Path to a kubeconfig. Only required if out-of-cluster.")
+		masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	flag.Parse()
+		flag.Parse()
 
-	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
-	if err != nil {
-		return nil, err
-	}
+		clusterConfig, err = clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+		if err != nil {
+			return
+		}
 
-	client, err := versioned.NewForConfig(clusterConfig)
-	if err != nil {
-		return nil, err
-	}
+		client, err = versioned.NewForConfig(clusterConfig)
+		if err != nil {
+			return
+		}
 
-	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
-	if err != nil {
-		return nil, err
-	}
+		k8sClient, err = kubernetes.NewForConfig(clusterConfig)
+		if err != nil {
+			return
+		}
+	})
+	require.NoError(t, err)
 
 	return &clients{
 		client:    client,

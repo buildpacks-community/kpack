@@ -101,7 +101,7 @@ func (r reconciledBuilderResult) reEnqueue() bool {
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
-	original, err := c.BuilderLister.Builders(desired.Namespace()).Get(desired.Name)
+	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -110,12 +110,16 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace()).UpdateStatus(desired)
+	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 
 func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconciledBuilderResult {
-	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
+	builderImage, err := c.MetadataRetriever.GetBuilderImage(&v1alpha1.BuilderImage{
+		Image:            builder.Spec.Image,
+		ImagePullSecrets: builder.Spec.ImagePullSecrets,
+		BuilderNamespace: builder.Namespace,
+	})
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
 			Status: duckv1alpha1.Status{

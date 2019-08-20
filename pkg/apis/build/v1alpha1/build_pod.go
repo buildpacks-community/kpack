@@ -69,7 +69,7 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder *Builder) (*corev1.Pod, error) {
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder *BuilderImage) (*corev1.Pod, error) {
 
 	var root int64 = 0
 
@@ -86,13 +86,13 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 	}
 	volumes = append(volumes, secretVolumes...)
 
+	builderImage := builder.Image
+
 	workspaceVolume := corev1.VolumeMount{
 		Name:      sourceVolume.Name,
 		MountPath: sourceVolume.MountPath,
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
 	}
-
-	builderImage := builder.Status.LatestImage
 
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -284,7 +284,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 			},
 			ServiceAccountName: b.Spec.ServiceAccount,
 			Volumes:            volumes,
-			ImagePullSecrets:   builder.Spec.ImagePullSecrets,
+			ImagePullSecrets:   builder.ImagePullSecrets,
 		},
 	}, nil
 }

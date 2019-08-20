@@ -6,7 +6,6 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,7 +34,7 @@ type MetadataRetriever interface {
 }
 
 type PodGenerator interface {
-	Generate(*v1alpha1.Build, *v1alpha1.Builder) (*corev1.Pod, error)
+	Generate(*v1alpha1.Build) (*corev1.Pod, error)
 }
 
 func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, builderInformer v1alpha1informer.BuilderInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
@@ -89,19 +88,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	builder, err := c.BuilderLister.Builders(build.Namespace()).Get(build.Spec.BuilderRef)
-	if err != nil && !k8s_errors.IsNotFound(err) {
-		return err
-	} else if k8s_errors.IsNotFound(err) {
-		build.Status.Conditions = build.BuilderNotFound()
-		build.Status.ObservedGeneration = build.Generation
-		c.updateStatus(build)
-		return nil
-	} else if !builder.Ready() {
-		return errors.New("Builder not ready")
-	}
-
-	pod, err := c.reconcileBuildPod(build, builder)
+	pod, err := c.reconcileBuildPod(build)
 	if err != nil {
 		return err
 	}
@@ -114,7 +101,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
-		build.Status.Builder = builder.Status.LatestImage
 	}
 
 	build.Status.PodName = pod.Name
@@ -127,12 +113,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(build)
 }
 
-func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build, builder *v1alpha1.Builder) (*corev1.Pod, error) {
+func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
 	pod, err := c.PodLister.Pods(build.Namespace()).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
 	} else if k8s_errors.IsNotFound(err) {
-		podConfig, err := c.PodGenerator.Generate(build, builder)
+		podConfig, err := c.PodGenerator.Generate(build)
 		if err != nil {
 			return nil, err
 		}

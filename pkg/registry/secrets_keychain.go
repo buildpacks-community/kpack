@@ -27,7 +27,7 @@ func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory
 }
 
 type pullSecretKeychain struct {
-	imageRef      *v1alpha1.Builder
+	imageRef      ImageRef
 	secretManager *secret.SecretManager
 }
 
@@ -64,8 +64,7 @@ func (f *SecretKeychainFactory) KeychainForImageRef(ref ImageRef) authn.Keychain
 		return &anonymousKeychain{}
 	}
 	if ref.ServiceAccount() == "" {
-		imageRef := ref.(*v1alpha1.Builder)
-		return &pullSecretKeychain{imageRef: imageRef, secretManager: f.secretManager}
+		return &pullSecretKeychain{imageRef: ref, secretManager: f.secretManager}
 	}
 	return &serviceAccountKeychain{imageRef: ref, secretManager: f.secretManager}
 }

@@ -38,6 +38,21 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	builder := &v1alpha1.Builder{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      builderRef,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.BuilderSpec{
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{Name: "some-image-secret"},
+			},
+		},
+		Status: v1alpha1.BuilderStatus{
+			LatestImage: builderImage,
+		},
+	}
+
 	build := &v1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
@@ -49,7 +64,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tag:            "someimage/name",
 			ServiceAccount: serviceAccount,
-			BuilderRef:     builderRef,
+			Builder:        builder.ImageRef(),
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -63,20 +78,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 			CacheName:            "some-cache-name",
 			AdditionalImageNames: []string{"someimage/name:tag2", "someimage/name:tag3"},
-		},
-	}
-	builder := &v1alpha1.Builder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builderRef,
-			Namespace: namespace,
-		},
-		Spec: v1alpha1.BuilderSpec{
-			ImagePullSecrets: []corev1.LocalObjectReference{
-				{Name: "some-image-secret"},
-			},
-		},
-		Status: v1alpha1.BuilderStatus{
-			LatestImage: builderImage,
 		},
 	}
 
@@ -120,7 +121,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 	when("BuildPod", func() {
 		it("creates a pod with a builder owner reference", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.ObjectMeta, metav1.ObjectMeta{
@@ -136,14 +137,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a pod with a correct service account", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 		})
 
 		it("creates init containers with all the build steps", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Len(t, pod.Spec.InitContainers, len([]string{
@@ -177,7 +178,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures creds init", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[0].Name, "creds-init")
@@ -203,7 +204,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures source init with the git source", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
@@ -231,7 +232,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Source.Blob = &v1alpha1.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
@@ -256,7 +257,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Source.Registry = &v1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 			}
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
@@ -287,7 +288,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					{Name: "foo"},
 				},
 			}
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, "source-init", pod.Spec.InitContainers[1].Name)
@@ -311,7 +312,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures prepare step with the build setup", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "prepare")
@@ -341,7 +342,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures detect step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "detect")
@@ -354,7 +355,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures restore step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "restore")
@@ -366,7 +367,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures analyze step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "analyze")
@@ -386,7 +387,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures build step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[6].Name, "build")
@@ -399,7 +400,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures export step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[7].Name, "export")
@@ -422,7 +423,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures cache step", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[8].Name, "cache")
@@ -434,7 +435,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the builder image and resources in all lifecycle steps", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			for _, container := range pod.Spec.InitContainers {
@@ -446,7 +447,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a pod with reusable cache when name is provided", func() {
-			pod, err := build.BuildPod(config, nil, builder)
+			pod, err := build.BuildPod(config, nil, builder.ImageRef())
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.Volumes, 7)
@@ -460,7 +461,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("creates a pod with empty cache when no name is provided", func() {
 			build.Spec.CacheName = ""
-			pod, err := build.BuildPod(config, nil, builder)
+			pod, err := build.BuildPod(config, nil, builder.ImageRef())
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.Volumes, 7)
@@ -473,7 +474,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("attach volumes for secrets", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			assertSecretPresent(t, pod, "git-secret-1")
@@ -482,7 +483,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("attach image pull secrets to pod", func() {
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.ImagePullSecrets, 1)
