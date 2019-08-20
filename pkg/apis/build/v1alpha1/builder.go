@@ -8,3 +8,33 @@ func (b *Builder) Ready() bool {
 	return b.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() &&
 		(b.Generation == b.Status.ObservedGeneration)
 }
+
+func (b *Builder) ImageRef() *BuilderImage {
+	return &BuilderImage{
+		Image:            b.Status.LatestImage,
+		ImagePullSecrets: b.Spec.ImagePullSecrets,
+	}
+}
+
+func (b *Builder) SecretName() string {
+	if b.HasSecret() {
+		return b.Spec.ImagePullSecrets[0].Name
+	}
+	return ""
+}
+
+func (b *Builder) ServiceAccount() string {
+	return ""
+}
+
+func (b *Builder) Namespace() string {
+	return b.ObjectMeta.Namespace
+}
+
+func (b *Builder) Tag() string {
+	return b.Spec.Image
+}
+
+func (b *Builder) HasSecret() bool {
+	return len(b.Spec.ImagePullSecrets) > 0
+}

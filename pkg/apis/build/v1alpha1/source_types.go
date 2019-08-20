@@ -80,8 +80,8 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 }
 
 type Registry struct {
-	Image            string   `json:"image"`
-	ImagePullSecrets []string `json:"imagePullSecrets"`
+	Image            string                        `json:"image"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
 func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
@@ -90,7 +90,7 @@ func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
 			Name: imagePullSecretsDirName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: r.ImagePullSecrets[0],
+					SecretName: r.ImagePullSecrets[0].Name,
 				},
 			},
 		}
@@ -225,9 +225,9 @@ func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
 }
 
 type ResolvedRegistrySource struct {
-	Image            string   `json:"image"`
-	ImagePullSecrets []string `json:"imagePullSecrets"`
-	SubPath          string   `json:"subPath,omitempty"`
+	Image            string                        `json:"image"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+	SubPath          string                        `json:"subPath,omitempty"`
 }
 
 func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {

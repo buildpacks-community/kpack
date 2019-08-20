@@ -26,6 +26,19 @@ func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory
 	}
 }
 
+type pullSecretKeychain struct {
+	imageRef      ImageRef
+	secretManager *secret.SecretManager
+}
+
+func (k *pullSecretKeychain) Resolve(registry name.Registry) (authn.Authenticator, error) {
+	base64Auth, err := k.secretManager.SecretForImagePull(k.imageRef.Namespace(), k.imageRef.SecretName(), registry.RegistryStr())
+	if err != nil {
+		return nil, err
+	}
+	return auth(base64Auth), nil
+}
+
 type serviceAccountKeychain struct {
 	imageRef      ImageRef
 	secretManager *secret.SecretManager
@@ -47,10 +60,12 @@ func (a auth) Authorization() (string, error) {
 }
 
 func (f *SecretKeychainFactory) KeychainForImageRef(ref ImageRef) authn.Keychain {
-	if ref.ServiceAccount() == "" {
+	if !ref.HasSecret() {
 		return &anonymousKeychain{}
 	}
-
+	if ref.ServiceAccount() == "" {
+		return &pullSecretKeychain{imageRef: ref, secretManager: f.secretManager}
+	}
 	return &serviceAccountKeychain{imageRef: ref, secretManager: f.secretManager}
 }
 

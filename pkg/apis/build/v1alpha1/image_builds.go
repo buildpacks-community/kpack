@@ -88,7 +88,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 		},
 		Spec: BuildSpec{
 			Tag:                  im.Spec.Tag,
-			Builder:              builder.Status.LatestImage,
+			Builder:              *builder.ImageRef(),
 			Env:                  im.Spec.Build.Env,
 			Resources:            im.Spec.Build.Resources,
 			ServiceAccount:       im.Spec.ServiceAccount,

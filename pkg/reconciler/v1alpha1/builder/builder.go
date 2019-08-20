@@ -2,12 +2,13 @@ package builder
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
@@ -67,7 +68,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	builder, err := c.BuilderLister.Builders(namespace).Get(builderName)
-	if errors.IsNotFound(err) {
+	if k8s_errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
@@ -100,7 +101,7 @@ func (r reconciledBuilderResult) reEnqueue() bool {
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
-	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
+	original, err := c.BuilderLister.Builders(desired.Namespace()).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -109,12 +110,12 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace()).UpdateStatus(desired)
 	return err
 }
 
 func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconciledBuilderResult {
-	builderImage, err := c.MetadataRetriever.GetBuilderImage(registry.NewNoAuthImageRef(builder.Spec.Image))
+	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
 			Status: duckv1alpha1.Status{

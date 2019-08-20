@@ -22,7 +22,6 @@ import (
 	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder/builderfakes"
-	"github.com/pivotal/build-service-system/pkg/registry"
 )
 
 func TestBuildReconciler(t *testing.T) {
@@ -74,7 +73,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-
 		when("metadata is available", func() {
 			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
 				BuilderBuildpackMetadata: cnb.BuilderMetadata{
@@ -87,40 +85,41 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}, nil)
 
 			it("saves metadata to the status", func() {
+				testBuilder := &v1alpha1.Builder{
+					ObjectMeta: builder.ObjectMeta,
+					Spec:       builder.Spec,
+					Status: v1alpha1.BuilderStatus{
+						Status: duckv1alpha1.Status{
+							ObservedGeneration: 1,
+							Conditions: duckv1alpha1.Conditions{
+								{
+									Type:   duckv1alpha1.ConditionReady,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+						BuilderMetadata: []v1alpha1.BuildpackMetadata{
+							{
+								ID:      "buildpack.version",
+								Version: "version",
+							},
+						},
+						LatestImage: builderIdentifier,
+					},
+				}
 				rt.Test(rtesting.TableRow{
 					Key:     key,
 					Objects: []runtime.Object{builder},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Builder{
-								ObjectMeta: builder.ObjectMeta,
-								Spec:       builder.Spec,
-								Status: v1alpha1.BuilderStatus{
-									Status: duckv1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: duckv1alpha1.Conditions{
-											{
-												Type:   duckv1alpha1.ConditionReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									BuilderMetadata: []v1alpha1.BuildpackMetadata{
-										{
-											ID:      "buildpack.version",
-											Version: "version",
-										},
-									},
-									LatestImage: builderIdentifier,
-								},
-							},
+							Object: testBuilder,
 						},
 					},
 				})
 
 				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
-				assert.Equal(t, fakeMetadataRetriever.GetBuilderImageArgsForCall(0), registry.NewNoAuthImageRef(imageName))
+				assert.Equal(t, testBuilder, fakeMetadataRetriever.GetBuilderImageArgsForCall(0))
 			})
 
 			it("schedule next polling when update policy is not set", func() {

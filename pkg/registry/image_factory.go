@@ -26,10 +26,16 @@ type ImageRef interface {
 	ServiceAccount() string
 	Namespace() string
 	Tag() string
+	HasSecret() bool
+	SecretName() string
 }
 
 type noAuthImageRef struct {
 	repoName string
+}
+
+func (na *noAuthImageRef) SecretName() string {
+	return ""
 }
 
 func NewNoAuthImageRef(repoName string) *noAuthImageRef {
@@ -42,6 +48,10 @@ func (na *noAuthImageRef) Tag() string {
 
 func (noAuthImageRef) ServiceAccount() string {
 	return ""
+}
+
+func (noAuthImageRef) HasSecret() bool {
+	return false
 }
 
 func (noAuthImageRef) Namespace() string {

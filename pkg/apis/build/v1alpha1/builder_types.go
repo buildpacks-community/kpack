@@ -19,8 +19,9 @@ type Builder struct {
 }
 
 type BuilderSpec struct {
-	Image        string              `json:"image"`
-	UpdatePolicy BuilderUpdatePolicy `json:"updatePolicy"`
+	Image            string                    `json:"image"`
+	UpdatePolicy     BuilderUpdatePolicy       `json:"updatePolicy"`
+	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
 type BuilderUpdatePolicy string
@@ -55,7 +56,7 @@ func (b *Builder) Ref() v1.ObjectReference {
 	return v1.ObjectReference{
 		APIVersion: gvk.GroupVersion().String(),
 		Kind:       gvk.Kind,
-		Namespace:  b.Namespace,
+		Namespace:  b.Namespace(),
 		Name:       b.Name,
 	}
 }

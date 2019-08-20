@@ -19,7 +19,7 @@ func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
 	if err != nil {
 		return nil, err
 	}
-	return build.BuildPod(g.BuildPodConfig, secrets)
+	return build.BuildPod(g.BuildPodConfig, secrets, build.Spec.Builder)
 }
 
 func (g *Generator) getBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, error) {

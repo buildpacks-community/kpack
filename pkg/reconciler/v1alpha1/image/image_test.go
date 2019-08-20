@@ -618,7 +618,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -682,7 +682,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -744,7 +744,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -786,7 +786,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -853,7 +853,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -895,7 +895,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -976,8 +976,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Tag: image.Spec.Tag,
+								Builder: v1alpha1.BuilderImage{
+									Image:            updatedBuilderImage,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1024,8 +1026,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tag:            image.Spec.Tag,
-								Builder:        updatedBuilderImage,
+								Tag: image.Spec.Tag,
+								Builder: v1alpha1.BuilderImage{
+									Image:            updatedBuilderImage,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1082,7 +1086,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1134,7 +1138,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: v1alpha1.BuildSpec{
 								Tag:            image.Spec.Tag,
-								Builder:        builder.Status.LatestImage,
+								Builder:        *builder.ImageRef(),
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1320,8 +1324,10 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 				CreationTimestamp: metav1.NewTime(time.Now().Add(time.Duration(i) * time.Minute)),
 			},
 			Spec: v1alpha1.BuildSpec{
-				Tag:            image.Spec.Tag,
-				Builder:        "some/builder",
+				Tag: image.Spec.Tag,
+				Builder: v1alpha1.BuilderImage{
+					Image: "builder-image/foo@sha256:112312",
+				},
 				ServiceAccount: image.Spec.ServiceAccount,
 				Source: v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{

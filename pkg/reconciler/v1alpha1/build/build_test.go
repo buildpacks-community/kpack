@@ -36,10 +36,10 @@ func TestBuildReconciler(t *testing.T) {
 }
 
 func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
-
 	const (
 		namespace                = "some-namespace"
 		buildName                = "build-name"
+		builderName              = "builder-name"
 		key                      = "some-namespace/build-name"
 		serviceAccountName       = "someserviceaccount"
 		originalGeneration int64 = 1
@@ -69,12 +69,36 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				PodLister:         listers.GetPodLister(),
 				MetadataRetriever: fakeMetadataRetriever,
 				PodGenerator:      podGenerator,
+				BuilderLister:     listers.GetBuilderLister(),
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
 
 			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
 		})
+
+	builder := &v1alpha1.Builder{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      builderName,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.BuilderSpec{
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{Name: "some-image-secret"},
+			},
+		},
+		Status: v1alpha1.BuilderStatus{
+			Status: duckv1alpha1.Status{
+				Conditions: duckv1alpha1.Conditions{
+					{
+						Type:   duckv1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+			LatestImage: "somebuilder/123@sha256:12334563ad",
+		},
+	}
 
 	build := &v1alpha1.Build{
 		ObjectMeta: v1.ObjectMeta{
@@ -88,7 +112,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tag:            "someimage/name",
 			ServiceAccount: serviceAccountName,
-			Builder:        "somebuilder/123",
+			Builder:        *builder.ImageRef(),
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -122,6 +146,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 				},
 				WantErr: false,
@@ -158,6 +183,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -193,6 +219,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -240,6 +267,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
+					builder,
 					build,
 					buildPod,
 				},
@@ -287,6 +315,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -384,6 +413,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -472,6 +502,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -528,6 +559,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -609,6 +641,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						build,
 						pod,
 					},
@@ -659,6 +692,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
+						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -729,6 +763,7 @@ func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
 					Name: "step-3",
 				},
 			},
+			ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
 		},
 	}, nil
 }

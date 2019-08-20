@@ -25,7 +25,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Spec: ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
-			BuilderRef:     "some/builder",
+			BuilderRef:     "builder-name",
 			Build: ImageBuild{
 				Env: []v1.EnvVar{
 					{
@@ -55,35 +55,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	build := &Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "image-name",
-		},
-		Spec: BuildSpec{
-			Tag:            "some/image",
-			Builder:        "some/builder",
-			ServiceAccount: "some/serviceaccount",
-			Env: []v1.EnvVar{
-				{
-					Name:  "keyA",
-					Value: "ValueA",
-				},
-				{
-					Name:  "keyB",
-					Value: "ValueB",
-				},
-			},
-		},
-		Status: BuildStatus{
-			BuildMetadata: []BuildpackMetadata{
-				{ID: "buildpack.matches", Version: "1"},
-			},
-		},
-	}
-
 	builder := &Builder{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "image-name",
+			Name: "builder-name",
 		},
 		Spec: BuilderSpec{
 			Image: "some/builder",
@@ -101,6 +75,32 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				{ID: "buildpack.matches", Version: "1"},
 			},
 			LatestImage: "some/builder@sha256:builder-digest",
+		},
+	}
+
+	build := &Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "image-name",
+		},
+		Spec: BuildSpec{
+			Tag:            "some/image",
+			Builder:        *builder.ImageRef(),
+			ServiceAccount: "some/serviceaccount",
+			Env: []v1.EnvVar{
+				{
+					Name:  "keyA",
+					Value: "ValueA",
+				},
+				{
+					Name:  "keyB",
+					Value: "ValueB",
+				},
+			},
+		},
+		Status: BuildStatus{
+			BuildMetadata: []BuildpackMetadata{
+				{ID: "buildpack.matches", Version: "1"},
+			},
 		},
 	}
 
@@ -452,7 +452,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			build := image.build(sourceResolver, builder, []string{}, 27)
 
-			assert.Equal(t, "some/builder@sha256:builder-digest", build.Spec.Builder)
+			assert.Equal(t, builder.Status.LatestImage, build.Spec.Builder.Image)
 		})
 
 		it("sets git url and git revision when image source is git", func() {
