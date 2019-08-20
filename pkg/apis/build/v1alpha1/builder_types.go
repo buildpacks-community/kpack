@@ -56,7 +56,7 @@ func (b *Builder) Ref() v1.ObjectReference {
 	return v1.ObjectReference{
 		APIVersion: gvk.GroupVersion().String(),
 		Kind:       gvk.Kind,
-		Namespace:  b.Namespace,
+		Namespace:  b.Namespace(),
 		Name:       b.Name,
 	}
 }

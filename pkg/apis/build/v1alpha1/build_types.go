@@ -44,12 +44,11 @@ var (
 type BuilderImage struct {
 	Image            string                        `json:"image"`
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-	BuilderNamespace string                        `json:"namespace"`
 }
 
 type BuildSpec struct {
 	Tag                  string                      `json:"tag"`
-	Builder              *BuilderImage               `json:"builder"`
+	Builder              BuilderImage                `json:"builder"`
 	ServiceAccount       string                      `json:"serviceAccount"`
 	Source               SourceConfig                `json:"source"`
 	CacheName            string                      `json:"cacheName"`

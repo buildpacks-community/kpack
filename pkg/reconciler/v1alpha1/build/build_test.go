@@ -112,7 +112,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tag:            "someimage/name",
 			ServiceAccount: serviceAccountName,
-			Builder:        builder.ImageRef(),
+			Builder:        *builder.ImageRef(),
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},

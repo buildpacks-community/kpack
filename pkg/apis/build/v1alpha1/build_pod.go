@@ -69,8 +69,7 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder *BuilderImage) (*corev1.Pod, error) {
-
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuilderImage) (*corev1.Pod, error) {
 	var root int64 = 0
 
 	buf, err := json.Marshal(b.Spec.Env)

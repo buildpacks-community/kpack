@@ -7,37 +7,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func (bi *BuilderImage) SecretName() string {
-	if bi.HasSecret() {
-
-		return bi.ImagePullSecrets[0].Name
-	}
-	return ""
-}
-
-func (bi *BuilderImage) ServiceAccount() string {
-	return ""
-}
-
-func (bi *BuilderImage) Namespace() string {
-	return bi.BuilderNamespace
-}
-
-func (bi *BuilderImage) Tag() string {
-	return bi.Image
-}
-
-func (bi *BuilderImage) HasSecret() bool {
-	return len(bi.ImagePullSecrets) > 0
-}
-
 func (bi *BuilderImage) getBuilderSecretVolume() corev1.Volume {
-	if bi.HasSecret() {
+	if len(bi.ImagePullSecrets) > 0 {
 		return corev1.Volume{
 			Name: builderPullSecretsDirName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: bi.SecretName(),
+					SecretName: bi.ImagePullSecrets[0].Name,
 				},
 			},
 		}
