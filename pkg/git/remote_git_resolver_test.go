@@ -30,9 +30,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
-					URL:      repo.URL,
-					Revision: nonHEADCommit,
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
+						URL:      repo.URL,
+						Revision: nonHEADCommit,
+					},
+					SubPath: "/foo/bar",
 				})
 				require.NoError(t, err)
 
@@ -40,6 +43,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 					Git: &v1alpha1.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
+						SubPath: "/foo/bar",
 						Type:     v1alpha1.Commit,
 					},
 				})
@@ -52,9 +56,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
-					URL:      repo.URL,
-					Revision: "master",
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
+						URL:      repo.URL,
+						Revision: "master",
+					},
+					SubPath: "/foo/bar",
 				})
 				require.NoError(t, err)
 
@@ -63,6 +70,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: fixtureHEADMasterCommit,
 						Type:     v1alpha1.Branch,
+						SubPath: "/foo/bar",
 					},
 				})
 			})
@@ -74,9 +82,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.Git{
-					URL:      repo.URL,
-					Revision: tag,
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
+						URL:      repo.URL,
+						Revision: tag,
+					},
+					SubPath: "/foo/bar",
 				})
 				require.NoError(t, err)
 
@@ -85,6 +96,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: tagCommit,
 						Type:     v1alpha1.Tag,
+						SubPath: "/foo/bar",
 					},
 				})
 			})
@@ -99,9 +111,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				resolvedGitSource, err := gitResolver.Resolve(basicAuth{
 					Username: "notgonna",
 					Password: "work",
-				}, v1alpha1.Git{
-					URL:      repo.URL,
-					Revision: tag,
+				}, v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
+						URL:      repo.URL,
+						Revision: tag,
+					},
+					SubPath: "/foo/bar",
 				})
 				require.NoError(t, err)
 
@@ -110,6 +125,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: tag,
 						Type:     v1alpha1.Unknown,
+						SubPath: "/foo/bar",
 					},
 				})
 			})

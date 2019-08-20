@@ -144,6 +144,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}))
 		})
 
+		it("configures the workspace volume with a subPath", func() {
+			build.Spec.Source.SubPath = "some/path"
+
+			pod, err := build.BuildPod(config, secrets)
+			require.NoError(t, err)
+
+			vol := getVolumeMountFromContainer(t, pod.Spec.InitContainers, "source-init", "workspace-dir")
+			assert.Equal(t, "/workspace", vol.MountPath)
+			assert.Equal(t, "", vol.SubPath)
+
+			for _, containerName := range []string{"prepare", "detect", "analyze", "build", "export"} {
+				vol := getVolumeMountFromContainer(t, pod.Spec.InitContainers, containerName, "workspace-dir")
+				assert.Equal(t, "/workspace", vol.MountPath)
+				assert.Equal(t, "some/path", vol.SubPath)
+			}
+		})
+
 		it("configures creds init", func() {
 			pod, err := build.BuildPod(config, secrets)
 			require.NoError(t, err)
@@ -470,4 +487,19 @@ func isSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) bool {
 		}
 	}
 	return false
+}
+
+func getVolumeMountFromContainer(t *testing.T, containers []corev1.Container, containerName string, volumeName string) corev1.VolumeMount {
+	t.Helper()
+	for _, container := range containers {
+		if container.Name == containerName {
+			for _, vol := range container.VolumeMounts {
+				if vol.Name == volumeName {
+					return vol
+				}
+			}
+		}
+	}
+	t.Errorf("could not find volume mount with name %s in container %s", volumeName, containerName)
+	return corev1.VolumeMount{}
 }

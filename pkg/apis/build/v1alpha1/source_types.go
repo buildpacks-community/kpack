@@ -9,6 +9,7 @@ type SourceConfig struct {
 	Git      *Git      `json:"git,omitempty"`
 	Blob     *Blob     `json:"blob,omitempty"`
 	Registry *Registry `json:"registry,omitempty"`
+	SubPath  string    `json:"subPath,omitempty"`
 }
 
 func (sc *SourceConfig) Source() Source {
@@ -119,7 +120,6 @@ type ResolvedSourceConfig struct {
 	Registry *ResolvedRegistrySource `json:"registry,omitempty"`
 }
 
-
 func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
 	if sc.Git != nil {
 		return sc.Git
@@ -151,6 +151,7 @@ const (
 type ResolvedGitSource struct {
 	URL      string        `json:"url"`
 	Revision string        `json:"commit"`
+	SubPath  string        `json:"subPath,omitempty"`
 	Type     GitSourceKind `json:"type"`
 }
 
@@ -160,6 +161,7 @@ func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
 			URL:      gs.URL,
 			Revision: gs.Revision,
 		},
+		SubPath: gs.SubPath,
 	}
 }
 
@@ -176,7 +178,8 @@ func (gs *ResolvedGitSource) ConfigChanged(lastBuild *Build) bool {
 		return true
 	}
 
-	return gs.URL != lastBuild.Spec.Source.Git.URL
+	return gs.URL != lastBuild.Spec.Source.Git.URL ||
+		gs.SubPath != lastBuild.Spec.Source.SubPath
 }
 
 func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
@@ -188,7 +191,8 @@ func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
 }
 
 type ResolvedBlobSource struct {
-	URL string `json:"url"`
+	URL     string `json:"url"`
+	SubPath string `json:"subPath,omitempty"`
 }
 
 func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
@@ -196,6 +200,7 @@ func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
 		Blob: &Blob{
 			URL: bs.URL,
 		},
+		SubPath: bs.SubPath,
 	}
 }
 
@@ -211,7 +216,8 @@ func (bs *ResolvedBlobSource) ConfigChanged(lastBuild *Build) bool {
 	if lastBuild.Spec.Source.Blob == nil {
 		return true
 	}
-	return bs.URL != lastBuild.Spec.Source.Blob.URL
+	return bs.URL != lastBuild.Spec.Source.Blob.URL ||
+		bs.SubPath != lastBuild.Spec.Source.SubPath
 }
 
 func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
@@ -221,6 +227,7 @@ func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
 type ResolvedRegistrySource struct {
 	Image            string   `json:"image"`
 	ImagePullSecrets []string `json:"imagePullSecrets"`
+	SubPath          string   `json:"subPath,omitempty"`
 }
 
 func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {
@@ -229,6 +236,7 @@ func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {
 			Image:            rs.Image,
 			ImagePullSecrets: rs.ImagePullSecrets,
 		},
+		SubPath: rs.SubPath,
 	}
 }
 
@@ -245,7 +253,9 @@ func (rs *ResolvedRegistrySource) ConfigChanged(lastBuild *Build) bool {
 		return true
 	}
 
-	return rs.Image != lastBuild.Spec.Source.Registry.Image || !equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets)
+	return rs.Image != lastBuild.Spec.Source.Registry.Image ||
+		!equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets) ||
+		rs.SubPath != lastBuild.Spec.Source.SubPath
 }
 
 func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {

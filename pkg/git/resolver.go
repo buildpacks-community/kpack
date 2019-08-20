@@ -24,7 +24,7 @@ func (r *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.Re
 		return v1alpha1.ResolvedSourceConfig{}, err
 	}
 
-	return r.remoteGitResolver.Resolve(auth, *sourceResolver.Spec.Source.Git)
+	return r.remoteGitResolver.Resolve(auth, sourceResolver.Spec.Source)
 }
 
 func (*Resolver) CanResolve(sourceResolver *v1alpha1.SourceResolver) bool {
