@@ -68,7 +68,14 @@ func (m *SecretManager) SecretForImagePull(namespace, secretName, registryName s
 	}
 
 	var config dockerConfigJson
-	err = json.Unmarshal(secret.Data[".dockerconfigjson"], &config)
+	switch secret.Type {
+	case v1.SecretTypeDockercfg:
+		var auths dockerConfig
+		err = json.Unmarshal(secret.Data[v1.DockerConfigKey], &auths)
+		config.Auths = auths
+	case v1.SecretTypeDockerConfigJson:
+		err = json.Unmarshal(secret.Data[v1.DockerConfigJsonKey], &config)
+	}
 	if err != nil {
 		return "", err
 	}

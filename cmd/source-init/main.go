@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -75,6 +76,30 @@ func main() {
 
 	if fileExists("/imagePullSecrets/.dockerconfigjson", logger) {
 		err := os.Symlink("/imagePullSecrets/.dockerconfigjson", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	} else if fileExists("/imagePullSecrets/.dockercfg", logger) {
+		file, err := os.Open("/imagePullSecrets/.dockercfg")
+		if err != nil {
+			logger.Fatal(err)
+		}
+		defer file.Close()
+		fileContents, err := ioutil.ReadAll(file)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		configJson := fmt.Sprintf(`{ "auths" : %s }`, string(fileContents))
+		tempFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			logger.Fatal(err)
+		}
+		defer tempFile.Close()
+		err = ioutil.WriteFile(tempFile.Name(), []byte(configJson), os.ModeType)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		err = os.Symlink(tempFile.Name(), filepath.Join(usr.HomeDir, ".docker/config.json"))
 		if err != nil {
 			logger.Fatal(err)
 		}

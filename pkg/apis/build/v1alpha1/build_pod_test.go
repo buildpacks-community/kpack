@@ -163,7 +163,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures the workspace volume with a subPath", func() {
 			build.Spec.Source.SubPath = "some/path"
 
-			pod, err := build.BuildPod(config, secrets, builder)
+			pod, err := build.BuildPod(config, secrets, builder.ImageRef())
 			require.NoError(t, err)
 
 			vol := getVolumeMountFromContainer(t, pod.Spec.InitContainers, "source-init", "workspace-dir")

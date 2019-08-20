@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -35,6 +37,30 @@ func main() {
 
 	if fileExists("/builderPullSecrets/.dockerconfigjson", logger) {
 		err := os.Symlink("/builderPullSecrets/.dockerconfigjson", filepath.Join(usr.HomeDir, ".docker/config.json"))
+		if err != nil {
+			logger.Fatal(err)
+		}
+	} else if fileExists("/builderPullSecrets/.dockercfg", logger) {
+		file, err := os.Open("/builderPullSecrets/.dockercfg")
+		if err != nil {
+			logger.Fatal(err)
+		}
+		defer file.Close()
+		fileContents, err := ioutil.ReadAll(file)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		configJson := fmt.Sprintf(`{ "auths" : %s }`, string(fileContents))
+		tempFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			logger.Fatal(err)
+		}
+		defer tempFile.Close()
+		err = ioutil.WriteFile(tempFile.Name(), []byte(configJson), os.ModeType)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		err = os.Symlink(tempFile.Name(), filepath.Join(usr.HomeDir, ".docker/config.json"))
 		if err != nil {
 			logger.Fatal(err)
 		}
