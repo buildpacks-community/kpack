@@ -32,7 +32,7 @@ type BuildPodConfig struct {
 }
 
 var (
-	workspaceVolume = corev1.VolumeMount{
+	sourceVolume = corev1.VolumeMount{
 		Name:      workspaceDir,
 		MountPath: "/workspace",
 	}
@@ -80,6 +80,12 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 	}
 	volumes = append(volumes, secretVolumes...)
 
+	workspaceVolume := corev1.VolumeMount{
+		Name:      sourceVolume.Name,
+		MountPath: sourceVolume.MountPath,
+		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
+	}
+
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      b.PodName(),
@@ -126,7 +132,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret) (*corev
 					WorkingDir:      "/workspace",
 					VolumeMounts: []corev1.VolumeMount{
 						imagePullSecretsVolume,
-						workspaceVolume,
+						sourceVolume,
 						homeVolume,
 					},
 				},

@@ -10,6 +10,7 @@ func (*Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.Reso
 		Registry: &v1alpha1.ResolvedRegistrySource{
 			Image:            sourceResolver.Spec.Source.Registry.Image,
 			ImagePullSecrets: sourceResolver.Spec.Source.Registry.ImagePullSecrets,
+			SubPath:          sourceResolver.Spec.Source.SubPath,
 		},
 	}, nil
 }
