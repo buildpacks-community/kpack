@@ -19,3 +19,6 @@ spec:
   - name: LatestImage
     type: string
     JSONPath: ".status.latestImage"
+  - name: Ready
+    type: string
+    JSONPath: #@ ".status.conditions[?(@.type==\"Ready\")].status"

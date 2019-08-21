@@ -17,9 +17,9 @@ spec:
   subresources:
     status: {}
   additionalPrinterColumns:
-  - name: SHA
+  - name: Image
     type: string
-    JSONPath: ".status.SHA"
+    JSONPath: ".status.latestImage"
   - name: Succeeded
     type: string
     JSONPath: #@ ".status.conditions[?(@.type==\"Succeeded\")].status"
