@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/build-service-system/pkg/secret"
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 func TestSecretManagerFactory(t *testing.T) {

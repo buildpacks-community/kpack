@@ -3,17 +3,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: build-service-system-controller
-  namespace: build-service-system
+  name: kpack-controller
+  namespace: kpack
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: build-service-system-controller
+      app: kpack-controller
   template:
     metadata:
       labels:
-        app: build-service-system-controller
+        app: kpack-controller
     spec:
       serviceAccountName: controller
       containers:

@@ -8,9 +8,9 @@ import (
 
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/pivotal/build-service-system/pkg/cnb"
-	"github.com/pivotal/build-service-system/pkg/registry"
-	"github.com/pivotal/build-service-system/pkg/registry/registryfakes"
+	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

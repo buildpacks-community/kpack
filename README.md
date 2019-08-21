@@ -1,6 +1,6 @@
-# Build Service System
+# Kpack
 
-Experimental Build Service CRDs.
+Experimental declarative Build Service Kubernetes CRDs.  
 
 ## Pre requirements
 
@@ -12,7 +12,7 @@ Experimental Build Service CRDs.
 
 ## Local Development Install
 
-Access to a Kubernetes cluster is needed in order to install the build service system controllers.
+Access to a Kubernetes cluster is needed in order to install the kpack controllers.
 
 ```bash
 kubectl cluster-info # ensure you have access to a cluster
@@ -167,7 +167,7 @@ logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME> -build <BUILD-NUMBER>
 
 ### Running Tests
 
-* To run the e2e tests the build service system must be installed and running on a cluster
+* To run the e2e tests, kpack must be installed and running on a cluster
 * The IMAGE_REGISTRY environment variable must point at a registry with local write access 
 
     ```bash

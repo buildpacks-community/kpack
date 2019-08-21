@@ -28,7 +28,7 @@ func loadConfig(t *testing.T) config {
 }
 
 func registryTag(registry string) string {
-	return registry + "/build-service-system-test"
+	return registry + "/kpack-test"
 }
 
 func (c *config) newImageTag() string {

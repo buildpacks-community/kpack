@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
 
 var (
