@@ -36,16 +36,23 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Tag                         string             `json:"tag"`
-	BuilderRef                  string             `json:"builderRef"`
-	ServiceAccount              string             `json:"serviceAccount"`
-	Source                      SourceConfig       `json:"source"`
-	CacheSize                   *resource.Quantity `json:"cacheSize,omitempty"`
-	FailedBuildHistoryLimit     *int64             `json:"failedBuildHistoryLimit"`
-	SuccessBuildHistoryLimit    *int64             `json:"successBuildHistoryLimit"`
-	DisableAdditionalImageNames bool               `json:"disableAdditionalImageNames"`
-	Build                       ImageBuild         `json:"build"`
+	Tag                      string               `json:"tag"`
+	BuilderRef               string               `json:"builderRef"`
+	ServiceAccount           string               `json:"serviceAccount"`
+	Source                   SourceConfig         `json:"source"`
+	CacheSize                *resource.Quantity   `json:"cacheSize,omitempty"`
+	FailedBuildHistoryLimit  *int64               `json:"failedBuildHistoryLimit"`
+	SuccessBuildHistoryLimit *int64               `json:"successBuildHistoryLimit"`
+	ImageTaggingStrategy     ImageTaggingStrategy `json:"imageTaggingStrategy"`
+	Build                    ImageBuild           `json:"build"`
 }
+
+type ImageTaggingStrategy string
+
+const (
+	None        ImageTaggingStrategy = "None"
+	BuildNumber ImageTaggingStrategy = "BuildNumber"
+)
 
 type ImageBuild struct {
 	Env       []corev1.EnvVar             `json:"env"`

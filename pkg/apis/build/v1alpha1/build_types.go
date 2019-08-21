@@ -47,14 +47,13 @@ type BuilderImage struct {
 }
 
 type BuildSpec struct {
-	Tag                  string                      `json:"tag"`
-	Builder              BuilderImage                `json:"builder"`
-	ServiceAccount       string                      `json:"serviceAccount"`
-	Source               SourceConfig                `json:"source"`
-	CacheName            string                      `json:"cacheName"`
-	AdditionalImageNames []string                    `json:"additionalImageNames"`
-	Env                  []corev1.EnvVar             `json:"env"`
-	Resources            corev1.ResourceRequirements `json:"resources"`
+	Tags           []string                    `json:"tags"`
+	Builder        BuilderImage                `json:"builder"`
+	ServiceAccount string                      `json:"serviceAccount"`
+	Source         SourceConfig                `json:"source"`
+	CacheName      string                      `json:"cacheName"`
+	Env            []corev1.EnvVar             `json:"env"`
+	Resources      corev1.ResourceRequirements `json:"resources"`
 }
 
 type BuildStatus struct {

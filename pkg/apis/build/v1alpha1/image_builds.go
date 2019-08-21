@@ -36,7 +36,7 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		return []string{BuildReasonConfig}, true
 	}
 
-	if im.Spec.Tag != lastBuild.Spec.Tag {
+	if im.Spec.Tag != lastBuild.Tag() {
 		return []string{BuildReasonConfig}, true
 	}
 
@@ -87,14 +87,13 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 			},
 		},
 		Spec: BuildSpec{
-			Tag:                  im.Spec.Tag,
-			Builder:              *builder.ImageRef(),
-			Env:                  im.Spec.Build.Env,
-			Resources:            im.Spec.Build.Resources,
-			ServiceAccount:       im.Spec.ServiceAccount,
-			Source:               sourceResolver.SourceConfig(),
-			CacheName:            im.Status.BuildCacheName,
-			AdditionalImageNames: im.generateImageNames(buildNumber),
+			Tags:           im.generateTags(buildNumber),
+			Builder:        *builder.ImageRef(),
+			Env:            im.Spec.Build.Env,
+			Resources:      im.Spec.Build.Resources,
+			ServiceAccount: im.Spec.ServiceAccount,
+			Source:         sourceResolver.SourceConfig(),
+			CacheName:      im.Status.BuildCacheName,
 		},
 	}
 }
@@ -157,9 +156,9 @@ func (im *Image) SourceResolver() *SourceResolver {
 	}
 }
 
-func (im *Image) generateImageNames(buildNumber string) []string {
-	if im.Spec.DisableAdditionalImageNames {
-		return nil
+func (im *Image) generateTags(buildNumber string) []string {
+	if im.disableAdditionalImageNames() {
+		return []string{im.Spec.Tag}
 	}
 	now := time.Now()
 
@@ -174,7 +173,9 @@ func (im *Image) generateImageNames(buildNumber string) []string {
 	if tagName == "latest-" {
 		tagName = ""
 	}
-	return []string{tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
+	return []string{
+		im.Spec.Tag,
+		tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
 }
 
 func (im *Image) generateBuildName(buildNumber string) string {
@@ -191,4 +192,8 @@ func (im *Image) labels(additionalLabels map[string]string) map[string]string {
 		labels[k] = v
 	}
 	return labels
+}
+
+func (im *Image) disableAdditionalImageNames() bool {
+	return im.Spec.ImageTaggingStrategy == None
 }
