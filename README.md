@@ -1,23 +1,16 @@
 # kpack
 
-Experimental declarative Build Service Kubernetes CRDs.  
+Experimental Build Service Kubernetes Resource Controllers.  
 
 ## Pre requirements
 
 - Kubernetes cluster
+- `kubectl` cli
+- Docker V2 Registry
 
 ## Install
 
-- Use the most recent github release.
-
-## Local Development Install
-
-Access to a Kubernetes cluster is needed in order to install the kpack controllers.
-
-```bash
-kubectl cluster-info # ensure you have access to a cluster
-./hack/apply.sh <IMAGE/NAME> # <IMAGE/NAME> is a writable and publicly accessible location 
-```
+- Use the most recent [github release](https://github.com/pivotal/kpack/releases).
 
 ### Creating an Image Resource
 
@@ -29,6 +22,8 @@ kubectl cluster-info # ensure you have access to a cluster
       name: sample-builder
     spec:
       image: cloudfoundry/cnb:bionic
+      imagePullSecrets: # optional, if not set builder must be public
+      - name: builder-secret
     ```
 
 2. Create a secret for push access to the desired docker registry. The example below is for a registry on gcr.
@@ -163,6 +158,15 @@ To view logs from a specific build use the build flag:
 
 ```bash
 logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME> -build <BUILD-NUMBER>
+```
+
+## Local Development Install
+
+Access to a Kubernetes cluster is needed in order to install the kpack controllers.
+
+```bash
+kubectl cluster-info # ensure you have access to a cluster
+./hack/apply.sh <IMAGE/NAME> # <IMAGE/NAME> is a writable and publicly accessible location 
 ```
 
 ### Running Tests
