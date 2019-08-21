@@ -8,9 +8,9 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	v1alpha1Listers "github.com/pivotal/build-service-system/pkg/client/listers/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 )
 
 var clientSetSchemes = []func(*runtime.Scheme) error{

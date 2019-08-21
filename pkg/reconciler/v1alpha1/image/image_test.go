@@ -22,10 +22,10 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/build-service-system/pkg/reconciler/testhelpers"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/image"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 )
 
 func TestImageReconciler(t *testing.T) {

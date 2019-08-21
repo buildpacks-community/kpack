@@ -4,8 +4,8 @@ package builderfakes
 import (
 	"sync"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/build-service-system/pkg/reconciler/v1alpha1/builder"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
 )
 
 type FakeEnqueuer struct {

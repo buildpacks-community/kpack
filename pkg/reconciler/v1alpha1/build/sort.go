@@ -3,7 +3,7 @@ package build
 import (
 	_ "strconv"
 
-	"github.com/pivotal/build-service-system/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type ByCreationTimestamp []*v1alpha1.Build

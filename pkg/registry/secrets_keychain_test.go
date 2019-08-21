@@ -12,9 +12,9 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/build-service-system/pkg/registry"
-	"github.com/pivotal/build-service-system/pkg/secret"
-	secrethelper "github.com/pivotal/build-service-system/pkg/secret/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/secret"
+	secrethelper "github.com/pivotal/kpack/pkg/secret/testhelpers"
 )
 
 func TestSecretKeychainFactory(t *testing.T) {
