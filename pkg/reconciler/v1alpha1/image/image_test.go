@@ -978,7 +978,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Spec: v1alpha1.BuildSpec{
 								Tag: image.Spec.Tag,
 								Builder: v1alpha1.BuilderImage{
-									Image:            updatedBuilderImage,
+									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
@@ -1028,7 +1028,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Spec: v1alpha1.BuildSpec{
 								Tag: image.Spec.Tag,
 								Builder: v1alpha1.BuilderImage{
-									Image:            updatedBuilderImage,
+									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{

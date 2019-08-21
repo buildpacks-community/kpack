@@ -43,7 +43,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 					Git: &v1alpha1.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
-						SubPath: "/foo/bar",
+						SubPath:  "/foo/bar",
 						Type:     v1alpha1.Commit,
 					},
 				})
@@ -70,7 +70,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: fixtureHEADMasterCommit,
 						Type:     v1alpha1.Branch,
-						SubPath: "/foo/bar",
+						SubPath:  "/foo/bar",
 					},
 				})
 			})
@@ -96,7 +96,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: tagCommit,
 						Type:     v1alpha1.Tag,
-						SubPath: "/foo/bar",
+						SubPath:  "/foo/bar",
 					},
 				})
 			})
@@ -125,7 +125,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      repo.URL,
 						Revision: tag,
 						Type:     v1alpha1.Unknown,
-						SubPath: "/foo/bar",
+						SubPath:  "/foo/bar",
 					},
 				})
 			})

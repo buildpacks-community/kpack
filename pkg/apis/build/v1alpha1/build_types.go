@@ -63,7 +63,7 @@ type BuildStatus struct {
 	LatestImage         string                  `json:"latestImage"`
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
-	StepsCompleted      []string                `json:"stepsCompleted",omitempty`
+	StepsCompleted      []string                `json:"stepsCompleted,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
