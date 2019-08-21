@@ -99,7 +99,10 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Name: "simple-build",
 				},
 				Spec: v1alpha1.BuildSpec{
-					Tag:            "image/name",
+					Tags: []string{
+						"image/name",
+						"additional/names",
+					},
 					Builder:        *builder.ImageRef(),
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.SourceConfig{
@@ -109,9 +112,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					CacheName: "some-cache-name",
-					AdditionalImageNames: []string{
-						"additional/names",
-					},
 					Env: []corev1.EnvVar{
 						{
 							Name:  "ENV",

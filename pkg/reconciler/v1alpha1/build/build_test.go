@@ -110,7 +110,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: originalGeneration,
 		},
 		Spec: v1alpha1.BuildSpec{
-			Tag:            "someimage/name",
+			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
 			Builder:        *builder.ImageRef(),
 			Env: []corev1.EnvVar{
@@ -133,8 +133,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName:            "some-cache-name",
-			AdditionalImageNames: []string{"someimage/name:tag2", "someimage/name:tag3"},
+			CacheName: "some-cache-name",
 		},
 	}
 

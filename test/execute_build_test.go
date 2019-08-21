@@ -155,12 +155,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: imageName,
 					},
 					Spec: v1alpha1.ImageSpec{
-						Tag:                         imageTag,
-						BuilderRef:                  builderName,
-						ServiceAccount:              serviceAccountName,
-						Source:                      imageSource,
-						CacheSize:                   &cacheSize,
-						DisableAdditionalImageNames: true,
+						Tag:                  imageTag,
+						BuilderRef:           builderName,
+						ServiceAccount:       serviceAccountName,
+						Source:               imageSource,
+						CacheSize:            &cacheSize,
+						ImageTaggingStrategy: v1alpha1.None,
 						Build: v1alpha1.ImageBuild{
 							Resources: expectedResources,
 						},

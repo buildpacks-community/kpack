@@ -53,7 +53,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: v1alpha1.BuildSpec{
-			Tag:            "someimage/name",
+			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccount,
 			Builder:        imageRef,
 			Env: []corev1.EnvVar{
@@ -67,8 +67,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName:            "some-cache-name",
-			AdditionalImageNames: []string{"someimage/name:tag2", "someimage/name:tag3"},
+			CacheName: "some-cache-name",
 		},
 	}
 
@@ -373,7 +372,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-helpers=false",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
-				build.Spec.Tag,
+				build.Tag(),
 			}, pod.Spec.InitContainers[5].Args)
 		})
 
@@ -407,7 +406,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-app=/workspace",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
-				build.Spec.Tag,
+				build.Tag(),
 				"someimage/name:tag2",
 				"someimage/name:tag3",
 			}, pod.Spec.InitContainers[7].Args)

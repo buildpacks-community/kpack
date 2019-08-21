@@ -83,7 +83,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Name: "image-name",
 		},
 		Spec: BuildSpec{
-			Tag:            "some/image",
+			Tags:           []string{"some/image"},
 			Builder:        *builder.ImageRef(),
 			ServiceAccount: "some/serviceaccount",
 			Env: []v1.EnvVar{
@@ -490,35 +490,35 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, build.Spec.Source.Registry.Image, "some-registry.io/some-image")
 		})
 
-		it("with excludes additional images names when explicitly disabled", func() {
+		it("with excludes additional tags names when explicitly disabled", func() {
 			image.Spec.Tag = "imagename/foo:test"
-			image.Spec.DisableAdditionalImageNames = true
+			image.Spec.ImageTaggingStrategy = None
 			build := image.build(sourceResolver, builder, []string{BuildReasonConfig}, 1)
-			require.Len(t, build.Spec.AdditionalImageNames, 0)
+			require.Len(t, build.Spec.Tags, 1)
 		})
 
 		when("generates additional image names for a provided build number", func() {
 			it("with tag prefix if image name has a tag", func() {
 				image.Spec.Tag = "gcr.io/imagename/foo:test"
 				build := image.build(sourceResolver, builder, []string{BuildReasonConfig}, 45)
-				require.Len(t, build.Spec.AdditionalImageNames, 1)
-				require.Regexp(t, "gcr.io/imagename/foo:test-b45\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+				require.Len(t, build.Spec.Tags, 2)
+				require.Regexp(t, "gcr.io/imagename/foo:test-b45\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
 
 			it("without tag prefix if image name has no provided tag", func() {
 				image.Spec.Tag = "gcr.io/imagename/notags"
 				build := image.build(sourceResolver, builder, []string{BuildReasonConfig}, 1)
 
-				require.Len(t, build.Spec.AdditionalImageNames, 1)
-				require.Regexp(t, "gcr.io/imagename/notags:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+				require.Len(t, build.Spec.Tags, 2)
+				require.Regexp(t, "gcr.io/imagename/notags:b1\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
 
 			it("without tag prefix if image name has the tag 'latest' provided", func() {
 				image.Spec.Tag = "gcr.io/imagename/tagged:latest"
 				build := image.build(sourceResolver, builder, []string{BuildReasonConfig}, 1)
 
-				require.Len(t, build.Spec.AdditionalImageNames, 1)
-				require.Regexp(t, "gcr.io/imagename/tagged:b1\\.\\d{8}\\.\\d{6}", build.Spec.AdditionalImageNames[0])
+				require.Len(t, build.Spec.Tags, 2)
+				require.Regexp(t, "gcr.io/imagename/tagged:b1\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
 		})
 

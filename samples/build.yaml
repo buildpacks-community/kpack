@@ -3,9 +3,10 @@ kind: Build
 metadata:
   name: sample
 spec:
+  tags:
+  - sample/image
   serviceAccount: serviceaccount
   builder: cloudfoundry/cnb
-  tag: sample/image
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

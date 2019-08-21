@@ -36,7 +36,7 @@ func (b *Build) ServiceAccount() string {
 }
 
 func (b *Build) Tag() string {
-	return b.Spec.Tag
+	return b.Spec.Tags[0]
 }
 
 func (b *Build) HasSecret() bool {
