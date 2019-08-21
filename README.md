@@ -1,4 +1,4 @@
-# Kpack
+# kpack
 
 Experimental declarative Build Service Kubernetes CRDs.  
 
