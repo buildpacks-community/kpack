@@ -2,6 +2,13 @@
 
 Experimental Build Service Kubernetes Resource Controllers.  
 
+kpack extends [Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) and utilizes kubernetes primitives to provide builds of OCI images as a platform implementation of [Cloud Native Buildpacks](https://buildpacks.io) (CNB).
+
+kpack provides a declarative image type that builds an image and schedules image rebuilds on relevant buildpack and source changes.
+
+kpack also provides a build type to execute a single Cloud Native Buildpack image build.
+
+
 ## Pre requirements
 
 - Kubernetes cluster
