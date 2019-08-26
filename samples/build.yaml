@@ -6,7 +6,8 @@ spec:
   tags:
   - sample/image
   serviceAccount: serviceaccount
-  builder: cloudfoundry/cnb
+  builder:
+    image: cloudfoundry/cnb:bionic
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

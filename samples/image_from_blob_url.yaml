@@ -3,8 +3,9 @@ kind: Image
 metadata:
   name: sample
 spec:
-  builderRef: sample-builder
   tag: sample/image-from-jar
+  builderRef: sample-builder
+  serviceAccount: service-account
   source:
     blob:
       url: https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar

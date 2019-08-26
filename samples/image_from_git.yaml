@@ -3,8 +3,9 @@ kind: Image
 metadata:
   name: sample-1
 spec:
-  builderRef: sample-builder
   tag: sample/image-from-git
+  builderRef: sample-builder
+  serviceAccount: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
@@ -15,8 +16,9 @@ kind: Image
 metadata:
   name: sample-2
 spec:
-  builderRef: sample-builder
   tag: sample/image-from-git-specific-sha
+  builderRef: sample-builder
+  serviceAccount: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
@@ -27,8 +29,9 @@ kind: Image
 metadata:
   name: sample-3
 spec:
-  builderRef: sample-builder
   tag: sample/image-from-git-tag
+  builderRef: sample-builder
+  serviceAccount: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
