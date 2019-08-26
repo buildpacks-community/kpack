@@ -24,6 +24,19 @@
   revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[projects]]
+  digest = "1:3aff45e2d22fc5851ec596b06612ac7319b78904880ec9311dfa67b173515906"
+  name = "github.com/Azure/go-autorest"
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date",
+    "version",
+  ]
+  pruneopts = "NUT"
+  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+
+[[projects]]
   branch = "master"
   digest = "1:c3e9dc7218d3339c0f7a8abfadfa34077a28b953cb09df3231ec70da93a1e33f"
   name = "github.com/alcortesm/tgz"
@@ -99,7 +112,7 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:e7d26760c4e7d67a443b082153c4b473ad0b8f7388302a2f788b1360f751abb8"
+  digest = "1:fa965c1fd0f17153f608037e109e62104058bc1d08d44849867795fd306fa8b8"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
     "gen-go/agent/common/v1",
@@ -107,8 +120,8 @@
     "gen-go/resource/v1",
   ]
   pruneopts = "NUT"
-  revision = "d89fa54de508111353cb0b06403c00569be780d8"
-  version = "v0.2.1"
+  revision = "7f2434bc10da710debe5c4315ed6d4df454b4024"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -117,6 +130,14 @@
   pruneopts = "NUT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:7a6852b35eb5bbc184561443762d225116ae630c26a7c4d90546619f1e7d2ad2"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   digest = "1:b498b36dbb2b306d1c5205ee5236c9e60352be8f9eea9bf08186723a9f75b4f3"
@@ -286,6 +307,22 @@
   ]
   pruneopts = "NUT"
   revision = "e73c7ec21d36ddb0711cb36d1502d18363b5c2c9"
+  version = "v0.3.0"
+
+[[projects]]
+  digest = "1:80230022ab481c6688b237550bc45017d9d2abfc19e4916e2ce344d24f613a6d"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination",
+  ]
+  pruneopts = "NUT"
+  revision = "0398b0cd16bfffade0883973c745180adbbe8918"
   version = "v0.3.0"
 
 [[projects]]
@@ -1089,7 +1126,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:07be043078c2dc2ee33e81278b264a84f364c6d711811d2932aa42212fc4f2ae"
+  digest = "1:0507d70fbf8d5d639fc8d48d946ce5abb8348db9b10af5fef4f8a3f70753c10f"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1236,8 +1273,12 @@
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
+    "plugin/pkg/client/auth",
+    "plugin/pkg/client/auth/azure",
     "plugin/pkg/client/auth/exec",
     "plugin/pkg/client/auth/gcp",
+    "plugin/pkg/client/auth/oidc",
+    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
     "testing",
@@ -1385,7 +1426,7 @@
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/listers/core/v1",
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",

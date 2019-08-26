@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
