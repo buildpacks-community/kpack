@@ -158,13 +158,13 @@ go build ./cmd/logs
 The logs tool allows you to view the logs for all builds for an image: 
 
 ```bash
-logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME>
+./logs -image <IMAGE-NAME>
 ```
 
 To view logs from a specific build use the build flag:  
 
 ```bash
-logs  -kubeconfig <PATH-TO-KUBECONFIG> -image <IMAGE-NAME> -build <BUILD-NUMBER>
+./logs -image <IMAGE-NAME> -build <BUILD-NUMBER>
 ```
 
 ## Local Development Install
