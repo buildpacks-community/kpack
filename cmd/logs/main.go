@@ -6,11 +6,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/pivotal/kpack/pkg/logs"
+
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/pivotal/kpack/pkg/logs"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 func main() {
 	flag.Parse()
 
-	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+	clusterConfig, err := BuildConfigFromFlags(*masterURL, *kubeconfig)
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
@@ -38,4 +40,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("error tailing logs %s", err)
 	}
+
+}
+
+func BuildConfigFromFlags(masterURL, kubeconfigPath string) (*rest.Config, error) {
+
+	var clientConfigLoader clientcmd.ClientConfigLoader
+
+	if kubeconfigPath == "" {
+		clientConfigLoader = clientcmd.NewDefaultClientConfigLoadingRules()
+	} else {
+		clientConfigLoader = &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientConfigLoader,
+		&clientcmd.ConfigOverrides{ClusterInfo: api.Cluster{Server: masterURL}}).ClientConfig()
+
 }
