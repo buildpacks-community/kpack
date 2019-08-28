@@ -1,4 +1,4 @@
-package registry
+package dockercreds
 
 import (
 	"fmt"
@@ -17,10 +17,10 @@ var registryDomains = []string{
 	"http://%s/v2/",
 }
 
-type registryMatcher struct {
+type RegistryMatcher struct {
 }
 
-func (r registryMatcher) Match(parsedRegistry, registry string) bool {
+func (r RegistryMatcher) Match(parsedRegistry, registry string) bool {
 	for _, format := range registryDomains {
 		if fmt.Sprintf(format, parsedRegistry) == registry {
 			return true

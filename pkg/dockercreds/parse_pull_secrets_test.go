@@ -1,12 +1,13 @@
 package dockercreds
 
 import (
-	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParsePullSecrets(t *testing.T) {
@@ -14,7 +15,6 @@ func TestParsePullSecrets(t *testing.T) {
 }
 
 func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
-
 	var testPullSecretsDir string
 
 	it.Before(func() {

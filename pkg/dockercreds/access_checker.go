@@ -1,4 +1,4 @@
-package registry
+package dockercreds
 
 import (
 	"fmt"

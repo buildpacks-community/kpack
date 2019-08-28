@@ -3,11 +3,27 @@ package dockercreds
 import (
 	"encoding/json"
 	"io/ioutil"
+
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 type DockerCreds map[string]entry
 
-func (c DockerCreds) AppendCredsToDockerConfig(path string) error {
+func (c DockerCreds) Resolve(reg name.Registry) (authn.Authenticator, error) {
+	registryMatcher := RegistryMatcher{}
+
+	for registry, registryAuth := range c {
+		if registryMatcher.Match(reg.RegistryStr(), registry) {
+			return Auth(registryAuth.Auth), nil
+		}
+	}
+
+	// Fallback on anonymous.
+	return authn.Anonymous, nil
+}
+
+func (c DockerCreds) AppendToDockerConfig(path string) error {
 	existingCreds, err := parseDockerConfigJson(path)
 	if err != nil {
 		return err

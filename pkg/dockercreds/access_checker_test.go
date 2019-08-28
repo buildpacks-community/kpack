@@ -1,4 +1,4 @@
-package registry_test
+package dockercreds
 
 import (
 	"fmt"
@@ -10,8 +10,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 func TestHasWriteAccess(t *testing.T) {
@@ -35,7 +33,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			hasAccess, err := registry.HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(tagName)
 			require.NoError(t, err)
 			assert.True(t, hasAccess)
 		})
@@ -52,7 +50,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			_, _ = registry.HasWriteAccess(tagName)
+			_, _ = HasWriteAccess(tagName)
 		})
 
 		it("false when fetching token is unauthorized", func() {
@@ -68,7 +66,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := registry.HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -86,7 +84,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := registry.HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -102,7 +100,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := registry.HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -114,7 +112,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := registry.HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(tagName)
 			require.Error(t, err)
 			assert.False(t, hasAccess)
 		})

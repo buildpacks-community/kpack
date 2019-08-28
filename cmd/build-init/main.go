@@ -30,7 +30,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	hasWriteAccess, err := registry.HasWriteAccess(*imageTag)
+	hasWriteAccess, err := dockercreds.HasWriteAccess(*imageTag)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,12 +44,12 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	dockerConfigs, err := dockercreds.ParseDockerPullSecrets("/builderPullSecrets")
+	builderCreds, err := dockercreds.ParseDockerPullSecrets("/builderPullSecrets")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = dockerConfigs.AppendCredsToDockerConfig("/builder/home/.docker/config.json")
+	err = builderCreds.AppendToDockerConfig("/builder/home/.docker/config.json")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package registry
+package dockercreds
 
 import (
 	"testing"
@@ -26,17 +26,17 @@ func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 			"http://reg.io/v2/",
 		} {
 			it("matches format "+regFormat, func() {
-				assert.True(t, registryMatcher{}.Match("reg.io", regFormat))
+				assert.True(t, RegistryMatcher{}.Match("reg.io", regFormat))
 			})
 
 			it("does not match other registries with "+regFormat, func() {
-				assert.False(t, registryMatcher{}.Match("gcr.io", regFormat))
+				assert.False(t, RegistryMatcher{}.Match("gcr.io", regFormat))
 			})
 		}
 
 		it("matches on dockerhub references", func() {
-			assert.True(t, registryMatcher{}.Match("index.docker.io", "http://index.docker.io"))
-			assert.True(t, registryMatcher{}.Match("index.docker.io", "index.docker.io"))
+			assert.True(t, RegistryMatcher{}.Match("index.docker.io", "http://index.docker.io"))
+			assert.True(t, RegistryMatcher{}.Match("index.docker.io", "index.docker.io"))
 		})
 	})
 }
