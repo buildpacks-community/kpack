@@ -104,9 +104,13 @@
   revision = "1f31ed20483a84a33484db37c125df7778692ed6"
 
 [[projects]]
-  digest = "1:cba73182e2f7de542825d4d982f84338558bc319dd33a7cda927b4626ad89022"
+  digest = "1:77a1f5aa24def37af94d1ce8e0d95ec942cbe8fb8fa75e6b74316e42396a3731"
   name = "github.com/buildpack/lifecycle"
-  packages = ["metadata"]
+  packages = [
+    "cmd",
+    "image/auth",
+    "metadata",
+  ]
   pruneopts = "NUT"
   revision = "a927d830e69e5cd2f207ea69cd99034cb34c5302"
   version = "v0.3.0"
@@ -1376,6 +1380,7 @@
     "github.com/buildpack/imgutil",
     "github.com/buildpack/imgutil/fakes",
     "github.com/buildpack/imgutil/remote",
+    "github.com/buildpack/lifecycle/image/auth",
     "github.com/buildpack/lifecycle/metadata",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
@@ -1383,6 +1388,7 @@
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1",
     "github.com/google/go-containerregistry/pkg/v1/remote",
+    "github.com/google/go-containerregistry/pkg/v1/remote/transport",
     "github.com/knative/pkg/apis",
     "github.com/knative/pkg/apis/duck/v1alpha1",
     "github.com/knative/pkg/controller",

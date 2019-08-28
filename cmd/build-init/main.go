@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -12,12 +10,14 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
 var (
 	builder         = flag.String("builder", os.Getenv("BUILDER"), "the builder to initialize the env for a build")
 	platformEnvVars = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
+	imageTag        = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
 )
 
 func main() {
@@ -30,45 +30,28 @@ func main() {
 		log.Fatal(err)
 	}
 
+	hasWriteAccess, err := registry.HasWriteAccess(*imageTag)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !hasWriteAccess {
+		log.Fatalf("invalid credentials to build to %s", *imageTag)
+	}
+
 	err = os.MkdirAll(filepath.Join(usr.HomeDir, ".docker"), os.ModePerm)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	if fileExists("/builderPullSecrets/.dockerconfigjson", logger) {
-		err := os.Symlink("/builderPullSecrets/.dockerconfigjson", filepath.Join(usr.HomeDir, ".docker/config.json"))
-		if err != nil {
-			logger.Fatal(err)
-		}
-	} else if fileExists("/builderPullSecrets/.dockercfg", logger) {
-		file, err := os.Open("/builderPullSecrets/.dockercfg")
-		if err != nil {
-			logger.Fatal(err)
-		}
-		defer file.Close()
-		fileContents, err := ioutil.ReadAll(file)
-		if err != nil {
-			logger.Fatal(err)
-		}
-		configJson := fmt.Sprintf(`{ "auths" : %s }`, string(fileContents))
-		tempFile, err := ioutil.TempFile("", "")
-		if err != nil {
-			logger.Fatal(err)
-		}
-		defer tempFile.Close()
-		err = ioutil.WriteFile(tempFile.Name(), []byte(configJson), os.ModeType)
-		if err != nil {
-			logger.Fatal(err)
-		}
-		err = os.Symlink(tempFile.Name(), filepath.Join(usr.HomeDir, ".docker/config.json"))
-		if err != nil {
-			logger.Fatal(err)
-		}
+	dockerConfigs, err := dockercreds.ParseDockerPullSecrets("/builderPullSecrets")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	err = os.Setenv("DOCKER_CONFIG", filepath.Join(usr.HomeDir, ".docker"))
+	err = dockerConfigs.AppendCredsToDockerConfig("/builder/home/.docker/config.json")
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	remoteImageFactory := &registry.ImageFactory{
