@@ -2,6 +2,7 @@ package dockercreds
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -13,9 +14,15 @@ type DockerCreds map[string]entry
 func (c DockerCreds) Resolve(reg name.Registry) (authn.Authenticator, error) {
 	registryMatcher := RegistryMatcher{}
 
-	for registry, registryAuth := range c {
+	for registry, entry := range c {
 		if registryMatcher.Match(reg.RegistryStr(), registry) {
-			return Auth(registryAuth.Auth), nil
+			if entry.Auth != "" {
+				return Auth(entry.Auth), nil
+			} else if entry.Username != "" {
+				return &authn.Basic{Username: entry.Username, Password: entry.Password}, nil
+			}
+
+			return nil, errors.Errorf("Unsupported entry in \"auths\" for %q", reg.RegistryStr())
 		}
 	}
 
@@ -52,7 +59,9 @@ func (c DockerCreds) append(a DockerCreds) DockerCreds {
 }
 
 type entry struct {
-	Auth string `json:"auth"`
+	Auth     string `json:"auth"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type dockerConfigJson struct {

@@ -29,11 +29,13 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 
 	it("parses .dockerconfigjson", func() {
 		err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, ".dockerconfigjson"), []byte(`{
-        "auths": {
-                "https://index.docker.io/v1/": {
-                        "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
-                }
-        }
+  "auths": {
+    "https://index.docker.io/v1/": {
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+      "username": "testusername",
+      "password": "testpassword"
+    }
+  }
 }`,
 		), os.ModePerm)
 		require.NoError(t, err)
@@ -43,7 +45,9 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 
 		expectedCreds := DockerCreds{
 			"https://index.docker.io/v1/": entry{
-				Auth: "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Username: "testusername",
+				Password: "testpassword",
 			},
 		}
 		require.Equal(t, expectedCreds, creds)
@@ -52,9 +56,11 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 
 	it("parses .dockercfg", func() {
 		err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, ".dockercfg"), []byte(`{
-                "https://index.docker.io/v1/": {
-                        "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
-                }
+  "https://index.docker.io/v1/": {
+    "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+    "username": "testusername",
+    "password": "testpassword"
+  }
 }`,
 		), os.ModePerm)
 		require.NoError(t, err)
@@ -64,27 +70,33 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 
 		expectedCreds := DockerCreds{
 			"https://index.docker.io/v1/": entry{
-				Auth: "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Username: "testusername",
+				Password: "testpassword",
 			},
 		}
 		require.Equal(t, expectedCreds, creds)
-
 	})
+
 	it("parses .dockercfg and .dockerconfigjson", func() {
 		err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, ".dockerconfigjson"), []byte(`{
-        "auths": {
-                "https://index.docker.io/v1/": {
-                        "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
-                }
-        }
+  "auths": {
+    "https://index.docker.io/v1/": {
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+      "username": "testdockerhub",
+      "password": "testdockerhubusername"
+    }
+  }
 }`,
 		), os.ModePerm)
 		require.NoError(t, err)
 
 		err = ioutil.WriteFile(filepath.Join(testPullSecretsDir, ".dockercfg"), []byte(`{
-                "gcr.io": {
-                        "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo="
-                }
+  "gcr.io": {
+    "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+    "username": "testusername",
+    "password": "testpassword"
+  }
 }`,
 		), os.ModePerm)
 		require.NoError(t, err)
@@ -94,13 +106,16 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 
 		expectedCreds := DockerCreds{
 			"https://index.docker.io/v1/": entry{
-				Auth: "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+				Username: "testdockerhub",
+				Password: "testdockerhubusername",
 			},
 			"gcr.io": entry{
-				Auth: "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+				Username: "testusername",
+				Password: "testpassword",
 			},
 		}
 		require.Equal(t, expectedCreds, creds)
-
 	})
 }
