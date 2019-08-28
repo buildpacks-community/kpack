@@ -1,4 +1,4 @@
-package registry_test
+package secret_test
 
 import (
 	"encoding/base64"
@@ -12,7 +12,6 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
 	secrethelper "github.com/pivotal/kpack/pkg/secret/testhelpers"
 )
@@ -28,13 +27,13 @@ func testSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	var (
 		testNamespace   = "namespace"
-		keychainFactory *registry.SecretKeychainFactory
+		keychainFactory *secret.SecretKeychainFactory
 		fakeClient      = fake.NewSimpleClientset(&v1.Secret{})
 	)
 
 	when("SecretKeychainFactory", func() {
 		it.Before(func() {
-			keychainFactory = registry.NewSecretKeychainFactory(fakeClient)
+			keychainFactory = secret.NewSecretKeychainFactory(fakeClient)
 
 			err := secrethelper.SaveDockerSecrets(fakeClient, testNamespace, serviceAccountName,
 				[]secret.URLAndUser{

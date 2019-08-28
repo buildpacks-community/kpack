@@ -26,6 +26,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 const (
@@ -85,7 +86,7 @@ func main() {
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		LifecycleImageFactory: &registry.ImageFactory{
-			KeychainFactory: registry.NewSecretKeychainFactory(k8sClient),
+			KeychainFactory: secret.NewSecretKeychainFactory(k8sClient),
 		},
 	}
 

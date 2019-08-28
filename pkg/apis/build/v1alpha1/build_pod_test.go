@@ -317,6 +317,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Value: `[{"name":"keyA","value":"valueA"},{"name":"keyB","value":"valueB"}]`,
 				},
 				{
+					Name:  "IMAGE_TAG",
+					Value: "someimage/name",
+				},
+				{
 					Name:  "HOME",
 					Value: "/builder/home",
 				},

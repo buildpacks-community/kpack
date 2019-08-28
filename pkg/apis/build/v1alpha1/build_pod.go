@@ -159,6 +159,10 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 							Name:  "PLATFORM_ENV_VARS",
 							Value: envVars,
 						},
+						{
+							Name:  "IMAGE_TAG",
+							Value: b.Tag(),
+						},
 						homeEnv,
 					},
 					Resources: b.Spec.Resources,

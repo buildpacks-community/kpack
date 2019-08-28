@@ -1,34 +1,32 @@
-package registry
+package secret
 
 import (
-	"encoding/base64"
-	"fmt"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/kpack/pkg/secret"
+	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 type SecretKeychainFactory struct {
-	secretManager *secret.SecretManager
+	secretManager *SecretManager
 }
 
 func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory {
 	return &SecretKeychainFactory{
-		secretManager: &secret.SecretManager{
+		secretManager: &SecretManager{
 			Client:        client,
 			AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix,
-			Matcher:       registryMatcher{},
+			Matcher:       dockercreds.RegistryMatcher{},
 		},
 	}
 }
 
 type pullSecretKeychain struct {
-	imageRef      ImageRef
-	secretManager *secret.SecretManager
+	imageRef      registry.ImageRef
+	secretManager *SecretManager
 }
 
 func (k *pullSecretKeychain) Resolve(registry name.Registry) (authn.Authenticator, error) {
@@ -36,12 +34,12 @@ func (k *pullSecretKeychain) Resolve(registry name.Registry) (authn.Authenticato
 	if err != nil {
 		return nil, err
 	}
-	return auth(base64Auth), nil
+	return dockercreds.Auth(base64Auth), nil
 }
 
 type serviceAccountKeychain struct {
-	imageRef      ImageRef
-	secretManager *secret.SecretManager
+	imageRef      registry.ImageRef
+	secretManager *SecretManager
 }
 
 func (k *serviceAccountKeychain) Resolve(reg name.Registry) (authn.Authenticator, error) {
@@ -50,16 +48,10 @@ func (k *serviceAccountKeychain) Resolve(reg name.Registry) (authn.Authenticator
 		return nil, err
 	}
 
-	return auth(toBase64(fmt.Sprintf("%s:%s", creds.Username, creds.Password))), nil
+	return &authn.Basic{Username: creds.Username, Password: creds.Password}, nil
 }
 
-type auth string
-
-func (a auth) Authorization() (string, error) {
-	return "Basic " + string(a), nil
-}
-
-func (f *SecretKeychainFactory) KeychainForImageRef(ref ImageRef) authn.Keychain {
+func (f *SecretKeychainFactory) KeychainForImageRef(ref registry.ImageRef) authn.Keychain {
 	if !ref.HasSecret() {
 		return &anonymousKeychain{}
 	}
@@ -74,8 +66,4 @@ type anonymousKeychain struct {
 
 func (anonymousKeychain) Resolve(name.Registry) (authn.Authenticator, error) {
 	return authn.Anonymous, nil
-}
-
-func toBase64(s string) []byte {
-	return []byte(base64.StdEncoding.EncodeToString([]byte(s)))
 }
