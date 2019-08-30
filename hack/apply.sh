@@ -9,6 +9,8 @@ fi
 
 source hack/common.sh
 
+set -e
+
 docker_repo=$1
 controller_image=${docker_repo}/controller
 build_init_image=${docker_repo}/build-init

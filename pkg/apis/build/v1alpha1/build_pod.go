@@ -111,6 +111,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					Name:            "nop",
 					Image:           config.NopImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
+					Resources: b.Spec.Resources,
 				},
 			},
 			InitContainers: []corev1.Container{
@@ -165,7 +166,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 						},
 						homeEnv,
 					},
-					Resources: b.Spec.Resources,
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      layersDirName,
@@ -182,7 +182,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "detect",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/detector"},
 					Args: []string{
 						"-app=/workspace",
@@ -199,7 +198,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "restore",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/restorer"},
 					Args: []string{
 						"-group=/layers/group.toml",
@@ -215,7 +213,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "analyze",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/analyzer"},
 					Args: []string{
 						"-layers=/layers",
@@ -237,7 +234,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "build",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/builder"},
 					Args: []string{
 						"-layers=/layers",
@@ -255,7 +251,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "export",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/exporter"},
 					Args:      buildExporterArgs(b),
 					VolumeMounts: []corev1.VolumeMount{
@@ -271,7 +266,6 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				{
 					Name:      "cache",
 					Image:     builderImage,
-					Resources: b.Spec.Resources,
 					Command:   []string{"/lifecycle/cacher"},
 					Args: []string{
 						"-group=/layers/group.toml",

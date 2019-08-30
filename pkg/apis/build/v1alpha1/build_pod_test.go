@@ -428,16 +428,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}))
 		})
 
-		it("configures the builder image and resources in all lifecycle steps", func() {
+		it("configures the builder image in all lifecycle steps", func() {
 			pod, err := build.BuildPod(config, secrets, imageRef)
 			require.NoError(t, err)
 
 			for _, container := range pod.Spec.InitContainers {
 				if container.Name != "creds-init" && container.Name != "source-init" && container.Name != "prepare" {
 					assert.Equal(t, builderImage, container.Image, fmt.Sprintf("image on container '%s'", container.Name))
-					assert.Equal(t, resources, container.Resources, fmt.Sprintf("resources on container '%s'", container.Name))
 				}
 			}
+		})
+
+		it("configures the nop container with resources", func() {
+			pod, err := build.BuildPod(config, secrets, imageRef)
+			require.NoError(t, err)
+
+			nopContainer := pod.Spec.Containers[0]
+			assert.Equal(t, resources, nopContainer.Resources)
 		})
 
 		it("creates a pod with reusable cache when name is provided", func() {
