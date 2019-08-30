@@ -196,12 +196,8 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	require.Len(t, podList.Items, 1)
 	pod := podList.Items[0]
 
-	for i, container := range pod.Spec.InitContainers {
-		if i < 2 {
-			continue // skip the non-build containers
-		}
-		assert.Equal(t, expectedResources, container.Resources)
-	}
+	require.Equal(t, 1, len(pod.Spec.Containers))
+	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
 }
 
 func imageExists(t *testing.T, name string) func() bool {
