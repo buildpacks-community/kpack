@@ -33,21 +33,36 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
       - name: builder-secret
     ```
 
-2. Create a secret for push access to the desired docker registry. The example below is for a registry on gcr.
-    ```yaml
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: basic-docker-user-pass
-      annotations:
-        build.pivotal.io/docker: gcr.io
-    type: kubernetes.io/basic-auth
-    stringData:
-      username: <username>
-      password: <password>
-    ```
+1. Create a secret for push access to the desired docker registry.
+   1. GCR example
+      ```yaml
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: basic-docker-user-pass
+        annotations:
+          build.pivotal.io/docker: gcr.io
+      type: kubernetes.io/basic-auth
+      stringData:
+        username: <username>
+        password: <password>
+      ```
 
-3. Create a secret for pull access from the desired git repository. The example below is for a github repository.
+    1. Docker Hub example
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: basic-docker-user-pass
+          annotations:
+            build.pivotal.io/docker: index.docker.io
+        type: kubernetes.io/basic-auth
+        stringData:
+          username: <username>
+          password: <password>
+        ```
+
+1. Create a secret for pull access from the desired git repository. The example below is for a github repository.
     ```yaml
     apiVersion: v1
     kind: Secret
@@ -61,7 +76,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
       password: <password>
     ```
 
-4. Create a service account that uses the docker registry secret and the git repository secret.
+1. Create a service account that uses the docker registry secret and the git repository secret.
     ```yaml
     apiVersion: v1
     kind: ServiceAccount
@@ -141,7 +156,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
     kubectl get cnbbuilds # before the first builds completes you will see a unknown (building) status
     ---------------
     NAME                          SHA   SUCCEEDED
-    test-image-build-1-ea3e6fa9         Unknown  
+    sample-image-build-1-ea3e6fa9         Unknown  
 
     ```
 
