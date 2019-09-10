@@ -193,7 +193,6 @@ kubectl cluster-info # ensure you have access to a cluster
 
 If generation of code is needed you should run the following commands:
 ```bash
-go mod vendor # Need a location to load the code generator tool from
 ./hack/update-codegen.sh
 ```
 

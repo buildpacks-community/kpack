@@ -5,10 +5,10 @@ go 1.12
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.0.0-20190211065954-c06c82c832ed // indirect
-	github.com/Azure/go-autorest/autorest v0.9.1 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
+	github.com/Azure/go-autorest v0.0.0-00010101000000-000000000000 // indirect
 	github.com/buildpack/imgutil v0.0.0-20190726132853-1f31ed20483a
 	github.com/buildpack/lifecycle v0.3.0
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/google/btree v1.0.0 // indirect
@@ -39,11 +39,13 @@ require (
 	k8s.io/api v0.0.0-20190831074750-7364b6bdad65
 	k8s.io/apimachinery v0.0.0-20190831074630-461753078381
 	k8s.io/client-go v0.0.0-20190831074946-3fe2abece89e
+	k8s.io/code-generator v0.0.0-20190831074504-732c9ca86353 // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 )
 
 replace (
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.0.0-20190211065954-c06c82c832ed
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v10.14.0+incompatible
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.1.0
 	github.com/knative/pkg => github.com/knative/pkg v0.0.0-20190624141606-d82505e6c5b4
 	go.opencensus.io => go.opencensus.io v0.20.2
