@@ -13,6 +13,7 @@ import (
 const (
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
+	BuildLabel                   = "build.pivotal.io/build"
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
 
@@ -97,8 +98,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 		ObjectMeta: v1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace(),
-			Labels:    b.Labels,
-
+			Labels: b.labels(map[string]string{
+				BuildLabel: b.Name,
+			}),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
@@ -111,7 +113,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					Name:            "nop",
 					Image:           config.NopImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					Resources: b.Spec.Resources,
+					Resources:       b.Spec.Resources,
 				},
 			},
 			InitContainers: []corev1.Container{
@@ -180,9 +182,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "detect",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/detector"},
+					Name:    "detect",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/detector"},
 					Args: []string{
 						"-app=/workspace",
 						"-group=/layers/group.toml",
@@ -196,9 +198,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "restore",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/restorer"},
+					Name:    "restore",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/restorer"},
 					Args: []string{
 						"-group=/layers/group.toml",
 						"-layers=/layers",
@@ -211,9 +213,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "analyze",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/analyzer"},
+					Name:    "analyze",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/analyzer"},
 					Args: []string{
 						"-layers=/layers",
 						"-helpers=false",
@@ -232,9 +234,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "build",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/builder"},
+					Name:    "build",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/builder"},
 					Args: []string{
 						"-layers=/layers",
 						"-app=/workspace",
@@ -249,10 +251,10 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "export",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/exporter"},
-					Args:      buildExporterArgs(b),
+					Name:    "export",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/exporter"},
+					Args:    buildExporterArgs(b),
 					VolumeMounts: []corev1.VolumeMount{
 						layersVolume,
 						workspaceVolume,
@@ -264,9 +266,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 				{
-					Name:      "cache",
-					Image:     builderImage,
-					Command:   []string{"/lifecycle/cacher"},
+					Name:    "cache",
+					Image:   builderImage,
+					Command: []string{"/lifecycle/cacher"},
 					Args: []string{
 						"-group=/layers/group.toml",
 						"-layers=/layers",
@@ -384,4 +386,16 @@ func (b *Build) setupVolumes() []corev1.Volume {
 	}
 
 	return append(volumes, b.ImagePullSecretsVolume())
+}
+
+func (b *Build) labels(additionalLabels map[string]string) map[string]string {
+	labels := make(map[string]string, len(additionalLabels)+len(b.Labels))
+
+	for k, v := range b.Labels {
+		labels[k] = v
+	}
+	for k, v := range additionalLabels {
+		labels[k] = v
+	}
+	return labels
 }
