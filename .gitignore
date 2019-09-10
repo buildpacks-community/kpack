@@ -10,3 +10,4 @@ bazel-*
 *.out
 coverage.txt
 
+vendor
