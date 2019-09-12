@@ -110,7 +110,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("BuildPod", func() {
-		it("creates a pod with a builder owner reference", func() {
+		it("creates a pod with a builder owner reference and build label", func() {
 			pod, err := build.BuildPod(config, secrets, imageRef)
 			require.NoError(t, err)
 
@@ -119,6 +119,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Namespace: namespace,
 				Labels: map[string]string{
 					"some/label": "to-pass-through",
+					"build.pivotal.io/build": buildName,
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					*kmeta.NewControllerRef(build),
