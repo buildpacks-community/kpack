@@ -7,7 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder *Builder) (BuildApplier, error) {
+func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder AbstractBuilder) (BuildApplier, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
 		return nil, err

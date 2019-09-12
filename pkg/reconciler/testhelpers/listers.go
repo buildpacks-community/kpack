@@ -62,6 +62,10 @@ func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {
 	return v1alpha1Listers.NewBuilderLister(l.indexerFor(&v1alpha1.Builder{}))
 }
 
+func (l *Listers) GetClusterBuilderLister() v1alpha1Listers.ClusterBuilderLister {
+	return v1alpha1Listers.NewClusterBuilderLister(l.indexerFor(&v1alpha1.ClusterBuilder{}))
+}
+
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {
 	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha1.SourceResolver{}))
 }

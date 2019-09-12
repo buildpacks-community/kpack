@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // +genclient
@@ -37,7 +38,7 @@ type Image struct {
 
 type ImageSpec struct {
 	Tag                      string               `json:"tag"`
-	BuilderRef               string               `json:"builderRef"`
+	Builder                  ImageBuilder         `json:"builder"`
 	ServiceAccount           string               `json:"serviceAccount"`
 	Source                   SourceConfig         `json:"source"`
 	CacheSize                *resource.Quantity   `json:"cacheSize,omitempty"`
@@ -45,6 +46,11 @@ type ImageSpec struct {
 	SuccessBuildHistoryLimit *int64               `json:"successBuildHistoryLimit"`
 	ImageTaggingStrategy     ImageTaggingStrategy `json:"imageTaggingStrategy"`
 	Build                    ImageBuild           `json:"build"`
+}
+
+type ImageBuilder struct {
+	metav1.TypeMeta `json:",inline"`
+	Name            string `json:"name"`
 }
 
 type ImageTaggingStrategy string
@@ -78,4 +84,8 @@ type ImageList struct {
 
 func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Image")
+}
+
+func (i *Image) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: i.Namespace, Name: i.Name}
 }

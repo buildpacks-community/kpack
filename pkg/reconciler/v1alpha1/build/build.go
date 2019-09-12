@@ -37,14 +37,13 @@ type PodGenerator interface {
 	Generate(*v1alpha1.Build) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, builderInformer v1alpha1informer.BuilderInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
 		MetadataRetriever: metadataRetriever,
 		Lister:            informer.Lister(),
 		PodLister:         podInformer.Lister(),
-		BuilderLister:     builderInformer.Lister(),
 		PodGenerator:      podGenerator,
 	}
 
@@ -65,7 +64,6 @@ type Reconciler struct {
 	Lister            v1alpha1lister.BuildLister
 	MetadataRetriever MetadataRetriever
 	K8sClient         k8sclient.Interface
-	BuilderLister     v1alpha1lister.BuilderLister
 	PodLister         v1Listers.PodLister
 	PodGenerator      PodGenerator
 }

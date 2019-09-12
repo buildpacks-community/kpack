@@ -118,7 +118,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Name:      build.PodName(),
 				Namespace: namespace,
 				Labels: map[string]string{
-					"some/label": "to-pass-through",
+					"some/label":             "to-pass-through",
 					"build.pivotal.io/build": buildName,
 				},
 				OwnerReferences: []metav1.OwnerReference{

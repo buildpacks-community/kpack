@@ -53,6 +53,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ImageList{},
 		&Builder{},
 		&BuilderList{},
+		&ClusterBuilder{},
+		&ClusterBuilderList{},
 		&SourceResolver{},
 		&SourceResolverList{},
 	)

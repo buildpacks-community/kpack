@@ -17,7 +17,7 @@ func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {
 			Type:    duckv1alpha1.ConditionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  BuilderNotFound,
-			Message: fmt.Sprintf("Unable to find builder %s.", im.Spec.BuilderRef),
+			Message: fmt.Sprintf("Unable to find builder %s.", im.Spec.Builder.Name),
 		},
 	}
 }

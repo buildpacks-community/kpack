@@ -12,6 +12,8 @@ rules:
   - images/status
   - builders
   - builders/status
+  - clusterbuilders
+  - clusterbuilders/status
   - sourceresolvers
   - sourceresolvers/status
   verbs:

@@ -69,7 +69,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				PodLister:         listers.GetPodLister(),
 				MetadataRetriever: fakeMetadataRetriever,
 				PodGenerator:      podGenerator,
-				BuilderLister:     listers.GetBuilderLister(),
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -82,7 +81,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name:      builderName,
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.BuilderSpec{
+		Spec: v1alpha1.BuilderWithSecretsSpec{
 			ImagePullSecrets: []corev1.LocalObjectReference{
 				{Name: "some-image-secret"},
 			},
@@ -112,7 +111,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
-			Builder:        *builder.ImageRef(),
+			Builder:        builder.ImageRef(),
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},

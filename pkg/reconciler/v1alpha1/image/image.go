@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/tracker"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -22,6 +23,7 @@ import (
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/tracker"
 )
 
 const (
@@ -30,11 +32,17 @@ const (
 	buildHistoryDefaultLimit = 10
 )
 
+type Tracker interface {
+	Track(ref metav1.ObjectMetaAccessor, obj types.NamespacedName) error
+	OnChanged(obj interface{})
+}
+
 func NewController(opt reconciler.Options,
 	k8sClient k8sclient.Interface,
 	imageInformer v1alpha1informers.ImageInformer,
 	buildInformer v1alpha1informers.BuildInformer,
 	builderInformer v1alpha1informers.BuilderInformer,
+	clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer,
 	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
 	pvcInformer coreinformers.PersistentVolumeClaimInformer) *controller.Impl {
 	c := &Reconciler{
@@ -43,6 +51,7 @@ func NewController(opt reconciler.Options,
 		ImageLister:          imageInformer.Lister(),
 		BuildLister:          buildInformer.Lister(),
 		BuilderLister:        builderInformer.Lister(),
+		ClusterBuilderLister: clusterBuilderInformer.Lister(),
 		SourceResolverLister: sourceResolverInformer.Lister(),
 		PvcLister:            pvcInformer.Lister(),
 	}
@@ -73,6 +82,11 @@ func NewController(opt reconciler.Options,
 		(&v1alpha1.Builder{}).GetGroupVersionKind(),
 	)))
 
+	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(controller.EnsureTypeMeta(
+		c.Tracker.OnChanged,
+		(&v1alpha1.ClusterBuilder{}).GetGroupVersionKind(),
+	)))
+
 	return impl
 }
 
@@ -81,9 +95,10 @@ type Reconciler struct {
 	ImageLister          v1alpha1Listers.ImageLister
 	BuildLister          v1alpha1Listers.BuildLister
 	BuilderLister        v1alpha1Listers.BuilderLister
+	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
 	SourceResolverLister v1alpha1Listers.SourceResolverLister
 	PvcLister            corelisters.PersistentVolumeClaimLister
-	Tracker              tracker.Interface
+	Tracker              Tracker
 	K8sClient            k8sclient.Interface
 }
 
@@ -94,7 +109,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	image, err := c.ImageLister.Images(namespace).Get(imageName)
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("failed attempting to fetch image with name %s: %s", imageName, err)
@@ -109,16 +124,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, error) {
-	builder, err := c.BuilderLister.Builders(image.Namespace).Get(image.Spec.BuilderRef)
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, err
-	} else if errors.IsNotFound(err) {
+	builder, err := c.getBuilder(image)
+	if k8serrors.IsNotFound(err) {
 		image.Status.Conditions = image.BuilderNotFound()
 		image.Status.ObservedGeneration = image.Generation
 		return image, nil
 	}
 
-	err = c.Tracker.Track(builder.Ref(), image)
+	err = c.Tracker.Track(builder, image.NamespacedName())
 	if err != nil {
 		return nil, err
 	}
@@ -161,16 +174,33 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 	return image, c.deleteOldBuilds(image)
 }
 
+func (c *Reconciler) getBuilder(image *v1alpha1.Image) (v1alpha1.AbstractBuilder, error) {
+	var builder v1alpha1.AbstractBuilder
+	var err error
+	if image.Spec.Builder.Kind == v1alpha1.ClusterBuilderKind {
+		builder, err = c.ClusterBuilderLister.Get(image.Spec.Builder.Name)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, errors.Wrap(err, "cannot retrieve cluster builder")
+		}
+	} else {
+		builder, err = c.BuilderLister.Builders(image.Namespace).Get(image.Spec.Builder.Name)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, errors.Wrap(err, "cannot retrieve namespaced builder")
+		}
+	}
+	return builder, err
+}
+
 func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.SourceResolver, error) {
 	desiredSourceResolver := image.SourceResolver()
 
 	sourceResolver, err := c.SourceResolverLister.SourceResolvers(image.Namespace).Get(image.SourceResolverName())
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, err
-	} else if errors.IsNotFound(err) {
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return nil, errors.Wrap(err, "cannot retrieve source resolver")
+	} else if k8serrors.IsNotFound(err) {
 		sourceResolver, err = c.Client.BuildV1alpha1().SourceResolvers(image.Namespace).Create(desiredSourceResolver)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "cannot create source resolver")
 		}
 	}
 
@@ -187,23 +217,23 @@ func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.S
 func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (string, error) {
 	if !image.NeedCache() {
 		buildCache, err := c.PvcLister.PersistentVolumeClaims(image.Namespace).Get(image.CacheName())
-		if err != nil && !errors.IsNotFound(err) {
-			return "", err
-		} else if errors.IsNotFound(err) {
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return "", errors.Wrap(err, "cannot retrieve persistent volume claim")
+		} else if k8serrors.IsNotFound(err) {
 			return "", nil
 		}
 
-		return "", c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Delete(image.CacheName(), &v1.DeleteOptions{
-			Preconditions: &v1.Preconditions{UID: &buildCache.UID},
+		return "", c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Delete(image.CacheName(), &metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &buildCache.UID},
 		})
 	}
 
 	desiredBuildCache := image.BuildCache()
 
 	buildCache, err := c.PvcLister.PersistentVolumeClaims(image.Namespace).Get(image.CacheName())
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return "", fmt.Errorf("failed to get image cache: %s", err)
-	} else if errors.IsNotFound(err) {
+	} else if k8serrors.IsNotFound(err) {
 		buildCache, err = c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Create(desiredBuildCache)
 		if err != nil {
 			return "", fmt.Errorf("failed creating image cache for build: %s", err)
@@ -218,7 +248,7 @@ func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (string, error) 
 	existing.Spec.Resources = desiredBuildCache.Spec.Resources
 	existing.ObjectMeta.Labels = desiredBuildCache.ObjectMeta.Labels
 	_, err = c.K8sClient.CoreV1().PersistentVolumeClaims(image.Namespace).Update(existing)
-	return existing.Name, err
+	return existing.Name, errors.Wrap(err, "cannot update persistent volume claim")
 }
 
 func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
@@ -230,7 +260,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	if builds.NumberFailedBuilds() > limitOrDefault(image.Spec.FailedBuildHistoryLimit, buildHistoryDefaultLimit) {
 		oldestFailedBuild := builds.OldestFailure()
 
-		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &v1.DeleteOptions{})
+		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting failed build: %s", err)
 		}
@@ -239,7 +269,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	if builds.NumberSuccessfulBuilds() > limitOrDefault(image.Spec.SuccessBuildHistoryLimit, buildHistoryDefaultLimit) {
 		oldestSuccess := builds.OldestSuccess()
 
-		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &v1.DeleteOptions{})
+		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting successful build: %s", err)
 		}

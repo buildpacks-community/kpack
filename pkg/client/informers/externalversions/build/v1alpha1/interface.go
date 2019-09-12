@@ -28,6 +28,8 @@ type Interface interface {
 	Builds() BuildInformer
 	// Builders returns a BuilderInformer.
 	Builders() BuilderInformer
+	// ClusterBuilders returns a ClusterBuilderInformer.
+	ClusterBuilders() ClusterBuilderInformer
 	// Images returns a ImageInformer.
 	Images() ImageInformer
 	// SourceResolvers returns a SourceResolverInformer.
@@ -53,6 +55,11 @@ func (v *version) Builds() BuildInformer {
 // Builders returns a BuilderInformer.
 func (v *version) Builders() BuilderInformer {
 	return &builderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterBuilders returns a ClusterBuilderInformer.
+func (v *version) ClusterBuilders() ClusterBuilderInformer {
+	return &clusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Images returns a ImageInformer.

@@ -36,6 +36,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		testNamespace      = "test"
 		dockerSecret       = "docker-secret"
 		builderName        = "build-service-builder"
+		clusterBuilderName = "cluster-build-service-builder"
 		serviceAccountName = "image-service-account"
 		builderImage       = "cloudfoundry/cnb:bionic"
 	)
@@ -46,6 +47,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		var err error
 		clients, err = newClients(t)
 		require.NoError(t, err)
+
+		err = clients.client.BuildV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
+		require.True(t, err == nil || errors.IsNotFound(err))
 
 		err = clients.k8sClient.CoreV1().Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
 		require.True(t, err == nil || errors.IsNotFound(err))
@@ -108,12 +112,25 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
+			_, err = clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: builderName,
+					Name:      clusterBuilderName,
+					Namespace: testNamespace,
 				},
 				Spec: v1alpha1.BuilderSpec{
 					Image: builderImage,
+				},
+			})
+			require.NoError(t, err)
+
+			_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      builderName,
+					Namespace: testNamespace,
+				},
+				Spec: v1alpha1.BuilderWithSecretsSpec{
+					BuilderSpec:      v1alpha1.BuilderSpec{Image: builderImage},
+					ImagePullSecrets: nil,
 				},
 			})
 			require.NoError(t, err)
@@ -148,6 +165,30 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
+			imageBuilders := map[string]v1alpha1.ImageBuilder{
+				"test-git-image": {
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.ClusterBuilderKind,
+						APIVersion: "build.pivotal.io/v1alpha1",
+					},
+					Name: clusterBuilderName,
+				},
+				"test-registry-image": {
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.BuilderKind,
+						APIVersion: "build.pivotal.io/v1alpha1",
+					},
+					Name: builderName,
+				},
+				"test-blob-image": {
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.ClusterBuilderKind,
+						APIVersion: "build.pivotal.io/v1alpha1",
+					},
+					Name: clusterBuilderName,
+				},
+			}
+
 			for imageName, imageSource := range imageConfigs {
 				imageTag := cfg.newImageTag()
 				_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
@@ -156,7 +197,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					},
 					Spec: v1alpha1.ImageSpec{
 						Tag:                  imageTag,
-						BuilderRef:           builderName,
+						Builder:              imageBuilders[imageName],
 						ServiceAccount:       serviceAccountName,
 						Source:               imageSource,
 						CacheSize:            &cacheSize,

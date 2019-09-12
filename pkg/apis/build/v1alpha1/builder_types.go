@@ -7,20 +7,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const BuilderKind = "Builder"
+
 // +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
 type Builder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BuilderSpec   `json:"spec"`
-	Status BuilderStatus `json:"status"`
+	Spec   BuilderWithSecretsSpec `json:"spec"`
+	Status BuilderStatus          `json:"status"`
 }
 
 type BuilderSpec struct {
-	Image            string                    `json:"image"`
-	UpdatePolicy     BuilderUpdatePolicy       `json:"updatePolicy"`
+	Image        string              `json:"image"`
+	UpdatePolicy BuilderUpdatePolicy `json:"updatePolicy"`
+}
+
+type BuilderWithSecretsSpec struct {
+	BuilderSpec      `json:",inline"`
 	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
@@ -47,16 +53,5 @@ type BuilderList struct {
 }
 
 func (*Builder) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Builder")
-}
-
-func (b *Builder) Ref() v1.ObjectReference {
-
-	gvk := b.GetGroupVersionKind()
-	return v1.ObjectReference{
-		APIVersion: gvk.GroupVersion().String(),
-		Kind:       gvk.Kind,
-		Namespace:  b.Namespace(),
-		Name:       b.Name,
-	}
+	return SchemeGroupVersion.WithKind(BuilderKind)
 }

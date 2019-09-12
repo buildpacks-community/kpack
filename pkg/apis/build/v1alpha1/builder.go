@@ -9,8 +9,8 @@ func (b *Builder) Ready() bool {
 		(b.Generation == b.Status.ObservedGeneration)
 }
 
-func (b *Builder) ImageRef() *BuilderImage {
-	return &BuilderImage{
+func (b *Builder) ImageRef() BuilderImage {
+	return BuilderImage{
 		Image:            b.Status.LatestImage,
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}
@@ -37,4 +37,8 @@ func (b *Builder) Tag() string {
 
 func (b *Builder) HasSecret() bool {
 	return len(b.Spec.ImagePullSecrets) > 0
+}
+
+func (b *Builder) BuildpackMetadata() BuildpackMetadataList {
+	return b.Status.BuilderMetadata
 }

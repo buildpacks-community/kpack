@@ -29,6 +29,7 @@ type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	BuildsGetter
 	BuildersGetter
+	ClusterBuildersGetter
 	ImagesGetter
 	SourceResolversGetter
 }
@@ -44,6 +45,10 @@ func (c *BuildV1alpha1Client) Builds(namespace string) BuildInterface {
 
 func (c *BuildV1alpha1Client) Builders(namespace string) BuilderInterface {
 	return newBuilders(c, namespace)
+}
+
+func (c *BuildV1alpha1Client) ClusterBuilders() ClusterBuilderInterface {
+	return newClusterBuilders(c)
 }
 
 func (c *BuildV1alpha1Client) Images(namespace string) ImageInterface {
