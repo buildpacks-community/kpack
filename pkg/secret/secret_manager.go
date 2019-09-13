@@ -17,9 +17,7 @@ type SecretManager struct {
 	Matcher       Matcher
 }
 
-type Matcher interface {
-	Match(url, annotatedUrl string) bool
-}
+type Matcher func(url, annotatedUrl string) bool
 
 func (m *SecretManager) SecretForServiceAccountAndURL(serviceAccount, namespace string, url string) (*URLAndUser, error) {
 	sa, err := m.Client.CoreV1().ServiceAccounts(namespace).Get(serviceAccount, meta_v1.GetOptions{})
@@ -43,7 +41,7 @@ func (m *SecretManager) secretForServiceAccount(account *v1.ServiceAccount, url 
 			return nil, err
 		}
 
-		if m.Matcher.Match(url, secret.ObjectMeta.Annotations[m.AnnotationKey]) {
+		if m.Matcher(url, secret.ObjectMeta.Annotations[m.AnnotationKey]) {
 			return secret, nil
 		}
 
@@ -81,7 +79,7 @@ func (m *SecretManager) SecretForImagePull(namespace, secretName, registryName s
 	}
 
 	for registry, registryAuth := range config.Auths {
-		if m.Matcher.Match(registryName, registry) {
+		if m.Matcher(registryName, registry) {
 			return registryAuth.Auth, nil
 		}
 	}

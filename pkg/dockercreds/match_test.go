@@ -12,7 +12,7 @@ func TestMatch(t *testing.T) {
 }
 
 func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
-	when("#Match", func() {
+	when("#RegistryMatch", func() {
 		for _, regFormat := range []string{
 			// Allow naked domains
 			"reg.io",
@@ -26,17 +26,17 @@ func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 			"http://reg.io/v2/",
 		} {
 			it("matches format "+regFormat, func() {
-				assert.True(t, RegistryMatcher{}.Match("reg.io", regFormat))
+				assert.True(t, RegistryMatch("reg.io", regFormat))
 			})
 
 			it("does not match other registries with "+regFormat, func() {
-				assert.False(t, RegistryMatcher{}.Match("gcr.io", regFormat))
+				assert.False(t, RegistryMatch("gcr.io", regFormat))
 			})
 		}
 
 		it("matches on dockerhub references", func() {
-			assert.True(t, RegistryMatcher{}.Match("index.docker.io", "http://index.docker.io"))
-			assert.True(t, RegistryMatcher{}.Match("index.docker.io", "index.docker.io"))
+			assert.True(t, RegistryMatch("index.docker.io", "http://index.docker.io"))
+			assert.True(t, RegistryMatch("index.docker.io", "index.docker.io"))
 		})
 	})
 }

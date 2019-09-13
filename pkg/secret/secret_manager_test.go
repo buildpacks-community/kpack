@@ -27,7 +27,7 @@ func testSecretManager(t *testing.T, when spec.G, it spec.S) {
 
 		subject = secret.SecretManager{
 			Client:  fakeClient,
-			Matcher: fakeMatcher{},
+			Matcher: fakeMatch,
 		}
 	)
 
@@ -100,9 +100,6 @@ func testSecretManager(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-type fakeMatcher struct {
-}
-
-func (fakeMatcher) Match(url, annotatedUrl string) bool {
+func fakeMatch(url, annotatedUrl string) bool {
 	return strings.Contains(annotatedUrl, url)
 }

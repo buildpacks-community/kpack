@@ -19,7 +19,7 @@ func NewSecretKeychainFactory(client k8sclient.Interface) *SecretKeychainFactory
 		secretManager: &SecretManager{
 			Client:        client,
 			AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix,
-			Matcher:       dockercreds.RegistryMatcher{},
+			Matcher:       dockercreds.RegistryMatch,
 		},
 	}
 }

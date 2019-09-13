@@ -14,10 +14,8 @@ import (
 type DockerCreds map[string]entry
 
 func (c DockerCreds) Resolve(reg name.Registry) (authn.Authenticator, error) {
-	registryMatcher := RegistryMatcher{}
-
 	for registry, entry := range c {
-		if registryMatcher.Match(reg.RegistryStr(), registry) {
+		if RegistryMatch(reg.RegistryStr(), registry) {
 			if entry.Auth != "" {
 				return Auth(entry.Auth), nil
 			} else if entry.Username != "" {
@@ -82,7 +80,7 @@ func (c DockerCreds) contains(reg string) (bool, error) {
 	}
 
 	for existingRegistry := range c {
-		if (RegistryMatcher{}.Match(u.Host, existingRegistry)) {
+		if RegistryMatch(u.Host, existingRegistry) {
 			return true, nil
 		}
 	}
