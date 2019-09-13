@@ -128,6 +128,34 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
 		})
+
+		it("does not overwrite registries if they already exist in a different format", func() {
+			expectedConfigJsonContents := `{
+  "auths": {
+    "https://gcr.io": {
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+      "username": "testdockerhub",
+      "password": "testdockerhubusername"
+    }
+  }
+}`
+			err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, "config.json"), []byte(expectedConfigJsonContents), os.ModePerm)
+			require.NoError(t, err)
+
+			credsToAppend := DockerCreds{
+				"gcr.io": entry{
+					Auth: "newCreds=",
+				},
+			}
+
+			err = credsToAppend.AppendToDockerConfig(filepath.Join(testPullSecretsDir, "config.json"))
+			require.NoError(t, err)
+
+			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
+			require.NoError(t, err)
+
+			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
+		})
 	})
 
 	when("#Resolve", func() {

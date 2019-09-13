@@ -18,7 +18,7 @@ func ParseDockerPullSecrets(path string) (DockerCreds, error) {
 		return nil, err
 	}
 
-	return dockerCfg.append(dockerJson), nil
+	return dockerCfg.append(dockerJson)
 }
 
 func parseDockerCfg(path string) (DockerCreds, error) {
@@ -44,7 +44,10 @@ func parseDockerCfg(path string) (DockerCreds, error) {
 }
 
 func parseDockerConfigJson(path string) (DockerCreds, error) {
-	var config dockerConfigJson
+	config := dockerConfigJson{
+		Auths: map[string]entry{},
+	}
+
 	configjsonExists, err := fileExists(path)
 	if err != nil {
 		return nil, err
