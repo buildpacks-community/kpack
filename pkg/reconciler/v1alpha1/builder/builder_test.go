@@ -1,12 +1,12 @@
 package builder_test
 
 import (
+	"errors"
 	"testing"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	rtesting "github.com/knative/pkg/reconciler/testing"
-	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,8 +67,9 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Namespace:  namespace,
 			Generation: initalGeneration,
 		},
-		Spec: v1alpha1.BuilderSpec{
-			Image: imageName,
+		Spec: v1alpha1.BuilderWithSecretsSpec{
+			BuilderSpec:      v1alpha1.BuilderSpec{Image: imageName},
+			ImagePullSecrets: nil,
 		},
 	}
 
@@ -258,13 +259,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		it("does not return error on nonexistent builder", func() {
-			rt.Test(rtesting.TableRow{
-				Key:     key,
-				WantErr: false,
-			})
-		})
-
 		when("metadata is not available", func() {
 			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{}, errors.New("unavailable metadata"))
 
@@ -295,6 +289,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				assert.Zero(t, fakeEnqueuer.EnqueueCallCount())
+			})
+		})
+
+		it("does not return error on nonexistent builder", func() {
+			rt.Test(rtesting.TableRow{
+				Key:     key,
+				WantErr: false,
 			})
 		})
 	})

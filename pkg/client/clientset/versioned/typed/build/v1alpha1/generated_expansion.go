@@ -22,6 +22,8 @@ type BuildExpansion interface{}
 
 type BuilderExpansion interface{}
 
+type ClusterBuilderExpansion interface{}
+
 type ImageExpansion interface{}
 
 type SourceResolverExpansion interface{}

@@ -1,0 +1,7 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: ClusterBuilder
+metadata:
+  name: cluster-sample-builder
+spec:
+  image: cloudfoundry/cnb:bionic
+  updatePolicy: polling

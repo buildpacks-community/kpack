@@ -23,7 +23,14 @@ const (
 	BuildReasonBuildpack  = "BUILDPACK"
 )
 
-func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder *Builder) ([]string, bool) {
+type AbstractBuilder interface {
+	metav1.ObjectMetaAccessor
+	ImageRef() BuilderImage
+	Ready() bool
+	BuildpackMetadata() BuildpackMetadataList
+}
+
+func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder AbstractBuilder) ([]string, bool) {
 	if !sourceResolver.Ready() {
 		return []string{}, false
 	}
@@ -59,9 +66,9 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 	return reasons, len(reasons) > 0
 }
 
-func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
+func lastBuildBuiltWithBuilderBuildpacks(builder AbstractBuilder, build *Build) bool {
 	for _, bp := range build.Status.BuildMetadata {
-		if !builder.Status.BuilderMetadata.Include(bp) {
+		if !builder.BuildpackMetadata().Include(bp) {
 			return false
 		}
 	}
@@ -69,7 +76,7 @@ func lastBuildBuiltWithBuilderBuildpacks(builder *Builder, build *Build) bool {
 	return true
 }
 
-func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons []string, nextBuildNumber int64) *Build {
+func (im *Image) build(sourceResolver *SourceResolver, builder AbstractBuilder, reasons []string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -88,7 +95,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder *Builder, reasons
 		},
 		Spec: BuildSpec{
 			Tags:           im.generateTags(buildNumber),
-			Builder:        *builder.ImageRef(),
+			Builder:        builder.ImageRef(),
 			Env:            im.Spec.Build.Env,
 			Resources:      im.Spec.Build.Resources,
 			ServiceAccount: im.Spec.ServiceAccount,

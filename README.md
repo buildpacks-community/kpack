@@ -22,16 +22,30 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
 ### Creating an Image Resource
 
 1. Create a builder resource. This resource tracks a builder on registry and will rebuild images when the builder has updated buildpacks. 
-    ```yaml
-    apiVersion: build.pivotal.io/v1alpha1
-    kind: Builder
-    metadata:
-      name: sample-builder
-    spec:
-      image: cloudfoundry/cnb:bionic
-      imagePullSecrets: # optional, if not set builder must be public
-      - name: builder-secret
-    ```
+    Two types of builders can be created, Cluster Scoped Builders and Namespace Scoped Builders
+
+    1. Namespace scoped builders
+        ```yaml
+        apiVersion: build.pivotal.io/v1alpha1
+        kind: Builder
+        metadata:
+          name: sample-builder
+        spec:
+          image: cloudfoundry/cnb:bionic
+          # imagePullSecrets: # Use these secrets if credentials are needed to pull the builder
+          # - name: builder-secret
+        ```
+
+   1. Cluster Scoped Builders
+        ```yaml
+        apiVersion: build.pivotal.io/v1alpha1
+        kind: ClusterBuilder
+        metadata:
+          name: cluster-sample-builder
+        spec:
+          image: cloudfoundry/cnb:bionic
+        ```
+   **Note:** The Cluster Builder image need to be publicly accessible.
 
 1. Create a secret for push access to the desired docker registry.
    1. GCR example
@@ -99,7 +113,9 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
     spec:
       tag: gcr.io/project-name/app
       serviceAccount: service-account
-      builderRef: sample-builder
+      builder:
+        name: sample-builder
+        kind: Builder
       cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
       failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
       successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
@@ -130,7 +146,9 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
     spec:
       tag: gcr.io/project-name/app
       serviceAccount: service-account
-      builderRef: sample-builder
+      builder:
+        name: cluster-sample-builder
+        kind: ClusterBuilder
       cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
       failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
       successBuildHistoryLimit: 5 # Optional, if not present defaults to 10

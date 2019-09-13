@@ -4,7 +4,9 @@ metadata:
   name: sample
 spec:
   tag: sample/image-from-jar
-  builderRef: sample-builder
+  builder:
+    kind: ClusterBuilder
+    name: sample-builder
   serviceAccount: service-account
   source:
     blob:

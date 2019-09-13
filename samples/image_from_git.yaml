@@ -4,7 +4,9 @@ metadata:
   name: sample-1
 spec:
   tag: sample/image-from-git
-  builderRef: sample-builder
+    builder:
+      kind: ClusterBuilder
+      name: cluster-sample-builder
   serviceAccount: service-account
   source:
     git:
@@ -17,7 +19,9 @@ metadata:
   name: sample-2
 spec:
   tag: sample/image-from-git-specific-sha
-  builderRef: sample-builder
+    builder:
+      kind: Builder
+      name: sample-builder
   serviceAccount: service-account
   source:
     git:
@@ -30,7 +34,9 @@ metadata:
   name: sample-3
 spec:
   tag: sample/image-from-git-tag
-  builderRef: sample-builder
+    builder:
+      kind: ClusterBuilder
+      name: cluster-sample-builder
   serviceAccount: service-account
   source:
     git:

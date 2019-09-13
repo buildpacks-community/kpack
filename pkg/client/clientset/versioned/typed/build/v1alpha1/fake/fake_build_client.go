@@ -36,6 +36,10 @@ func (c *FakeBuildV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface
 	return &FakeBuilders{c, namespace}
 }
 
+func (c *FakeBuildV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
+	return &FakeClusterBuilders{c}
+}
+
 func (c *FakeBuildV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
 	return &FakeImages{c, namespace}
 }

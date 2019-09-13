@@ -25,7 +25,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Spec: ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
-			BuilderRef:     "builder-name",
+			Builder: ImageBuilder{
+				Name: "builder-name",
+			},
 			Build: ImageBuild{
 				Env: []v1.EnvVar{
 					{
@@ -59,8 +61,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "builder-name",
 		},
-		Spec: BuilderSpec{
-			Image: "some/builder",
+		Spec: BuilderWithSecretsSpec{
+			BuilderSpec:      BuilderSpec{Image: "some/builder"},
+			ImagePullSecrets: nil,
 		},
 		Status: BuilderStatus{
 			Status: duckv1alpha1.Status{
@@ -84,7 +87,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: BuildSpec{
 			Tags:           []string{"some/image"},
-			Builder:        *builder.ImageRef(),
+			Builder:        builder.ImageRef(),
 			ServiceAccount: "some/serviceaccount",
 			Env: []v1.EnvVar{
 				{

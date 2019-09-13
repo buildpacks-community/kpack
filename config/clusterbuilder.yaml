@@ -1,0 +1,16 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterbuilders.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: ClusterBuilder
+    singular: clusterbuilder
+    plural: clusterbuilders
+    shortNames:
+    - clstbldr
+  scope: Cluster
+  subresources:
+    status: {}

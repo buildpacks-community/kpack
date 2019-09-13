@@ -23,6 +23,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -78,6 +79,7 @@ func main() {
 	buildInformer := informerFactory.Build().V1alpha1().Builds()
 	imageInformer := informerFactory.Build().V1alpha1().Images()
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
+	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
@@ -104,9 +106,10 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	buildController := build.NewController(options, k8sClient, buildInformer, builderInformer, podInformer, metadataRetriever, buildpodGenerator)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, sourceResolverInformer, pvcInformer)
+	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
+	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 
 	stopChan := make(chan struct{})
@@ -116,6 +119,7 @@ func main() {
 	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, clusterBuilderInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, podInformer.Informer().HasSynced)
@@ -129,6 +133,9 @@ func main() {
 		},
 		func(done <-chan struct{}) error {
 			return builderController.Run(routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return clusterBuilderController.Run(routinesPerController, done)
 		},
 		func(done <-chan struct{}) error {
 			return sourceResolverController.Run(2*routinesPerController, done)
