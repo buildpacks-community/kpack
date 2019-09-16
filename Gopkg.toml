@@ -111,4 +111,4 @@ required = [
 
 [[override]]
   name = "github.com/Azure/go-autorest"
-  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+  version = "^13.0.1"
