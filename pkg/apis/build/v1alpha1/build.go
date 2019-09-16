@@ -35,7 +35,7 @@ func (b *Build) ServiceAccount() string {
 	return b.Spec.ServiceAccount
 }
 
-func (b *Build) Identifier() string {
+func (b *Build) Image() string {
 	return b.Tag()
 }
 

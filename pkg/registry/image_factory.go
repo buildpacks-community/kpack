@@ -11,7 +11,7 @@ type ImageFactory struct {
 }
 
 func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remoteImage, err := NewGoContainerRegistryImage(imageRef.Identifier(), f.KeychainFactory.KeychainForImageRef(imageRef))
+	remoteImage, err := NewGoContainerRegistryImage(imageRef.Image(), f.KeychainFactory.KeychainForImageRef(imageRef))
 	return remoteImage, err
 }
 
@@ -22,7 +22,7 @@ type KeychainFactory interface {
 type ImageRef interface {
 	ServiceAccount() string
 	Namespace() string
-	Identifier() string
+	Image() string
 	HasSecret() bool
 	SecretName() string
 }
@@ -39,7 +39,7 @@ func NewNoAuthImageRef(identifier string) *noAuthImageRef {
 	return &noAuthImageRef{identifier: identifier}
 }
 
-func (na *noAuthImageRef) Identifier() string {
+func (na *noAuthImageRef) Image() string {
 	return na.identifier
 }
 

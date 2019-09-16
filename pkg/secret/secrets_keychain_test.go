@@ -100,7 +100,7 @@ func (f *fakeImageRef) Namespace() string {
 	return f.namespace
 }
 
-func (f *fakeImageRef) Identifier() string {
+func (f *fakeImageRef) Image() string {
 	return "NOT-NEEDED"
 }
 
