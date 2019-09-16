@@ -122,8 +122,9 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconcile
 				ObservedGeneration: builder.Generation,
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionFalse,
+						Type:    duckv1alpha1.ConditionReady,
+						Status:  corev1.ConditionFalse,
+						Message: err.Error(),
 					},
 				},
 			},
@@ -131,7 +132,6 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) reconcile
 
 		return reconciledBuilderResult{
 			builder: builder,
-			err:     err,
 		}
 
 	}

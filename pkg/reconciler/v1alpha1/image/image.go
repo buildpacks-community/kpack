@@ -125,8 +125,16 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, error) {
 	builder, err := c.getBuilder(image)
-	if k8serrors.IsNotFound(err) {
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return nil, err
+	} else if k8serrors.IsNotFound(err) {
 		image.Status.Conditions = image.BuilderNotFound()
+		image.Status.ObservedGeneration = image.Generation
+		return image, nil
+	}
+
+	if !builder.Ready() {
+		image.Status.Conditions = image.BuilderNotReady()
 		image.Status.ObservedGeneration = image.Generation
 		return image, nil
 	}

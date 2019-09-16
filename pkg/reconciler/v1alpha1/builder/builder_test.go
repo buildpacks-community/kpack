@@ -266,7 +266,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key:     key,
 					Objects: []runtime.Object{builder},
-					WantErr: true,
+					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &v1alpha1.Builder{
@@ -277,8 +277,9 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: 1,
 										Conditions: duckv1alpha1.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
-												Status: corev1.ConditionFalse,
+												Type:    duckv1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Message: "unavailable metadata",
 											},
 										},
 									},
@@ -288,7 +289,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				assert.Zero(t, fakeEnqueuer.EnqueueCallCount())
+				assert.Equal(t, fakeEnqueuer.EnqueueCallCount(), 1)
 			})
 		})
 

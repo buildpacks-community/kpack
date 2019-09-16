@@ -114,8 +114,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 			_, err = clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      clusterBuilderName,
-					Namespace: testNamespace,
+					Name: clusterBuilderName,
 				},
 				Spec: v1alpha1.BuilderSpec{
 					Image: builderImage,
@@ -188,6 +187,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Name: clusterBuilderName,
 				},
 			}
+
+			time.Sleep(10 * time.Second)
 
 			for imageName, imageSource := range imageConfigs {
 				imageTag := cfg.newImageTag()

@@ -121,8 +121,9 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 				ObservedGeneration: builder.Generation,
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionFalse,
+						Type:    duckv1alpha1.ConditionReady,
+						Status:  corev1.ConditionFalse,
+						Message: err.Error(),
 					},
 				},
 			},
@@ -130,7 +131,6 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 
 		return reconciledClusterBuilderResult{
 			builder: builder,
-			err:     err,
 		}
 
 	}
