@@ -22,6 +22,7 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 			build:         im.build(resolver, builder, reasons, nextBuildNumber),
 			buildCounter:  nextBuildNumber,
 			latestImage:   latestImage,
+			builder:       builder,
 		}, nil
 	}
 
@@ -65,23 +66,12 @@ func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
 }
 
 func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
-	if !r.builder.Ready() {
-		return duckv1alpha1.Conditions{
-			{
-				Type:    duckv1alpha1.ConditionReady,
-				Status:  corev1.ConditionFalse,
-				Reason:  BuilderNotReady,
-				Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
-			},
-		}
-	}
-
 	if r.build == nil || r.build.Status.GetCondition(duckv1alpha1.ConditionSucceeded) == nil {
 		return duckv1alpha1.Conditions{
 			{
 				Type:   duckv1alpha1.ConditionReady,
 				Status: corev1.ConditionUnknown,
-			},
+			}, r.builderCondition(),
 		}
 	}
 
@@ -91,7 +81,22 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: condition.Status,
-		},
+		}, r.builderCondition(),
+	}
+}
+
+func (r upToDateBuild) builderCondition() duckv1alpha1.Condition {
+	if !r.builder.Ready() {
+		return duckv1alpha1.Condition{
+			Type:    ConditionBuilderReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  BuilderNotReady,
+			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
+		}
+	}
+	return duckv1alpha1.Condition{
+		Type:   ConditionBuilderReady,
+		Status: corev1.ConditionTrue,
 	}
 }
 
@@ -100,6 +105,7 @@ type newBuild struct {
 	buildCounter  int64
 	latestImage   string
 	previousBuild *Build
+	builder       AbstractBuilder
 }
 
 func (r newBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
@@ -117,6 +123,10 @@ func (r newBuild) conditions() duckv1alpha1.Conditions {
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: corev1.ConditionUnknown,
+		},
+		{
+			Type:   ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
 		},
 	}
 }
