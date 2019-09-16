@@ -89,3 +89,5 @@ func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
 func (i *Image) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: i.Namespace, Name: i.Name}
 }
+
+const ConditionBuilderReady duckv1alpha1.ConditionType = "BuilderReady"

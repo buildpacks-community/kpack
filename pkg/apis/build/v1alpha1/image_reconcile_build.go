@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strconv"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -24,7 +25,12 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 		}, nil
 	}
 
-	return upToDateBuild{build: latestBuild, buildCounter: currentBuildNumber, latestImage: latestImage}, nil
+	return upToDateBuild{
+		build:        latestBuild,
+		buildCounter: currentBuildNumber,
+		latestImage:  latestImage,
+		builder:      builder,
+	}, nil
 }
 
 type BuildCreator interface {
@@ -46,6 +52,7 @@ type upToDateBuild struct {
 	build        *Build
 	buildCounter int64
 	latestImage  string
+	builder      AbstractBuilder
 }
 
 func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
@@ -63,7 +70,7 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 			{
 				Type:   duckv1alpha1.ConditionReady,
 				Status: corev1.ConditionUnknown,
-			},
+			}, r.builderCondition(),
 		}
 	}
 
@@ -73,7 +80,22 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: condition.Status,
-		},
+		}, r.builderCondition(),
+	}
+}
+
+func (r upToDateBuild) builderCondition() duckv1alpha1.Condition {
+	if !r.builder.Ready() {
+		return duckv1alpha1.Condition{
+			Type:    ConditionBuilderReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  BuilderNotReady,
+			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
+		}
+	}
+	return duckv1alpha1.Condition{
+		Type:   ConditionBuilderReady,
+		Status: corev1.ConditionTrue,
 	}
 }
 
@@ -99,6 +121,10 @@ func (r newBuild) conditions() duckv1alpha1.Conditions {
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: corev1.ConditionUnknown,
+		},
+		{
+			Type:   ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
 		},
 	}
 }

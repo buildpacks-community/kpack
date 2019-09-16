@@ -105,7 +105,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		Status: v1alpha1.ImageStatus{
 			Status: duckv1alpha1.Status{
 				ObservedGeneration: originalGeneration,
-				Conditions:         conditionUnknown(),
+				Conditions:         conditionReadyUnknown(),
 			},
 		},
 	}
@@ -186,7 +186,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							Status: v1alpha1.ImageStatus{
 								Status: duckv1alpha1.Status{
 									ObservedGeneration: updatedGeneration,
-									Conditions:         conditionUnknown(),
+									Conditions:         conditionReadyUnknown(),
 								},
 							},
 						},
@@ -431,7 +431,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									BuildCacheName: image.CacheName(),
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 								},
 							},
@@ -591,7 +591,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 								},
 							},
@@ -623,6 +623,31 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						resolvedSourceResolver(image),
 					},
 					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: duckv1alpha1.Conditions{
+											{
+												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionUnknown,
+											},
+											{
+												Type:    v1alpha1.ConditionBuilderReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  v1alpha1.BuilderNotReady,
+												Message: "Builder builder-name is not ready",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				})
 			})
 
@@ -674,7 +699,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
 									BuildCounter:   1,
@@ -743,6 +768,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   duckv1alpha1.ConditionReady,
 												Status: corev1.ConditionUnknown,
+											},
+											{
+												Type:   v1alpha1.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
 											},
 										},
 									},
@@ -842,7 +871,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
@@ -951,7 +980,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
@@ -1086,7 +1115,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: duckv1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionUnknown(),
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
 									LatestImage:    image.Spec.Tag + "@sha256:just-built",
@@ -1193,6 +1222,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											Type:   duckv1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
+										{
+											Type:   v1alpha1.ConditionBuilderReady,
+											Status: corev1.ConditionTrue,
+										},
 									},
 								},
 							},
@@ -1292,6 +1325,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Conditions: duckv1alpha1.Conditions{
 											{
 												Type:   duckv1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   v1alpha1.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
 											},
 										},
@@ -1396,11 +1433,15 @@ func limit(limit int64) *int64 {
 	return &limit
 }
 
-func conditionUnknown() duckv1alpha1.Conditions {
+func conditionReadyUnknown() duckv1alpha1.Conditions {
 	return duckv1alpha1.Conditions{
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: corev1.ConditionUnknown,
+		},
+		{
+			Type:   v1alpha1.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
 		},
 	}
 }
@@ -1411,6 +1452,10 @@ func conditionReady() duckv1alpha1.Conditions {
 			Type:   duckv1alpha1.ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
+		{
+			Type:   v1alpha1.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
+		},
 	}
 }
 
@@ -1419,6 +1464,10 @@ func conditionNotReady() duckv1alpha1.Conditions {
 		{
 			Type:   duckv1alpha1.ConditionReady,
 			Status: corev1.ConditionFalse,
+		},
+		{
+			Type:   v1alpha1.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
 		},
 	}
 }

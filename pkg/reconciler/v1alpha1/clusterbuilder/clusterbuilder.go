@@ -74,29 +74,20 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	reconciledResult := c.reconcileClusterBuilderStatus(builder)
+	builder = c.reconcileClusterBuilderStatus(builder)
 
-	err = c.updateClusterBuilderStatus(reconciledResult.builder)
+	err = c.updateClusterBuilderStatus(builder)
 	if err != nil {
 		return err
 	}
 
-	if reconciledResult.reEnqueue() {
+	if builder.Spec.UpdatePolicy != v1alpha1.External {
 		err = c.Enqueuer.Enqueue(builder)
 		if err != nil {
 			return err
 		}
 	}
-	return reconciledResult.err
-}
-
-type reconciledClusterBuilderResult struct {
-	builder *v1alpha1.ClusterBuilder
-	err     error
-}
-
-func (r reconciledClusterBuilderResult) reEnqueue() bool {
-	return r.builder.Spec.UpdatePolicy != v1alpha1.External && r.err == nil
+	return nil
 }
 
 func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder) error {
@@ -113,7 +104,7 @@ func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder
 	return err
 }
 
-func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) reconciledClusterBuilderResult {
+func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) *v1alpha1.ClusterBuilder {
 	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
@@ -121,18 +112,14 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 				ObservedGeneration: builder.Generation,
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionFalse,
+						Type:    duckv1alpha1.ConditionReady,
+						Status:  corev1.ConditionFalse,
+						Message: err.Error(),
 					},
 				},
 			},
 		}
-
-		return reconciledClusterBuilderResult{
-			builder: builder,
-			err:     err,
-		}
-
+		return builder
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
@@ -149,9 +136,7 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 		LatestImage:     builderImage.Identifier,
 	}
 
-	return reconciledClusterBuilderResult{
-		builder: builder,
-	}
+	return builder
 }
 
 func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {

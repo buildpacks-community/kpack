@@ -9,6 +9,7 @@ import (
 
 const (
 	BuilderNotFound = "BuilderNotFound"
+	BuilderNotReady = "BuilderNotReady"
 )
 
 func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {
@@ -18,17 +19,6 @@ func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {
 			Status:  corev1.ConditionFalse,
 			Reason:  BuilderNotFound,
 			Message: fmt.Sprintf("Unable to find builder %s.", im.Spec.Builder.Name),
-		},
-	}
-}
-
-func (b *Build) BuilderNotFound() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
-		{
-			Type:    duckv1alpha1.ConditionSucceeded,
-			Status:  corev1.ConditionFalse,
-			Reason:  BuilderNotFound,
-			Message: fmt.Sprintf("Unable to find builder %s.", b.Spec.Builder.Image),
 		},
 	}
 }

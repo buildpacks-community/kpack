@@ -28,6 +28,7 @@ type AbstractBuilder interface {
 	ImageRef() BuilderImage
 	Ready() bool
 	BuildpackMetadata() BuildpackMetadataList
+	GetName() string
 }
 
 func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder AbstractBuilder) ([]string, bool) {
