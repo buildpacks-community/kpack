@@ -35,6 +35,10 @@ func (b *Build) ServiceAccount() string {
 	return b.Spec.ServiceAccount
 }
 
+func (b *Build) Identifier() string {
+	return b.Tag()
+}
+
 func (b *Build) Tag() string {
 	return b.Spec.Tags[0]
 }

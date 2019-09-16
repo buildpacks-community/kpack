@@ -3,10 +3,7 @@ package registry
 import (
 	"time"
 
-	"github.com/buildpack/imgutil"
-	"github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pkg/errors"
 )
 
 type ImageFactory struct {
@@ -14,8 +11,8 @@ type ImageFactory struct {
 }
 
 func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remote, err := remote.NewImage(imageRef.Tag(), f.KeychainFactory.KeychainForImageRef(imageRef), remote.FromBaseImage(imageRef.Tag()))
-	return remote, errors.Wrapf(err, "could not create remote image from ref %s", imageRef.Tag())
+	remoteImage, err := NewGoContainerRegistryImage(imageRef.Identifier(), f.KeychainFactory.KeychainForImageRef(imageRef))
+	return remoteImage, err
 }
 
 type KeychainFactory interface {
@@ -25,25 +22,25 @@ type KeychainFactory interface {
 type ImageRef interface {
 	ServiceAccount() string
 	Namespace() string
-	Tag() string
+	Identifier() string
 	HasSecret() bool
 	SecretName() string
 }
 
 type noAuthImageRef struct {
-	repoName string
+	identifier string
 }
 
 func (na *noAuthImageRef) SecretName() string {
 	return ""
 }
 
-func NewNoAuthImageRef(repoName string) *noAuthImageRef {
-	return &noAuthImageRef{repoName: repoName}
+func NewNoAuthImageRef(identifier string) *noAuthImageRef {
+	return &noAuthImageRef{identifier: identifier}
 }
 
-func (na *noAuthImageRef) Tag() string {
-	return na.repoName
+func (na *noAuthImageRef) Identifier() string {
+	return na.identifier
 }
 
 func (noAuthImageRef) ServiceAccount() string {
@@ -60,7 +57,7 @@ func (noAuthImageRef) Namespace() string {
 
 type RemoteImage interface {
 	CreatedAt() (time.Time, error)
-	Identifier() (imgutil.Identifier, error)
+	Identifier() (string, error)
 	Label(labelName string) (string, error)
 	Env(key string) (string, error)
 }

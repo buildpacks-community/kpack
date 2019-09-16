@@ -57,7 +57,7 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (Build
 
 	return BuilderImage{
 		BuilderBuildpackMetadata: metadata.Buildpacks,
-		Identifier:               identifier.String(),
+		Identifier:               identifier,
 	}, nil
 }
 
@@ -90,7 +90,7 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltIma
 	}
 
 	return BuiltImage{
-		Identifier:        identifier.String(),
+		Identifier:        identifier,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: metadata.Buildpacks,
 	}, nil

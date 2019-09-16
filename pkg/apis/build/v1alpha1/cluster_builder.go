@@ -12,7 +12,7 @@ func (in *ClusterBuilder) Namespace() string {
 	return ""
 }
 
-func (in *ClusterBuilder) Tag() string {
+func (in *ClusterBuilder) Identifier() string {
 	return in.Spec.Image
 }
 

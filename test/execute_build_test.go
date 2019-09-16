@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	imgremote "github.com/buildpack/imgutil/remote"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 func TestCreateImage(t *testing.T) {
@@ -225,7 +225,7 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	}()
 
 	t.Logf("Waiting for image '%s' to be created", imageTag)
-	eventually(t, imageExists(t, imageTag), 5*time.Second, 5*time.Minute)
+	eventually(t, imageExists(imageTag), 5*time.Second, 5*time.Minute)
 
 	assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", imageTag))
 
@@ -241,26 +241,15 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
 }
 
-func imageExists(t *testing.T, name string) func() bool {
+func imageExists(name string) func() bool {
 	return func() bool {
-		_, found := imageSha(t, name)
-		return found
+		_, err := registry.NewGoContainerRegistryImage(name, authn.DefaultKeychain)
+		if err != nil {
+			return false
+		}
+
+		return true
 	}
-}
-
-func imageSha(t *testing.T, name string) (string, bool) {
-	remoteImage, err := imgremote.NewImage(name, authn.DefaultKeychain)
-	require.NoError(t, err)
-
-	found := remoteImage.Found()
-	if !found {
-		return "", found
-	}
-
-	digest, err := remoteImage.Identifier()
-	require.NoError(t, err)
-
-	return digest.String(), found
 }
 
 func deleteImageTag(t *testing.T, deleteImageTag string) {

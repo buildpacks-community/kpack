@@ -3,9 +3,6 @@ package cnb_test
 import (
 	"testing"
 
-	"github.com/buildpack/imgutil/fakes"
-	"github.com/buildpack/imgutil/remote"
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,12 +24,8 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	when("RemoteMetadataRetriever", func() {
 		when("retrieving from a builder image", func() {
 			it("gets buildpacks from a local image", func() {
-				digest, err := name.NewDigest("builder/image:tag@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
-				require.NoError(t, err)
-				fakeImage := fakes.NewImage("builder/image:tag", "topLayerSha", remote.DigestIdentifier{
-					Digest: digest,
-				})
-				err = fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
+				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/builder/image", "sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
+				err := fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
 				imageRef := registry.NewNoAuthImageRef("test-repo-name")
@@ -53,13 +46,8 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 		when("GetBuiltImage", func() {
 			it("retrieves the metadata from the registry", func() {
-				digest, err := name.NewDigest("built/image:tag@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
-				require.NoError(t, err)
-
-				fakeImage := fakes.NewImage("built/image:tag", "topLayerSha", remote.DigestIdentifier{
-					Digest: digest,
-				})
-				err = fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
+				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/image", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
+				err := fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
 				fakeImageRef := registry.NewNoAuthImageRef("built/image:tag")

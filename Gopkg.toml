@@ -12,7 +12,6 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "github.com/knative/test-infra/scripts",
   "github.com/knative/test-infra/tools/dep-collector",
-  "github.com/buildpack/imgutil",
 ]
 
 [[override]]
@@ -99,10 +98,6 @@ required = [
   name = "golang.org/x/net"
   revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
   
-[[override]]
-  name = "github.com/buildpack/imgutil"
-  revision = "1f31ed20483a84a33484db37c125df7778692ed6"
-
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   # HEAD as of 2019-02-11
