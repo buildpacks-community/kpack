@@ -55,7 +55,7 @@ func main() {
 	}
 
 	remoteImageFactory := &registry.ImageFactory{
-		KeychainFactory: defaultKeychainFactory{},
+		KeychainFactory: keychainFactory{builderCreds},
 	}
 
 	filePermissionSetup := &cnb.FilePermissionSetup{
@@ -76,11 +76,12 @@ func main() {
 	}
 }
 
-type defaultKeychainFactory struct {
+type keychainFactory struct {
+	keychain authn.Keychain
 }
 
-func (defaultKeychainFactory) KeychainForImageRef(registry.ImageRef) authn.Keychain {
-	return authn.DefaultKeychain
+func (k keychainFactory) KeychainForImageRef(registry.ImageRef) authn.Keychain {
+	return k.keychain
 }
 
 type realOs struct {
@@ -88,16 +89,4 @@ type realOs struct {
 
 func (realOs) Chown(volume string, uid, gid int) error {
 	return os.Chown(volume, uid, gid)
-}
-
-func fileExists(file string, logger *log.Logger) bool {
-	_, err := os.Stat(file)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-		logger.Fatal(err.Error())
-	}
-
-	return true
 }

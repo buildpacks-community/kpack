@@ -17,10 +17,7 @@ var registryDomains = []string{
 	"http://%s/v2/",
 }
 
-type RegistryMatcher struct {
-}
-
-func (r RegistryMatcher) Match(parsedRegistry, registry string) bool {
+func RegistryMatch(parsedRegistry, registry string) bool {
 	for _, format := range registryDomains {
 		if fmt.Sprintf(format, parsedRegistry) == registry {
 			return true

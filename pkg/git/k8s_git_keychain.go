@@ -19,7 +19,7 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	return &k8sGitKeychain{secretManager: secret.SecretManager{
 		Client:        k8sClient,
 		AnnotationKey: v1alpha1.GITSecretAnnotationPrefix,
-		Matcher:       gitUrlMatcher{},
+		Matcher:       gitUrlMatch,
 	}}
 }
 
@@ -40,9 +40,6 @@ func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 
 }
 
-type gitUrlMatcher struct {
-}
-
 var matchingDomains = []string{
 	// Allow naked domains
 	"%s",
@@ -51,7 +48,7 @@ var matchingDomains = []string{
 	"http://%s",
 }
 
-func (gitUrlMatcher) Match(urlMatch, annotatedUrl string) bool {
+func gitUrlMatch(urlMatch, annotatedUrl string) bool {
 	parseURL, err := url.Parse(urlMatch)
 	if err != nil {
 		return false

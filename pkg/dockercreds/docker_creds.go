@@ -2,20 +2,20 @@ package dockercreds
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io/ioutil"
+	"net/url"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/pkg/errors"
 )
 
 type DockerCreds map[string]entry
 
 func (c DockerCreds) Resolve(reg name.Registry) (authn.Authenticator, error) {
-	registryMatcher := RegistryMatcher{}
-
 	for registry, entry := range c {
-		if registryMatcher.Match(reg.RegistryStr(), registry) {
+		if RegistryMatch(reg.RegistryStr(), registry) {
 			if entry.Auth != "" {
 				return Auth(entry.Auth), nil
 			} else if entry.Username != "" {
@@ -36,7 +36,11 @@ func (c DockerCreds) AppendToDockerConfig(path string) error {
 		return err
 	}
 
-	appendedCreds := c.append(existingCreds)
+	appendedCreds, err := existingCreds.append(c)
+	if err != nil {
+		return err
+	}
+
 	configJson := dockerConfigJson{
 		Auths: appendedCreds,
 	}
@@ -47,15 +51,41 @@ func (c DockerCreds) AppendToDockerConfig(path string) error {
 	return ioutil.WriteFile(path, configJsonBytes, 0600)
 }
 
-func (c DockerCreds) append(a DockerCreds) DockerCreds {
+func (c DockerCreds) append(a DockerCreds) (DockerCreds, error) {
 	if c == nil {
-		return a
+		return a, nil
+	} else if a == nil {
+		return c, nil
 	}
 
 	for k, v := range a {
-		c[k] = v
+		if contains, err := c.contains(k); err != nil {
+			return nil, err
+		} else if !contains {
+			c[k] = v
+		}
 	}
-	return c
+
+	return c, nil
+}
+
+func (c DockerCreds) contains(reg string) (bool, error) {
+	if !strings.HasPrefix(reg, "http://") && !strings.HasPrefix(reg, "https://") {
+		reg = "//" + reg
+	}
+
+	u, err := url.Parse(reg)
+	if err != nil {
+		return false, err
+	}
+
+	for existingRegistry := range c {
+		if RegistryMatch(u.Host, existingRegistry) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 type entry struct {
