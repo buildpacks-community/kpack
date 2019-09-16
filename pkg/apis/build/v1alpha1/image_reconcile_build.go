@@ -105,7 +105,6 @@ type newBuild struct {
 	buildCounter  int64
 	latestImage   string
 	previousBuild *Build
-	builder       AbstractBuilder
 }
 
 func (r newBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
