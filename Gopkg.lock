@@ -102,16 +102,12 @@
   revision = "36282d0caea7f9a6e6369dcc147390a90a6df4b1"
 
 [[projects]]
-  digest = "1:77a1f5aa24def37af94d1ce8e0d95ec942cbe8fb8fa75e6b74316e42396a3731"
+  digest = "1:04576b73a5c3db22756988358485c264d6560b171e66bba9b2d4152b3eee4c0a"
   name = "github.com/buildpack/lifecycle"
-  packages = [
-    "cmd",
-    "image/auth",
-    "metadata",
-  ]
+  packages = ["metadata"]
   pruneopts = "NUT"
-  revision = "a927d830e69e5cd2f207ea69cd99034cb34c5302"
-  version = "v0.3.0"
+  revision = "4f14ca20ee105b60862fc76f80e088ca832b023d"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:fa965c1fd0f17153f608037e109e62104058bc1d08d44849867795fd306fa8b8"
@@ -240,10 +236,13 @@
   revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
-  digest = "1:6c8f3d94681aabfdfa54f67e4bba7fa2fb19f0d12f16d0dd1aa7db3dc47d078d"
+  digest = "1:0868b736949c82d5ce7806e83b32d9f98ca458ad4e7c66d560430c0f205ef459"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
+    "pkg/internal/retry",
+    "pkg/internal/retry/wait",
+    "pkg/logs",
     "pkg/name",
     "pkg/v1",
     "pkg/v1/partial",
@@ -253,7 +252,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "1c6c7f61e8a5402b606c3c6db169fdcd1b0712b7"
+  revision = "650bcbc276f32fe9e40263635bbf4a61a7837739"
 
 [[projects]]
   digest = "1:52c5834e2bebac9030c97cc0798ac11c3aa8a39f098aeb419f142533da6cd3cc"
@@ -413,13 +412,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8088406ae072aec06ed42e61e872c4029fc2ab5d77484160877c17d74b822306"
+  digest = "1:b42d6255c0409854d64f4ece0d64e8fcf963f93299408e017fd367d05fb297c1"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
-  pruneopts = "UT"
+  pruneopts = "NUT"
   revision = "d5c56732c050b2064c3ee498ede1e04136933314"
 
 [[projects]]
@@ -1371,7 +1370,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buildpack/lifecycle/image/auth",
     "github.com/buildpack/lifecycle/metadata",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",

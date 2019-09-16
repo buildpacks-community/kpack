@@ -31,7 +31,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				imageRef := registry.NewNoAuthImageRef("test-repo-name")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
-				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
+				subject := cnb.RemoteMetadataRetriever{RemoteImageFactory: mockFactory}
 				builderImage, err := subject.GetBuilderImage(imageRef)
 				assert.NoError(t, err)
 
@@ -47,19 +47,19 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 		when("GetBuiltImage", func() {
 			it("retrieves the metadata from the registry", func() {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/image", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
-				err := fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"buildpacks": [{"key": "test.id", "version": "1.2.3"}]}`)
+				err := fakeImage.SetLabel("io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
 
 				fakeImageRef := registry.NewNoAuthImageRef("built/image:tag")
 				mockFactory.NewRemoteReturns(fakeImage, nil)
 
-				subject := cnb.RemoteMetadataRetriever{LifecycleImageFactory: mockFactory}
+				subject := cnb.RemoteMetadataRetriever{RemoteImageFactory: mockFactory}
 
 				result, err := subject.GetBuiltImage(fakeImageRef)
 				assert.NoError(t, err)
 
 				metadata := result.BuildpackMetadata
-				assert.Len(t, metadata, 1)
+				require.Len(t, metadata, 1)
 				assert.Equal(t, metadata[0].ID, "test.id")
 				assert.Equal(t, metadata[0].Version, "1.2.3")
 

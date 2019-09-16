@@ -7,13 +7,12 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 )
 
 type DockerCreds map[string]entry
 
-func (c DockerCreds) Resolve(reg name.Registry) (authn.Authenticator, error) {
+func (c DockerCreds) Resolve(reg authn.Resource) (authn.Authenticator, error) {
 	for registry, entry := range c {
 		if RegistryMatch(reg.RegistryStr(), registry) {
 			if entry.Auth != "" {

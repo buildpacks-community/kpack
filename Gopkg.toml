@@ -14,69 +14,29 @@ required = [
   "github.com/knative/test-infra/tools/dep-collector",
 ]
 
-[[override]]
-  name = "gopkg.in/yaml.v2"
-  version = "v2.2.1"
-
-[[override]]
+[[constraint]]
   name = "github.com/knative/pkg"
   branch = "release-0.7"
 
-[[override]]
+[[constraint]]
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
 
 [[constraint]]
-  name = "github.com/google/go-containerregistry"
-  # HEAD as of 2019-06-04
-  revision = "1c6c7f61e8a5402b606c3c6db169fdcd1b0712b7"
-
-[[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.12.6"
 
-[[override]]
+[[constraint]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.12.6"
 
-[[override]]
+[[constraint]]
   name = "k8s.io/code-generator"
   version = "kubernetes-1.12.6"
 
-[[override]]
+[[constraint]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.12.6"
-
-[[override]]
-  name = "github.com/json-iterator/go"
-  version = "^1.1.6"
-  # This is the commit at which k8s depends on this in 1.11
-  # It seems to be broken at HEAD.
-
-[[override]]
-  name = "github.com/rogpeppe/go-internal"
-  # HEAD as of 2019-01-09
-  # Needed because release 1.0.0 does not contain a LICENSE file
-  revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
-
-[[override]]
-  name = "github.com/census-instrumentation/opencensus-proto"
-  # Needed to downgrade protobuf to v2
-  version = "v0.1.0"
-
-[prune]
-  go-tests = true
-  unused-packages = true
-  non-go = true
-
-[[prune.project]]
-  name = "k8s.io/code-generator"
-  unused-packages = false
-  non-go = false
-
-[[prune.project]]
-  name = "github.com/knative/test-infra"
-  non-go = false
 
 [[constraint]]
   name = "github.com/sclevine/spec"
@@ -84,7 +44,11 @@ required = [
 
 [[constraint]]
   name = "github.com/buildpack/lifecycle"
-  version = "0.3.0"
+  version = "0.4.0"
+
+[[constraint]]
+  name = "github.com/google/go-containerregistry"
+  revision = "650bcbc276f32fe9e40263635bbf4a61a7837739"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -97,7 +61,17 @@ required = [
 [[override]]
   name = "golang.org/x/net"
   revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
-  
+
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  version = "v2.2.1"
+
+[[override]]
+  name = "github.com/json-iterator/go"
+  version = "^1.1.6"
+  # This is the commit at which k8s depends on this in 1.11
+  # It seems to be broken at HEAD.
+
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   # HEAD as of 2019-02-11
@@ -107,3 +81,22 @@ required = [
 [[override]]
   name = "github.com/Azure/go-autorest"
   revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+
+[[override]]
+  name = "github.com/rogpeppe/go-internal"
+  revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
+
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  # Needed to downgrade protobuf to v2
+  version = "v0.1.0"
+
+[[prune.project]]
+  name = "k8s.io/code-generator"
+  unused-packages = false
+  non-go = false
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
