@@ -133,12 +133,6 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 		return image, nil
 	}
 
-	if !builder.Ready() {
-		image.Status.Conditions = image.BuilderNotReady()
-		image.Status.ObservedGeneration = image.Generation
-		return image, nil
-	}
-
 	err = c.Tracker.Track(builder, image.NamespacedName())
 	if err != nil {
 		return nil, err

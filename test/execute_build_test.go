@@ -188,8 +188,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			time.Sleep(10 * time.Second)
-
 			for imageName, imageSource := range imageConfigs {
 				imageTag := cfg.newImageTag()
 				_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{

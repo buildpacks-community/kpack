@@ -24,7 +24,12 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 		}, nil
 	}
 
-	return upToDateBuild{build: latestBuild, buildCounter: currentBuildNumber, latestImage: latestImage}, nil
+	return upToDateBuild{
+		build:        latestBuild,
+		buildCounter: currentBuildNumber,
+		latestImage:  latestImage,
+		builder:      builder,
+	}, nil
 }
 
 type BuildCreator interface {
@@ -46,6 +51,7 @@ type upToDateBuild struct {
 	build        *Build
 	buildCounter int64
 	latestImage  string
+	builder      AbstractBuilder
 }
 
 func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
@@ -58,6 +64,16 @@ func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
 }
 
 func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
+	if !r.builder.Ready() {
+		return duckv1alpha1.Conditions{
+			{
+				Type:   duckv1alpha1.ConditionReady,
+				Status: corev1.ConditionFalse,
+				Reason: BuilderNotReady,
+			},
+		}
+	}
+
 	if r.build == nil || r.build.Status.GetCondition(duckv1alpha1.ConditionSucceeded) == nil {
 		return duckv1alpha1.Conditions{
 			{
