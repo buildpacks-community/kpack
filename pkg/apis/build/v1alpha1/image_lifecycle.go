@@ -22,14 +22,3 @@ func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {
 		},
 	}
 }
-
-func (im *Image) BuilderNotReady() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
-		{
-			Type:    duckv1alpha1.ConditionReady,
-			Status:  corev1.ConditionFalse,
-			Reason:  BuilderNotReady,
-			Message: fmt.Sprintf("Builder %s is not ready.", im.Spec.Builder.Name),
-		},
-	}
-}
