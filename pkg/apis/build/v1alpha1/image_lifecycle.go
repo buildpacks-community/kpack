@@ -9,6 +9,7 @@ import (
 
 const (
 	BuilderNotFound = "BuilderNotFound"
+	BuilderNotReady = "BuilderNotReady"
 )
 
 func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {

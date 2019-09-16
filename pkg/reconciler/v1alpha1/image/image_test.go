@@ -633,9 +633,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: duckv1alpha1.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
-												Status: corev1.ConditionFalse,
-												Reason: "BuilderNotReady",
+												Type:    duckv1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  "BuilderNotReady",
+												Message: "Builder builder-name is not ready",
 											},
 										},
 									},

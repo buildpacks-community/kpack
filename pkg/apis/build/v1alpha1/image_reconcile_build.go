@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strconv"
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -67,9 +68,10 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 	if !r.builder.Ready() {
 		return duckv1alpha1.Conditions{
 			{
-				Type:   duckv1alpha1.ConditionReady,
-				Status: corev1.ConditionFalse,
-				Reason: BuilderNotReady,
+				Type:    duckv1alpha1.ConditionReady,
+				Status:  corev1.ConditionFalse,
+				Reason:  BuilderNotReady,
+				Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
 			},
 		}
 	}

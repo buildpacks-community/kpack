@@ -39,3 +39,7 @@ func (in *ClusterBuilder) Ready() bool {
 	return in.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() &&
 		(in.Generation == in.Status.ObservedGeneration)
 }
+
+func (in *ClusterBuilder) GetName() string {
+	return in.ObjectMeta.Name
+}
