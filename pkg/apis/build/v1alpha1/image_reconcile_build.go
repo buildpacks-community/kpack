@@ -22,7 +22,6 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 			build:         im.build(resolver, builder, reasons, nextBuildNumber),
 			buildCounter:  nextBuildNumber,
 			latestImage:   latestImage,
-			builder:       builder,
 		}, nil
 	}
 
