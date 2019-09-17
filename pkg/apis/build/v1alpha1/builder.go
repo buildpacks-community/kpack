@@ -31,7 +31,7 @@ func (b *Builder) Namespace() string {
 	return b.ObjectMeta.Namespace
 }
 
-func (b *Builder) Tag() string {
+func (b *Builder) Image() string {
 	return b.Spec.Image
 }
 

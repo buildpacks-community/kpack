@@ -87,7 +87,7 @@ func main() {
 	podInformer := k8sInformerFactory.Core().V1().Pods()
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
-		LifecycleImageFactory: &registry.ImageFactory{
+		RemoteImageFactory: &registry.ImageFactory{
 			KeychainFactory: secret.NewSecretKeychainFactory(k8sClient),
 		},
 	}

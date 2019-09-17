@@ -29,11 +29,11 @@ type BuilderImage struct {
 type BuilderMetadata []BuildpackMetadata
 
 type RemoteMetadataRetriever struct {
-	LifecycleImageFactory registry.RemoteImageFactory
+	RemoteImageFactory registry.RemoteImageFactory
 }
 
 func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (BuilderImage, error) {
-	img, err := r.LifecycleImageFactory.NewRemote(repo)
+	img, err := r.RemoteImageFactory.NewRemote(repo)
 	if err != nil {
 		return BuilderImage{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
@@ -57,23 +57,23 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (Build
 
 	return BuilderImage{
 		BuilderBuildpackMetadata: metadata.Buildpacks,
-		Identifier:               identifier.String(),
+		Identifier:               identifier,
 	}, nil
 }
 
 func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltImage, error) {
-	img, err := r.LifecycleImageFactory.NewRemote(ref)
+	img, err := r.RemoteImageFactory.NewRemote(ref)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	var metadataJSON string
-	metadataJSON, err = img.Label(lcyclemd.AppMetadataLabel)
+	metadataJSON, err = img.Label(lcyclemd.BuildMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	var metadata lcyclemd.AppImageMetadata
+	var metadata lcyclemd.BuildMetadata
 	err = json.Unmarshal([]byte(metadataJSON), &metadata)
 	if err != nil {
 		return BuiltImage{}, err
@@ -90,7 +90,7 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltIma
 	}
 
 	return BuiltImage{
-		Identifier:        identifier.String(),
+		Identifier:        identifier,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: metadata.Buildpacks,
 	}, nil

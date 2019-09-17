@@ -6,14 +6,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/buildpack/imgutil/fakes"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestFilePermissionSetup(t *testing.T) {
@@ -38,10 +37,7 @@ func testFilePermissionSetup(t *testing.T, when spec.G, it spec.S) {
 
 	when("#setup", func() {
 		it("sets the owner of all requested", func() {
-			digest, err := name.NewDigest("some/builder:tag@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
-			require.NoError(t, err)
-
-			fakeImage := fakes.NewImage("some/builder", "topLayerSha", digest)
+			fakeImage := registryfakes.NewFakeRemoteImage("some/builder", "2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
 			require.NoError(t, fakeImage.SetEnv("CNB_USER_ID", "1234"))
 			require.NoError(t, fakeImage.SetEnv("CNB_GROUP_ID", "5678"))
 
@@ -55,7 +51,7 @@ func testFilePermissionSetup(t *testing.T, when spec.G, it spec.S) {
 				RemoteImageFactory: fakeRemoteImageFactory,
 				Chowner:            chowner,
 			}
-			err = filePermissionSetup.Setup("builder/builder", testVolume)
+			err := filePermissionSetup.Setup("builder/builder", testVolume)
 			require.NoError(t, err)
 
 			require.Equal(t, chowner.chowned[testVolume], "1234:5678")

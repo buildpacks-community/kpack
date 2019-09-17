@@ -2,7 +2,6 @@ package secret
 
 import (
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -29,7 +28,7 @@ type pullSecretKeychain struct {
 	secretManager *SecretManager
 }
 
-func (k *pullSecretKeychain) Resolve(registry name.Registry) (authn.Authenticator, error) {
+func (k *pullSecretKeychain) Resolve(registry authn.Resource) (authn.Authenticator, error) {
 	base64Auth, err := k.secretManager.SecretForImagePull(k.imageRef.Namespace(), k.imageRef.SecretName(), registry.RegistryStr())
 	if err != nil {
 		return nil, err
@@ -42,8 +41,8 @@ type serviceAccountKeychain struct {
 	secretManager *SecretManager
 }
 
-func (k *serviceAccountKeychain) Resolve(reg name.Registry) (authn.Authenticator, error) {
-	creds, err := k.secretManager.SecretForServiceAccountAndURL(k.imageRef.ServiceAccount(), k.imageRef.Namespace(), reg.RegistryStr())
+func (k *serviceAccountKeychain) Resolve(res authn.Resource) (authn.Authenticator, error) {
+	creds, err := k.secretManager.SecretForServiceAccountAndURL(k.imageRef.ServiceAccount(), k.imageRef.Namespace(), res.RegistryStr())
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +63,6 @@ func (f *SecretKeychainFactory) KeychainForImageRef(ref registry.ImageRef) authn
 type anonymousKeychain struct {
 }
 
-func (anonymousKeychain) Resolve(name.Registry) (authn.Authenticator, error) {
+func (anonymousKeychain) Resolve(authn.Resource) (authn.Authenticator, error) {
 	return authn.Anonymous, nil
 }

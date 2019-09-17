@@ -5,24 +5,28 @@ import (
 	"net/http"
 	"net/url"
 
-	lcAuth "github.com/buildpack/lifecycle/image/auth"
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
 )
 
-func HasWriteAccess(tagName string) (bool, error) {
+func HasWriteAccess(tag string) (bool, error) {
 	keychain := authn.DefaultKeychain
 
-	ref, auth, err := lcAuth.ReferenceForRepoName(keychain, tagName)
+	var auth authn.Authenticator
+	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {
-		return false, errors.WithStack(err)
+		return false, err
 	}
 
-	recordingTransport := &unAuthorizedWithoutErrorCodeTransportChecker{}
+	auth, err = keychain.Resolve(ref.Context().Registry)
+	if err != nil {
+		return false, err
+	}
 
 	scopes := []string{ref.Scope(transport.PushScope)}
-	tr, err := transport.New(ref.Context().Registry, auth, recordingTransport, scopes)
+	tr, err := transport.New(ref.Context().Registry, auth, http.DefaultTransport, scopes)
 	if err != nil {
 		if transportError, ok := err.(*transport.Error); ok {
 			for _, diagnosticError := range transportError.Errors {
@@ -31,7 +35,7 @@ func HasWriteAccess(tagName string) (bool, error) {
 				}
 			}
 
-			if recordingTransport.wasRequestUnauthorized() {
+			if transportError.StatusCode == 401 {
 				return false, nil
 			}
 		}
@@ -59,22 +63,4 @@ func HasWriteAccess(tagName string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-type unAuthorizedWithoutErrorCodeTransportChecker struct {
-	isToken401 bool
-}
-
-func (h *unAuthorizedWithoutErrorCodeTransportChecker) RoundTrip(r *http.Request) (*http.Response, error) {
-	response, err := http.DefaultTransport.RoundTrip(r)
-
-	if _, isTokenFetchRequest := r.Header["Authorization"]; isTokenFetchRequest && response != nil {
-		h.isToken401 = response.StatusCode == 401
-	}
-
-	return response, err
-}
-
-func (h *unAuthorizedWithoutErrorCodeTransportChecker) wasRequestUnauthorized() bool {
-	return h.isToken401
 }
