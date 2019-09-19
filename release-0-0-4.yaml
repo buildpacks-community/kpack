@@ -1,0 +1,200 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kpack
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: builds.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: Build
+    singular: build
+    plural: builds
+    shortNames:
+    - cnbbuild
+    - cnbbuilds
+    - bld
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+  - name: Image
+    type: string
+    JSONPath: .status.latestImage
+  - name: Succeeded
+    type: string
+    JSONPath: .status.conditions[?(@.type=="Succeeded")].status
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: builders.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: Builder
+    singular: builder
+    plural: builders
+    shortNames:
+    - cnbbuilder
+    - cnbbuilders
+    - bldr
+  scope: Namespaced
+  subresources:
+    status: {}
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterbuilders.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: ClusterBuilder
+    singular: clusterbuilder
+    plural: clusterbuilders
+    shortNames:
+    - clstbldr
+  scope: Cluster
+  subresources:
+    status: {}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kpack-admin
+rules:
+- apiGroups:
+  - build.pivotal.io
+  resources:
+  - builds
+  - builds/status
+  - images
+  - images/status
+  - builders
+  - builders/status
+  - clusterbuilders
+  - clusterbuilders/status
+  - sourceresolvers
+  - sourceresolvers/status
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - serviceaccounts
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  - pods
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kpack-controller-admin
+subjects:
+- kind: ServiceAccount
+  name: controller
+  namespace: kpack
+roleRef:
+  kind: ClusterRole
+  name: kpack-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kpack-controller
+  namespace: kpack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kpack-controller
+  template:
+    metadata:
+      labels:
+        app: kpack-controller
+    spec:
+      serviceAccountName: controller
+      containers:
+      - name: controller
+        image: gcr.io/cf-build-service-public/kpack/controller@sha256:3c515511cbaa891ab88088b1a12a56cedcd52a9e4a8868380c418a7619c467e0
+        env:
+        - name: BUILD_INIT_IMAGE
+          value: gcr.io/cf-build-service-public/kpack/build-init@sha256:8bb88919b4a7daa4048857dae1cc7380306f0f6fef6cd3c8abc210abf1d3a93a
+        - name: SOURCE_INIT_IMAGE
+          value: gcr.io/cf-build-service-public/kpack/source-init@sha256:db1b1560a2daaa483352628aafb5a1b7b63d574a49d75e203030b07db152431a
+        - name: CRED_INIT_IMAGE
+          value: gcr.io/pivotal-knative/github.com/knative/build/cmd/creds-init@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895
+        - name: NOP_IMAGE
+          value: gcr.io/pivotal-knative/github.com/knative/build/cmd/nop@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: images.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: Image
+    singular: image
+    plural: images
+    shortNames:
+    - cnbimage
+    - cnbimages
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+  - name: LatestImage
+    type: string
+    JSONPath: .status.latestImage
+  - name: Ready
+    type: string
+    JSONPath: .status.conditions[?(@.type=="Ready")].status
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: controller
+  namespace: kpack
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: sourceresolvers.build.pivotal.io
+spec:
+  group: build.pivotal.io
+  version: v1alpha1
+  names:
+    kind: SourceResolver
+    singular: sourceresolver
+    plural: sourceresolvers
+  scope: Namespaced
+  subresources:
+    status: {}
