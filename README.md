@@ -32,7 +32,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
           name: sample-builder
         spec:
           image: cloudfoundry/cnb:bionic
-          # imagePullSecrets: # Use these secrets if credentials are needed to pull the builder
+          # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
           # - name: builder-secret
         ```
 
@@ -45,7 +45,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
         spec:
           image: cloudfoundry/cnb:bionic
         ```
-   **Note:** The Cluster Builder image need to be publicly accessible.
+   **Note:** The Cluster Builder image must be publicly accessible.
 
 1. Create a secret for push access to the desired docker registry.
    1. GCR example
@@ -75,6 +75,8 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
           username: <username>
           password: <password>
         ```
+        
+   **Note:** Because Docker Hub and GCR are hosted services, when referencing these registries in the `registry` field, use the domain names `index.docker.io` and `gcr.io` respectively.  For Artifactory or Harbor, reference the domain that is specific to your deployment of the registry.
 
 1. Create a secret for pull access from the desired git repository. The example below is for a github repository.
     ```yaml
@@ -136,7 +138,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
             memory: 512M
     ```
 
-    If you would like to build an image from an hosted zip or jar:
+    If you would like to build an image from a hosted zip or jar:
  
     ```yaml
     apiVersion: build.pivotal.io/v1alpha1
@@ -171,7 +173,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
 6.  See the builds for the image
 
     ```builds
-    kubectl get cnbbuilds # before the first builds completes you will see a unknown (building) status
+    kubectl get builds # before the first builds completes you will see a unknown (building) status
     ---------------
     NAME                          SHA   SUCCEEDED
     sample-image-build-1-ea3e6fa9         Unknown  
