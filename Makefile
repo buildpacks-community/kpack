@@ -1,10 +1,9 @@
 # Go parameters
 GOCMD?=go
-GOENV=CGO_ENABLED=0
 
 all: dep deps unit
 
-unit:
+unit: dep deps
 	@echo "> Running unit tests..."
 	$(GOCMD) test -v -count=1 -parallel=1 -timeout=0 ./pkg/...
 
