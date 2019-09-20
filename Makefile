@@ -10,7 +10,7 @@ unit:
 
 dep:
 ifeq ($(shell command -v dep 2> /dev/null),)
-	$(GOCMD) get -u -v github.com/golang/dep/cmd/dep
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 
 deps: dep
