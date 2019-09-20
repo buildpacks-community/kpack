@@ -1,4 +1,5 @@
 # kpack
+[![Build Status](https://travis-ci.com/pivotal/kpack.svg?branch=master)](https://travis-ci.com/pivotal/kpack)
 
 Experimental Kubernetes Native Container Build Service
 
