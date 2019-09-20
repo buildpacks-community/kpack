@@ -88,7 +88,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     metadata:
       name: tutorial-image
     spec:
-      tag: <REGISTRY-TAG>
+      tag: <DOCKER-IMAGE>
       serviceAccount: tutorial-service-account
       builder:
         name: default-builder
@@ -99,9 +99,8 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
           revision: master
     ```
 
-   - Make sure to replace <REGISTRY> with the registry you configured in step #2.     
-   - Make sure to replace <YOUR-GITHUB-URL> with a publicly accessible github url
-    
+   - Make sure to replace <DOCKER-IMAGE> with the registry you configured in step #2. Something like: gcr.io/your-project/app     
+   - Make sure to replace <YOUR-GITHUB-URL> with the publicly accessible github url to the fork from step #3
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
    Apply that image to the cluster 
