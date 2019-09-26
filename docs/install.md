@@ -4,7 +4,7 @@
 
 1. A Kubernetes cluster version 1.12 or later
 1. [kubectl CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-1. Cluster-admin permissions for the current user.
+1. Cluster-admin permissions for the current user
 1. Accessible Docker V2 Registry
 
 ## Installing-kpack
