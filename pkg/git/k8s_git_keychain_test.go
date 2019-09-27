@@ -51,50 +51,50 @@ func test(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("Resolve", func() {
-		it("returns git auth for matching secrets", func() {
+		it("returns git Auth for matching secrets", func() {
 			auth, err := keychain.Resolve("some-namespace", serviceAccount, v1alpha1.Git{
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, basicAuth{
+			require.Equal(t, auth, BasicAuth{
 				Username: "saved-username",
 				Password: "saved-password",
 			})
 		})
 
-		it("returns git auth for matching secrets without scheme", func() {
+		it("returns git Auth for matching secrets without scheme", func() {
 			auth, err := keychain.Resolve("some-namespace", serviceAccount, v1alpha1.Git{
 				URL:      "https://noschemegit.com/org/repo",
 				Revision: "master",
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, basicAuth{
+			require.Equal(t, auth, BasicAuth{
 				Username: "noschemegit-username",
 				Password: "noschemegit-password",
 			})
 		})
 
-		it("returns anonymous auth for no matching secret", func() {
+		it("returns anonymous Auth for no matching secret", func() {
 			auth, err := keychain.Resolve("some-namespace", serviceAccount, v1alpha1.Git{
 				URL:      "https://no-creds-github.com/org/repo",
 				Revision: "master",
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, anonymousAuth{})
+			require.Equal(t, auth, AnonymousAuth{})
 		})
 
-		it("returns anonymous auth for an empty service account", func() {
+		it("returns anonymous Auth for an empty service account", func() {
 			auth, err := keychain.Resolve("some-namespace", "", v1alpha1.Git{
 				URL:      "https://no-creds-github.com/org/repo",
 				Revision: "master",
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, auth, anonymousAuth{})
+			require.Equal(t, auth, AnonymousAuth{})
 		})
 	})
 }

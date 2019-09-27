@@ -13,39 +13,40 @@ import (
 
 const defaultRemote = "origin"
 
-type auth interface {
-	auth() transport.AuthMethod
+type Auth interface {
+	Auth() transport.AuthMethod
 }
 
-type basicAuth struct {
+type BasicAuth struct {
 	Username string
 	Password string
 }
 
-func (b basicAuth) auth() transport.AuthMethod {
+
+func (b BasicAuth) Auth() transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: b.Username,
 		Password: b.Password,
 	}
 }
 
-type anonymousAuth struct {
+type AnonymousAuth struct {
 }
 
-func (anonymousAuth) auth() transport.AuthMethod {
+func (AnonymousAuth) Auth() transport.AuthMethod {
 	return nil
 }
 
 type remoteGitResolver struct {
 }
 
-func (*remoteGitResolver) Resolve(auth auth, sourceConfig v1alpha1.SourceConfig) (v1alpha1.ResolvedSourceConfig, error) {
+func (*remoteGitResolver) Resolve(auth Auth, sourceConfig v1alpha1.SourceConfig) (v1alpha1.ResolvedSourceConfig, error) {
 	repo := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},
 	})
 	references, err := repo.List(&git.ListOptions{
-		Auth: auth.auth(),
+		Auth: auth.Auth(),
 	})
 	if err != nil {
 		return v1alpha1.ResolvedSourceConfig{

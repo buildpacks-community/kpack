@@ -30,7 +30,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
@@ -56,7 +56,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: "master",
@@ -82,7 +82,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: tag,
@@ -108,7 +108,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(basicAuth{
+				resolvedGitSource, err := gitResolver.Resolve(BasicAuth{
 					Username: "notgonna",
 					Password: "work",
 				}, v1alpha1.SourceConfig{
