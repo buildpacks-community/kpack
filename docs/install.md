@@ -14,11 +14,28 @@
    ```bash
    kubectl apply  --filename release.yaml
    ```
+   
 1. Ensure that the kpack controller has a status of `Running` using  `kubectl get`.   
 
    ```bash
    kubectl get pods --namespace kpack --watch
    ```
+
+1. Check the logs to confirm the kpack controller started without error.
+
+    ```bash
+    kubectl -n kpack logs deployment/kpack-controller -f
+    2019-09-27T18:49:32.373Z	INFO	controller/controller.go:277	Starting controller and workers
+    2019-09-27T18:49:32.373Z	INFO	controller/controller.go:287	Started workers
+    2019-09-27T18:49:32.373Z	INFO	controller/controller.go:277	Starting controller and workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:287	Started workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:277	Starting controller and workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:287	Started workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:277	Starting controller and workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:277	Starting controller and workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:287	Started workers
+    2019-09-27T18:49:32.374Z	INFO	controller/controller.go:287	Started workers
+    ```
 
 1. Create a [ClusterBuilder](builders.md) resource. A ClusterBuilder is a reference to a [Cloud Native Buildpacks builder image](https://buildpacks.io/docs/using-pack/working-with-builders/). 
 The Builder image contains buildpacks that will be used to build images with kpack. We recommend starting with the [cloudfoundry/cnb:bionic](https://hub.docker.com/r/cloudfoundry/cnb) image which has support for Java, Node and Go.         
