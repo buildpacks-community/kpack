@@ -78,7 +78,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
 
 1. Apply kpack image configuration 
 
-    An image configuration is the specification for an image that kpack should build and manage. For more info check out image documentation. We will create a sample image that builds with the default builder setup in installing.      
+    An image configuration is the specification for an image that kpack should build and manage. For more info check out the image documentation. We will create a sample image that builds with the default builder setup in the [installing documentation](./install.md).      
       
     Create an image configuration:
     
@@ -100,7 +100,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     ```
 
    - Make sure to replace <DOCKER-IMAGE> with the registry you configured in step #2. Something like: gcr.io/your-project/app     
-   - Make sure to replace <YOUR-GITHUB-URL> with the publicly accessible github url to the fork from step #3
+   - Make sure to replace <YOUR-GITHUB-URL> with the publicly accessible github url to your fork from step #3
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
    Apply that image to the cluster 
@@ -140,11 +140,11 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     test        tutorial-image        gcr.io/project-name/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b8   True
     ```
     
-    The latest image is available to be used in locally via `docker pull` and in a kubernetes deployment.   
+    The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
 
 1. Run the build app locally 
 
-    Download the latest image available in step #4 and docker run it
+   Download the latest image available in step #4 and run it with docker.
     
    ```bash
    docker run -p 8080:8080 <latest-image-with-digest>
@@ -180,10 +180,10 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    tutorial-image-build-2-xsf2l                                                                                                        Unknown
    ```
 
-   You can tail the logs for the image with log utility used in step #5
+   You can tail the logs for the image with log utility used in step #4.
    
    ```
-   logs -image tutorial-image -b 2  
+   logs -image tutorial-image -build 2  
    ```
     
 1. kpack rebuilds with buildpack updates

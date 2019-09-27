@@ -40,7 +40,7 @@ stringData:
 
 kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/git` annotation that references a remote git location.      
 
-For github, this would look like   
+For github, this would look like
 ```yaml
 apiVersion: v1
 kind: Secret

@@ -1,6 +1,6 @@
 # kpack logs
 
-Tailing the build logs from kpack builds from kubernetes is possible with the kpack log utility. 
+Tailing the build logs is possible with the kpack log utility. 
 
 ### Install
 
@@ -13,12 +13,12 @@ To tail logs from all builds for an image
 logs -image <image-name> 
 ```
 
-To tail logs from for a specific build on an image  
+To tail logs from a specific build on an image  
 ```bash
 logs -image <image-name> -build <build-number>
 ```
 
-To tail logs from for an image in a different namespace  
+To tail logs from an image in a different namespace  
 ```bash
 logs -image <image-name> -n <namespace>
 ```
