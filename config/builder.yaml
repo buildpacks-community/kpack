@@ -13,6 +13,8 @@ spec:
     - cnbbuilder
     - cnbbuilders
     - bldr
+    categories:
+    - kpack
   scope: Namespaced
   subresources:
     status: {}
