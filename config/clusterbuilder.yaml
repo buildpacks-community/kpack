@@ -11,6 +11,8 @@ spec:
     plural: clusterbuilders
     shortNames:
     - clstbldr
+    categories:
+    - kpack
   scope: Cluster
   subresources:
     status: {}

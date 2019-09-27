@@ -12,6 +12,8 @@ spec:
     shortNames:
     - cnbimage
     - cnbimages
+    categories:
+    - kpack
   scope: Namespaced
   subresources:
     status: {}
