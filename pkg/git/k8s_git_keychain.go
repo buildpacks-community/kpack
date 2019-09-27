@@ -23,9 +23,9 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	}}
 }
 
-func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (auth, error) {
+func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (Auth, error) {
 	if serviceAccount == "" {
-		return anonymousAuth{}, nil
+		return AnonymousAuth{}, nil
 	}
 
 	creds, err := k.secretManager.SecretForServiceAccountAndURL(serviceAccount, namespace, git.URL)
@@ -33,11 +33,10 @@ func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 		return nil, err
 	}
 	if k8serrors.IsNotFound(err) {
-		return anonymousAuth{}, nil
+		return AnonymousAuth{}, nil
 	}
 
-	return basicAuth{Username: creds.Username, Password: creds.Password}, nil
-
+	return BasicAuth{Username: creds.Username, Password: creds.Password}, nil
 }
 
 var matchingDomains = []string{

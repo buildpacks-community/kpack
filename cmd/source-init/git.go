@@ -2,37 +2,46 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/user"
-	"path/filepath"
+
+	"github.com/pkg/errors"
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+
+	kpackgit "github.com/pivotal/kpack/pkg/git"
 )
 
-func checkoutGitSource(dir string, logger *log.Logger) {
-	usr, err := user.Current() // The user should be root to be able to read .git-credentials and .gitconfig
+type GitKeychain interface {
+	Resolve(gitUrl string) (kpackgit.Auth, error)
+}
+
+func checkoutGitSource(keychain GitKeychain, dir string, logger *log.Logger) {
+	resolvedAuth, err := keychain.Resolve(*gitURL)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(errors.Wrap(err, "error retrieving the authorization"))
 	}
 
-	symlinks := []string{".ssh", ".git-credentials", ".gitconfig"}
-	for _, path := range symlinks {
-		err = os.Symlink("/builder/home/"+path, filepath.Join(usr.HomeDir, path))
-		if err != nil {
-			logger.Fatalf("Unexpected error creating symlink: %v", err)
-		}
-	}
-
-	run(logger, "git", "init")
-	run(logger, "git", "remote", "add", "origin", *gitURL)
-
-	err = runOrFail("git", "fetch", "--depth=1", "--recurse-submodules=yes", "origin", *gitRevision)
+	repo, err := git.PlainClone(dir, false, &git.CloneOptions{
+		URL:               *gitURL,
+		Auth:              resolvedAuth.Auth(),
+		RemoteName:        "origin",
+		Depth:             1,
+		RecurseSubmodules: 1,
+	})
 	if err != nil {
-		run(logger, "git", "pull", "--recurse-submodules=yes", "origin")
-		err = runOrFail("git", "checkout", *gitRevision)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-	} else {
-		run(logger, "git", "reset", "--hard", "FETCH_HEAD")
+		logger.Fatal(errors.Wrap(err, "unable to fetch git repository"))
 	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "unable to retrieve working tree"))
+	}
+
+	err = worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(*gitRevision),
+	})
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "unable to checkout"))
+	}
+
 	logger.Printf("Successfully cloned %q @ %q in path %q", *gitURL, *gitRevision, dir)
 }
