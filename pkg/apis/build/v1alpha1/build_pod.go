@@ -6,8 +6,8 @@ import (
 
 	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -278,6 +278,11 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 						layersVolume,
 						cacheVolume,
 					},
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
+				{
+					Name:            "success",
+					Image:           config.NopImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 			},

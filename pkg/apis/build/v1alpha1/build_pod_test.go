@@ -148,6 +148,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"build",
 				"export",
 				"cache",
+				"success",
 			}))
 		})
 
@@ -434,7 +435,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			for _, container := range pod.Spec.InitContainers {
-				if container.Name != "creds-init" && container.Name != "source-init" && container.Name != "prepare" {
+				if container.Name != "creds-init" && container.Name != "source-init" && container.Name != "prepare" && container.Name != "success" {
 					assert.Equal(t, builderImage, container.Image, fmt.Sprintf("image on container '%s'", container.Name))
 				}
 			}
