@@ -13,12 +13,19 @@ fi
 
 source hack/common.sh
 
+# e.g. gcr.io/cf-build-service-public/kpack
 registry=$1
+# e.g. path/to/release.yml
 release_yaml=$2
+mkdir -p $(dirname ${release_yaml})
 
-controller_image=${registry}/controller
-build_init_image=${registry}/build-init
-source_init_image=${registry}/source-init
+# Overrides registry=$1 for Docker Hub images
+# e.g. IMAGE_PREFIX=username/kpack-
+IMAGE_PREFIX=${IMAGE_PREFIX:-"${registry}/"}
+
+controller_image=${IMAGE_PREFIX}controller
+build_init_image=${IMAGE_PREFIX}build-init
+source_init_image=${IMAGE_PREFIX}source-init
 
 pack_build ${controller_image} "./cmd/controller"
 controller_image=${resolved_image_name}
