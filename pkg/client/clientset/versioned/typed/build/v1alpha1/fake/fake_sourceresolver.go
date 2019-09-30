@@ -131,7 +131,7 @@ func (c *FakeSourceResolvers) DeleteCollection(options *v1.DeleteOptions, listOp
 // Patch applies the patch and returns the patched sourceResolver.
 func (c *FakeSourceResolvers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.SourceResolver, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(sourceresolversResource, c.ns, name, data, subresources...), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewPatchSubresourceAction(sourceresolversResource, c.ns, name, pt, data, subresources...), &v1alpha1.SourceResolver{})
 
 	if obj == nil {
 		return nil, err

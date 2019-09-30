@@ -23,7 +23,6 @@ const cnbGroupId = "CNB_GROUP_ID"
 func (p *FilePermissionSetup) Setup(builder string, volumes ...string) error {
 	image, err := p.RemoteImageFactory.NewRemote(registry.NewNoAuthImageRef(builder))
 	if err != nil {
-
 		return err
 	}
 

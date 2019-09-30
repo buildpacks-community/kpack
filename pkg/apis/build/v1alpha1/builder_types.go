@@ -1,10 +1,10 @@
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
 const BuilderKind = "Builder"

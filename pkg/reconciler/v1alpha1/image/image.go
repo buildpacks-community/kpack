@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/knative/pkg/controller"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -17,6 +16,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"

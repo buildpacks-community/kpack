@@ -5,9 +5,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	rtesting "github.com/knative/pkg/reconciler/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func ReconcilerTester(t *testing.T, factory rtesting.Factory) SpecReconcilerTester {

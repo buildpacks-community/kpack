@@ -21,8 +21,8 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 	when("#Track", func() {
 		when("tracking a namespace scoped object", func() {
 			it("calls the callback when OnChanged is called", func() {
-				wasCalledWith := ""
-				track := tracker.New(func(key string) {
+				var wasCalledWith types.NamespacedName
+				track := tracker.New(func(key types.NamespacedName) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
@@ -40,14 +40,17 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 
 				track.OnChanged(builder)
 
-				require.Equal(t, wasCalledWith, "some-other-namespace/call-me-when-builder-changes")
+				require.Equal(t, wasCalledWith, types.NamespacedName{
+					Namespace: "some-other-namespace",
+					Name:      "call-me-when-builder-changes",
+				})
 			})
 		})
 
 		when("tracking a cluster scoped object", func() {
 			it("calls the callback when OnChanged is called", func() {
-				wasCalledWith := ""
-				track := tracker.New(func(key string) {
+				var wasCalledWith types.NamespacedName
+				track := tracker.New(func(key types.NamespacedName) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
@@ -64,7 +67,10 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 
 				track.OnChanged(clusterBuilder)
 
-				require.Equal(t, wasCalledWith, "some-other-namespace/call-me-when-builder-changes")
+				require.Equal(t, wasCalledWith, types.NamespacedName{
+					Namespace: "some-other-namespace",
+					Name:      "call-me-when-builder-changes",
+				})
 			})
 		})
 	})
