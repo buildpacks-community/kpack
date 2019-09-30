@@ -20,7 +20,7 @@ logs -image <image-name> -build <build-number>
 
 To tail logs from an image in a different namespace  
 ```bash
-logs -image <image-name> -n <namespace>
+logs -image <image-name> -namespace <namespace>
 ```
 
 > The log utility will not exit when the build finishes.  
