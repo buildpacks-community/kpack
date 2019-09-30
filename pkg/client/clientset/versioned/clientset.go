@@ -28,8 +28,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Build() buildv1alpha1.BuildV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -41,12 +39,6 @@ type Clientset struct {
 
 // BuildV1alpha1 retrieves the BuildV1alpha1Client
 func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
-	return c.buildV1alpha1
-}
-
-// Deprecated: Build retrieves the default version of BuildClient.
-// Please explicitly pick a version.
-func (c *Clientset) Build() buildv1alpha1.BuildV1alpha1Interface {
 	return c.buildV1alpha1
 }
 

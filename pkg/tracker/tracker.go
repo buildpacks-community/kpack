@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// modified from https://github.com/knative/pkg/tree/master/tracker
+// modified from https://knative.dev/pkg/tree/master/tracker
 // The version provided by knative/pkg forces tracking on namespace scoped
 // object an in our case the ClusterBuilder is a cluster scoped
 // object that need to be tracked
@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func New(callback func(string), lease time.Duration) *Tracker {
+func New(callback func(types.NamespacedName), lease time.Duration) *Tracker {
 	return &Tracker{
 		leaseDuration: lease,
 		cb:            callback,
@@ -46,7 +46,7 @@ type Tracker struct {
 	// before having to renew the lease.
 	leaseDuration time.Duration
 
-	cb func(string)
+	cb func(types.NamespacedName)
 }
 
 // set is a map from keys to expirations
@@ -98,7 +98,7 @@ func (i *Tracker) OnChanged(obj interface{}) {
 			delete(s, key)
 			continue
 		}
-		i.cb(key.String())
+		i.cb(key)
 	}
 
 	if len(s) == 0 {

@@ -131,7 +131,7 @@ func (c *FakeBuilders) DeleteCollection(options *v1.DeleteOptions, listOptions v
 // Patch applies the patch and returns the patched builder.
 func (c *FakeBuilders) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Builder, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(buildersResource, c.ns, name, data, subresources...), &v1alpha1.Builder{})
+		Invokes(testing.NewPatchSubresourceAction(buildersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Builder{})
 
 	if obj == nil {
 		return nil, err
