@@ -86,6 +86,16 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 						}
 					}
 				}
+
+				for _, c := range pod.Status.ContainerStatuses {
+					if c.State.Waiting == nil {
+						readyContainers <- readyContainer{
+							podName:       pod.Name,
+							containerName: c.Name,
+							namespace:     pod.Namespace,
+						}
+					}
+				}
 			}
 		}
 	}
@@ -128,10 +138,14 @@ func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.
 				return nil
 			}
 
-			_, err = writer.Write(line)
+			_, err = writer.Write([]byte(fmt.Sprintf("[%s] %s", cyan(readyContainer.containerName), line)))
 			if err != nil {
 				return err
 			}
 		}
 	}
+}
+
+func cyan(s string) string {
+	return fmt.Sprintf("%s%s%s", "\033[0;36m", s, "\033[0m")
 }
