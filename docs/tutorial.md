@@ -33,16 +33,16 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    Your secret configuration should look something like this:
    
    ```yaml
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: tutorial-registry-credentials
-      annotations:
-        build.pivotal.io/docker: index.docker.io
-    type: kubernetes.io/basic-auth
-    stringData:
-      username: sample-username
-      password: sample-password
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: tutorial-registry-credentials
+     annotations:
+       build.pivotal.io/docker: index.docker.io
+   type: kubernetes.io/basic-auth
+   stringData:
+     username: sample-username
+     password: sample-password
    ```
    
    Apply that credential to the cluster 
