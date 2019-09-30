@@ -111,7 +111,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
-			Builder:        builder.ImageRef(),
+			Builder:        builder.BuildBuilderSpec(),
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -743,7 +743,7 @@ func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      build.PodName(),
-			Namespace: build.Namespace(),
+			Namespace: build.Namespace,
 			Labels:    build.Labels,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(build),

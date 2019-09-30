@@ -1,7 +1,6 @@
 package secret
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -30,7 +29,7 @@ func (m *SecretManager) SecretForServiceAccountAndURL(serviceAccount, namespace 
 		return nil, err
 	}
 
-	registryUser := NewURLAndUser(url, string(secret.Data["username"]), string(secret.Data["password"]))
+	registryUser := NewURLAndUser(url, string(secret.Data[v1.BasicAuthUsernameKey]), string(secret.Data[v1.BasicAuthPasswordKey]))
 	return &registryUser, nil
 }
 
@@ -41,47 +40,10 @@ func (m *SecretManager) secretForServiceAccount(account *v1.ServiceAccount, url 
 			return nil, err
 		}
 
-		if m.Matcher(url, secret.ObjectMeta.Annotations[m.AnnotationKey]) {
+		if m.Matcher(url, secret.Annotations[m.AnnotationKey]) && secret.Type == v1.SecretTypeBasicAuth {
 			return secret, nil
 		}
 
 	}
 	return nil, k8serrors.NewNotFound(schema.GroupResource{Group: "", Resource: "Secret"}, fmt.Sprintf("secret for %s", url))
-}
-
-type dockerConfigJson struct {
-	Auths dockerConfig `json:"auths"`
-}
-
-type dockerConfig map[string]dockerConfigEntry
-
-type dockerConfigEntry struct {
-	Auth string
-}
-
-func (m *SecretManager) SecretForImagePull(namespace, secretName, registryName string) (string, error) {
-	secret, err := m.Client.CoreV1().Secrets(namespace).Get(secretName, meta_v1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	var config dockerConfigJson
-	switch secret.Type {
-	case v1.SecretTypeDockercfg:
-		var auths dockerConfig
-		err = json.Unmarshal(secret.Data[v1.DockerConfigKey], &auths)
-		config.Auths = auths
-	case v1.SecretTypeDockerConfigJson:
-		err = json.Unmarshal(secret.Data[v1.DockerConfigJsonKey], &config)
-	}
-	if err != nil {
-		return "", err
-	}
-
-	for registry, registryAuth := range config.Auths {
-		if m.Matcher(registryName, registry) {
-			return registryAuth.Auth, nil
-		}
-	}
-	return "", fmt.Errorf("no secret configuration for registry: %s", registryName)
 }

@@ -9,40 +9,25 @@ func (b *Builder) Ready() bool {
 		(b.Generation == b.Status.ObservedGeneration)
 }
 
-func (b *Builder) ImageRef() BuilderImage {
-	return BuilderImage{
+func (b *Builder) BuildBuilderSpec() BuildBuilderSpec {
+	return BuildBuilderSpec{
 		Image:            b.Status.LatestImage,
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}
 }
 
-func (b *Builder) SecretName() string {
-	if b.HasSecret() {
-		return b.Spec.ImagePullSecrets[0].Name
+func (b *Builder) ImagePullSecrets() []string {
+	var secrets []string
+	for _, s := range b.Spec.ImagePullSecrets {
+		secrets = append(secrets, s.Name)
 	}
-	return ""
-}
-
-func (b *Builder) ServiceAccount() string {
-	return ""
-}
-
-func (b *Builder) Namespace() string {
-	return b.ObjectMeta.Namespace
+	return secrets
 }
 
 func (b *Builder) Image() string {
 	return b.Spec.Image
 }
 
-func (b *Builder) HasSecret() bool {
-	return len(b.Spec.ImagePullSecrets) > 0
-}
-
 func (b *Builder) BuildpackMetadata() BuildpackMetadataList {
 	return b.Status.BuilderMetadata
-}
-
-func (b *Builder) GetName() string {
-	return b.ObjectMeta.Name
 }

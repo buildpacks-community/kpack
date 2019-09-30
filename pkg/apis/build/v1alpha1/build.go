@@ -7,7 +7,7 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
-func (bi *BuilderImage) getBuilderSecretVolume() corev1.Volume {
+func (bi *BuildBuilderSpec) getBuilderSecretVolume() corev1.Volume {
 	if len(bi.ImagePullSecrets) > 0 {
 		return corev1.Volume{
 			Name: builderPullSecretsDirName,
@@ -31,28 +31,8 @@ func (*Build) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Build")
 }
 
-func (b *Build) ServiceAccount() string {
-	return b.Spec.ServiceAccount
-}
-
-func (b *Build) Image() string {
-	return b.Tag()
-}
-
 func (b *Build) Tag() string {
 	return b.Spec.Tags[0]
-}
-
-func (b *Build) HasSecret() bool {
-	return true
-}
-
-func (b *Build) Namespace() string {
-	return b.ObjectMeta.Namespace
-}
-
-func (b *Build) SecretName() string {
-	return "" // Needed only for ImagePullSecrets Keychain
 }
 
 func (b *Build) IsRunning() bool {

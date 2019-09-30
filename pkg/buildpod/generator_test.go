@@ -103,7 +103,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						"image/name",
 						"additional/names",
 					},
-					Builder:        builder.ImageRef(),
+					Builder:        builder.BuildBuilderSpec(),
 					ServiceAccount: serviceAccountName,
 					Source: v1alpha1.SourceConfig{
 						Git: &v1alpha1.Git{
@@ -136,7 +136,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			expectedPod, err := build.BuildPod(buildPodConfig, []corev1.Secret{
 				*gitSecret,
 				*dockerSecret,
-			}, builder.ImageRef())
+			}, builder.BuildBuilderSpec())
 			require.NoError(t, err)
 			require.Equal(t, expectedPod, pod)
 		})

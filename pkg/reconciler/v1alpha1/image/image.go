@@ -176,8 +176,8 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 	return image, c.deleteOldBuilds(image)
 }
 
-func (c *Reconciler) getBuilder(image *v1alpha1.Image) (v1alpha1.AbstractBuilder, error) {
-	var builder v1alpha1.AbstractBuilder
+func (c *Reconciler) getBuilder(image *v1alpha1.Image) (v1alpha1.BuilderResource, error) {
+	var builder v1alpha1.BuilderResource
 	var err error
 	if image.Spec.Builder.Kind == v1alpha1.ClusterBuilderKind {
 		builder, err = c.ClusterBuilderLister.Get(image.Spec.Builder.Name)
@@ -335,5 +335,5 @@ func buildCacheEqual(desiredBuildCache *corev1.PersistentVolumeClaim, buildCache
 }
 
 func (c *Reconciler) CreateBuild(build *v1alpha1.Build) (*v1alpha1.Build, error) {
-	return c.Client.BuildV1alpha1().Builds(build.Namespace()).Create(build)
+	return c.Client.BuildV1alpha1().Builds(build.Namespace).Create(build)
 }

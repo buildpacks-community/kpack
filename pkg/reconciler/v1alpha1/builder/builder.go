@@ -17,7 +17,6 @@ import (
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -27,7 +26,7 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderImage(repo registry.ImageRef) (cnb.BuilderImage, error)
+	GetBuilderImage(builder v1alpha1.BuilderResource) (cnb.BuilderImage, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -92,7 +91,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
-	original, err := c.BuilderLister.Builders(desired.Namespace()).Get(desired.Name)
+	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -101,7 +100,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace()).UpdateStatus(desired)
+	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 

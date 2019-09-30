@@ -8,7 +8,7 @@ import (
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
-func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder AbstractBuilder) (BuildApplier, error) {
+func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder BuilderResource) (BuildApplier, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ type upToDateBuild struct {
 	build        *Build
 	buildCounter int64
 	latestImage  string
-	builder      AbstractBuilder
+	builder      BuilderResource
 }
 
 func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
@@ -90,7 +90,7 @@ func (r upToDateBuild) builderCondition() duckv1alpha1.Condition {
 			Type:    ConditionBuilderReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  BuilderNotReady,
-			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
+			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetObjectMeta().GetName()),
 		}
 	}
 	return duckv1alpha1.Condition{

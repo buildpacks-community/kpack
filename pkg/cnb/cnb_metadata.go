@@ -7,6 +7,7 @@ import (
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
 	"github.com/pkg/errors"
 
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -32,8 +33,11 @@ type RemoteMetadataRetriever struct {
 	RemoteImageFactory registry.RemoteImageFactory
 }
 
-func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (BuilderImage, error) {
-	img, err := r.RemoteImageFactory.NewRemote(repo)
+func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResource) (BuilderImage, error) {
+	img, err := r.RemoteImageFactory.NewRemote(builder.Image(), registry.SecretRef{
+		Namespace:        builder.GetObjectMeta().GetNamespace(),
+		ImagePullSecrets: builder.ImagePullSecrets(),
+	})
 	if err != nil {
 		return BuilderImage{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
@@ -61,8 +65,11 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(repo registry.ImageRef) (Build
 	}, nil
 }
 
-func (r *RemoteMetadataRetriever) GetBuiltImage(ref registry.ImageRef) (BuiltImage, error) {
-	img, err := r.RemoteImageFactory.NewRemote(ref)
+func (r *RemoteMetadataRetriever) GetBuiltImage(ref *v1alpha1.Build) (BuiltImage, error) {
+	img, err := r.RemoteImageFactory.NewRemote(ref.Tag(), registry.SecretRef{
+		ServiceAccount: ref.Spec.ServiceAccount,
+		Namespace:      ref.Namespace,
+	})
 	if err != nil {
 		return BuiltImage{}, err
 	}

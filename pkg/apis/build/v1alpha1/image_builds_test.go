@@ -87,7 +87,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: BuildSpec{
 			Tags:           []string{"some/image"},
-			Builder:        builder.ImageRef(),
+			Builder:        builder.BuildBuilderSpec(),
 			ServiceAccount: "some/serviceaccount",
 			Env: []v1.EnvVar{
 				{
