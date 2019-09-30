@@ -6,7 +6,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 
@@ -111,9 +113,10 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 				ObservedGeneration: builder.Generation,
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:    duckv1alpha1.ConditionReady,
-						Status:  corev1.ConditionFalse,
-						Message: err.Error(),
+						Type:               duckv1alpha1.ConditionReady,
+						Status:             corev1.ConditionFalse,
+						LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
+						Message:            err.Error(),
 					},
 				},
 			},
@@ -126,8 +129,9 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 			ObservedGeneration: builder.Generation,
 			Conditions: duckv1alpha1.Conditions{
 				{
-					Type:   duckv1alpha1.ConditionReady,
-					Status: corev1.ConditionTrue,
+					LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
+					Type:               duckv1alpha1.ConditionReady,
+					Status:             corev1.ConditionTrue,
 				},
 			},
 		},

@@ -24,11 +24,11 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder/clusterbuilderfakes"
 )
 
-func TestBuildReconciler(t *testing.T) {
-	spec.Run(t, "Builder Reconciler", testBuilderReconciler)
+func TestCluterBuilderReconciler(t *testing.T) {
+	spec.Run(t, "Cluster Builder Reconciler", testClusterBuilderReconciler)
 }
 
-func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
+func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeMetadataRetriever := &clusterbuilderfakes.FakeMetadataRetriever{}
 
 	fakeEnqueuer := &clusterbuilderfakes.FakeEnqueuer{}
@@ -119,7 +119,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
-					assert.Equal(t, testBuilder, fakeMetadataRetriever.GetBuilderImageArgsForCall(0))
 				})
 
 				it("schedule next polling when update policy is not set", func() {

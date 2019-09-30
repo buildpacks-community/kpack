@@ -3,11 +3,12 @@ package builder
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/equality"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 
@@ -112,9 +113,10 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1
 				ObservedGeneration: builder.Generation,
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:    duckv1alpha1.ConditionReady,
-						Status:  corev1.ConditionFalse,
-						Message: err.Error(),
+						Type:               duckv1alpha1.ConditionReady,
+						Status:             corev1.ConditionFalse,
+						Message:            err.Error(),
+						LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 					},
 				},
 			},
@@ -127,8 +129,9 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1
 			ObservedGeneration: builder.Generation,
 			Conditions: duckv1alpha1.Conditions{
 				{
-					Type:   duckv1alpha1.ConditionReady,
-					Status: corev1.ConditionTrue,
+					Type:               duckv1alpha1.ConditionReady,
+					Status:             corev1.ConditionTrue,
+					LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 				},
 			},
 		},

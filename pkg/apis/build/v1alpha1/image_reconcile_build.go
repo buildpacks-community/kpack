@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
@@ -70,8 +72,9 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 	if r.build == nil || r.build.Status.GetCondition(duckv1alpha1.ConditionSucceeded) == nil {
 		return duckv1alpha1.Conditions{
 			{
-				Type:   duckv1alpha1.ConditionReady,
-				Status: corev1.ConditionUnknown,
+				Type:               duckv1alpha1.ConditionReady,
+				Status:             corev1.ConditionUnknown,
+				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 			}, r.builderCondition(),
 		}
 	}
@@ -80,8 +83,9 @@ func (r upToDateBuild) conditions() duckv1alpha1.Conditions {
 
 	return duckv1alpha1.Conditions{
 		{
-			Type:   duckv1alpha1.ConditionReady,
-			Status: condition.Status,
+			Type:               duckv1alpha1.ConditionReady,
+			Status:             condition.Status,
+			LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 		}, r.builderCondition(),
 	}
 }
@@ -121,12 +125,14 @@ func (r newBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
 func (r newBuild) conditions() duckv1alpha1.Conditions {
 	return duckv1alpha1.Conditions{
 		{
-			Type:   duckv1alpha1.ConditionReady,
-			Status: corev1.ConditionUnknown,
+			Type:               duckv1alpha1.ConditionReady,
+			Status:             corev1.ConditionUnknown,
+			LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 		},
 		{
-			Type:   ConditionBuilderReady,
-			Status: corev1.ConditionTrue,
+			Type:               ConditionBuilderReady,
+			Status:             corev1.ConditionTrue,
+			LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 		},
 	}
 }
