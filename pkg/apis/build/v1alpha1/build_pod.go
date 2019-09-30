@@ -110,7 +110,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
-					Name:            "nop",
+					Name:            "completion",
 					Image:           config.NopImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Resources:       b.Spec.Resources,
