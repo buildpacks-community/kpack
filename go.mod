@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.46.3 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
+	github.com/Azure/azure-sdk-for-go v11.3.0-beta+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
 	github.com/buildpack/imgutil v0.0.0-20190827204914-36282d0caea7 // indirect
 	github.com/buildpack/lifecycle v0.4.0
@@ -53,6 +54,7 @@ require (
 	k8s.io/gengo v0.0.0-20190822140433-26a664648505 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
+	k8s.io/kubernetes v1.10.2 // indirect
 	k8s.io/utils v0.0.0-20190923111123-69764acb6e8e // indirect
 	knative.dev/pkg v0.0.0-20190927181044-f6eb4a55ec68
 )

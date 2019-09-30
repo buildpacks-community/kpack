@@ -8,10 +8,11 @@ import (
 )
 
 type FakeRemoteImageFactory struct {
-	NewRemoteStub        func(registry.ImageRef) (registry.RemoteImage, error)
+	NewRemoteStub        func(string, registry.SecretRef) (registry.RemoteImage, error)
 	newRemoteMutex       sync.RWMutex
 	newRemoteArgsForCall []struct {
-		arg1 registry.ImageRef
+		arg1 string
+		arg2 registry.SecretRef
 	}
 	newRemoteReturns struct {
 		result1 registry.RemoteImage
@@ -21,20 +22,34 @@ type FakeRemoteImageFactory struct {
 		result1 registry.RemoteImage
 		result2 error
 	}
+	NewRemoteWithDefaultKeychainStub        func(string) (registry.RemoteImage, error)
+	newRemoteWithDefaultKeychainMutex       sync.RWMutex
+	newRemoteWithDefaultKeychainArgsForCall []struct {
+		arg1 string
+	}
+	newRemoteWithDefaultKeychainReturns struct {
+		result1 registry.RemoteImage
+		result2 error
+	}
+	newRemoteWithDefaultKeychainReturnsOnCall map[int]struct {
+		result1 registry.RemoteImage
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRemoteImageFactory) NewRemote(arg1 registry.ImageRef) (registry.RemoteImage, error) {
+func (fake *FakeRemoteImageFactory) NewRemote(arg1 string, arg2 registry.SecretRef) (registry.RemoteImage, error) {
 	fake.newRemoteMutex.Lock()
 	ret, specificReturn := fake.newRemoteReturnsOnCall[len(fake.newRemoteArgsForCall)]
 	fake.newRemoteArgsForCall = append(fake.newRemoteArgsForCall, struct {
-		arg1 registry.ImageRef
-	}{arg1})
-	fake.recordInvocation("NewRemote", []interface{}{arg1})
+		arg1 string
+		arg2 registry.SecretRef
+	}{arg1, arg2})
+	fake.recordInvocation("NewRemote", []interface{}{arg1, arg2})
 	fake.newRemoteMutex.Unlock()
 	if fake.NewRemoteStub != nil {
-		return fake.NewRemoteStub(arg1)
+		return fake.NewRemoteStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -49,17 +64,17 @@ func (fake *FakeRemoteImageFactory) NewRemoteCallCount() int {
 	return len(fake.newRemoteArgsForCall)
 }
 
-func (fake *FakeRemoteImageFactory) NewRemoteCalls(stub func(registry.ImageRef) (registry.RemoteImage, error)) {
+func (fake *FakeRemoteImageFactory) NewRemoteCalls(stub func(string, registry.SecretRef) (registry.RemoteImage, error)) {
 	fake.newRemoteMutex.Lock()
 	defer fake.newRemoteMutex.Unlock()
 	fake.NewRemoteStub = stub
 }
 
-func (fake *FakeRemoteImageFactory) NewRemoteArgsForCall(i int) registry.ImageRef {
+func (fake *FakeRemoteImageFactory) NewRemoteArgsForCall(i int) (string, registry.SecretRef) {
 	fake.newRemoteMutex.RLock()
 	defer fake.newRemoteMutex.RUnlock()
 	argsForCall := fake.newRemoteArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeRemoteImageFactory) NewRemoteReturns(result1 registry.RemoteImage, result2 error) {
@@ -88,11 +103,76 @@ func (fake *FakeRemoteImageFactory) NewRemoteReturnsOnCall(i int, result1 regist
 	}{result1, result2}
 }
 
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychain(arg1 string) (registry.RemoteImage, error) {
+	fake.newRemoteWithDefaultKeychainMutex.Lock()
+	ret, specificReturn := fake.newRemoteWithDefaultKeychainReturnsOnCall[len(fake.newRemoteWithDefaultKeychainArgsForCall)]
+	fake.newRemoteWithDefaultKeychainArgsForCall = append(fake.newRemoteWithDefaultKeychainArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("NewRemoteWithDefaultKeychain", []interface{}{arg1})
+	fake.newRemoteWithDefaultKeychainMutex.Unlock()
+	if fake.NewRemoteWithDefaultKeychainStub != nil {
+		return fake.NewRemoteWithDefaultKeychainStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.newRemoteWithDefaultKeychainReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychainCallCount() int {
+	fake.newRemoteWithDefaultKeychainMutex.RLock()
+	defer fake.newRemoteWithDefaultKeychainMutex.RUnlock()
+	return len(fake.newRemoteWithDefaultKeychainArgsForCall)
+}
+
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychainCalls(stub func(string) (registry.RemoteImage, error)) {
+	fake.newRemoteWithDefaultKeychainMutex.Lock()
+	defer fake.newRemoteWithDefaultKeychainMutex.Unlock()
+	fake.NewRemoteWithDefaultKeychainStub = stub
+}
+
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychainArgsForCall(i int) string {
+	fake.newRemoteWithDefaultKeychainMutex.RLock()
+	defer fake.newRemoteWithDefaultKeychainMutex.RUnlock()
+	argsForCall := fake.newRemoteWithDefaultKeychainArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychainReturns(result1 registry.RemoteImage, result2 error) {
+	fake.newRemoteWithDefaultKeychainMutex.Lock()
+	defer fake.newRemoteWithDefaultKeychainMutex.Unlock()
+	fake.NewRemoteWithDefaultKeychainStub = nil
+	fake.newRemoteWithDefaultKeychainReturns = struct {
+		result1 registry.RemoteImage
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRemoteImageFactory) NewRemoteWithDefaultKeychainReturnsOnCall(i int, result1 registry.RemoteImage, result2 error) {
+	fake.newRemoteWithDefaultKeychainMutex.Lock()
+	defer fake.newRemoteWithDefaultKeychainMutex.Unlock()
+	fake.NewRemoteWithDefaultKeychainStub = nil
+	if fake.newRemoteWithDefaultKeychainReturnsOnCall == nil {
+		fake.newRemoteWithDefaultKeychainReturnsOnCall = make(map[int]struct {
+			result1 registry.RemoteImage
+			result2 error
+		})
+	}
+	fake.newRemoteWithDefaultKeychainReturnsOnCall[i] = struct {
+		result1 registry.RemoteImage
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRemoteImageFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newRemoteMutex.RLock()
 	defer fake.newRemoteMutex.RUnlock()
+	fake.newRemoteWithDefaultKeychainMutex.RLock()
+	defer fake.newRemoteWithDefaultKeychainMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

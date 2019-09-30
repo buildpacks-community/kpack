@@ -10,49 +10,20 @@ type ImageFactory struct {
 	KeychainFactory KeychainFactory
 }
 
-func (f *ImageFactory) NewRemote(imageRef ImageRef) (RemoteImage, error) {
-	remoteImage, err := NewGoContainerRegistryImage(imageRef.Image(), f.KeychainFactory.KeychainForImageRef(imageRef))
-	return remoteImage, err
+func (f *ImageFactory) NewRemote(image string, secretRef SecretRef) (RemoteImage, error) {
+	keychain, err := f.KeychainFactory.KeychainForSecretRef(secretRef)
+	if err != nil {
+		return nil, err
+	}
+	return NewGoContainerRegistryImage(image, keychain)
+}
+
+func (f *ImageFactory) NewRemoteWithDefaultKeychain(image string) (RemoteImage, error) {
+	return NewGoContainerRegistryImage(image, authn.DefaultKeychain)
 }
 
 type KeychainFactory interface {
-	KeychainForImageRef(ImageRef) authn.Keychain
-}
-
-type ImageRef interface {
-	ServiceAccount() string
-	Namespace() string
-	Image() string
-	HasSecret() bool
-	SecretName() string
-}
-
-type noAuthImageRef struct {
-	identifier string
-}
-
-func (na *noAuthImageRef) SecretName() string {
-	return ""
-}
-
-func NewNoAuthImageRef(identifier string) *noAuthImageRef {
-	return &noAuthImageRef{identifier: identifier}
-}
-
-func (na *noAuthImageRef) Image() string {
-	return na.identifier
-}
-
-func (noAuthImageRef) ServiceAccount() string {
-	return ""
-}
-
-func (noAuthImageRef) HasSecret() bool {
-	return false
-}
-
-func (noAuthImageRef) Namespace() string {
-	return ""
+	KeychainForSecretRef(SecretRef) (authn.Keychain, error)
 }
 
 type RemoteImage interface {
@@ -64,5 +35,23 @@ type RemoteImage interface {
 
 //go:generate counterfeiter . RemoteImageFactory
 type RemoteImageFactory interface {
-	NewRemote(imageRef ImageRef) (RemoteImage, error)
+	NewRemote(image string, secretRef SecretRef) (RemoteImage, error)
+	NewRemoteWithDefaultKeychain(image string) (RemoteImage, error)
+}
+
+type SecretRef struct {
+	ServiceAccount   string
+	Namespace        string
+	ImagePullSecrets []string
+}
+
+func (s SecretRef) IsNamespaced() bool {
+	return s.Namespace != ""
+}
+
+func (s SecretRef) ServiceAccountOrDefault() string {
+	if s.ServiceAccount == "" {
+		return "default"
+	}
+	return s.ServiceAccount
 }

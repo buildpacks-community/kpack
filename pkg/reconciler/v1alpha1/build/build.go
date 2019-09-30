@@ -21,7 +21,6 @@ import (
 	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -29,8 +28,9 @@ const (
 	Kind           = "Build"
 )
 
+//go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuiltImage(repoName registry.ImageRef) (cnb.BuiltImage, error)
+	GetBuiltImage(repoName *v1alpha1.Build) (cnb.BuiltImage, error)
 }
 
 type PodGenerator interface {
@@ -112,7 +112,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
-	pod, err := c.PodLister.Pods(build.Namespace()).Get(build.PodName())
+	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
 	} else if k8s_errors.IsNotFound(err) {
@@ -120,7 +120,7 @@ func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, erro
 		if err != nil {
 			return nil, err
 		}
-		return c.K8sClient.CoreV1().Pods(build.Namespace()).Create(podConfig)
+		return c.K8sClient.CoreV1().Pods(build.Namespace).Create(podConfig)
 	}
 
 	return pod, nil
@@ -174,7 +174,7 @@ func stepCompleted(pod *corev1.Pod) []string {
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
-	original, err := c.Lister.Builds(desired.Namespace()).Get(desired.Name)
+	original, err := c.Lister.Builds(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Builds(desired.Namespace()).UpdateStatus(desired)
+	_, err = c.Client.BuildV1alpha1().Builds(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 

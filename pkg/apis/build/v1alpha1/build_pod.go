@@ -70,7 +70,7 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuilderImage) (*corev1.Pod, error) {
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuildBuilderSpec) (*corev1.Pod, error) {
 	var root int64 = 0
 
 	buf, err := json.Marshal(b.Spec.Env)
@@ -97,7 +97,7 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      b.PodName(),
-			Namespace: b.Namespace(),
+			Namespace: b.Namespace,
 			Labels: b.labels(map[string]string{
 				BuildLabel: b.Name,
 			}),

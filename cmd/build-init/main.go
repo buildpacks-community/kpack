@@ -7,8 +7,6 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -54,9 +52,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	remoteImageFactory := &registry.ImageFactory{
-		KeychainFactory: keychainFactory{builderCreds},
-	}
+	remoteImageFactory := &registry.ImageFactory{}
 
 	filePermissionSetup := &cnb.FilePermissionSetup{
 		RemoteImageFactory: remoteImageFactory,
@@ -74,14 +70,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("error setting up platform env vars %s", err)
 	}
-}
-
-type keychainFactory struct {
-	keychain authn.Keychain
-}
-
-func (k keychainFactory) KeychainForImageRef(registry.ImageRef) authn.Keychain {
-	return k.keychain
 }
 
 type realOs struct {

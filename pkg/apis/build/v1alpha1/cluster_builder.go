@@ -4,42 +4,25 @@ import (
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
-func (in *ClusterBuilder) ServiceAccount() string {
-	return ""
+func (c *ClusterBuilder) Image() string {
+	return c.Spec.Image
 }
 
-func (in *ClusterBuilder) Namespace() string {
-	return ""
-}
-
-func (in *ClusterBuilder) Image() string {
-	return in.Spec.Image
-}
-
-func (in *ClusterBuilder) HasSecret() bool {
-	return false
-}
-
-func (in *ClusterBuilder) SecretName() string {
-	return ""
-}
-
-func (in *ClusterBuilder) ImageRef() BuilderImage {
-	return BuilderImage{
-		Image:            in.Status.LatestImage,
-		ImagePullSecrets: nil,
+func (c *ClusterBuilder) BuildBuilderSpec() BuildBuilderSpec {
+	return BuildBuilderSpec{
+		Image: c.Status.LatestImage,
 	}
 }
 
-func (in *ClusterBuilder) BuildpackMetadata() BuildpackMetadataList {
-	return in.Status.BuilderMetadata
+func (c *ClusterBuilder) BuildpackMetadata() BuildpackMetadataList {
+	return c.Status.BuilderMetadata
 }
 
-func (in *ClusterBuilder) Ready() bool {
-	return in.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() &&
-		(in.Generation == in.Status.ObservedGeneration)
+func (c *ClusterBuilder) Ready() bool {
+	return c.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue() &&
+		(c.Generation == c.Status.ObservedGeneration)
 }
 
-func (in *ClusterBuilder) GetName() string {
-	return in.ObjectMeta.Name
+func (c *ClusterBuilder) ImagePullSecrets() []string {
+	return nil
 }

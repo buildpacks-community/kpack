@@ -37,7 +37,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	imageRef := v1alpha1.BuilderImage{
+	imageRef := v1alpha1.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},

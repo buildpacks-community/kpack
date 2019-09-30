@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
@@ -32,7 +31,7 @@ func testFilePermissionSetup(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		os.RemoveAll(testVolume)
+		require.NoError(t, os.RemoveAll(testVolume))
 	})
 
 	when("#setup", func() {
@@ -41,7 +40,7 @@ func testFilePermissionSetup(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, fakeImage.SetEnv("CNB_USER_ID", "1234"))
 			require.NoError(t, fakeImage.SetEnv("CNB_GROUP_ID", "5678"))
 
-			fakeRemoteImageFactory.NewRemoteReturns(fakeImage, nil)
+			fakeRemoteImageFactory.NewRemoteWithDefaultKeychainReturns(fakeImage, nil)
 
 			chowner := &osSpy{
 				chowned: make(map[string]string),
@@ -56,8 +55,8 @@ func testFilePermissionSetup(t *testing.T, when spec.G, it spec.S) {
 
 			require.Equal(t, chowner.chowned[testVolume], "1234:5678")
 
-			require.Equal(t, fakeRemoteImageFactory.NewRemoteCallCount(), 1)
-			assert.Equal(t, fakeRemoteImageFactory.NewRemoteArgsForCall(0), registry.NewNoAuthImageRef("builder/builder"))
+			require.Equal(t, fakeRemoteImageFactory.NewRemoteWithDefaultKeychainCallCount(), 1)
+			assert.Equal(t, fakeRemoteImageFactory.NewRemoteWithDefaultKeychainArgsForCall(0), "builder/builder")
 
 		})
 	})

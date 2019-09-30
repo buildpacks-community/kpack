@@ -24,12 +24,12 @@ func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
 
 func (g *Generator) getBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, error) {
 	var secrets []corev1.Secret
-	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.Namespace()).Get(build.ServiceAccount(), metav1.GetOptions{})
+	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.Namespace).Get(build.Spec.ServiceAccount, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, secretRef := range serviceAccount.Secrets {
-		secret, err := g.K8sClient.CoreV1().Secrets(build.Namespace()).Get(secretRef.Name, metav1.GetOptions{})
+		secret, err := g.K8sClient.CoreV1().Secrets(build.Namespace).Get(secretRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}

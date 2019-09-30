@@ -4,16 +4,16 @@ package builderfakes
 import (
 	"sync"
 
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 type FakeMetadataRetriever struct {
-	GetBuilderImageStub        func(registry.ImageRef) (cnb.BuilderImage, error)
+	GetBuilderImageStub        func(v1alpha1.BuilderResource) (cnb.BuilderImage, error)
 	getBuilderImageMutex       sync.RWMutex
 	getBuilderImageArgsForCall []struct {
-		arg1 registry.ImageRef
+		arg1 v1alpha1.BuilderResource
 	}
 	getBuilderImageReturns struct {
 		result1 cnb.BuilderImage
@@ -27,11 +27,11 @@ type FakeMetadataRetriever struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImage(arg1 registry.ImageRef) (cnb.BuilderImage, error) {
+func (fake *FakeMetadataRetriever) GetBuilderImage(arg1 v1alpha1.BuilderResource) (cnb.BuilderImage, error) {
 	fake.getBuilderImageMutex.Lock()
 	ret, specificReturn := fake.getBuilderImageReturnsOnCall[len(fake.getBuilderImageArgsForCall)]
 	fake.getBuilderImageArgsForCall = append(fake.getBuilderImageArgsForCall, struct {
-		arg1 registry.ImageRef
+		arg1 v1alpha1.BuilderResource
 	}{arg1})
 	fake.recordInvocation("GetBuilderImage", []interface{}{arg1})
 	fake.getBuilderImageMutex.Unlock()
@@ -51,13 +51,13 @@ func (fake *FakeMetadataRetriever) GetBuilderImageCallCount() int {
 	return len(fake.getBuilderImageArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImageCalls(stub func(registry.ImageRef) (cnb.BuilderImage, error)) {
+func (fake *FakeMetadataRetriever) GetBuilderImageCalls(stub func(v1alpha1.BuilderResource) (cnb.BuilderImage, error)) {
 	fake.getBuilderImageMutex.Lock()
 	defer fake.getBuilderImageMutex.Unlock()
 	fake.GetBuilderImageStub = stub
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImageArgsForCall(i int) registry.ImageRef {
+func (fake *FakeMetadataRetriever) GetBuilderImageArgsForCall(i int) v1alpha1.BuilderResource {
 	fake.getBuilderImageMutex.RLock()
 	defer fake.getBuilderImageMutex.RUnlock()
 	argsForCall := fake.getBuilderImageArgsForCall[i]
