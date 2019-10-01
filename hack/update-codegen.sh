@@ -15,6 +15,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf ${TMP_DIR} && rm -rf $SCRIPT_ROOT/vendor' EXIT
+export GOPATH=${GOPATH:-${TMP_DIR}}
 
 TMP_REPO_PATH="${TMP_DIR}/src/github.com/pivotal/kpack"
 mkdir -p "$(dirname "${TMP_REPO_PATH}")" && ln -s "${SCRIPT_ROOT}" "${TMP_REPO_PATH}"
