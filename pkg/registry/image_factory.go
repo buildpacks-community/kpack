@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "k8s.io/api/core/v1"
 )
 
 type ImageFactory struct {
@@ -42,7 +43,7 @@ type RemoteImageFactory interface {
 type SecretRef struct {
 	ServiceAccount   string
 	Namespace        string
-	ImagePullSecrets []string
+	ImagePullSecrets []v1.LocalObjectReference
 }
 
 func (s SecretRef) IsNamespaced() bool {

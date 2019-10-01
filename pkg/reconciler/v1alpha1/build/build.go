@@ -37,7 +37,7 @@ type PodGenerator interface {
 	Generate(*v1alpha1.Build) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, imageRebaser cnb.ImageRebaser) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
@@ -45,6 +45,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 		Lister:            informer.Lister(),
 		PodLister:         podInformer.Lister(),
 		PodGenerator:      podGenerator,
+		ImageRebaser:      imageRebaser,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -66,6 +67,7 @@ type Reconciler struct {
 	K8sClient         k8sclient.Interface
 	PodLister         v1Listers.PodLister
 	PodGenerator      PodGenerator
+	ImageRebaser      cnb.ImageRebaser
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -86,25 +88,55 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	pod, err := c.reconcileBuildPod(build)
-	if err != nil {
-		return err
-	}
-
-	if build.MetadataReady(pod) {
-		image, err := c.MetadataRetriever.GetBuiltImage(build)
+	if build.Rebasable() {
+		image, err := c.ImageRebaser.Rebase(build, ctx)
 		if err != nil {
-			return err
+			build.Status.Conditions = duckv1alpha1.Conditions{
+				{
+					Type:               duckv1alpha1.ConditionSucceeded,
+					Status:             corev1.ConditionFalse,
+					LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+					Message:            err.Error(),
+				},
+			}
+			if err := c.updateStatus(build); err != nil {
+				return err
+			}
+			return controller.NewPermanentError(err)
 		}
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
-	}
+		build.Status.RunImage = image.RunImage
+		build.Status.Conditions = duckv1alpha1.Conditions{
+			{
+				Type:               duckv1alpha1.ConditionSucceeded,
+				Status:             corev1.ConditionTrue,
+				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+			},
+		}
+	} else {
+		pod, err := c.reconcileBuildPod(build)
+		if err != nil {
+			return err
+		}
 
-	build.Status.PodName = pod.Name
-	build.Status.StepStates = stepStates(pod)
-	build.Status.StepsCompleted = stepCompleted(pod)
-	build.Status.Conditions = conditionForPod(pod)
+		if build.MetadataReady(pod) {
+			image, err := c.MetadataRetriever.GetBuiltImage(build)
+			if err != nil {
+				return err
+			}
+
+			build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
+			build.Status.LatestImage = image.Identifier
+			build.Status.RunImage = image.RunImage
+		}
+
+		build.Status.PodName = pod.Name
+		build.Status.StepStates = stepStates(pod)
+		build.Status.StepsCompleted = stepCompleted(pod)
+		build.Status.Conditions = conditionForPod(pod)
+	}
 
 	build.Status.ObservedGeneration = build.Generation
 

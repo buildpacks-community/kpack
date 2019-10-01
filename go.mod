@@ -8,21 +8,19 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
 	github.com/Azure/azure-sdk-for-go v11.3.0-beta+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
-	github.com/buildpack/imgutil v0.0.0-20190827204914-36282d0caea7 // indirect
-	github.com/buildpack/lifecycle v0.4.0
+	github.com/buildpack/imgutil v0.0.0-20190827204914-36282d0caea7
+	github.com/buildpack/lifecycle v0.4.1-0.20191002130645-029baabfa337
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20190910142231-b02d448a3705
-	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
-	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect

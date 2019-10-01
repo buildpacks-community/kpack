@@ -47,10 +47,12 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 			it("gets buildpacks from a local image", func() {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/builder/image", "sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
-				err := fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
+				fakeRunImage := registryfakes.NewFakeRemoteImage("foo.io/run", "sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504")
+				err := fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}], "stack": { "runImage": { "image": "foo.io/run:basecnb" }}}`)
 				assert.NoError(t, err)
 
-				mockFactory.NewRemoteReturns(fakeImage, nil)
+				mockFactory.NewRemoteReturnsOnCall(0, fakeImage, nil)
+				mockFactory.NewRemoteReturnsOnCall(1, fakeRunImage, nil)
 
 				subject := cnb.RemoteMetadataRetriever{RemoteImageFactory: mockFactory}
 				builderImage, err := subject.GetBuilderImage(builder)
@@ -63,10 +65,11 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, image, "builder/name")
 				assert.Equal(t, secretRef, registry.SecretRef{
 					Namespace:        "builderNamespace",
-					ImagePullSecrets: []string{"Secret-1", "Secret-2"},
+					ImagePullSecrets: []v1.LocalObjectReference{{"Secret-1"}, {"Secret-2"}},
 				})
 
 				assert.Equal(t, "index.docker.io/builder/image@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895", builderImage.Identifier)
+				assert.Equal(t, "foo.io/run@sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504", builderImage.RunImage)
 			})
 		})
 
@@ -85,6 +88,8 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 			it("retrieves the metadata from the registry", func() {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/image", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
 				err := fakeImage.SetLabel("io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
+				assert.NoError(t, err)
+				err = fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"cloudfoundry/run:full-cnb"}}}`)
 				assert.NoError(t, err)
 
 				mockFactory.NewRemoteReturns(fakeImage, nil)
