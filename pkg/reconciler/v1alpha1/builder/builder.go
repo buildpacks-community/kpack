@@ -134,6 +134,7 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1
 		},
 		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
 		LatestImage:     builderImage.Identifier,
+		RunImage:        builderImage.RunImage,
 	}
 	return builder
 }

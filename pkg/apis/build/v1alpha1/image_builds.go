@@ -21,6 +21,7 @@ const (
 	BuildReasonConfig     = "CONFIG"
 	BuildReasonCommit     = "COMMIT"
 	BuildReasonBuildpack  = "BUILDPACK"
+	BuildReasonStack      = "STACK"
 )
 
 func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool) {
@@ -54,6 +55,10 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 
 	if !lastBuildBuiltWithBuilderBuildpacks(builder, lastBuild) {
 		reasons = append(reasons, BuildReasonBuildpack)
+	}
+
+	if lastBuild.Status.RunImage != "" && lastBuild.Status.RunImage != builder.RunImage() {
+		reasons = append(reasons, BuildReasonStack)
 	}
 
 	return reasons, len(reasons) > 0
@@ -94,6 +99,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
+			LastBuild:      LastBuild{Image: im.Status.LatestImage},
 		},
 	}
 }

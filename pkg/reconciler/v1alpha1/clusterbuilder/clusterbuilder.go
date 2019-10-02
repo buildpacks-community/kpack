@@ -133,8 +133,8 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 		},
 		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
 		LatestImage:     builderImage.Identifier,
+		RunImage:        builderImage.RunImage,
 	}
-
 	return builder
 }
 

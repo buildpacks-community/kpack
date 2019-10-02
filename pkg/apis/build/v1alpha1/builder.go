@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
@@ -16,12 +17,8 @@ func (b *Builder) BuildBuilderSpec() BuildBuilderSpec {
 	}
 }
 
-func (b *Builder) ImagePullSecrets() []string {
-	var secrets []string
-	for _, s := range b.Spec.ImagePullSecrets {
-		secrets = append(secrets, s.Name)
-	}
-	return secrets
+func (b *Builder) ImagePullSecrets() []v1.LocalObjectReference {
+	return b.Spec.ImagePullSecrets
 }
 
 func (b *Builder) Image() string {
@@ -30,4 +27,8 @@ func (b *Builder) Image() string {
 
 func (b *Builder) BuildpackMetadata() BuildpackMetadataList {
 	return b.Status.BuilderMetadata
+}
+
+func (b *Builder) RunImage() string {
+	return b.Status.RunImage
 }

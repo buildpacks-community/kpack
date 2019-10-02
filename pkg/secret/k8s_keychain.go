@@ -3,6 +3,7 @@ package secret
 import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
+	"k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
@@ -28,13 +29,21 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 	k8sKeychain, err := k8schain.New(f.client, k8schain.Options{
 		Namespace:          ref.Namespace,
 		ServiceAccountName: ref.ServiceAccount,
-		ImagePullSecrets:   ref.ImagePullSecrets,
+		ImagePullSecrets:   toStringPullSecrets(ref.ImagePullSecrets),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return authn.NewMultiKeychain(annotatedBasicAuthKeychain, k8sKeychain), nil
+}
+
+func toStringPullSecrets(secrets []v1.LocalObjectReference) []string {
+	var stringSecrets []string
+	for _, s := range secrets {
+		stringSecrets = append(stringSecrets, s.Name)
+	}
+	return stringSecrets
 }
 
 func NewSecretKeychainFactory(client k8sclient.Interface) *k8sSecretKeychainFactory {
