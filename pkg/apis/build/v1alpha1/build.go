@@ -89,7 +89,7 @@ func (b *Build) Finished() bool {
 	return !b.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsUnknown()
 }
 
-func (b *Build) BuildEnvVars() []corev1.EnvVar {
+func (b *Build) SourceEnvVars() []corev1.EnvVar {
 	return b.Spec.Source.Source().BuildEnvVars()
 }
 

@@ -1,4 +1,4 @@
-package secret_test
+package dockercreds
 
 import (
 	"encoding/base64"
@@ -17,7 +17,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/secret"
 )
 
 func TestK8sSecretKeychainFactory(t *testing.T) {
@@ -55,7 +54,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 						{Name: "secret-1"},
 					},
 				})
-			keychainFactory := secret.NewSecretKeychainFactory(fakeClient)
+			keychainFactory := NewSecretKeychainFactory(fakeClient)
 
 			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
 				ServiceAccount: serviceAccountName,
@@ -106,7 +105,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 							{Name: "secret-1"},
 						},
 					})
-				keychainFactory := secret.NewSecretKeychainFactory(fakeClient)
+				keychainFactory := NewSecretKeychainFactory(fakeClient)
 
 				keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
 					ServiceAccount: "",
@@ -144,7 +143,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 						Namespace: testNamespace,
 					},
 				})
-			keychainFactory := secret.NewSecretKeychainFactory(fakeClient)
+			keychainFactory := NewSecretKeychainFactory(fakeClient)
 
 			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
@@ -167,7 +166,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("keychain provides Anonymous auth for no matching credentials", func() {
-			keychainFactory := secret.NewSecretKeychainFactory(fake.NewSimpleClientset(&v1.ServiceAccount{
+			keychainFactory := NewSecretKeychainFactory(fake.NewSimpleClientset(&v1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      serviceAccountName,
 					Namespace: testNamespace,
@@ -189,7 +188,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns an empty k8schain when no namespace is provided to leverage k8s.io/kubernetes/pkg/credentialprovider", func() {
-			keychainFactory := secret.NewSecretKeychainFactory(fake.NewSimpleClientset())
+			keychainFactory := NewSecretKeychainFactory(fake.NewSimpleClientset())
 
 			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
 				Namespace: "",

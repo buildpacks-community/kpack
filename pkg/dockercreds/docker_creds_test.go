@@ -30,21 +30,9 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, os.RemoveAll(testPullSecretsDir))
 	})
 
-	when("#AppendToDockerConfig", func() {
-		it("adds secrets to config.json", func() {
-			err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, "config.json"), []byte(`{
-  "auths": {
-    "https://index.docker.io/v1/": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-      "username": "testdockerhub",
-      "password": "testdockerhubusername"
-    }
-  }
-}`,
-			), os.ModePerm)
-			require.NoError(t, err)
-
-			credsToAppend := DockerCreds{
+	when("#Save", func() {
+		it("saves secrets to the provided path in json", func() {
+			creds := DockerCreds{
 				"gcr.io": entry{
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
@@ -54,11 +42,6 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 			expectedConfigJsonContents := `{
   "auths": {
-    "https://index.docker.io/v1/": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-      "username": "testdockerhub",
-      "password": "testdockerhubusername"
-    },
     "gcr.io": {
       "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
       "username": "testusername",
@@ -66,7 +49,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
     }
   }
 }`
-			err = credsToAppend.AppendToDockerConfig(filepath.Join(testPullSecretsDir, "config.json"))
+			err := creds.Save(filepath.Join(testPullSecretsDir, "config.json"))
 			require.NoError(t, err)
 
 			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
@@ -74,87 +57,81 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
 		})
+	})
 
-		it("writes a new config.json does not exist", func() {
-			credsToAppend := DockerCreds{
+	when("#Append", func() {
+		it("creates a new Dockercreds with both creds appended", func() {
+			creds := DockerCreds{
 				"gcr.io": entry{
-					Auth: "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+					Username: "testusername",
+					Password: "testpassword",
 				},
 			}
 
-			expectedConfigJsonContents := `{
-  "auths": {
-    "gcr.io": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
-      "username": "",
-      "password": ""
-    }
-  }
-}`
-			err := credsToAppend.AppendToDockerConfig(filepath.Join(testPullSecretsDir, "config.json"))
+			newCreds, err := creds.Append(DockerCreds{
+				"appendedcreds.io": entry{
+					Auth:     "AppendedCreds=",
+					Username: "appendedUser",
+					Password: "appendedPassword",
+				},
+			})
 			require.NoError(t, err)
 
-			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
-			require.NoError(t, err)
-
-			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
-
+			assert.Equal(t, newCreds, DockerCreds{
+				"gcr.io": entry{
+					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+					Username: "testusername",
+					Password: "testpassword",
+				},
+				"appendedcreds.io": entry{
+					Auth:     "AppendedCreds=",
+					Username: "appendedUser",
+					Password: "appendedPassword",
+				},
+			})
 		})
 
-		it("does not overwrite registries if they already exist", func() {
-			expectedConfigJsonContents := `{
-  "auths": {
-    "https://index.docker.io/v1/": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-      "username": "testdockerhub",
-      "password": "testdockerhubusername"
-    }
-  }
-}`
-			err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, "config.json"), []byte(expectedConfigJsonContents), os.ModePerm)
-			require.NoError(t, err)
-
-			credsToAppend := DockerCreds{
-				"https://index.docker.io/v1/": entry{
-					Auth: "newCreds=",
+		it("does not overwrite registries in the appended creds if they already exist", func() {
+			creds := DockerCreds{
+				"gcr.io": entry{
+					Auth: "dontOverwriteMe=",
 				},
 			}
 
-			err = credsToAppend.AppendToDockerConfig(filepath.Join(testPullSecretsDir, "config.json"))
+			newCreds, err := creds.Append(DockerCreds{
+				"gcr.io": entry{
+					Auth: "ToNotBeOverwritten=",
+				},
+			})
 			require.NoError(t, err)
 
-			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
-			require.NoError(t, err)
-
-			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
+			assert.Equal(t, newCreds, DockerCreds{
+				"gcr.io": entry{
+					Auth: "dontOverwriteMe=",
+				},
+			})
 		})
 
 		it("does not overwrite registries if they already exist in a different format", func() {
-			expectedConfigJsonContents := `{
-  "auths": {
-    "https://gcr.io": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-      "username": "testdockerhub",
-      "password": "testdockerhubusername"
-    }
-  }
-}`
-			err := ioutil.WriteFile(filepath.Join(testPullSecretsDir, "config.json"), []byte(expectedConfigJsonContents), os.ModePerm)
-			require.NoError(t, err)
-
-			credsToAppend := DockerCreds{
+			creds := DockerCreds{
 				"gcr.io": entry{
-					Auth: "newCreds=",
+					Auth: "dontOverwriteMe=",
 				},
 			}
 
-			err = credsToAppend.AppendToDockerConfig(filepath.Join(testPullSecretsDir, "config.json"))
+			newCreds, err := creds.Append(DockerCreds{
+				"https://gcr.io": entry{
+					Auth: "ToNotOverwrite=",
+				},
+			})
 			require.NoError(t, err)
 
-			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
-			require.NoError(t, err)
-
-			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))
+			assert.Equal(t, newCreds, DockerCreds{
+				"gcr.io": entry{
+					Auth: "dontOverwriteMe=",
+				},
+			})
 		})
 	})
 

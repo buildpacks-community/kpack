@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	buildInitBinary = "/layers/org.cloudfoundry.go-mod/app-binary/build-init" // Can be changed to build-init in https://github.com/cloudfoundry/go-mod-cnb/issues/8
+
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
 	BuildLabel                   = "build.pivotal.io/build"
@@ -27,10 +29,13 @@ const (
 )
 
 type BuildPodConfig struct {
-	SourceInitImage string
-	BuildInitImage  string
-	CredsInitImage  string
-	NopImage        string
+	BuildInitImage string
+	NopImage       string
+}
+
+type UserAndGroup struct {
+	Uid int64
+	Gid int64
 }
 
 var (
@@ -70,9 +75,7 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuildBuilderSpec) (*corev1.Pod, error) {
-	var root int64 = 0
-
+func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuildBuilderSpec, userAndGroup UserAndGroup) (*corev1.Pod, error) {
 	buf, err := json.Marshal(b.Spec.Env)
 	if err != nil {
 		return nil, err
@@ -116,70 +119,39 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					Resources:       b.Spec.Resources,
 				},
 			},
+			SecurityContext: &corev1.PodSecurityContext{
+				FSGroup: &userAndGroup.Gid,
+			},
 			InitContainers: []corev1.Container{
-				{
-					Name:            "creds-init",
-					Image:           config.CredsInitImage,
-					Args:            secretArgs,
-					ImagePullPolicy: corev1.PullIfNotPresent,
-					VolumeMounts:    append(secretVolumeMounts, homeVolume),
-					Env: []corev1.EnvVar{
-						{
-							Name:  "HOME",
-							Value: "/builder/home",
-						},
-					},
-				},
-				{
-					Name:  "source-init",
-					Image: config.SourceInitImage,
-					SecurityContext: &corev1.SecurityContext{
-						RunAsUser:  &root,
-						RunAsGroup: &root,
-					},
-					Env:             b.BuildEnvVars(),
-					ImagePullPolicy: corev1.PullIfNotPresent,
-					WorkingDir:      "/workspace",
-					VolumeMounts: []corev1.VolumeMount{
-						imagePullSecretsVolume,
-						sourceVolume,
-						homeVolume,
-					},
-				},
 				{
 					Name:  "prepare",
 					Image: config.BuildInitImage,
 					SecurityContext: &corev1.SecurityContext{
-						RunAsUser:  &root,
-						RunAsGroup: &root,
+						RunAsUser:  &userAndGroup.Uid,
+						RunAsGroup: &userAndGroup.Gid,
 					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  "BUILDER",
-							Value: builderImage,
-						},
-						{
+					Args: buildInitArgs(buildInitBinary, secretArgs),
+					Env: append(
+						b.SourceEnvVars(),
+						corev1.EnvVar{
 							Name:  "PLATFORM_ENV_VARS",
 							Value: envVars,
 						},
-						{
+						corev1.EnvVar{
 							Name:  "IMAGE_TAG",
 							Value: b.Tag(),
 						},
-						homeEnv,
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      layersDirName,
-							MountPath: "/layersDir",
-						},
-						cacheVolume,
-						platformVolume,
-						workspaceVolume,
-						homeVolume,
-						builderPullSecretsVolume,
-					},
+					),
 					ImagePullPolicy: corev1.PullIfNotPresent,
+					WorkingDir:      "/workspace",
+					VolumeMounts: append(
+						secretVolumeMounts,
+						builderPullSecretsVolume,
+						imagePullSecretsVolume,
+						platformVolume,
+						sourceVolume,
+						homeVolume,
+					),
 				},
 				{
 					Name:    "detect",
@@ -254,7 +226,13 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 					Name:    "export",
 					Image:   builderImage,
 					Command: []string{"/lifecycle/exporter"},
-					Args:    buildExporterArgs(b),
+					Args: append([]string{
+						"-layers=/layers",
+						"-helpers=false",
+						"-app=/workspace",
+						"-group=/layers/group.toml",
+						"-analyzed=/layers/analyzed.toml",
+					}, b.Spec.Tags...),
 					VolumeMounts: []corev1.VolumeMount{
 						layersVolume,
 						workspaceVolume,
@@ -288,14 +266,12 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 	}, nil
 }
 
-func buildExporterArgs(build *Build) []string {
-	return append([]string{
-		"-layers=/layers",
-		"-helpers=false",
-		"-app=/workspace",
-		"-group=/layers/group.toml",
-		"-analyzed=/layers/analyzed.toml",
-	}, build.Spec.Tags...)
+const directExecute = "--"
+
+func buildInitArgs(buildInitBinary string, secretArgs []string) []string {
+	return append(
+		[]string{directExecute, buildInitBinary},
+		secretArgs...)
 }
 
 func (b *Build) cacheVolume() corev1.VolumeSource {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
@@ -15,6 +17,8 @@ type k8sGitKeychain struct {
 	secretManager secret.SecretManager
 }
 
+var anonymousAuth transport.AuthMethod = nil
+
 func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	return &k8sGitKeychain{secretManager: secret.SecretManager{
 		Client:        k8sClient,
@@ -23,20 +27,16 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	}}
 }
 
-func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (Auth, error) {
-	if serviceAccount == "" {
-		return AnonymousAuth{}, nil
-	}
-
+func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
 	creds, err := k.secretManager.SecretForServiceAccountAndURL(serviceAccount, namespace, git.URL)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
 	if k8serrors.IsNotFound(err) {
-		return AnonymousAuth{}, nil
+		return anonymousAuth, nil
 	}
 
-	return BasicAuth{Username: creds.Username, Password: creds.Password}, nil
+	return &http.BasicAuth{Username: creds.Username, Password: creds.Password}, nil
 }
 
 var matchingDomains = []string{

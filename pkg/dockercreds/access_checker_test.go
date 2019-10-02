@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			hasAccess, err := HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.True(t, hasAccess)
 		})
@@ -50,7 +51,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			_, _ = HasWriteAccess(tagName)
+			_, _ = HasWriteAccess(testKeychain{}, tagName)
 		})
 
 		it("false when fetching token is unauthorized", func() {
@@ -66,7 +67,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -84,7 +85,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -100,7 +101,7 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
 		})
@@ -112,9 +113,19 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 
 			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 
-			hasAccess, err := HasWriteAccess(tagName)
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.Error(t, err)
 			assert.False(t, hasAccess)
 		})
 	})
+}
+
+type testKeychain struct {
+}
+
+func (t testKeychain) Resolve(authn.Resource) (authn.Authenticator, error) {
+	return &authn.Basic{
+		Username: "testUser",
+		Password: "testPassword",
+	}, nil
 }
