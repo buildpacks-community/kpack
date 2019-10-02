@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	fixtures "gopkg.in/src-d/go-git-fixtures.v3"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
@@ -30,7 +31,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
@@ -56,7 +57,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: "master",
@@ -82,7 +83,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(AnonymousAuth{}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      repo.URL,
 						Revision: tag,
@@ -108,7 +109,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(BasicAuth{
+				resolvedGitSource, err := gitResolver.Resolve(&http.BasicAuth{
 					Username: "notgonna",
 					Password: "work",
 				}, v1alpha1.SourceConfig{

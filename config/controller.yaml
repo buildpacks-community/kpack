@@ -22,9 +22,5 @@ spec:
         env:
         - name: BUILD_INIT_IMAGE
           value: #@ data.values.build_init_image
-        - name: SOURCE_INIT_IMAGE
-          value: #@ data.values.source_init_image
-        - name: CRED_INIT_IMAGE
-          value: #@ data.values.cred_init_image
         - name: NOP_IMAGE
           value: #@ data.values.nop_image

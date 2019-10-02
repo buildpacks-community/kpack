@@ -2,8 +2,9 @@ package dockercreds
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -29,28 +30,25 @@ func (c DockerCreds) Resolve(reg authn.Resource) (authn.Authenticator, error) {
 	return authn.Anonymous, nil
 }
 
-func (c DockerCreds) AppendToDockerConfig(path string) error {
-	existingCreds, err := parseDockerConfigJson(path)
+func (c DockerCreds) Save(path string) error {
+	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
-		return err
-	}
-
-	appendedCreds, err := existingCreds.append(c)
-	if err != nil {
-		return err
+		return errors.Wrapf(err, "error creating %s", filepath.Dir(path))
 	}
 
 	configJson := dockerConfigJson{
-		Auths: appendedCreds,
+		Auths: c,
 	}
-	configJsonBytes, err := json.Marshal(configJson)
+
+	fh, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, configJsonBytes, 0600)
+	defer fh.Close()
+	return json.NewEncoder(fh).Encode(configJson)
 }
 
-func (c DockerCreds) append(a DockerCreds) (DockerCreds, error) {
+func (c DockerCreds) Append(a DockerCreds) (DockerCreds, error) {
 	if c == nil {
 		return a, nil
 	} else if a == nil {

@@ -1,4 +1,4 @@
-package git
+package secret
 
 import (
 	"fmt"
@@ -8,32 +8,26 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type VolumeSecretReader struct {
-}
-
-func (v VolumeSecretReader) FromSecret(secretName string) (*BasicAuth, error) {
-	secretPath := VolumeName(secretName)
+func ReadSecret(secretVolume, secretName string) (BasicAuth, error) {
+	secretPath := volumeName(secretVolume, secretName)
 	ub, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.BasicAuthUsernameKey))
 	if err != nil {
-		return nil, err
+		return BasicAuth{}, err
 	}
 	username := string(ub)
 
 	pb, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.BasicAuthPasswordKey))
 	if err != nil {
-		return nil, err
+		return BasicAuth{}, err
 	}
 	password := string(pb)
 
-	return &BasicAuth{
+	return BasicAuth{
 		Username: username,
 		Password: password,
 	}, nil
 }
 
-const VolumePath = "/var/build-secrets"
-
-// VolumeName returns the full path to the secret, inside the VolumePath.
-func VolumeName(secretName string) string {
+func volumeName(VolumePath, secretName string) string {
 	return fmt.Sprintf("%s/%s", VolumePath, secretName)
 }

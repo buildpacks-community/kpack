@@ -11,9 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HasWriteAccess(tag string) (bool, error) {
-	keychain := authn.DefaultKeychain
-
+func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 	var auth authn.Authenticator
 	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {

@@ -43,7 +43,6 @@ func (g *Git) BuildEnvVars() []corev1.EnvVar {
 			Name:  "GIT_REVISION",
 			Value: g.Revision,
 		},
-		homeEnv,
 	}
 }
 
@@ -75,7 +74,6 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 			Name:  "BLOB_URL",
 			Value: b.URL,
 		},
-		homeEnv,
 	}
 }
 
@@ -110,7 +108,6 @@ func (r *Registry) BuildEnvVars() []corev1.EnvVar {
 			Name:  "REGISTRY_IMAGE",
 			Value: r.Image,
 		},
-		homeEnv,
 	}
 }
 

@@ -18,7 +18,7 @@ func ParseDockerPullSecrets(path string) (DockerCreds, error) {
 		return nil, err
 	}
 
-	return dockerCfg.append(dockerJson)
+	return dockerCfg.Append(dockerJson)
 }
 
 func parseDockerCfg(path string) (DockerCreds, error) {

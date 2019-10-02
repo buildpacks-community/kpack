@@ -18,19 +18,21 @@ type SecretManager struct {
 
 type Matcher func(url, annotatedUrl string) bool
 
-func (m *SecretManager) SecretForServiceAccountAndURL(serviceAccount, namespace string, url string) (*URLAndUser, error) {
+func (m *SecretManager) SecretForServiceAccountAndURL(serviceAccount, namespace string, url string) (BasicAuth, error) {
 	sa, err := m.Client.CoreV1().ServiceAccounts(namespace).Get(serviceAccount, meta_v1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return BasicAuth{}, err
 	}
 
 	secret, err := m.secretForServiceAccount(sa, url, namespace)
 	if err != nil {
-		return nil, err
+		return BasicAuth{}, err
 	}
 
-	registryUser := NewURLAndUser(url, string(secret.Data[v1.BasicAuthUsernameKey]), string(secret.Data[v1.BasicAuthPasswordKey]))
-	return &registryUser, nil
+	return BasicAuth{
+		Username: string(secret.Data[v1.BasicAuthUsernameKey]),
+		Password: string(secret.Data[v1.BasicAuthPasswordKey]),
+	}, nil
 }
 
 func (m *SecretManager) secretForServiceAccount(account *v1.ServiceAccount, url string, namespace string) (*v1.Secret, error) {

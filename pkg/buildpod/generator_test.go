@@ -12,6 +12,8 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestGenerator(t *testing.T) {
@@ -82,16 +84,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		builder := &v1alpha1.Builder{}
 
 		it("returns pod config with secrets on build's service account", func() {
+			fakeRemoteImageFactory := &registryfakes.FakeRemoteImageFactory{}
+			fakeImage := registryfakes.NewFakeRemoteImage("some/builder", "2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
+			require.NoError(t, fakeImage.SetEnv("CNB_USER_ID", "1234"))
+			require.NoError(t, fakeImage.SetEnv("CNB_GROUP_ID", "5678"))
+
+			fakeRemoteImageFactory.NewRemoteReturns(fakeImage, nil)
 
 			buildPodConfig := v1alpha1.BuildPodConfig{
-				SourceInitImage: "source/init:image",
-				BuildInitImage:  "build/init:image",
-				CredsInitImage:  "creds/init:image",
-				NopImage:        "no/op:image",
+				BuildInitImage: "build/init:builderImage",
+				NopImage:       "no/op:builderImage",
 			}
 			generator := &buildpod.Generator{
-				BuildPodConfig: buildPodConfig,
-				K8sClient:      fakeK8sClient,
+				BuildPodConfig:     buildPodConfig,
+				K8sClient:          fakeK8sClient,
+				RemoteImageFactory: fakeRemoteImageFactory,
 			}
 
 			build := &v1alpha1.Build{
@@ -100,7 +107,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 				Spec: v1alpha1.BuildSpec{
 					Tags: []string{
-						"image/name",
+						"builderImage/name",
 						"additional/names",
 					},
 					Builder:        builder.BuildBuilderSpec(),
@@ -136,9 +143,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			expectedPod, err := build.BuildPod(buildPodConfig, []corev1.Secret{
 				*gitSecret,
 				*dockerSecret,
-			}, builder.BuildBuilderSpec())
+			}, builder.BuildBuilderSpec(), v1alpha1.UserAndGroup{
+				Uid: 1234,
+				Gid: 5678,
+			})
 			require.NoError(t, err)
 			require.Equal(t, expectedPod, pod)
+
+			require.Equal(t, 1, fakeRemoteImageFactory.NewRemoteCallCount())
+
+			builderImage, secretRef := fakeRemoteImageFactory.NewRemoteArgsForCall(0)
+			require.Equal(t, builder.BuildBuilderSpec().Image, builderImage)
+			require.Equal(t, registry.SecretRef{
+				Namespace:        build.Namespace,
+				ImagePullSecrets: builder.BuildBuilderSpec().ImagePullSecrets,
+			}, secretRef)
 		})
 	})
 }

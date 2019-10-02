@@ -19,6 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/build"
@@ -27,7 +28,6 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/secret"
 )
 
 const (
@@ -38,10 +38,8 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	buildInitImage  = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	sourceInitImage = flag.String("source-init-image", os.Getenv("SOURCE_INIT_IMAGE"), "The image used to fetch the app source")
-	credInitImage   = flag.String("cred-init-image", os.Getenv("CRED_INIT_IMAGE"), "The image used to setup build credentials")
-	nopImage        = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
+	buildInitImage = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	nopImage       = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
 )
 
 func main() {
@@ -87,11 +85,11 @@ func main() {
 	podInformer := k8sInformerFactory.Core().V1().Pods()
 
 	imageFactory := &registry.ImageFactory{
-		KeychainFactory: secret.NewSecretKeychainFactory(k8sClient),
+		KeychainFactory: dockercreds.NewSecretKeychainFactory(k8sClient),
 	}
 
 	imageUtilFactory := &cnb.ImageFactory{
-		KeychainFactory: secret.NewSecretKeychainFactory(k8sClient),
+		KeychainFactory: dockercreds.NewSecretKeychainFactory(k8sClient),
 	}
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
@@ -104,12 +102,11 @@ func main() {
 
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: v1alpha1.BuildPodConfig{
-			BuildInitImage:  *buildInitImage,
-			SourceInitImage: *sourceInitImage,
-			CredsInitImage:  *credInitImage,
-			NopImage:        *nopImage,
+			BuildInitImage: *buildInitImage,
+			NopImage:       *nopImage,
 		},
-		K8sClient: k8sClient,
+		K8sClient:          k8sClient,
+		RemoteImageFactory: imageFactory,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
