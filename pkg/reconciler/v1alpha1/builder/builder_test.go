@@ -58,6 +58,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		key                     = "some-namespace/builder-name"
 		imageName               = "some/builder"
 		builderIdentifier       = "some/builder@sha256:resolved-builder-digest"
+		runImgIdentifier        = "some/runImage@sha256:resolved-builder-digest"
 		initalGeneration  int64 = 1
 	)
 
@@ -83,6 +84,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 				Identifier: builderIdentifier,
+				RunImage:   runImgIdentifier,
 			}, nil)
 
 			it("saves metadata to the status", func() {
@@ -106,6 +108,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						LatestImage: builderIdentifier,
+						RunImage:    runImgIdentifier,
 					},
 				}
 				rt.Test(rtesting.TableRow{
@@ -150,6 +153,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
+									RunImage:    runImgIdentifier,
 								},
 							},
 						},
@@ -186,6 +190,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
+									RunImage:    runImgIdentifier,
 								},
 							},
 						},
@@ -222,6 +227,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
+									RunImage:    runImgIdentifier,
 								},
 							},
 						},
@@ -249,6 +255,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					LatestImage: builderIdentifier,
+					RunImage:    runImgIdentifier,
 				}
 
 				rt.Test(rtesting.TableRow{

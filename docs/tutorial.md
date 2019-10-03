@@ -18,7 +18,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     apiVersion: v1
     kind: Secret
     metadata:
-      name: registry-credentials
+      name: tutorial-registry-credentials
       annotations:
         build.pivotal.io/docker: <registry>
     type: kubernetes.io/basic-auth

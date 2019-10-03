@@ -54,11 +54,17 @@ type BuildSpec struct {
 	CacheName      string                      `json:"cacheName"`
 	Env            []corev1.EnvVar             `json:"env"`
 	Resources      corev1.ResourceRequirements `json:"resources"`
+	LastBuild      LastBuild                   `json:"lastBuild"`
+}
+
+type LastBuild struct {
+	Image string `json:"image"`
 }
 
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
+	RunImage            string                  `json:"runImage"`
 	LatestImage         string                  `json:"latestImage"`
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`

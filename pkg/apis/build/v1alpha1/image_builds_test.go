@@ -78,6 +78,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				{ID: "buildpack.matches", Version: "1"},
 			},
 			LatestImage: "some/builder@sha256:builder-digest",
+			RunImage:    "some.registry.io/run-image@sha256:abcdefg1234",
 		},
 	}
 
@@ -101,6 +102,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Status: BuildStatus{
+			RunImage: "some.registry.io/run-image@sha256:abcdefg1234",
 			BuildMetadata: []BuildpackMetadata{
 				{ID: "buildpack.matches", Version: "1"},
 			},

@@ -96,3 +96,7 @@ func (b *Build) BuildEnvVars() []corev1.EnvVar {
 func (b *Build) ImagePullSecretsVolume() corev1.Volume {
 	return b.Spec.Source.Source().ImagePullSecretsVolume()
 }
+
+func (b *Build) Rebasable() bool {
+	return b.Annotations[BuildReasonAnnotation] == BuildReasonStack
+}
