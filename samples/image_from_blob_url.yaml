@@ -6,7 +6,7 @@ spec:
   tag: sample/image-from-jar
   builder:
     kind: ClusterBuilder
-    name: sample-builder
+    name: cluster-sample-builder
   serviceAccount: service-account
   source:
     blob:
