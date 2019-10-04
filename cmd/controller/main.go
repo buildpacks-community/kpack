@@ -19,7 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/build"
@@ -85,11 +85,11 @@ func main() {
 	podInformer := k8sInformerFactory.Core().V1().Pods()
 
 	imageFactory := &registry.ImageFactory{
-		KeychainFactory: dockercreds.NewSecretKeychainFactory(k8sClient),
+		KeychainFactory: k8sdockercreds.NewSecretKeychainFactory(k8sClient),
 	}
 
 	imageUtilFactory := &cnb.ImageFactory{
-		KeychainFactory: dockercreds.NewSecretKeychainFactory(k8sClient),
+		KeychainFactory: k8sdockercreds.NewSecretKeychainFactory(k8sClient),
 	}
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{

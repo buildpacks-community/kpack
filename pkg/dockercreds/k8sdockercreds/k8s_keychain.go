@@ -1,4 +1,4 @@
-package dockercreds
+package k8sdockercreds
 
 import (
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -8,6 +8,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
 )
@@ -23,7 +24,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 
 	annotatedBasicAuthKeychain := &annotatedBasicAuthKeychain{
 		secretRef:     ref,
-		secretManager: &secret.SecretManager{Client: f.client, AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix, Matcher: RegistryMatch},
+		secretManager: &secret.SecretManager{Client: f.client, AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix, Matcher: dockercreds.RegistryMatch},
 	}
 
 	k8sKeychain, err := k8schain.New(f.client, k8schain.Options{

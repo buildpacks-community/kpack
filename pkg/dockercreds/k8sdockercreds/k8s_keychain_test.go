@@ -1,4 +1,4 @@
-package dockercreds
+package k8sdockercreds
 
 import (
 	"encoding/base64"
