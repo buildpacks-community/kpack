@@ -36,7 +36,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		testNamespace      = "test"
 		dockerSecret       = "docker-secret"
 		builderName        = "build-service-builder"
-		clusterBuilderName = "cluster-build-service-builder"
+		clusterBuilderName = "cluster-builder"
 		serviceAccountName = "image-service-account"
 		builderImage       = "cloudfoundry/cnb:bionic"
 	)

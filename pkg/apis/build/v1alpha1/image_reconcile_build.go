@@ -15,7 +15,9 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 	}
 	latestImage := im.latestForImage(latestBuild)
 
-	if reasons, needed := im.buildNeeded(latestBuild, resolver, builder); needed {
+	if reasons, needed, err := im.buildNeeded(latestBuild, resolver, builder); err != nil {
+		return nil, err
+	} else if needed {
 		nextBuildNumber := currentBuildNumber + 1
 		return newBuild{
 			previousBuild: latestBuild,
