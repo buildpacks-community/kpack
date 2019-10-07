@@ -89,7 +89,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/image", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
 				err := fakeImage.SetLabel("io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
 				assert.NoError(t, err)
-				err = fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"cloudfoundry/run:full-cnb"}}}`)
+				err = fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"gcr.io:443/run:full-cnb"}}}`)
 				assert.NoError(t, err)
 
 				mockFactory.NewRemoteReturns(fakeImage, nil)
@@ -101,20 +101,21 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 				metadata := result.BuildpackMetadata
 				require.Len(t, metadata, 1)
-				assert.Equal(t, metadata[0].ID, "test.id")
-				assert.Equal(t, metadata[0].Version, "1.2.3")
+				assert.Equal(t, "test.id", metadata[0].ID)
+				assert.Equal(t, "1.2.3", metadata[0].Version)
 
 				createdAtTime, err := fakeImage.CreatedAt()
 				assert.NoError(t, err)
 
-				assert.Equal(t, result.CompletedAt, createdAtTime)
-				assert.Equal(t, result.Identifier, "index.docker.io/built/image@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
+				assert.Equal(t, createdAtTime, result.CompletedAt)
+				assert.Equal(t, "gcr.io:443/run@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0", result.RunImage)
+				assert.Equal(t, "index.docker.io/built/image@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4", result.Identifier)
 				image, secretRef := mockFactory.NewRemoteArgsForCall(0)
-				assert.Equal(t, image, "image/name")
-				assert.Equal(t, secretRef, registry.SecretRef{
+				assert.Equal(t, "image/name", image)
+				assert.Equal(t, registry.SecretRef{
 					ServiceAccount: "service-account",
 					Namespace:      "namespace-name",
-				})
+				}, secretRef)
 			})
 		})
 	})

@@ -78,7 +78,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				{ID: "buildpack.matches", Version: "1"},
 			},
 			LatestImage: "some/builder@sha256:builder-digest",
-			RunImage:    "some.registry.io/run-image@sha256:abcdefg1234",
+			RunImage:    "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 		},
 	}
 
@@ -102,7 +102,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Status: BuildStatus{
-			RunImage: "some.registry.io/run-image@sha256:abcdefg1234",
+			RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 			BuildMetadata: []BuildpackMetadata{
 				{ID: "buildpack.matches", Version: "1"},
 			},
@@ -129,7 +129,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("false for no changes", func() {
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -137,7 +138,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different image", func() {
 				image.Spec.Tag = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -146,7 +148,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different GitURL", func() {
 				sourceResolver.Status.Source.Git.URL = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -155,7 +158,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Git SubPath", func() {
 				sourceResolver.Status.Source.Git.SubPath = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -164,7 +168,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different GitRevision", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonCommit)
@@ -178,7 +183,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						Status: v1.ConditionFalse,
 					}}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -187,7 +193,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.URL = "some-change"
 				builder.Status.Conditions = nil
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -201,7 +208,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -217,7 +225,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -226,7 +235,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -235,7 +245,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
 
-				reasons, needed := image.buildNeeded(nil, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(nil, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -245,7 +256,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.ObjectMeta.Generation = 2
 				sourceResolver.Status.ObservedGeneration = 1
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -253,7 +265,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("false for different ServiceAccount", func() {
 				image.Spec.ServiceAccount = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -263,7 +276,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Name: "keyA", Value: "previous-value"},
 				}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -278,7 +292,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Name: "keyA", Value: "new"},
 				}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 			})
@@ -306,7 +321,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -319,7 +335,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						{ID: "buildpack.unused", Version: "unused"},
 					}
 
-					reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
 					assert.False(t, needed)
 					require.Len(t, reasons, 0)
 				})
@@ -330,7 +347,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						{ID: "buildpack.different", Version: "different"},
 					}
 
-					reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
 					assert.True(t, needed)
 					require.Len(t, reasons, 1)
 					assert.Contains(t, reasons, BuildReasonBuildpack)
@@ -342,7 +360,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						{ID: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 					}
 
-					reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
 					assert.True(t, needed)
 					require.Len(t, reasons, 1)
 					assert.Contains(t, reasons, BuildReasonBuildpack)
@@ -352,7 +371,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					sourceResolver.Status.Source.Git.URL = "different"
 					sourceResolver.Status.Source.Git.Revision = "different"
 
-					reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
 					assert.True(t, needed)
 					require.Len(t, reasons, 2)
 					assert.Contains(t, reasons, BuildReasonConfig)
@@ -377,7 +397,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true for different BlobURL", func() {
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -386,7 +407,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Blob SubPath", func() {
 				sourceResolver.Status.Source.Blob.SubPath = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -409,7 +431,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true for different RegistryImage", func() {
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -418,7 +441,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Registry SubPath", func() {
 				sourceResolver.Status.Source.Registry.SubPath = "different"
 
-				reasons, needed := image.buildNeeded(build, sourceResolver, builder)
+				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+				require.NoError(t, err)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)

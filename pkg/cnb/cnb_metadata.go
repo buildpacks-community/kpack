@@ -2,7 +2,6 @@ package cnb
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	lcyclemd "github.com/buildpack/lifecycle/metadata"
@@ -137,18 +136,22 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 		return BuiltImage{}, err
 	}
 
-	runImageReference := layerMetadata.RunImage.Reference
+	runImageReferenceStr := layerMetadata.RunImage.Reference
+	runImageRef, err := name.ParseReference(runImageReferenceStr)
+	if err != nil {
+		return BuiltImage{}, err
+	}
+
 	baseRunImage := layerMetadata.Stack.RunImage.Image
 	baseImageRef, err := name.ParseReference(baseRunImage)
 	if err != nil {
 		return BuiltImage{}, err
 	}
-	runImage := strings.Split(baseImageRef.Name(), ":")[0] + "@" + strings.Split(runImageReference, "@")[1]
 
 	return BuiltImage{
 		Identifier:        identifier,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
-		RunImage:          runImage,
+		RunImage:          baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
 	}, nil
 }
