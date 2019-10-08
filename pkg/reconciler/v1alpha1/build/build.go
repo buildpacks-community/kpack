@@ -179,8 +179,9 @@ func conditionForPod(pod *corev1.Pod) duckv1alpha1.Conditions {
 	default:
 		return duckv1alpha1.Conditions{
 			{
-				Type:   duckv1alpha1.ConditionSucceeded,
-				Status: corev1.ConditionUnknown,
+				Type:               duckv1alpha1.ConditionSucceeded,
+				Status:             corev1.ConditionUnknown,
+				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	}

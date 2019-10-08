@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
@@ -69,8 +70,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Status: duckv1alpha1.Status{
 				Conditions: duckv1alpha1.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: corev1.ConditionTrue,
+						Type:               duckv1alpha1.ConditionReady,
+						Status:             corev1.ConditionTrue,
+						LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
 					},
 				},
 			},

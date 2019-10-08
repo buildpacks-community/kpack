@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -24,7 +25,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder/builderfakes"
 )
 
-func TestBuildReconciler(t *testing.T) {
+func TestBuilderReconciler(t *testing.T) {
 	spec.Run(t, "Builder Reconciler", testBuilderReconciler)
 }
 
@@ -96,8 +97,9 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObservedGeneration: 1,
 							Conditions: duckv1alpha1.Conditions{
 								{
-									Type:   duckv1alpha1.ConditionReady,
-									Status: corev1.ConditionTrue,
+									Type:               duckv1alpha1.ConditionReady,
+									Status:             corev1.ConditionTrue,
+									LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
 								},
 							},
 						},
@@ -123,7 +125,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
-				assert.Equal(t, testBuilder, fakeMetadataRetriever.GetBuilderImageArgsForCall(0))
 			})
 
 			it("schedule next polling when update policy is not set", func() {
