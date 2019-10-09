@@ -62,9 +62,13 @@ func testImageRebaser(t *testing.T, when spec.G, it spec.S) {
 			appImage := fakes.NewImage("testimage/app", "980723452toplayer", &fakeImageIdentifier{identifier: "appimage"})
 			err = appImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"cloudfoundry/run:full-cnb"}}}`)
 			require.NoError(t, err)
+			err = appImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stacks.bionic")
+			require.NoError(t, err)
 			fakeRemoteImageFactory.NewRemoteReturnsOnCall(1, appImage, nil)
 
 			newRunImage := fakes.NewImage("testbuilder/run@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0", "0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0", &fakeImageIdentifier{identifier: "runimage"})
+			err = newRunImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stacks.bionic")
+			require.NoError(t, err)
 			fakeRemoteImageFactory.NewRemoteReturnsOnCall(2, newRunImage, nil)
 
 			rebasedAppImage := fakes.NewImage("testimage/app", "980723452toplayer", &fakeImageIdentifier{identifier: "rebasedappimage"})
