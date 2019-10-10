@@ -52,11 +52,10 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
-github.com/buildpack/imgutil v0.0.0-20190726132853-1f31ed20483a/go.mod h1:X0yFLGZtSyTXsEJq9NaPP9Rdnaq+3wouZ7xaTgw1680=
-github.com/buildpack/imgutil v0.0.0-20190827204914-36282d0caea7 h1:QPLcNqs3w8W+Rdzer4h+hS0KuWoXWwEDtghySKIvk8w=
-github.com/buildpack/imgutil v0.0.0-20190827204914-36282d0caea7/go.mod h1:X0yFLGZtSyTXsEJq9NaPP9Rdnaq+3wouZ7xaTgw1680=
-github.com/buildpack/lifecycle v0.4.1-0.20191002130645-029baabfa337 h1:QZ4F9IzB5+7ksELzPQz7icY5R8W9qudx+SPn80gXbkU=
-github.com/buildpack/lifecycle v0.4.1-0.20191002130645-029baabfa337/go.mod h1:zyG0kjmdgSk7ymJkTfh9XQGrenVaXX3yLQMesoWMVl8=
+github.com/buildpack/imgutil v0.0.0-20191010153712-78959154ded1 h1:8569yKDg8c4Qo/dMeBaUaWDn62hmrEBgqVMYdeDZysk=
+github.com/buildpack/imgutil v0.0.0-20191010153712-78959154ded1/go.mod h1:xl28ycwHsITb5aDb5ExzC7ud2qoUcKy+cMhbr2pKMrM=
+github.com/buildpack/lifecycle v0.4.1-0.20191010154241-8fa26e4820cb h1:nE1so9h2cX7JAs3k+RqoPjRbhaRcIOjrsi3NrcHVyOg=
+github.com/buildpack/lifecycle v0.4.1-0.20191010154241-8fa26e4820cb/go.mod h1:Xo/66RpHiIXEIY3q+77sl+eSP9pC28FzDiDLX11SbWo=
 github.com/census-instrumentation/opencensus-proto v0.2.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/census-instrumentation/opencensus-proto v0.2.1 h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -303,7 +302,6 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/tj/assert v0.0.0-20171129193455-018094318fb0 h1:Rw8kxzWo1mr6FSaYXjQELRe88y2KdfynXdnK72rdjtA=
 github.com/tj/assert v0.0.0-20171129193455-018094318fb0/go.mod h1:mZ9/Rh9oLWpLLDRpvE+3b7gP/C2YyLFYxNmcLnPTMe0=
 github.com/tj/go-elastic v0.0.0-20171221160941-36157cbbebc2/go.mod h1:WjeM0Oo1eNAjXGDx2yma7uG2XoyRZTq1uv3M/o7imD0=
 github.com/tj/go-kinesis v0.0.0-20171128231115-08b17f58cb1b/go.mod h1:/yhzCV0xPfx6jb1bBgRFjl5lytqVqZXEaeqWP8lTEao=
@@ -432,7 +430,6 @@ golang.org/x/tools v0.0.0-20190506145303-2d16b83fe98c/go.mod h1:RgjU9mgBXZiqYHBn
 golang.org/x/tools v0.0.0-20190524140312-2c0ae7006135/go.mod h1:RgjU9mgBXZiqYHBnxXauZ1Gv1EHHAz9KjViQ78xBX0Q=
 golang.org/x/tools v0.0.0-20190606124116-d0a3d012864b/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
-golang.org/x/tools v0.0.0-20190624190245-7f2218787638/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190628153133-6cdbf07be9d0/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190729092621-ff9f1409240a/go.mod h1:jcCCGcm9btYwXyDqrUWc6MKQKKGJCWEQ3AfLSRIbEuI=
 golang.org/x/tools v0.0.0-20190808195139-e713427fea3f/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
