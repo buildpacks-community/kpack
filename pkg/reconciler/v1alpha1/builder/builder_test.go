@@ -274,7 +274,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key:     key,
 					Objects: []runtime.Object{builder},
-					WantErr: false,
+					WantErr: true,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &v1alpha1.Builder{
