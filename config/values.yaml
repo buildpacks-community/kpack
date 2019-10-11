@@ -2,7 +2,6 @@
 ---
 controller_image: gcr.io/controller
 build_init_image: gcr.io/build-init
-source_init_image: gcr.io/source-init
-cred_init_image: gcr.io/pivotal-knative/github.com/knative/build/cmd/creds-init@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895
+pod_webhook_image: gcr.io/pod-webhook
 nop_image: gcr.io/pivotal-knative/github.com/knative/build/cmd/nop@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4
 version: dev

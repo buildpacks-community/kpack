@@ -1,0 +1,75 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:base64", "base64")
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  webhook-server-tls
+  namespace: kpack
+type: kubernetes.io/tls
+data:
+  tls.key: #@ base64.encode(data.read("webhook-server-tls.key"))
+  tls.crt: #@ base64.encode(data.read("webhook-server-tls.crt"))
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: build-mutate-webhook
+  namespace: kpack
+  labels:
+    app: build-mutate-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: build-mutate-webhook
+  template:
+    metadata:
+      labels:
+        app: build-mutate-webhook
+    spec:
+      containers:
+        - name: server
+          image: #@ data.values.pod_webhook_image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: webhook-api
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /run/secrets/tls
+              readOnly: true
+      volumes:
+        - name: webhook-tls-certs
+          secret:
+            secretName: webhook-server-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: build-mutate-webhook
+  namespace: kpack
+spec:
+  selector:
+    app: build-mutate-webhook
+  ports:
+    - port: 443
+      targetPort: webhook-api
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: build-mutate-webhook
+webhooks:
+  - name: build-mutate-webhook.kpack.svc
+    clientConfig:
+      service:
+        name: build-mutate-webhook
+        namespace: kpack
+        path: "/mutate"
+      caBundle: #@ base64.encode(data.read("ca.crt"))
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: ["build.pivotal.io"]
+        apiVersions: ["v1alpha1"]
+        resources: ["builds"]
