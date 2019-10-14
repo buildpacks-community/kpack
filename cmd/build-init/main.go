@@ -50,21 +50,21 @@ func main() {
 
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	hasWriteAccess, err := dockercreds.HasWriteAccess(creds, *imageTag)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	if !hasWriteAccess {
-		log.Fatalf("invalid credentials to build to %s", *imageTag)
+		logger.Fatalf("invalid credentials to build to %s", *imageTag)
 	}
 
 	err = fetchSource(logger, creds)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
@@ -74,7 +74,7 @@ func main() {
 
 	builderCreds, err := dockercreds.ParseDockerPullSecrets(builderPullSecretsDir)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	dockerCreds, err := creds.Append(builderCreds)

@@ -7,6 +7,7 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 )
 
 type Fetcher struct {
@@ -39,8 +40,10 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision string) error {
 		Depth:    0,
 	}
 	err = remote.Fetch(opts)
-	if err != nil {
+	if err != nil && err != transport.ErrAuthenticationRequired {
 		return errors.Wrap(err, "unable to fetch git repository")
+	} else if err == transport.ErrAuthenticationRequired {
+		return errors.Errorf("invalid credentials to fetch git repository: %s", gitURL)
 	}
 
 	workTree, err := repo.Worktree()
