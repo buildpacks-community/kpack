@@ -75,18 +75,22 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	builder = c.reconcileClusterBuilderStatus(builder)
+	builder, err = c.reconcileClusterBuilderStatus(builder)
 
-	err = c.updateClusterBuilderStatus(builder)
-	if err != nil {
-		return err
+	updateErr := c.updateClusterBuilderStatus(builder)
+	if updateErr != nil {
+		return updateErr
 	}
 
 	if builder.Spec.UpdatePolicy != v1alpha1.External {
-		err = c.Enqueuer.Enqueue(builder)
+		err := c.Enqueuer.Enqueue(builder)
 		if err != nil {
 			return err
 		}
+	}
+
+	if err != nil {
+		return controller.NewPermanentError(err)
 	}
 	return nil
 }
@@ -105,7 +109,7 @@ func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder
 	return err
 }
 
-func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) *v1alpha1.ClusterBuilder {
+func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) (*v1alpha1.ClusterBuilder, error) {
 	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
@@ -121,7 +125,7 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 				},
 			},
 		}
-		return builder
+		return builder, err
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
@@ -139,7 +143,7 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 		LatestImage:     builderImage.Identifier,
 		RunImage:        builderImage.RunImage,
 	}
-	return builder
+	return builder, nil
 }
 
 func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {

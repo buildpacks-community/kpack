@@ -264,7 +264,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					rt.Test(rtesting.TableRow{
 						Key:     clusterBuilderKey,
 						Objects: []runtime.Object{clusterBuilder},
-						WantErr: false,
+						WantErr: true,
 						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 							{
 								Object: &v1alpha1.ClusterBuilder{

@@ -75,18 +75,22 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	builder = builder.DeepCopy()
 
-	builder = c.reconcileBuilderStatus(builder)
+	builder, err = c.reconcileBuilderStatus(builder)
 
-	err = c.updateStatus(builder)
-	if err != nil {
-		return err
+	updateErr := c.updateStatus(builder)
+	if updateErr != nil {
+		return updateErr
 	}
 
 	if builder.Spec.UpdatePolicy != v1alpha1.External {
-		err = c.Enqueuer.Enqueue(builder)
+		err := c.Enqueuer.Enqueue(builder)
 		if err != nil {
 			return err
 		}
+	}
+
+	if err != nil {
+		return controller.NewPermanentError(err)
 	}
 	return nil
 }
@@ -105,7 +109,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 	return err
 }
 
-func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1.Builder {
+func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) (*v1alpha1.Builder, error) {
 	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
@@ -121,7 +125,7 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1
 				},
 			},
 		}
-		return builder
+		return builder, err
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
@@ -139,7 +143,7 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) *v1alpha1
 		LatestImage:     builderImage.Identifier,
 		RunImage:        builderImage.RunImage,
 	}
-	return builder
+	return builder, nil
 }
 
 func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {

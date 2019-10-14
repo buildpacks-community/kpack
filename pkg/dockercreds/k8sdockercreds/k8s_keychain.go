@@ -1,6 +1,11 @@
 package k8sdockercreds
 
 import (
+	// Note this line is separated to ensure it is loaded before any other import
+	// This needs to happen because the init in the package should run before
+	// the init of the go containerregistry
+	_ "github.com/pivotal/kpack/pkg/dockercreds/k8svolume"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"k8s.io/api/core/v1"
