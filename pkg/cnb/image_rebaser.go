@@ -21,18 +21,17 @@ type ImageRebaser struct {
 }
 
 func (f *ImageRebaser) Rebase(build *v1alpha1.Build, ctx context.Context) (BuiltImage, error) {
-	builderImage, err := f.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
+	builderImage, err := f.RemoteImageFactory.newRemote(build.Spec.Builder.Image, build.Spec.Builder.Image, registry.SecretRef{
 		Namespace:        build.Namespace,
 		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
-		ServiceAccount:   build.Spec.ServiceAccount,
 	})
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	appImage, err := f.RemoteImageFactory.NewRemote(build.Spec.LastBuild.Image, registry.SecretRef{
-		ServiceAccount: build.Spec.ServiceAccount,
+	appImage, err := f.RemoteImageFactory.newRemote(build.Tag(), build.Spec.LastBuild.Image, registry.SecretRef{
 		Namespace:      build.Namespace,
+		ServiceAccount: build.Spec.ServiceAccount,
 	})
 	if err != nil {
 		return BuiltImage{}, err
@@ -49,32 +48,23 @@ func (f *ImageRebaser) Rebase(build *v1alpha1.Build, ctx context.Context) (Built
 		return BuiltImage{}, errors.Wrap(err, "unsupported builder metadata structure")
 	}
 
-	newBaseImage, err := f.RemoteImageFactory.NewRemote(metadata.Stack.RunImage.Image, registry.SecretRef{
+	newBaseImage, err := f.RemoteImageFactory.newRemote(metadata.Stack.RunImage.Image, metadata.Stack.RunImage.Image, registry.SecretRef{
 		Namespace:        build.Namespace,
 		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
-		ServiceAccount:   build.Spec.ServiceAccount,
 	})
 	if err != nil {
-		return BuiltImage{}, errors.Wrap(err, "unable to fetch remote run image")
+		return BuiltImage{}, err
 	}
 
 	rebaser := lifecycle.Rebaser{
 		Logger: wrappedLogger{logging.FromContext(ctx)},
 	}
-	err = rebaser.Rebase(appImage, newBaseImage, build.Spec.Tags)
+	err = rebaser.Rebase(appImage, newBaseImage, build.Spec.Tags[1:])
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	rebasedImage, err := f.RemoteImageFactory.NewRemote(build.Tag(), registry.SecretRef{
-		ServiceAccount: build.Spec.ServiceAccount,
-		Namespace:      build.Namespace,
-	})
-	if err != nil {
-		return BuiltImage{}, err
-	}
-
-	return readBuiltImage(remoteImageWrapper{rebasedImage})
+	return readBuiltImage(remoteImageWrapper{appImage})
 }
 
 type remoteImageWrapper struct {
@@ -110,7 +100,7 @@ func (w wrappedLogger) Debug(msg string) {
 }
 
 func (w wrappedLogger) Debugf(fmt string, v ...interface{}) {
-	w.logger.Debugf(fmt, v)
+	w.logger.Debugf(fmt, v...)
 }
 
 func (w wrappedLogger) Info(msg string) {
@@ -118,7 +108,7 @@ func (w wrappedLogger) Info(msg string) {
 }
 
 func (w wrappedLogger) Infof(fmt string, v ...interface{}) {
-	w.logger.Infof(fmt, v)
+	w.logger.Infof(fmt, v...)
 }
 
 func (w wrappedLogger) Warn(msg string) {
@@ -126,7 +116,7 @@ func (w wrappedLogger) Warn(msg string) {
 }
 
 func (w wrappedLogger) Warnf(fmt string, v ...interface{}) {
-	w.logger.Warnf(fmt, v)
+	w.logger.Warnf(fmt, v...)
 }
 
 func (w wrappedLogger) Error(msg string) {
@@ -134,13 +124,13 @@ func (w wrappedLogger) Error(msg string) {
 }
 
 func (w wrappedLogger) Errorf(fmt string, v ...interface{}) {
-	w.logger.Errorf(fmt, v)
+	w.logger.Errorf(fmt, v...)
 }
 
 func (w wrappedLogger) Writer() io.Writer {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (w wrappedLogger) WantLevel(level string) {
-	panic("implement me")
+	panic("not implemented")
 }
