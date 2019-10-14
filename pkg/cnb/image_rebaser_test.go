@@ -7,10 +7,10 @@ import (
 
 	"github.com/buildpack/imgutil"
 	"github.com/buildpack/imgutil/fakes"
+	"github.com/google/go-cmp/cmp"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -131,7 +131,7 @@ type newRemoteArgs struct {
 func (f *FakeRemoteImageUtilFactory) newRemote(imageName string, baseImage string, secretRef registry.SecretRef) (imgutil.Image, error) {
 	for i, args := range f.args {
 		remoteArgs := newRemoteArgs{ImageName: imageName, BaseImage: baseImage, SecretRef: secretRef}
-		if cmp.DeepEqual(args, remoteArgs)().Success() {
+		if diff := cmp.Diff(args, remoteArgs); diff == "" {
 			return f.images[i], nil
 		}
 	}
