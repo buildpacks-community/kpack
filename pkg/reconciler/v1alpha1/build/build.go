@@ -107,7 +107,8 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
-		build.Status.RunImage = image.RunImage
+		build.Status.Stack.RunImage = image.Stack.RunImage
+		build.Status.Stack.ID = image.Stack.ID
 		build.Status.Conditions = duckv1alpha1.Conditions{
 			{
 				Type:               duckv1alpha1.ConditionSucceeded,
@@ -129,7 +130,8 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 			build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 			build.Status.LatestImage = image.Identifier
-			build.Status.RunImage = image.RunImage
+			build.Status.Stack.RunImage = image.Stack.RunImage
+			build.Status.Stack.ID = image.Stack.ID
 		}
 
 		build.Status.PodName = pod.Name

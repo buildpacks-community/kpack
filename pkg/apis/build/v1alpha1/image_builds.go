@@ -17,11 +17,12 @@ const (
 	BuildNumberLabel = "image.build.pivotal.io/buildNumber"
 	ImageLabel       = "image.build.pivotal.io/image"
 
-	BuildReasonAnnotation = "image.build.pivotal.io/reason"
-	BuildReasonConfig     = "CONFIG"
-	BuildReasonCommit     = "COMMIT"
-	BuildReasonBuildpack  = "BUILDPACK"
-	BuildReasonStack      = "STACK"
+	BuildReasonAnnotation  = "image.build.pivotal.io/reason"
+	BuildReasonConfig      = "CONFIG"
+	BuildReasonCommit      = "COMMIT"
+	BuildReasonBuildpack   = "BUILDPACK"
+	BuildReasonStack       = "STACK"
+	BuildReasonStackUpdate = "STACK-UPDATE"
 )
 
 func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool, error) {
@@ -57,8 +58,15 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		reasons = append(reasons, BuildReasonBuildpack)
 	}
 
-	if lastBuild.Status.RunImage != "" {
-		lastBuildRunImageRef, err := name.ParseReference(lastBuild.Status.RunImage)
+	if lastBuild.Status.Stack.ID != "" {
+		if lastBuild.Status.Stack.ID != builder.Stack() {
+			reasons = append(reasons, BuildReasonStackUpdate)
+			return reasons, true, nil
+		}
+	}
+
+	if lastBuild.Status.Stack.RunImage != "" {
+		lastBuildRunImageRef, err := name.ParseReference(lastBuild.Status.Stack.RunImage)
 		if err != nil {
 			return reasons, false, err
 		}

@@ -100,7 +100,8 @@ func testImageRebaser(t *testing.T, when spec.G, it spec.S) {
 			rebasedImage, err := imgRebaser.Rebase(build, context.TODO())
 			require.NoError(t, err)
 
-			assert.Equal(t, "foo.io/run@sha256:c4e5e3ea177cd1238f67481d920ea17388792a0fb2cfa38fd95394f912c35ea8", rebasedImage.RunImage)
+			assert.Equal(t, "foo.io/run@sha256:c4e5e3ea177cd1238f67481d920ea17388792a0fb2cfa38fd95394f912c35ea8", rebasedImage.Stack.RunImage)
+			assert.Equal(t, "io.buildpacks.stacks.bionic", rebasedImage.Stack.ID)
 
 			assert.Len(t, appImage.SavedNames(), 2)
 			assert.Contains(t, appImage.SavedNames(), "testimage/app")

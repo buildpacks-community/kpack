@@ -26,8 +26,8 @@ type BuilderImageMetadata struct {
 
 type BuilderImage struct {
 	BuilderBuildpackMetadata BuilderMetadata
-	RunImage                 string
 	Identifier               string
+	Stack                    Stack
 }
 
 type BuilderMetadata []BuildpackMetadata
@@ -57,6 +57,12 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResour
 		return BuilderImage{}, errors.Wrap(err, "unsupported builder metadata structure")
 	}
 
+	var stackId string
+	stackId, err = img.Label(lcyclemd.StackMetadataLabel)
+	if err != nil {
+		return BuilderImage{}, errors.Wrap(err, "failed to retrieve builder stack id")
+	}
+
 	identifier, err := img.Identifier()
 	if err != nil {
 		return BuilderImage{}, errors.Wrap(err, "failed to retrieve builder image SHA")
@@ -78,8 +84,11 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResour
 
 	return BuilderImage{
 		BuilderBuildpackMetadata: metadata.Buildpacks,
-		RunImage:                 runImageIdentifier,
-		Identifier:               identifier,
+		Stack: Stack{
+			RunImage: runImageIdentifier,
+			ID:       stackId,
+		},
+		Identifier: identifier,
 	}, nil
 }
 
@@ -95,23 +104,40 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(ref *v1alpha1.Build) (BuiltImage
 	return readBuiltImage(img)
 }
 
+type Stack struct {
+	RunImage string
+	ID       string
+}
+
 type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
 	BuildpackMetadata []lcyclemd.BuildpackMetadata
-	RunImage          string
+	Stack             Stack
 }
 
 func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
-	var buildMetadataJSON string
-	var layerMetadataJSON string
+	var (
+		buildMetadataJSON string
+		layerMetadataJSON string
+		stackId           string
+		err               error
+	)
 
-	buildMetadataJSON, err := img.Label(lcyclemd.BuildMetadataLabel)
+	buildMetadataJSON, err = img.Label(lcyclemd.BuildMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	layerMetadataJSON, err = img.Label(lcyclemd.LayerMetadataLabel)
+	if err != nil {
+		return BuiltImage{}, err
+	}
+
+	stackId, err = img.Label(lcyclemd.StackMetadataLabel)
+	if err != nil {
+		return BuiltImage{}, err
+	}
 
 	var buildMetadata lcyclemd.BuildMetadata
 	var layerMetadata lcyclemd.LayersMetadata
@@ -152,6 +178,9 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 		Identifier:        identifier,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
-		RunImage:          baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
+		Stack: Stack{
+			ID:       stackId,
+			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
+		},
 	}, nil
 }

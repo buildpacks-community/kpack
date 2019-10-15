@@ -80,7 +80,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				{ID: "buildpack.matches", Version: "1"},
 			},
 			LatestImage: "some/builder@sha256:builder-digest",
-			RunImage:    "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+			Stack: BuildStack{
+				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+				ID:       "io.buildpacks.stack.bionic",
+			},
 		},
 	}
 
@@ -104,7 +107,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Status: BuildStatus{
-			RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+			Stack: BuildStack{
+				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+				ID:       "io.buildpacks.stack.bionic",
+			},
 			BuildMetadata: []BuildpackMetadata{
 				{ID: "buildpack.matches", Version: "1"},
 			},
@@ -354,6 +360,26 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					assert.True(t, needed)
 					require.Len(t, reasons, 1)
 					assert.Contains(t, reasons, BuildReasonBuildpack)
+				})
+
+				it("true if builder has a different stack", func() {
+					builder.Status.Stack.ID = "io.buildpacks.cflinuxfs3"
+
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
+					assert.True(t, needed)
+					require.Len(t, reasons, 1)
+					assert.Contains(t, reasons, BuildReasonStackUpdate)
+				})
+
+				it("true if builder has a different run image", func() {
+					builder.Status.Stack.RunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+
+					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
+					require.NoError(t, err)
+					assert.True(t, needed)
+					require.Len(t, reasons, 1)
+					assert.Contains(t, reasons, BuildReasonStack)
 				})
 
 				it("true if builder does not have all most recent used buildpacks and is not currently building", func() {
