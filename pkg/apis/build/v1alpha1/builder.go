@@ -12,6 +12,7 @@ func (b *Builder) Ready() bool {
 
 func (b *Builder) BuildBuilderSpec() BuildBuilderSpec {
 	return BuildBuilderSpec{
+		TypeMeta:         b.TypeMeta,
 		Image:            b.Status.LatestImage,
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}

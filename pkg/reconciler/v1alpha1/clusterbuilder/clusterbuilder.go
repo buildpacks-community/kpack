@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	ReconcilerName = "Builders"
-	Kind           = "Builder"
+	ReconcilerName = "ClusterBuilders"
+	Kind           = "ClusterBuilder"
 )
 
 //go:generate counterfeiter . MetadataRetriever
