@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -226,7 +227,9 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	t.Logf("Waiting for image '%s' to be created", imageTag)
 	eventually(t, imageExists(imageTag), 5*time.Second, 5*time.Minute)
 
-	assert.Contains(t, logTail.String(), fmt.Sprintf("%s - succeeded", imageTag))
+	eventually(t, func() bool {
+		return strings.Contains(logTail.String(), fmt.Sprintf("%s - succeeded", imageTag))
+	}, 5*time.Second, 1*time.Minute)
 
 	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),

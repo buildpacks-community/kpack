@@ -39,6 +39,7 @@ var (
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
 	buildInitImage = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	rebaseImage    = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	nopImage       = flag.String("nop-image", os.Getenv("NOP_IMAGE"), "The image used to finish a build")
 )
 
@@ -88,22 +89,15 @@ func main() {
 		KeychainFactory: k8sdockercreds.NewSecretKeychainFactory(k8sClient),
 	}
 
-	imageUtilFactory := &cnb.ImageFactory{
-		KeychainFactory: k8sdockercreds.NewSecretKeychainFactory(k8sClient),
-	}
-
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		RemoteImageFactory: imageFactory,
 	}
 
-	rebaser := cnb.ImageRebaser{
-		RemoteImageFactory: imageUtilFactory,
-	}
-
 	buildpodGenerator := &buildpod.Generator{
-		BuildPodConfig: v1alpha1.BuildPodConfig{
+		BuildPodConfig: v1alpha1.BuildPodImages{
 			BuildInitImage: *buildInitImage,
 			NopImage:       *nopImage,
+			RebaseImage:    *rebaseImage,
 		},
 		K8sClient:          k8sClient,
 		RemoteImageFactory: imageFactory,
@@ -113,7 +107,7 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, rebaser)
+	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)

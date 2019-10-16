@@ -25,7 +25,6 @@ var (
 )
 
 func newClients(t *testing.T) (*clients, error) {
-
 	if usr, err := user.Current(); err == nil {
 		defaultKubeconfig = path.Join(usr.HomeDir, ".kube/config")
 	}
