@@ -12,7 +12,7 @@ func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCr
 	for _, s := range secrets {
 		splitSecret := strings.Split(s, "=")
 		if len(splitSecret) != 2 {
-			return nil, errors.Errorf("could not parse git secret argument %s", s)
+			return nil, errors.Errorf("could not parse docker secret argument %s", s)
 		}
 		secretName := splitSecret[0]
 		domain := splitSecret[1]

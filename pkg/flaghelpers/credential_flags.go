@@ -1,10 +1,10 @@
-package main
+package flaghelpers
 
 import "strings"
 
-type credentialsFlags []string
+type CredentialsFlags []string
 
-func (i *credentialsFlags) String() string {
+func (i *CredentialsFlags) String() string {
 	builder := strings.Builder{}
 	for _, v := range *i {
 		builder.WriteString(v)
@@ -12,7 +12,7 @@ func (i *credentialsFlags) String() string {
 	return builder.String()
 }
 
-func (i *credentialsFlags) Set(value string) error {
+func (i *CredentialsFlags) Set(value string) error {
 	*i = append(*i, value)
 	return nil
 }

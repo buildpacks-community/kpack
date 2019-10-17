@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -25,13 +26,13 @@ var (
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 
-	gitCredentials    credentialsFlags
-	dockerCredentials credentialsFlags
+	gitCredentials    flaghelpers.CredentialsFlags
+	dockerCredentials flaghelpers.CredentialsFlags
 )
 
 func init() {
-	flag.Var(&gitCredentials, "basic-git", "Basic authentication for git on the form 'secretname=git.domain.com'")
-	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker on form 'secretname=git.domain.com'")
+	flag.Var(&gitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
+	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 }
 
 const (

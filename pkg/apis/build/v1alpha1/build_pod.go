@@ -12,6 +12,7 @@ import (
 
 const (
 	buildInitBinary = "/layers/org.cloudfoundry.go-mod/app-binary/build-init" // Can be changed to build-init in https://github.com/cloudfoundry/go-mod-cnb/issues/8
+	rebaseBinary    = "/layers/org.cloudfoundry.go-mod/app-binary/rebase"     // Can be changed to rebase in https://github.com/cloudfoundry/go-mod-cnb/issues/8
 
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
@@ -28,14 +29,18 @@ const (
 	builderPullSecretsDirName = "builder-pull-secrets-dir"
 )
 
-type BuildPodConfig struct {
+type BuildPodImages struct {
 	BuildInitImage string
 	NopImage       string
+	RebaseImage    string
 }
 
-type UserAndGroup struct {
-	Uid int64
-	Gid int64
+type BuildPodBuilderConfig struct {
+	BuilderSpec BuildBuilderSpec
+	StackID     string
+	RunImage    string
+	Uid         int64
+	Gid         int64
 }
 
 var (
@@ -75,21 +80,65 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder BuildBuilderSpec, userAndGroup UserAndGroup) (*corev1.Pod, error) {
+func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
+	if b.Rebasable() {
+		secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+		if err != nil {
+			return nil, err
+		}
+
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      b.PodName(),
+				Namespace: b.Namespace,
+				Labels: b.labels(map[string]string{
+					BuildLabel: b.Name,
+				}),
+				OwnerReferences: []metav1.OwnerReference{
+					*kmeta.NewControllerRef(b),
+				},
+			},
+			Spec: corev1.PodSpec{
+				ServiceAccountName: b.Spec.ServiceAccount,
+				Volumes:            secretVolumes,
+				RestartPolicy:      corev1.RestartPolicyNever,
+				Containers: []corev1.Container{
+					{
+						Name:            "completion",
+						Image:           config.NopImage,
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Resources:       b.Spec.Resources,
+					},
+				},
+				InitContainers: []corev1.Container{
+					{
+						Name:            "rebase",
+						Image:           config.RebaseImage,
+						Args:            rebaseArgs(rebaseBinary, buildPodBuilderConfig.RunImage, b.Spec.LastBuild.Image, b.Spec.Tags, secretArgs),
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						WorkingDir:      "/workspace",
+						VolumeMounts:    secretVolumeMounts,
+					},
+				},
+			},
+			Status: corev1.PodStatus{},
+		}, nil
+	}
+
 	buf, err := json.Marshal(b.Spec.Env)
 	if err != nil {
 		return nil, err
 	}
 	envVars := string(buf)
 
-	volumes := append(b.setupVolumes(), builder.getBuilderSecretVolume())
-	secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets)
+	volumes := append(b.setupVolumes(), buildPodBuilderConfig.BuilderSpec.getBuilderSecretVolume())
+	secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
 	if err != nil {
 		return nil, err
 	}
 	volumes = append(volumes, secretVolumes...)
 
-	builderImage := builder.Image
+	builderImage := buildPodBuilderConfig.BuilderSpec.Image
 
 	workspaceVolume := corev1.VolumeMount{
 		Name:      sourceVolume.Name,
@@ -120,15 +169,15 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 				},
 			},
 			SecurityContext: &corev1.PodSecurityContext{
-				FSGroup: &userAndGroup.Gid,
+				FSGroup: &buildPodBuilderConfig.Gid,
 			},
 			InitContainers: []corev1.Container{
 				{
 					Name:  "prepare",
 					Image: config.BuildInitImage,
 					SecurityContext: &corev1.SecurityContext{
-						RunAsUser:  &userAndGroup.Uid,
-						RunAsGroup: &userAndGroup.Gid,
+						RunAsUser:  &buildPodBuilderConfig.Uid,
+						RunAsGroup: &buildPodBuilderConfig.Gid,
 					},
 					Args: buildInitArgs(buildInitBinary, secretArgs),
 					Env: append(
@@ -261,17 +310,9 @@ func (b *Build) BuildPod(config BuildPodConfig, secrets []corev1.Secret, builder
 			},
 			ServiceAccountName: b.Spec.ServiceAccount,
 			Volumes:            volumes,
-			ImagePullSecrets:   builder.ImagePullSecrets,
+			ImagePullSecrets:   buildPodBuilderConfig.BuilderSpec.ImagePullSecrets,
 		},
 	}, nil
-}
-
-const directExecute = "--"
-
-func buildInitArgs(buildInitBinary string, secretArgs []string) []string {
-	return append(
-		[]string{directExecute, buildInitBinary},
-		secretArgs...)
 }
 
 func (b *Build) cacheVolume() corev1.VolumeSource {
@@ -286,18 +327,22 @@ func (b *Build) cacheVolume() corev1.VolumeSource {
 	}
 }
 
-func isBuildServiceSecret(secret corev1.Secret) bool {
+func gitAndDockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[GITSecretAnnotationPrefix] != "" || secret.Annotations[DOCKERSecretAnnotationPrefix] != ""
 }
 
-func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret) ([]corev1.Volume, []corev1.VolumeMount, []string, error) {
+func dockerSecrets(secret corev1.Secret) bool {
+	return secret.Annotations[DOCKERSecretAnnotationPrefix] != ""
+}
+
+func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string, error) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
 		args         []string
 	)
 	for _, secret := range secrets {
-		if !isBuildServiceSecret(secret) {
+		if !filter(secret) {
 			continue
 		}
 		volumeName := fmt.Sprintf(SecretTemplateName, secret.Name)
@@ -374,4 +419,30 @@ func (b *Build) labels(additionalLabels map[string]string) map[string]string {
 		labels[k] = v
 	}
 	return labels
+}
+
+func combineArgs(args ...[]string) []string {
+	var combined []string
+	for _, a := range args {
+		combined = append(combined, a...)
+	}
+	return combined
+}
+
+const directExecute = "--"
+
+func rebaseArgs(rebaseBinary, runsImage, lastBuiltImage string, tags, secretArgs []string) []string {
+	return combineArgs(
+		[]string{directExecute, rebaseBinary},
+		secretArgs,
+		[]string{"--run-image", runsImage, "--last-built-image", lastBuiltImage},
+		tags,
+	)
+}
+
+func buildInitArgs(buildInitBinary string, secretArgs []string) []string {
+	return combineArgs(
+		[]string{directExecute, buildInitBinary},
+		secretArgs,
+	)
 }

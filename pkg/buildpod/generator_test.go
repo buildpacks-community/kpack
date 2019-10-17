@@ -3,6 +3,7 @@ package buildpod_test
 import (
 	"testing"
 
+	"github.com/buildpack/lifecycle/metadata"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -86,12 +88,14 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it("returns pod config with secrets on build's service account", func() {
 			fakeRemoteImageFactory := &registryfakes.FakeRemoteImageFactory{}
 			fakeImage := registryfakes.NewFakeRemoteImage("some/builder", "2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
+			require.NoError(t, fakeImage.SetLabel(metadata.StackMetadataLabel, "some.stack.id"))
+			require.NoError(t, fakeImage.SetLabel(cnb.BuilderMetadataLabel, `{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`))
 			require.NoError(t, fakeImage.SetEnv("CNB_USER_ID", "1234"))
 			require.NoError(t, fakeImage.SetEnv("CNB_GROUP_ID", "5678"))
 
 			fakeRemoteImageFactory.NewRemoteReturns(fakeImage, nil)
 
-			buildPodConfig := v1alpha1.BuildPodConfig{
+			buildPodConfig := v1alpha1.BuildPodImages{
 				BuildInitImage: "build/init:builderImage",
 				NopImage:       "no/op:builderImage",
 			}
@@ -143,9 +147,12 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			expectedPod, err := build.BuildPod(buildPodConfig, []corev1.Secret{
 				*gitSecret,
 				*dockerSecret,
-			}, builder.BuildBuilderSpec(), v1alpha1.UserAndGroup{
-				Uid: 1234,
-				Gid: 5678,
+			}, v1alpha1.BuildPodBuilderConfig{
+				BuilderSpec: builder.BuildBuilderSpec(),
+				StackID:     "some.stack.id",
+				RunImage:    "some-registry.io/run-image",
+				Uid:         1234,
+				Gid:         5678,
 			})
 			require.NoError(t, err)
 			require.Equal(t, expectedPod, pod)
