@@ -170,6 +170,7 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 	image.Status.LatestBuildRef = reconciledBuild.Build.BuildRef()
 	image.Status.BuildCounter = reconciledBuild.BuildCounter
 	image.Status.LatestImage = reconciledBuild.LatestImage
+	image.Status.LatestStack = reconciledBuild.Build.Stack()
 	image.Status.Conditions = reconciledBuild.Conditions
 	image.Status.ObservedGeneration = image.Generation
 

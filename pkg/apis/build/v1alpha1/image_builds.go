@@ -57,8 +57,8 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		reasons = append(reasons, BuildReasonBuildpack)
 	}
 
-	if lastBuild.Status.RunImage != "" {
-		lastBuildRunImageRef, err := name.ParseReference(lastBuild.Status.RunImage)
+	if lastBuild.Status.Stack.RunImage != "" {
+		lastBuildRunImageRef, err := name.ParseReference(lastBuild.Status.Stack.RunImage)
 		if err != nil {
 			return reasons, false, err
 		}
@@ -111,7 +111,10 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
-			LastBuild:      LastBuild{Image: im.Status.LatestImage},
+			LastBuild: LastBuild{
+				Image:   im.Status.LatestImage,
+				StackID: im.Status.LatestStack,
+			},
 		},
 	}
 }

@@ -40,7 +40,7 @@ const (
 type BuilderStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata"`
-	RunImage            string                `json:"runImage"`
+	Stack               BuildStack            `json:"stack"`
 	LatestImage         string                `json:"latestImage"`
 }
 

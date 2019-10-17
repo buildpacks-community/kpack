@@ -13,4 +13,5 @@ type BuilderResource interface {
 	Ready() bool
 	BuildpackMetadata() BuildpackMetadataList
 	RunImage() string
+	Stack() string
 }

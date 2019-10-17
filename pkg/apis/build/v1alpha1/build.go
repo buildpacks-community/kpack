@@ -51,6 +51,16 @@ func (b *Build) BuildRef() string {
 	return b.GetName()
 }
 
+func (b *Build) Stack() string {
+	if b == nil {
+		return ""
+	}
+	if !b.IsSuccess() {
+		return ""
+	}
+	return b.Status.Stack.ID
+}
+
 func (b *Build) BuiltImage() string {
 	if b == nil {
 		return ""
@@ -97,6 +107,9 @@ func (b *Build) ImagePullSecretsVolume() corev1.Volume {
 	return b.Spec.Source.Source().ImagePullSecretsVolume()
 }
 
-func (b *Build) Rebasable() bool {
+func (b *Build) Rebasable(builderStack string) bool {
+	if b.Spec.LastBuild.StackID != "" {
+		return b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackID == builderStack
+	}
 	return b.Annotations[BuildReasonAnnotation] == BuildReasonStack
 }

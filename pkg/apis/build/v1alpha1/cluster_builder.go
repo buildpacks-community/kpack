@@ -29,5 +29,9 @@ func (c *ClusterBuilder) ImagePullSecrets() []v1.LocalObjectReference {
 }
 
 func (c *ClusterBuilder) RunImage() string {
-	return c.Status.RunImage
+	return c.Status.Stack.RunImage
+}
+
+func (c *ClusterBuilder) Stack() string {
+	return c.Status.Stack.ID
 }

@@ -58,13 +58,19 @@ type BuildSpec struct {
 }
 
 type LastBuild struct {
-	Image string `json:"image"`
+	Image   string `json:"image"`
+	StackID string `json:"stackId"`
+}
+
+type BuildStack struct {
+	RunImage string `json:"runImage"`
+	ID       string `json:"id"`
 }
 
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
-	RunImage            string                  `json:"runImage"`
+	Stack               BuildStack              `json:"stack"`
 	LatestImage         string                  `json:"latestImage"`
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
