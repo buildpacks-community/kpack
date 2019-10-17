@@ -86,21 +86,24 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: v1alpha1.ImageSpec{
-			Tag:            "some/image",
-			ServiceAccount: serviceAccount,
+			Tag: "some/image",
 			Builder: v1alpha1.ImageBuilder{
 				TypeMeta: metav1.TypeMeta{
 					Kind: "Builder",
 				},
 				Name: builderName,
 			},
+			ServiceAccount: serviceAccount,
 			Source: v1alpha1.SourceConfig{
 				Git: &v1alpha1.Git{
 					URL:      "https://some.git/url",
 					Revision: "1234567",
 				},
 			},
-			ImageTaggingStrategy: v1alpha1.None,
+			FailedBuildHistoryLimit:  limit(10),
+			SuccessBuildHistoryLimit: limit(10),
+			ImageTaggingStrategy:     v1alpha1.None,
+			Build:                    v1alpha1.ImageBuild{},
 		},
 		Status: v1alpha1.ImageStatus{
 			Status: duckv1alpha1.Status{

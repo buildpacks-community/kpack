@@ -27,9 +27,8 @@ import (
 )
 
 const (
-	ReconcilerName           = "Images"
-	Kind                     = "Image"
-	buildHistoryDefaultLimit = 10
+	ReconcilerName = "Images"
+	Kind           = "Image"
 )
 
 type Tracker interface {
@@ -260,7 +259,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 		return fmt.Errorf("failed fetching all builds for image: %s", err)
 	}
 
-	if builds.NumberFailedBuilds() > limitOrDefault(image.Spec.FailedBuildHistoryLimit, buildHistoryDefaultLimit) {
+	if builds.NumberFailedBuilds() > *image.Spec.FailedBuildHistoryLimit {
 		oldestFailedBuild := builds.OldestFailure()
 
 		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &metav1.DeleteOptions{})
@@ -269,7 +268,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 		}
 	}
 
-	if builds.NumberSuccessfulBuilds() > limitOrDefault(image.Spec.SuccessBuildHistoryLimit, buildHistoryDefaultLimit) {
+	if builds.NumberSuccessfulBuilds() > *image.Spec.SuccessBuildHistoryLimit {
 		oldestSuccess := builds.OldestSuccess()
 
 		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &metav1.DeleteOptions{})
@@ -279,13 +278,6 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	}
 
 	return nil
-}
-
-func limitOrDefault(limit *int64, defaultLimit int64) int64 {
-	if limit != nil {
-		return *limit
-	}
-	return defaultLimit
 }
 
 func (c *Reconciler) fetchAllBuilds(image *v1alpha1.Image) (buildList, error) {
