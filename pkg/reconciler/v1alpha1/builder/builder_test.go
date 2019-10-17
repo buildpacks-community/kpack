@@ -85,7 +85,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 				Identifier: builderIdentifier,
-				RunImage:   runImgIdentifier,
+				Stack: cnb.Stack{
+					RunImage: runImgIdentifier,
+					ID:       "io.buildpacks.stacks.bionic",
+				},
 			}, nil)
 
 			it("saves metadata to the status", func() {
@@ -110,7 +113,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						LatestImage: builderIdentifier,
-						RunImage:    runImgIdentifier,
+						Stack: v1alpha1.BuildStack{
+							RunImage: runImgIdentifier,
+							ID:       "io.buildpacks.stacks.bionic",
+						},
 					},
 				}
 				rt.Test(rtesting.TableRow{
@@ -154,7 +160,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									RunImage:    runImgIdentifier,
+									Stack: v1alpha1.BuildStack{
+										RunImage: runImgIdentifier,
+										ID:       "io.buildpacks.stacks.bionic",
+									},
 								},
 							},
 						},
@@ -191,7 +200,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									RunImage:    runImgIdentifier,
+									Stack: v1alpha1.BuildStack{
+										RunImage: runImgIdentifier,
+										ID:       "io.buildpacks.stacks.bionic",
+									},
 								},
 							},
 						},
@@ -228,7 +240,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									RunImage:    runImgIdentifier,
+									Stack: v1alpha1.BuildStack{
+										RunImage: runImgIdentifier,
+										ID:       "io.buildpacks.stacks.bionic",
+									},
 								},
 							},
 						},
@@ -256,7 +271,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					LatestImage: builderIdentifier,
-					RunImage:    runImgIdentifier,
+					Stack: v1alpha1.BuildStack{
+						RunImage: runImgIdentifier,
+						ID:       "io.buildpacks.stacks.bionic",
+					},
 				}
 
 				rt.Test(rtesting.TableRow{

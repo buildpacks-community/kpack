@@ -26,9 +26,14 @@ type BuilderImageMetadata struct {
 	Stack      metadata.StackMetadata `json:"stack"`
 }
 
+type Stack struct {
+	RunImage string
+	ID       string
+}
+
 type BuilderImage struct {
 	BuilderBuildpackMetadata BuilderMetadata
-	RunImage                 string
+	Stack                    Stack
 	Identifier               string
 }
 
@@ -51,6 +56,11 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResour
 	metadataJSON, err = img.Label(BuilderMetadataLabel)
 	if err != nil {
 		return BuilderImage{}, errors.Wrap(err, "builder image metadata label not present")
+	}
+
+	stackId, err := img.Label(metadata.StackMetadataLabel)
+	if err != nil {
+		return BuilderImage{}, err
 	}
 
 	var md BuilderImageMetadata
@@ -80,8 +90,11 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResour
 
 	return BuilderImage{
 		BuilderBuildpackMetadata: md.Buildpacks,
-		RunImage:                 runImageIdentifier,
-		Identifier:               identifier,
+		Stack: Stack{
+			RunImage: runImageIdentifier,
+			ID:       stackId,
+		},
+		Identifier: identifier,
 	}, nil
 }
 
@@ -101,7 +114,7 @@ type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
 	BuildpackMetadata []metadata.BuildpackMetadata
-	RunImage          string
+	Stack             Stack
 }
 
 func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
@@ -114,6 +127,14 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 	}
 
 	layerMetadataJSON, err = img.Label(metadata.LayerMetadataLabel)
+	if err != nil {
+		return BuiltImage{}, err
+	}
+
+	stackId, err := img.Label(metadata.StackMetadataLabel)
+	if err != nil {
+		return BuiltImage{}, nil
+	}
 
 	var buildMetadata metadata.BuildMetadata
 	var layerMetadata metadata.LayersMetadata
@@ -154,6 +175,9 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 		Identifier:        identifier,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
-		RunImage:          baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
+		Stack: Stack{
+			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
+			ID:       stackId,
+		},
 	}, nil
 }

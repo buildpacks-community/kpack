@@ -97,7 +97,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			LatestImage: "somebuilder/123@sha256:12334563ad",
-			RunImage:    "somerun/123@sha256:12334563ad",
+			Stack: v1alpha1.BuildStack{
+				RunImage: "somerun/123@sha256:12334563ad",
+				ID:       "io.buildpacks.stacks.bionic",
+			},
 		},
 	}
 
@@ -379,7 +382,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:      "io.buildpack.executed",
 					Version: "1.1",
 				}},
-				RunImage: "somerun/123@sha256:12334563ad",
+				Stack: cnb.Stack{
+					RunImage: "somerun/123@sha256:12334563ad",
+					ID:       "io.buildpacks.stacks.bionic",
+				},
 			}
 			fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
 
@@ -441,7 +447,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										Version: "1.1",
 									}},
 									LatestImage: identifier,
-									RunImage:    "somerun/123@sha256:12334563ad",
+									Stack: v1alpha1.BuildStack{
+										RunImage: "somerun/123@sha256:12334563ad",
+										ID:       "io.buildpacks.stacks.bionic",
+									},
 									StepStates: []corev1.ContainerState{
 										{
 											Terminated: &corev1.ContainerStateTerminated{

@@ -81,7 +81,7 @@ var (
 )
 
 func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
-	if b.Rebasable() {
+	if b.Rebasable(buildPodBuilderConfig.StackID) {
 		secretVolumes, secretVolumeMounts, secretArgs, err := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 		if err != nil {
 			return nil, err
