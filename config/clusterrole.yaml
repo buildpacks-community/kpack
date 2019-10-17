@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kpack-admin
+  name: kpack-controller-admin
 rules:
 - apiGroups:
   - build.pivotal.io
@@ -43,3 +43,32 @@ rules:
   - update
   - delete
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kpack-webhook-admin
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - create
+  - update
+- apiGroups:
+  - "apps"
+  resources:
+  - deployments
+  verbs:
+  - get
+- apiGroups:
+  - "admissionregistration.k8s.io"
+  resources:
+  - "mutatingwebhookconfigurations"
+  verbs:
+  - get
+  - create
+  - update
+  - delete

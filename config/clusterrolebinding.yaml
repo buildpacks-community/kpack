@@ -8,5 +8,18 @@ subjects:
     namespace: kpack
 roleRef:
   kind: ClusterRole
-  name: kpack-admin
+  name: kpack-controller-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kpack-webhook-admin
+subjects:
+- kind: ServiceAccount
+  name: webhook
+  namespace: kpack
+roleRef:
+  kind: ClusterRole
+  name: kpack-webhook-admin
   apiGroup: rbac.authorization.k8s.io
