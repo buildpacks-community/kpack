@@ -20,7 +20,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     metadata:
       name: tutorial-registry-credentials
       annotations:
-        build.pivotal.io/docker: <registry>
+        build.pivotal.io/docker: <registry-prefix>
     type: kubernetes.io/basic-auth
     stringData:
       username: <username>
@@ -28,7 +28,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     ```
    
    > Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `index.docker.io`. 
-   For GCR this should be `gcr.io`.
+   For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON).
    
    Your secret configuration should look something like this:
    
@@ -43,6 +43,25 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    stringData:
      username: sample-username
      password: sample-password
+   ```
+   
+   or
+   
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: tutorial-registry-credentials
+     annotations:
+       build.pivotal.io/docker: gcr.io
+   type: kubernetes.io/basic-auth
+   stringData:
+     username: _json_key
+     sample-password: |
+       {
+         "type": "service-account",
+         ... <rest of JSON from GCP>
+       }
    ```
    
    Apply that credential to the cluster 
@@ -99,7 +118,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
           revision: master
     ```
 
-   - Make sure to replace <DOCKER-IMAGE> with the registry you configured in step #2. Something like: gcr.io/your-project/app     
+   - Make sure to replace <DOCKER-IMAGE> with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
    - Make sure to replace <YOUR-GITHUB-URL> with the publicly accessible github url to your fork from step #3
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
@@ -137,7 +156,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     The output should look something like this:
     ```
     NAMESPACE   NAME                  LATESTIMAGE                                                                                       READY
-    test        tutorial-image        gcr.io/project-name/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b8   True
+    test        tutorial-image        index.docker.io/your-project/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b8   True
     ```
     
     The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
@@ -176,7 +195,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    
    ```
    NAME                                IMAGE                                                                                           SUCCEEDED
-   tutorial-image-build-1-8mqkc       gcr.io/project-name/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b   True
+   tutorial-image-build-1-8mqkc       index.docker.io/your-name/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b   True
    tutorial-image-build-2-xsf2l                                                                                                        Unknown
    ```
 
