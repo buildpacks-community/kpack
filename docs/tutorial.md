@@ -155,8 +155,8 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     
     The output should look something like this:
     ```
-    NAMESPACE   NAME                  LATESTIMAGE                                                                                       READY
-    test        tutorial-image        index.docker.io/your-project/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b8   True
+    NAMESPACE   NAME                  LATESTIMAGE                                        READY
+    test        tutorial-image        index.docker.io/your-project/app@sha256:6744b...   True
     ```
     
     The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
@@ -194,9 +194,9 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    You should see a new build with
    
    ```
-   NAME                                IMAGE                                                                                           SUCCEEDED
-   tutorial-image-build-1-8mqkc       index.docker.io/your-name/app@sha256:6744b3b24a7ab8d2b45d7673313c180daccb534b3d931369d0aa9805712f34b   True
-   tutorial-image-build-2-xsf2l                                                                                                        Unknown
+   NAME                                IMAGE                                          SUCCEEDED
+   tutorial-image-build-1-8mqkc       index.docker.io/your-name/app@sha256:6744b...   True
+   tutorial-image-build-2-xsf2l                                                       Unknown
    ```
 
    You can tail the logs for the image with log utility used in step #4.
