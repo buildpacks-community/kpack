@@ -18,7 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
@@ -52,11 +54,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		err = clients.client.BuildV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
 		require.True(t, err == nil || errors.IsNotFound(err))
 
-		err = clients.k8sClient.CoreV1().Namespaces().Delete(testNamespace, &metav1.DeleteOptions{})
-		require.True(t, err == nil || errors.IsNotFound(err))
-		if err == nil {
-			time.Sleep(10 * time.Second)
-		}
+		deleteNamespace(t, clients, testNamespace)
 
 		_, err = clients.k8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -72,146 +70,146 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	when("an image is applied", func() {
-		it("builds an initial image", func() {
-			reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
-			require.NoError(t, err)
+	it("builds and rebases git, blob, and registry based images", func() {
+		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
+		require.NoError(t, err)
 
-			auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-			require.NoError(t, err)
+		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
+		require.NoError(t, err)
 
-			basicAuth, err := auth.Authorization()
-			require.NoError(t, err)
+		basicAuth, err := auth.Authorization()
+		require.NoError(t, err)
 
-			username, password, ok := parseBasicAuth(basicAuth)
-			require.True(t, ok)
+		username, password, ok := parseBasicAuth(basicAuth)
+		require.True(t, ok)
 
-			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: dockerSecret,
-					Annotations: map[string]string{
-						"build.pivotal.io/docker": reference.Context().RegistryStr(),
-					},
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: dockerSecret,
+				Annotations: map[string]string{
+					"build.pivotal.io/docker": reference.Context().RegistryStr(),
 				},
-				StringData: map[string]string{
-					"username": username,
-					"password": password,
-				},
-				Type: v1.SecretTypeBasicAuth,
-			})
-			require.NoError(t, err)
-
-			_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: serviceAccountName,
-				},
-				Secrets: []v1.ObjectReference{
-					{
-						Name: dockerSecret,
-					},
-				},
-			})
-			require.NoError(t, err)
-
-			_, err = clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: clusterBuilderName,
-				},
-				Spec: v1alpha1.BuilderSpec{
-					Image: builderImage,
-				},
-			})
-			require.NoError(t, err)
-
-			_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      builderName,
-					Namespace: testNamespace,
-				},
-				Spec: v1alpha1.BuilderWithSecretsSpec{
-					BuilderSpec:      v1alpha1.BuilderSpec{Image: builderImage},
-					ImagePullSecrets: nil,
-				},
-			})
-			require.NoError(t, err)
-
-			cacheSize := resource.MustParse("1Gi")
-
-			expectedResources := v1.ResourceRequirements{
-				Limits: v1.ResourceList{
-					v1.ResourceMemory: resource.MustParse("1G"),
-				},
-				Requests: v1.ResourceList{
-					v1.ResourceMemory: resource.MustParse("512M"),
-				},
-			}
-
-			imageConfigs := map[string]v1alpha1.SourceConfig{
-				"test-git-image": {
-					Git: &v1alpha1.Git{
-						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-						Revision: "master",
-					},
-				},
-				"test-blob-image": {
-					Blob: &v1alpha1.Blob{
-						URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
-					},
-				},
-				"test-registry-image": {
-					Registry: &v1alpha1.Registry{
-						Image: "gcr.io/cf-build-service-public/testing/beam/source@sha256:7d8aa6c87fc659d52bf42aadf23e0aaa15b1d7ed8e41383a201edabfe9d17949",
-					},
-				},
-			}
-
-			imageBuilders := map[string]v1alpha1.ImageBuilder{
-				"test-git-image": {
-					TypeMeta: metav1.TypeMeta{
-						Kind:       v1alpha1.ClusterBuilderKind,
-						APIVersion: "build.pivotal.io/v1alpha1",
-					},
-					Name: clusterBuilderName,
-				},
-				"test-registry-image": {
-					TypeMeta: metav1.TypeMeta{
-						Kind:       v1alpha1.BuilderKind,
-						APIVersion: "build.pivotal.io/v1alpha1",
-					},
-					Name: builderName,
-				},
-				"test-blob-image": {
-					TypeMeta: metav1.TypeMeta{
-						Kind:       v1alpha1.ClusterBuilderKind,
-						APIVersion: "build.pivotal.io/v1alpha1",
-					},
-					Name: clusterBuilderName,
-				},
-			}
-
-			for imageName, imageSource := range imageConfigs {
-				imageTag := cfg.newImageTag()
-				_, err = clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: imageName,
-					},
-					Spec: v1alpha1.ImageSpec{
-						Tag:                  imageTag,
-						Builder:              imageBuilders[imageName],
-						ServiceAccount:       serviceAccountName,
-						Source:               imageSource,
-						CacheSize:            &cacheSize,
-						ImageTaggingStrategy: v1alpha1.None,
-						Build: v1alpha1.ImageBuild{
-							Resources: expectedResources,
-						},
-					},
-				})
-				require.NoError(t, err)
-
-				validateImageCreate(t, clients, imageTag, imageName, testNamespace, expectedResources)
-			}
+			},
+			StringData: map[string]string{
+				"username": username,
+				"password": password,
+			},
+			Type: v1.SecretTypeBasicAuth,
 		})
+		require.NoError(t, err)
+
+		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: serviceAccountName,
+			},
+			Secrets: []v1.ObjectReference{
+				{
+					Name: dockerSecret,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		_, err = clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterBuilderName,
+			},
+			Spec: v1alpha1.BuilderSpec{
+				Image: builderImage,
+			},
+		})
+		require.NoError(t, err)
+
+		_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      builderName,
+				Namespace: testNamespace,
+			},
+			Spec: v1alpha1.BuilderWithSecretsSpec{
+				BuilderSpec:      v1alpha1.BuilderSpec{Image: builderImage},
+				ImagePullSecrets: nil,
+			},
+		})
+		require.NoError(t, err)
+
+		cacheSize := resource.MustParse("1Gi")
+
+		expectedResources := v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("1G"),
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("512M"),
+			},
+		}
+
+		imageConfigs := map[string]v1alpha1.SourceConfig{
+			"test-git-image": {
+				Git: &v1alpha1.Git{
+					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+					Revision: "master",
+				},
+			},
+			"test-blob-image": {
+				Blob: &v1alpha1.Blob{
+					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+				},
+			},
+			"test-registry-image": {
+				Registry: &v1alpha1.Registry{
+					Image: "gcr.io/cf-build-service-public/testing/beam/source@sha256:7d8aa6c87fc659d52bf42aadf23e0aaa15b1d7ed8e41383a201edabfe9d17949",
+				},
+			},
+		}
+
+		imageBuilders := map[string]v1alpha1.ImageBuilder{
+			"test-git-image": {
+				TypeMeta: metav1.TypeMeta{
+					Kind:       v1alpha1.ClusterBuilderKind,
+					APIVersion: "build.pivotal.io/v1alpha1",
+				},
+				Name: clusterBuilderName,
+			},
+			"test-registry-image": {
+				TypeMeta: metav1.TypeMeta{
+					Kind:       v1alpha1.BuilderKind,
+					APIVersion: "build.pivotal.io/v1alpha1",
+				},
+				Name: builderName,
+			},
+			"test-blob-image": {
+				TypeMeta: metav1.TypeMeta{
+					Kind:       v1alpha1.ClusterBuilderKind,
+					APIVersion: "build.pivotal.io/v1alpha1",
+				},
+				Name: clusterBuilderName,
+			},
+		}
+
+		for imageName, imageSource := range imageConfigs {
+			imageTag := cfg.newImageTag()
+			_, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: imageName,
+				},
+				Spec: v1alpha1.ImageSpec{
+					Tag:                  imageTag,
+					Builder:              imageBuilders[imageName],
+					ServiceAccount:       serviceAccountName,
+					Source:               imageSource,
+					CacheSize:            &cacheSize,
+					ImageTaggingStrategy: v1alpha1.None,
+					Build: v1alpha1.ImageBuild{
+						Resources: expectedResources,
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			validateImageCreate(t, clients, imageTag, imageName, testNamespace, expectedResources)
+
+			validateRebase(t, clients, imageName, testNamespace)
+		}
 	})
 }
 
@@ -249,9 +247,41 @@ func imageExists(name string) func() bool {
 		if err != nil {
 			return false
 		}
-
 		return true
 	}
+}
+
+func validateRebase(t *testing.T, clients *clients, imageName, testNamespace string) {
+	var build v1alpha1.Build
+
+	eventually(t, func() bool {
+		buildList, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+		})
+		require.NoError(t, err)
+
+		require.Len(t, buildList.Items, 1)
+		build = buildList.Items[0]
+
+		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+	}, 5*time.Second, 1*time.Minute)
+
+	build.Spec.LastBuild.Image = build.Status.LatestImage
+
+	_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        build.Name + "-rebase",
+			Annotations: map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack},
+		},
+		Spec: build.Spec,
+	})
+	require.NoError(t, err)
+
+	eventually(t, func() bool {
+		build, err := clients.client.BuildV1alpha1().Builds(testNamespace).Get(build.Name+"-rebase", metav1.GetOptions{})
+		require.NoError(t, err)
+		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+	}, 5*time.Second, 1*time.Minute)
 }
 
 func deleteImageTag(t *testing.T, deleteImageTag string) {
@@ -263,4 +293,35 @@ func deleteImageTag(t *testing.T, deleteImageTag string) {
 
 	err = remote.Delete(reference, remote.WithAuth(authenticator))
 	require.NoError(t, err)
+}
+
+func deleteNamespace(t *testing.T, clients *clients, namespace string) {
+	err := clients.k8sClient.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
+	require.True(t, err == nil || errors.IsNotFound(err))
+	if errors.IsNotFound(err) {
+		return
+	}
+
+	var (
+		timeout int64 = 120
+		closed        = false
+	)
+
+	watcher, err := clients.k8sClient.CoreV1().Namespaces().Watch(metav1.ListOptions{
+		TimeoutSeconds: &timeout,
+	})
+	require.NoError(t, err)
+
+	for evt := range watcher.ResultChan() {
+		if evt.Type != watch.Deleted {
+			continue
+		}
+		if ns, ok := evt.Object.(*v1.Namespace); ok {
+			if ns.Name == namespace {
+				closed = true
+				break
+			}
+		}
+	}
+	require.True(t, closed)
 }
