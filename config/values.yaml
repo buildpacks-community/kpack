@@ -4,5 +4,5 @@ controller_image: gcr.io/controller
 webhook_image: gcr.io/webhook
 build_init_image: gcr.io/build-init
 rebase_image: gcr.io/rebase
-nop_image: gcr.io/pivotal-knative/github.com/knative/build/cmd/nop@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4
+completion_image: gcr.io/completion
 version: dev

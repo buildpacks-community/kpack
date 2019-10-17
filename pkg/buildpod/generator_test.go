@@ -113,8 +113,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			fakeRemoteImageFactory.NewRemoteReturns(fakeImage, nil)
 
 			buildPodConfig := v1alpha1.BuildPodImages{
-				BuildInitImage: "build/init:builderImage",
-				NopImage:       "no/op:builderImage",
+				BuildInitImage:  "build/init:builderImage",
+				CompletionImage: "completion/image:builderImage",
 			}
 			generator := &buildpod.Generator{
 				BuildPodConfig:     buildPodConfig,
