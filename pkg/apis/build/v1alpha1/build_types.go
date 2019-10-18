@@ -42,6 +42,7 @@ var (
 )
 
 type BuildBuilderSpec struct {
+	metav1.TypeMeta
 	Image            string                        `json:"image"`
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }

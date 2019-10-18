@@ -19,10 +19,6 @@ func (f *ImageFactory) NewRemote(image string, secretRef SecretRef) (RemoteImage
 	return NewGoContainerRegistryImage(image, keychain)
 }
 
-func (f *ImageFactory) NewRemoteWithDefaultKeychain(image string) (RemoteImage, error) {
-	return NewGoContainerRegistryImage(image, authn.DefaultKeychain)
-}
-
 type KeychainFactory interface {
 	KeychainForSecretRef(SecretRef) (authn.Keychain, error)
 }
@@ -37,7 +33,6 @@ type RemoteImage interface {
 //go:generate counterfeiter . RemoteImageFactory
 type RemoteImageFactory interface {
 	NewRemote(image string, secretRef SecretRef) (RemoteImage, error)
-	NewRemoteWithDefaultKeychain(image string) (RemoteImage, error)
 }
 
 type SecretRef struct {
