@@ -25,5 +25,5 @@ spec:
           value: #@ data.values.build_init_image
         - name: REBASE_IMAGE
           value: #@ data.values.rebase_image
-        - name: NOP_IMAGE
-          value: #@ data.values.nop_image
+        - name: COMPLETION_IMAGE
+          value: #@ data.values.completion_image

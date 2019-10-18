@@ -30,9 +30,9 @@ const (
 )
 
 type BuildPodImages struct {
-	BuildInitImage string
-	NopImage       string
-	RebaseImage    string
+	BuildInitImage  string
+	CompletionImage string
+	RebaseImage     string
 }
 
 type BuildPodBuilderConfig struct {
@@ -105,7 +105,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPo
 				Containers: []corev1.Container{
 					{
 						Name:            "completion",
-						Image:           config.NopImage,
+						Image:           config.CompletionImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Resources:       b.Spec.Resources,
 					},
@@ -163,7 +163,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPo
 			Containers: []corev1.Container{
 				{
 					Name:            "completion",
-					Image:           config.NopImage,
+					Image:           config.CompletionImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Resources:       b.Spec.Resources,
 				},

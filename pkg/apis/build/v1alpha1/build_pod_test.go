@@ -109,8 +109,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	config := v1alpha1.BuildPodImages{
-		BuildInitImage: "build/init:image",
-		NopImage:       "no/op:image",
+		BuildInitImage:  "build/init:image",
+		CompletionImage: "completion/image:image",
 	}
 
 	buildPodBuilderConfig := v1alpha1.BuildPodBuilderConfig{
@@ -446,12 +446,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		it("configures the nop container with resources", func() {
+		it("configures the completion container with resources", func() {
 			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 			require.NoError(t, err)
 
-			nopContainer := pod.Spec.Containers[0]
-			assert.Equal(t, resources, nopContainer.Resources)
+			completionContainer := pod.Spec.Containers[0]
+			assert.Equal(t, resources, completionContainer.Resources)
 		})
 
 		it("creates a pod with reusable cache when name is provided", func() {
@@ -521,7 +521,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Containers: []corev1.Container{
 						{
 							Name:            "completion",
-							Image:           config.NopImage,
+							Image:           config.CompletionImage,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources:       build.Spec.Resources,
 						},
@@ -551,6 +551,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 				}, pod.Spec)
 			})
+		})
+
+		it("creates the pod container correctly", func() {
+			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			require.NoError(t, err)
+
+			require.Len(t, pod.Spec.Containers, 1)
+			assert.Equal(t, "completion/image:image", pod.Spec.Containers[0].Image)
 		})
 	})
 }
