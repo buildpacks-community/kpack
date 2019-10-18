@@ -552,6 +552,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, pod.Spec)
 			})
 		})
+
+		it("creates the pod container correctly", func() {
+			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			require.NoError(t, err)
+
+			require.Len(t, pod.Spec.Containers, 1)
+			assert.Equal(t, "completion/image:image", pod.Spec.Containers[0].Image)
+		})
 	})
 }
 
