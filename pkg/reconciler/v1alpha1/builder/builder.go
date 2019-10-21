@@ -82,7 +82,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return updateErr
 	}
 
-	if builder.Spec.UpdatePolicy != v1alpha1.External {
+	if builder.Spec.UpdatePolicy == v1alpha1.Polling {
 		err := c.Enqueuer.Enqueue(builder)
 		if err != nil {
 			return err

@@ -114,3 +114,10 @@ func validateFieldNotEmpty(value, field string) *apis.FieldError {
 	}
 	return nil
 }
+
+func validateListNotEmpty(value []string, field string) *apis.FieldError {
+	if len(value) == 0 {
+		return apis.ErrMissingField(field)
+	}
+	return nil
+}
