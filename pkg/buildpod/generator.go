@@ -13,7 +13,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -57,16 +56,10 @@ const cnbUserId = "CNB_USER_ID"
 const cnbGroupId = "CNB_GROUP_ID"
 
 func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPodBuilderConfig, error) {
-	var image registry.RemoteImage
-	var err error
-	if build.Spec.Builder.Kind == clusterbuilder.Kind {
-		image, err = g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{})
-	} else {
-		image, err = g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
-			Namespace:        build.Namespace,
-			ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
-		})
-	}
+	image, err := g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
+		Namespace:        build.Namespace,
+		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
+	})
 
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, err

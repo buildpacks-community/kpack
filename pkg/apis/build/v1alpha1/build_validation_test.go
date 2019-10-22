@@ -22,9 +22,6 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		Spec: BuildSpec{
 			Tags: []string{"some/image"},
 			Builder: BuildBuilderSpec{
-				TypeMeta: metav1.TypeMeta{
-					Kind: "ClusterBuilder",
-				},
 				Image:            "builder/bionic-builder@sha256:e431a4f94fb84854fd081da62762192f36fd093fdfb85ad3bc009b9309524e2d",
 				ImagePullSecrets: nil,
 			},
@@ -72,17 +69,12 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("missing builder name", func() {
 			build.Spec.Builder.Image = ""
-			assertValidationError(build, apis.ErrMissingField("name").ViaField("spec", "builder"))
+			assertValidationError(build, apis.ErrMissingField("image").ViaField("spec", "builder"))
 		})
 
 		it("invalid builder name", func() {
 			build.Spec.Builder.Image = "foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh"
 			assertValidationError(build, apis.ErrInvalidValue("foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh", "image").ViaField("spec", "builder"))
-		})
-
-		it("invalid builder Kind", func() {
-			build.Spec.Builder.Kind = "FakeBuilder"
-			assertValidationError(build, apis.ErrInvalidValue("FakeBuilder", "kind").ViaField("spec", "builder"))
 		})
 
 		it("multiple sources", func() {
@@ -141,10 +133,10 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("combining errors", func() {
 			build.Spec.Tags = []string{}
-			build.Spec.Builder.Kind = "FakeBuilder"
+			build.Spec.Builder.Image = ""
 			assertValidationError(build,
 				apis.ErrMissingField("tags").ViaField("spec").
-					Also(apis.ErrInvalidValue("FakeBuilder", "kind").ViaField("spec", "builder")))
+					Also(apis.ErrMissingField("image").ViaField("spec", "builder")))
 		})
 	})
 }

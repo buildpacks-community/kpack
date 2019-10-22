@@ -1,11 +1,6 @@
 package k8sdockercreds
 
 import (
-	// Note this line is separated to ensure it is loaded before any other import
-	// This needs to happen because the init in the package should run before
-	// the init of the go containerregistry
-	_ "github.com/pivotal/kpack/pkg/dockercreds/k8svolume"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"k8s.io/api/core/v1"
@@ -19,12 +14,26 @@ import (
 )
 
 type k8sSecretKeychainFactory struct {
-	client k8sclient.Interface
+	client         k8sclient.Interface
+	volumeKeychain authn.Keychain
+}
+
+func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFactory, error) {
+	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
+	if err != nil {
+		return nil, err
+	}
+
+	return &k8sSecretKeychainFactory{client: client, volumeKeychain: volumeKeychain}, nil
 }
 
 func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) (authn.Keychain, error) {
 	if !ref.IsNamespaced() {
-		return k8schain.New(nil, k8schain.Options{}) // k8s keychain with no secrets
+		keychain, err := k8schain.New(nil, k8schain.Options{})
+		if err != nil {
+			return nil, err
+		}
+		return authn.NewMultiKeychain(f.volumeKeychain, keychain), nil // k8s keychain with no secrets
 	}
 
 	annotatedBasicAuthKeychain := &annotatedBasicAuthKeychain{
@@ -41,7 +50,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 		return nil, err
 	}
 
-	return authn.NewMultiKeychain(annotatedBasicAuthKeychain, k8sKeychain), nil
+	return authn.NewMultiKeychain(annotatedBasicAuthKeychain, f.volumeKeychain, k8sKeychain), nil
 }
 
 func toStringPullSecrets(secrets []v1.LocalObjectReference) []string {
@@ -50,12 +59,6 @@ func toStringPullSecrets(secrets []v1.LocalObjectReference) []string {
 		stringSecrets = append(stringSecrets, s.Name)
 	}
 	return stringSecrets
-}
-
-func NewSecretKeychainFactory(client k8sclient.Interface) *k8sSecretKeychainFactory {
-	return &k8sSecretKeychainFactory{
-		client: client,
-	}
 }
 
 type annotatedBasicAuthKeychain struct {

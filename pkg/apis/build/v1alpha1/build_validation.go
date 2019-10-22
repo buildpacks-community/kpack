@@ -25,19 +25,12 @@ func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 
 func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	if bbs.Image == "" {
-		return apis.ErrMissingField("name")
+		return apis.ErrMissingField("image")
 	}
 
 	_, err := name.ParseReference(bbs.Image, name.WeakValidation)
 	if err != nil {
 		return apis.ErrInvalidValue(bbs.Image, "image")
 	}
-
-	switch bbs.Kind {
-	case ClusterBuilderKind,
-		BuilderKind:
-		return nil
-	default:
-		return apis.ErrInvalidValue(bbs.Kind, "kind")
-	}
+	return nil
 }

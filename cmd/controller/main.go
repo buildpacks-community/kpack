@@ -85,8 +85,13 @@ func main() {
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
 	podInformer := k8sInformerFactory.Core().V1().Pods()
 
+	keychainFactory, err := k8sdockercreds.NewSecretKeychainFactory(k8sClient)
+	if err != nil {
+		log.Fatalf("could not create k8s keychain factory: %s", err.Error())
+	}
+
 	imageFactory := &registry.ImageFactory{
-		KeychainFactory: k8sdockercreds.NewSecretKeychainFactory(k8sClient),
+		KeychainFactory: keychainFactory,
 	}
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
