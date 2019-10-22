@@ -13,7 +13,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20190910142231-b02d448a3705
 	github.com/googleapis/gnostic v0.3.1 // indirect
@@ -55,7 +54,7 @@ require (
 	k8s.io/gengo v0.0.0-20190822140433-26a664648505 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
-	k8s.io/kubernetes v1.10.2
+	k8s.io/kubernetes v1.10.2 // indirect
 	k8s.io/utils v0.0.0-20190923111123-69764acb6e8e // indirect
 	knative.dev/pkg v0.0.0-20190927181044-f6eb4a55ec68
 )

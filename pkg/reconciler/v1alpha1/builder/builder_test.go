@@ -70,7 +70,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initalGeneration,
 		},
 		Spec: v1alpha1.BuilderWithSecretsSpec{
-			BuilderSpec:      v1alpha1.BuilderSpec{Image: imageName},
+			BuilderSpec: v1alpha1.BuilderSpec{
+				Image:        imageName,
+				UpdatePolicy: v1alpha1.Polling,
+			},
 			ImagePullSecrets: nil,
 		},
 	}
@@ -133,7 +136,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
 			})
 
-			it("schedule next polling when update policy is not set", func() {
+			it("schedule next polling when update policy is set to polling", func() {
 				rt.Test(rtesting.TableRow{
 					Key:     key,
 					Objects: []runtime.Object{builder},

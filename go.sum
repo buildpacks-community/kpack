@@ -210,8 +210,6 @@ github.com/markbates/inflect v1.0.4 h1:5fh1gzTFhfae06u3hzHYO9xe3l3v3nW5Pwt3naLTP
 github.com/markbates/inflect v1.0.4/go.mod h1:1fR9+pO2KHEO9ZRtto13gDwwZaAKstQzferVeWqbgNs=
 github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a h1:+J2gw7Bw77w/fbK7wnNJJDKmw1IbWft2Ul5BzrG1Qm8=
 github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a/go.mod h1:M1qoD/MqPgTZIk0EWKB38wE28ACRfVcn+cU08jyArI0=
-github.com/matthewmcnew/archtest v0.0.0-20190529164558-d718149ccde2 h1:LyLYKB4zlE2sEtRVHT9V2PV6NlSGxW/LqW5ZkkazNZ0=
-github.com/matthewmcnew/archtest v0.0.0-20190529164558-d718149ccde2/go.mod h1:vpNp7aKKdQUbJhf1LeKhTO+mx6oPBwmAd6i6lFuWnwU=
 github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad h1:uJ70JGeczglS1K//Rsi2+7EryfuJTEL23a5pYI6TpkA=
 github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad/go.mod h1:rcTN3gxjbgtNw/OIFSR8KQMx1wtwk8i1L9JmZTTjTM4=
 github.com/mattn/go-colorable v0.1.1/go.mod h1:FuOcm+DKB9mbwrcAfNl7/TZVBZ6rcnceauSikq3lYCQ=

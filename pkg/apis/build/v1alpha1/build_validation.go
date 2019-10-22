@@ -1,31 +1,36 @@
-/*
- * Copyright 2019 The original author or authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package v1alpha1
 
 import (
 	"context"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"knative.dev/pkg/apis"
 )
 
-func (a *Build) Validate(ctx context.Context) *apis.FieldError {
-	return nil
+func (b *Build) SetDefaults(ctx context.Context) {
+	if b.Spec.ServiceAccount == "" {
+		b.Spec.ServiceAccount = defaultServiceAccount
+	}
 }
 
-func (as *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
+func (b *Build) Validate(ctx context.Context) *apis.FieldError {
+	return b.Spec.Validate(ctx).ViaField("spec")
+}
+
+func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
+	return validateListNotEmpty(bs.Tags, "tags").
+		Also(bs.Builder.Validate(ctx).ViaField("builder")).
+		Also(bs.Source.Validate(ctx).ViaField("source"))
+}
+
+func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
+	if bbs.Image == "" {
+		return apis.ErrMissingField("image")
+	}
+
+	_, err := name.ParseReference(bbs.Image, name.WeakValidation)
+	if err != nil {
+		return apis.ErrInvalidValue(bbs.Image, "image")
+	}
 	return nil
 }

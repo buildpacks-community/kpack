@@ -11,8 +11,7 @@ func (c *ClusterBuilder) Image() string {
 
 func (c *ClusterBuilder) BuildBuilderSpec() BuildBuilderSpec {
 	return BuildBuilderSpec{
-		TypeMeta: c.TypeMeta,
-		Image:    c.Status.LatestImage,
+		Image: c.Status.LatestImage,
 	}
 }
 

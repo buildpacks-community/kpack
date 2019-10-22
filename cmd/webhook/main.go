@@ -52,7 +52,10 @@ func main() {
 	}
 
 	resourceHandlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		v1alpha1.SchemeGroupVersion.WithKind("Image"): &v1alpha1.Image{},
+		v1alpha1.SchemeGroupVersion.WithKind("Image"):          &v1alpha1.Image{},
+		v1alpha1.SchemeGroupVersion.WithKind("Build"):          &v1alpha1.Build{},
+		v1alpha1.SchemeGroupVersion.WithKind("Builder"):        &v1alpha1.Builder{},
+		v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"): &v1alpha1.ClusterBuilder{},
 	}
 
 	admissionControllers := map[string]webhook.AdmissionController{
