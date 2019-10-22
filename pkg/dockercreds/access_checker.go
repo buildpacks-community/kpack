@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
 )
@@ -58,6 +59,19 @@ func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 
 	if err := transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
 		return false, nil
+	}
+
+	return true, nil
+}
+
+func HasReadAccess(keychain authn.Keychain, tag string) (bool, error) {
+	ref, err := name.ParseReference(tag, name.WeakValidation)
+	if err != nil {
+		return false, errors.Wrapf(err, "parse reference '%s'", tag)
+	}
+	_, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport))
+	if err != nil {
+		return false, errors.Wrapf(err, "connect to registry store '%s'", tag)
 	}
 
 	return true, nil

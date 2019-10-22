@@ -190,6 +190,10 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPo
 							Name:  "IMAGE_TAG",
 							Value: b.Tag(),
 						},
+						corev1.EnvVar{
+							Name:  "RUN_IMAGE",
+							Value: buildPodBuilderConfig.RunImage,
+						},
 					),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",

@@ -223,14 +223,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				corev1.EnvVar{
 					Name:  "PLATFORM_ENV_VARS",
 					Value: `[{"name":"keyA","value":"valueA"},{"name":"keyB","value":"valueB"}]`,
-				},
+				})
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
 					Name:  "IMAGE_TAG",
 					Value: "someimage/name",
-				},
+				})
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
-					Name:  "HOME",
-					Value: "/builder/home",
+					Name:  "RUN_IMAGE",
+					Value: "builderregistry.io/run",
 				})
 			assert.Subset(t, pod.Spec.InitContainers[0].VolumeMounts, []corev1.VolumeMount{
 				{
@@ -263,7 +265,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				corev1.EnvVar{
 					Name:  "GIT_URL",
 					Value: build.Spec.Source.Git.URL,
-				},
+				})
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
 					Name:  "GIT_REVISION",
 					Value: build.Spec.Source.Git.Revision,
