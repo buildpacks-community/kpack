@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHasWriteAccess(t *testing.T) {
-	spec.Run(t, "Test HasWriteAccess", testHasWriteAccess)
+func TestAccessChecker(t *testing.T) {
+	spec.Run(t, "Test HasWriteAccess", testAccessChecker)
 }
 
-func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
+func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 	var (
 		handler = http.NewServeMux()
 		server  = httptest.NewServer(handler)
@@ -116,6 +116,46 @@ func testHasWriteAccess(t *testing.T, when spec.G, it spec.S) {
 			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.Error(t, err)
 			assert.False(t, hasAccess)
+		})
+	})
+
+	when("#HasReadAccess", func() {
+		it("returns true when we do have read access", func() {
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(200)
+			})
+
+			handler.HandleFunc("/v2/some/image/manifests/tag", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(200)
+			})
+
+			canRead, err := HasReadAccess(testKeychain{}, tagName)
+			require.NoError(t, err)
+			assert.True(t, canRead)
+		})
+
+		it("returns false when we do not have read access", func() {
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(200)
+			})
+
+			handler.HandleFunc("/v2/some/image/manifests/tag", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(401)
+			})
+
+			canRead, err := HasReadAccess(testKeychain{}, tagName)
+			require.Error(t, err)
+			assert.False(t, canRead)
+		})
+
+		it("returns false when we cannot reach the server", func() {
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(404)
+			})
+
+			canRead, err := HasReadAccess(testKeychain{}, tagName)
+			require.Error(t, err)
+			assert.False(t, canRead)
 		})
 	})
 }

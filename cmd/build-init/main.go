@@ -20,6 +20,7 @@ import (
 var (
 	platformEnvVars = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
 	imageTag        = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
+	runImage        = flag.String("runImage", os.Getenv("RUN_IMAGE"), "run image that the build the image on")
 
 	gitURL        = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
 	gitRevision   = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
@@ -54,13 +55,22 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	hasWriteAccess, err := dockercreds.HasWriteAccess(creds, *imageTag)
+	hasImageWriteAccess, err := dockercreds.HasWriteAccess(creds, *imageTag)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	if !hasWriteAccess {
+	if !hasImageWriteAccess {
 		logger.Fatalf("invalid credentials to build to %s", *imageTag)
+	}
+
+	hasRunImageReadAccess, err := dockercreds.HasReadAccess(creds, *runImage)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if !hasRunImageReadAccess {
+		logger.Fatalf("no read access to run image %s", *runImage)
 	}
 
 	err = fetchSource(logger, creds)
