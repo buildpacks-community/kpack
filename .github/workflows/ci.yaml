@@ -17,6 +17,7 @@ jobs:
         go-version: '1.13'
     - name: Run tests
       run: make unit-ci
-    - uses: codecov/codecov-action@v1.0.3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Report coverage
+      run: bash <(curl -s https://codecov.io/bash)
+      env:
+        CODECOV_TOKEN: 4e256ab5-d474-459d-8d4d-cffea6455db7
