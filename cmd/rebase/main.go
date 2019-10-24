@@ -2,12 +2,11 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"github.com/buildpack/imgutil/remote"
 	"github.com/buildpack/lifecycle"
-	"github.com/buildpack/lifecycle/logging"
+	"github.com/buildpack/lifecycle/cmd"
 
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -30,34 +29,33 @@ func init() {
 
 func main() {
 	flag.Parse()
-
-	logger := log.New(os.Stdout, "rebase:", log.Lshortfile)
-
 	tags := flag.Args()
+
+	cmd.Exit(rebase(tags))
+}
+
+func rebase(tags []string) error {
 	if len(tags) < 1 {
-		logger.Fatal("must provide one or more image tags")
+		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
 	}
 
 	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
-		logger.Fatal(err)
+		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}
 
 	appImage, err := remote.NewImage(tags[0], keychain, remote.FromBaseImage(*lastBuiltImage))
 	if err != nil {
-		logger.Fatal(err)
+		return err
 	}
 
 	newBaseImage, err := remote.NewImage(*runImage, keychain, remote.FromBaseImage(*runImage))
 	if err != nil {
-		logger.Fatal(err)
+		return err
 	}
 
 	rebaser := lifecycle.Rebaser{
-		Logger: logging.New(logger.Writer()),
+		Logger: cmd.Logger,
 	}
-	err = rebaser.Rebase(appImage, newBaseImage, tags[1:])
-	if err != nil {
-		logger.Fatal(err)
-	}
+	return rebaser.Rebase(appImage, newBaseImage, tags[1:])
 }

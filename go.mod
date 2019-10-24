@@ -9,7 +9,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v11.3.0-beta+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
 	github.com/buildpack/imgutil v0.0.0-20191010153712-78959154ded1
-	github.com/buildpack/lifecycle v0.4.1-0.20191010154241-8fa26e4820cb
+	github.com/buildpack/lifecycle v0.5.0
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
@@ -38,7 +38,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190927123631-a832865fa7ad // indirect
 	golang.org/x/net v0.0.0-20190926025831-c00fd9afed17 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190927073244-c990c680b611 // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/appengine v1.6.4 // indirect
