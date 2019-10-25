@@ -59,7 +59,7 @@ func main() {
 	}
 
 	admissionControllers := map[string]webhook.AdmissionController{
-		options.ResourceAdmissionControllerPath: webhook.NewResourceAdmissionController(resourceHandlers, options, true),
+		options.ResourceAdmissionControllerPath: webhook.NewResourceAdmissionController(resourceHandlers, options, false),
 	}
 
 	controller, err := webhook.New(client, options, admissionControllers, logger, nil)
