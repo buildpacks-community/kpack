@@ -57,7 +57,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    type: kubernetes.io/basic-auth
    stringData:
      username: _json_key
-     sample-password: |
+     password: |
        {
          "type": "service-account",
          ... <rest of JSON from GCP>
