@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	buildInitBinary = "/layers/org.cloudfoundry.go-mod/app-binary/build-init" // Can be changed to build-init in https://github.com/cloudfoundry/go-mod-cnb/issues/8
-	rebaseBinary    = "/layers/org.cloudfoundry.go-mod/app-binary/rebase"     // Can be changed to rebase in https://github.com/cloudfoundry/go-mod-cnb/issues/8
+	buildInitBinary = "build-init"
+	rebaseBinary    = "rebase"
 
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"

@@ -226,7 +226,7 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	eventually(t, imageExists(imageTag), 5*time.Second, 5*time.Minute)
 
 	eventually(t, func() bool {
-		return strings.Contains(logTail.String(), fmt.Sprintf("%s - succeeded", imageTag))
+		return strings.Contains(logTail.String(), "Build successful")
 	}, 5*time.Second, 1*time.Minute)
 
 	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{
