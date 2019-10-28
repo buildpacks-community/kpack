@@ -8,8 +8,10 @@ rules:
   resources:
   - builds
   - builds/status
+  - builds/finalizers
   - images
   - images/status
+  - images/finalizers
   - builders
   - builders/status
   - clusterbuilders
@@ -61,6 +63,7 @@ rules:
   - "apps"
   resources:
   - deployments
+  - deployments/finalizers
   verbs:
   - get
 - apiGroups:
