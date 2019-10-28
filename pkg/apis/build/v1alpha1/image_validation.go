@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"context"
-
 	"knative.dev/pkg/apis"
 )
 
@@ -38,13 +37,21 @@ func (s *Image) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validateFieldNotEmpty(is.Tag, "tag").
+	return is.validateTag(ctx).
 		Also(is.Builder.Validate(ctx).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source"))
-
 }
 
-func (im *ImageBuilder) Validate(context context.Context) *apis.FieldError {
+func (im *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*Image)
+		return validateImmutableField(original.Spec.Tag, im.Tag, "tag")
+	}
+
+	return validateTag(im.Tag)
+}
+
+func (im *ImageBuilder) Validate(ctx context.Context) *apis.FieldError {
 	if im.Name == "" {
 		return apis.ErrMissingField("name")
 	}
@@ -83,7 +90,7 @@ func (s *SourceConfig) Validate(ctx context.Context) *apis.FieldError {
 		Also(s.Registry.Validate(ctx).ViaField("registry"))
 }
 
-func (g *Git) Validate(context context.Context) *apis.FieldError {
+func (g *Git) Validate(ctx context.Context) *apis.FieldError {
 	if g == nil {
 		return nil
 	}
@@ -92,7 +99,7 @@ func (g *Git) Validate(context context.Context) *apis.FieldError {
 		Also(validateFieldNotEmpty(g.Revision, "revision"))
 }
 
-func (b *Blob) Validate(context context.Context) *apis.FieldError {
+func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
 	if b == nil {
 		return nil
 	}
@@ -100,24 +107,10 @@ func (b *Blob) Validate(context context.Context) *apis.FieldError {
 	return validateFieldNotEmpty(b.URL, "url")
 }
 
-func (r *Registry) Validate(context context.Context) *apis.FieldError {
+func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
 	if r == nil {
 		return nil
 	}
 
-	return validateFieldNotEmpty(r.Image, "image")
-}
-
-func validateFieldNotEmpty(value, field string) *apis.FieldError {
-	if value == "" {
-		return apis.ErrMissingField(field)
-	}
-	return nil
-}
-
-func validateListNotEmpty(value []string, field string) *apis.FieldError {
-	if len(value) == 0 {
-		return apis.ErrMissingField(field)
-	}
-	return nil
+	return validateImage(r.Image)
 }
