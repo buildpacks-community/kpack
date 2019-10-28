@@ -193,7 +193,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
 			assert.Equal(t, []string{
 				directExecute,
-				"/layers/org.cloudfoundry.go-mod/app-binary/build-init",
+				"build-init",
 				"-basic-git=git-secret-1=https://github.com",
 				"-basic-docker=docker-secret-1=acr.io",
 			}, pod.Spec.InitContainers[0].Args)
@@ -535,7 +535,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							Image: config.RebaseImage,
 							Args: []string{
 								directExecute,
-								"/layers/org.cloudfoundry.go-mod/app-binary/rebase",
+								"rebase",
 								"-basic-docker=docker-secret-1=acr.io",
 								"--run-image",
 								"builderregistry.io/run",
