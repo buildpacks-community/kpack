@@ -11,8 +11,6 @@ source hack/common.sh
 
 set -e
 
-mkdir -p $(dirname ${release_yaml})
-
 TMP_DIR="$(mktemp -d)"
 
 compile $1 ${TMP_DIR}/out.yaml
