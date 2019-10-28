@@ -106,6 +106,18 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, apis.ErrMissingField("tag").ViaField("spec"))
 		})
 
+		it("invalid image tag", func() {
+			image.Spec.Tag = "ftp//invalid/tag@@"
+
+			assertValidationError(image, apis.ErrInvalidValue(image.Spec.Tag, "tag").ViaField("spec"))
+		})
+
+		it("tag does not contain fully qualified digest", func() {
+			image.Spec.Tag = "some/app@sha256:72d10a33e3233657832967acffce652b729961da5247550ea58b2c2389cddc68"
+
+			assertValidationError(image, apis.ErrInvalidValue(image.Spec.Tag, "tag").ViaField("spec"))
+		})
+
 		it("missing builder name", func() {
 			image.Spec.Builder.Name = ""
 			assertValidationError(image, apis.ErrMissingField("name").ViaField("spec", "builder"))
@@ -163,11 +175,18 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
 		})
 
-		it("validates registry url", func() {
+		it("validates registry image exists", func() {
 			image.Spec.Source.Git = nil
 			image.Spec.Source.Registry = &Registry{Image: ""}
 
 			assertValidationError(image, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
+		})
+
+		it("validates registry image valide", func() {
+			image.Spec.Source.Git = nil
+			image.Spec.Source.Registry = &Registry{Image: "NotValid@@!"}
+
+			assertValidationError(image, apis.ErrInvalidValue(image.Spec.Source.Registry.Image, "image").ViaField("spec", "source", "registry"))
 		})
 
 		it("combining errors", func() {
@@ -176,6 +195,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image,
 				apis.ErrMissingField("tag").ViaField("spec").
 					Also(apis.ErrInvalidValue("FakeBuilder", "kind").ViaField("spec", "builder")))
+		})
+
+		it("image.tag has not changed", func() {
+			original := image.DeepCopy()
+
+			image.Spec.Tag = "something/different"
+			err := image.Validate(apis.WithinUpdate(context.TODO(), original))
+			assert.EqualError(t, err, "Immutable field changed: spec.tag\ngot: something/different, want: some/image")
 		})
 	})
 }

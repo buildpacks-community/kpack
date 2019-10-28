@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmp"
 )
 
 func (b *Build) SetDefaults(ctx context.Context) {
@@ -19,18 +19,43 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 
 func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validateListNotEmpty(bs.Tags, "tags").
+		Also(validateTags(bs.Tags)).
 		Also(bs.Builder.Validate(ctx).ViaField("builder")).
-		Also(bs.Source.Validate(ctx).ViaField("source"))
+		Also(bs.Source.Validate(ctx).ViaField("source")).
+		Also(bs.LastBuild.Validate(ctx).ViaField("lastBuild")).
+		Also(bs.validateImmutableFields(ctx))
+}
+
+func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldError {
+	if !apis.IsInUpdate(ctx) {
+		return nil
+	}
+
+	original := apis.GetBaseline(ctx).(*Build)
+	if diff, err := kmp.ShortDiff(&original.Spec, bs); err != nil {
+		return &apis.FieldError{
+			Message: "Failed to diff Build",
+			Paths:   []string{"spec"},
+			Details: err.Error(),
+		}
+	} else if diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
+	}
+	return nil
 }
 
 func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	if bbs.Image == "" {
-		return apis.ErrMissingField("image")
+	return validateImage(bbs.Image)
+}
+
+func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
+	if lb.Image == "" {
+		return nil
 	}
 
-	_, err := name.ParseReference(bbs.Image, name.WeakValidation)
-	if err != nil {
-		return apis.ErrInvalidValue(bbs.Image, "image")
-	}
-	return nil
+	return validateImage(lb.Image)
 }

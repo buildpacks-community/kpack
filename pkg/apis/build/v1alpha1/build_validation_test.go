@@ -67,6 +67,14 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(build, apis.ErrMissingField("tags").ViaField("spec"))
 		})
 
+		it("all tags are valid", func() {
+			build.Spec.Tags = []string{"valid/tag", "invalid/tag@sha256:thisisatag", "also/invalid@@"}
+			assertValidationError(build,
+				apis.ErrInvalidArrayValue("invalid/tag@sha256:thisisatag", "tags", 1).
+					Also(apis.ErrInvalidArrayValue("also/invalid@@", "tags", 2)).
+					ViaField("spec"))
+		})
+
 		it("missing builder name", func() {
 			build.Spec.Builder.Image = ""
 			assertValidationError(build, apis.ErrMissingField("image").ViaField("spec", "builder"))
@@ -131,12 +139,28 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(build, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
 
+		it("validates valid lastBuilt Image", func() {
+			build.Spec.LastBuild = LastBuild{Image: "invalid@@"}
+
+			assertValidationError(build, apis.ErrInvalidValue(build.Spec.LastBuild.Image, "image").ViaField("spec", "lastBuild"))
+		})
+
 		it("combining errors", func() {
 			build.Spec.Tags = []string{}
 			build.Spec.Builder.Image = ""
 			assertValidationError(build,
 				apis.ErrMissingField("tags").ViaField("spec").
 					Also(apis.ErrMissingField("image").ViaField("spec", "builder")))
+		})
+
+		it("validates spec is immutable", func() {
+			original := build.DeepCopy()
+
+			build.Spec.Source.Git.URL = "http://something/different"
+			err := build.Validate(apis.WithinUpdate(context.TODO(), original))
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "http://something/different")
+
 		})
 	})
 }
