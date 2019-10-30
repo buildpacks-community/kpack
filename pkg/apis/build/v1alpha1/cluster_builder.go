@@ -12,6 +12,10 @@ func (c *ClusterBuilder) Image() string {
 func (c *ClusterBuilder) BuildBuilderSpec() BuildBuilderSpec {
 	return BuildBuilderSpec{
 		Image: c.Status.LatestImage,
+		RunImage: &RunImage{
+			Image:   c.Status.Stack.RunImage.LatestImage,
+			Mirrors: c.Status.Stack.RunImage.Mirrors,
+		},
 	}
 }
 
@@ -29,9 +33,13 @@ func (c *ClusterBuilder) ImagePullSecrets() []v1.LocalObjectReference {
 }
 
 func (c *ClusterBuilder) RunImage() string {
-	return c.Status.Stack.RunImage
+	return c.Status.Stack.RunImage.LatestImage
 }
 
 func (c *ClusterBuilder) Stack() string {
 	return c.Status.Stack.ID
+}
+
+func (c *ClusterBuilder) RunImageMirrors() []Mirror {
+	return c.Spec.Stack.RunImage.Mirrors
 }

@@ -27,8 +27,13 @@ type BuilderImageMetadata struct {
 }
 
 type Stack struct {
-	RunImage string
+	RunImage RunImage
 	ID       string
+}
+
+type RunImage struct {
+	Image   string
+	Mirrors []v1alpha1.Mirror
 }
 
 type BuilderImage struct {
@@ -88,11 +93,43 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResour
 		return BuilderImage{}, errors.Wrap(err, "failed to retrieve run image SHA")
 	}
 
+	digest, err := runImage.Digest()
+	if err != nil {
+		return BuilderImage{}, err
+	}
+
+	var mirrors []v1alpha1.Mirror
+	for _, mirror := range builder.RunImageMirrors() {
+		mirrorImage, err := r.RemoteImageFactory.NewRemote(mirror.Image, registry.SecretRef{
+			Namespace:        builder.GetObjectMeta().GetNamespace(),
+			ImagePullSecrets: builder.ImagePullSecrets(),
+		})
+		if err != nil {
+			return BuilderImage{}, err
+		}
+
+		mirrorDigest, err := mirrorImage.Digest()
+		if err != nil {
+			return BuilderImage{}, err
+		}
+
+		if mirrorDigest == digest {
+			id, err := mirrorImage.Identifier()
+			if err != nil {
+				return BuilderImage{}, err
+			}
+			mirrors = append(mirrors, v1alpha1.Mirror{Image: id})
+		}
+	}
+
 	return BuilderImage{
 		BuilderBuildpackMetadata: md.Buildpacks,
 		Stack: Stack{
-			RunImage: runImageIdentifier,
-			ID:       stackId,
+			RunImage: RunImage{
+				Image:   runImageIdentifier,
+				Mirrors: mirrors,
+			},
+			ID: stackId,
 		},
 		Identifier: identifier,
 	}, nil
@@ -176,8 +213,10 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
 		Stack: Stack{
-			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
-			ID:       stackId,
+			RunImage: RunImage{
+				Image: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
+			},
+			ID: stackId,
 		},
 	}, nil
 }

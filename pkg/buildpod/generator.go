@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/buildpack/lifecycle/metadata"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -56,48 +57,78 @@ const cnbUserId = "CNB_USER_ID"
 const cnbGroupId = "CNB_GROUP_ID"
 
 func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPodBuilderConfig, error) {
-	image, err := g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
+	builderImage, err := g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
 		Namespace:        build.Namespace,
 		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
 	})
-
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, err
 	}
 
-	stackId, err := image.Label(metadata.StackMetadataLabel)
+	builderStackID, err := builderImage.Label(metadata.StackMetadataLabel)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
 	}
 
-	metadataJSON, err := image.Label(cnb.BuilderMetadataLabel)
+	metadataJSON, err := builderImage.Label(cnb.BuilderMetadataLabel)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image metadata label not present")
 	}
 
-	var metadata cnb.BuilderImageMetadata
-	err = json.Unmarshal([]byte(metadataJSON), &metadata)
+	var builderMetadata cnb.BuilderImageMetadata
+	err = json.Unmarshal([]byte(metadataJSON), &builderMetadata)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unsupported builder metadata structure")
 	}
 
-	uid, err := parseCNBID(image, cnbUserId)
+	runImage, err := resolveRunImage(build, builderMetadata)
+	if err != nil {
+		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unsupported builder metadata structure")
+	}
+
+	// Parse the run image so that we can strip the digest. We have to do this
+	// for now because exporter does not support run images with digests.
+	runImageRef, err := name.ParseReference(runImage, name.WeakValidation)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, err
 	}
 
-	gid, err := parseCNBID(image, cnbGroupId)
+	uid, err := parseCNBID(builderImage, cnbUserId)
+	if err != nil {
+		return v1alpha1.BuildPodBuilderConfig{}, err
+	}
+
+	gid, err := parseCNBID(builderImage, cnbGroupId)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, err
 	}
 
 	return v1alpha1.BuildPodBuilderConfig{
 		BuilderSpec: build.Spec.Builder,
-		StackID:     stackId,
-		RunImage:    metadata.Stack.RunImage.Image,
+		StackID:     builderStackID,
+		RunImage:    runImageRef.Context().Name(),
 		Uid:         uid,
 		Gid:         gid,
 	}, nil
+}
+
+func resolveRunImage(build *v1alpha1.Build, builderMetadata cnb.BuilderImageMetadata) (string, error) {
+	ref, err := name.ParseReference(build.Spec.Tags[0], name.WeakValidation)
+	if err != nil {
+		return "", err
+	}
+
+	metadataMirrors := builderMetadata.Stack.RunImage.Mirrors
+	if build.Spec.Builder.RunImage == nil {
+		return getBestRunImage(ref.Context().RegistryStr(), builderMetadata.Stack.RunImage.Image, metadataMirrors), nil
+	}
+
+	var mirrors []string
+	for _, mirror := range build.Spec.Builder.RunImage.Mirrors {
+		mirrors = append(mirrors, mirror.Image)
+	}
+	mirrors = append(mirrors, metadataMirrors...)
+	return getBestRunImage(ref.Context().RegistryStr(), build.Spec.Builder.RunImage.Image, mirrors), nil
 }
 
 func parseCNBID(image registry.RemoteImage, env string) (int64, error) {
@@ -106,4 +137,18 @@ func parseCNBID(image registry.RemoteImage, env string) (int64, error) {
 		return 0, err
 	}
 	return strconv.ParseInt(v, 10, 64)
+}
+
+func getBestRunImage(registry string, runImage string, mirrors []string) string {
+	runImageList := append([]string{runImage}, mirrors...)
+	for _, img := range runImageList {
+		ref, err := name.ParseReference(img, name.WeakValidation)
+		if err != nil {
+			continue
+		}
+		if ref.Context().RegistryStr() == registry {
+			return img
+		}
+	}
+	return runImage
 }

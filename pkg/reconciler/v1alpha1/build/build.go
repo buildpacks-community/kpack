@@ -99,7 +99,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
-		build.Status.Stack.RunImage = image.Stack.RunImage
+		build.Status.Stack.RunImage = image.Stack.RunImage.Image
 		build.Status.Stack.ID = image.Stack.ID
 	}
 

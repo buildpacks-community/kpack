@@ -420,6 +420,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-app=/workspace",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
+				"-image=builderregistry.io/run",
 				build.Tag(),
 				"someimage/name:tag2",
 				"someimage/name:tag3",

@@ -48,3 +48,7 @@ func (i *FakeRemoteImage) SetEnv(k string, v string) error {
 	i.env[k] = v
 	return nil
 }
+
+func (i *FakeRemoteImage) Digest() (string, error) {
+	return i.digest, nil
+}

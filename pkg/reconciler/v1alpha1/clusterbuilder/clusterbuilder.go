@@ -141,9 +141,12 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 		},
 		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
 		LatestImage:     builderImage.Identifier,
-		Stack: v1alpha1.BuildStack{
-			RunImage: builderImage.Stack.RunImage,
-			ID:       builderImage.Stack.ID,
+		Stack: v1alpha1.BuilderStackStatus{
+			RunImage: v1alpha1.RunImageStatus{
+				LatestImage: builderImage.Stack.RunImage.Image,
+				Mirrors:     builderImage.Stack.RunImage.Mirrors,
+			},
+			ID: builderImage.Stack.ID,
 		},
 	}
 	return builder, nil

@@ -14,4 +14,5 @@ type BuilderResource interface {
 	BuildpackMetadata() BuildpackMetadataList
 	RunImage() string
 	Stack() string
+	RunImageMirrors() []Mirror
 }

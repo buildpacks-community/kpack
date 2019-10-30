@@ -54,13 +54,19 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	const (
-		builderName             = "builder-name"
-		namespace               = "some-namespace"
-		key                     = "some-namespace/builder-name"
-		imageName               = "some/builder"
-		builderIdentifier       = "some/builder@sha256:resolved-builder-digest"
-		runImgIdentifier        = "some/runImage@sha256:resolved-builder-digest"
-		initalGeneration  int64 = 1
+		builderName       = "builder-name"
+		namespace         = "some-namespace"
+		key               = "some-namespace/builder-name"
+		imageName         = "some/builder"
+		builderIdentifier = "some/builder@sha256:resolved-builder-digest"
+
+		runImgIdentifier = "some/runImage@sha256:resolved-run-digest"
+		mirrorOne        = "foo.io/some-image@sha256:resolved-run-digest"
+		mirrorTwo        = "bar.io/another-image@sha256:resolved-run-digest"
+
+		stackId = "io.buildpacks.stacks.bionic"
+
+		initalGeneration int64 = 1
 	)
 
 	builder := &v1alpha1.Builder{
@@ -89,8 +95,14 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 				Identifier: builderIdentifier,
 				Stack: cnb.Stack{
-					RunImage: runImgIdentifier,
-					ID:       "io.buildpacks.stacks.bionic",
+					RunImage: cnb.RunImage{
+						Image: runImgIdentifier,
+						Mirrors: []v1alpha1.Mirror{
+							{Image: mirrorOne},
+							{Image: mirrorTwo},
+						},
+					},
+					ID: stackId,
 				},
 			}, nil)
 
@@ -116,9 +128,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						LatestImage: builderIdentifier,
-						Stack: v1alpha1.BuildStack{
-							RunImage: runImgIdentifier,
-							ID:       "io.buildpacks.stacks.bionic",
+						Stack: v1alpha1.BuilderStackStatus{
+							RunImage: v1alpha1.RunImageStatus{
+								LatestImage: runImgIdentifier,
+								Mirrors: []v1alpha1.Mirror{
+									{Image: mirrorOne},
+									{Image: mirrorTwo},
+								},
+							},
+							ID: stackId,
 						},
 					},
 				}
@@ -163,9 +181,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
+									Stack: v1alpha1.BuilderStackStatus{
+										RunImage: v1alpha1.RunImageStatus{
+											LatestImage: runImgIdentifier,
+											Mirrors: []v1alpha1.Mirror{
+												{Image: mirrorOne},
+												{Image: mirrorTwo},
+											},
+										},
+										ID: stackId,
 									},
 								},
 							},
@@ -203,9 +227,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
+									Stack: v1alpha1.BuilderStackStatus{
+										RunImage: v1alpha1.RunImageStatus{
+											LatestImage: runImgIdentifier,
+											Mirrors: []v1alpha1.Mirror{
+												{Image: mirrorOne},
+												{Image: mirrorTwo},
+											},
+										},
+										ID: stackId,
 									},
 								},
 							},
@@ -243,9 +273,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
+									Stack: v1alpha1.BuilderStackStatus{
+										RunImage: v1alpha1.RunImageStatus{
+											LatestImage: runImgIdentifier,
+											Mirrors: []v1alpha1.Mirror{
+												{Image: mirrorOne},
+												{Image: mirrorTwo},
+											},
+										},
+										ID: stackId,
 									},
 								},
 							},
@@ -274,9 +310,15 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					LatestImage: builderIdentifier,
-					Stack: v1alpha1.BuildStack{
-						RunImage: runImgIdentifier,
-						ID:       "io.buildpacks.stacks.bionic",
+					Stack: v1alpha1.BuilderStackStatus{
+						RunImage: v1alpha1.RunImageStatus{
+							LatestImage: runImgIdentifier,
+							Mirrors: []v1alpha1.Mirror{
+								{Image: mirrorOne},
+								{Image: mirrorTwo},
+							},
+						},
+						ID: stackId,
 					},
 				}
 

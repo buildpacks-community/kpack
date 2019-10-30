@@ -12,7 +12,11 @@ func (b *Builder) Ready() bool {
 
 func (b *Builder) BuildBuilderSpec() BuildBuilderSpec {
 	return BuildBuilderSpec{
-		Image:            b.Status.LatestImage,
+		Image: b.Status.LatestImage,
+		RunImage: &RunImage{
+			Image:   b.Status.Stack.RunImage.LatestImage,
+			Mirrors: b.Status.Stack.RunImage.Mirrors,
+		},
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}
 }
@@ -30,9 +34,13 @@ func (b *Builder) BuildpackMetadata() BuildpackMetadataList {
 }
 
 func (b *Builder) RunImage() string {
-	return b.Status.Stack.RunImage
+	return b.Status.Stack.RunImage.LatestImage
 }
 
 func (b *Builder) Stack() string {
 	return b.Status.Stack.ID
+}
+
+func (b *Builder) RunImageMirrors() []Mirror {
+	return b.Spec.Stack.RunImage.Mirrors
 }

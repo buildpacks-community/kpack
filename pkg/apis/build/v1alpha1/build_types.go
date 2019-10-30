@@ -43,7 +43,13 @@ var (
 
 type BuildBuilderSpec struct {
 	Image            string                        `json:"image"`
+	RunImage         *RunImage                     `json:"runImage"`
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+}
+
+type RunImage struct {
+	Image   string
+	Mirrors []Mirror
 }
 
 type BuildSpec struct {
@@ -62,7 +68,7 @@ type LastBuild struct {
 	StackID string `json:"stackId"`
 }
 
-type BuildStack struct {
+type BuildStackStatus struct {
 	RunImage string `json:"runImage"`
 	ID       string `json:"id"`
 }
@@ -70,7 +76,7 @@ type BuildStack struct {
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
-	Stack               BuildStack              `json:"stack"`
+	Stack               BuildStackStatus        `json:"stack"`
 	LatestImage         string                  `json:"latestImage"`
 	PodName             string                  `json:"podName"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`

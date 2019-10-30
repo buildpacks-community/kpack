@@ -97,6 +97,14 @@ func (i *GoContainerRegistryImage) Identifier() (string, error) {
 	return fmt.Sprintf("%s@%s", ref.Context().Name(), digest), nil
 }
 
+func (i *GoContainerRegistryImage) Digest() (string, error) {
+	digest, err := i.image.Digest()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get digest for image '%s'", i.repoName)
+	}
+	return digest.String(), nil
+}
+
 func (i *GoContainerRegistryImage) configFile() (*v1.ConfigFile, error) {
 	cfg, err := i.image.ConfigFile()
 	if err != nil {

@@ -22,7 +22,20 @@ type Builder struct {
 
 type BuilderSpec struct {
 	Image        string              `json:"image"`
+	Stack        BuilderStackSpec    `json:"stack"`
 	UpdatePolicy BuilderUpdatePolicy `json:"updatePolicy"`
+}
+
+type BuilderStackSpec struct {
+	RunImage RunImageSpec `json:"runImage"`
+}
+
+type RunImageSpec struct {
+	Mirrors []Mirror `json:"mirrors"`
+}
+
+type Mirror struct {
+	Image string `json:"image"`
 }
 
 type BuilderWithSecretsSpec struct {
@@ -40,8 +53,18 @@ const (
 type BuilderStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata"`
-	Stack               BuildStack            `json:"stack"`
+	Stack               BuilderStackStatus    `json:"stack"`
 	LatestImage         string                `json:"latestImage"`
+}
+
+type BuilderStackStatus struct {
+	RunImage RunImageStatus `json:"runImage"`
+	ID       string         `json:"id"`
+}
+
+type RunImageStatus struct {
+	LatestImage string   `json:"latestImage"`
+	Mirrors     []Mirror `json:"mirrors"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

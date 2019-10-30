@@ -285,6 +285,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, buildPo
 						"-app=/workspace",
 						"-group=/layers/group.toml",
 						"-analyzed=/layers/analyzed.toml",
+						"-image=" + buildPodBuilderConfig.RunImage,
 					}, b.Spec.Tags...),
 					VolumeMounts: []corev1.VolumeMount{
 						layersVolume,
@@ -435,11 +436,11 @@ func combineArgs(args ...[]string) []string {
 
 const directExecute = "--"
 
-func rebaseArgs(rebaseBinary, runsImage, lastBuiltImage string, tags, secretArgs []string) []string {
+func rebaseArgs(rebaseBinary, runImage, lastBuiltImage string, tags, secretArgs []string) []string {
 	return combineArgs(
 		[]string{directExecute, rebaseBinary},
 		secretArgs,
-		[]string{"--run-image", runsImage, "--last-built-image", lastBuiltImage},
+		[]string{"--run-image", runImage, "--last-built-image", lastBuiltImage},
 		tags,
 	)
 }

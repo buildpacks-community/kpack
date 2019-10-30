@@ -130,9 +130,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Version: "version",
 				},
 			},
-			Stack: v1alpha1.BuildStack{
-				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-				ID:       "io.buildpacks.stacks.bionic",
+			Stack: v1alpha1.BuilderStackStatus{
+				RunImage: v1alpha1.RunImageStatus{
+					LatestImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+				},
+				ID: "io.buildpacks.stacks.bionic",
 			},
 			Status: duckv1alpha1.Status{
 				Conditions: duckv1alpha1.Conditions{
@@ -160,9 +162,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Version: "version",
 				},
 			},
-			Stack: v1alpha1.BuildStack{
-				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-				ID:       "io.buildpacks.stacks.bionic",
+			Stack: v1alpha1.BuilderStackStatus{
+				RunImage: v1alpha1.RunImageStatus{
+					LatestImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+				},
+				ID: "io.buildpacks.stacks.bionic",
 			},
 
 			Status: duckv1alpha1.Status{
@@ -833,7 +837,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: v1alpha1.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
-								Stack: v1alpha1.BuildStack{
+								Stack: v1alpha1.BuildStackStatus{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -946,7 +950,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: v1alpha1.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
-								Stack: v1alpha1.BuildStack{
+								Stack: v1alpha1.BuildStackStatus{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -1041,9 +1045,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								LatestImage: updatedBuilderImage,
-								Stack: v1alpha1.BuildStack{
-									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-									ID:       "io.buildpacks.stacks.bionic",
+								Stack: v1alpha1.BuilderStackStatus{
+									RunImage: v1alpha1.RunImageStatus{
+										LatestImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+									},
+									ID: "io.buildpacks.stacks.bionic",
 								},
 								BuilderMetadata: v1alpha1.BuildpackMetadataList{
 									{
@@ -1089,7 +1095,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								Stack: v1alpha1.BuildStack{
+								Stack: v1alpha1.BuildStackStatus{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -1124,6 +1130,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
+									RunImage: &v1alpha1.RunImage{
+										Image: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+									},
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
@@ -1245,7 +1254,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: v1alpha1.BuildStatus{
 								LatestImage: image.Status.LatestImage,
-								Stack: v1alpha1.BuildStack{
+								Stack: v1alpha1.BuildStackStatus{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -1450,7 +1459,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 			},
 			Status: v1alpha1.BuildStatus{
 				LatestImage: fmt.Sprintf("%s@sha256:build-%d", image.Spec.Tag, i),
-				Stack: v1alpha1.BuildStack{
+				Stack: v1alpha1.BuildStackStatus{
 					RunImage: runImageRef,
 					ID:       "io.buildpacks.stacks.bionic",
 				},

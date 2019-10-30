@@ -53,12 +53,19 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	const (
-		clusterBuilderName             = "cluster-builder-name"
-		key                            = "some-namespace/builder-name"
-		clusterBuilderKey              = "cluster-builder-name"
-		clusterImageName               = "some/cluster-builder"
-		clusterBuilderIdentifier       = "some/cluster-builder@sha256:resolved-builder-digest"
-		initalGeneration         int64 = 1
+		clusterBuilderName       = "cluster-builder-name"
+		key                      = "some-namespace/builder-name"
+		clusterBuilderKey        = "cluster-builder-name"
+		clusterImageName         = "some/cluster-builder"
+		clusterBuilderIdentifier = "some/cluster-builder@sha256:resolved-builder-digest"
+
+		runImgIdentifier = "some/runImage@sha256:resolved-run-digest"
+		mirrorOne        = "foo.io/some-image@sha256:resolved-run-digest"
+		mirrorTwo        = "bar.io/another-image@sha256:resolved-run-digest"
+
+		stackId = "io.buildpacks.stacks.bionic"
+
+		initalGeneration int64 = 1
 	)
 
 	clusterBuilder := &v1alpha1.ClusterBuilder{
@@ -80,6 +87,16 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							ID:      "buildpack.version",
 							Version: "version",
 						},
+					},
+					Stack: cnb.Stack{
+						RunImage: cnb.RunImage{
+							Image: runImgIdentifier,
+							Mirrors: []v1alpha1.Mirror{
+								{Image: mirrorOne},
+								{Image: mirrorTwo},
+							},
+						},
+						ID: stackId,
 					},
 					Identifier: clusterBuilderIdentifier,
 				}, nil)
@@ -103,6 +120,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:      "buildpack.version",
 									Version: "version",
 								},
+							},
+							Stack: v1alpha1.BuilderStackStatus{
+								RunImage: v1alpha1.RunImageStatus{
+									LatestImage: runImgIdentifier,
+									Mirrors: []v1alpha1.Mirror{
+										{Image: mirrorOne}, {Image: mirrorTwo},
+									},
+								},
+								ID: stackId,
 							},
 							LatestImage: clusterBuilderIdentifier,
 						},
@@ -141,6 +167,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 												},
 											},
 										},
+										Stack: v1alpha1.BuilderStackStatus{
+											RunImage: v1alpha1.RunImageStatus{
+												LatestImage: runImgIdentifier,
+												Mirrors: []v1alpha1.Mirror{
+													{Image: mirrorOne}, {Image: mirrorTwo},
+												},
+											},
+											ID: stackId,
+										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
 												ID:      "buildpack.version",
@@ -176,6 +211,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 													Status: corev1.ConditionTrue,
 												},
 											},
+										},
+										Stack: v1alpha1.BuilderStackStatus{
+											RunImage: v1alpha1.RunImageStatus{
+												LatestImage: runImgIdentifier,
+												Mirrors: []v1alpha1.Mirror{
+													{Image: mirrorOne}, {Image: mirrorTwo},
+												},
+											},
+											ID: stackId,
 										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
@@ -213,6 +257,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 												},
 											},
 										},
+										Stack: v1alpha1.BuilderStackStatus{
+											RunImage: v1alpha1.RunImageStatus{
+												LatestImage: runImgIdentifier,
+												Mirrors: []v1alpha1.Mirror{
+													{Image: mirrorOne}, {Image: mirrorTwo},
+												},
+											},
+											ID: stackId,
+										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
 												ID:      "buildpack.version",
@@ -239,6 +292,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									Status: corev1.ConditionTrue,
 								},
 							},
+						},
+						Stack: v1alpha1.BuilderStackStatus{
+							RunImage: v1alpha1.RunImageStatus{
+								LatestImage: runImgIdentifier,
+								Mirrors: []v1alpha1.Mirror{
+									{Image: mirrorOne}, {Image: mirrorTwo},
+								},
+							},
+							ID: stackId,
 						},
 						BuilderMetadata: []v1alpha1.BuildpackMetadata{
 							{
