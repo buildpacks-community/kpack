@@ -16,6 +16,11 @@ metadata:
   name: sample-builder
 spec:
   image: cloudfoundry/cnb:bionic
+  stack: # OPTIONAL
+    runImage:
+      mirrors: # add alternate run image mirrors
+      - gcr.io/run/mirror1
+      - index.docker.io/run/mirror2
   # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
   # - name: builder-secret
 ```
@@ -26,6 +31,8 @@ The major difference between the options is that `external` require a user to up
 configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists
 - `imagePullSecrets`: This is an optional parameter that should only be used if the builder image is in a
 private registry. [To create this secret please reference this link](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials)
+- `stack.runImage.mirrors`: This is an optional parameter that accepts a list of mirrors for the run image. This list extends the default list specified in the builder metadata. 
+    When provided, kpack will utilize the mirror that is on the same registry as the app image or fallback to the default run image if a mirror does not exist on the same registry.
 
 A sample builder is available in [samples/builder](../samples/builder.yaml) 
 
@@ -40,6 +47,11 @@ metadata:
   name: cluster-sample-builder
 spec:
   image: cloudfoundry/cnb:bionic
+  stack: # OPTIONAL
+    runImage:
+      mirrors:  # add alternate run image mirrors
+      - gcr.io/run/mirror1
+      - index.docker.io/run/mirror2
 ```
 - `name`: The name of the builder that will be used to reference by the image.
 - `namespace`: Namespace where the builder builder will be created
@@ -47,8 +59,10 @@ spec:
 - `updatePolicy`: Update policy of the builder. Valid options are `polling` and `external`
 The major difference between the options is that `external` require a user to update the resource by applying a new
 configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists
+- `stack.runImage.mirrors`: This is an optional parameter that accepts a list of mirrors for the run image. This list extends the default list specified in the builder metadata. 
+    When provided, kpack will utilize the mirror that is on the same registry as the app image or fallback to the default run image if a mirror does not exist on the same registry.
 
-> Note: ClusterBuilders do not support imagePullSecrets. Therefore the builder image must be available to kpack without credentials.
+> Note: ClusterBuilders do not support imagePullSecrets. Therefore the builder image and it's run image mirrors must be available to kpack without credentials.
 
 A sample cluster builder is available in [samples/cluster_builder.yaml](../samples/cluster_builder.yaml) 
 

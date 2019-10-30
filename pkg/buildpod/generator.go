@@ -83,7 +83,7 @@ func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPod
 
 	runImage, err := resolveRunImage(build, builderMetadata)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unsupported builder metadata structure")
+		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "failed to resolve run image")
 	}
 
 	// Parse the run image so that we can strip the digest. We have to do this
