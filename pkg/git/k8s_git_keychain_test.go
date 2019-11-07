@@ -1,11 +1,17 @@
 package git
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
+	ssh2 "golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -14,10 +20,16 @@ import (
 )
 
 func Test(t *testing.T) {
-	spec.Run(t, "Test Git Keychain", test)
+	privateKeyBytes := gitTest{key1: generateRandomPrivateKey(t), key2: generateRandomPrivateKey(t)}
+	spec.Run(t, "Test Git Keychain", privateKeyBytes.testK8sGitKeychain)
 }
 
-func test(t *testing.T, when spec.G, it spec.S) {
+type gitTest struct {
+	key1 []byte
+	key2 []byte
+}
+
+func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 	const serviceAccount = "some-service-account"
 	const testNamespace = "test-namespace"
 
@@ -51,6 +63,73 @@ func test(t *testing.T, when spec.G, it spec.S) {
 					v1.BasicAuthPasswordKey: []byte("noschemegit-password"),
 				},
 			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-3",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+					},
+				},
+				Type: v1.SecretTypeSSHAuth,
+				Data: map[string][]byte{
+					v1.SSHAuthPrivateKey: keys.key1,
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-4",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+					},
+				},
+				Type: v1.SecretTypeSSHAuth,
+				Data: map[string][]byte{
+					v1.SSHAuthPrivateKey: keys.key1,
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-5",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+					},
+				},
+				Type: v1.SecretTypeBasicAuth,
+				Data: map[string][]byte{
+					v1.BasicAuthUsernameKey: []byte("gitlab-username"),
+					v1.BasicAuthPasswordKey: []byte("gitlab-password"),
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-6",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+					},
+				},
+				Type: v1.SecretTypeSSHAuth,
+				Data: map[string][]byte{
+					v1.SSHAuthPrivateKey: keys.key2,
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-7",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+					},
+				},
+				Type: v1.SecretTypeBasicAuth,
+				Data: map[string][]byte{
+					v1.BasicAuthUsernameKey: []byte("other-username"),
+					v1.BasicAuthPasswordKey: []byte("other-password"),
+				},
+			},
 			&v1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      serviceAccount,
@@ -59,13 +138,18 @@ func test(t *testing.T, when spec.G, it spec.S) {
 				Secrets: []v1.ObjectReference{
 					{Name: "secret-1"},
 					{Name: "secret-2"},
+					{Name: "secret-3"},
+					{Name: "secret-4"},
+					{Name: "secret-5"},
+					{Name: "secret-6"},
+					{Name: "secret-7"},
 				},
 			})
 		keychain = newK8sGitKeychain(fakeClient)
 	)
 
 	when("Resolve", func() {
-		it("returns git Auth for matching secrets", func() {
+		it("returns git Auth for matching secrets with basic auth", func() {
 			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
@@ -76,6 +160,58 @@ func test(t *testing.T, when spec.G, it spec.S) {
 				Username: "saved-username",
 				Password: "saved-password",
 			}, auth)
+		})
+
+		it("returns the alphabetical first secretRef for basic auth", func() {
+			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://github.com/org/repo",
+				Revision: "master",
+			})
+			require.NoError(t, err)
+
+			require.Equal(t, &http.BasicAuth{
+				Username: "saved-username",
+				Password: "saved-password",
+			}, auth)
+
+		})
+
+		it("returns the alphabetical first secretRef for ssh auth", func() {
+			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@gitlab.com:org/repo",
+				Revision: "master",
+			})
+			require.NoError(t, err)
+
+			publicKeys, ok := actualAuth.(*ssh.PublicKeys)
+			require.True(t, ok)
+
+			require.Equal(t, "git", publicKeys.User)
+
+			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, expectedSigner, publicKeys.Signer)
+
+			require.Nil(t, publicKeys.HostKeyCallback("gitlab.com", nil, expectedSigner.PublicKey()))
+		})
+
+		it("returns git Auth for matching secrets with ssh auth", func() {
+			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@bitbucket.com:org/repo",
+				Revision: "master",
+			})
+			require.NoError(t, err)
+
+			publicKeys, ok := actualAuth.(*ssh.PublicKeys)
+			require.True(t, ok)
+
+			require.Equal(t, "git", publicKeys.User)
+
+			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, expectedSigner, publicKeys.Signer)
+
+			require.Nil(t, publicKeys.HostKeyCallback("bitbucket.com", nil, expectedSigner.PublicKey()))
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
@@ -101,4 +237,14 @@ func test(t *testing.T, when spec.G, it spec.S) {
 			require.Nil(t, auth)
 		})
 	})
+}
+
+func generateRandomPrivateKey(t *testing.T) []byte {
+	key, err := rsa.GenerateKey(rand.Reader, 4096)
+	require.NoError(t, err)
+	var pemBlock = &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+	return pem.EncodeToMemory(pemBlock)
 }

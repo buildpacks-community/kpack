@@ -92,6 +92,19 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Type: corev1.SecretTypeBasicAuth,
 		},
 		{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "git-secret-2",
+				Annotations: map[string]string{
+					v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+				},
+			},
+			StringData: map[string]string{
+				"ssh-privatekey": "some key",
+			},
+			Type: corev1.SecretTypeSSHAuth,
+		},
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "docker-secret-1",
 				Annotations: map[string]string{
@@ -195,6 +208,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				directExecute,
 				"build-init",
 				"-basic-git=git-secret-1=https://github.com",
+				"-ssh-git=git-secret-2=https://bitbucket.com",
 				"-basic-docker=docker-secret-1=acr.io",
 			}, pod.Spec.InitContainers[0].Args)
 
@@ -203,6 +217,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				corev1.VolumeMount{
 					Name:      "secret-volume-git-secret-1",
 					MountPath: "/var/build-secrets/git-secret-1",
+				},
+				corev1.VolumeMount{
+					Name:      "secret-volume-git-secret-2",
+					MountPath: "/var/build-secrets/git-secret-2",
 				},
 				corev1.VolumeMount{
 					Name:      "secret-volume-docker-secret-1",

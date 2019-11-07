@@ -2,10 +2,9 @@ package git
 
 import (
 	"fmt"
-	"net/url"
 
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
@@ -14,29 +13,61 @@ import (
 )
 
 type k8sGitKeychain struct {
-	secretManager secret.SecretManager
+	secretFetcher secret.Fetcher
 }
 
 var anonymousAuth transport.AuthMethod = nil
 
 func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
-	return &k8sGitKeychain{secretManager: secret.SecretManager{
-		Client:        k8sClient,
-		AnnotationKey: v1alpha1.GITSecretAnnotationPrefix,
-		Matcher:       gitUrlMatch,
-	}}
+	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
 }
 
 func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
-	creds, err := k.secretManager.SecretForServiceAccountAndURL(serviceAccount, namespace, git.URL)
+	secrets, err := k.secretFetcher.SecretsForServiceAccount(serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
-	}
-	if k8serrors.IsNotFound(err) {
+	} else if k8serrors.IsNotFound(err) {
 		return anonymousAuth, nil
 	}
 
-	return &http.BasicAuth{Username: creds.Username, Password: creds.Password}, nil
+	var creds []gitCredential
+	for _, s := range secrets {
+		switch s.Type {
+		case v1.SecretTypeBasicAuth:
+			{
+				creds = append(creds, gitBasicAuthCred{
+					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					SecretName:  s.Name,
+					fetchSecret: fetchBasicAuth(s),
+				})
+			}
+		case v1.SecretTypeSSHAuth:
+			{
+				creds = append(creds, gitSshAuthCred{
+					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					SecretName:  s.Name,
+					fetchSecret: fetchSshAuth(s),
+				})
+			}
+		}
+	}
+
+	return (&secretGitKeychain{creds: creds}).Resolve(git.URL)
+}
+
+func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {
+	return func() (auth secret.BasicAuth, err error) {
+		return secret.BasicAuth{
+			Username: string(s.Data[v1.BasicAuthUsernameKey]),
+			Password: string(s.Data[v1.BasicAuthPasswordKey]),
+		}, nil
+	}
+}
+
+func fetchSshAuth(s *v1.Secret) func() (secret.SSH, error) {
+	return func() (auth secret.SSH, err error) {
+		return secret.SSH{PrivateKey: s.Data[v1.SSHAuthPrivateKey]}, nil
+	}
 }
 
 var matchingDomains = []string{
@@ -45,19 +76,14 @@ var matchingDomains = []string{
 	// Allow scheme-prefixed.
 	"https://%s",
 	"http://%s",
+	"git@%s",
 }
 
 func gitUrlMatch(urlMatch, annotatedUrl string) bool {
-	parseURL, err := url.Parse(urlMatch)
-	if err != nil {
-		return false
-	}
-
 	for _, format := range matchingDomains {
-		if fmt.Sprintf(format, parseURL.Hostname()) == annotatedUrl {
+		if fmt.Sprintf(format, urlMatch) == annotatedUrl {
 			return true
 		}
 	}
-
 	return false
 }
