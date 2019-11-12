@@ -27,12 +27,14 @@ var (
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 
-	gitCredentials    flaghelpers.CredentialsFlags
-	dockerCredentials flaghelpers.CredentialsFlags
+	basicGitCredentials flaghelpers.CredentialsFlags
+	sshGitCredentials   flaghelpers.CredentialsFlags
+	dockerCredentials   flaghelpers.CredentialsFlags
 )
 
 func init() {
-	flag.Var(&gitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
+	flag.Var(&basicGitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
+	flag.Var(&sshGitCredentials, "ssh-git", "SSH authentication for git of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 }
 
@@ -103,7 +105,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 
 	switch {
 	case *gitURL != "":
-		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, gitCredentials)
+		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, basicGitCredentials, sshGitCredentials)
 		if err != nil {
 			return err
 		}

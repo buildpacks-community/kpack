@@ -365,14 +365,22 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			MountPath: fmt.Sprintf(SecretPathName, secret.Name),
 		})
 
-		annotatedUrl := secret.Annotations[DOCKERSecretAnnotationPrefix]
-		secretType := "docker"
-		if secret.Annotations[GITSecretAnnotationPrefix] != "" {
-			annotatedUrl = secret.Annotations[GITSecretAnnotationPrefix]
-			secretType = "git"
-		}
+		if secret.Annotations[DOCKERSecretAnnotationPrefix] != "" {
+			annotatedUrl := secret.Annotations[DOCKERSecretAnnotationPrefix]
+			secretType := "docker"
 
-		args = append(args, fmt.Sprintf("-basic-%s=%s=%s", secretType, secret.Name, annotatedUrl))
+			args = append(args, fmt.Sprintf("-basic-%s=%s=%s", secretType, secret.Name, annotatedUrl))
+		} else {
+			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
+			secretType := "git"
+
+			switch secret.Type {
+			case corev1.SecretTypeBasicAuth:
+				args = append(args, fmt.Sprintf("-basic-%s=%s=%s", secretType, secret.Name, annotatedUrl))
+			case corev1.SecretTypeSSHAuth:
+				args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", secretType, secret.Name, annotatedUrl))
+			}
+		}
 	}
 
 	return volumes, volumeMounts, args, nil

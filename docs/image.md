@@ -140,6 +140,15 @@ spec:
         memory: 512M
 ```
 
+Source for github can also be specified in the ssh format if there is a corresponding ssh secret
+
+```yaml
+  source:
+    git:
+      url: git@github.com/buildpack/sample-java-app.git
+      revision: master
+```
+
 ### Sample Image with hosted zip or jar as a source
 
 ```yaml
