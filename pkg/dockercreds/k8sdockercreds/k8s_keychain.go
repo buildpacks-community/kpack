@@ -79,13 +79,10 @@ func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenti
 	sort.Slice(secrets, func(i, j int) bool { return secrets[i].Name < secrets[j].Name })
 
 	for _, s := range secrets {
-		if match(s, res) {
+		matcher := dockercreds.RegistryMatcher{Registry: s.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix]}
+		if matcher.Match(res.RegistryStr()) && s.Type == v1.SecretTypeBasicAuth {
 			return &authn.Basic{Username: string(s.Data[v1.BasicAuthUsernameKey]), Password: string(s.Data[v1.BasicAuthPasswordKey])}, nil
 		}
 	}
 	return authn.Anonymous, nil
-}
-
-func match(secret *v1.Secret, res authn.Resource) bool {
-	return dockercreds.RegistryMatch(secret.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix], res.RegistryStr()) && secret.Type == v1.SecretTypeBasicAuth
 }

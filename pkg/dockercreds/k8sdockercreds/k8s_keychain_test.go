@@ -73,7 +73,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 
 			auth, err := authenticator.Authorization()
 			require.NoError(t, err)
-			assert.Equal(t, auth, fmt.Sprintf("Basic %s", encoded))
+			assert.Equal(t, fmt.Sprintf("Basic %s", encoded), auth)
 		})
 
 		when("no service account is provided", func() {
@@ -125,7 +125,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 
 				auth, err := authenticator.Authorization()
 				require.NoError(t, err)
-				assert.Equal(t, auth, fmt.Sprintf("Basic %s", encoded))
+				assert.Equal(t, fmt.Sprintf("Basic %s", encoded), auth)
 			})
 		})
 
