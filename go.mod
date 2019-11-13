@@ -55,5 +55,5 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 	k8s.io/kubernetes v1.10.2 // indirect
 	k8s.io/utils v0.0.0-20190923111123-69764acb6e8e // indirect
-	knative.dev/pkg v0.0.0-20190927181044-f6eb4a55ec68
+	knative.dev/pkg v0.0.0-20191107185656-884d50f09454
 )

@@ -539,6 +539,8 @@ k8s.io/utils v0.0.0-20190923111123-69764acb6e8e h1:BXSmdH6S3YGLlhC89DZp+sNdYSmwN
 k8s.io/utils v0.0.0-20190923111123-69764acb6e8e/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
 knative.dev/pkg v0.0.0-20190927181044-f6eb4a55ec68 h1:/6AMpGMXxDKe36ZLDGyqKQd9fK7qqofbx29CM5otkP4=
 knative.dev/pkg v0.0.0-20190927181044-f6eb4a55ec68/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
+knative.dev/pkg v0.0.0-20191107185656-884d50f09454 h1:nkslWFyRWaJp3nPDm+GSQOSvN8NpZg8qIYTR+XssNNg=
+knative.dev/pkg v0.0.0-20191107185656-884d50f09454/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
 modernc.org/golex v1.0.0/go.mod h1:b/QX9oBD/LhixY6NDh+IdGv17hgB+51fET1i2kPSmvk=
 modernc.org/mathutil v1.0.0/go.mod h1:wU0vUrJsVWBZ4P6e7xtFJEhFSNsfRLJ8H458uRjg03k=
