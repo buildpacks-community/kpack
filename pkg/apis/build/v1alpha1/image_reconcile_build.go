@@ -23,7 +23,7 @@ func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, bu
 		nextBuildNumber := currentBuildNumber + 1
 		return newBuild{
 			previousBuild: latestBuild,
-			build:         im.build(resolver, builder, reasons, nextBuildNumber),
+			build:         im.build(resolver, builder, latestBuild, reasons, nextBuildNumber),
 			buildCounter:  nextBuildNumber,
 			latestImage:   latestImage,
 		}, nil

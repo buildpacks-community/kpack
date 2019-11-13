@@ -108,8 +108,5 @@ func (b *Build) ImagePullSecretsVolume() corev1.Volume {
 }
 
 func (b *Build) Rebasable(builderStack string) bool {
-	if b.Spec.LastBuild.StackID != "" {
-		return b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackID == builderStack
-	}
-	return b.Annotations[BuildReasonAnnotation] == BuildReasonStack
+	return b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackID == builderStack
 }

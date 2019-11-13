@@ -86,7 +86,7 @@ func lastBuildBuiltWithBuilderBuildpacks(builder BuilderResource, build *Build) 
 	return true
 }
 
-func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, reasons []string, nextBuildNumber int64) *Build {
+func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -112,8 +112,8 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
 			LastBuild: LastBuild{
-				Image:   im.Status.LatestImage,
-				StackID: im.Status.LatestStack,
+				Image:   latestBuild.BuiltImage(),
+				StackID: latestBuild.Stack(),
 			},
 		},
 	}

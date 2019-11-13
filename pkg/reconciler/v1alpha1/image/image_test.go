@@ -876,6 +876,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								LastBuild: v1alpha1.LastBuild{
+									Image:   "some/image@sha256:just-built",
+									StackID: "io.buildpacks.stacks.bionic",
+								},
 							},
 						},
 					},
@@ -988,6 +992,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
+								},
+								LastBuild: v1alpha1.LastBuild{
+									Image:   "some/image@sha256:just-built",
+									StackID: "io.buildpacks.stacks.bionic",
 								},
 							},
 						},
@@ -1131,6 +1139,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
+								},
+								LastBuild: v1alpha1.LastBuild{
+									Image:   "some/image@sha256:just-built",
+									StackID: "io.buildpacks.stacks.bionic",
 								},
 							},
 						},
