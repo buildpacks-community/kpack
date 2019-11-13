@@ -71,7 +71,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 			Resources: resources,
 			LastBuild: v1alpha1.LastBuild{
-				Image: previousAppImage,
+				Image:   previousAppImage,
+				StackID: "com.builder.stack.io",
 			},
 		},
 	}
