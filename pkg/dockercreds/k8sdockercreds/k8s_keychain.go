@@ -1,6 +1,8 @@
 package k8sdockercreds
 
 import (
+	"sort"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"k8s.io/api/core/v1"
@@ -38,7 +40,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 
 	annotatedBasicAuthKeychain := &annotatedBasicAuthKeychain{
 		secretRef:     ref,
-		secretManager: &secret.SecretManager{Client: f.client, AnnotationKey: v1alpha1.DOCKERSecretAnnotationPrefix, Matcher: dockercreds.RegistryMatch},
+		secretFetcher: &secret.Fetcher{Client: f.client},
 	}
 
 	k8sKeychain, err := k8schain.New(f.client, k8schain.Options{
@@ -63,16 +65,24 @@ func toStringPullSecrets(secrets []v1.LocalObjectReference) []string {
 
 type annotatedBasicAuthKeychain struct {
 	secretRef     registry.SecretRef
-	secretManager *secret.SecretManager
+	secretFetcher *secret.Fetcher
 }
 
 func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenticator, error) {
-	creds, err := k.secretManager.SecretForServiceAccountAndURL(k.secretRef.ServiceAccountOrDefault(), k.secretRef.Namespace, res.RegistryStr())
+	secrets, err := k.secretFetcher.SecretsForServiceAccount(k.secretRef.ServiceAccountOrDefault(), k.secretRef.Namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {
 		return authn.Anonymous, nil
 	}
 
-	return &authn.Basic{Username: creds.Username, Password: creds.Password}, nil
+	sort.Slice(secrets, func(i, j int) bool { return secrets[i].Name < secrets[j].Name })
+
+	for _, s := range secrets {
+		matcher := dockercreds.RegistryMatcher{Registry: s.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix]}
+		if matcher.Match(res.RegistryStr()) && s.Type == v1.SecretTypeBasicAuth {
+			return &authn.Basic{Username: string(s.Data[v1.BasicAuthUsernameKey]), Password: string(s.Data[v1.BasicAuthPasswordKey])}, nil
+		}
+	}
+	return authn.Anonymous, nil
 }

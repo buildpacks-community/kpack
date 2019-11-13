@@ -40,7 +40,7 @@ stringData:
 
 kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/git` annotation that references a remote git location.      
 
-For github, this would look like
+For github, the basic auth secret would look like
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -52,6 +52,19 @@ type: kubernetes.io/basic-auth
 stringData:
   username: <username>
   password: <password>
+```
+
+For github, the ssh auth secret would look like
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-ssh-auth
+  annotations:
+    build.pivotal.io/git: git@github.com
+type: kubernetes.io/ssh-auth
+stringData:
+  ssh-privatekey: <x509-private-key>
 ```
 
 If your github account has 2 factor auth configured, create a personal access token using [this procedure](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line).
@@ -82,4 +95,5 @@ metadata:
 secrets:
   - name: basic-docker-user-pass
   - name: basic-git-user-pass
+  - name: git-ssh-auth
 ```

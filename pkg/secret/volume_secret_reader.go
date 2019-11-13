@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func ReadSecret(secretVolume, secretName string) (BasicAuth, error) {
+func ReadBasicAuthSecret(secretVolume, secretName string) (BasicAuth, error) {
 	secretPath := volumeName(secretVolume, secretName)
 	ub, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.BasicAuthUsernameKey))
 	if err != nil {
@@ -25,6 +25,18 @@ func ReadSecret(secretVolume, secretName string) (BasicAuth, error) {
 	return BasicAuth{
 		Username: username,
 		Password: password,
+	}, nil
+}
+
+func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
+	secretPath := volumeName(secretVolume, secretName)
+	privateKey, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.SSHAuthPrivateKey))
+	if err != nil {
+		return SSH{}, err
+	}
+
+	return SSH{
+		PrivateKey: privateKey,
 	}, nil
 }
 

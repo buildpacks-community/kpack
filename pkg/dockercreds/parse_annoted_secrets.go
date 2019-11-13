@@ -17,7 +17,7 @@ func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCr
 		secretName := splitSecret[0]
 		domain := splitSecret[1]
 
-		auth, err := secret.ReadSecret(volumeName, secretName)
+		auth, err := secret.ReadBasicAuthSecret(volumeName, secretName)
 		if err != nil {
 			return nil, err
 		}
