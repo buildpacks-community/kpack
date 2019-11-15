@@ -1,0 +1,27 @@
+[default]
+id = "org.cloudfoundry.node-engine"
+version = "0.0.89"
+
+[[blobs]]
+uri = "./wip/metabp"
+
+[[blobs]]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.node-engine/org.cloudfoundry.node-engine-0.0.89-any-stack-f2951687.tgz"
+
+[[blobs]]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.node-engine/org.cloudfoundry.node-engine-0.0.82-any-stack-d156f0e6.tgz"
+
+[[blobs]]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.npm/org.cloudfoundry.npm-0.0.55-any-stack-75a119b5.tgz"
+
+[[blobs]]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/org.cloudfoundry.npm/org.cloudfoundry.npm-0.0.51-any-stack-b42a73fe.tgz"
+
+[[blobs]]
+uri = "https://github.com/cloudfoundry/go-compiler-cnb/releases/download/v0.0.55/go-compiler-cnb-0.0.55.tgz"
+
+[[blobs]]
+uri = "https://github.com/cloudfoundry/go-mod-cnb/releases/download/v0.0.58/go-mod-cnb-0.0.58.tgz"
+
+[[stacks]]
+id = "io.buildpacks.stacks.bionic"

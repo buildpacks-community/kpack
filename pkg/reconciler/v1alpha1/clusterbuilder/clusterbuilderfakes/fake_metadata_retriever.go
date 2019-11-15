@@ -10,24 +10,24 @@ import (
 )
 
 type FakeMetadataRetriever struct {
-	GetBuilderImageStub        func(v1alpha1.BuilderResource) (cnb.BuilderImage, error)
+	GetBuilderImageStub        func(v1alpha1.BuilderResource) (cnb.RemoteImage, error)
 	getBuilderImageMutex       sync.RWMutex
 	getBuilderImageArgsForCall []struct {
 		arg1 v1alpha1.BuilderResource
 	}
 	getBuilderImageReturns struct {
-		result1 cnb.BuilderImage
+		result1 cnb.RemoteImage
 		result2 error
 	}
 	getBuilderImageReturnsOnCall map[int]struct {
-		result1 cnb.BuilderImage
+		result1 cnb.RemoteImage
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImage(arg1 v1alpha1.BuilderResource) (cnb.BuilderImage, error) {
+func (fake *FakeMetadataRetriever) GetBuilderImage(arg1 v1alpha1.BuilderResource) (cnb.RemoteImage, error) {
 	fake.getBuilderImageMutex.Lock()
 	ret, specificReturn := fake.getBuilderImageReturnsOnCall[len(fake.getBuilderImageArgsForCall)]
 	fake.getBuilderImageArgsForCall = append(fake.getBuilderImageArgsForCall, struct {
@@ -51,7 +51,7 @@ func (fake *FakeMetadataRetriever) GetBuilderImageCallCount() int {
 	return len(fake.getBuilderImageArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImageCalls(stub func(v1alpha1.BuilderResource) (cnb.BuilderImage, error)) {
+func (fake *FakeMetadataRetriever) GetBuilderImageCalls(stub func(v1alpha1.BuilderResource) (cnb.RemoteImage, error)) {
 	fake.getBuilderImageMutex.Lock()
 	defer fake.getBuilderImageMutex.Unlock()
 	fake.GetBuilderImageStub = stub
@@ -64,28 +64,28 @@ func (fake *FakeMetadataRetriever) GetBuilderImageArgsForCall(i int) v1alpha1.Bu
 	return argsForCall.arg1
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImageReturns(result1 cnb.BuilderImage, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuilderImageReturns(result1 cnb.RemoteImage, result2 error) {
 	fake.getBuilderImageMutex.Lock()
 	defer fake.getBuilderImageMutex.Unlock()
 	fake.GetBuilderImageStub = nil
 	fake.getBuilderImageReturns = struct {
-		result1 cnb.BuilderImage
+		result1 cnb.RemoteImage
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeMetadataRetriever) GetBuilderImageReturnsOnCall(i int, result1 cnb.BuilderImage, result2 error) {
+func (fake *FakeMetadataRetriever) GetBuilderImageReturnsOnCall(i int, result1 cnb.RemoteImage, result2 error) {
 	fake.getBuilderImageMutex.Lock()
 	defer fake.getBuilderImageMutex.Unlock()
 	fake.GetBuilderImageStub = nil
 	if fake.getBuilderImageReturnsOnCall == nil {
 		fake.getBuilderImageReturnsOnCall = make(map[int]struct {
-			result1 cnb.BuilderImage
+			result1 cnb.RemoteImage
 			result2 error
 		})
 	}
 	fake.getBuilderImageReturnsOnCall[i] = struct {
-		result1 cnb.BuilderImage
+		result1 cnb.RemoteImage
 		result2 error
 	}{result1, result2}
 }

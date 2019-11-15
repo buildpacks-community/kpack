@@ -7,6 +7,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
 	github.com/Azure/azure-sdk-for-go v11.3.0-beta+incompatible // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
 	github.com/buildpack/imgutil v0.0.0-20191010153712-78959154ded1
 	github.com/buildpack/lifecycle v0.5.0
@@ -31,6 +32,7 @@ require (
 	github.com/sclevine/spec v1.3.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
+	github.com/tj/assert v0.0.0-20171129193455-018094318fb0
 	go.opencensus.io v0.22.1 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect

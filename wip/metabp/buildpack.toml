@@ -1,0 +1,17 @@
+api = "0.2"
+
+[buildpack]
+  id = "org.cloudfoundry.nodejs"
+  name = "Node.js Buildpack"
+  version = "1.0.1"
+
+
+[[order]]
+
+  [[order.group]]
+    id = "org.cloudfoundry.node-engine"
+    version = "0.0.82"
+
+  [[order.group]]
+    id = "org.cloudfoundry.npm"
+    version = "0.0.51"
