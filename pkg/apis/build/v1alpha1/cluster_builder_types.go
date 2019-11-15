@@ -17,7 +17,7 @@ type ClusterBuilder struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   BuilderSpec   `json:"spec"`
-	Status BuilderStatus `json:"status"`
+	Status BuilderStatus `json:"status,omitempty"`
 }
 
 // +genclient:nonNamespaced

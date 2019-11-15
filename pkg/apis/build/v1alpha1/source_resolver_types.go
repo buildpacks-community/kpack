@@ -13,17 +13,17 @@ type SourceResolver struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              SourceResolverSpec   `json:"spec"`
-	Status            SourceResolverStatus `json:"status"`
+	Status            SourceResolverStatus `json:"status,omitempty"`
 }
 
 type SourceResolverSpec struct {
-	ServiceAccount string       `json:"serviceAccount"`
+	ServiceAccount string       `json:"serviceAccount,omitempty"`
 	Source         SourceConfig `json:"source"`
 }
 
 type SourceResolverStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	Source              ResolvedSourceConfig `json:"source"`
+	Source              ResolvedSourceConfig `json:"source,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

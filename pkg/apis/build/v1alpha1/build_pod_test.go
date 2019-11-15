@@ -70,7 +70,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				{Name: "keyB", Value: "valueB"},
 			},
 			Resources: resources,
-			LastBuild: v1alpha1.LastBuild{
+			LastBuild: &v1alpha1.LastBuild{
 				Image:   previousAppImage,
 				StackID: "com.builder.stack.io",
 			},

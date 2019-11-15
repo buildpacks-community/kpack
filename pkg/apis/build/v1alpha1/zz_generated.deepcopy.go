@@ -176,7 +176,11 @@ func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 		}
 	}
 	in.Resources.DeepCopyInto(&out.Resources)
-	out.LastBuild = in.LastBuild
+	if in.LastBuild != nil {
+		in, out := &in.LastBuild, &out.LastBuild
+		*out = new(LastBuild)
+		**out = **in
+	}
 	return
 }
 
@@ -614,7 +618,11 @@ func (in *ImageSpec) DeepCopyInto(out *ImageSpec) {
 		*out = new(int64)
 		**out = **in
 	}
-	in.Build.DeepCopyInto(&out.Build)
+	if in.Build != nil {
+		in, out := &in.Build, &out.Build
+		*out = new(ImageBuild)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

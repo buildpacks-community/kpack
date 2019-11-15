@@ -103,7 +103,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			FailedBuildHistoryLimit:  limit(10),
 			SuccessBuildHistoryLimit: limit(10),
 			ImageTaggingStrategy:     v1alpha1.None,
-			Build:                    v1alpha1.ImageBuild{},
+			Build:                    &v1alpha1.ImageBuild{},
 		},
 		Status: v1alpha1.ImageStatus{
 			Status: duckv1alpha1.Status{
@@ -876,7 +876,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: v1alpha1.LastBuild{
+								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackID: "io.buildpacks.stacks.bionic",
 								},
@@ -993,7 +993,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: v1alpha1.LastBuild{
+								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackID: "io.buildpacks.stacks.bionic",
 								},
@@ -1140,7 +1140,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: v1alpha1.LastBuild{
+								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackID: "io.buildpacks.stacks.bionic",
 								},

@@ -53,7 +53,7 @@ func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
-	if lb.Image == "" {
+	if lb == nil || lb.Image == "" {
 		return nil
 	}
 

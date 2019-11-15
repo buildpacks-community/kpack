@@ -33,19 +33,19 @@ type Image struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ImageSpec   `json:"spec"`
-	Status ImageStatus `json:"status"`
+	Status ImageStatus `json:"status,omitempty"`
 }
 
 type ImageSpec struct {
 	Tag                      string               `json:"tag"`
-	Builder                  ImageBuilder         `json:"builder"`
-	ServiceAccount           string               `json:"serviceAccount"`
+	Builder                  ImageBuilder         `json:"builder,omitempty"`
+	ServiceAccount           string               `json:"serviceAccount,omitempty"`
 	Source                   SourceConfig         `json:"source"`
 	CacheSize                *resource.Quantity   `json:"cacheSize,omitempty"`
-	FailedBuildHistoryLimit  *int64               `json:"failedBuildHistoryLimit"`
-	SuccessBuildHistoryLimit *int64               `json:"successBuildHistoryLimit"`
-	ImageTaggingStrategy     ImageTaggingStrategy `json:"imageTaggingStrategy"`
-	Build                    ImageBuild           `json:"build"`
+	FailedBuildHistoryLimit  *int64               `json:"failedBuildHistoryLimit,omitempty"`
+	SuccessBuildHistoryLimit *int64               `json:"successBuildHistoryLimit,omitempty"`
+	ImageTaggingStrategy     ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
+	Build                    *ImageBuild          `json:"build,omitempty"`
 }
 
 type ImageBuilder struct {
@@ -61,17 +61,17 @@ const (
 )
 
 type ImageBuild struct {
-	Env       []corev1.EnvVar             `json:"env"`
-	Resources corev1.ResourceRequirements `json:"resources"`
+	Env       []corev1.EnvVar             `json:"env,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type ImageStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	LatestBuildRef      string `json:"latestBuildRef"`
-	LatestImage         string `json:"latestImage"`
-	LatestStack         string `json:"latestStack"`
-	BuildCounter        int64  `json:"buildCounter"`
-	BuildCacheName      string `json:"buildCacheName"`
+	LatestBuildRef      string `json:"latestBuildRef,omitempty"`
+	LatestImage         string `json:"latestImage,omitempty"`
+	LatestStack         string `json:"latestStack,omitempty"`
+	BuildCounter        int64  `json:"buildCounter,omitempty"`
+	BuildCacheName      string `json:"buildCacheName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
