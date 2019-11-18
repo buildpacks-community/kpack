@@ -74,13 +74,17 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		when("cluster builder", func() {
 			when("metadata is available", func() {
 				fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{
-					//BuilderBuildpackMetadata: cnb.BuilderMetadata{
-					//	{
-					//		ID:      "buildpack.version",
-					//		Version: "version",
-					//	},
-					//},
-					//Identifier: clusterBuilderIdentifier,
+					Image: clusterBuilderIdentifier,
+					Stack: v1alpha1.BuildStack{
+						RunImage: "",
+						ID:       "",
+					},
+					Buildpacks: v1alpha1.BuildpackMetadataList{
+						{
+							ID:      "buildpack.version",
+							Version: "version",
+						},
+					},
 				}, nil)
 
 				it("saves metadata to the status", func() {

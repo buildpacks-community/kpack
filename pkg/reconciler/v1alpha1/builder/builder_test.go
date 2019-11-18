@@ -80,17 +80,17 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		when("metadata is available", func() {
 			fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{
-				//BuilderBuildpackMetadata: cnb.BuilderMetadata{
-				//	{
-				//		ID:      "buildpack.version",
-				//		Version: "version",
-				//	},
-				//},
-				//Identifier: builderIdentifier,
-				//Stack: cnb.Stack{
-				//	RunImage: runImgIdentifier,
-				//	ID:       "io.buildpacks.stacks.bionic",
-				//},
+				Image: builderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: runImgIdentifier,
+					ID:       "io.buildpacks.stacks.bionic",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{
+					{
+						ID:      "buildpack.version",
+						Version: "version",
+					},
+				},
 			}, nil)
 
 			it("saves metadata to the status", func() {

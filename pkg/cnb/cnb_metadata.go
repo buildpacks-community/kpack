@@ -108,15 +108,12 @@ type BuiltImage struct {
 }
 
 func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
-	var buildMetadataJSON string
-	var layerMetadataJSON string
-
 	buildMetadataJSON, err := img.Label(metadata.BuildMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	layerMetadataJSON, err = img.Label(metadata.LayerMetadataLabel)
+	layerMetadataJSON, err := img.Label(metadata.LayerMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, err
 	}
@@ -127,13 +124,12 @@ func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
 	}
 
 	var buildMetadata metadata.BuildMetadata
-	var layerMetadata metadata.LayersMetadata
-
 	err = json.Unmarshal([]byte(buildMetadataJSON), &buildMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
+	var layerMetadata metadata.LayersMetadata
 	err = json.Unmarshal([]byte(layerMetadataJSON), &layerMetadata)
 	if err != nil {
 		return BuiltImage{}, err

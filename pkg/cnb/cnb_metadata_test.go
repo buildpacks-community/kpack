@@ -48,7 +48,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 			it("gets buildpacks from a local baseImage", func() {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/builder/baseImage", "sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
 				fakeRunImage := registryfakes.NewFakeRemoteImage("foo.io/run", "sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504")
-				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}], "stack": { "runImage": { "baseImage": "foo.io/run:basecnb" }}}`))
+				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}], "stack": { "runImage": { "image": "foo.io/run:basecnb" }}}`))
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stacks.bionic"))
 
 				mockFactory.NewRemoteReturnsOnCall(0, fakeImage, nil)
@@ -86,10 +86,10 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				Status: v1alpha1.BuildStatus{},
 			}
 
-			it("retrieves the metadata from the registry", func() {
+			it.Focus("retrieves the metadata from the registry", func() {
 				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/baseImage", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`))
-				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"baseImage":"gcr.io:443/run:full-cnb"}}}`))
+				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"gcr.io:443/run:full-cnb"}}}`))
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stack.bionic"))
 
 				mockFactory.NewRemoteReturns(fakeImage, nil)

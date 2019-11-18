@@ -66,7 +66,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	builder, creationError := c.reconcileCustomBuilder(customBuilder)
 	if creationError != nil {
-		customBuilder.ErrorCreate(err)
+		customBuilder.ErrorCreate(creationError)
 
 		err := c.updateStatus(customBuilder)
 		if err != nil {
