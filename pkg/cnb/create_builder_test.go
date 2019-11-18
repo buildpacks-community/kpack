@@ -3,20 +3,22 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
-	"time"
+
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestCreateBuilder(t *testing.T) {
@@ -26,31 +28,24 @@ func TestCreateBuilder(t *testing.T) {
 func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
 		tag             = "custom/example"
-		storeImage      = "store/image"
 		baseBuilder     = "base/builder"
 		baseImageLayers = 10
 	)
 
 	var (
 		fakeClient       = registryfakes.NewFakeClient()
-		fakeStore        = &fakeStore{buildpacks: map[string][]buildpackLayer{}}
-		expectedKeychain = authn.NewMultiKeychain(authn.DefaultKeychain)
+		fakeStoreFactory = &fakeStoreFactory{
+			image:    "store/image",
+			keychain: authn.NewMultiKeychain(authn.DefaultKeychain),
+			store:    &fakeStore{buildpacks: map[string][]buildpackLayer{}},
+		}
 	)
 
-	fakeClient.ExpectedKeychain(expectedKeychain)
+	fakeClient.ExpectedKeychain(fakeStoreFactory.keychain)
 
 	remoteBuilderCreator := RemoteBuilderCreator{
 		RemoteImageClient: fakeClient,
-		NewStore: func(keychain authn.Keychain, image string) (Store, error) {
-			if keychain != expectedKeychain {
-				return nil, errors.New("invalid keychain")
-			}
-			if image != storeImage {
-				return nil, errors.New("invalid store image")
-			}
-
-			return fakeStore, nil
-		},
+		StoreFactory:      fakeStoreFactory,
 	}
 
 	clusterBuilder := &eV1alpha1.CustomBuilder{
@@ -63,7 +58,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				BaseBuilderImage: baseBuilder,
 			},
 			Store: eV1alpha1.Store{
-				Image: storeImage,
+				Image: fakeStoreFactory.image,
 			},
 			Order: []eV1alpha1.Group{
 				{
@@ -101,7 +96,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 	)
 
-	fakeStore.AddBP("io.buildpack.1", "v1", []buildpackLayer{
+	fakeStoreFactory.store.AddBP("io.buildpack.1", "v1", []buildpackLayer{
 		{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: BuildpackInfo{
@@ -111,7 +106,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		},
 	})
 
-	fakeStore.AddBP("io.buildpack.2", "v2", []buildpackLayer{
+	fakeStoreFactory.store.AddBP("io.buildpack.2", "v2", []buildpackLayer{
 		{
 			v1Layer: buildpack3Layer,
 			BuildpackInfo: BuildpackInfo{
@@ -142,8 +137,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("CreateBuilder", func() {
-
 		var baseImage v1.Image
+
 		it.Before(func() {
 			var err error
 			baseImage, err = random.Image(10, int64(baseImageLayers))
@@ -178,7 +173,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := remoteBuilderCreator.CreateBuilder(expectedKeychain, clusterBuilder)
+			builderRecord, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -300,11 +295,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := remoteBuilderCreator.CreateBuilder(expectedKeychain, clusterBuilder)
+			original, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := remoteBuilderCreator.CreateBuilder(expectedKeychain, clusterBuilder)
+				other, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -312,6 +307,23 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 	})
+}
+
+type fakeStoreFactory struct {
+	image    string
+	keychain authn.Keychain
+	store    *fakeStore
+}
+
+func (f *fakeStoreFactory) MakeStore(keychain authn.Keychain, image string) (Store, error) {
+	if keychain != f.keychain {
+		return nil, errors.New("invalid keychain")
+	}
+	if image != f.image {
+		return nil, errors.New("invalid store image")
+	}
+
+	return f.store, nil
 }
 
 type fakeStore struct {

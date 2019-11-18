@@ -43,7 +43,8 @@ func NewController(opt reconciler.Options,
 	builderInformer v1alpha1informers.BuilderInformer,
 	clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer,
 	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
-	pvcInformer coreinformers.PersistentVolumeClaimInformer) *controller.Impl {
+	pvcInformer coreinformers.PersistentVolumeClaimInformer,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:               opt.Client,
 		K8sClient:            k8sClient,

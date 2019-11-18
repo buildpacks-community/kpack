@@ -14,7 +14,7 @@ import (
 type BuildPackageStoreFactory struct {
 }
 
-func (f *BuildPackageStoreFactory) NewBuildPackageStore(keychain authn.Keychain, storeImage string) (Store, error) {
+func (f *BuildPackageStoreFactory) MakeStore(keychain authn.Keychain, storeImage string) (Store, error) {
 	ref, err := name.ParseReference(storeImage, name.WeakValidation)
 	if err != nil {
 		return nil, err

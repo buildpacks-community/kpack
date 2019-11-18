@@ -3,6 +3,7 @@ package cnb
 import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
@@ -12,13 +13,17 @@ type Client interface {
 	Save(keychain authn.Keychain, tag string, image v1.Image) (string, error)
 }
 
+type StoreFactory interface {
+	MakeStore(keychain authn.Keychain, storeImage string) (Store, error)
+}
+
 type Store interface {
 	FetchBuildpack(id, version string) (RemoteBuildpackInfo, error)
 }
 
 type RemoteBuilderCreator struct {
 	RemoteImageClient Client
-	NewStore          func(keychain authn.Keychain, storeImage string) (Store, error)
+	StoreFactory      StoreFactory
 }
 
 func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuilder *experimentalV1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
@@ -27,7 +32,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 		return emptyRecord, err
 	}
 
-	store, err := r.NewStore(keychain, customBuilder.Spec.Store.Image)
+	store, err := r.StoreFactory.MakeStore(keychain, customBuilder.Spec.Store.Image)
 	if err != nil {
 		return emptyRecord, err
 	}

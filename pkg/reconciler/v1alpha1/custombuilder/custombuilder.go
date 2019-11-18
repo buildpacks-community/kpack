@@ -1,12 +1,14 @@
-package clusterbuilder
+package custombuilder
 
 import (
 	"context"
+
 	"github.com/google/go-containerregistry/pkg/authn"
+	"k8s.io/apimachinery/pkg/api/equality"
+
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	"k8s.io/apimachinery/pkg/api/equality"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
@@ -27,10 +29,12 @@ type BuilderCreator interface {
 	CreateBuilder(keychain authn.Keychain, customBuilder *experimentalV1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error)
 }
 
-func NewController(opt reconciler.Options, customBuilderInformer v1alpha1informers.CustomBuilderInformer) *controller.Impl {
+func NewController(opt reconciler.Options, customBuilderInformer v1alpha1informers.CustomBuilderInformer, builderCreator BuilderCreator, keychainFactory registry.KeychainFactory) *controller.Impl {
 	c := &Reconciler{
 		Client:              opt.Client,
 		CustomBuilderLister: customBuilderInformer.Lister(),
+		BuilderCreator:      builderCreator,
+		KeychainFactory:     keychainFactory,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -44,9 +48,8 @@ type Reconciler struct {
 	Client              versioned.Interface
 	CustomBuilderLister v1alpha1Listers.CustomBuilderLister
 
-	BuilderCreator    BuilderCreator
-	KeychainFactory   registry.KeychainFactory
-	RemoteImageClient registry.Client
+	BuilderCreator  BuilderCreator
+	KeychainFactory registry.KeychainFactory
 }
 
 //todo this is not tested.
