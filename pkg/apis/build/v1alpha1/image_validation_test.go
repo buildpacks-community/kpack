@@ -39,7 +39,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			FailedBuildHistoryLimit:  &limit,
 			SuccessBuildHistoryLimit: &limit,
 			ImageTaggingStrategy:     None,
-			Build: ImageBuild{
+			Build: &ImageBuild{
 				Env: []v1.EnvVar{
 					{
 						Name:  "keyA",

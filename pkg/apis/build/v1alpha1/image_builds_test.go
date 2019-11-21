@@ -29,18 +29,6 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Builder: ImageBuilder{
 				Name: "builder-name",
 			},
-			Build: ImageBuild{
-				Env: []v1.EnvVar{
-					{
-						Name:  "keyA",
-						Value: "ValueA",
-					},
-					{
-						Name:  "keyB",
-						Value: "ValueB",
-					},
-				},
-			},
 		},
 	}
 
@@ -95,16 +83,6 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Tags:           []string{"some/image"},
 			Builder:        builder.BuildBuilderSpec(),
 			ServiceAccount: "some/serviceaccount",
-			Env: []v1.EnvVar{
-				{
-					Name:  "keyA",
-					Value: "ValueA",
-				},
-				{
-					Name:  "keyB",
-					Value: "ValueB",
-				},
-			},
 		},
 		Status: BuildStatus{
 			Status: duckv1alpha1.Status{
@@ -305,8 +283,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				build.Spec.Env = []v1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build.Env = []v1.EnvVar{
-					{Name: "keyA", Value: "new"},
+				image.Spec.Build = &ImageBuild{
+					Env: []v1.EnvVar{
+						{Name: "keyA", Value: "new"},
+					},
 				}
 
 				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
@@ -327,14 +307,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				image.Spec.Build.Resources = v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("3"),
-						v1.ResourceMemory: resource.MustParse("512M"),
-					},
-					Requests: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("2"),
-						v1.ResourceMemory: resource.MustParse("256M"),
+				image.Spec.Build = &ImageBuild{
+					Resources: v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse("3"),
+							v1.ResourceMemory: resource.MustParse("512M"),
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse("2"),
+							v1.ResourceMemory: resource.MustParse("256M"),
+						},
 					},
 				}
 
@@ -588,6 +570,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds the env vars to the build spec", func() {
+			image.Spec.Build = &ImageBuild{
+				Env: []v1.EnvVar{
+					{Name: "keyA", Value: "new"},
+				},
+			}
+
 			expectedBuild := image.build(sourceResolver, builder, build, []string{BuildReasonConfig}, 1)
 
 			assert.Equal(t, image.Spec.Build.Env, expectedBuild.Spec.Env)
@@ -607,14 +595,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds build resources", func() {
-			image.Spec.Build.Resources = v1.ResourceRequirements{
-				Limits: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("2"),
-					v1.ResourceMemory: resource.MustParse("256M"),
-				},
-				Requests: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("1"),
-					v1.ResourceMemory: resource.MustParse("128M"),
+			image.Spec.Build = &ImageBuild{
+				Resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						v1.ResourceCPU:    resource.MustParse("2"),
+						v1.ResourceMemory: resource.MustParse("256M"),
+					},
+					Requests: v1.ResourceList{
+						v1.ResourceCPU:    resource.MustParse("1"),
+						v1.ResourceMemory: resource.MustParse("128M"),
+					},
 				},
 			}
 

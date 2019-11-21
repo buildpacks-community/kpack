@@ -44,8 +44,8 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 	var reasons []string
 
 	if sourceResolver.ConfigChanged(lastBuild) ||
-		!equality.Semantic.DeepEqual(im.Spec.Build.Env, lastBuild.Spec.Env) ||
-		!equality.Semantic.DeepEqual(im.Spec.Build.Resources, lastBuild.Spec.Resources) {
+		!equality.Semantic.DeepEqual(im.env(), lastBuild.Spec.Env) ||
+		!equality.Semantic.DeepEqual(im.resources(), lastBuild.Spec.Resources) {
 		reasons = append(reasons, BuildReasonConfig)
 	}
 
@@ -106,16 +106,24 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 		Spec: BuildSpec{
 			Tags:           im.generateTags(buildNumber),
 			Builder:        builder.BuildBuilderSpec(),
-			Env:            im.Spec.Build.Env,
-			Resources:      im.Spec.Build.Resources,
+			Env:            im.env(),
+			Resources:      im.resources(),
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
-			LastBuild: LastBuild{
-				Image:   latestBuild.BuiltImage(),
-				StackID: latestBuild.Stack(),
-			},
+			LastBuild:      lastBuild(latestBuild),
 		},
+	}
+}
+
+func lastBuild(latestBuild *Build) *LastBuild {
+	if latestBuild == nil {
+		return nil
+	}
+
+	return &LastBuild{
+		Image:   latestBuild.BuiltImage(),
+		StackID: latestBuild.Stack(),
 	}
 }
 
@@ -125,6 +133,20 @@ func (im *Image) latestForImage(build *Build) string {
 		latestImage = build.BuiltImage()
 	}
 	return latestImage
+}
+
+func (im *Image) env() []corev1.EnvVar {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.Env
+}
+
+func (im *Image) resources() corev1.ResourceRequirements {
+	if im.Spec.Build == nil {
+		return corev1.ResourceRequirements{}
+	}
+	return im.Spec.Build.Resources
 }
 
 func (im *Image) CacheName() string {

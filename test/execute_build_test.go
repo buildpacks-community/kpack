@@ -199,7 +199,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Source:               imageSource,
 					CacheSize:            &cacheSize,
 					ImageTaggingStrategy: v1alpha1.None,
-					Build: v1alpha1.ImageBuild{
+					Build: &v1alpha1.ImageBuild{
 						Resources: expectedResources,
 					},
 				},
@@ -266,14 +266,18 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
 	}, 5*time.Second, 1*time.Minute)
 
-	build.Spec.LastBuild.Image = build.Status.LatestImage
+	rebaseBuildBuildSpec := build.Spec.DeepCopy()
+	rebaseBuildBuildSpec.LastBuild = &v1alpha1.LastBuild{
+		Image:   build.Status.LatestImage,
+		StackID: build.Status.Stack.ID,
+	}
 
 	_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        build.Name + "-rebase",
 			Annotations: map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack},
 		},
-		Spec: build.Spec,
+		Spec: *rebaseBuildBuildSpec,
 	})
 	require.NoError(t, err)
 

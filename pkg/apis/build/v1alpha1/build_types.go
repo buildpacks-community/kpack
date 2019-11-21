@@ -32,7 +32,7 @@ type Build struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   BuildSpec   `json:"spec"`
-	Status BuildStatus `json:"status"`
+	Status BuildStatus `json:"status,omitempty"`
 }
 
 var (
@@ -42,37 +42,37 @@ var (
 )
 
 type BuildBuilderSpec struct {
-	Image            string                        `json:"image"`
+	Image            string                        `json:"image,omitempty"`
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
 type BuildSpec struct {
-	Tags           []string                    `json:"tags"`
-	Builder        BuildBuilderSpec            `json:"builder"`
-	ServiceAccount string                      `json:"serviceAccount"`
+	Tags           []string                    `json:"tags,omitempty"`
+	Builder        BuildBuilderSpec            `json:"builder,omitempty"`
+	ServiceAccount string                      `json:"serviceAccount,omitempty"`
 	Source         SourceConfig                `json:"source"`
-	CacheName      string                      `json:"cacheName"`
-	Env            []corev1.EnvVar             `json:"env"`
-	Resources      corev1.ResourceRequirements `json:"resources"`
-	LastBuild      LastBuild                   `json:"lastBuild"`
+	CacheName      string                      `json:"cacheName,omitempty"`
+	Env            []corev1.EnvVar             `json:"env,omitempty"`
+	Resources      corev1.ResourceRequirements `json:"resources,omitempty"`
+	LastBuild      *LastBuild                  `json:"lastBuild,omitempty"`
 }
 
 type LastBuild struct {
-	Image   string `json:"image"`
-	StackID string `json:"stackId"`
+	Image   string `json:"image,omitempty"`
+	StackID string `json:"stackId,omitempty"`
 }
 
 type BuildStack struct {
-	RunImage string `json:"runImage"`
-	ID       string `json:"id"`
+	RunImage string `json:"runImage,omitempty"`
+	ID       string `json:"id,omitempty"`
 }
 
 type BuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata"`
-	Stack               BuildStack              `json:"stack"`
-	LatestImage         string                  `json:"latestImage"`
-	PodName             string                  `json:"podName"`
+	BuildMetadata       BuildpackMetadataList   `json:"buildMetadata,omitempty"`
+	Stack               BuildStack              `json:"stack,omitempty"`
+	LatestImage         string                  `json:"latestImage,omitempty"`
+	PodName             string                  `json:"podName,omitempty"`
 	StepStates          []corev1.ContainerState `json:"stepStates,omitempty"`
 	StepsCompleted      []string                `json:"stepsCompleted,omitempty"`
 }
