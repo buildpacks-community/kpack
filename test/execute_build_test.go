@@ -284,7 +284,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 	eventually(t, func() bool {
 		build, err := clients.client.BuildV1alpha1().Builds(testNamespace).Get(build.Name+"-rebase", metav1.GetOptions{})
 		require.NoError(t, err)
-		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() && len(build.Status.StepsCompleted) == 1
 	}, 5*time.Second, 1*time.Minute)
 }
 
