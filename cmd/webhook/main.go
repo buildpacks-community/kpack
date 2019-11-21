@@ -40,15 +40,15 @@ func main() {
 
 	options := webhook.ControllerOptions{
 		ServiceName:                     "kpack-webhook",
-		DeploymentName:                  "kpack-webhook",
 		Namespace:                       system.Namespace(),
 		Port:                            8443,
 		SecretName:                      "webhook-certs",
 		ResourceMutatingWebhookName:     "resource.webhook.kpack.pivotal.io",
 		ResourceAdmissionControllerPath: "/",
-		ConfigValidationWebhookName:     "config.webhook.kpack.pivotal.io",
-		ConfigValidationControllerPath:  "/config-validation",
-		ConfigValidationNamespaceLabel:  "kpack.pivotal.io/release",
+
+		//unused config validation
+		ConfigValidationWebhookName:    "config.webhook.kpack.pivotal.io",
+		ConfigValidationControllerPath: "/config-validation",
 	}
 
 	resourceHandlers := map[schema.GroupVersionKind]webhook.GenericCRD{
