@@ -9,8 +9,10 @@ import (
 	"knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 )
 
 var clientSetSchemes = []func(*runtime.Scheme) error{
@@ -64,6 +66,10 @@ func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {
 
 func (l *Listers) GetClusterBuilderLister() v1alpha1Listers.ClusterBuilderLister {
 	return v1alpha1Listers.NewClusterBuilderLister(l.indexerFor(&v1alpha1.ClusterBuilder{}))
+}
+
+func (l *Listers) GetCustomBuilderLister() expv1alpha1Listers.CustomBuilderLister {
+	return expv1alpha1Listers.NewCustomBuilderLister(l.indexerFor(&expv1alpha1.CustomBuilder{}))
 }
 
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {

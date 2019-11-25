@@ -19,9 +19,12 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	expv1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/tracker"
 )
@@ -36,14 +39,17 @@ type Tracker interface {
 	OnChanged(obj interface{})
 }
 
-func NewController(opt reconciler.Options,
+func NewController(
+	opt reconciler.Options,
 	k8sClient k8sclient.Interface,
 	imageInformer v1alpha1informers.ImageInformer,
 	buildInformer v1alpha1informers.BuildInformer,
 	builderInformer v1alpha1informers.BuilderInformer,
 	clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer,
 	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
-	pvcInformer coreinformers.PersistentVolumeClaimInformer) *controller.Impl {
+	pvcInformer coreinformers.PersistentVolumeClaimInformer,
+	customBuilderInformer expv1alpha1informers.CustomBuilderInformer,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:               opt.Client,
 		K8sClient:            k8sClient,
@@ -51,6 +57,7 @@ func NewController(opt reconciler.Options,
 		BuildLister:          buildInformer.Lister(),
 		BuilderLister:        builderInformer.Lister(),
 		ClusterBuilderLister: clusterBuilderInformer.Lister(),
+		CustomBuilderLister:  customBuilderInformer.Lister(),
 		SourceResolverLister: sourceResolverInformer.Lister(),
 		PvcLister:            pvcInformer.Lister(),
 	}
@@ -95,6 +102,7 @@ type Reconciler struct {
 	BuildLister          v1alpha1Listers.BuildLister
 	BuilderLister        v1alpha1Listers.BuilderLister
 	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
+	CustomBuilderLister  expv1alpha1Listers.CustomBuilderLister
 	SourceResolverLister v1alpha1Listers.SourceResolverLister
 	PvcLister            corelisters.PersistentVolumeClaimLister
 	Tracker              Tracker
@@ -184,11 +192,18 @@ func (c *Reconciler) getBuilder(image *v1alpha1.Image) (v1alpha1.BuilderResource
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return nil, errors.Wrap(err, "cannot retrieve cluster builder")
 		}
-	} else {
+	} else if image.Spec.Builder.Kind == v1alpha1.BuilderKind {
 		builder, err = c.BuilderLister.Builders(image.Namespace).Get(image.Spec.Builder.Name)
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return nil, errors.Wrap(err, "cannot retrieve namespaced builder")
 		}
+	} else if image.Spec.Builder.Kind == expv1alpha1.CustomBuilderKind {
+		builder, err = c.CustomBuilderLister.CustomBuilders(image.Namespace).Get(image.Spec.Builder.Name)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, errors.Wrap(err, "cannot retrieve custom builder")
+		}
+	} else {
+		return nil, errors.New("image spec with unknown builder kind: " + image.Spec.Builder.Kind)
 	}
 	return builder, err
 }

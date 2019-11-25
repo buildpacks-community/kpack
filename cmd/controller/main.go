@@ -25,6 +25,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/custombuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -80,6 +81,7 @@ func main() {
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
 	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
+	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
@@ -108,15 +110,21 @@ func main() {
 		RemoteImageFactory: imageFactory,
 	}
 
+	builderCreator := &cnb.RemoteBuilderCreator{
+		RemoteImageClient: &registry.Client{},
+		StoreFactory:      &cnb.BuildPackageStoreFactory{},
+	}
+
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer, customBuilderInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -129,6 +137,7 @@ func main() {
 	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, podInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, customBuilderInformer.Informer().HasSynced)
 
 	err = runGroup(
 		func(done <-chan struct{}) error {
@@ -145,6 +154,9 @@ func main() {
 		},
 		func(done <-chan struct{}) error {
 			return sourceResolverController.Run(2*routinesPerController, done)
+		},
+		func(done <-chan struct{}) error {
+			return customBuilderController.Run(routinesPerController, done)
 		},
 	)
 	if err != nil {

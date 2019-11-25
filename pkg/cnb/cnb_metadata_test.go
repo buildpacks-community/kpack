@@ -25,7 +25,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	when("RemoteMetadataRetriever", func() {
-		when("retrieving from a builder image", func() {
+		when("retrieving from a builder baseImage", func() {
 			var builder = &v1alpha1.Builder{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "builderNamespace",
@@ -45,8 +45,8 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			it("gets buildpacks from a local image", func() {
-				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/builder/image", "sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
+			it("gets buildpacks from a local baseImage", func() {
+				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/builder/baseImage", "sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
 				fakeRunImage := registryfakes.NewFakeRemoteImage("foo.io/run", "sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504")
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.builder.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}], "stack": { "runImage": { "image": "foo.io/run:basecnb" }}}`))
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stacks.bionic"))
@@ -55,12 +55,12 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				mockFactory.NewRemoteReturnsOnCall(1, fakeRunImage, nil)
 
 				subject := cnb.RemoteMetadataRetriever{RemoteImageFactory: mockFactory}
-				builderImage, err := subject.GetBuilderImage(builder)
+				builderRecord, err := subject.GetBuilderImage(builder)
 				assert.NoError(t, err)
 
-				require.Len(t, builderImage.BuilderBuildpackMetadata, 1)
-				assert.Equal(t, builderImage.BuilderBuildpackMetadata[0].ID, "test.id")
-				assert.Equal(t, builderImage.BuilderBuildpackMetadata[0].Version, "1.2.3")
+				require.Len(t, builderRecord.Buildpacks, 1)
+				assert.Equal(t, builderRecord.Buildpacks[0].ID, "test.id")
+				assert.Equal(t, builderRecord.Buildpacks[0].Version, "1.2.3")
 				image, secretRef := mockFactory.NewRemoteArgsForCall(0)
 				assert.Equal(t, image, "builder/name")
 				assert.Equal(t, secretRef, registry.SecretRef{
@@ -68,9 +68,9 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					ImagePullSecrets: []v1.LocalObjectReference{{"Secret-1"}, {"Secret-2"}},
 				})
 
-				assert.Equal(t, "index.docker.io/builder/image@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895", builderImage.Identifier)
-				assert.Equal(t, "foo.io/run@sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504", builderImage.Stack.RunImage)
-				assert.Equal(t, "io.buildpacks.stacks.bionic", builderImage.Stack.ID)
+				assert.Equal(t, "index.docker.io/builder/baseImage@sha256:2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895", builderRecord.Image)
+				assert.Equal(t, "foo.io/run@sha256:c9d19ce90add2f415b859908952bc85afc0ee0aec012b3889cf5f2e9690bb504", builderRecord.Stack.RunImage)
+				assert.Equal(t, "io.buildpacks.stacks.bionic", builderRecord.Stack.ID)
 			})
 		})
 
@@ -80,14 +80,14 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					Namespace: "namespace-name",
 				},
 				Spec: v1alpha1.BuildSpec{
-					Tags:           []string{"image/name"},
+					Tags:           []string{"baseImage/name"},
 					ServiceAccount: "service-account",
 				},
 				Status: v1alpha1.BuildStatus{},
 			}
 
-			it("retrieves the metadata from the registry", func() {
-				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/image", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
+			it.Focus("retrieves the metadata from the registry", func() {
+				fakeImage := registryfakes.NewFakeRemoteImage("index.docker.io/built/baseImage", "sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4")
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`))
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.lifecycle.metadata", `{"runImage":{"topLayer":"sha256:719f3f610dade1fdf5b4b2473aea0c6b1317497cf20691ab6d184a9b2fa5c409","reference":"localhost:5000/node@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0"},"stack":{"runImage":{"image":"gcr.io:443/run:full-cnb"}}}`))
 				assert.NoError(t, fakeImage.SetLabel("io.buildpacks.stack.id", "io.buildpacks.stack.bionic"))
@@ -110,9 +110,9 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, createdAtTime, result.CompletedAt)
 				assert.Equal(t, "gcr.io:443/run@sha256:0fd6395e4fe38a0c089665cbe10f52fb26fc64b4b15e672ada412bd7ab5499a0", result.Stack.RunImage)
 				assert.Equal(t, "io.buildpacks.stack.bionic", result.Stack.ID)
-				assert.Equal(t, "index.docker.io/built/image@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4", result.Identifier)
+				assert.Equal(t, "index.docker.io/built/baseImage@sha256:dc7e5e790001c71c2cfb175854dd36e65e0b71c58294b331a519be95bdec4ef4", result.Identifier)
 				image, secretRef := mockFactory.NewRemoteArgsForCall(0)
-				assert.Equal(t, "image/name", image)
+				assert.Equal(t, "baseImage/name", image)
 				assert.Equal(t, registry.SecretRef{
 					ServiceAccount: "service-account",
 					Namespace:      "namespace-name",

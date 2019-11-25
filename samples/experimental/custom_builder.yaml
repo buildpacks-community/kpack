@@ -1,0 +1,19 @@
+apiVersion: experimental.kpack.pivotal.io/v1alpha1
+kind: CustomBuilder
+metadata:
+  name: my-custom-builder
+  namespace: default
+spec:
+  serviceAccount: default
+  tag: sample/custom-builder
+  stack:
+    baseBuilderImage: cloudfoundry/cnb:bionic
+  store:
+    image: cloudfoundry/cnb:bionic
+  order:
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.yarn
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.npm  

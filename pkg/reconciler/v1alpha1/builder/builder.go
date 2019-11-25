@@ -27,7 +27,7 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderImage(builder v1alpha1.BuilderResource) (cnb.BuilderImage, error)
+	GetBuilderImage(builder cnb.FetchableBuilder) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -110,7 +110,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 }
 
 func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) (*v1alpha1.Builder, error) {
-	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
+	cnbBuilder, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
 			Status: duckv1alpha1.Status{
@@ -139,25 +139,9 @@ func (c *Reconciler) reconcileBuilderStatus(builder *v1alpha1.Builder) (*v1alpha
 				},
 			},
 		},
-		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
-		LatestImage:     builderImage.Identifier,
-		Stack: v1alpha1.BuildStack{
-			RunImage: builderImage.Stack.RunImage,
-			ID:       builderImage.Stack.ID,
-		},
+		BuilderMetadata: cnbBuilder.Buildpacks,
+		LatestImage:     cnbBuilder.Image,
+		Stack:           cnbBuilder.Stack,
 	}
 	return builder, nil
-}
-
-func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {
-	out := make(v1alpha1.BuildpackMetadataList, 0, len(in))
-
-	for _, m := range in {
-		out = append(out, v1alpha1.BuildpackMetadata{
-			ID:      m.ID,
-			Version: m.Version,
-		})
-	}
-
-	return out
 }

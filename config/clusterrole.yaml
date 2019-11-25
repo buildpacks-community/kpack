@@ -45,6 +45,20 @@ rules:
   - update
   - delete
   - watch
+- apiGroups:
+  - experimental.kpack.pivotal.io
+  resources:
+  - custombuilders
+  - custombuilders/status
+  - custombuilders/finalizers
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

@@ -7,12 +7,14 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
 	github.com/Azure/azure-sdk-for-go v11.3.0-beta+incompatible // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/aws/aws-sdk-go v1.25.1 // indirect
 	github.com/buildpack/imgutil v0.0.0-20191010153712-78959154ded1
 	github.com/buildpack/lifecycle v0.5.0
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20190910142231-b02d448a3705
 	github.com/googleapis/gnostic v0.3.1 // indirect

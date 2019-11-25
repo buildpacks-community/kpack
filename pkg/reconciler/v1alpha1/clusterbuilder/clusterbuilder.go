@@ -27,7 +27,7 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderImage(builder v1alpha1.BuilderResource) (cnb.BuilderImage, error)
+	GetBuilderImage(builder cnb.FetchableBuilder) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options, clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
@@ -110,7 +110,7 @@ func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder
 }
 
 func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) (*v1alpha1.ClusterBuilder, error) {
-	builderImage, err := c.MetadataRetriever.GetBuilderImage(builder)
+	builderRecord, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
 			Status: duckv1alpha1.Status{
@@ -139,25 +139,9 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 				},
 			},
 		},
-		BuilderMetadata: transform(builderImage.BuilderBuildpackMetadata),
-		LatestImage:     builderImage.Identifier,
-		Stack: v1alpha1.BuildStack{
-			RunImage: builderImage.Stack.RunImage,
-			ID:       builderImage.Stack.ID,
-		},
+		BuilderMetadata: builderRecord.Buildpacks,
+		LatestImage:     builderRecord.Image,
+		Stack:           builderRecord.Stack,
 	}
 	return builder, nil
-}
-
-func transform(in cnb.BuilderMetadata) v1alpha1.BuildpackMetadataList {
-	out := make(v1alpha1.BuildpackMetadataList, 0, len(in))
-
-	for _, m := range in {
-		out = append(out, v1alpha1.BuildpackMetadata{
-			ID:      m.ID,
-			Version: m.Version,
-		})
-	}
-
-	return out
 }

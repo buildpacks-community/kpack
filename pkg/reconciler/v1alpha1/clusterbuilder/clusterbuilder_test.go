@@ -18,13 +18,12 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder/clusterbuilderfakes"
 )
 
-func TestCluterBuilderReconciler(t *testing.T) {
+func TestClusterBuilderReconciler(t *testing.T) {
 	spec.Run(t, "Cluster Builder Reconciler", testClusterBuilderReconciler)
 }
 
@@ -58,13 +57,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderKey              = "cluster-builder-name"
 		clusterImageName               = "some/cluster-builder"
 		clusterBuilderIdentifier       = "some/cluster-builder@sha256:resolved-builder-digest"
-		initalGeneration         int64 = 1
+		initialGeneration        int64 = 1
 	)
 
 	clusterBuilder := &v1alpha1.ClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       clusterBuilderName,
-			Generation: initalGeneration,
+			Generation: initialGeneration,
 		},
 		Spec: v1alpha1.BuilderSpec{
 			Image: clusterImageName,
@@ -74,14 +73,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		when("cluster builder", func() {
 			when("metadata is available", func() {
-				fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
-					BuilderBuildpackMetadata: cnb.BuilderMetadata{
+				fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{
+					Image: clusterBuilderIdentifier,
+					Stack: v1alpha1.BuildStack{
+						RunImage: "",
+						ID:       "",
+					},
+					Buildpacks: v1alpha1.BuildpackMetadataList{
 						{
 							ID:      "buildpack.version",
 							Version: "version",
 						},
 					},
-					Identifier: clusterBuilderIdentifier,
 				}, nil)
 
 				it("saves metadata to the status", func() {
@@ -258,7 +261,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("metadata is not available", func() {
-				fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{}, errors.New("unavailable metadata"))
+				fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{}, errors.New("unavailable metadata"))
 
 				it("saves not ready to the builder status", func() {
 					rt.Test(rtesting.TableRow{

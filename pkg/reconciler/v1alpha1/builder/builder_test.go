@@ -19,7 +19,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder/builderfakes"
@@ -80,17 +79,17 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		when("metadata is available", func() {
-			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{
-				BuilderBuildpackMetadata: cnb.BuilderMetadata{
+			fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{
+				Image: builderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: runImgIdentifier,
+					ID:       "io.buildpacks.stacks.bionic",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{
 					{
 						ID:      "buildpack.version",
 						Version: "version",
 					},
-				},
-				Identifier: builderIdentifier,
-				Stack: cnb.Stack{
-					RunImage: runImgIdentifier,
-					ID:       "io.buildpacks.stacks.bionic",
 				},
 			}, nil)
 
@@ -289,7 +288,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("metadata is not available", func() {
-			fakeMetadataRetriever.GetBuilderImageReturns(cnb.BuilderImage{}, errors.New("unavailable metadata"))
+			fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{}, errors.New("unavailable metadata"))
 
 			it("saves not ready to the builder status", func() {
 				rt.Test(rtesting.TableRow{
