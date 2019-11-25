@@ -7,6 +7,8 @@ import (
 	"github.com/buildpack/lifecycle/metadata"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -16,11 +18,17 @@ const (
 	BuilderMetadataLabel = "io.buildpacks.builder.metadata"
 )
 
+type FetchableBuilder interface {
+	metav1.ObjectMetaAccessor
+	Image() string
+	ImagePullSecrets() []v1.LocalObjectReference
+}
+
 type RemoteMetadataRetriever struct {
 	RemoteImageFactory registry.RemoteImageFactory
 }
 
-func (r *RemoteMetadataRetriever) GetBuilderImage(builder v1alpha1.BuilderResource) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteMetadataRetriever) GetBuilderImage(builder FetchableBuilder) (v1alpha1.BuilderRecord, error) {
 	img, err := r.RemoteImageFactory.NewRemote(builder.Image(), registry.SecretRef{
 		Namespace:        builder.GetObjectMeta().GetNamespace(),
 		ImagePullSecrets: builder.ImagePullSecrets(),

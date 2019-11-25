@@ -32,7 +32,3 @@ func (b *Builder) BuildpackMetadata() BuildpackMetadataList {
 func (b *Builder) RunImage() string {
 	return b.Status.Stack.RunImage
 }
-
-func (b *Builder) Stack() string {
-	return b.Status.Stack.ID
-}

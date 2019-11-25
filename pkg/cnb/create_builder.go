@@ -1,7 +1,10 @@
 package cnb
 
 import (
+	"fmt"
+
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -37,7 +40,12 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 		return emptyRecord, err
 	}
 
-	builderBuilder, err := newBuilderBuilder(keychain, r.RemoteImageClient, baseImage)
+	builderBuilder, err := newBuilderBuilder(baseImage)
+	if err != nil {
+		return emptyRecord, err
+	}
+
+	runImage, err := r.getRunImage(keychain, builderBuilder.baseMetadata.Stack.RunImage.Image)
 	if err != nil {
 		return emptyRecord, err
 	}
@@ -68,7 +76,29 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
-		Stack: builderBuilder.stack(),
+		Stack: v1alpha1.BuildStack{
+			RunImage: runImage,
+			ID:       builderBuilder.stackID,
+		},
 		Buildpacks: builderBuilder.buildpacks(),
 	}, nil
+}
+
+func (r *RemoteBuilderCreator) getRunImage(keychain authn.Keychain, tag string) (string, error) {
+	runImageRef, err := name.ParseReference(tag, name.WeakValidation)
+	if err != nil {
+		return "", err
+	}
+
+	runImage, err := r.RemoteImageClient.Fetch(keychain, tag)
+	if err != nil {
+		return "", err
+	}
+
+	rawDigest, err := runImage.Digest()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s@%s", runImageRef.Context().Name(), rawDigest), nil
 }

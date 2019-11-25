@@ -65,16 +65,15 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	builderRecord, creationError := c.reconcileCustomBuilder(customBuilder)
 	if creationError != nil {
 		customBuilder.ErrorCreate(creationError)
-
+		
 		err := c.updateStatus(customBuilder)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		return controller.NewPermanentError(creationError)
 	}
-
-	customBuilder.Status.ObservedGeneration = customBuilder.Generation
+	
 	customBuilder.Status.BuilderStatus(builderRecord)
 	return c.updateStatus(customBuilder)
 }
@@ -92,6 +91,8 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *experimentalV1alpha1.
 }
 
 func (c *Reconciler) updateStatus(desired *experimentalV1alpha1.CustomBuilder) error {
+	desired.Status.ObservedGeneration = desired.Generation
+	
 	original, err := c.CustomBuilderLister.CustomBuilders(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err

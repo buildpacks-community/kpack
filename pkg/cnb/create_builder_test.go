@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tj/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -367,7 +367,7 @@ func assertLayerContents(t *testing.T, layer v1.Layer, expectedMode int64, expec
 	require.NoError(t, err)
 	reader := tar.NewReader(uncompressed)
 
-	for {
+	for {	
 		header, err := reader.Next()
 		if err != nil {
 			break

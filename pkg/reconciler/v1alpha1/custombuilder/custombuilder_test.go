@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -150,6 +151,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
+
+			assert.Equal(t, customBuilder.Spec.ServiceAccount, keychainFactory.SecretRef.ServiceAccount)
+			assert.Equal(t, customBuilder.Namespace, keychainFactory.SecretRef.Namespace)
+			assert.Len(t, keychainFactory.SecretRef.ImagePullSecrets, 0)
 		})
 
 		it("does not update the status with no status change", func() {
@@ -205,7 +210,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Spec:       customBuilder.Spec,
 				Status: v1alpha1.BuilderStatus{
 					Status: duckv1alpha1.Status{
-						ObservedGeneration: 0,
+						ObservedGeneration: 1,
 						Conditions: duckv1alpha1.Conditions{
 							{
 								Type:    duckv1alpha1.ConditionReady,
@@ -241,9 +246,11 @@ func (f *fakeBuilderCreator) CreateBuilder(authn.Keychain, *expv1alpha1.CustomBu
 }
 
 type fakeKeychainFactory struct {
+	SecretRef registry.SecretRef
 }
 
-func (f *fakeKeychainFactory) KeychainForSecretRef(registry.SecretRef) (authn.Keychain, error) {
+func (f *fakeKeychainFactory) KeychainForSecretRef(secretRef registry.SecretRef) (authn.Keychain, error) {
+	f.SecretRef = secretRef
 	return &fakeKeychain{}, nil
 }
 

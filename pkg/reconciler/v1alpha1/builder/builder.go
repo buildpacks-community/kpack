@@ -16,6 +16,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -26,7 +27,7 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuilderImage(builder v1alpha1.BuilderResource) (v1alpha1.BuilderRecord, error)
+	GetBuilderImage(builder cnb.FetchableBuilder) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options, builderInformer v1alpha1informers.BuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {

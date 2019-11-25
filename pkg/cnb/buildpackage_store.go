@@ -2,13 +2,12 @@ package cnb
 
 import (
 	"encoding/json"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/pkg/errors"
-	"io"
 )
 
 type BuildPackageStoreFactory struct {
@@ -94,42 +93,4 @@ func (b *BuildPackageStore) layersForOrder(order Order) ([]buildpackLayer, error
 
 	}
 	return buildpackLayers, nil
-}
-
-func kpackmountableLayer(ref name.Reference, digest, diffId string) v1.Layer {
-	return &kpackLayer{diffId, digest}
-
-	//return &remote.MountableLayer{
-	//	Layer:     &kpackLayer{diffId, digest},
-	//	Reference: ref,
-	//}
-}
-
-type kpackLayer struct {
-	diffId string
-	digest string
-}
-
-func (l *kpackLayer) Compressed() (io.ReadCloser, error) {
-	panic("implement me")
-}
-
-func (l *kpackLayer) Uncompressed() (io.ReadCloser, error) {
-	panic("implement me")
-}
-
-func (l *kpackLayer) Size() (int64, error) {
-	return 6013008, nil
-}
-
-func (l *kpackLayer) MediaType() (types.MediaType, error) {
-	return types.DockerLayer, nil
-}
-
-func (l *kpackLayer) Digest() (v1.Hash, error) {
-	return v1.NewHash(l.digest)
-}
-
-func (l *kpackLayer) DiffID() (v1.Hash, error) {
-	return v1.NewHash(l.diffId)
 }

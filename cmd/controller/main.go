@@ -81,7 +81,7 @@ func main() {
 	builderInformer := informerFactory.Build().V1alpha1().Builders()
 	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
-	custromBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
+	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
@@ -120,11 +120,11 @@ func main() {
 	registryResolver := &registry.Resolver{}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer, custromBuilderInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer, customBuilderInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, custromBuilderInformer, builderCreator, keychainFactory)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -137,7 +137,7 @@ func main() {
 	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
 	cache.WaitForCacheSync(stopChan, podInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, custromBuilderInformer.Informer().HasSynced)
+	cache.WaitForCacheSync(stopChan, customBuilderInformer.Informer().HasSynced)
 
 	err = runGroup(
 		func(done <-chan struct{}) error {
