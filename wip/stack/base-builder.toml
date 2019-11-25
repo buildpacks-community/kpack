@@ -1,6 +1,0 @@
-[stack]
-id = "io.buildpacks.stacks.bionic"
-# This image is used at runtime
-run-image = "cloudfoundry/run:base-cnb"
-# This image is used at build-time
-build-image = "cloudfoundry/build:base-cnb"

@@ -1,6 +1,0 @@
-[stack]
-id = "org.cloudfoundry.stacks.cflinuxfs3"
-# This image is used at runtime
-run-image = "cloudfoundry/run:full-cnb"
-# This image is used at build-time
-build-image = "cloudfoundry/build:full-cnb"
