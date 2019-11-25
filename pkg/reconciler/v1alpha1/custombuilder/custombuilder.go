@@ -67,7 +67,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	customBuilder = customBuilder.DeepCopy()
 
-	builder, creationError := c.reconcileCustomBuilder(customBuilder)
+	builderRecord, creationError := c.reconcileCustomBuilder(customBuilder)
 	if creationError != nil {
 		customBuilder.ErrorCreate(creationError)
 
@@ -77,10 +77,10 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		}
 
 		return controller.NewPermanentError(creationError)
-	} else {
-		customBuilder.Status.BuilderStatus(builder)
 	}
-
+	
+	customBuilder.Status.ObservedGeneration = customBuilder.Generation
+	customBuilder.Status.BuilderStatus(builderRecord)
 	return c.updateStatus(customBuilder)
 }
 

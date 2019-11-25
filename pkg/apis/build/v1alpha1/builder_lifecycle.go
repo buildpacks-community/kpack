@@ -17,7 +17,6 @@ func (bs *BuilderStatus) BuilderStatus(record BuilderRecord) {
 	bs.Stack = record.Stack
 	bs.BuilderMetadata = record.Buildpacks
 	bs.LatestImage = record.Image
-
 	bs.Conditions = duckv1alpha1.Conditions{
 		{
 			LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},

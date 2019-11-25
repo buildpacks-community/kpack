@@ -4,19 +4,47 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
+	"sort"
+	"time"
+
 	"github.com/BurntSushi/toml"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	"sort"
-	"time"
 )
 
-func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
+type BuilderBuilder struct {
+	baseImage       v1.Image
+	baseMetadata    *BuilderImageMetadata
+	order           []OrderEntry
+	runImageName    string
+	stackID         string
+	buildpackLayers map[BuildpackInfo]buildpackLayer
+}
+
+func newBuilderBuilder(keychain authn.Keychain, client Client, baseImage v1.Image) (*BuilderBuilder, error) {
 	baseMetadata := &BuilderImageMetadata{}
 	err := registry.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	runImageRef, err := name.ParseReference(baseMetadata.Stack.RunImage.Image, name.WeakValidation)
+	if err != nil {
+		return nil, err
+	}
+
+	runImage, err := client.Fetch(keychain, baseMetadata.Stack.RunImage.Image)
+	if err != nil {
+		return nil, err
+	}
+
+	rawDigest, err := runImage.Digest()
 	if err != nil {
 		return nil, err
 	}
@@ -29,17 +57,10 @@ func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
 	return &BuilderBuilder{
 		baseImage:       baseImage,
 		baseMetadata:    baseMetadata,
+		runImageName:    fmt.Sprintf("%s@%s", runImageRef.Context().Name(), rawDigest),
 		stackID:         stackID,
 		buildpackLayers: map[BuildpackInfo]buildpackLayer{},
 	}, nil
-}
-
-type BuilderBuilder struct {
-	baseImage       v1.Image
-	baseMetadata    *BuilderImageMetadata
-	order           []OrderEntry
-	stackID         string
-	buildpackLayers map[BuildpackInfo]buildpackLayer
 }
 
 func (cb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
@@ -56,7 +77,7 @@ func (cb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
 
 func (cb *BuilderBuilder) stack() v1alpha1.BuildStack {
 	return v1alpha1.BuildStack{
-		RunImage: cb.baseMetadata.Stack.RunImage.Image,
+		RunImage: cb.runImageName,
 		ID:       cb.stackID,
 	}
 }

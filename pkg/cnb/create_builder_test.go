@@ -29,56 +29,19 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
 		tag             = "custom/example"
 		baseBuilder     = "base/builder"
+		runImageTag     = "kpack/run"
 		baseImageLayers = 10
 	)
 
 	var (
-		fakeClient       = registryfakes.NewFakeClient()
+		fakeClient = registryfakes.NewFakeClient()
+
 		fakeStoreFactory = &fakeStoreFactory{
 			image:    "store/image",
 			keychain: authn.NewMultiKeychain(authn.DefaultKeychain),
 			store:    &fakeStore{buildpacks: map[string][]buildpackLayer{}},
 		}
-	)
 
-	fakeClient.ExpectedKeychain(fakeStoreFactory.keychain)
-
-	remoteBuilderCreator := RemoteBuilderCreator{
-		RemoteImageClient: fakeClient,
-		StoreFactory:      fakeStoreFactory,
-	}
-
-	clusterBuilder := &eV1alpha1.CustomBuilder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-name",
-		},
-		Spec: eV1alpha1.CustomBuilderSpec{
-			Tag: "custom/example",
-			Stack: eV1alpha1.Stack{
-				BaseBuilderImage: baseBuilder,
-			},
-			Store: eV1alpha1.Store{
-				Image: fakeStoreFactory.image,
-			},
-			Order: []eV1alpha1.Group{
-				{
-					Group: []eV1alpha1.Buildpack{
-						{
-							ID:      "io.buildpack.1",
-							Version: "v1",
-						},
-						{
-							ID:       "io.buildpack.2",
-							Version:  "v2",
-							Optional: true,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	var (
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
 			diffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
@@ -94,7 +57,44 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			diffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   100,
 		}
+
+		clusterBuilder = &eV1alpha1.CustomBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cluster-name",
+			},
+			Spec: eV1alpha1.CustomBuilderSpec{
+				Tag: "custom/example",
+				Stack: eV1alpha1.Stack{
+					BaseBuilderImage: baseBuilder,
+				},
+				Store: eV1alpha1.Store{
+					Image: fakeStoreFactory.image,
+				},
+				Order: []eV1alpha1.Group{
+					{
+						Group: []eV1alpha1.Buildpack{
+							{
+								ID:      "io.buildpack.1",
+								Version: "v1",
+							},
+							{
+								ID:       "io.buildpack.2",
+								Version:  "v2",
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		subject = RemoteBuilderCreator{
+			RemoteImageClient: fakeClient,
+			StoreFactory:      fakeStoreFactory,
+		}
 	)
+
+	fakeClient.ExpectedKeychain(fakeStoreFactory.keychain)
 
 	fakeStoreFactory.store.AddBP("io.buildpack.1", "v1", []buildpackLayer{
 		{
@@ -137,7 +137,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("CreateBuilder", func() {
-		var baseImage v1.Image
+		var (
+			baseImage      v1.Image
+			runImageDigest string
+		)
 
 		it.Before(func() {
 			var err error
@@ -153,7 +156,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				buildpackMetadataLabel: BuilderImageMetadata{
 					Stack: StackMetadata{
 						RunImage: RunImageMetadata{
-							Image: "kpack/run",
+							Image: runImageTag,
 						},
 					},
 					Lifecycle: LifecycleMetadata{
@@ -170,17 +173,26 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			fakeClient.AddImage(baseBuilder, baseImage)
+
+			runImage, err := random.Image(1, int64(1))
+			require.NoError(t, err)
+
+			rawDigest, err := runImage.Digest()
+			require.NoError(t, err)
+			runImageDigest = rawDigest.Hex
+
+			fakeClient.AddImage(runImageTag, runImage)
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+			builderRecord, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.1", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.2", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.3", Version: "v2"})
-			assert.Equal(t, v1alpha1.BuildStack{RunImage: "kpack/run", ID: "io.buildpacks.stack"}, builderRecord.Stack)
+			assert.Equal(t, v1alpha1.BuildStack{RunImage: "index.docker.io/kpack/run@sha256:" + runImageDigest, ID: "io.buildpacks.stack"}, builderRecord.Stack)
 
 			assert.Len(t, fakeClient.SavedImages(), 1)
 			savedImage := fakeClient.SavedImages()[tag]
@@ -295,11 +307,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+			original, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := remoteBuilderCreator.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+				other, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)

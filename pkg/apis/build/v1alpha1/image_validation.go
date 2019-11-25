@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+
 	"knative.dev/pkg/apis"
 )
 
@@ -58,6 +59,7 @@ func (im *ImageBuilder) Validate(ctx context.Context) *apis.FieldError {
 
 	switch im.Kind {
 	case ClusterBuilderKind,
+		"CustomBuilder", // TODO : use the const var when the experimental pkg migrates into the build pkg 
 		BuilderKind:
 		return nil
 	default:

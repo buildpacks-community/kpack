@@ -37,7 +37,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 		return emptyRecord, err
 	}
 
-	builderBuilder, err := newBuilderBuilder(baseImage)
+	builderBuilder, err := newBuilderBuilder(keychain, r.RemoteImageClient, baseImage)
 	if err != nil {
 		return emptyRecord, err
 	}
@@ -67,8 +67,8 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 	}
 
 	return v1alpha1.BuilderRecord{
-		Image:      identifier,
-		Stack:      builderBuilder.stack(),
+		Image: identifier,
+		Stack: builderBuilder.stack(),
 		Buildpacks: builderBuilder.buildpacks(),
 	}, nil
 }

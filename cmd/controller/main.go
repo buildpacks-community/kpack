@@ -120,7 +120,7 @@ func main() {
 	registryResolver := &registry.Resolver{}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer, custromBuilderInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
