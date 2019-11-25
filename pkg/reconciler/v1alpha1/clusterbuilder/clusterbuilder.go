@@ -73,7 +73,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if err != nil {
 		return err
 	}
+	
 	builder = builder.DeepCopy()
+	builder.SetDefaults(ctx)
 
 	builder, err = c.reconcileClusterBuilderStatus(builder)
 

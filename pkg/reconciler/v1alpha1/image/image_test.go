@@ -1391,6 +1391,24 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		})
+		
+		when("defaulting has not happened", func() {
+			image.Spec.FailedBuildHistoryLimit = nil
+			image.Spec.SuccessBuildHistoryLimit = nil
+			
+			it("sets the FailedBuildHistoryLimit and SuccessBuildHistoryLimit", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						clusterBuilder,
+						unresolvedSourceResolver(image),
+					},
+					WantErr: false,
+				})
+			})
+		})
 	})
 }
 

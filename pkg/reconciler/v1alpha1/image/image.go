@@ -122,7 +122,10 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return fmt.Errorf("failed attempting to fetch image with name %s: %s", imageName, err)
 	}
 
-	image, err = c.reconcileImage(image.DeepCopy())
+	image = image.DeepCopy()
+	image.SetDefaults(ctx)
+	
+	image, err = c.reconcileImage(image)
 	if err != nil {
 		return err
 	}

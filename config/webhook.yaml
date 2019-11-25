@@ -1,5 +1,18 @@
 #@ load("@ytt:data", "data")
-
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: resource.webhook.kpack.pivotal.io
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: kpack-webhook
+      namespace: kpack
+  failurePolicy: Fail
+  name: resource.webhook.kpack.pivotal.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

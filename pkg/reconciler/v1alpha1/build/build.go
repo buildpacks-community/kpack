@@ -80,7 +80,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if err != nil {
 		return err
 	}
+
 	build = build.DeepCopy()
+	build.SetDefaults(ctx)
 
 	if build.Finished() {
 		return nil
