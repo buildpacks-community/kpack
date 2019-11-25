@@ -33,7 +33,6 @@ require (
 	github.com/sclevine/spec v1.3.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
-	github.com/tj/assert v0.0.0-20171129193455-018094318fb0
 	go.opencensus.io v0.22.1 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
