@@ -23,6 +23,7 @@ import (
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -42,6 +43,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderName = "cluster-builder"
 		serviceAccountName = "image-service-account"
 		builderImage       = "cloudfoundry/cnb:bionic"
+		customBuilderName  = "custom-builder"
 	)
 
 	it.Before(func() {
@@ -120,6 +122,36 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
+		_, err = clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&experimentalV1alpha1.CustomBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      customBuilderName,
+				Namespace: testNamespace,
+			},
+			Spec: experimentalV1alpha1.CustomBuilderSpec{
+				Tag: cfg.newImageTag(),
+				Stack: experimentalV1alpha1.Stack{
+					BaseBuilderImage: builderImage,
+				},
+				Store: experimentalV1alpha1.Store{
+					Image: builderImage,
+				},
+				Order: []experimentalV1alpha1.Group{
+					{
+						Group: []experimentalV1alpha1.Buildpack{
+							{
+								ID: "org.cloudfoundry.node-engine",
+							},
+							{
+								ID: "org.cloudfoundry.npm",
+							},
+						},
+					},
+				},
+				ServiceAccount: serviceAccountName,
+			},
+		})
+		require.NoError(t, err)
+
 		_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      builderName,
@@ -131,6 +163,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		})
 		require.NoError(t, err)
+
+		// Wait for builders to be reconciled
+		time.Sleep(5 * time.Second)
 
 		cacheSize := resource.MustParse("1Gi")
 
@@ -165,10 +200,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		imageBuilders := map[string]v1alpha1.ImageBuilder{
 			"test-git-image": {
 				TypeMeta: metav1.TypeMeta{
-					Kind:       v1alpha1.ClusterBuilderKind,
-					APIVersion: "build.pivotal.io/v1alpha1",
+					Kind:       experimentalV1alpha1.CustomBuilderKind,
+					APIVersion: "experimental.kpack.pivotal.io/v1alpha1",
 				},
-				Name: clusterBuilderName,
+				Name: customBuilderName,
 			},
 			"test-registry-image": {
 				TypeMeta: metav1.TypeMeta{

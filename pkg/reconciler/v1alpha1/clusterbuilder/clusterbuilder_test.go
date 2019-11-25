@@ -23,7 +23,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder/clusterbuilderfakes"
 )
 
-func TestCluterBuilderReconciler(t *testing.T) {
+func TestClusterBuilderReconciler(t *testing.T) {
 	spec.Run(t, "Cluster Builder Reconciler", testClusterBuilderReconciler)
 }
 
@@ -57,13 +57,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderKey              = "cluster-builder-name"
 		clusterImageName               = "some/cluster-builder"
 		clusterBuilderIdentifier       = "some/cluster-builder@sha256:resolved-builder-digest"
-		initalGeneration         int64 = 1
+		initialGeneration        int64 = 1
 	)
 
 	clusterBuilder := &v1alpha1.ClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       clusterBuilderName,
-			Generation: initalGeneration,
+			Generation: initialGeneration,
 		},
 		Spec: v1alpha1.BuilderSpec{
 			Image: clusterImageName,

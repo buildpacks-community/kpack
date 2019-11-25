@@ -36,23 +36,18 @@ func NewController(opt reconciler.Options, customBuilderInformer v1alpha1informe
 		BuilderCreator:      builderCreator,
 		KeychainFactory:     keychainFactory,
 	}
-
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
-
 	customBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
-
 	return impl
 }
 
 type Reconciler struct {
 	Client              versioned.Interface
 	CustomBuilderLister v1alpha1Listers.CustomBuilderLister
-
-	BuilderCreator  BuilderCreator
-	KeychainFactory registry.KeychainFactory
+	BuilderCreator      BuilderCreator
+	KeychainFactory     registry.KeychainFactory
 }
 
-//todo this is not tested.
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, builderName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -78,10 +73,22 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 		return controller.NewPermanentError(creationError)
 	}
-	
+
 	customBuilder.Status.ObservedGeneration = customBuilder.Generation
 	customBuilder.Status.BuilderStatus(builderRecord)
 	return c.updateStatus(customBuilder)
+}
+
+func (c *Reconciler) reconcileCustomBuilder(customBuilder *experimentalV1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+		ServiceAccount: customBuilder.Spec.ServiceAccount,
+		Namespace:      customBuilder.Namespace,
+	})
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	return c.BuilderCreator.CreateBuilder(keychain, customBuilder)
 }
 
 func (c *Reconciler) updateStatus(desired *experimentalV1alpha1.CustomBuilder) error {
@@ -96,16 +103,4 @@ func (c *Reconciler) updateStatus(desired *experimentalV1alpha1.CustomBuilder) e
 
 	_, err = c.Client.ExperimentalV1alpha1().CustomBuilders(desired.Namespace).UpdateStatus(desired)
 	return err
-}
-
-func (c *Reconciler) reconcileCustomBuilder(customBuilder *experimentalV1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
-		ServiceAccount: customBuilder.Spec.ServiceAccount,
-		Namespace:      customBuilder.Namespace,
-	})
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
-	}
-
-	return c.BuilderCreator.CreateBuilder(keychain, customBuilder)
 }

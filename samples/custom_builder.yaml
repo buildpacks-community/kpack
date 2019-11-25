@@ -5,7 +5,7 @@ metadata:
   namespace: default
 spec:
   serviceAccount: default
-  tag: registry.default.svc.cluster.local:5001/custom-builder
+  tag: sample/custom-builder
   stack:
     baseBuilderImage: cloudfoundry/cnb:bionic
   store:
