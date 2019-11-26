@@ -1,0 +1,20 @@
+apiVersion: experimental.kpack.pivotal.io/v1alpha1
+kind: CustomClusterBuilder
+metadata:
+  name: my-cluster-builder
+spec:
+  tag: sample/custom-builder
+  stack:
+    baseBuilderImage: cloudfoundry/cnb:bionic
+  store:
+    image: cloudfoundry/cnb:bionic
+  order:
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.yarn
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.npm
+  serviceAccountRef:
+    name: default
+    namespace: default

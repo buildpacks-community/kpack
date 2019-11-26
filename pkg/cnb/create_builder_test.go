@@ -13,7 +13,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
@@ -58,30 +57,25 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
-		clusterBuilder = &eV1alpha1.CustomBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "cluster-name",
+		clusterBuilderSpec = eV1alpha1.CustomBuilderSpec{
+			Tag: "custom/example",
+			Stack: eV1alpha1.Stack{
+				BaseBuilderImage: baseBuilder,
 			},
-			Spec: eV1alpha1.CustomBuilderSpec{
-				Tag: "custom/example",
-				Stack: eV1alpha1.Stack{
-					BaseBuilderImage: baseBuilder,
-				},
-				Store: eV1alpha1.Store{
-					Image: fakeStoreFactory.image,
-				},
-				Order: []eV1alpha1.Group{
-					{
-						Group: []eV1alpha1.Buildpack{
-							{
-								ID:      "io.buildpack.1",
-								Version: "v1",
-							},
-							{
-								ID:       "io.buildpack.2",
-								Version:  "v2",
-								Optional: true,
-							},
+			Store: eV1alpha1.Store{
+				Image: fakeStoreFactory.image,
+			},
+			Order: []eV1alpha1.Group{
+				{
+					Group: []eV1alpha1.Buildpack{
+						{
+							ID:      "io.buildpack.1",
+							Version: "v1",
+						},
+						{
+							ID:       "io.buildpack.2",
+							Version:  "v2",
+							Optional: true,
 						},
 					},
 				},
@@ -185,7 +179,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+			builderRecord, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -307,11 +301,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+			original, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilder)
+				other, err := subject.CreateBuilder(fakeStoreFactory.keychain, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -367,7 +361,7 @@ func assertLayerContents(t *testing.T, layer v1.Layer, expectedMode int64, expec
 	require.NoError(t, err)
 	reader := tar.NewReader(uncompressed)
 
-	for {	
+	for {
 		header, err := reader.Next()
 		if err != nil {
 			break

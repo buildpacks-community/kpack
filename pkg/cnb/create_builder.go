@@ -29,13 +29,13 @@ type RemoteBuilderCreator struct {
 	StoreFactory      StoreFactory
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuilder *experimentalV1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
-	baseImage, err := r.RemoteImageClient.Fetch(keychain, customBuilder.Spec.Stack.BaseBuilderImage)
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, spec experimentalV1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+	baseImage, err := r.RemoteImageClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
 	if err != nil {
 		return emptyRecord, err
 	}
 
-	store, err := r.StoreFactory.MakeStore(keychain, customBuilder.Spec.Store.Image)
+	store, err := r.StoreFactory.MakeStore(keychain, spec.Store.Image)
 	if err != nil {
 		return emptyRecord, err
 	}
@@ -50,7 +50,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 		return emptyRecord, err
 	}
 
-	for _, group := range customBuilder.Spec.Order {
+	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
 		for _, buildpack := range group.Group {
@@ -69,7 +69,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, customBuil
 		return emptyRecord, err
 	}
 
-	identifier, err := r.RemoteImageClient.Save(keychain, customBuilder.Spec.Tag, writeableImage)
+	identifier, err := r.RemoteImageClient.Save(keychain, spec.Tag, writeableImage)
 	if err != nil {
 		return emptyRecord, err
 	}

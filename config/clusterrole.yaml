@@ -50,7 +50,8 @@ rules:
   resources:
   - custombuilders
   - custombuilders/status
-  - custombuilders/finalizers
+  - customclusterbuilders
+  - customclusterbuilders/status
   verbs:
   - get
   - list

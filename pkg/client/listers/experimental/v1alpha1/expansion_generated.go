@@ -25,3 +25,7 @@ type CustomBuilderListerExpansion interface{}
 // CustomBuilderNamespaceListerExpansion allows custom methods to be added to
 // CustomBuilderNamespaceLister.
 type CustomBuilderNamespaceListerExpansion interface{}
+
+// CustomClusterBuilderListerExpansion allows custom methods to be added to
+// CustomClusterBuilderLister.
+type CustomClusterBuilderListerExpansion interface{}

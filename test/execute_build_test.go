@@ -127,22 +127,21 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name:      customBuilderName,
 				Namespace: testNamespace,
 			},
-			Spec: experimentalV1alpha1.CustomBuilderSpec{
-				Tag: cfg.newImageTag(),
-				Stack: experimentalV1alpha1.Stack{
-					BaseBuilderImage: builderImage,
-				},
-				Store: experimentalV1alpha1.Store{
-					Image: builderImage,
-				},
-				Order: []experimentalV1alpha1.Group{
-					{
-						Group: []experimentalV1alpha1.Buildpack{
-							{
-								ID: "org.cloudfoundry.node-engine",
-							},
-							{
-								ID: "org.cloudfoundry.npm",
+			Spec: experimentalV1alpha1.CustomNamespacedBuilderSpec{
+				CustomBuilderSpec: experimentalV1alpha1.CustomBuilderSpec{
+					Tag: cfg.newImageTag(),
+					Stack: experimentalV1alpha1.Stack{
+						BaseBuilderImage: builderImage,
+					},
+					Store: experimentalV1alpha1.Store{
+						Image: builderImage,
+					},
+					Order: []experimentalV1alpha1.Group{
+						{
+							Group: []experimentalV1alpha1.Buildpack{
+								{
+									ID: "org.cloudfoundry.nodejs",
+								},
 							},
 						},
 					},

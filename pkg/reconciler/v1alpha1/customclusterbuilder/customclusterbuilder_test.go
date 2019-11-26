@@ -1,4 +1,4 @@
-package custombuilder_test
+package customclusterbuilder_test
 
 import (
 	"errors"
@@ -19,18 +19,17 @@ import (
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
-	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/custombuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
 )
 
-func TestCustomBuilderReconciler(t *testing.T) {
-	spec.Run(t, "Custom Builder Reconciler", testCustomBuilderReconciler)
+func TestCustomClusterBuilderReconciler(t *testing.T) {
+	spec.Run(t, "Custom Cluster Builder Reconciler", testCustomClusterBuilderReconciler)
 }
 
-func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
+func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
-		testNamespace                 = "some-namespace"
 		customBuilderName             = "custom-builder"
-		customBuilderKey              = testNamespace + "/" + customBuilderName
+		customBuilderKey              = customBuilderName
 		customBuilderTag              = "example.com/custom-builder"
 		customBuilderIdentifier       = "example.com/custom-builder@sha256:resolved-builder-digest"
 		initialGeneration       int64 = 1
@@ -45,22 +44,21 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &custombuilder.Reconciler{
-				Client:              fakeClient,
-				CustomBuilderLister: listers.GetCustomBuilderLister(),
-				BuilderCreator:      builderCreator,
-				KeychainFactory:     keychainFactory,
+			r := &customclusterbuilder.Reconciler{
+				Client:                     fakeClient,
+				CustomClusterBuilderLister: listers.GetCustomClusterBuilderLister(),
+				BuilderCreator:             builderCreator,
+				KeychainFactory:            keychainFactory,
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
 
-	customBuilder := &expv1alpha1.CustomBuilder{
+	customBuilder := &expv1alpha1.CustomClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       customBuilderName,
 			Generation: initialGeneration,
-			Namespace:  testNamespace,
 		},
-		Spec: expv1alpha1.CustomNamespacedBuilderSpec{
+		Spec: expv1alpha1.CustomClusterBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 				Tag: customBuilderTag,
 				Stack: expv1alpha1.Stack{
@@ -86,7 +84,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			ServiceAccount: "some-service-account",
+			ServiceAccountRef: corev1.ObjectReference{
+				Namespace: "some-sa-namespace",
+				Name:      "some-sa-name",
+			},
 		},
 	}
 
@@ -110,7 +111,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			expectedBuilder := &expv1alpha1.CustomBuilder{
+			expectedBuilder := &expv1alpha1.CustomClusterBuilder{
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
 				Status: expv1alpha1.CustomBuilderStatus{
@@ -154,8 +155,8 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			assert.Equal(t, customBuilder.Spec.ServiceAccount, keychainFactory.SecretRef.ServiceAccount)
-			assert.Equal(t, customBuilder.Namespace, keychainFactory.SecretRef.Namespace)
+			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Name, keychainFactory.SecretRef.ServiceAccount)
+			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Namespace, keychainFactory.SecretRef.Namespace)
 			assert.Len(t, keychainFactory.SecretRef.ImagePullSecrets, 0)
 		})
 
@@ -207,7 +208,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("updates status on creation error", func() {
 			builderCreator.CreateErr = errors.New("create error")
 
-			expectedBuilder := &expv1alpha1.CustomBuilder{
+			expectedBuilder := &expv1alpha1.CustomClusterBuilder{
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
 				Status: expv1alpha1.CustomBuilderStatus{
