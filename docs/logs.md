@@ -4,7 +4,7 @@ Tailing the build logs is possible with the kpack log utility.
 
 ### Install
 
-Downloading the log utility for you operating system from the most recent [github release](https://github.com/pivotal/kpack/releases).
+Downloading the log utility for your operating system from the most recent [github release](https://github.com/pivotal/kpack/releases).
 
 ### Usage
 
