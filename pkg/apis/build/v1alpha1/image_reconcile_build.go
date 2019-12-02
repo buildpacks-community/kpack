@@ -96,7 +96,7 @@ func (r upToDateBuild) builderCondition() duckv1alpha1.Condition {
 			Type:    ConditionBuilderReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  BuilderNotReady,
-			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetObjectMeta().GetName()),
+			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
 		}
 	}
 	return duckv1alpha1.Condition{

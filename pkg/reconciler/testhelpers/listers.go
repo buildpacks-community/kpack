@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/duckbuilder"
 )
 
 var clientSetSchemes = []func(*runtime.Scheme) error{
@@ -86,4 +87,13 @@ func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolum
 
 func (l *Listers) GetPodLister() corev1listers.PodLister {
 	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
+}
+
+func (l *Listers) GetDuckBuilderLister() *duckbuilder.DuckBuilderLister {
+	return &duckbuilder.DuckBuilderLister{
+		BuilderLister:              l.GetBuilderLister(),
+		ClusterBuilderLister:       l.GetClusterBuilderLister(),
+		CustomBuilderLister:        l.GetCustomBuilderLister(),
+		CustomClusterBuilderLister: l.GetCustomClusterBuilderLister(),
+	}
 }

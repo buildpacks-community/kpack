@@ -29,7 +29,7 @@ func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	stackID, err := registry.GetStringLabel(baseImage, stackMetadataLabel)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	}); err != nil {
 		return nil, err
 	}
-	
+
 	if _, err := w.Write(contents); err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
-	
+
 	return tarball.LayerFromReader(b)
 }
 
@@ -161,6 +161,6 @@ func deterministicSortBySize(layers map[BuildpackInfo]buildpackLayer) []Buildpac
 
 		return sizeI > sizeJ
 	})
-	
+
 	return keys
 }

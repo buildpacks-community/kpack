@@ -19,12 +19,10 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	expv1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
-	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/tracker"
 )
@@ -44,20 +42,16 @@ func NewController(
 	k8sClient k8sclient.Interface,
 	imageInformer v1alpha1informers.ImageInformer,
 	buildInformer v1alpha1informers.BuildInformer,
-	builderInformer v1alpha1informers.BuilderInformer,
-	clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer,
+	duckbuilderInformer *duckbuilder.DuckBuilderInformer,
 	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
 	pvcInformer coreinformers.PersistentVolumeClaimInformer,
-	customBuilderInformer expv1alpha1informers.CustomBuilderInformer,
 ) *controller.Impl {
 	c := &Reconciler{
 		Client:               opt.Client,
 		K8sClient:            k8sClient,
 		ImageLister:          imageInformer.Lister(),
 		BuildLister:          buildInformer.Lister(),
-		BuilderLister:        builderInformer.Lister(),
-		ClusterBuilderLister: clusterBuilderInformer.Lister(),
-		CustomBuilderLister:  customBuilderInformer.Lister(),
+		DuckBuilderLister:    duckbuilderInformer.Lister(),
 		SourceResolverLister: sourceResolverInformer.Lister(),
 		PvcLister:            pvcInformer.Lister(),
 	}
@@ -83,26 +77,16 @@ func NewController(
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
 
-	builderInformer.Informer().AddEventHandler(reconciler.Handler(controller.EnsureTypeMeta(
-		c.Tracker.OnChanged,
-		(&v1alpha1.Builder{}).GetGroupVersionKind(),
-	)))
-
-	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(controller.EnsureTypeMeta(
-		c.Tracker.OnChanged,
-		(&v1alpha1.ClusterBuilder{}).GetGroupVersionKind(),
-	)))
+	duckbuilderInformer.AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 
 	return impl
 }
 
 type Reconciler struct {
 	Client               versioned.Interface
+	DuckBuilderLister    *duckbuilder.DuckBuilderLister
 	ImageLister          v1alpha1Listers.ImageLister
 	BuildLister          v1alpha1Listers.BuildLister
-	BuilderLister        v1alpha1Listers.BuilderLister
-	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
-	CustomBuilderLister  expv1alpha1Listers.CustomBuilderLister
 	SourceResolverLister v1alpha1Listers.SourceResolverLister
 	PvcLister            corelisters.PersistentVolumeClaimLister
 	Tracker              Tracker
@@ -124,7 +108,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	image = image.DeepCopy()
 	image.SetDefaults(ctx)
-	
+
 	image, err = c.reconcileImage(image)
 	if err != nil {
 		return err
@@ -134,7 +118,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, error) {
-	builder, err := c.getBuilder(image)
+	builder, err := c.DuckBuilderLister.Namespace(image.Namespace).Get(image.Spec.Builder)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {
@@ -185,30 +169,6 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 	image.Status.ObservedGeneration = image.Generation
 
 	return image, c.deleteOldBuilds(image)
-}
-
-func (c *Reconciler) getBuilder(image *v1alpha1.Image) (v1alpha1.BuilderResource, error) {
-	var builder v1alpha1.BuilderResource
-	var err error
-	if image.Spec.Builder.Kind == v1alpha1.ClusterBuilderKind {
-		builder, err = c.ClusterBuilderLister.Get(image.Spec.Builder.Name)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, "cannot retrieve cluster builder")
-		}
-	} else if image.Spec.Builder.Kind == v1alpha1.BuilderKind {
-		builder, err = c.BuilderLister.Builders(image.Namespace).Get(image.Spec.Builder.Name)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, "cannot retrieve namespaced builder")
-		}
-	} else if image.Spec.Builder.Kind == expv1alpha1.CustomBuilderKind {
-		builder, err = c.CustomBuilderLister.CustomBuilders(image.Namespace).Get(image.Spec.Builder.Name)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, "cannot retrieve custom builder")
-		}
-	} else {
-		return nil, errors.New("image spec with unknown builder kind: " + image.Spec.Builder.Kind)
-	}
-	return builder, err
 }
 
 func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.SourceResolver, error) {

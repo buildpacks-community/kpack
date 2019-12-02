@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
@@ -26,7 +25,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Spec: ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
-			Builder: ImageBuilder{
+			Builder: corev1.ObjectReference{
+				Kind: "Builder",
 				Name: "builder-name",
 			},
 		},
@@ -46,33 +46,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builder := &Builder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "builder-name",
+	builder := &TestBuilderResource{
+		Name:         "builder-Name",
+		LatestImage:  "some/builder@sha256:builder-digest",
+		BuilderReady: true,
+		BuilderMetadata: []BuildpackMetadata{
+			{ID: "buildpack.matches", Version: "1"},
 		},
-		Spec: BuilderWithSecretsSpec{
-			BuilderSpec:      BuilderSpec{Image: "some/builder"},
-			ImagePullSecrets: nil,
-		},
-		Status: BuilderStatus{
-			Status: duckv1alpha1.Status{
-				Conditions: duckv1alpha1.Conditions{
-					{
-						Type:               duckv1alpha1.ConditionReady,
-						Status:             corev1.ConditionTrue,
-						LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
-					},
-				},
-			},
-			BuilderMetadata: []BuildpackMetadata{
-				{ID: "buildpack.matches", Version: "1"},
-			},
-			LatestImage: "some/builder@sha256:builder-digest",
-			Stack: BuildStack{
-				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-				ID:       "io.buildpacks.stack.bionic",
-			},
-		},
+		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 	}
 
 	build := &Build{
@@ -184,41 +165,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				require.Len(t, reasons, 0)
 			})
 
-			it("false if builder has not processed", func() {
-				sourceResolver.Status.Source.Git.URL = "some-change"
-				builder.Status.Conditions = nil
-
-				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
-				require.NoError(t, err)
-				assert.False(t, needed)
-				require.Len(t, reasons, 0)
-			})
-
 			it("false if builder is not ready", func() {
 				sourceResolver.Status.Source.Git.URL = "some-change"
-				builder.Status.Conditions = []duckv1alpha1.Condition{
-					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: v1.ConditionFalse,
-					},
-				}
-
-				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
-				require.NoError(t, err)
-				assert.False(t, needed)
-				require.Len(t, reasons, 0)
-			})
-
-			it("false if builder has not processed current generation", func() {
-				sourceResolver.Status.Source.Git.URL = "some-change"
-				builder.ObjectMeta.Generation = 2
-				builder.Status.ObservedGeneration = 1
-				builder.Status.Conditions = []duckv1alpha1.Condition{
-					{
-						Type:   duckv1alpha1.ConditionReady,
-						Status: v1.ConditionTrue,
-					},
-				}
+				builder.BuilderReady = false
 
 				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
 				require.NoError(t, err)
@@ -329,7 +278,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			when("Builder Metadata changes", func() {
 				it("false if builder has additional unused buildpack metadata", func() {
-					builder.Status.BuilderMetadata = []BuildpackMetadata{
+					builder.BuilderMetadata = []BuildpackMetadata{
 						{ID: "buildpack.matches", Version: "1"},
 						{ID: "buildpack.unused", Version: "unused"},
 					}
@@ -341,7 +290,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("true if builder metadata has different buildpack from used buildpack", func() {
-					builder.Status.BuilderMetadata = []BuildpackMetadata{
+					builder.BuilderMetadata = []BuildpackMetadata{
 						{ID: "buildpack.matches", Version: "NEW_VERSION"},
 						{ID: "buildpack.different", Version: "different"},
 					}
@@ -354,7 +303,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("true if builder has a different run image", func() {
-					builder.Status.Stack.RunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+					builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
 
 					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
 					require.NoError(t, err)
@@ -364,7 +313,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("true if builder does not have all most recent used buildpacks and is not currently building", func() {
-					builder.Status.BuilderMetadata = []BuildpackMetadata{
+					builder.BuilderMetadata = []BuildpackMetadata{
 						{ID: "buildpack.only.new.buildpacks", Version: "1"},
 						{ID: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 					}
@@ -490,7 +439,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			expectedBuild := image.build(sourceResolver, builder, build, []string{}, 27)
 
-			assert.Equal(t, builder.Status.LatestImage, expectedBuild.Spec.Builder.Image)
+			assert.Equal(t, builder.LatestImage, expectedBuild.Spec.Builder.Image)
 		})
 
 		it("sets git url and git revision when image source is git", func() {
@@ -613,4 +562,36 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, image.Spec.Build.Resources, expectedBuild.Spec.Resources)
 		})
 	})
+}
+
+type TestBuilderResource struct {
+	BuilderReady     bool
+	BuilderMetadata  []BuildpackMetadata
+	ImagePullSecrets []corev1.LocalObjectReference
+	LatestImage      string
+	LatestRunImage   string
+	Name             string
+}
+
+func (t TestBuilderResource) BuildBuilderSpec() BuildBuilderSpec {
+	return BuildBuilderSpec{
+		Image:            t.LatestImage,
+		ImagePullSecrets: t.ImagePullSecrets,
+	}
+}
+
+func (t TestBuilderResource) Ready() bool {
+	return t.BuilderReady
+}
+
+func (t TestBuilderResource) BuildpackMetadata() BuildpackMetadataList {
+	return t.BuilderMetadata
+}
+
+func (t TestBuilderResource) RunImage() string {
+	return t.LatestRunImage
+}
+
+func (t TestBuilderResource) GetName() string {
+	return t.Name
 }

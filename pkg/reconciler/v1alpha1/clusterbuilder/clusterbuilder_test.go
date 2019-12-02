@@ -66,7 +66,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initialGeneration,
 		},
 		Spec: v1alpha1.BuilderSpec{
-			Image: clusterImageName,
+			Image:        clusterImageName,
 			UpdatePolicy: "polling",
 		},
 	}

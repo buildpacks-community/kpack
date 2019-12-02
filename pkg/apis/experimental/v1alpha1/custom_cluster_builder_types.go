@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const CustomClusterBuilderKind = "CustomClusterBuilder"
@@ -30,4 +31,8 @@ type CustomClusterBuilderList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []CustomClusterBuilder `json:"items"`
+}
+
+func (*CustomClusterBuilder) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(CustomClusterBuilderKind)
 }

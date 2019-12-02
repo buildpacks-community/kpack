@@ -50,7 +50,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 			_, err := (&registry.Client{}).Save(authn.DefaultKeychain, tagName, image)
 			require.NoError(t, err)
 		})
-		
+
 		it("does not save images if exisiting image already exisits", func() {
 			image := randomImage(t)
 
@@ -61,7 +61,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				writer.Write(configFile)
 				writer.WriteHeader(200)
 			})
-			
+
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				if request.Method != "GET" {
 					t.Fatalf("unexpected %s to %s", request.Method, request.URL)

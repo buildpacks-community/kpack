@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
@@ -60,4 +61,8 @@ type CustomBuilderList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []CustomBuilder `json:"items"`
+}
+
+func (*CustomBuilder) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(CustomBuilderKind)
 }
