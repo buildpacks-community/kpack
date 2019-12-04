@@ -23,6 +23,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
@@ -35,15 +36,17 @@ func TestImageReconciler(t *testing.T) {
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	const (
-		imageName                    = "image-name"
-		builderName                  = "builder-name"
-		clusterBuilderName           = "cluster-builder-name"
-		serviceAccount               = "service-account"
-		namespace                    = "some-namespace"
-		key                          = "some-namespace/image-name"
-		someLabelKey                 = "some/label"
-		someValueToPassThrough       = "to-pass-through"
-		originalGeneration     int64 = 0
+		imageName                      = "image-name"
+		builderName                    = "builder-name"
+		clusterBuilderName             = "cluster-builder-name"
+		customBuilderName              = "custom-builder-name"
+		customClusterBuilderName       = "custom-cluster-builder-name"
+		serviceAccount                 = "service-account"
+		namespace                      = "some-namespace"
+		key                            = "some-namespace/image-name"
+		someLabelKey                   = "some/label"
+		someValueToPassThrough         = "to-pass-through"
+		originalGeneration       int64 = 0
 	)
 	var (
 		fakeTracker = fakeTracker{}
@@ -64,8 +67,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				Client:               fakeClient,
 				ImageLister:          listers.GetImageLister(),
 				BuildLister:          listers.GetBuildLister(),
-				BuilderLister:        listers.GetBuilderLister(),
-				ClusterBuilderLister: listers.GetClusterBuilderLister(),
+				DuckBuilderLister:    listers.GetDuckBuilderLister(),
 				SourceResolverLister: listers.GetSourceResolverLister(),
 				PvcLister:            listers.GetPersistentVolumeClaimLister(),
 				Tracker:              fakeTracker,
@@ -87,10 +89,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: v1alpha1.ImageSpec{
 			Tag: "some/image",
-			Builder: v1alpha1.ImageBuilder{
-				TypeMeta: metav1.TypeMeta{
-					Kind: "Builder",
-				},
+			Builder: corev1.ObjectReference{
+				Kind: "Builder",
 				Name: builderName,
 			},
 			ServiceAccount: serviceAccount,
@@ -150,10 +150,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name: clusterBuilderName,
 		},
 		Spec: v1alpha1.BuilderSpec{
-			Image: "some/builder",
+			Image: "some/clusterbuilder",
 		},
 		Status: v1alpha1.BuilderStatus{
-			LatestImage: "some/builder@sha256:acf123",
+			LatestImage: "some/clusterbuilder@sha256:acf123",
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
 					ID:      "buildpack.version",
@@ -170,6 +170,67 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					{
 						Type:   duckv1alpha1.ConditionReady,
 						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	customBuilder := &experimentalv1alpha1.CustomBuilder{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      customBuilderName,
+			Namespace: namespace,
+		},
+		Status: experimentalv1alpha1.CustomBuilderStatus{
+			BuilderStatus: v1alpha1.BuilderStatus{
+				LatestImage: "some/custombuilder@sha256:acf123",
+				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+					{
+						ID:      "buildpack.version",
+						Version: "version",
+					},
+				},
+				Stack: v1alpha1.BuildStack{
+					RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+					ID:       "io.buildpacks.stacks.bionic",
+				},
+
+				Status: duckv1alpha1.Status{
+					Conditions: duckv1alpha1.Conditions{
+						{
+							Type:   duckv1alpha1.ConditionReady,
+							Status: corev1.ConditionTrue,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	customClusterBuilder := &experimentalv1alpha1.CustomClusterBuilder{
+		ObjectMeta: v1.ObjectMeta{
+			Name: customClusterBuilderName,
+		},
+		Status: experimentalv1alpha1.CustomBuilderStatus{
+			BuilderStatus: v1alpha1.BuilderStatus{
+				LatestImage: "some/customclusterbuilder@sha256:acf123",
+				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+					{
+						ID:      "buildpack.version",
+						Version: "version",
+					},
+				},
+				Stack: v1alpha1.BuildStack{
+					RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+					ID:       "io.buildpacks.stacks.bionic",
+				},
+
+				Status: duckv1alpha1.Status{
+					Conditions: duckv1alpha1.Conditions{
+						{
+							Type:   duckv1alpha1.ConditionReady,
+							Status: corev1.ConditionTrue,
+						},
 					},
 				},
 			},
@@ -691,8 +752,213 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionReadyUnknown(),
+									},
+									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
+									BuildCounter:   1,
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build with a cluster builder", func() {
+				image.Spec.Builder = corev1.ObjectReference{
+					Kind: v1alpha1.ClusterBuilderKind,
+					Name: clusterBuilderName,
+				}
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						clusterBuilder,
+						sourceResolver,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-1-",
+								Namespace:    namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image: clusterBuilder.Status.LatestImage,
+								},
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionReadyUnknown(),
+									},
+									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
+									BuildCounter:   1,
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build with a custom builder", func() {
+				image.Spec.Builder = corev1.ObjectReference{
+					Kind: experimentalv1alpha1.CustomBuilderKind,
+					Name: customBuilderName,
+				}
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						customBuilder,
+						sourceResolver,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-1-",
+								Namespace:    namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image: customBuilder.Status.LatestImage,
+								},
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: duckv1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionReadyUnknown(),
+									},
+									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
+									BuildCounter:   1,
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build with a custom cluster builder", func() {
+				image.Spec.Builder = corev1.ObjectReference{
+					Kind: experimentalv1alpha1.CustomClusterBuilderKind,
+					Name: customClusterBuilderName,
+				}
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						customBuilder,
+						customClusterBuilder,
+						sourceResolver,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-1-",
+								Namespace:    namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "1",
+									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image: customClusterBuilder.Status.LatestImage,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -755,8 +1021,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -821,8 +1090,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -867,8 +1139,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -938,8 +1213,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -984,8 +1262,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1192,8 +1473,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: "old-service-account",
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1245,8 +1529,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
-								Tags:           []string{image.Spec.Tag},
-								Builder:        builder.BuildBuilderSpec(),
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
 								ServiceAccount: image.Spec.ServiceAccount,
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
@@ -1391,11 +1678,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		})
-		
+
 		when("defaulting has not happened", func() {
 			image.Spec.FailedBuildHistoryLimit = nil
 			image.Spec.SuccessBuildHistoryLimit = nil
-			
+
 			it("sets the FailedBuildHistoryLimit and SuccessBuildHistoryLimit", func() {
 				rt.Test(rtesting.TableRow{
 					Key: key,

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"context"
 
+	v1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -39,7 +40,7 @@ func (s *Image) Validate(ctx context.Context) *apis.FieldError {
 
 func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
-		Also(is.Builder.Validate(ctx).ViaField("builder")).
+		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source"))
 }
 
@@ -52,18 +53,19 @@ func (im *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	return validateTag(im.Tag)
 }
 
-func (im *ImageBuilder) Validate(ctx context.Context) *apis.FieldError {
-	if im.Name == "" {
+func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
+	if builder.Name == "" {
 		return apis.ErrMissingField("name")
 	}
 
-	switch im.Kind {
+	switch builder.Kind {
 	case ClusterBuilderKind,
-		"CustomBuilder", // TODO : use the const var when the experimental pkg migrates into the build pkg 
-		BuilderKind:
+		BuilderKind,
+		"CustomBuilder", // TODO : use the const var when the experimental pkg migrates into the build pkg
+		"CustomClusterBuilder":
 		return nil
 	default:
-		return apis.ErrInvalidValue(im.Kind, "kind")
+		return apis.ErrInvalidValue(builder.Kind, "kind")
 	}
 }
 

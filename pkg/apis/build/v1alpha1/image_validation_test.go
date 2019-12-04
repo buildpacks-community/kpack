@@ -7,6 +7,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -23,10 +24,8 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: ImageSpec{
 			Tag: "some/image",
-			Builder: ImageBuilder{
-				TypeMeta: metav1.TypeMeta{
-					Kind: "ClusterBuilder",
-				},
+			Builder: corev1.ObjectReference{
+				Kind: "ClusterBuilder",
 				Name: "builder-name",
 			},
 			ServiceAccount: "some/service-account",
@@ -93,6 +92,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 	when("Validate", func() {
 		it("returns nil on no validation error", func() {
 			assert.Nil(t, image.Validate(context.TODO()))
+
+			for _, builderKind := range []string{"Builder", "ClusterBuilder", "CustomBuilder", "CustomClusterBuilder"} {
+				image.Spec.Builder.Kind = builderKind
+				assert.Nil(t, image.Validate(context.TODO()))
+			}
 		})
 
 		assertValidationError := func(image *Image, expectedError *apis.FieldError) {

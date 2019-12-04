@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
@@ -15,16 +16,24 @@ type CustomBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CustomBuilderSpec      `json:"spec"`
-	Status v1alpha1.BuilderStatus `json:"status"`
+	Spec   CustomNamespacedBuilderSpec `json:"spec"`
+	Status CustomBuilderStatus         `json:"status"`
 }
 
 type CustomBuilderSpec struct {
-	Tag            string  `json:"tag"`
-	Stack          Stack   `json:"stack"`
-	Store          Store   `json:"store"`
-	Order          []Group `json:"order"`
-	ServiceAccount string  `json:"serviceAccount"`
+	Tag   string  `json:"tag"`
+	Stack Stack   `json:"stack"`
+	Store Store   `json:"store"`
+	Order []Group `json:"order"`
+}
+
+type CustomNamespacedBuilderSpec struct {
+	CustomBuilderSpec
+	ServiceAccount string `json:"serviceAccount"`
+}
+
+type CustomBuilderStatus struct {
+	v1alpha1.BuilderStatus
 }
 
 type Stack struct {
@@ -52,4 +61,8 @@ type CustomBuilderList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []CustomBuilder `json:"items"`
+}
+
+func (*CustomBuilder) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(CustomBuilderKind)
 }

@@ -15,12 +15,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"knative.dev/pkg/apis/duck"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
@@ -29,7 +33,7 @@ import (
 )
 
 func TestCreateImage(t *testing.T) {
-	spec.Run(t, "CreateImage", testCreateImage, spec.Sequential())
+	spec.Run(t, "CreateImage", testCreateImage)
 }
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
@@ -37,13 +41,14 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	var clients *clients
 
 	const (
-		testNamespace      = "test"
-		dockerSecret       = "docker-secret"
-		builderName        = "build-service-builder"
-		clusterBuilderName = "cluster-builder"
-		serviceAccountName = "image-service-account"
-		builderImage       = "cloudfoundry/cnb:bionic"
-		customBuilderName  = "custom-builder"
+		testNamespace            = "test"
+		dockerSecret             = "docker-secret"
+		builderName              = "build-service-builder"
+		clusterBuilderName       = "cluster-builder"
+		serviceAccountName       = "image-service-account"
+		builderImage             = "cloudfoundry/cnb:bionic"
+		customBuilderName        = "custom-builder"
+		customClusterBuilderName = "custom-cluster-builder"
 	)
 
 	it.Before(func() {
@@ -54,7 +59,14 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		err = clients.client.BuildV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
-		require.True(t, err == nil || errors.IsNotFound(err))
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
 
 		deleteNamespace(t, clients, testNamespace)
 
@@ -112,7 +124,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuilderName,
 			},
@@ -122,27 +134,40 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&experimentalV1alpha1.CustomBuilder{
+		customBuilder, err := clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&experimentalV1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
 				Namespace: testNamespace,
 			},
-			Spec: experimentalV1alpha1.CustomBuilderSpec{
-				Tag: cfg.newImageTag(),
-				Stack: experimentalV1alpha1.Stack{
-					BaseBuilderImage: builderImage,
-				},
-				Store: experimentalV1alpha1.Store{
-					Image: builderImage,
-				},
-				Order: []experimentalV1alpha1.Group{
-					{
-						Group: []experimentalV1alpha1.Buildpack{
-							{
-								ID: "org.cloudfoundry.node-engine",
+			Spec: experimentalV1alpha1.CustomNamespacedBuilderSpec{
+				CustomBuilderSpec: experimentalV1alpha1.CustomBuilderSpec{
+					Tag: cfg.newImageTag(),
+					Stack: experimentalV1alpha1.Stack{
+						BaseBuilderImage: builderImage,
+					},
+					Store: experimentalV1alpha1.Store{
+						Image: builderImage,
+					},
+					Order: []experimentalV1alpha1.Group{
+						{
+							Group: []experimentalV1alpha1.Buildpack{
+								{
+									ID: "org.cloudfoundry.nodejs",
+								},
 							},
-							{
-								ID: "org.cloudfoundry.npm",
+						},
+						{
+							Group: []experimentalV1alpha1.Buildpack{
+								{
+									ID: "org.cloudfoundry.openjdk",
+								},
+								{
+									ID:       "org.cloudfoundry.buildsystem",
+									Optional: true,
+								},
+								{
+									ID: "org.cloudfoundry.jvmapplication",
+								},
 							},
 						},
 					},
@@ -152,7 +177,52 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
+		customClusterBuilder, err := clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Create(&experimentalV1alpha1.CustomClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: customClusterBuilderName,
+			},
+			Spec: experimentalV1alpha1.CustomClusterBuilderSpec{
+				CustomBuilderSpec: experimentalV1alpha1.CustomBuilderSpec{
+					Tag: cfg.newImageTag(),
+					Stack: experimentalV1alpha1.Stack{
+						BaseBuilderImage: builderImage,
+					},
+					Store: experimentalV1alpha1.Store{
+						Image: builderImage,
+					},
+					Order: []experimentalV1alpha1.Group{
+						{
+							Group: []experimentalV1alpha1.Buildpack{
+								{
+									ID: "org.cloudfoundry.nodejs",
+								},
+							},
+						},
+						{
+							Group: []experimentalV1alpha1.Buildpack{
+								{
+									ID: "org.cloudfoundry.openjdk",
+								},
+								{
+									ID:       "org.cloudfoundry.buildsystem",
+									Optional: true,
+								},
+								{
+									ID: "org.cloudfoundry.jvmapplication",
+								},
+							},
+						},
+					},
+				},
+				ServiceAccountRef: v1.ObjectReference{
+					Namespace: testNamespace,
+					Name:      serviceAccountName,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		builder, err := clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      builderName,
 				Namespace: testNamespace,
@@ -164,8 +234,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		// Wait for builders to be reconciled
-		time.Sleep(5 * time.Second)
+		waitUntilReady(t, clients, builder, customBuilder, clusterBuilder, customClusterBuilder)
 
 		cacheSize := resource.MustParse("1Gi")
 
@@ -178,7 +247,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		imageConfigs := map[string]v1alpha1.SourceConfig{
+		imageSources := map[string]v1alpha1.SourceConfig{
 			"test-git-image": {
 				Git: &v1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
@@ -197,75 +266,106 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		imageBuilders := map[string]v1alpha1.ImageBuilder{
-			"test-git-image": {
-				TypeMeta: metav1.TypeMeta{
-					Kind:       experimentalV1alpha1.CustomBuilderKind,
-					APIVersion: "experimental.kpack.pivotal.io/v1alpha1",
-				},
-				Name: customBuilderName,
+		builderConfigs := map[string]corev1.ObjectReference{
+			"custom-builder": {
+				Kind:       experimentalV1alpha1.CustomBuilderKind,
+				APIVersion: "experimental.kpack.pivotal.io/v1alpha1",
+				Name:       customBuilderName,
 			},
-			"test-registry-image": {
-				TypeMeta: metav1.TypeMeta{
-					Kind:       v1alpha1.BuilderKind,
-					APIVersion: "build.pivotal.io/v1alpha1",
-				},
-				Name: builderName,
+			"builder": {
+				Kind:       v1alpha1.BuilderKind,
+				APIVersion: "build.pivotal.io/v1alpha1",
+				Name:       builderName,
 			},
-			"test-blob-image": {
-				TypeMeta: metav1.TypeMeta{
-					Kind:       v1alpha1.ClusterBuilderKind,
-					APIVersion: "build.pivotal.io/v1alpha1",
-				},
-				Name: clusterBuilderName,
+			"cluster-builder": {
+				Kind:       v1alpha1.ClusterBuilderKind,
+				APIVersion: "build.pivotal.io/v1alpha1",
+				Name:       clusterBuilderName,
+			},
+			"custom-cluster-builder": {
+				Kind:       experimentalV1alpha1.CustomClusterBuilderKind,
+				APIVersion: "build.pivotal.io/v1alpha1",
+				Name:       customClusterBuilderName,
 			},
 		}
 
-		for imageName, imageSource := range imageConfigs {
-			imageTag := cfg.newImageTag()
-			_, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: imageName,
-				},
-				Spec: v1alpha1.ImageSpec{
-					Tag:                  imageTag,
-					Builder:              imageBuilders[imageName],
-					ServiceAccount:       serviceAccountName,
-					Source:               imageSource,
-					CacheSize:            &cacheSize,
-					ImageTaggingStrategy: v1alpha1.None,
-					Build: &v1alpha1.ImageBuild{
-						Resources: expectedResources,
-					},
-				},
-			})
-			require.NoError(t, err)
+		for imageType := range imageSources {
+			for builderType := range builderConfigs {
 
-			validateImageCreate(t, clients, imageTag, imageName, testNamespace, expectedResources)
+				imageName := fmt.Sprintf("%s-%s", imageType, builderType)
+				source := imageSources[imageType]
+				builder := builderConfigs[builderType]
 
-			validateRebase(t, clients, imageName, testNamespace)
+				t.Run(imageName, func(t *testing.T) {
+					t.Parallel()
+
+					imageTag := cfg.newImageTag()
+					image, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: imageName,
+						},
+						Spec: v1alpha1.ImageSpec{
+							Tag:                  imageTag,
+							Builder:              builder,
+							ServiceAccount:       serviceAccountName,
+							Source:               source,
+							CacheSize:            &cacheSize,
+							ImageTaggingStrategy: v1alpha1.None,
+							Build: &v1alpha1.ImageBuild{
+								Resources: expectedResources,
+							},
+						},
+					})
+					require.NoError(t, err)
+
+					validateImageCreate(t, clients, image, expectedResources)
+					validateRebase(t, clients, image.Name, testNamespace)
+				})
+			}
 		}
 	})
 }
 
-func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, testNamespace string, expectedResources v1.ResourceRequirements) {
+func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefable) {
+	for _, ob := range objects {
+		namespace := ob.GetObjectMeta().GetNamespace()
+		name := ob.GetObjectMeta().GetName()
+		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
+
+		eventually(t, func() bool {
+			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
+			require.NoError(t, err)
+
+			kResource := &duckv1alpha1.KResource{}
+			err = duck.FromUnstructured(unstructured, kResource)
+			require.NoError(t, err)
+
+			return kResource.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue()
+		}, 1*time.Second, 8*time.Minute)
+	}
+}
+
+func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, expectedResources v1.ResourceRequirements) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	logTail := &bytes.Buffer{}
 	go func() {
-		err := logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, imageName, "1", testNamespace)
+		err := logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, image.Name, "1", image.Namespace)
 		require.NoError(t, err)
 	}()
 
-	t.Logf("Waiting for image '%s' to be created", imageTag)
-	eventually(t, imageExists(imageTag), 5*time.Second, 5*time.Minute)
+	t.Logf("Waiting for image '%s' to be created", image.Name)
+	waitUntilReady(t, clients, image)
+
+	_, err := registry.NewGoContainerRegistryImage(image.Spec.Tag, authn.DefaultKeychain)
+	require.NoError(t, err)
 
 	eventually(t, func() bool {
 		return strings.Contains(logTail.String(), "Build successful")
-	}, 5*time.Second, 1*time.Minute)
+	}, 1*time.Second, 10*time.Second)
 
-	podList, err := clients.k8sClient.CoreV1().Pods(testNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+	podList, err := clients.k8sClient.CoreV1().Pods(image.Namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", image.Name),
 	})
 	require.NoError(t, err)
 
@@ -276,30 +376,16 @@ func validateImageCreate(t *testing.T, clients *clients, imageTag, imageName, te
 	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
 }
 
-func imageExists(name string) func() bool {
-	return func() bool {
-		_, err := registry.NewGoContainerRegistryImage(name, authn.DefaultKeychain)
-		if err != nil {
-			return false
-		}
-		return true
-	}
-}
-
 func validateRebase(t *testing.T, clients *clients, imageName, testNamespace string) {
-	var build v1alpha1.Build
+	var rebaseBuildName = imageName + "-rebase"
 
-	eventually(t, func() bool {
-		buildList, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
-		})
-		require.NoError(t, err)
+	buildList, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+	})
+	require.NoError(t, err)
 
-		require.Len(t, buildList.Items, 1)
-		build = buildList.Items[0]
-
-		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
-	}, 5*time.Second, 1*time.Minute)
+	require.Len(t, buildList.Items, 1)
+	build := buildList.Items[0]
 
 	rebaseBuildBuildSpec := build.Spec.DeepCopy()
 	rebaseBuildBuildSpec.LastBuild = &v1alpha1.LastBuild{
@@ -309,7 +395,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 
 	_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        build.Name + "-rebase",
+			Name:        rebaseBuildName,
 			Annotations: map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack},
 		},
 		Spec: *rebaseBuildBuildSpec,
@@ -317,9 +403,12 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
-		build, err := clients.client.BuildV1alpha1().Builds(testNamespace).Get(build.Name+"-rebase", metav1.GetOptions{})
+		build, err := clients.client.BuildV1alpha1().Builds(testNamespace).Get(rebaseBuildName, metav1.GetOptions{})
 		require.NoError(t, err)
-		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue() && len(build.Status.StepsCompleted) == 1
+
+		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
+
+		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
 	}, 5*time.Second, 1*time.Minute)
 }
 

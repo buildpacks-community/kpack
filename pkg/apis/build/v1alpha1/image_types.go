@@ -37,15 +37,15 @@ type Image struct {
 }
 
 type ImageSpec struct {
-	Tag                      string               `json:"tag"`
-	Builder                  ImageBuilder         `json:"builder,omitempty"`
-	ServiceAccount           string               `json:"serviceAccount,omitempty"`
-	Source                   SourceConfig         `json:"source"`
-	CacheSize                *resource.Quantity   `json:"cacheSize,omitempty"`
-	FailedBuildHistoryLimit  *int64               `json:"failedBuildHistoryLimit,omitempty"`
-	SuccessBuildHistoryLimit *int64               `json:"successBuildHistoryLimit,omitempty"`
-	ImageTaggingStrategy     ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
-	Build                    *ImageBuild          `json:"build,omitempty"`
+	Tag                      string                 `json:"tag"`
+	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
+	ServiceAccount           string                 `json:"serviceAccount,omitempty"`
+	Source                   SourceConfig           `json:"source"`
+	CacheSize                *resource.Quantity     `json:"cacheSize,omitempty"`
+	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
+	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
+	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
+	Build                    *ImageBuild            `json:"build,omitempty"`
 }
 
 type ImageBuilder struct {

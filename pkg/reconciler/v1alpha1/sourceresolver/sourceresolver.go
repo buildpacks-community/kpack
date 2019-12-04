@@ -80,7 +80,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if err != nil {
 		return err
 	}
-	
+
 	sourceResolver = sourceResolver.DeepCopy()
 
 	sourceReconciler, err := c.sourceReconciler(sourceResolver)

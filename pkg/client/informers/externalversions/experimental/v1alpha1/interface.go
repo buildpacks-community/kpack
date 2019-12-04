@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// CustomBuilders returns a CustomBuilderInformer.
 	CustomBuilders() CustomBuilderInformer
+	// CustomClusterBuilders returns a CustomClusterBuilderInformer.
+	CustomClusterBuilders() CustomClusterBuilderInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // CustomBuilders returns a CustomBuilderInformer.
 func (v *version) CustomBuilders() CustomBuilderInformer {
 	return &customBuilderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CustomClusterBuilders returns a CustomClusterBuilderInformer.
+func (v *version) CustomClusterBuilders() CustomClusterBuilderInformer {
+	return &customClusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

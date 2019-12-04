@@ -6,6 +6,7 @@ import (
 )
 
 func eventually(t *testing.T, fun func() bool, interval time.Duration, duration time.Duration) {
+	t.Helper()
 	endTime := time.Now().Add(duration)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

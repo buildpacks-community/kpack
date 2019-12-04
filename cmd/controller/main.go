@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
@@ -20,12 +21,14 @@ import (
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
+	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/build"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/custombuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -82,6 +85,14 @@ func main() {
 	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
+	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
+
+	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
+		BuilderInformer:              builderInformer,
+		ClusterBuilderInformer:       clusterBuilderInformer,
+		CustomBuilderInformer:        customBuilderInformer,
+		CustomClusterBuilderInformer: customClusterBuilderInformer,
+	}
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
@@ -120,47 +131,52 @@ func main() {
 	registryResolver := &registry.Resolver{}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, builderInformer, clusterBuilderInformer, sourceResolverInformer, pvcInformer, customBuilderInformer)
+	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, builderCreator, keychainFactory)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
 	k8sInformerFactory.Start(stopChan)
 
-	cache.WaitForCacheSync(stopChan, buildInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, imageInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, builderInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, clusterBuilderInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, sourceResolverInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, pvcInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, podInformer.Informer().HasSynced)
-	cache.WaitForCacheSync(stopChan, customBuilderInformer.Informer().HasSynced)
+	waitForSync(stopChan,
+		buildInformer.Informer(),
+		imageInformer.Informer(),
+		builderInformer.Informer(),
+		clusterBuilderInformer.Informer(),
+		sourceResolverInformer.Informer(),
+		pvcInformer.Informer(),
+		podInformer.Informer(),
+		customBuilderInformer.Informer(),
+		customClusterBuilderInformer.Informer(),
+	)
 
 	err = runGroup(
-		func(done <-chan struct{}) error {
-			return imageController.Run(routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return buildController.Run(routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return builderController.Run(routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return clusterBuilderController.Run(routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return sourceResolverController.Run(2*routinesPerController, done)
-		},
-		func(done <-chan struct{}) error {
-			return customBuilderController.Run(routinesPerController, done)
-		},
+		run(imageController, routinesPerController),
+		run(buildController, routinesPerController),
+		run(builderController, routinesPerController),
+		run(clusterBuilderController, routinesPerController),
+		run(customBuilderController, routinesPerController),
+		run(customClusterBuilderController, routinesPerController),
+		run(sourceResolverController, 2*routinesPerController),
 	)
 	if err != nil {
 		logger.Fatalw("Error running controller", zap.Error(err))
+	}
+}
+
+func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInformer) {
+	for _, informer := range indexFormers {
+		cache.WaitForCacheSync(stopCh, informer.HasSynced)
+	}
+}
+
+func run(ctrl *controller.Impl, threadiness int) doneFunc {
+	return func(done <-chan struct{}) error {
+		return ctrl.Run(threadiness, done)
 	}
 }
 

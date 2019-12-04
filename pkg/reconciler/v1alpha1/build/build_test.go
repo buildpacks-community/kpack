@@ -39,7 +39,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
 		namespace                = "some-namespace"
 		buildName                = "build-name"
-		builderName              = "builder-name"
 		key                      = "some-namespace/build-name"
 		serviceAccountName       = "someserviceaccount"
 		originalGeneration int64 = 1
@@ -76,34 +75,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
 		})
 
-	builder := &v1alpha1.Builder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builderName,
-			Namespace: namespace,
-		},
-		Spec: v1alpha1.BuilderWithSecretsSpec{
-			ImagePullSecrets: []corev1.LocalObjectReference{
-				{Name: "some-image-secret"},
-			},
-		},
-		Status: v1alpha1.BuilderStatus{
-			Status: duckv1alpha1.Status{
-				Conditions: duckv1alpha1.Conditions{
-					{
-						Type:               duckv1alpha1.ConditionReady,
-						Status:             corev1.ConditionTrue,
-						LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
-					},
-				},
-			},
-			LatestImage: "somebuilder/123@sha256:12334563ad",
-			Stack: v1alpha1.BuildStack{
-				RunImage: "somerun/123@sha256:12334563ad",
-				ID:       "io.buildpacks.stacks.bionic",
-			},
-		},
-	}
-
 	build := &v1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
@@ -116,7 +87,12 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: v1alpha1.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
-			Builder:        builder.BuildBuilderSpec(),
+			Builder: v1alpha1.BuildBuilderSpec{
+				Image: "somebuilder/123@sha256:12334563ad",
+				ImagePullSecrets: []corev1.LocalObjectReference{
+					{Name: "some-image-secret"},
+				},
+			},
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -149,7 +125,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					builder,
 					build,
 				},
 				WantErr: false,
@@ -187,7 +162,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					builder,
 					build,
 					buildPod,
 				},
@@ -223,7 +197,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					builder,
 					build,
 					buildPod,
 				},
@@ -271,7 +244,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					builder,
 					build,
 					buildPod,
 				},
@@ -319,7 +291,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						build,
 						pod,
 					},
@@ -421,7 +392,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						build,
 						pod,
 					},
@@ -514,7 +484,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -571,7 +540,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
@@ -653,7 +621,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						build,
 						pod,
 					},
@@ -704,7 +671,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						builder,
 						&v1alpha1.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,

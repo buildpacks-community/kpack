@@ -14,6 +14,7 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -89,10 +90,13 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 
-		builder := &v1alpha1.Builder{
+		builder := &duckbuilder.DuckBuilder{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       v1alpha1.BuilderKind,
 				APIVersion: "v1alpha1",
+			},
+			Status: v1alpha1.BuilderStatus{
+				LatestImage: "some/builde@sha256:1234",
 			},
 		}
 
