@@ -8,8 +8,7 @@ spec:
   tag: sample/custom-builder
   stack:
     baseBuilderImage: cloudfoundry/cnb:bionic
-  store:
-    image: cloudfoundry/cnb:bionic
+  store: sample-store
   order:
   - group:
     - id: org.cloudfoundry.node-engine

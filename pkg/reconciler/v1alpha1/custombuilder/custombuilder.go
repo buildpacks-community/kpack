@@ -25,18 +25,23 @@ const (
 	Kind           = "CustomBuilder"
 )
 
+type NewBuildpackRepository func(store *expv1alpha1.Store) cnb.BuildpackRepository
+
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, store cnb.Store, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options,
 	customBuilderInformer v1alpha1informers.CustomBuilderInformer,
+	repoFactory NewBuildpackRepository,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
-	storeInformer v1alpha1informers.StoreInformer) *controller.Impl {
+	storeInformer v1alpha1informers.StoreInformer,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:              opt.Client,
 		CustomBuilderLister: customBuilderInformer.Lister(),
+		RepoFactory:         repoFactory,
 		BuilderCreator:      builderCreator,
 		KeychainFactory:     keychainFactory,
 		StoreLister:         storeInformer.Lister(),
@@ -53,9 +58,10 @@ func NewController(opt reconciler.Options,
 type Reconciler struct {
 	Client              versioned.Interface
 	CustomBuilderLister v1alpha1Listers.CustomBuilderLister
+	RepoFactory         NewBuildpackRepository
 	BuilderCreator      BuilderCreator
 	KeychainFactory     registry.KeychainFactory
-	Tracker             *tracker.Tracker
+	Tracker             reconciler.Tracker
 	StoreLister         v1alpha1Listers.StoreLister
 }
 
@@ -91,6 +97,16 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
+	store, err := c.StoreLister.Get(customBuilder.Spec.Store)
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	err = c.Tracker.Track(store, customBuilder.NamespacedName())
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		ServiceAccount: customBuilder.Spec.ServiceAccount,
 		Namespace:      customBuilder.Namespace,
@@ -99,18 +115,7 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomBui
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	store, err := c.StoreLister.Get(customBuilder.Spec.Store.Name)
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
-	}
-
-	buildPackageStore := &cnb.BuildpackRetriever{
-		Keychain: nil, // TODO: this should be a keychain created from the store spec not the builder spec
-		Client:   &registry.Client{},
-		Store:    store,
-	}
-
-	return c.BuilderCreator.CreateBuilder(keychain, buildPackageStore, customBuilder.Spec.CustomBuilderSpec)
+	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(store), customBuilder.Spec.CustomBuilderSpec)
 }
 
 func (c *Reconciler) updateStatus(desired *expv1alpha1.CustomBuilder) error {

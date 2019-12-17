@@ -13,7 +13,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
@@ -38,7 +37,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		keychain = authn.NewMultiKeychain(authn.DefaultKeychain)
 
-		store = &fakeStore{buildpacks: map[string][]buildpackLayer{}}
+		store = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
 
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
@@ -61,10 +60,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			Stack: eV1alpha1.Stack{
 				BaseBuilderImage: baseBuilder,
 			},
-			Store: corev1.ObjectReference{
-				Kind: eV1alpha1.StoreKind,
-				Name: "some-store",
-			},
+			Store: "some-store",
 			Order: []eV1alpha1.Group{
 				{
 					Group: []eV1alpha1.Buildpack{
@@ -314,28 +310,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-type fakeStoreFactory struct {
-	image    string
-	keychain authn.Keychain
-	store    *fakeStore
-}
-
-func (f *fakeStoreFactory) MakeStore(keychain authn.Keychain, image string) (Store, error) {
-	if keychain != f.keychain {
-		return nil, errors.New("invalid keychain")
-	}
-	if image != f.image {
-		return nil, errors.New("invalid store image")
-	}
-
-	return f.store, nil
-}
-
-type fakeStore struct {
+type fakeBuildpackRepository struct {
 	buildpacks map[string][]buildpackLayer
 }
 
-func (f *fakeStore) FetchBuildpack(id, version string) (RemoteBuildpackInfo, error) {
+func (f *fakeBuildpackRepository) FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error) {
 	layers, ok := f.buildpacks[fmt.Sprintf("%s@%s", id, version)]
 	if !ok {
 		return RemoteBuildpackInfo{}, errors.New("buildpack not found")
@@ -350,7 +329,7 @@ func (f *fakeStore) FetchBuildpack(id, version string) (RemoteBuildpackInfo, err
 	}, nil
 }
 
-func (f *fakeStore) AddBP(id, version string, layers []buildpackLayer) {
+func (f *fakeBuildpackRepository) AddBP(id, version string, layers []buildpackLayer) {
 	f.buildpacks[fmt.Sprintf("%s@%s", id, version)] = layers
 }
 

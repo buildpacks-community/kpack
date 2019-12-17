@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/types"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -31,11 +30,6 @@ const (
 	ReconcilerName = "Images"
 	Kind           = "Image"
 )
-
-type Tracker interface {
-	Track(ref metav1.ObjectMetaAccessor, obj types.NamespacedName) error
-	OnChanged(obj interface{})
-}
 
 func NewController(
 	opt reconciler.Options,
@@ -89,7 +83,7 @@ type Reconciler struct {
 	BuildLister          v1alpha1Listers.BuildLister
 	SourceResolverLister v1alpha1Listers.SourceResolverLister
 	PvcLister            corelisters.PersistentVolumeClaimLister
-	Tracker              Tracker
+	Tracker              reconciler.Tracker
 	K8sClient            k8sclient.Interface
 }
 

@@ -1,13 +1,13 @@
-package image_test
+package testhelpers
 
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-type fakeTracker map[types.UID]map[types.NamespacedName]struct{}
+type FakeTracker map[types.UID]map[types.NamespacedName]struct{}
 
-func (f fakeTracker) Track(ref v1.ObjectMetaAccessor, obj types.NamespacedName) error {
+func (f FakeTracker) Track(ref v1.ObjectMetaAccessor, obj types.NamespacedName) error {
 	key := ref.GetObjectMeta().GetUID()
 
 	_, ok := f[key]
@@ -19,11 +19,11 @@ func (f fakeTracker) Track(ref v1.ObjectMetaAccessor, obj types.NamespacedName) 
 	return nil
 }
 
-func (fakeTracker) OnChanged(obj interface{}) {
+func (FakeTracker) OnChanged(obj interface{}) {
 	panic("I should not be called in tests")
 }
 
-func (f fakeTracker) IsTracking(ref v1.ObjectMetaAccessor, obj types.NamespacedName) bool {
+func (f FakeTracker) IsTracking(ref v1.ObjectMetaAccessor, obj types.NamespacedName) bool {
 	trackingObs, ok := f[ref.GetObjectMeta().GetUID()]
 	if !ok {
 		return false

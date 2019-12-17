@@ -176,10 +176,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Stack: expv1alpha1.Stack{
 						BaseBuilderImage: cfg.stackTag(),
 					},
-					Store: v1.ObjectReference{
-						Kind: expv1alpha1.StoreKind,
-						Name: storeName,
-					},
+					Store: storeName,
 					Order: []expv1alpha1.Group{
 						{
 							Group: []expv1alpha1.Buildpack{
@@ -215,10 +212,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Stack: expv1alpha1.Stack{
 						BaseBuilderImage: cfg.stackTag(),
 					},
-					Store: v1.ObjectReference{
-						Kind: expv1alpha1.StoreKind,
-						Name: storeName,
-					},
+					Store: storeName,
 					Order: []expv1alpha1.Group{
 						{
 							Group: []expv1alpha1.Buildpack{
