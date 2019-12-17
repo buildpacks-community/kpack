@@ -162,20 +162,18 @@ func (c *Reconciler) getBuildpacks(sources []expv1alpha1.BuildPackage) ([]expv1a
 	return buildpacks, nil
 }
 
-func toStoreOrder(order cnb.Order) (expv1alpha1.Order, error) {
-	var storeOrder expv1alpha1.Order
+func toStoreOrder(order cnb.Order) ([]expv1alpha1.Group, error) {
+	var storeOrder []expv1alpha1.Group
 	for _, entry := range order {
-		var storeEntry expv1alpha1.OrderEntry
+		var group expv1alpha1.Group
 		for _, buildpack := range entry.Group {
-			storeEntry.Group = append(storeEntry.Group, expv1alpha1.BuildpackRef{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					ID:      buildpack.ID,
-					Version: buildpack.Version,
-				},
+			group.Group = append(group.Group, expv1alpha1.Buildpack{
+				ID:       buildpack.ID,
+				Version:  buildpack.Version,
 				Optional: buildpack.Optional,
 			})
 		}
-		storeOrder = append(storeOrder, storeEntry)
+		storeOrder = append(storeOrder, group)
 	}
 	return storeOrder, nil
 }

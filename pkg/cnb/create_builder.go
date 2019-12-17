@@ -13,15 +13,15 @@ type RegistryClient interface {
 	Save(keychain authn.Keychain, tag string, image v1.Image) (string, error)
 }
 
-type Store interface {
-	FetchBuildpack(id, version string) (RemoteBuildpackInfo, error)
+type BuildpackRepository interface {
+	FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error)
 }
 
 type RemoteBuilderCreator struct {
 	RegistryClient RegistryClient
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, store Store, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
 	baseImage, _, err := r.RegistryClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
@@ -41,7 +41,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, store Stor
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
 		for _, buildpack := range group.Group {
-			remoteBuildpack, err := store.FetchBuildpack(buildpack.ID, buildpack.Version)
+			remoteBuildpack, err := buildpackRepo.FindByIdAndVersion(buildpack.ID, buildpack.Version)
 			if err != nil {
 				return v1alpha1.BuilderRecord{}, err
 			}

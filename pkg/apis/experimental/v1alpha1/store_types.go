@@ -30,20 +30,17 @@ type BuildPackage struct {
 	Image string `json:"image"`
 }
 
-type StoreBuildpack struct {
-	ID           string       `json:"id"`
-	Version      string       `json:"version"`
-	LayerDiffID  string       `json:"layerDiffId"`
-	BuildPackage BuildPackage `json:"buildPackage"`
-	Order        Order        `json:"order"`
-}
-
 type StoreStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	Buildpacks          []StoreBuildpack `json:"buildpacks"`
 }
 
-type BuildpacksRecord struct {
+type StoreBuildpack struct {
+	ID           string       `json:"id"`
+	Version      string       `json:"version"`
+	LayerDiffID  string       `json:"layerDiffId"`
+	BuildPackage BuildPackage `json:"buildPackage"`
+	Order        []Group      `json:"order"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -56,20 +53,4 @@ type StoreList struct {
 
 func (*Store) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(StoreKind)
-}
-
-type Order []OrderEntry
-
-type OrderEntry struct {
-	Group []BuildpackRef `json:"group"`
-}
-
-type BuildpackRef struct {
-	BuildpackInfo
-	Optional bool `json:"optional,omitempty"`
-}
-
-type BuildpackInfo struct {
-	ID      string `json:"id"`
-	Version string `json:"version,omitempty"`
 }

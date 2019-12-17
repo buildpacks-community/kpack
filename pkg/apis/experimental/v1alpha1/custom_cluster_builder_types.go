@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const CustomClusterBuilderKind = "CustomClusterBuilder"
@@ -35,4 +36,8 @@ type CustomClusterBuilderList struct {
 
 func (*CustomClusterBuilder) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(CustomClusterBuilderKind)
+}
+
+func (c *CustomClusterBuilder) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
 }

@@ -19,7 +19,7 @@ func TestBuildpackRetriever(t *testing.T) {
 }
 
 func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
-	when("FetchBuildpack", func() {
+	when("FindByIdAndVersion", func() {
 		engineLayer := fakeLayer{
 			diffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   10,
@@ -52,9 +52,9 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		client := registryfakes.NewFakeClient()
 		client.AddImage("some.registry.io/build-package", image, "", nil)
 
-		subject := &BuildpackRetriever{
-			Keychain: nil,
-			Client:   client,
+		subject := &StoreBuildpackRepository{
+			Keychain:       nil,
+			RegistryClient: client,
 			Store: &v1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-store",
@@ -78,6 +78,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 								Image: "some.registry.io/build-package",
 							},
 							Order: nil,
+						}, {
+							ID:          "io.buildpack.multi",
+							Version:     "v8",
+							LayerDiffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							BuildPackage: v1alpha1.BuildPackage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: nil,
 						},
 						{
 							ID:          "io.buildpack.package-manager",
@@ -95,21 +103,17 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 							BuildPackage: v1alpha1.BuildPackage{
 								Image: "some.registry.io/build-package",
 							},
-							Order: v1alpha1.Order{
+							Order: []v1alpha1.Group{
 								{
-									Group: []v1alpha1.BuildpackRef{
+									Group: []v1alpha1.Buildpack{
 										{
-											BuildpackInfo: v1alpha1.BuildpackInfo{
-												ID:      "io.buildpack.engine",
-												Version: "v1",
-											},
+											ID:       "io.buildpack.engine",
+											Version:  "v1",
 											Optional: false,
 										},
 										{
-											BuildpackInfo: v1alpha1.BuildpackInfo{
-												ID:      "io.buildpack.package-manager",
-												Version: "v1",
-											},
+											ID:       "io.buildpack.package-manager",
+											Version:  "v1",
 											Optional: true,
 										},
 									},
@@ -122,7 +126,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("returns layer info from store image", func() {
-			info, err := subject.FetchBuildpack("io.buildpack.engine", "v1")
+			info, err := subject.FindByIdAndVersion("io.buildpack.engine", "v1")
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
@@ -143,7 +147,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical newest buildpack if version is unspecified", func() {
-			info, err := subject.FetchBuildpack("io.buildpack.multi", "")
+			info, err := subject.FindByIdAndVersion("io.buildpack.multi", "")
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
@@ -164,7 +168,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {
-			info, err := subject.FetchBuildpack("io.buildpack.meta", "v1")
+			info, err := subject.FindByIdAndVersion("io.buildpack.meta", "v1")
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{

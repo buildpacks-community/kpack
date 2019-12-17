@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,6 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/custombuilder"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -40,6 +43,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	var (
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
+		fakeTracker     = testhelpers.FakeTracker{}
+		fakeRepoFactory = func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+			return testhelpers.FakeBuildpackRepository{Store: store}
+		}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -49,8 +56,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			r := &custombuilder.Reconciler{
 				Client:              fakeClient,
 				CustomBuilderLister: listers.GetCustomBuilderLister(),
+				RepoFactory:         fakeRepoFactory,
 				BuilderCreator:      builderCreator,
 				KeychainFactory:     keychainFactory,
+				Tracker:             fakeTracker,
 				StoreLister:         listers.GetStoreLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
@@ -76,10 +85,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Stack: expv1alpha1.Stack{
 					BaseBuilderImage: "example.com/some-base-image",
 				},
-				Store: corev1.ObjectReference{
-					Kind: expv1alpha1.StoreKind,
-					Name: "some-store",
-				},
+				Store: "some-store",
 				Order: []expv1alpha1.Group{
 					{
 						Group: []expv1alpha1.Buildpack{
@@ -176,6 +182,58 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
+
+			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
+				Keychain: &registryfakes.FakeKeychain{},
+				BuildpackRepository: testhelpers.FakeBuildpackRepository{Store: store},
+				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
+			}}, builderCreator.CreateBuilderCalls)
+		})
+
+		it("tracks the store for a custom builder", func() {
+			builderCreator.Record = v1alpha1.BuilderRecord{
+				Image: customBuilderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{},
+			}
+
+			expectedBuilder := &expv1alpha1.CustomBuilder{
+				ObjectMeta: customBuilder.ObjectMeta,
+				Spec:       customBuilder.Spec,
+				Status: expv1alpha1.CustomBuilderStatus{
+					BuilderStatus: v1alpha1.BuilderStatus{
+						Status: duckv1alpha1.Status{
+							ObservedGeneration: 1,
+							Conditions: duckv1alpha1.Conditions{
+								{
+									Type:   duckv1alpha1.ConditionReady,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+						BuilderMetadata: []v1alpha1.BuildpackMetadata{},
+						Stack: v1alpha1.BuildStack{
+							RunImage: "example.com/run-image@sha256:123456",
+							ID:       "fake.stack.id",
+						},
+						LatestImage: customBuilderIdentifier,
+					},
+				},
+			}
+
+			rt.Test(rtesting.TableRow{
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					expectedBuilder,
+				},
+				WantErr: false,
+			})
+
+			require.True(t, fakeTracker.IsTracking(store, customBuilder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {

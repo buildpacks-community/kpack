@@ -9,8 +9,6 @@ spec:
     kind: Store
     singular: store
     plural: stores
-    shortNames:
-    - store
     categories:
     - kpack
   scope: Cluster

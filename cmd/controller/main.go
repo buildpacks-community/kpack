@@ -15,6 +15,7 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -102,7 +103,7 @@ func main() {
 
 	keychainFactory, err := k8sdockercreds.NewSecretKeychainFactory(k8sClient)
 	if err != nil {
-		log.Fatalf("could not create k8s keychain factory: %s", err.Error())
+		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
@@ -134,8 +135,8 @@ func main() {
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory, storeInformer)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, builderCreator, keychainFactory, storeInformer)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
 	storeController := store.NewController(options, storeInformer, &registry.Client{})
 
 	stopChan := make(chan struct{})
@@ -201,4 +202,18 @@ func runGroup(fns ...doneFunc) error {
 	defer wg.Wait()
 	defer close(done)
 	return <-result
+}
+
+func newBuildpackRepository(keychainFactory registry.KeychainFactory) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+	storeKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
+	}
+	return func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+		return &cnb.StoreBuildpackRepository{
+			Keychain:       storeKeychain,
+			RegistryClient: &registry.Client{},
+			Store:          store,
+		}
+	}
 }

@@ -49,7 +49,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		originalGeneration       int64 = 0
 	)
 	var (
-		fakeTracker = fakeTracker{}
+		fakeTracker = testhelpers.FakeTracker{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
