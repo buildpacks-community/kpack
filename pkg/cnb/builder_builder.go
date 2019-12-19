@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 type BuilderBuilder struct {
@@ -25,12 +25,12 @@ type BuilderBuilder struct {
 
 func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
 	baseMetadata := &BuilderImageMetadata{}
-	err := registry.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
+	err := imagehelpers.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
 	if err != nil {
 		return nil, err
 	}
 
-	stackID, err := registry.GetStringLabel(baseImage, stackMetadataLabel)
+	stackID, err := imagehelpers.GetStringLabel(baseImage, stackMetadataLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	return registry.SetLabels(image, map[string]interface{}{
+	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
 		buildpackLayersLabel: buildpackLayerMetadata,
 		buildpackMetadataLabel: BuilderImageMetadata{

@@ -37,9 +37,6 @@ func TestCreateImage(t *testing.T) {
 }
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
-	var cfg config
-	var clients *clients
-
 	const (
 		testNamespace            = "test"
 		dockerSecret             = "docker-secret"
@@ -49,6 +46,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		builderImage             = "cloudfoundry/cnb:bionic"
 		customBuilderName        = "custom-builder"
 		customClusterBuilderName = "custom-cluster-builder"
+	)
+
+	var (
+		cfg     config
+		clients *clients
 	)
 
 	it.Before(func() {
@@ -348,6 +350,7 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, expectedResources v1.ResourceRequirements) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	logTail := &bytes.Buffer{}
 	go func() {
 		err := logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, image.Name, "1", image.Namespace)
@@ -357,7 +360,8 @@ func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, 
 	t.Logf("Waiting for image '%s' to be created", image.Name)
 	waitUntilReady(t, clients, image)
 
-	_, err := registry.NewGoContainerRegistryImage(image.Spec.Tag, authn.DefaultKeychain)
+	registryClient := &registry.Client{}
+	_, _, err = registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
