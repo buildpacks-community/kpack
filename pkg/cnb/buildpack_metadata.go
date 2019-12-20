@@ -1,6 +1,8 @@
 package cnb
 
-import "fmt"
+import (
+	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+)
 
 const (
 	buildpackOrderLabel    = "io.buildpacks.buildpack.order"
@@ -11,36 +13,12 @@ const (
 	orderTomlPath = "/cnb/order.toml"
 )
 
-type Order []OrderEntry
-
-type OrderEntry struct {
-	Group []BuildpackRef `toml:"group" json:"group"`
-}
-
-type TomlOrder struct {
-	Order Order `toml:"order"`
-}
-
-type BuildpackRef struct {
-	BuildpackInfo
-	Optional bool `toml:"optional,omitempty" json:"optional,omitempty"`
-}
-
-type BuildpackInfo struct {
-	ID      string `toml:"id" json:"id"`
-	Version string `toml:"version" json:"version,omitempty"`
-}
-
-func (b BuildpackInfo) String() string {
-	return fmt.Sprintf("%s@%s", b.ID, b.Version)
-}
-
 type BuilderImageMetadata struct {
-	Description string            `json:"description"`
-	Stack       StackMetadata     `json:"stack"`
-	Lifecycle   LifecycleMetadata `json:"lifecycle"`
-	CreatedBy   CreatorMetadata   `json:"createdBy"`
-	Buildpacks  []BuildpackInfo   `json:"buildpacks"`
+	Description string                   `json:"description"`
+	Stack       StackMetadata            `json:"stack"`
+	Lifecycle   LifecycleMetadata        `json:"lifecycle"`
+	CreatedBy   CreatorMetadata          `json:"createdBy"`
+	Buildpacks  []v1alpha1.BuildpackInfo `json:"buildpacks"`
 }
 
 type StackMetadata struct {

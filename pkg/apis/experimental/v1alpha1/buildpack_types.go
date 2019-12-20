@@ -1,11 +1,23 @@
 package v1alpha1
 
-type Group struct {
-	Group []Buildpack `json:"group"`
+import "fmt"
+
+type Order []OrderEntry
+
+type OrderEntry struct {
+	Group []BuildpackRef `json:"group"`
 }
 
-type Buildpack struct {
-	ID       string `json:"id"`
-	Version  string `json:"version"`
-	Optional bool   `json:"optional"`
+type BuildpackRef struct {
+	BuildpackInfo
+	Optional bool `json:"optional,omitempty"`
+}
+
+type BuildpackInfo struct {
+	ID      string `json:"id"`
+	Version string `json:"version,omitempty"`
+}
+
+func (b BuildpackInfo) String() string {
+	return fmt.Sprintf("%s@%s", b.ID, b.Version)
 }

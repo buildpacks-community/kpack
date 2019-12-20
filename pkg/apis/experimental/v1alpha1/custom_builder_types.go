@@ -22,10 +22,10 @@ type CustomBuilder struct {
 }
 
 type CustomBuilderSpec struct {
-	Tag   string  `json:"tag"`
-	Stack Stack   `json:"stack"`
-	Store string  `json:"store"`
-	Order []Group `json:"order"`
+	Tag   string       `json:"tag"`
+	Stack Stack        `json:"stack"`
+	Store string       `json:"store"`
+	Order []OrderEntry `json:"order"`
 }
 
 type CustomNamespacedBuilderSpec struct {

@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
@@ -22,11 +21,10 @@ type Store struct {
 }
 
 type StoreSpec struct {
-	Sources           []BuildPackage         `json:"sources"`
-	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef"`
+	Sources []StoreImage `json:"sources"`
 }
 
-type BuildPackage struct {
+type StoreImage struct {
 	Image string `json:"image"`
 }
 
@@ -36,11 +34,10 @@ type StoreStatus struct {
 }
 
 type StoreBuildpack struct {
-	ID           string       `json:"id"`
-	Version      string       `json:"version"`
-	LayerDiffID  string       `json:"layerDiffId"`
-	BuildPackage BuildPackage `json:"buildPackage"`
-	Order        []Group      `json:"order"`
+	BuildpackInfo
+	LayerDiffID string       `json:"layerDiffId"`
+	StoreImage  StoreImage   `json:"storeImage"`
+	Order       []OrderEntry `json:"order"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

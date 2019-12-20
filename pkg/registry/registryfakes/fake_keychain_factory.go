@@ -50,6 +50,7 @@ func (f *FakeKeychainFactory) getKeychainForSecretRef(secretRef registry.SecretR
 }
 
 type FakeKeychain struct {
+	Name string
 
 }
 

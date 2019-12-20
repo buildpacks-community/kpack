@@ -1,15 +1,19 @@
 package cnb
 
-import v1 "github.com/google/go-containerregistry/pkg/v1"
+import (
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
+	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+)
 
 type RemoteBuildpackInfo struct {
-	BuildpackInfo BuildpackInfo
+	BuildpackInfo v1alpha1.BuildpackInfo
 	Layers        []buildpackLayer
 }
 
 func (i RemoteBuildpackInfo) Optional(optional bool) RemoteBuildpackRef {
 	return RemoteBuildpackRef{
-		BuildpackRef: BuildpackRef{
+		BuildpackRef: v1alpha1.BuildpackRef{
 			BuildpackInfo: i.BuildpackInfo,
 			Optional:      optional,
 		},
@@ -18,12 +22,12 @@ func (i RemoteBuildpackInfo) Optional(optional bool) RemoteBuildpackRef {
 }
 
 type RemoteBuildpackRef struct {
-	BuildpackRef BuildpackRef
+	BuildpackRef v1alpha1.BuildpackRef
 	Layers       []buildpackLayer
 }
 
 type buildpackLayer struct {
 	v1Layer       v1.Layer
-	BuildpackInfo BuildpackInfo
-	Order         Order
+	BuildpackInfo v1alpha1.BuildpackInfo
+	Order         v1alpha1.Order
 }

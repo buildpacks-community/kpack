@@ -9,5 +9,5 @@ import (
 func TestDependencies(t *testing.T) {
 	archtest.Package(t, "github.com/pivotal/kpack/...").
 		IncludeTests().
-		ShouldNotDependDirectlyOn("gotest.tools/...")
+		ShouldNotDependDirectlyOn("gotest.tools/...", "github.com/tj/assert/...")
 }

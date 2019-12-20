@@ -129,6 +129,9 @@ func main() {
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
+	remoteStoreReader := &cnb.RemoteStoreReader{
+		RegistryClient: &registry.Client{},
+	}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
@@ -137,7 +140,7 @@ func main() {
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
 	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
-	storeController := store.NewController(options, storeInformer, &registry.Client{})
+	storeController := store.NewController(options, storeInformer, remoteStoreReader, keychainFactory)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)

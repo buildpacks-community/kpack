@@ -86,17 +86,21 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					BaseBuilderImage: "example.com/some-base-image",
 				},
 				Store: "some-store",
-				Order: []expv1alpha1.Group{
+				Order: []expv1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.Buildpack{
+						Group: []expv1alpha1.BuildpackRef{
 							{
-								ID:       "buildpack.id.1",
-								Version:  "1.0.0",
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									ID:      "buildpack.id.1",
+									Version: "1.0.0",
+								},
 								Optional: false,
 							},
 							{
-								ID:       "buildpack.id.2",
-								Version:  "2.0.0",
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									ID:      "buildpack.id.2",
+									Version: "2.0.0",
+								},
 								Optional: false,
 							},
 						},

@@ -23,7 +23,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		return RemoteBuildpackInfo{}, err
 	}
 
-	buildPackageImage, _, err := s.RegistryClient.Fetch(s.Keychain, storeBuildpack.BuildPackage.Image)
+	buildPackageImage, _, err := s.RegistryClient.Fetch(s.Keychain, storeBuildpack.StoreImage.Image)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}
@@ -38,12 +38,12 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		return RemoteBuildpackInfo{}, err
 	}
 
-	layers, err := s.layersForOrder(toCnbOrder(storeBuildpack.Order))
+	layers, err := s.layersForOrder(storeBuildpack.Order)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}
 
-	info := BuildpackInfo{
+	info := v1alpha1.BuildpackInfo{
 		ID:      storeBuildpack.ID,
 		Version: storeBuildpack.Version,
 	}
@@ -53,7 +53,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		Layers: append(layers, buildpackLayer{
 			v1Layer:       layer,
 			BuildpackInfo: info,
-			Order:         toCnbOrder(storeBuildpack.Order),
+			Order:         storeBuildpack.Order,
 		}),
 	}, nil
 }
@@ -84,7 +84,7 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.S
 }
 
 // TODO: ensure there are no cycles in the buildpack graph
-func (s *StoreBuildpackRepository) layersForOrder(order Order) ([]buildpackLayer, error) {
+func (s *StoreBuildpackRepository) layersForOrder(order v1alpha1.Order) ([]buildpackLayer, error) {
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
@@ -98,24 +98,6 @@ func (s *StoreBuildpackRepository) layersForOrder(order Order) ([]buildpackLayer
 
 	}
 	return buildpackLayers, nil
-}
-
-func toCnbOrder(groups []v1alpha1.Group) Order {
-	var order Order
-	for _, elem := range groups {
-		var entry OrderEntry
-		for _, buildpack := range elem.Group {
-			entry.Group = append(entry.Group, BuildpackRef{
-				BuildpackInfo: BuildpackInfo{
-					ID:      buildpack.ID,
-					Version: buildpack.Version,
-				},
-				Optional: buildpack.Optional,
-			})
-		}
-		order = append(order, entry)
-	}
-	return order
 }
 
 func highestVersion(matchingBuildpacks []v1alpha1.StoreBuildpack) v1alpha1.StoreBuildpack {
