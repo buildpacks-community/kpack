@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 )
@@ -79,13 +79,13 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		customBuilder = &experimentalv1alpha1.CustomBuilder{
+		customBuilder = &expv1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
 				Namespace: customBuilderNamespace,
 			},
-			Spec: experimentalv1alpha1.CustomNamespacedBuilderSpec{},
-			Status: experimentalv1alpha1.CustomBuilderStatus{
+			Spec: expv1alpha1.CustomNamespacedBuilderSpec{},
+			Status: expv1alpha1.CustomBuilderStatus{
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
@@ -99,12 +99,12 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		customClusterbuilder = &experimentalv1alpha1.CustomClusterBuilder{
+		customClusterbuilder = &expv1alpha1.CustomClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: customClusterBuilderName,
 			},
-			Spec: experimentalv1alpha1.CustomClusterBuilderSpec{},
-			Status: experimentalv1alpha1.CustomBuilderStatus{
+			Spec: expv1alpha1.CustomClusterBuilderSpec{},
+			Status: expv1alpha1.CustomBuilderStatus{
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
@@ -171,7 +171,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("can return a builder of type CustomBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace(customBuilderNamespace).Get(v1.ObjectReference{
-				Kind:      experimentalv1alpha1.CustomBuilderKind,
+				Kind:      expv1alpha1.CustomBuilderKind,
 				Namespace: customBuilderNamespace,
 				Name:      customBuilderName,
 			})
@@ -184,7 +184,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("can return a builder of type CustomClusterBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace("").Get(v1.ObjectReference{
-				Kind: experimentalv1alpha1.CustomClusterBuilderKind,
+				Kind: expv1alpha1.CustomClusterBuilderKind,
 				Name: customClusterBuilderName,
 			})
 			require.NoError(t, err)
@@ -196,8 +196,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns a k8s not found error on missing builder", func() {
 			for _, typ := range []string{
-				experimentalv1alpha1.CustomClusterBuilderKind,
-				experimentalv1alpha1.CustomBuilderKind,
+				expv1alpha1.CustomClusterBuilderKind,
+				expv1alpha1.CustomBuilderKind,
 				v1alpha1.BuilderKind,
 				v1alpha1.ClusterBuilderKind,
 			} {

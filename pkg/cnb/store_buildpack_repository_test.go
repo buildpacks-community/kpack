@@ -14,8 +14,8 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
-func TestBuildpackRetriever(t *testing.T) {
-	spec.Run(t, "TestBuildpackRetriever", testBuildpackRetriever)
+func TestBuildpackRepository(t *testing.T) {
+	spec.Run(t, "TestBuildpackRepository", testBuildpackRetriever)
 }
 
 func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
@@ -62,58 +62,72 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 				Status: v1alpha1.StoreStatus{
 					Buildpacks: []v1alpha1.StoreBuildpack{
 						{
-							ID:          "io.buildpack.engine",
-							Version:     "v1",
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.engine",
+								Version: "v1",
+							},
 							LayerDiffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							BuildPackage: v1alpha1.BuildPackage{
+							StoreImage: v1alpha1.StoreImage{
 								Image: "some.registry.io/build-package",
 							},
 							Order: nil,
 						},
 						{
-							ID:          "io.buildpack.multi",
-							Version:     "v9",
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.multi",
+								Version: "v9",
+							},
 							LayerDiffID: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							BuildPackage: v1alpha1.BuildPackage{
+							StoreImage: v1alpha1.StoreImage{
 								Image: "some.registry.io/build-package",
 							},
 							Order: nil,
 						}, {
-							ID:          "io.buildpack.multi",
-							Version:     "v8",
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.multi",
+								Version: "v8",
+							},
 							LayerDiffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							BuildPackage: v1alpha1.BuildPackage{
+							StoreImage: v1alpha1.StoreImage{
 								Image: "some.registry.io/build-package",
 							},
 							Order: nil,
 						},
 						{
-							ID:          "io.buildpack.package-manager",
-							Version:     "v1",
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.package-manager",
+								Version: "v1",
+							},
 							LayerDiffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							BuildPackage: v1alpha1.BuildPackage{
+							StoreImage: v1alpha1.StoreImage{
 								Image: "some.registry.io/build-package",
 							},
 							Order: nil,
 						},
 						{
-							ID:          "io.buildpack.meta",
-							Version:     "v1",
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.meta",
+								Version: "v1",
+							},
 							LayerDiffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							BuildPackage: v1alpha1.BuildPackage{
+							StoreImage: v1alpha1.StoreImage{
 								Image: "some.registry.io/build-package",
 							},
-							Order: []v1alpha1.Group{
+							Order: []v1alpha1.OrderEntry{
 								{
-									Group: []v1alpha1.Buildpack{
+									Group: []v1alpha1.BuildpackRef{
 										{
-											ID:       "io.buildpack.engine",
-											Version:  "v1",
+											BuildpackInfo: v1alpha1.BuildpackInfo{
+												ID:      "io.buildpack.engine",
+												Version: "v1",
+											},
 											Optional: false,
 										},
 										{
-											ID:       "io.buildpack.package-manager",
-											Version:  "v1",
+											BuildpackInfo: v1alpha1.BuildpackInfo{
+												ID:      "io.buildpack.package-manager",
+												Version: "v1",
+											},
 											Optional: true,
 										},
 									},
@@ -130,14 +144,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.engine",
 					Version: "v1",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: engineLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
 						},
@@ -151,14 +165,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.multi",
 					Version: "v9",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: v9Layer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.multi",
 							Version: "v9",
 						},
@@ -172,43 +186,43 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.meta",
 					Version: "v1",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: engineLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
 						},
 					},
 					{
 						v1Layer: packageManagerLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.package-manager",
 							Version: "v1",
 						},
 					},
 					{
 						v1Layer: metaLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.meta",
 							Version: "v1",
 						},
-						Order: Order{
+						Order: v1alpha1.Order{
 							{
-								Group: []BuildpackRef{
+								Group: []v1alpha1.BuildpackRef{
 									{
-										BuildpackInfo: BuildpackInfo{
+										BuildpackInfo: v1alpha1.BuildpackInfo{
 											ID:      "io.buildpack.engine",
 											Version: "v1",
 										},
 										Optional: false,
 									},
 									{
-										BuildpackInfo: BuildpackInfo{
+										BuildpackInfo: v1alpha1.BuildpackInfo{
 											ID:      "io.buildpack.package-manager",
 											Version: "v1",
 										},

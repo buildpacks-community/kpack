@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -37,7 +37,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		keychain = authn.NewMultiKeychain(authn.DefaultKeychain)
 
-		store = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
+		buildpackRepository = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
 
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
@@ -55,22 +55,26 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
-		clusterBuilderSpec = eV1alpha1.CustomBuilderSpec{
+		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
 			Tag: "custom/example",
-			Stack: eV1alpha1.Stack{
+			Stack: expv1alpha1.Stack{
 				BaseBuilderImage: baseBuilder,
 			},
-			Store: "some-store",
-			Order: []eV1alpha1.Group{
+			Store: "some-buildpackRepository",
+			Order: []expv1alpha1.OrderEntry{
 				{
-					Group: []eV1alpha1.Buildpack{
+					Group: []expv1alpha1.BuildpackRef{
 						{
-							ID:      "io.buildpack.1",
-							Version: "v1",
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.1",
+								Version: "v1",
+							},
 						},
 						{
-							ID:       "io.buildpack.2",
-							Version:  "v2",
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.2",
+								Version: "v2",
+							},
 							Optional: true,
 						},
 					},
@@ -83,35 +87,35 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 	)
 
-	store.AddBP("io.buildpack.1", "v1", []buildpackLayer{
+	buildpackRepository.AddBP("io.buildpack.1", "v1", []buildpackLayer{
 		{
 			v1Layer: buildpack1Layer,
-			BuildpackInfo: BuildpackInfo{
+			BuildpackInfo: expv1alpha1.BuildpackInfo{
 				ID:      "io.buildpack.1",
 				Version: "v1",
 			},
 		},
 	})
 
-	store.AddBP("io.buildpack.2", "v2", []buildpackLayer{
+	buildpackRepository.AddBP("io.buildpack.2", "v2", []buildpackLayer{
 		{
 			v1Layer: buildpack3Layer,
-			BuildpackInfo: BuildpackInfo{
+			BuildpackInfo: expv1alpha1.BuildpackInfo{
 				ID:      "io.buildpack.3",
 				Version: "v2",
 			},
 		},
 		{
 			v1Layer: buildpack2Layer,
-			BuildpackInfo: BuildpackInfo{
+			BuildpackInfo: expv1alpha1.BuildpackInfo{
 				ID:      "io.buildpack.2",
 				Version: "v1",
 			},
-			Order: Order{
+			Order: expv1alpha1.Order{
 				{
-					Group: []BuildpackRef{
+					Group: []expv1alpha1.BuildpackRef{
 						{
-							BuildpackInfo: BuildpackInfo{
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
 								ID:      "io.buildpack.3",
 								Version: "v2",
 							},
@@ -174,7 +178,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
+			builderRecord, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -296,11 +300,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -321,7 +325,7 @@ func (f *fakeBuildpackRepository) FindByIdAndVersion(id, version string) (Remote
 	}
 
 	return RemoteBuildpackInfo{
-		BuildpackInfo: BuildpackInfo{
+		BuildpackInfo: expv1alpha1.BuildpackInfo{
 			ID:      id,
 			Version: version,
 		},

@@ -132,24 +132,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: storeName,
 			},
 			Spec: expv1alpha1.StoreSpec{
-				Sources: []expv1alpha1.BuildPackage{
+				Sources: []expv1alpha1.StoreImage{
 					{
-						Image: cfg.buildpackageTag("nodejs"),
-					},
-					{
-						Image: cfg.buildpackageTag("node-engine"),
-					},
-					{
-						Image: cfg.buildpackageTag("yarn"),
-					},
-					{
-						Image: cfg.buildpackageTag("npm"),
-					},
-					{
-						Image: cfg.buildpackageTag("openjdk"),
-					},
-					{
-						Image: cfg.buildpackageTag("jvmapplication"),
+						Image: builderImage,
 					},
 				},
 			},
@@ -174,24 +159,36 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: expv1alpha1.Stack{
-						BaseBuilderImage: cfg.stackTag(),
+						BaseBuilderImage: builderImage,
 					},
 					Store: storeName,
-					Order: []expv1alpha1.Group{
+					Order: []expv1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.Buildpack{
+							Group: []expv1alpha1.BuildpackRef{
 								{
-									ID: "org.cloudfoundry.nodejs",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.nodejs",
+									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.Buildpack{
+							Group: []expv1alpha1.BuildpackRef{
 								{
-									ID: "org.cloudfoundry.openjdk",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.openjdk",
+									},
 								},
 								{
-									ID: "org.cloudfoundry.jvmapplication",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.buildsystem",
+									},
+									Optional: true,
+								},
+								{
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.jvmapplication",
+									},
 								},
 							},
 						},
@@ -210,24 +207,36 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: expv1alpha1.Stack{
-						BaseBuilderImage: cfg.stackTag(),
+						BaseBuilderImage: builderImage,
 					},
 					Store: storeName,
-					Order: []expv1alpha1.Group{
+					Order: []expv1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.Buildpack{
+							Group: []expv1alpha1.BuildpackRef{
 								{
-									ID: "org.cloudfoundry.nodejs",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.nodejs",
+									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.Buildpack{
+							Group: []expv1alpha1.BuildpackRef{
 								{
-									ID: "org.cloudfoundry.openjdk",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.openjdk",
+									},
 								},
 								{
-									ID: "org.cloudfoundry.jvmapplication",
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.buildsystem",
+									},
+									Optional: true,
+								},
+								{
+									BuildpackInfo: expv1alpha1.BuildpackInfo{
+										ID: "org.cloudfoundry.jvmapplication",
+									},
 								},
 							},
 						},

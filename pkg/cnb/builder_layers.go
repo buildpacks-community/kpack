@@ -2,14 +2,16 @@ package cnb
 
 import (
 	"github.com/pkg/errors"
+
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
 type BuildpackLayerMetadata map[string]map[string]BuildpackLayerInfo
 
 type BuildpackLayerInfo struct {
-	LayerDigest string `json:"layerDigest"`
-	LayerDiffID string `json:"layerDiffID"`
-	Order       Order  `json:"order,omitempty"`
+	LayerDigest string            `json:"layerDigest"`
+	LayerDiffID string            `json:"layerDiffID"`
+	Order       expv1alpha1.Order `json:"order,omitempty"`
 }
 
 func (l BuildpackLayerMetadata) add(layer buildpackLayer) error {

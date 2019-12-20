@@ -2,10 +2,8 @@ package store
 
 import (
 	"context"
-	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,8 +17,8 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -28,15 +26,17 @@ const (
 	Kind           = "Store"
 )
 
-type BuildPackageClient interface {
-	Fetch(keychain authn.Keychain, repoName string) (ggcrv1.Image, string, error)
+//go:generate counterfeiter . StoreReader
+type StoreReader interface {
+	Read(keychain authn.Keychain, storeImages []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error)
 }
 
-func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.StoreInformer, client BuildPackageClient) *controller.Impl {
+func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.StoreInformer, storeReader StoreReader, keychainFactory registry.KeychainFactory) *controller.Impl {
 	c := &Reconciler{
-		Client:             opt.Client,
-		StoreLister:        storeInformer.Lister(),
-		BuildPackageClient: client,
+		Client:          opt.Client,
+		StoreLister:     storeInformer.Lister(),
+		StoreReader:     storeReader,
+		KeychainFactory: keychainFactory,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	storeInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -44,9 +44,10 @@ func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.St
 }
 
 type Reconciler struct {
-	Client             versioned.Interface
-	BuildPackageClient BuildPackageClient
-	StoreLister        v1alpha1expListers.StoreLister
+	Client          versioned.Interface
+	StoreReader     StoreReader
+	KeychainFactory registry.KeychainFactory
+	StoreLister     v1alpha1expListers.StoreLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -128,52 +129,11 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 	return store, nil
 }
 
-func (c *Reconciler) getBuildpacks(sources []expv1alpha1.BuildPackage) ([]expv1alpha1.StoreBuildpack, error) {
-	var buildpacks []expv1alpha1.StoreBuildpack
-	for _, buildPackage := range sources {
-		image, _, err := c.BuildPackageClient.Fetch(authn.DefaultKeychain, buildPackage.Image)
-		if err != nil {
-			return nil, err
-		}
-
-		var packageMetadata cnb.BuildpackLayerMetadata
-		err = imagehelpers.GetLabel(image, "io.buildpacks.buildpack.layers", &packageMetadata)
-		if err != nil {
-			return nil, err
-		}
-
-		for id := range packageMetadata {
-			for version := range packageMetadata[id] {
-				order, err := toStoreOrder(packageMetadata[id][version].Order)
-				if err != nil {
-					return nil, err
-				}
-				storeBP := expv1alpha1.StoreBuildpack{
-					ID:           id,
-					Version:      version,
-					LayerDiffID:  packageMetadata[id][version].LayerDiffID,
-					BuildPackage: buildPackage,
-					Order:        order,
-				}
-				buildpacks = append(buildpacks, storeBP)
-			}
-		}
+func (c *Reconciler) getBuildpacks(sources []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error) {
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	if err != nil {
+		return nil, err
 	}
-	return buildpacks, nil
-}
 
-func toStoreOrder(order cnb.Order) ([]expv1alpha1.Group, error) {
-	var storeOrder []expv1alpha1.Group
-	for _, entry := range order {
-		var group expv1alpha1.Group
-		for _, buildpack := range entry.Group {
-			group.Group = append(group.Group, expv1alpha1.Buildpack{
-				ID:       buildpack.ID,
-				Version:  buildpack.Version,
-				Optional: buildpack.Optional,
-			})
-		}
-		storeOrder = append(storeOrder, group)
-	}
-	return storeOrder, nil
+	return c.StoreReader.Read(keychain, sources)
 }
