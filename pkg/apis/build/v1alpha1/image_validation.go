@@ -47,10 +47,10 @@ func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
 func (im *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
-		return validateImmutableField(original.Spec.Tag, im.Tag, "tag")
+		return ValidateImmutableField(original.Spec.Tag, im.Tag, "tag")
 	}
 
-	return validateTag(im.Tag)
+	return ValidateTag(im.Tag)
 }
 
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
@@ -99,8 +99,8 @@ func (g *Git) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return validateFieldNotEmpty(g.URL, "url").
-		Also(validateFieldNotEmpty(g.Revision, "revision"))
+	return ValidateFieldNotEmpty(g.URL, "url").
+		Also(ValidateFieldNotEmpty(g.Revision, "revision"))
 }
 
 func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
@@ -108,7 +108,7 @@ func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return validateFieldNotEmpty(b.URL, "url")
+	return ValidateFieldNotEmpty(b.URL, "url")
 }
 
 func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
@@ -116,5 +116,5 @@ func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return validateImage(r.Image)
+	return ValidateImage(r.Image)
 }

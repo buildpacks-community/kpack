@@ -17,7 +17,7 @@ func (b *Builder) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (bs *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validateImage(bs.Image)
+	return ValidateImage(bs.Image)
 }
 
 func (b *ClusterBuilder) SetDefaults(ctx context.Context) {

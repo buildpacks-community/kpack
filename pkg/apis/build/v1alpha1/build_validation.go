@@ -18,8 +18,8 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validateListNotEmpty(bs.Tags, "tags").
-		Also(validateTags(bs.Tags)).
+	return ValidateListNotEmpty(bs.Tags, "tags").
+		Also(ValidateTags(bs.Tags)).
 		Also(bs.Builder.Validate(ctx).ViaField("builder")).
 		Also(bs.Source.Validate(ctx).ViaField("source")).
 		Also(bs.LastBuild.Validate(ctx).ViaField("lastBuild")).
@@ -49,7 +49,7 @@ func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldErr
 }
 
 func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validateImage(bbs.Image)
+	return ValidateImage(bbs.Image)
 }
 
 func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
@@ -57,5 +57,5 @@ func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return validateImage(lb.Image)
+	return ValidateImage(lb.Image)
 }

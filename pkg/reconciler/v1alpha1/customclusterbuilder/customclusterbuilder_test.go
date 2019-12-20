@@ -189,7 +189,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
-				Keychain: &registryfakes.FakeKeychain{},
+				Keychain:            &registryfakes.FakeKeychain{},
 				BuildpackRepository: testhelpers.FakeBuildpackRepository{Store: store},
 				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)

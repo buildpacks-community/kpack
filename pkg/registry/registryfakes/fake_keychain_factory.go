@@ -51,7 +51,6 @@ func (f *FakeKeychainFactory) getKeychainForSecretRef(secretRef registry.SecretR
 
 type FakeKeychain struct {
 	Name string
-
 }
 
 func (f *FakeKeychain) Resolve(authn.Resource) (authn.Authenticator, error) {
