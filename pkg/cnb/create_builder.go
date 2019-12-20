@@ -1,18 +1,15 @@
 package cnb
 
 import (
-	"fmt"
-
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
-type Client interface {
-	Fetch(keychain authn.Keychain, repoName string) (v1.Image, error)
+type RegistryClient interface {
+	Fetch(keychain authn.Keychain, repoName string) (v1.Image, string, error)
 	Save(keychain authn.Keychain, tag string, image v1.Image) (string, error)
 }
 
@@ -25,29 +22,29 @@ type Store interface {
 }
 
 type RemoteBuilderCreator struct {
-	RemoteImageClient Client
-	StoreFactory      StoreFactory
+	RegistryClient RegistryClient
+	StoreFactory   StoreFactory
 }
 
 func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, spec experimentalV1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
-	baseImage, err := r.RemoteImageClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
+	baseImage, _, err := r.RegistryClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
 	store, err := r.StoreFactory.MakeStore(keychain, spec.Store.Image)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
 	builderBuilder, err := newBuilderBuilder(baseImage)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
-	runImage, err := r.getRunImage(keychain, builderBuilder.baseMetadata.Stack.RunImage.Image)
+	_, runImageId, err := r.RegistryClient.Fetch(keychain, builderBuilder.baseMetadata.Stack.RunImage.Image)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
 	for _, group := range spec.Order {
@@ -56,7 +53,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, spec exper
 		for _, buildpack := range group.Group {
 			remoteBuildpack, err := store.FetchBuildpack(buildpack.ID, buildpack.Version)
 			if err != nil {
-				return emptyRecord, err
+				return v1alpha1.BuilderRecord{}, err
 			}
 
 			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
@@ -66,39 +63,20 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, spec exper
 
 	writeableImage, err := builderBuilder.writeableImage()
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
-	identifier, err := r.RemoteImageClient.Save(keychain, spec.Tag, writeableImage)
+	identifier, err := r.RegistryClient.Save(keychain, spec.Tag, writeableImage)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
-			RunImage: runImage,
+			RunImage: runImageId,
 			ID:       builderBuilder.stackID,
 		},
 		Buildpacks: builderBuilder.buildpacks(),
 	}, nil
-}
-
-func (r *RemoteBuilderCreator) getRunImage(keychain authn.Keychain, tag string) (string, error) {
-	runImageRef, err := name.ParseReference(tag, name.WeakValidation)
-	if err != nil {
-		return "", err
-	}
-
-	runImage, err := r.RemoteImageClient.Fetch(keychain, tag)
-	if err != nil {
-		return "", err
-	}
-
-	rawDigest, err := runImage.Digest()
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s@%s", runImageRef.Context().Name(), rawDigest), nil
 }

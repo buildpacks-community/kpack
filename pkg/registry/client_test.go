@@ -23,6 +23,26 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 	handler := http.NewServeMux()
 	server := httptest.NewServer(handler)
 	tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
+	subject := &registry.Client{}
+
+	when("Fetch", func() {
+		when("#Identifer", func() {
+			it("includes digest if repoName does not have a digest", func() {
+				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "cloudfoundry/cnb:bionic")
+				require.NoError(t, err)
+
+				require.Len(t, imageId, 104)
+				require.Equal(t, imageId[0:40], "index.docker.io/cloudfoundry/cnb@sha256:")
+			})
+
+			it("includes digest if repoName already has a digest", func() {
+				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "cloudfoundry/cnb:bionic@sha256:33c3ad8676530f864d51d78483b510334ccc4f03368f7f5bb9d517ff4cbd630f")
+				require.NoError(t, err)
+
+				require.Equal(t, imageId, "index.docker.io/cloudfoundry/cnb@sha256:33c3ad8676530f864d51d78483b510334ccc4f03368f7f5bb9d517ff4cbd630f")
+			})
+		})
+	})
 
 	when("Save", func() {
 		it("should save", func() {
@@ -47,7 +67,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			_, err := (&registry.Client{}).Save(authn.DefaultKeychain, tagName, image)
+			_, err := subject.Save(authn.DefaultKeychain, tagName, image)
 			require.NoError(t, err)
 		})
 
@@ -70,7 +90,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			_, err := (&registry.Client{}).Save(authn.DefaultKeychain, tagName, image)
+			_, err := subject.Save(authn.DefaultKeychain, tagName, image)
 			require.NoError(t, err)
 		})
 	})
@@ -79,6 +99,5 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 func randomImage(t *testing.T) v1.Image {
 	image, err := random.Image(5, 10)
 	require.NoError(t, err)
-
 	return image
 }

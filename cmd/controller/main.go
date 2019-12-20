@@ -103,12 +103,9 @@ func main() {
 		log.Fatalf("could not create k8s keychain factory: %s", err.Error())
 	}
 
-	imageFactory := &registry.ImageFactory{
-		KeychainFactory: keychainFactory,
-	}
-
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
-		RemoteImageFactory: imageFactory,
+		KeychainFactory: keychainFactory,
+		ImageFetcher:    &registry.Client{},
 	}
 
 	buildpodGenerator := &buildpod.Generator{
@@ -117,13 +114,14 @@ func main() {
 			CompletionImage: *completionImage,
 			RebaseImage:     *rebaseImage,
 		},
-		K8sClient:          k8sClient,
-		RemoteImageFactory: imageFactory,
+		K8sClient:       k8sClient,
+		KeychainFactory: keychainFactory,
+		ImageFetcher:    &registry.Client{},
 	}
 
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RemoteImageClient: &registry.Client{},
-		StoreFactory:      &cnb.BuildPackageStoreFactory{},
+		RegistryClient: &registry.Client{},
+		StoreFactory:   &cnb.BuildPackageStoreFactory{},
 	}
 
 	gitResolver := git.NewResolver(k8sClient)

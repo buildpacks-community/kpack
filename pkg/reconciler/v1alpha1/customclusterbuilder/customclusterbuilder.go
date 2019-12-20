@@ -42,8 +42,8 @@ func NewController(opt reconciler.Options, informer v1alpha1informers.CustomClus
 type Reconciler struct {
 	Client                     versioned.Interface
 	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
-	BuilderCreator             BuilderCreator
 	KeychainFactory            registry.KeychainFactory
+	BuilderCreator             BuilderCreator
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {

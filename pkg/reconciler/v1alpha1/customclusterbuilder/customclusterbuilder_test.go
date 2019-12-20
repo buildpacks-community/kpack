@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +19,8 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
+	"github.com/pivotal/kpack/pkg/registry"
+	regtesthelpers "github.com/pivotal/kpack/pkg/registry/testhelpers"
 )
 
 func TestCustomClusterBuilderReconciler(t *testing.T) {
@@ -36,8 +37,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
+		keychainFactory = &regtesthelpers.FakeKeychainFactory{}
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
-		keychainFactory = &testhelpers.FakeKeychainFactory{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -91,7 +92,16 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	secretRef := registry.SecretRef{
+		ServiceAccount: customBuilder.Spec.ServiceAccountRef.Name,
+		Namespace:      customBuilder.Spec.ServiceAccountRef.Namespace,
+	}
+
 	when("#Reconcile", func() {
+		it.Before(func() {
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, &regtesthelpers.FakeKeychain{})
+		})
+
 		it("saves metadata to the status", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: customBuilderIdentifier,
@@ -154,10 +164,6 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
-
-			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Name, keychainFactory.SecretRef.ServiceAccount)
-			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Namespace, keychainFactory.SecretRef.Namespace)
-			assert.Len(t, keychainFactory.SecretRef.ImagePullSecrets, 0)
 		})
 
 		it("does not update the status with no status change", func() {
