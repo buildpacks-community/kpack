@@ -28,6 +28,7 @@ type ExperimentalV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CustomBuildersGetter
 	CustomClusterBuildersGetter
+	StoresGetter
 }
 
 // ExperimentalV1alpha1Client is used to interact with features provided by the experimental.kpack.pivotal.io group.
@@ -41,6 +42,10 @@ func (c *ExperimentalV1alpha1Client) CustomBuilders(namespace string) CustomBuil
 
 func (c *ExperimentalV1alpha1Client) CustomClusterBuilders() CustomClusterBuilderInterface {
 	return newCustomClusterBuilders(c)
+}
+
+func (c *ExperimentalV1alpha1Client) Stores() StoreInterface {
+	return newStores(c)
 }
 
 // NewForConfig creates a new ExperimentalV1alpha1Client for the given config.

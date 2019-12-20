@@ -13,11 +13,12 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	eV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
-	"github.com/pivotal/kpack/pkg/registry/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestCreateBuilder(t *testing.T) {
@@ -33,13 +34,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		registryClient = testhelpers.NewFakeClient()
+		registryClient = registryfakes.NewFakeClient()
 
-		storeFactory = &fakeStoreFactory{
-			image:    "store/image",
-			keychain: authn.NewMultiKeychain(authn.DefaultKeychain),
-			store:    &fakeStore{buildpacks: map[string][]buildpackLayer{}},
-		}
+		keychain = authn.NewMultiKeychain(authn.DefaultKeychain)
+
+		store = &fakeStore{buildpacks: map[string][]buildpackLayer{}}
 
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
@@ -62,8 +61,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			Stack: eV1alpha1.Stack{
 				BaseBuilderImage: baseBuilder,
 			},
-			Store: eV1alpha1.Store{
-				Image: storeFactory.image,
+			Store: corev1.ObjectReference{
+				Kind: eV1alpha1.StoreKind,
+				Name: "some-store",
 			},
 			Order: []eV1alpha1.Group{
 				{
@@ -84,11 +84,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		subject = RemoteBuilderCreator{
 			RegistryClient: registryClient,
-			StoreFactory:   storeFactory,
 		}
 	)
 
-	storeFactory.store.AddBP("io.buildpack.1", "v1", []buildpackLayer{
+	store.AddBP("io.buildpack.1", "v1", []buildpackLayer{
 		{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: BuildpackInfo{
@@ -98,7 +97,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		},
 	})
 
-	storeFactory.store.AddBP("io.buildpack.2", "v2", []buildpackLayer{
+	store.AddBP("io.buildpack.2", "v2", []buildpackLayer{
 		{
 			v1Layer: buildpack3Layer,
 			BuildpackInfo: BuildpackInfo{
@@ -128,7 +127,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		},
 	})
 
-	registryClient.AddSaveKeychain("custom/example", storeFactory.keychain)
+	registryClient.AddSaveKeychain("custom/example", keychain)
 
 	when("CreateBuilder", func() {
 		var (
@@ -166,7 +165,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			registryClient.AddImage(baseBuilder, baseImage, "index.docker.io/base/builder@sha256:abc123", storeFactory.keychain)
+			registryClient.AddImage(baseBuilder, baseImage, "index.docker.io/base/builder@sha256:abc123", keychain)
 
 			runImage, err := random.Image(1, int64(1))
 			require.NoError(t, err)
@@ -175,11 +174,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 			runImageDigest = rawDigest.Hex
 
-			registryClient.AddImage(runImageTag, runImage, "index.docker.io/kpack/run@sha256:"+runImageDigest, storeFactory.keychain)
+			registryClient.AddImage(runImageTag, runImage, "index.docker.io/kpack/run@sha256:"+runImageDigest, keychain)
 		})
 
-		it.Focus("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(storeFactory.keychain, clusterBuilderSpec)
+		it("creates a custom builder", func() {
+			builderRecord, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -301,11 +300,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(storeFactory.keychain, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(storeFactory.keychain, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(keychain, store, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)

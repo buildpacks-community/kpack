@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -44,6 +44,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderName       = "cluster-builder"
 		serviceAccountName       = "image-service-account"
 		builderImage             = "cloudfoundry/cnb:bionic"
+		storeName                = "store"
 		customBuilderName        = "custom-builder"
 		customClusterBuilderName = "custom-cluster-builder"
 	)
@@ -126,6 +127,34 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
+		clients.client.ExperimentalV1alpha1().Stores().Create(&expv1alpha1.Store{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: storeName,
+			},
+			Spec: expv1alpha1.StoreSpec{
+				Sources: []expv1alpha1.BuildPackage{
+					{
+						Image: cfg.buildpackageTag("nodejs"),
+					},
+					{
+						Image: cfg.buildpackageTag("node-engine"),
+					},
+					{
+						Image: cfg.buildpackageTag("yarn"),
+					},
+					{
+						Image: cfg.buildpackageTag("npm"),
+					},
+					{
+						Image: cfg.buildpackageTag("openjdk"),
+					},
+					{
+						Image: cfg.buildpackageTag("jvmapplication"),
+					},
+				},
+			},
+		})
+
 		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuilderName,
@@ -136,36 +165,33 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customBuilder, err := clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&experimentalV1alpha1.CustomBuilder{
+		customBuilder, err := clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&expv1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
 				Namespace: testNamespace,
 			},
-			Spec: experimentalV1alpha1.CustomNamespacedBuilderSpec{
-				CustomBuilderSpec: experimentalV1alpha1.CustomBuilderSpec{
+			Spec: expv1alpha1.CustomNamespacedBuilderSpec{
+				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
-					Stack: experimentalV1alpha1.Stack{
-						BaseBuilderImage: builderImage,
+					Stack: expv1alpha1.Stack{
+						BaseBuilderImage: cfg.stackTag(),
 					},
-					Store: experimentalV1alpha1.Store{
-						Image: builderImage,
+					Store: v1.ObjectReference{
+						Kind: expv1alpha1.StoreKind,
+						Name: storeName,
 					},
-					Order: []experimentalV1alpha1.Group{
+					Order: []expv1alpha1.Group{
 						{
-							Group: []experimentalV1alpha1.Buildpack{
+							Group: []expv1alpha1.Buildpack{
 								{
 									ID: "org.cloudfoundry.nodejs",
 								},
 							},
 						},
 						{
-							Group: []experimentalV1alpha1.Buildpack{
+							Group: []expv1alpha1.Buildpack{
 								{
 									ID: "org.cloudfoundry.openjdk",
-								},
-								{
-									ID:       "org.cloudfoundry.buildsystem",
-									Optional: true,
 								},
 								{
 									ID: "org.cloudfoundry.jvmapplication",
@@ -179,35 +205,32 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customClusterBuilder, err := clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Create(&experimentalV1alpha1.CustomClusterBuilder{
+		customClusterBuilder, err := clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Create(&expv1alpha1.CustomClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: customClusterBuilderName,
 			},
-			Spec: experimentalV1alpha1.CustomClusterBuilderSpec{
-				CustomBuilderSpec: experimentalV1alpha1.CustomBuilderSpec{
+			Spec: expv1alpha1.CustomClusterBuilderSpec{
+				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
-					Stack: experimentalV1alpha1.Stack{
-						BaseBuilderImage: builderImage,
+					Stack: expv1alpha1.Stack{
+						BaseBuilderImage: cfg.stackTag(),
 					},
-					Store: experimentalV1alpha1.Store{
-						Image: builderImage,
+					Store: v1.ObjectReference{
+						Kind: expv1alpha1.StoreKind,
+						Name: storeName,
 					},
-					Order: []experimentalV1alpha1.Group{
+					Order: []expv1alpha1.Group{
 						{
-							Group: []experimentalV1alpha1.Buildpack{
+							Group: []expv1alpha1.Buildpack{
 								{
 									ID: "org.cloudfoundry.nodejs",
 								},
 							},
 						},
 						{
-							Group: []experimentalV1alpha1.Buildpack{
+							Group: []expv1alpha1.Buildpack{
 								{
 									ID: "org.cloudfoundry.openjdk",
-								},
-								{
-									ID:       "org.cloudfoundry.buildsystem",
-									Optional: true,
 								},
 								{
 									ID: "org.cloudfoundry.jvmapplication",
@@ -270,7 +293,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		builderConfigs := map[string]corev1.ObjectReference{
 			"custom-builder": {
-				Kind:       experimentalV1alpha1.CustomBuilderKind,
+				Kind:       expv1alpha1.CustomBuilderKind,
 				APIVersion: "experimental.kpack.pivotal.io/v1alpha1",
 				Name:       customBuilderName,
 			},
@@ -285,7 +308,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name:       clusterBuilderName,
 			},
 			"custom-cluster-builder": {
-				Kind:       experimentalV1alpha1.CustomClusterBuilderKind,
+				Kind:       expv1alpha1.CustomClusterBuilderKind,
 				APIVersion: "build.pivotal.io/v1alpha1",
 				Name:       customClusterBuilderName,
 			},

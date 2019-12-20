@@ -5,16 +5,12 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
 type RegistryClient interface {
 	Fetch(keychain authn.Keychain, repoName string) (v1.Image, string, error)
 	Save(keychain authn.Keychain, tag string, image v1.Image) (string, error)
-}
-
-type StoreFactory interface {
-	MakeStore(keychain authn.Keychain, storeImage string) (Store, error)
 }
 
 type Store interface {
@@ -23,16 +19,10 @@ type Store interface {
 
 type RemoteBuilderCreator struct {
 	RegistryClient RegistryClient
-	StoreFactory   StoreFactory
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, spec experimentalV1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, store Store, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
 	baseImage, _, err := r.RegistryClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
-	}
-
-	store, err := r.StoreFactory.MakeStore(keychain, spec.Store.Image)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}

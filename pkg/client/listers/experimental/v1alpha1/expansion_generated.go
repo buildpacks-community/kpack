@@ -29,3 +29,7 @@ type CustomBuilderNamespaceListerExpansion interface{}
 // CustomClusterBuilderListerExpansion allows custom methods to be added to
 // CustomClusterBuilderLister.
 type CustomClusterBuilderListerExpansion interface{}
+
+// StoreListerExpansion allows custom methods to be added to
+// StoreLister.
+type StoreListerExpansion interface{}

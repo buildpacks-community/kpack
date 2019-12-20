@@ -28,6 +28,8 @@ type Interface interface {
 	CustomBuilders() CustomBuilderInformer
 	// CustomClusterBuilders returns a CustomClusterBuilderInformer.
 	CustomClusterBuilders() CustomClusterBuilderInformer
+	// Stores returns a StoreInformer.
+	Stores() StoreInformer
 }
 
 type version struct {
@@ -49,4 +51,9 @@ func (v *version) CustomBuilders() CustomBuilderInformer {
 // CustomClusterBuilders returns a CustomClusterBuilderInformer.
 func (v *version) CustomClusterBuilders() CustomClusterBuilderInformer {
 	return &customClusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// Stores returns a StoreInformer.
+func (v *version) Stores() StoreInformer {
+	return &storeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

@@ -19,7 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
-	"github.com/pivotal/kpack/pkg/registry/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestGenerator(t *testing.T) {
@@ -34,8 +34,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		var (
-			keychainFactory = &testhelpers.FakeKeychainFactory{}
-			imageFetcher    = testhelpers.NewFakeClient()
+			keychainFactory = &registryfakes.FakeKeychainFactory{}
+			imageFetcher    = registryfakes.NewFakeClient()
 		)
 
 		gitSecret := &corev1.Secret{
@@ -114,7 +114,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Namespace:        namespace,
 				ImagePullSecrets: builder.Spec.ImagePullSecrets,
 			}
-			keychain := &testhelpers.FakeKeychain{}
+			keychain := &registryfakes.FakeKeychain{}
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
 			image := randomImage(t)
