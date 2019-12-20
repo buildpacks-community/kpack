@@ -58,7 +58,7 @@ func getIdentifier(image v1.Image, ref name.Reference) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get digest for image '%s'", ref.Context().Name())
 	}
-	return fmt.Sprintf("%s@%s", ref.Context().Name(), digest), nil
+	return ref.Context().Name() + "@" + digest.String(), nil
 }
 
 func previousDigest(ref name.Reference, keychain authn.Keychain, passedIn v1.Image) string {
