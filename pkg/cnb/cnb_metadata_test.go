@@ -15,7 +15,7 @@ import (
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
-	"github.com/pivotal/kpack/pkg/registry/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestMetadataRetriever(t *testing.T) {
@@ -24,8 +24,8 @@ func TestMetadataRetriever(t *testing.T) {
 
 func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	var (
-		keychainFactory = &testhelpers.FakeKeychainFactory{}
-		imageFetcher    = testhelpers.NewFakeClient()
+		keychainFactory = &registryfakes.FakeKeychainFactory{}
+		imageFetcher    = registryfakes.NewFakeClient()
 	)
 
 	when("RemoteMetadataRetriever", func() {
@@ -54,7 +54,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					Namespace:        builder.Namespace,
 					ImagePullSecrets: builder.Spec.ImagePullSecrets,
 				}
-				builderKeychain := &testhelpers.FakeKeychain{}
+				builderKeychain := &registryfakes.FakeKeychain{}
 				keychainFactory.AddKeychainForSecretRef(t, builderSecretRef, builderKeychain)
 
 				builderImage := randomImage(t)
@@ -99,7 +99,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					ServiceAccount: build.Spec.ServiceAccount,
 					Namespace:      build.Namespace,
 				}
-				appImageKeychain := &testhelpers.FakeKeychain{}
+				appImageKeychain := &registryfakes.FakeKeychain{}
 				keychainFactory.AddKeychainForSecretRef(t, appImageSecretRef, appImageKeychain)
 
 				appImage := randomImage(t)

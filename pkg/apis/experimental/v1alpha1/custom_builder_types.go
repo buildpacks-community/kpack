@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -21,10 +22,10 @@ type CustomBuilder struct {
 }
 
 type CustomBuilderSpec struct {
-	Tag   string  `json:"tag"`
-	Stack Stack   `json:"stack"`
-	Store Store   `json:"store"`
-	Order []Group `json:"order"`
+	Tag   string                 `json:"tag"`
+	Stack Stack                  `json:"stack"`
+	Store corev1.ObjectReference `json:"store"`
+	Order []Group                `json:"order"`
 }
 
 type CustomNamespacedBuilderSpec struct {
@@ -40,19 +41,14 @@ type Stack struct {
 	BaseBuilderImage string `json:"baseBuilderImage"` //todo rename, maybe?
 }
 
-type Store struct {
-	Image string `json:"image"`
-}
-
 type Group struct {
 	Group []Buildpack `json:"group"`
 }
 
 type Buildpack struct {
-	ID      string `json:"id"`
-	Version string `json:"version"`
-
-	Optional bool `json:"optional"`
+	ID       string `json:"id"`
+	Version  string `json:"version"`
+	Optional bool   `json:"optional"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

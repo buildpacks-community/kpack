@@ -36,6 +36,10 @@ func (c *FakeExperimentalV1alpha1) CustomClusterBuilders() v1alpha1.CustomCluste
 	return &FakeCustomClusterBuilders{c}
 }
 
+func (c *FakeExperimentalV1alpha1) Stores() v1alpha1.StoreInterface {
+	return &FakeStores{c}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeExperimentalV1alpha1) RESTClient() rest.Interface {

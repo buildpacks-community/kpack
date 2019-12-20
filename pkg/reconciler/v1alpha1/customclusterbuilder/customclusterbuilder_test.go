@@ -20,7 +20,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
-	regtesthelpers "github.com/pivotal/kpack/pkg/registry/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestCustomClusterBuilderReconciler(t *testing.T) {
@@ -37,7 +37,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		keychainFactory = &regtesthelpers.FakeKeychainFactory{}
+		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 	)
 
@@ -50,9 +50,18 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				CustomClusterBuilderLister: listers.GetCustomClusterBuilderLister(),
 				BuilderCreator:             builderCreator,
 				KeychainFactory:            keychainFactory,
+				StoreLister:                listers.GetStoreLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
+
+	store := &expv1alpha1.Store{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-store",
+		},
+		Spec:   expv1alpha1.StoreSpec{},
+		Status: expv1alpha1.StoreStatus{},
+	}
 
 	customBuilder := &expv1alpha1.CustomClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
@@ -65,8 +74,9 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Stack: expv1alpha1.Stack{
 					BaseBuilderImage: "example.com/some-base-image",
 				},
-				Store: expv1alpha1.Store{
-					Image: "example.com/some-store-image",
+				Store: corev1.ObjectReference{
+					Kind: expv1alpha1.StoreKind,
+					Name: "some-store",
 				},
 				Order: []expv1alpha1.Group{
 					{
@@ -99,7 +109,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		it.Before(func() {
-			keychainFactory.AddKeychainForSecretRef(t, secretRef, &regtesthelpers.FakeKeychain{})
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, &registryfakes.FakeKeychain{})
 		})
 
 		it("saves metadata to the status", func() {
@@ -155,8 +165,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
@@ -205,8 +218,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: false,
 			})
 		})
@@ -234,8 +250,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{

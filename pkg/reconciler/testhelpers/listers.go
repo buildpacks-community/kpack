@@ -77,6 +77,10 @@ func (l *Listers) GetCustomClusterBuilderLister() expv1alpha1Listers.CustomClust
 	return expv1alpha1Listers.NewCustomClusterBuilderLister(l.indexerFor(&expv1alpha1.CustomClusterBuilder{}))
 }
 
+func (l *Listers) GetStoreLister() expv1alpha1Listers.StoreLister {
+	return expv1alpha1Listers.NewStoreLister(l.indexerFor(&expv1alpha1.Store{}))
+}
+
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {
 	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha1.SourceResolver{}))
 }

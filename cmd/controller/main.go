@@ -31,6 +31,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -86,6 +87,7 @@ func main() {
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
+	storeInformer := informerFactory.Experimental().V1alpha1().Stores()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
 		BuilderInformer:              builderInformer,
@@ -121,7 +123,6 @@ func main() {
 
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient: &registry.Client{},
-		StoreFactory:   &cnb.BuildPackageStoreFactory{},
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
@@ -133,8 +134,9 @@ func main() {
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, builderCreator, keychainFactory)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory, storeInformer)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, builderCreator, keychainFactory, storeInformer)
+	storeController := store.NewController(options, storeInformer, &registry.Client{})
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -150,6 +152,7 @@ func main() {
 		podInformer.Informer(),
 		customBuilderInformer.Informer(),
 		customClusterBuilderInformer.Informer(),
+		storeInformer.Informer(),
 	)
 
 	err = runGroup(
@@ -159,6 +162,7 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(customBuilderController, routinesPerController),
 		run(customClusterBuilderController, routinesPerController),
+		run(storeController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 	)
 	if err != nil {
