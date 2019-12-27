@@ -1,10 +1,11 @@
 package buildpod
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/buildpack/lifecycle/metadata"
+	"github.com/google/go-containerregistry/pkg/authn"
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,12 +15,23 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
+const (
+	cnbUserId  = "CNB_USER_ID"
+	cnbGroupId = "CNB_GROUP_ID"
+)
+
+type ImageFetcher interface {
+	Fetch(keychain authn.Keychain, repoName string) (ggcrv1.Image, string, error)
+}
+
 type Generator struct {
-	BuildPodConfig     v1alpha1.BuildPodImages
-	K8sClient          k8sclient.Interface
-	RemoteImageFactory registry.RemoteImageFactory
+	BuildPodConfig  v1alpha1.BuildPodImages
+	K8sClient       k8sclient.Interface
+	KeychainFactory registry.KeychainFactory
+	ImageFetcher    ImageFetcher
 }
 
 func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
@@ -52,33 +64,29 @@ func (g *Generator) fetchBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, e
 	return secrets, nil
 }
 
-const cnbUserId = "CNB_USER_ID"
-const cnbGroupId = "CNB_GROUP_ID"
-
 func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPodBuilderConfig, error) {
-	image, err := g.RemoteImageFactory.NewRemote(build.Spec.Builder.Image, registry.SecretRef{
+	keychain, err := g.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		Namespace:        build.Namespace,
 		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
 	})
-
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, err
+		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to create builder image keychain")
 	}
 
-	stackId, err := image.Label(metadata.StackMetadataLabel)
+	image, _, err := g.ImageFetcher.Fetch(keychain, build.Spec.Builder.Image)
+	if err != nil {
+		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
+	}
+
+	stackId, err := imagehelpers.GetStringLabel(image, metadata.StackMetadataLabel)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
 	}
 
-	metadataJSON, err := image.Label(cnb.BuilderMetadataLabel)
-	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image metadata label not present")
-	}
-
 	var metadata cnb.BuilderImageMetadata
-	err = json.Unmarshal([]byte(metadataJSON), &metadata)
+	err = imagehelpers.GetLabel(image, cnb.BuilderMetadataLabel, &metadata)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unsupported builder metadata structure")
+		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to get builder metadata")
 	}
 
 	uid, err := parseCNBID(image, cnbUserId)
@@ -100,8 +108,8 @@ func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPod
 	}, nil
 }
 
-func parseCNBID(image registry.RemoteImage, env string) (int64, error) {
-	v, err := image.Env(env)
+func parseCNBID(image ggcrv1.Image, env string) (int64, error) {
+	v, err := imagehelpers.GetEnv(image, env)
 	if err != nil {
 		return 0, err
 	}

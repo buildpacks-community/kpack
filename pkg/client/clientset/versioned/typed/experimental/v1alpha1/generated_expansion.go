@@ -21,3 +21,5 @@ package v1alpha1
 type CustomBuilderExpansion interface{}
 
 type CustomClusterBuilderExpansion interface{}
+
+type StoreExpansion interface{}

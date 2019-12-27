@@ -2,27 +2,34 @@ package cnb
 
 import (
 	"errors"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
+	"testing"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
-	"testing"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
-func TestBuildPackageStore(t *testing.T) {
-	spec.Run(t, "TestBuildPackageStore", testBuildPackageStore)
+func TestBuildpackRepository(t *testing.T) {
+	spec.Run(t, "TestBuildpackRepository", testBuildpackRetriever)
 }
 
-func testBuildPackageStore(t *testing.T, when spec.G, it spec.S) {
-	when("FetchBuildpack", func() {
+func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
+	when("FindByIdAndVersion", func() {
 		engineLayer := fakeLayer{
 			diffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   10,
 		}
+
 		packageManagerLayer := fakeLayer{
 			diffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   10,
 		}
+
 		metaLayer := fakeLayer{
 			diffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   10,
@@ -38,78 +45,113 @@ func testBuildPackageStore(t *testing.T, when spec.G, it spec.S) {
 			size:   10,
 		}
 
-		fakeStoreImage := &fakeStoreImage{
-			layersByDiffId: []v1.Layer{
-				engineLayer,
-				packageManagerLayer,
-				metaLayer,
-				v8Layer,
-				v9Layer,
-			},
+		image := &fakeStoreImage{
+			layersByDiffId: []v1.Layer{engineLayer, packageManagerLayer, metaLayer, v8Layer, v9Layer},
 		}
 
-		store := &BuildPackageStore{
-			Image: fakeStoreImage,
-			PackageMetadata: map[string]map[string]BuildpackLayerInfo{
-				"io.buildpack.engine": {
-					"v1": {
-						LayerDiffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-					},
+		client := registryfakes.NewFakeClient()
+		client.AddImage("some.registry.io/build-package", image, "", nil)
+
+		subject := &StoreBuildpackRepository{
+			Keychain:       nil,
+			RegistryClient: client,
+			Store: &v1alpha1.Store{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "some-store",
 				},
-				"io.buildpack.package-manager": {
-					"v1": {
-						LayerDiffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-					},
-				},
-				"io.buildpack.meta": {
-					"v1": {
-						LayerDiffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-						Order: Order{
-							{
-								Group: []BuildpackRef{
-									{
-										BuildpackInfo: BuildpackInfo{
-											ID:      "io.buildpack.engine",
-											Version: "v1",
+				Status: v1alpha1.StoreStatus{
+					Buildpacks: []v1alpha1.StoreBuildpack{
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.engine",
+								Version: "v1",
+							},
+							LayerDiffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							StoreImage: v1alpha1.StoreImage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: nil,
+						},
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.multi",
+								Version: "v9",
+							},
+							LayerDiffID: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							StoreImage: v1alpha1.StoreImage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: nil,
+						}, {
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.multi",
+								Version: "v8",
+							},
+							LayerDiffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							StoreImage: v1alpha1.StoreImage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: nil,
+						},
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.package-manager",
+								Version: "v1",
+							},
+							LayerDiffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							StoreImage: v1alpha1.StoreImage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: nil,
+						},
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								ID:      "io.buildpack.meta",
+								Version: "v1",
+							},
+							LayerDiffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+							StoreImage: v1alpha1.StoreImage{
+								Image: "some.registry.io/build-package",
+							},
+							Order: []v1alpha1.OrderEntry{
+								{
+									Group: []v1alpha1.BuildpackRef{
+										{
+											BuildpackInfo: v1alpha1.BuildpackInfo{
+												ID:      "io.buildpack.engine",
+												Version: "v1",
+											},
+											Optional: false,
 										},
-										Optional: false,
-									},
-									{
-										BuildpackInfo: BuildpackInfo{
-											ID:      "io.buildpack.package-manager",
-											Version: "v1",
+										{
+											BuildpackInfo: v1alpha1.BuildpackInfo{
+												ID:      "io.buildpack.package-manager",
+												Version: "v1",
+											},
+											Optional: true,
 										},
-										Optional: true,
 									},
 								},
 							},
 						},
 					},
 				},
-				"io.buildpack.multi": {
-					"v8": {
-						LayerDiffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-					},
-					"v9": {
-						LayerDiffID: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-					},
-				},
 			},
 		}
 
 		it("returns layer info from store image", func() {
-			info, err := store.FetchBuildpack("io.buildpack.engine", "v1")
+			info, err := subject.FindByIdAndVersion("io.buildpack.engine", "v1")
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.engine",
 					Version: "v1",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: engineLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
 						},
@@ -119,18 +161,18 @@ func testBuildPackageStore(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical newest buildpack if version is unspecified", func() {
-			info, err := store.FetchBuildpack("io.buildpack.multi", "")
+			info, err := subject.FindByIdAndVersion("io.buildpack.multi", "")
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.multi",
 					Version: "v9",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: v9Layer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.multi",
 							Version: "v9",
 						},
@@ -140,47 +182,47 @@ func testBuildPackageStore(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {
-			info, err := store.FetchBuildpack("io.buildpack.meta", "v1")
+			info, err := subject.FindByIdAndVersion("io.buildpack.meta", "v1")
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{
-				BuildpackInfo: BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "io.buildpack.meta",
 					Version: "v1",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: engineLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
 						},
 					},
 					{
 						v1Layer: packageManagerLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.package-manager",
 							Version: "v1",
 						},
 					},
 					{
 						v1Layer: metaLayer,
-						BuildpackInfo: BuildpackInfo{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.meta",
 							Version: "v1",
 						},
-						Order: Order{
+						Order: v1alpha1.Order{
 							{
-								Group: []BuildpackRef{
+								Group: []v1alpha1.BuildpackRef{
 									{
-										BuildpackInfo: BuildpackInfo{
+										BuildpackInfo: v1alpha1.BuildpackInfo{
 											ID:      "io.buildpack.engine",
 											Version: "v1",
 										},
 										Optional: false,
 									},
 									{
-										BuildpackInfo: BuildpackInfo{
+										BuildpackInfo: v1alpha1.BuildpackInfo{
 											ID:      "io.buildpack.package-manager",
 											Version: "v1",
 										},

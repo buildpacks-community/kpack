@@ -1,17 +1,20 @@
 package cnb
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/buildpack/lifecycle/metadata"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 const (
@@ -24,68 +27,64 @@ type FetchableBuilder interface {
 	ImagePullSecrets() []v1.LocalObjectReference
 }
 
+type ImageFetcher interface {
+	Fetch(keychain authn.Keychain, repoName string) (ggcrv1.Image, string, error)
+}
+
 type RemoteMetadataRetriever struct {
-	RemoteImageFactory registry.RemoteImageFactory
+	KeychainFactory registry.KeychainFactory
+	ImageFetcher    ImageFetcher
 }
 
 func (r *RemoteMetadataRetriever) GetBuilderImage(builder FetchableBuilder) (v1alpha1.BuilderRecord, error) {
-	img, err := r.RemoteImageFactory.NewRemote(builder.Image(), registry.SecretRef{
+	builderKeychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		Namespace:        builder.GetObjectMeta().GetNamespace(),
 		ImagePullSecrets: builder.ImagePullSecrets(),
 	})
 	if err != nil {
-		return emptyRecord, errors.Wrap(err, "unable to fetch remote builder baseImage")
+		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to create builder image keychain")
 	}
 
-	var metadataJSON string
-	metadataJSON, err = img.Label(BuilderMetadataLabel)
+	builderImage, builderImageId, err := r.ImageFetcher.Fetch(builderKeychain, builder.Image())
 	if err != nil {
-		return emptyRecord, errors.Wrap(err, "builder baseImage metadata label not present")
+		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
-	stackId, err := img.Label(metadata.StackMetadataLabel)
+	stackId, err := imagehelpers.GetStringLabel(builderImage, metadata.StackMetadataLabel)
 	if err != nil {
-		return emptyRecord, err
+		return v1alpha1.BuilderRecord{}, err
 	}
 
 	var md BuilderImageMetadata
-	err = json.Unmarshal([]byte(metadataJSON), &md)
+	err = imagehelpers.GetLabel(builderImage, BuilderMetadataLabel, &md)
 	if err != nil {
-		return emptyRecord, errors.Wrap(err, "unsupported builder metadata structure")
+		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unsupported builder metadata structure")
 	}
 
-	identifier, err := img.Identifier()
-	if err != nil {
-		return emptyRecord, errors.Wrap(err, "failed to retrieve builder baseImage SHA")
-	}
-
-	runImage, err := r.RemoteImageFactory.NewRemote(md.Stack.RunImage.Image, registry.SecretRef{
+	runImageKeychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		Namespace:        builder.GetObjectMeta().GetNamespace(),
 		ImagePullSecrets: builder.ImagePullSecrets(),
 	})
-
 	if err != nil {
-		return emptyRecord, errors.Wrap(err, "unable to fetch remote run baseImage")
+		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to create run image keychain")
 	}
 
-	runImageIdentifier, err := runImage.Identifier()
+	_, runImageId, err := r.ImageFetcher.Fetch(runImageKeychain, md.Stack.RunImage.Image)
 	if err != nil {
-		return emptyRecord, errors.Wrap(err, "failed to retrieve run baseImage SHA")
+		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to fetch remote run image")
 	}
 
 	return v1alpha1.BuilderRecord{
-		Image: identifier,
+		Image: builderImageId,
 		Stack: v1alpha1.BuildStack{
-			RunImage: runImageIdentifier,
+			RunImage: runImageId,
 			ID:       stackId,
 		},
 		Buildpacks: transform(md.Buildpacks),
 	}, nil
 }
 
-var emptyRecord v1alpha1.BuilderRecord
-
-func transform(infos []BuildpackInfo) v1alpha1.BuildpackMetadataList {
+func transform(infos []expv1alpha1.BuildpackInfo) v1alpha1.BuildpackMetadataList {
 	buildpacks := make(v1alpha1.BuildpackMetadataList, 0, len(infos))
 	for _, buildpack := range infos {
 		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
@@ -96,16 +95,21 @@ func transform(infos []BuildpackInfo) v1alpha1.BuildpackMetadataList {
 	return buildpacks
 }
 
-func (r *RemoteMetadataRetriever) GetBuiltImage(ref *v1alpha1.Build) (BuiltImage, error) {
-	img, err := r.RemoteImageFactory.NewRemote(ref.Tag(), registry.SecretRef{
-		ServiceAccount: ref.Spec.ServiceAccount,
-		Namespace:      ref.Namespace,
+func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltImage, error) {
+	keychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+		ServiceAccount: build.Spec.ServiceAccount,
+		Namespace:      build.Namespace,
 	})
 	if err != nil {
-		return BuiltImage{}, err
+		return BuiltImage{}, errors.Wrap(err, "unable to create app image keychain")
 	}
 
-	return readBuiltImage(img)
+	appImage, appImageId, err := r.ImageFetcher.Fetch(keychain, build.Tag())
+	if err != nil {
+		return BuiltImage{}, errors.Wrap(err, "unable to fetch app image")
+	}
+
+	return readBuiltImage(appImage, appImageId)
 }
 
 type BuiltImage struct {
@@ -115,58 +119,41 @@ type BuiltImage struct {
 	Stack             Stack
 }
 
-func readBuiltImage(img registry.RemoteImage) (BuiltImage, error) {
-	buildMetadataJSON, err := img.Label(metadata.BuildMetadataLabel)
-	if err != nil {
-		return BuiltImage{}, err
-	}
-
-	layerMetadataJSON, err := img.Label(metadata.LayerMetadataLabel)
-	if err != nil {
-		return BuiltImage{}, err
-	}
-
-	stackId, err := img.Label(metadata.StackMetadataLabel)
+func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error) {
+	stackId, err := imagehelpers.GetStringLabel(appImage, metadata.StackMetadataLabel)
 	if err != nil {
 		return BuiltImage{}, nil
 	}
 
 	var buildMetadata metadata.BuildMetadata
-	err = json.Unmarshal([]byte(buildMetadataJSON), &buildMetadata)
+	err = imagehelpers.GetLabel(appImage, metadata.BuildMetadataLabel, &buildMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	var layerMetadata metadata.LayersMetadata
-	err = json.Unmarshal([]byte(layerMetadataJSON), &layerMetadata)
+	err = imagehelpers.GetLabel(appImage, metadata.LayerMetadataLabel, &layerMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	imageCreatedAt, err := img.CreatedAt()
+	imageCreatedAt, err := imagehelpers.GetCreatedAt(appImage)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	identifier, err := img.Identifier()
+	runImageRef, err := name.ParseReference(layerMetadata.RunImage.Reference)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
-	runImageReferenceStr := layerMetadata.RunImage.Reference
-	runImageRef, err := name.ParseReference(runImageReferenceStr)
-	if err != nil {
-		return BuiltImage{}, err
-	}
-
-	baseRunImage := layerMetadata.Stack.RunImage.Image
-	baseImageRef, err := name.ParseReference(baseRunImage)
+	baseImageRef, err := name.ParseReference(layerMetadata.Stack.RunImage.Image)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	return BuiltImage{
-		Identifier:        identifier,
+		Identifier:        appImageId,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
 		Stack: Stack{

@@ -15,6 +15,7 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -31,6 +32,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -86,6 +88,7 @@ func main() {
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
+	storeInformer := informerFactory.Experimental().V1alpha1().Stores()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
 		BuilderInformer:              builderInformer,
@@ -100,15 +103,12 @@ func main() {
 
 	keychainFactory, err := k8sdockercreds.NewSecretKeychainFactory(k8sClient)
 	if err != nil {
-		log.Fatalf("could not create k8s keychain factory: %s", err.Error())
-	}
-
-	imageFactory := &registry.ImageFactory{
-		KeychainFactory: keychainFactory,
+		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
-		RemoteImageFactory: imageFactory,
+		KeychainFactory: keychainFactory,
+		ImageFetcher:    &registry.Client{},
 	}
 
 	buildpodGenerator := &buildpod.Generator{
@@ -117,26 +117,30 @@ func main() {
 			CompletionImage: *completionImage,
 			RebaseImage:     *rebaseImage,
 		},
-		K8sClient:          k8sClient,
-		RemoteImageFactory: imageFactory,
+		K8sClient:       k8sClient,
+		KeychainFactory: keychainFactory,
+		ImageFetcher:    &registry.Client{},
 	}
 
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RemoteImageClient: &registry.Client{},
-		StoreFactory:      &cnb.BuildPackageStoreFactory{},
+		RegistryClient: &registry.Client{},
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
+	remoteStoreReader := &cnb.RemoteStoreReader{
+		RegistryClient: &registry.Client{},
+	}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, builderCreator, keychainFactory)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, builderCreator, keychainFactory)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer)
+	storeController := store.NewController(options, storeInformer, remoteStoreReader, keychainFactory)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -152,6 +156,7 @@ func main() {
 		podInformer.Informer(),
 		customBuilderInformer.Informer(),
 		customClusterBuilderInformer.Informer(),
+		storeInformer.Informer(),
 	)
 
 	err = runGroup(
@@ -161,6 +166,7 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(customBuilderController, routinesPerController),
 		run(customClusterBuilderController, routinesPerController),
+		run(storeController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 	)
 	if err != nil {
@@ -199,4 +205,18 @@ func runGroup(fns ...doneFunc) error {
 	defer wg.Wait()
 	defer close(done)
 	return <-result
+}
+
+func newBuildpackRepository(keychainFactory registry.KeychainFactory) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+	storeKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
+	}
+	return func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+		return &cnb.StoreBuildpackRepository{
+			Keychain:       storeKeychain,
+			RegistryClient: &registry.Client{},
+			Store:          store,
+		}
+	}
 }

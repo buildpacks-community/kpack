@@ -23,7 +23,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/image"
@@ -49,7 +49,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		originalGeneration       int64 = 0
 	)
 	var (
-		fakeTracker = fakeTracker{}
+		fakeTracker = testhelpers.FakeTracker{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -176,12 +176,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customBuilder := &experimentalv1alpha1.CustomBuilder{
+	customBuilder := &expv1alpha1.CustomBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      customBuilderName,
 			Namespace: namespace,
 		},
-		Status: experimentalv1alpha1.CustomBuilderStatus{
+		Status: expv1alpha1.CustomBuilderStatus{
 			BuilderStatus: v1alpha1.BuilderStatus{
 				LatestImage: "some/custombuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
@@ -207,11 +207,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customClusterBuilder := &experimentalv1alpha1.CustomClusterBuilder{
+	customClusterBuilder := &expv1alpha1.CustomClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name: customClusterBuilderName,
 		},
-		Status: experimentalv1alpha1.CustomBuilderStatus{
+		Status: expv1alpha1.CustomBuilderStatus{
 			BuilderStatus: v1alpha1.BuilderStatus{
 				LatestImage: "some/customclusterbuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
@@ -855,7 +855,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a custom builder", func() {
 				image.Spec.Builder = corev1.ObjectReference{
-					Kind: experimentalv1alpha1.CustomBuilderKind,
+					Kind: expv1alpha1.CustomBuilderKind,
 					Name: customBuilderName,
 				}
 
@@ -922,7 +922,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a custom cluster builder", func() {
 				image.Spec.Builder = corev1.ObjectReference{
-					Kind: experimentalv1alpha1.CustomClusterBuilderKind,
+					Kind: expv1alpha1.CustomClusterBuilderKind,
 					Name: customClusterBuilderName,
 				}
 

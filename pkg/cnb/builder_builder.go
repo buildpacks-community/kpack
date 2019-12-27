@@ -12,25 +12,26 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 type BuilderBuilder struct {
 	baseImage       v1.Image
 	baseMetadata    *BuilderImageMetadata
-	order           []OrderEntry
+	order           []expv1alpha1.OrderEntry
 	stackID         string
-	buildpackLayers map[BuildpackInfo]buildpackLayer
+	buildpackLayers map[expv1alpha1.BuildpackInfo]buildpackLayer
 }
 
 func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
 	baseMetadata := &BuilderImageMetadata{}
-	err := registry.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
+	err := imagehelpers.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
 	if err != nil {
 		return nil, err
 	}
 
-	stackID, err := registry.GetStringLabel(baseImage, stackMetadataLabel)
+	stackID, err := imagehelpers.GetStringLabel(baseImage, stackMetadataLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -39,12 +40,12 @@ func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
 		baseImage:       baseImage,
 		baseMetadata:    baseMetadata,
 		stackID:         stackID,
-		buildpackLayers: map[BuildpackInfo]buildpackLayer{},
+		buildpackLayers: map[expv1alpha1.BuildpackInfo]buildpackLayer{},
 	}, nil
 }
 
 func (bb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
-	group := make([]BuildpackRef, 0, len(buildpacks))
+	group := make([]expv1alpha1.BuildpackRef, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		group = append(group, b.BuildpackRef)
 
@@ -52,7 +53,7 @@ func (bb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
 			bb.buildpackLayers[layer.BuildpackInfo] = layer
 		}
 	}
-	bb.order = append(bb.order, OrderEntry{Group: group})
+	bb.order = append(bb.order, expv1alpha1.OrderEntry{Group: group})
 }
 
 func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
@@ -70,7 +71,7 @@ func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
 
 func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 	buildpackLayerMetadata := make(BuildpackLayerMetadata)
-	buildpacks := make([]BuildpackInfo, 0, len(bb.buildpackLayers))
+	buildpacks := make([]expv1alpha1.BuildpackInfo, 0, len(bb.buildpackLayers))
 	layers := make([]v1.Layer, 0, len(bb.buildpackLayers)+1)
 
 	for _, key := range deterministicSortBySize(bb.buildpackLayers) {
@@ -92,7 +93,7 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	return registry.SetLabels(image, map[string]interface{}{
+	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
 		buildpackLayersLabel: buildpackLayerMetadata,
 		buildpackMetadataLabel: BuilderImageMetadata{
@@ -110,11 +111,40 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 
 func (bb *BuilderBuilder) tomlLayer() (v1.Layer, error) {
 	orderBuf := &bytes.Buffer{}
-	err := toml.NewEncoder(orderBuf).Encode(TomlOrder{bb.order})
+
+	order := make(tomlOrder, 0, len(bb.order))
+	for _, o := range bb.order {
+		bps := make([]tomlBuildpack, 0, len(o.Group))
+		for _, b := range o.Group {
+			bps = append(bps, tomlBuildpack{
+				ID:       b.ID,
+				Version:  b.Version,
+				Optional: b.Optional,
+			})
+		}
+		order = append(order, tomlOrderEntry{Group: bps})
+	}
+
+	err := toml.NewEncoder(orderBuf).Encode(tomlFile{order})
 	if err != nil {
 		return nil, err
 	}
 	return singeFileLayer(orderTomlPath, orderBuf.Bytes())
+}
+
+type tomlOrder []tomlOrderEntry
+
+type tomlOrderEntry struct {
+	Group []tomlBuildpack `toml:"group"`
+}
+
+type tomlBuildpack struct {
+	ID       string `toml:"id"`
+	Version  string `toml:"version"`
+	Optional bool   `toml:"optional,omitempty"`
+}
+type tomlFile struct {
+	Order tomlOrder `toml:"order"`
 }
 
 var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
@@ -142,9 +172,9 @@ func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
-func deterministicSortBySize(layers map[BuildpackInfo]buildpackLayer) []BuildpackInfo {
-	keys := make([]BuildpackInfo, 0, len(layers))
-	sizes := make(map[BuildpackInfo]int64, len(layers))
+func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer) []expv1alpha1.BuildpackInfo {
+	keys := make([]expv1alpha1.BuildpackInfo, 0, len(layers))
+	sizes := make(map[expv1alpha1.BuildpackInfo]int64, len(layers))
 	for k, layer := range layers {
 		keys = append(keys, k)
 		size, _ := layer.v1Layer.Size()

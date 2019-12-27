@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/buildpack/lifecycle/metadata"
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +18,7 @@ import (
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
@@ -28,6 +31,11 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		const (
 			serviceAccountName = "serviceAccountName"
 			namespace          = "some-namespace"
+		)
+
+		var (
+			keychainFactory = &registryfakes.FakeKeychainFactory{}
+			imageFetcher    = registryfakes.NewFakeClient()
 		)
 
 		gitSecret := &corev1.Secret{
@@ -88,6 +96,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		}
+
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 
 		builder := &duckbuilder.DuckBuilder{
@@ -101,20 +110,26 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("returns pod config with secrets on build's service account", func() {
-			fakeRemoteImageFactory := &registryfakes.FakeRemoteImageFactory{}
-			fakeImage := registryfakes.NewFakeRemoteImage("some/builder", "2bc85afc0ee0aec012b3889cf5f2e9690bb504c9d19ce90add2f415b85990895")
-			require.NoError(t, fakeImage.SetLabel(metadata.StackMetadataLabel, "some.stack.id"))
-			require.NoError(t, fakeImage.SetLabel(cnb.BuilderMetadataLabel, `{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`))
-			require.NoError(t, fakeImage.SetEnv("CNB_USER_ID", "1234"))
-			require.NoError(t, fakeImage.SetEnv("CNB_GROUP_ID", "5678"))
+			secretRef := registry.SecretRef{
+				Namespace:        namespace,
+				ImagePullSecrets: builder.Spec.ImagePullSecrets,
+			}
+			keychain := &registryfakes.FakeKeychain{}
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
-			fakeRemoteImageFactory.NewRemoteReturns(fakeImage, nil)
+			image := randomImage(t)
+			image, _ = imagehelpers.SetStringLabel(image, metadata.StackMetadataLabel, "some.stack.id")
+			image, _ = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, `{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
+			image, _ = imagehelpers.SetEnv(image, "CNB_USER_ID=1234")
+			image, _ = imagehelpers.SetEnv(image, "CNB_GROUP_ID=5678")
+			imageFetcher.AddImage("some/builde@sha256:1234", image, "some/builder@sha256:1234", keychain)
 
 			buildPodConfig := v1alpha1.BuildPodImages{}
 			generator := &buildpod.Generator{
-				BuildPodConfig:     buildPodConfig,
-				K8sClient:          fakeK8sClient,
-				RemoteImageFactory: fakeRemoteImageFactory,
+				BuildPodConfig:  buildPodConfig,
+				K8sClient:       fakeK8sClient,
+				KeychainFactory: keychainFactory,
+				ImageFetcher:    imageFetcher,
 			}
 
 			build := &v1alpha1.Build{
@@ -169,15 +184,12 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 			require.Equal(t, expectedPod, pod)
-
-			require.Equal(t, 1, fakeRemoteImageFactory.NewRemoteCallCount())
-
-			builderImage, secretRef := fakeRemoteImageFactory.NewRemoteArgsForCall(0)
-			require.Equal(t, builder.BuildBuilderSpec().Image, builderImage)
-			require.Equal(t, registry.SecretRef{
-				Namespace:        namespace,
-				ImagePullSecrets: builder.BuildBuilderSpec().ImagePullSecrets,
-			}, secretRef)
 		})
 	})
+}
+
+func randomImage(t *testing.T) ggcrv1.Image {
+	image, err := random.Image(5, 10)
+	require.NoError(t, err)
+	return image
 }

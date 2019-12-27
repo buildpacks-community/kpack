@@ -1,0 +1,16 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: stores.experimental.kpack.pivotal.io
+spec:
+  group: experimental.kpack.pivotal.io
+  version: v1alpha1
+  names:
+    kind: Store
+    singular: store
+    plural: stores
+    categories:
+    - kpack
+  scope: Cluster
+  subresources:
+    status: {}

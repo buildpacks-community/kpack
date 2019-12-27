@@ -10,12 +10,14 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	experimentalV1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/tracker"
 )
 
 const (
@@ -23,27 +25,45 @@ const (
 	Kind           = "CustomBuilder"
 )
 
+type NewBuildpackRepository func(store *expv1alpha1.Store) cnb.BuildpackRepository
+
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, spec experimentalV1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
-func NewController(opt reconciler.Options, informer v1alpha1informers.CustomClusterBuilderInformer, builderCreator BuilderCreator, keychainFactory registry.KeychainFactory) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	informer v1alpha1informers.CustomClusterBuilderInformer,
+	repoFactory NewBuildpackRepository,
+	builderCreator BuilderCreator,
+	keychainFactory registry.KeychainFactory,
+	storeInformer v1alpha1informers.StoreInformer,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:                     opt.Client,
 		CustomClusterBuilderLister: informer.Lister(),
+		RepoFactory:                repoFactory,
 		BuilderCreator:             builderCreator,
 		KeychainFactory:            keychainFactory,
+		StoreLister:                storeInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+
+	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
+	storeInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
+
 	return impl
 }
 
 type Reconciler struct {
 	Client                     versioned.Interface
 	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
+	RepoFactory                NewBuildpackRepository
 	BuilderCreator             BuilderCreator
 	KeychainFactory            registry.KeychainFactory
+	Tracker                    reconciler.Tracker
+	StoreLister                v1alpha1Listers.StoreLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -77,7 +97,17 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(customBuilder)
 }
 
-func (c *Reconciler) reconcileCustomBuilder(customBuilder *experimentalV1alpha1.CustomClusterBuilder) (v1alpha1.BuilderRecord, error) {
+func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomClusterBuilder) (v1alpha1.BuilderRecord, error) {
+	store, err := c.StoreLister.Get(customBuilder.Spec.Store)
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	err = c.Tracker.Track(store, customBuilder.NamespacedName())
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		ServiceAccount: customBuilder.Spec.ServiceAccountRef.Name,
 		Namespace:      customBuilder.Spec.ServiceAccountRef.Namespace,
@@ -86,10 +116,10 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *experimentalV1alpha1.
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	return c.BuilderCreator.CreateBuilder(keychain, customBuilder.Spec.CustomBuilderSpec)
+	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(store), customBuilder.Spec.CustomBuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(desired *experimentalV1alpha1.CustomClusterBuilder) error {
+func (c *Reconciler) updateStatus(desired *expv1alpha1.CustomClusterBuilder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.CustomClusterBuilderLister.Get(desired.Name)

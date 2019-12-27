@@ -6,6 +6,7 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,8 +19,11 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/customclusterbuilder"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestCustomClusterBuilderReconciler(t *testing.T) {
@@ -37,7 +41,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	var (
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
-		keychainFactory = &testhelpers.FakeKeychainFactory{}
+		keychainFactory = &registryfakes.FakeKeychainFactory{}
+		fakeTracker     = testhelpers.FakeTracker{}
+		fakeRepoFactory = func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+			return testhelpers.FakeBuildpackRepository{Store: store}
+		}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -47,11 +55,22 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			r := &customclusterbuilder.Reconciler{
 				Client:                     fakeClient,
 				CustomClusterBuilderLister: listers.GetCustomClusterBuilderLister(),
+				RepoFactory:                fakeRepoFactory,
 				BuilderCreator:             builderCreator,
 				KeychainFactory:            keychainFactory,
+				Tracker:                    fakeTracker,
+				StoreLister:                listers.GetStoreLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
+
+	store := &expv1alpha1.Store{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-store",
+		},
+		Spec:   expv1alpha1.StoreSpec{},
+		Status: expv1alpha1.StoreStatus{},
+	}
 
 	customBuilder := &expv1alpha1.CustomClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
@@ -64,20 +83,22 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Stack: expv1alpha1.Stack{
 					BaseBuilderImage: "example.com/some-base-image",
 				},
-				Store: expv1alpha1.Store{
-					Image: "example.com/some-store-image",
-				},
-				Order: []expv1alpha1.Group{
+				Store: "some-store",
+				Order: []expv1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.Buildpack{
+						Group: []expv1alpha1.BuildpackRef{
 							{
-								ID:       "buildpack.id.1",
-								Version:  "1.0.0",
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									ID:      "buildpack.id.1",
+									Version: "1.0.0",
+								},
 								Optional: false,
 							},
 							{
-								ID:       "buildpack.id.2",
-								Version:  "2.0.0",
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									ID:      "buildpack.id.2",
+									Version: "2.0.0",
+								},
 								Optional: false,
 							},
 						},
@@ -91,7 +112,16 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	secretRef := registry.SecretRef{
+		ServiceAccount: customBuilder.Spec.ServiceAccountRef.Name,
+		Namespace:      customBuilder.Spec.ServiceAccountRef.Namespace,
+	}
+
 	when("#Reconcile", func() {
+		it.Before(func() {
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, &registryfakes.FakeKeychain{})
+		})
+
 		it("saves metadata to the status", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: customBuilderIdentifier,
@@ -145,8 +175,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
@@ -155,9 +188,57 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Name, keychainFactory.SecretRef.ServiceAccount)
-			assert.Equal(t, customBuilder.Spec.ServiceAccountRef.Namespace, keychainFactory.SecretRef.Namespace)
-			assert.Len(t, keychainFactory.SecretRef.ImagePullSecrets, 0)
+			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
+				Keychain:            &registryfakes.FakeKeychain{},
+				BuildpackRepository: testhelpers.FakeBuildpackRepository{Store: store},
+				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
+			}}, builderCreator.CreateBuilderCalls)
+		})
+
+		it("tracks the store for a custom builder", func() {
+			builderCreator.Record = v1alpha1.BuilderRecord{
+				Image: customBuilderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{},
+			}
+
+			expectedBuilder := &expv1alpha1.CustomClusterBuilder{
+				ObjectMeta: customBuilder.ObjectMeta,
+				Spec:       customBuilder.Spec,
+				Status: expv1alpha1.CustomBuilderStatus{
+					BuilderStatus: v1alpha1.BuilderStatus{
+						Status: duckv1alpha1.Status{
+							ObservedGeneration: 1,
+							Conditions: duckv1alpha1.Conditions{
+								{
+									Type:   duckv1alpha1.ConditionReady,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+						BuilderMetadata: []v1alpha1.BuildpackMetadata{},
+						Stack: v1alpha1.BuildStack{
+							RunImage: "example.com/run-image@sha256:123456",
+							ID:       "fake.stack.id",
+						},
+						LatestImage: customBuilderIdentifier,
+					},
+				},
+			}
+
+			rt.Test(rtesting.TableRow{
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					expectedBuilder,
+				},
+				WantErr: false,
+			})
+
+			require.True(t, fakeTracker.IsTracking(store, expectedBuilder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -199,8 +280,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: false,
 			})
 		})
@@ -228,8 +312,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key:     customBuilderKey,
-				Objects: []runtime.Object{customBuilder},
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					store,
+					customBuilder,
+				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 func (b *Builder) SetDefaults(ctx context.Context) {
@@ -17,7 +19,7 @@ func (b *Builder) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (bs *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validateImage(bs.Image)
+	return validate.Image(bs.Image)
 }
 
 func (b *ClusterBuilder) SetDefaults(ctx context.Context) {
