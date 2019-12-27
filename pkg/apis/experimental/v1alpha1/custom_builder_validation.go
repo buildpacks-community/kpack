@@ -5,7 +5,7 @@ import (
 
 	"knative.dev/pkg/apis"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 const (
@@ -23,16 +23,16 @@ func (cb *CustomBuilder) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (s *CustomBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return v1alpha1.ValidateTag(s.Tag).
+	return validate.Tag(s.Tag).
 		Also(s.Stack.Validate(ctx).ViaField("stack")).
-		Also(v1alpha1.ValidateFieldNotEmpty(s.Store, "store"))
+		Also(validate.FieldNotEmpty(s.Store, "store"))
 }
 
 func (s *CustomNamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return s.CustomBuilderSpec.Validate(ctx).
-		Also(v1alpha1.ValidateFieldNotEmpty(s.ServiceAccount, "serviceAccount"))
+		Also(validate.FieldNotEmpty(s.ServiceAccount, "serviceAccount"))
 }
 
 func (s *Stack) Validate(ctx context.Context) *apis.FieldError {
-	return v1alpha1.ValidateImage(s.BaseBuilderImage)
+	return validate.Image(s.BaseBuilderImage)
 }

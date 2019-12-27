@@ -5,6 +5,8 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 func (b *Build) SetDefaults(ctx context.Context) {
@@ -18,8 +20,8 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
-	return ValidateListNotEmpty(bs.Tags, "tags").
-		Also(ValidateTags(bs.Tags)).
+	return validate.ListNotEmpty(bs.Tags, "tags").
+		Also(validate.Tags(bs.Tags)).
 		Also(bs.Builder.Validate(ctx).ViaField("builder")).
 		Also(bs.Source.Validate(ctx).ViaField("source")).
 		Also(bs.LastBuild.Validate(ctx).ViaField("lastBuild")).
@@ -49,7 +51,7 @@ func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldErr
 }
 
 func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return ValidateImage(bbs.Image)
+	return validate.Image(bbs.Image)
 }
 
 func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
@@ -57,5 +59,5 @@ func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return ValidateImage(lb.Image)
+	return validate.Image(lb.Image)
 }

@@ -5,6 +5,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 const (
@@ -47,10 +49,10 @@ func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
 func (im *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
-		return ValidateImmutableField(original.Spec.Tag, im.Tag, "tag")
+		return validate.ImmutableField(original.Spec.Tag, im.Tag, "tag")
 	}
 
-	return ValidateTag(im.Tag)
+	return validate.Tag(im.Tag)
 }
 
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
@@ -99,8 +101,8 @@ func (g *Git) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return ValidateFieldNotEmpty(g.URL, "url").
-		Also(ValidateFieldNotEmpty(g.Revision, "revision"))
+	return validate.FieldNotEmpty(g.URL, "url").
+		Also(validate.FieldNotEmpty(g.Revision, "revision"))
 }
 
 func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
@@ -108,7 +110,7 @@ func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return ValidateFieldNotEmpty(b.URL, "url")
+	return validate.FieldNotEmpty(b.URL, "url")
 }
 
 func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
@@ -116,5 +118,5 @@ func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return ValidateImage(r.Image)
+	return validate.Image(r.Image)
 }

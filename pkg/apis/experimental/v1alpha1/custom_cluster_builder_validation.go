@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"context"
 
-	v1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -11,16 +10,15 @@ func (ccb *CustomClusterBuilder) SetDefaults(context.Context) {
 }
 
 func (ccb *CustomClusterBuilder) Validate(ctx context.Context) *apis.FieldError {
-	return ccb.Spec.CustomBuilderSpec.Validate(ctx).
-		Also(validateServiceAccountRef(ccb.Spec.ServiceAccountRef))
+	return ccb.Spec.Validate(ctx)
 }
 
-func validateServiceAccountRef(serviceAccount v1.ObjectReference) *apis.FieldError {
-	if serviceAccount.Name == "" {
+func (ccbs *CustomClusterBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
+	if ccbs.ServiceAccountRef.Name == "" {
 		return apis.ErrMissingField("name").ViaField("spec", "serviceAccountRef")
 	}
-	if serviceAccount.Namespace == "" {
+	if ccbs.ServiceAccountRef.Namespace == "" {
 		return apis.ErrMissingField("namespace").ViaField("spec", "serviceAccountRef")
 	}
-	return nil
+	return ccbs.CustomBuilderSpec.Validate(ctx)
 }

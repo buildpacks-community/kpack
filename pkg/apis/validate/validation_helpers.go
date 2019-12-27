@@ -1,4 +1,4 @@
-package v1alpha1
+package validate
 
 import (
 	"fmt"
@@ -7,21 +7,21 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func ValidateFieldNotEmpty(value, field string) *apis.FieldError {
+func FieldNotEmpty(value, field string) *apis.FieldError {
 	if value == "" {
 		return apis.ErrMissingField(field)
 	}
 	return nil
 }
 
-func ValidateListNotEmpty(value []string, field string) *apis.FieldError {
+func ListNotEmpty(value []string, field string) *apis.FieldError {
 	if len(value) == 0 {
 		return apis.ErrMissingField(field)
 	}
 	return nil
 }
 
-func ValidateImmutableField(original, current interface{}, field string) *apis.FieldError {
+func ImmutableField(original, current interface{}, field string) *apis.FieldError {
 	if original != current {
 		return &apis.FieldError{
 			Message: "Immutable field changed",
@@ -32,7 +32,7 @@ func ValidateImmutableField(original, current interface{}, field string) *apis.F
 	return nil
 }
 
-func ValidateTag(value string) *apis.FieldError {
+func Tag(value string) *apis.FieldError {
 	if value == "" {
 		return apis.ErrMissingField("tag")
 	}
@@ -44,7 +44,7 @@ func ValidateTag(value string) *apis.FieldError {
 	return nil
 }
 
-func ValidateTags(tags []string) *apis.FieldError {
+func Tags(tags []string) *apis.FieldError {
 	var errors *apis.FieldError = nil
 	for i, tag := range tags {
 		_, err := name.NewTag(tag, name.WeakValidation)
@@ -56,7 +56,7 @@ func ValidateTags(tags []string) *apis.FieldError {
 	return errors
 }
 
-func ValidateImage(value string) *apis.FieldError {
+func Image(value string) *apis.FieldError {
 	if value == "" {
 		return apis.ErrMissingField("image")
 	}
