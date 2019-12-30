@@ -21,8 +21,8 @@ func TestRemoteStoreReader(t *testing.T) {
 func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 	when("Remote Store Reader", func() {
 		const (
-			buildpackageA = "build/packageA"
-			buildpackageB = "build/packageB"
+			buildpackageA = "build/package_a"
+			buildpackageB = "build/package_b"
 		)
 
 		var (
@@ -35,10 +35,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		it.Before(func() {
-			buildPackageA, err := random.Image(10, int64(10))
+			buildPackageAImage, err := random.Image(10, int64(10))
 			require.NoError(t, err)
 
-			buildPackageA, err = mutate.AppendLayers(buildPackageA,
+			buildPackageAImage, err = mutate.AppendLayers(buildPackageAImage,
 				fakeLayer{
 					digest: "sha256:c375a5c675104fe85cbd3042f5cfa6b1e56573c6d4e5d11224a62598532f3cc1",
 					diffID: "sha256:1c6d357a885d873824545b40e1ccc9fd228c2dd38ba0acb9649955daf2941f94",
@@ -57,7 +57,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			)
 			require.NoError(t, err)
 
-			buildPackageA, err = imagehelpers.SetStringLabels(buildPackageA, map[string]string{
+			buildPackageAImage, err = imagehelpers.SetStringLabels(buildPackageAImage, map[string]string{
 				"io.buildpacks.buildpack.layers": //language=json
 				`{
   "org.buildpack.meta": {
@@ -96,12 +96,12 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			fakeClient.AddImage(buildpackageA, buildPackageA, "", expectedKeychain)
+			fakeClient.AddImage(buildpackageA, buildPackageAImage, expectedKeychain)
 
-			buildPackageB, err := random.Image(10, int64(10))
+			buildPackageBImage, err := random.Image(10, int64(10))
 			require.NoError(t, err)
 
-			buildPackageB, err = mutate.AppendLayers(buildPackageA,
+			buildPackageBImage, err = mutate.AppendLayers(buildPackageAImage,
 				fakeLayer{
 					digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
 					diffID: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
@@ -109,7 +109,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				},
 			)
 
-			buildPackageB, err = imagehelpers.SetStringLabels(buildPackageB, map[string]string{
+			buildPackageBImage, err = imagehelpers.SetStringLabels(buildPackageBImage, map[string]string{
 				"io.buildpacks.buildpack.layers": //language=json
 				`{
   "org.buildpack.simple": {
@@ -122,7 +122,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			fakeClient.AddImage(buildpackageB, buildPackageB, "", expectedKeychain)
+			fakeClient.AddImage(buildpackageB, buildPackageBImage, expectedKeychain)
 		})
 
 		it("returns all buildpacks from multiple images", func() {

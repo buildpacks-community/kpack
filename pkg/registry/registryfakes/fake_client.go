@@ -2,6 +2,7 @@ package registryfakes
 
 import (
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -11,7 +12,6 @@ import (
 func NewFakeClient() *FakeClient {
 	return &FakeClient{
 		images:         map[string]v1.Image{},
-		ids:            map[string]string{},
 		readKeychains:  map[string]authn.Keychain{},
 		savedImages:    map[string]v1.Image{},
 		writeKeychains: map[string]authn.Keychain{},
@@ -20,7 +20,6 @@ func NewFakeClient() *FakeClient {
 
 type FakeClient struct {
 	images        map[string]v1.Image
-	ids           map[string]string
 	readKeychains map[string]authn.Keychain
 
 	savedImages    map[string]v1.Image
@@ -37,12 +36,17 @@ func (f *FakeClient) Fetch(keychain authn.Keychain, repoName string) (v1.Image, 
 		return nil, "", errors.Errorf("image %s not found in fake", repoName)
 	}
 
-	id, ok := f.ids[repoName]
-	if !ok {
-		return nil, "", errors.Errorf("image %s not found in fake", repoName)
+	ref, err := name.ParseReference(repoName, name.WeakValidation)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "unable to parse %s", repoName)
 	}
 
-	return image, id, nil
+	digest, err := image.Digest()
+	if err != nil {
+		return nil, "", err
+	}
+
+	return image, fmt.Sprintf("%s@%s", ref.Context().Name(), digest), nil
 }
 
 func (f *FakeClient) Save(keychain authn.Keychain, tag string, image v1.Image) (string, error) {
@@ -56,9 +60,8 @@ func (f *FakeClient) Save(keychain authn.Keychain, tag string, image v1.Image) (
 	return fmt.Sprintf("%s@%s", tag, hash), err
 }
 
-func (f *FakeClient) AddImage(repoName string, image v1.Image, id string, keychain authn.Keychain) {
+func (f *FakeClient) AddImage(repoName string, image v1.Image, keychain authn.Keychain) {
 	f.images[repoName] = image
-	f.ids[repoName] = id
 	f.readKeychains[repoName] = keychain
 }
 
