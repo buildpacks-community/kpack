@@ -4,6 +4,8 @@ import (
 	"sort"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -29,16 +31,38 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []v1alpha1
 
 		for id := range layerMetadata {
 			for version, metadata := range layerMetadata[id] {
-				order := metadata.Order
+				info := v1alpha1.BuildpackInfo{
+					ID:      id,
+					Version: version,
+				}
 
+				diffId, err := v1.NewHash(metadata.LayerDiffID)
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to parse layer diffId for %s", info)
+				}
+				layer, err := image.LayerByDiffID(diffId)
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to get layer %s", info)
+				}
+
+				size, err := layer.Size()
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to get layer %s size", info)
+				}
+
+				digest, err := layer.Digest()
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to get layer %s digest", info)
+				}
+
+				order := metadata.Order
 				storeBP := v1alpha1.StoreBuildpack{
-					BuildpackInfo: v1alpha1.BuildpackInfo{
-						ID:      id,
-						Version: version,
-					},
-					LayerDiffID: metadata.LayerDiffID,
-					StoreImage:  storeImage,
-					Order:       order,
+					BuildpackInfo: info,
+					DiffId:        metadata.LayerDiffID,
+					StoreImage:    storeImage,
+					Order:         order,
+					Digest:        digest.String(),
+					Size:          size,
 				}
 				buildpacks = append(buildpacks, storeBP)
 			}

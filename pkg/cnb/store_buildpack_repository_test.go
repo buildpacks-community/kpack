@@ -1,12 +1,8 @@
 package cnb
 
 import (
-	"errors"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"testing"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,128 +16,118 @@ func TestBuildpackRepository(t *testing.T) {
 
 func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 	when("FindByIdAndVersion", func() {
-		engineLayer := fakeLayer{
-			diffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-			size:   10,
+		engineBuildpack := v1alpha1.StoreBuildpack{
+			BuildpackInfo: v1alpha1.BuildpackInfo{
+				ID:      "io.buildpack.engine",
+				Version: "v1",
+			},
+			DiffId: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+			Digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
+			Size:   50,
+			StoreImage: v1alpha1.StoreImage{
+				Image: "some.registry.io/build-package",
+			},
+			Order: nil,
 		}
 
-		packageManagerLayer := fakeLayer{
-			diffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-			size:   10,
+		packageManagerBuildpack := v1alpha1.StoreBuildpack{
+			BuildpackInfo: v1alpha1.BuildpackInfo{
+				ID:      "io.buildpack.package-manager",
+				Version: "v1",
+			},
+			DiffId: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+			Digest: "sha256:7c1213a54d20137a7479e72150c058268a6604b98c011b4fc11ca45927923d7b",
+			Size:   40,
+			StoreImage: v1alpha1.StoreImage{
+				Image: "some.registry.io/build-package",
+			},
+			Order: nil,
 		}
 
-		metaLayer := fakeLayer{
-			diffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-			size:   10,
-		}
-
-		v8Layer := fakeLayer{
-			diffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-			size:   10,
-		}
-
-		v9Layer := fakeLayer{
-			diffID: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-			size:   10,
-		}
-
-		image := &fakeStoreImage{
-			layersByDiffId: []v1.Layer{engineLayer, packageManagerLayer, metaLayer, v8Layer, v9Layer},
-		}
-
-		client := registryfakes.NewFakeClient()
-		client.AddImage("some.registry.io/build-package", image, "", nil)
-
-		subject := &StoreBuildpackRepository{
-			Keychain:       nil,
-			RegistryClient: client,
-			Store: &v1alpha1.Store{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "some-store",
-				},
-				Status: v1alpha1.StoreStatus{
-					Buildpacks: []v1alpha1.StoreBuildpack{
+		metaBuildpack := v1alpha1.StoreBuildpack{
+			BuildpackInfo: v1alpha1.BuildpackInfo{
+				ID:      "io.buildpack.meta",
+				Version: "v1",
+			},
+			DiffId: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+			Digest: "sha256:07db84e57fdd7101104c2469984217696fdfe51591cb1edee2928514135920d6",
+			Size:   30,
+			StoreImage: v1alpha1.StoreImage{
+				Image: "some.registry.io/build-package",
+			},
+			Order: []v1alpha1.OrderEntry{
+				{
+					Group: []v1alpha1.BuildpackRef{
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{
 								ID:      "io.buildpack.engine",
 								Version: "v1",
 							},
-							LayerDiffID: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							StoreImage: v1alpha1.StoreImage{
-								Image: "some.registry.io/build-package",
-							},
-							Order: nil,
-						},
-						{
-							BuildpackInfo: v1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.multi",
-								Version: "v9",
-							},
-							LayerDiffID: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							StoreImage: v1alpha1.StoreImage{
-								Image: "some.registry.io/build-package",
-							},
-							Order: nil,
-						}, {
-							BuildpackInfo: v1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.multi",
-								Version: "v8",
-							},
-							LayerDiffID: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							StoreImage: v1alpha1.StoreImage{
-								Image: "some.registry.io/build-package",
-							},
-							Order: nil,
+							Optional: false,
 						},
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{
 								ID:      "io.buildpack.package-manager",
 								Version: "v1",
 							},
-							LayerDiffID: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							StoreImage: v1alpha1.StoreImage{
-								Image: "some.registry.io/build-package",
-							},
-							Order: nil,
-						},
-						{
-							BuildpackInfo: v1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.meta",
-								Version: "v1",
-							},
-							LayerDiffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-							StoreImage: v1alpha1.StoreImage{
-								Image: "some.registry.io/build-package",
-							},
-							Order: []v1alpha1.OrderEntry{
-								{
-									Group: []v1alpha1.BuildpackRef{
-										{
-											BuildpackInfo: v1alpha1.BuildpackInfo{
-												ID:      "io.buildpack.engine",
-												Version: "v1",
-											},
-											Optional: false,
-										},
-										{
-											BuildpackInfo: v1alpha1.BuildpackInfo{
-												ID:      "io.buildpack.package-manager",
-												Version: "v1",
-											},
-											Optional: true,
-										},
-									},
-								},
-							},
+							Optional: true,
 						},
 					},
 				},
 			},
 		}
 
+		v8Buildpack := v1alpha1.StoreBuildpack{
+			BuildpackInfo: v1alpha1.BuildpackInfo{
+				ID:      "io.buildpack.multi",
+				Version: "v8",
+			},
+			DiffId: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+			Digest: "sha256:fc14806eb95d01b6338ba1b9fea605e84db7c8c09561ae360bad5b80b5d0d80b",
+			Size:   20,
+			StoreImage: v1alpha1.StoreImage{
+				Image: "some.registry.io/build-package",
+			},
+			Order: nil,
+		}
+
+		v9Buildpack := v1alpha1.StoreBuildpack{
+			BuildpackInfo: v1alpha1.BuildpackInfo{
+				ID:      "io.buildpack.multi",
+				Version: "v9",
+			},
+			DiffId: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+			Digest: "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+			Size:   10,
+			StoreImage: v1alpha1.StoreImage{
+				Image: "some.registry.io/build-package",
+			},
+			Order: nil,
+		}
+
+		storeBuildpackRepository := &StoreBuildpackRepository{
+			Keychain: nil,
+			Store: &v1alpha1.Store{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "some-store",
+				},
+				Status: v1alpha1.StoreStatus{
+					Buildpacks: []v1alpha1.StoreBuildpack{
+						engineBuildpack,
+						v9Buildpack,
+						v8Buildpack,
+						packageManagerBuildpack,
+						metaBuildpack,
+					},
+				},
+			},
+		}
+
 		it("returns layer info from store image", func() {
-			info, err := subject.FindByIdAndVersion("io.buildpack.engine", "v1")
+			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.engine", "v1")
 			require.NoError(t, err)
+
+			expectedLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
@@ -150,7 +136,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 				},
 				Layers: []buildpackLayer{
 					{
-						v1Layer: engineLayer,
+						v1Layer: expectedLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
@@ -161,7 +147,10 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical newest buildpack if version is unspecified", func() {
-			info, err := subject.FindByIdAndVersion("io.buildpack.multi", "")
+			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
+			require.NoError(t, err)
+
+			expectedLayer, err := layerFromStoreBuildpack(nil, v9Buildpack)
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
@@ -171,7 +160,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 				},
 				Layers: []buildpackLayer{
 					{
-						v1Layer: v9Layer,
+						v1Layer: expectedLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.multi",
 							Version: "v9",
@@ -182,7 +171,16 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {
-			info, err := subject.FindByIdAndVersion("io.buildpack.meta", "v1")
+			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.meta", "v1")
+			require.NoError(t, err)
+
+			expectedEngineLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
+			require.NoError(t, err)
+
+			expectedPackageManagerLayer, err := layerFromStoreBuildpack(nil, packageManagerBuildpack)
+			require.NoError(t, err)
+
+			expectedMetaLayer, err := layerFromStoreBuildpack(nil, metaBuildpack)
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{
@@ -192,21 +190,21 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 				},
 				Layers: []buildpackLayer{
 					{
-						v1Layer: engineLayer,
+						v1Layer: expectedEngineLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.engine",
 							Version: "v1",
 						},
 					},
 					{
-						v1Layer: packageManagerLayer,
+						v1Layer: expectedPackageManagerLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.package-manager",
 							Version: "v1",
 						},
 					},
 					{
-						v1Layer: metaLayer,
+						v1Layer: expectedMetaLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							ID:      "io.buildpack.meta",
 							Version: "v1",
@@ -238,57 +236,4 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 
 	})
 
-}
-
-type fakeStoreImage struct {
-	layersByDiffId []v1.Layer
-}
-
-func (f fakeStoreImage) LayerByDiffID(diffId v1.Hash) (v1.Layer, error) {
-	for _, layer := range f.layersByDiffId {
-		hash, err := layer.DiffID()
-		if err != nil {
-			return nil, err
-		}
-		if hash == diffId {
-			return layer, nil
-		}
-	}
-	return nil, errors.New("layer not found")
-}
-
-func (f fakeStoreImage) LayerByDigest(v1.Hash) (v1.Layer, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) Layers() ([]v1.Layer, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) MediaType() (types.MediaType, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) ConfigName() (v1.Hash, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) ConfigFile() (*v1.ConfigFile, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) RawConfigFile() ([]byte, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) Digest() (v1.Hash, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) Manifest() (*v1.Manifest, error) {
-	panic("not implemented in tests")
-}
-
-func (f fakeStoreImage) RawManifest() ([]byte, error) {
-	panic("not implemented in tests")
 }

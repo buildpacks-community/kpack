@@ -83,7 +83,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:      "org.cloudfoundry.node-engine",
 					Version: "0.0.116",
 				},
-				LayerDiffID: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
+				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
 				StoreImage: expv1alpha1.StoreImage{
 					Image: "some.registry/some-image-1",
 				},
@@ -94,7 +94,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:      "org.cloudfoundry.npm",
 					Version: "0.0.71",
 				},
-				LayerDiffID: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
+				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
 				StoreImage: expv1alpha1.StoreImage{
 					Image: "some.registry/some-image-2",
 				},

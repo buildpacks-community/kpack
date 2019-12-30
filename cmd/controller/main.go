@@ -214,9 +214,8 @@ func newBuildpackRepository(keychainFactory registry.KeychainFactory) func(store
 	}
 	return func(store *expv1alpha1.Store) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
-			Keychain:       storeKeychain,
-			RegistryClient: &registry.Client{},
-			Store:          store,
+			Keychain: storeKeychain,
+			Store:    store,
 		}
 	}
 }
