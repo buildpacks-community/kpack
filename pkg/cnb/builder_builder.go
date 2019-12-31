@@ -17,30 +17,27 @@ import (
 )
 
 type BuilderBuilder struct {
-	baseImage       v1.Image
-	baseMetadata    *BuilderImageMetadata
-	order           []expv1alpha1.OrderEntry
-	stackID         string
-	buildpackLayers map[expv1alpha1.BuildpackInfo]buildpackLayer
+	baseImage         v1.Image
+	lifecycleImage    v1.Image
+	LifecycleMetadata LifecycleMetadata
+	stack             *expv1alpha1.Stack
+	order             []expv1alpha1.OrderEntry
+	buildpackLayers   map[expv1alpha1.BuildpackInfo]buildpackLayer
 }
 
-func newBuilderBuilder(baseImage v1.Image) (*BuilderBuilder, error) {
-	baseMetadata := &BuilderImageMetadata{}
-	err := imagehelpers.GetLabel(baseImage, buildpackMetadataLabel, baseMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	stackID, err := imagehelpers.GetStringLabel(baseImage, stackMetadataLabel)
+func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1alpha1.Stack) (*BuilderBuilder, error) {
+	lifecycleMd := LifecycleMetadata{}
+	err := imagehelpers.GetLabel(lifecycleImage, lifecycleMetadataLabel, &lifecycleMd)
 	if err != nil {
 		return nil, err
 	}
 
 	return &BuilderBuilder{
-		baseImage:       baseImage,
-		baseMetadata:    baseMetadata,
-		stackID:         stackID,
-		buildpackLayers: map[expv1alpha1.BuildpackInfo]buildpackLayer{},
+		baseImage:         baseImage,
+		lifecycleImage:    lifecycleImage,
+		LifecycleMetadata: lifecycleMd,
+		stack:             stack,
+		buildpackLayers:   map[expv1alpha1.BuildpackInfo]buildpackLayer{},
 	}, nil
 }
 
@@ -83,12 +80,27 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 		layers = append(layers, layer.v1Layer)
 	}
 
-	orderLayer, err := bb.tomlLayer()
+	stackLayer, err := bb.stackLayer()
 	if err != nil {
 		return nil, err
 	}
 
-	image, err := mutate.AppendLayers(bb.baseImage, append(layers, orderLayer)...)
+	orderLayer, err := bb.orderLayer()
+	if err != nil {
+		return nil, err
+	}
+
+	lifecycleLayers, err := bb.lifecycleImage.Layers()
+	if err != nil {
+		return nil, err
+	}
+
+	image, err := mutate.AppendLayers(bb.baseImage, append(lifecycleLayers, stackLayer)...)
+	if err != nil {
+		return nil, err
+	}
+
+	image, err = mutate.AppendLayers(image, append(layers, orderLayer)...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +110,13 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 		buildpackLayersLabel: buildpackLayerMetadata,
 		buildpackMetadataLabel: BuilderImageMetadata{
 			Description: "Custom Builder built with kpack",
-			Stack:       bb.baseMetadata.Stack,
-			Lifecycle:   bb.baseMetadata.Lifecycle,
+			Stack: StackMetadata{
+				RunImage: RunImageMetadata{
+					Image:   bb.stack.Spec.RunImage.Image,
+					Mirrors: nil,
+				},
+			},
+			Lifecycle: bb.LifecycleMetadata,
 			CreatedBy: CreatorMetadata{
 				Name:    "kpack CustomBuilder",
 				Version: "",
@@ -109,7 +126,29 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 	})
 }
 
-func (bb *BuilderBuilder) tomlLayer() (v1.Layer, error) {
+func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
+	stackBuf := &bytes.Buffer{}
+	stackFile := tomlStackFile{
+		RunImage: tomlRunImage{
+			Image: bb.stack.Spec.RunImage.Image,
+		},
+	}
+	err := toml.NewEncoder(stackBuf).Encode(stackFile)
+	if err != nil {
+		return nil, err
+	}
+	return singeFileLayer(stackTomlPath, stackBuf.Bytes())
+}
+
+type tomlStackFile struct {
+	RunImage tomlRunImage `toml:"run-image"`
+}
+
+type tomlRunImage struct {
+	Image string `toml:"image"`
+}
+
+func (bb *BuilderBuilder) orderLayer() (v1.Layer, error) {
 	orderBuf := &bytes.Buffer{}
 
 	order := make(tomlOrder, 0, len(bb.order))
@@ -125,7 +164,7 @@ func (bb *BuilderBuilder) tomlLayer() (v1.Layer, error) {
 		order = append(order, tomlOrderEntry{Group: bps})
 	}
 
-	err := toml.NewEncoder(orderBuf).Encode(tomlFile{order})
+	err := toml.NewEncoder(orderBuf).Encode(tomlOrderFile{order})
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +182,8 @@ type tomlBuildpack struct {
 	Version  string `toml:"version"`
 	Optional bool   `toml:"optional,omitempty"`
 }
-type tomlFile struct {
+
+type tomlOrderFile struct {
 	Order tomlOrder `toml:"order"`
 }
 

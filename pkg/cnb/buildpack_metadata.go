@@ -8,9 +8,10 @@ const (
 	buildpackOrderLabel    = "io.buildpacks.buildpack.order"
 	buildpackLayersLabel   = "io.buildpacks.buildpack.layers"
 	buildpackMetadataLabel = "io.buildpacks.builder.metadata"
-	stackMetadataLabel     = "io.buildpacks.stack.id"
+	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 
 	orderTomlPath = "/cnb/order.toml"
+	stackTomlPath = "/cnb/stack.toml"
 )
 
 type BuilderImageMetadata struct {

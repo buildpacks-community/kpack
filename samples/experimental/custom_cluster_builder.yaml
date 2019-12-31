@@ -3,14 +3,10 @@ kind: CustomClusterBuilder
 metadata:
   name: my-cluster-builder
 spec:
-  tag: sample/custom-builder
-  stack:
-    baseBuilderImage: cloudfoundry/cnb:bionic
+  tag: buildingbuilder/custom-builder
+  stack: cflinuxfs3-stack
   store: sample-store
   order:
-  - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
   - group:
     - id: org.cloudfoundry.node-engine
     - id: org.cloudfoundry.npm

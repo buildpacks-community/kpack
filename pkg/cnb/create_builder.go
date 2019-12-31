@@ -19,20 +19,21 @@ type BuildpackRepository interface {
 
 type RemoteBuilderCreator struct {
 	RegistryClient RegistryClient
+	LifecycleImage string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
-	baseImage, _, err := r.RegistryClient.Fetch(keychain, spec.Stack.BaseBuilderImage)
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, stack *expv1alpha1.Stack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+	buildImage, _, err := r.RegistryClient.Fetch(keychain, stack.Status.BuildImageRef)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	builderBuilder, err := newBuilderBuilder(baseImage)
+	lifecycleImage, _, err := r.RegistryClient.Fetch(keychain, r.LifecycleImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	_, runImageId, err := r.RegistryClient.Fetch(keychain, builderBuilder.baseMetadata.Stack.RunImage.Image)
+	builderBuilder, err := newBuilderBuilder(buildImage, lifecycleImage, stack)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -64,8 +65,8 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
-			RunImage: runImageId,
-			ID:       builderBuilder.stackID,
+			RunImage: stack.Status.RunImageRef,
+			ID:       stack.Spec.Id,
 		},
 		Buildpacks: builderBuilder.buildpacks(),
 	}, nil

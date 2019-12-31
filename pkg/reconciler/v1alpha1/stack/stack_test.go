@@ -1,11 +1,13 @@
-package store_test
+package stack_test
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,105 +20,85 @@ import (
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
-	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store"
-	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store/storefakes"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/stack"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
-func TestStoreReconciler(t *testing.T) {
-	spec.Run(t, "Store Reconciler", testStoreReconciler)
+func TestStackReconciler(t *testing.T) {
+	spec.Run(t, "Stack Reconciler", testStackReconciler)
 }
 
-func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
+func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
-		storeName               = "some-store"
-		storeKey                = storeName
+		stackName               = "some-stack"
+		stackKey                = stackName
 		initialGeneration int64 = 1
 	)
+
 	var (
-		fakeStoreReader     = &storefakes.FakeStoreReader{}
 		fakeKeychainFactory = &registryfakes.FakeKeychainFactory{}
 		expectedKeychain    = &registryfakes.FakeKeychain{Name: "Expected Keychain"}
+		fakeRegistryClient  = registryfakes.NewFakeClient()
+		buildImage          ggcrv1.Image
+		buildImageSha       string
+		runImage            ggcrv1.Image
+		runImageSha         string
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
 			listers := testhelpers.NewListers(row.Objects)
-
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-
-			r := &store.Reconciler{
+			r := &stack.Reconciler{
+				ImageFetcher:    fakeRegistryClient,
 				Client:          fakeClient,
-				StoreReader:     fakeStoreReader,
 				KeychainFactory: fakeKeychainFactory,
-				StoreLister:     listers.GetStoreLister(),
+				StackLister:     listers.GetStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
 
-	store := &expv1alpha1.Store{
+	stack := &expv1alpha1.Stack{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       storeName,
+			Name:       stackName,
 			Generation: initialGeneration,
 		},
-		Spec: expv1alpha1.StoreSpec{
-			Sources: []expv1alpha1.StoreImage{
-				{
-					Image: "some.registry/some-image-1",
-				},
-				{
-					Image: "some.registry/some-image-2",
-				},
+		Spec: expv1alpha1.StackSpec{
+			Id: "some.stack.id",
+			BuildImage: expv1alpha1.StackImage{
+				Image: "some-registry.io/build-image",
+			},
+			RunImage: expv1alpha1.StackImage{
+				Image: "some-registry.io/run-image",
 			},
 		},
 	}
 
 	it.Before(func() {
 		fakeKeychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{}, expectedKeychain)
+
+		buildImage, buildImageSha = randomImage(t)
+		fakeRegistryClient.AddImage("some-registry.io/build-image", buildImage, expectedKeychain)
+
+		runImage, runImageSha = randomImage(t)
+		fakeRegistryClient.AddImage("some-registry.io/run-image", runImage, expectedKeychain)
 	})
 
 	when("#Reconcile", func() {
-		readBuildpacks := []expv1alpha1.StoreBuildpack{
-			{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					ID:      "org.cloudfoundry.node-engine",
-					Version: "0.0.116",
-				},
-				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
-				StoreImage: expv1alpha1.StoreImage{
-					Image: "some.registry/some-image-1",
-				},
-				Order: nil,
-			},
-			{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					ID:      "org.cloudfoundry.npm",
-					Version: "0.0.71",
-				},
-				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
-				StoreImage: expv1alpha1.StoreImage{
-					Image: "some.registry/some-image-2",
-				},
-				Order: nil,
-			},
-		}
-
 		it("saves metadata to the status", func() {
-			fakeStoreReader.ReadReturns(readBuildpacks, nil)
-
 			rt.Test(rtesting.TableRow{
-				Key: storeKey,
+				Key: stackKey,
 				Objects: []runtime.Object{
-					store,
+					stack,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Store{
-							ObjectMeta: store.ObjectMeta,
-							Spec:       store.Spec,
-							Status: expv1alpha1.StoreStatus{
+						Object: &expv1alpha1.Stack{
+							ObjectMeta: stack.ObjectMeta,
+							Spec:       stack.Spec,
+							Status: expv1alpha1.StackStatus{
 								Status: v1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: v1alpha1.Conditions{
@@ -126,25 +108,17 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								Buildpacks: readBuildpacks,
+								BuildImageRef: "some-registry.io/build-image@" + buildImageSha,
+								RunImageRef:   "some-registry.io/run-image@" + runImageSha,
 							},
 						},
 					},
 				},
 			})
-
-			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
-			keychain, storeImages := fakeStoreReader.ReadArgsForCall(0)
-
-			assert.Equal(t, expectedKeychain, keychain)
-
-			assert.Equal(t, store.Spec.Sources, storeImages)
 		})
 
 		it("does not update the status with no status change", func() {
-			fakeStoreReader.ReadReturns(readBuildpacks, nil)
-
-			store.Status = expv1alpha1.StoreStatus{
+			stack.Status = expv1alpha1.StackStatus{
 				Status: v1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: v1alpha1.Conditions{
@@ -154,37 +128,38 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				Buildpacks: readBuildpacks,
+				BuildImageRef: "some-registry.io/build-image@" + buildImageSha,
+				RunImageRef:   "some-registry.io/run-image@" + runImageSha,
 			}
 			rt.Test(rtesting.TableRow{
-				Key: storeKey,
+				Key: stackKey,
 				Objects: []runtime.Object{
-					store,
+					stack,
 				},
 				WantErr: false,
 			})
 		})
 
-		it("sets the status to Ready False if error reading buildpacks", func() {
-			fakeStoreReader.ReadReturns(nil, fmt.Errorf("no buildpacks left"))
+		it("sets the status to Ready False if error reading from registry", func() {
+			fakeRegistryClient.SetFetchError(errors.New("some fetch error"))
 
 			rt.Test(rtesting.TableRow{
-				Key: storeKey,
+				Key: stackKey,
 				Objects: []runtime.Object{
-					store,
+					stack,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Store{
-							ObjectMeta: store.ObjectMeta,
-							Spec:       store.Spec,
-							Status: expv1alpha1.StoreStatus{
+						Object: &expv1alpha1.Stack{
+							ObjectMeta: stack.ObjectMeta,
+							Spec:       stack.Spec,
+							Status: expv1alpha1.StackStatus{
 								Status: v1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: v1alpha1.Conditions{
 										{
-											Message: "no buildpacks left",
+											Message: "some fetch error",
 											Type:    v1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
 										},
@@ -197,4 +172,14 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
+}
+
+func randomImage(t *testing.T) (ggcrv1.Image, string) {
+	image, err := random.Image(5, 10)
+	require.NoError(t, err)
+
+	hash, err := image.Digest()
+	require.NoError(t, err)
+
+	return image, hash.String()
 }

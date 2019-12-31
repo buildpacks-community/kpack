@@ -13,6 +13,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
@@ -26,10 +27,13 @@ func TestCreateBuilder(t *testing.T) {
 
 func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
-		tag             = "custom/example"
-		baseBuilder     = "base/builder"
-		runImageTag     = "kpack/run"
-		baseImageLayers = 10
+		tag                  = "custom/example"
+		lifecycleImageRef    = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		buildImageRef        = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		runImageRef          = "index.docker.io/cloudfoundry/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
+		buildImageLayers     = 10
+		lifecycleImageLayers = 1
+		stackTomlLayers      = 1
 	)
 
 	var (
@@ -55,11 +59,28 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
-		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
-			Tag: "custom/example",
-			Stack: expv1alpha1.Stack{
-				BaseBuilderImage: baseBuilder,
+		stack = &expv1alpha1.Stack{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: "sample-stack",
 			},
+			Spec: expv1alpha1.StackSpec{
+				Id: "io.buildpacks.stacks.cflinuxfs3",
+				BuildImage: expv1alpha1.StackImage{
+					Image: "cloudfoundry/build:full-cnb",
+				},
+				RunImage: expv1alpha1.StackImage{
+					Image: "cloudfoundry/run:full-cnb",
+				},
+			},
+			Status: expv1alpha1.StackStatus{
+				BuildImageRef: buildImageRef,
+				RunImageRef:   runImageRef,
+			},
+		}
+
+		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
+			Tag:   "custom/example",
+			Stack: "some-stack",
 			Store: "some-buildpackRepository",
 			Order: []expv1alpha1.OrderEntry{
 				{
@@ -84,6 +105,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		subject = RemoteBuilderCreator{
 			RegistryClient: registryClient,
+			LifecycleImage: lifecycleImageRef,
 		}
 	)
 
@@ -131,61 +153,44 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 	when("CreateBuilder", func() {
 		var (
-			baseImage      v1.Image
-			runImageDigest string
+			lifecycleImg v1.Image
 		)
 
 		it.Before(func() {
 			var err error
-			baseImage, err = random.Image(10, int64(baseImageLayers))
+			lifecycleImg, err = random.Image(10, int64(lifecycleImageLayers))
 			require.NoError(t, err)
 
-			baseImage, err := imagehelpers.SetStringLabels(baseImage, map[string]string{
-				stackMetadataLabel: "io.buildpacks.stack",
-			})
-			require.NoError(t, err)
-
-			baseImage, err = imagehelpers.SetLabels(baseImage, map[string]interface{}{
-				buildpackMetadataLabel: BuilderImageMetadata{
-					Stack: StackMetadata{
-						RunImage: RunImageMetadata{
-							Image: runImageTag,
-						},
+			lifecycleImg, err = imagehelpers.SetLabels(lifecycleImg, map[string]interface{}{
+				lifecycleMetadataLabel: LifecycleMetadata{
+					LifecycleInfo: LifecycleInfo{
+						Version: "0.5.0",
 					},
-					Lifecycle: LifecycleMetadata{
-						LifecycleInfo: LifecycleInfo{
-							Version: "0.5.0",
-						},
-						API: LifecycleAPI{
-							BuildpackVersion: "0.2",
-							PlatformVersion:  "0.1",
-						},
+					API: LifecycleAPI{
+						BuildpackVersion: "0.2",
+						PlatformVersion:  "0.1",
 					},
 				},
 			})
 			require.NoError(t, err)
 
-			registryClient.AddImage(baseBuilder, baseImage, keychain)
+			registryClient.AddImage(lifecycleImageRef, lifecycleImg, keychain)
 
-			runImage, err := random.Image(1, int64(1))
+			buildImage, err := random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
 
-			rawDigest, err := runImage.Digest()
-			require.NoError(t, err)
-			runImageDigest = rawDigest.Hex
-
-			registryClient.AddImage(runImageTag, runImage, keychain)
+			registryClient.AddImage(buildImageRef, buildImage, keychain)
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
+			builderRecord, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.1", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.2", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.3", Version: "v2"})
-			assert.Equal(t, v1alpha1.BuildStack{RunImage: "index.docker.io/kpack/run@sha256:" + runImageDigest, ID: "io.buildpacks.stack"}, builderRecord.Stack)
+			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImageRef, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
 			savedImage := registryClient.SavedImages()[tag]
@@ -199,7 +204,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 			numberOfBuildpackLayers := 3
 			numberOrderLayers := 1
-			assert.Len(t, layers, baseImageLayers+numberOfBuildpackLayers+numberOrderLayers)
+			assert.Len(t, layers, buildImageLayers+lifecycleImageLayers+stackTomlLayers+numberOfBuildpackLayers+numberOrderLayers)
 			assert.Contains(t, layers, buildpack1Layer)
 			assert.Contains(t, layers, buildpack2Layer)
 			assert.Contains(t, layers, buildpack3Layer)
@@ -219,6 +224,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     optional = true
 `})
 
+			stackLayer := layers[buildImageLayers+lifecycleImageLayers]
+			assertLayerContents(t, stackLayer, 0644, map[string]string{
+				"/cnb/stack.toml": //language=toml
+				`[run-image]
+  image = "cloudfoundry/run:full-cnb"
+`})
+
 			buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
 			assert.NoError(t, err)
 			assert.JSONEq(t, //language=json
@@ -231,7 +243,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   "description": "Custom Builder built with kpack",
   "stack": {
     "runImage": {
-      "image": "kpack/run",
+      "image": "cloudfoundry/run:full-cnb",
       "mirrors": null
     }
   },
@@ -300,11 +312,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(keychain, buildpackRepository, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)

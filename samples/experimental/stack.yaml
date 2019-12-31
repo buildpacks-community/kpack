@@ -1,0 +1,10 @@
+apiVersion: experimental.kpack.pivotal.io/v1alpha1
+kind: Stack
+metadata:
+  name: cflinuxfs3-stack
+spec:
+  id: "io.buildpacks.stacks.cflinuxfs3"
+  buildImage:
+    image: "cloudfoundry/build:full-cnb"
+  runImage:
+    image: "cloudfoundry/run:full-cnb"

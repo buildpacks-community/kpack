@@ -60,6 +60,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				KeychainFactory:            keychainFactory,
 				Tracker:                    fakeTracker,
 				StoreLister:                listers.GetStoreLister(),
+				StackLister:                listers.GetStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
@@ -72,6 +73,12 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		Status: expv1alpha1.StoreStatus{},
 	}
 
+	stack := &expv1alpha1.Stack{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-stack",
+		},
+	}
+
 	customBuilder := &expv1alpha1.CustomClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       customBuilderName,
@@ -79,10 +86,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.CustomClusterBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag: customBuilderTag,
-				Stack: expv1alpha1.Stack{
-					BaseBuilderImage: "example.com/some-base-image",
-				},
+				Tag:   customBuilderTag,
+				Stack: "some-stack",
 				Store: "some-store",
 				Order: []expv1alpha1.OrderEntry{
 					{
@@ -177,6 +182,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},
@@ -232,6 +238,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					expectedBuilder,
 				},
@@ -282,6 +289,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},
@@ -314,6 +322,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},

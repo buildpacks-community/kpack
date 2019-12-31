@@ -6,13 +6,9 @@ metadata:
 spec:
   serviceAccount: default
   tag: sample/custom-builder
-  stack:
-    baseBuilderImage: cloudfoundry/cnb:bionic
+  stack: cflinuxfs3-stack
   store: sample-store
   order:
-  - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
   - group:
     - id: org.cloudfoundry.node-engine
     - id: org.cloudfoundry.npm  

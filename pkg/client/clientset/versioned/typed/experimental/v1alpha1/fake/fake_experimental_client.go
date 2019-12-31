@@ -36,6 +36,10 @@ func (c *FakeExperimentalV1alpha1) CustomClusterBuilders() v1alpha1.CustomCluste
 	return &FakeCustomClusterBuilders{c}
 }
 
+func (c *FakeExperimentalV1alpha1) Stacks() v1alpha1.StackInterface {
+	return &FakeStacks{c}
+}
+
 func (c *FakeExperimentalV1alpha1) Stores() v1alpha1.StoreInterface {
 	return &FakeStores{c}
 }
