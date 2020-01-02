@@ -165,7 +165,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			registryClient.AddImage(baseBuilder, baseImage, "index.docker.io/base/builder@sha256:abc123", keychain)
+			registryClient.AddImage(baseBuilder, baseImage, keychain)
 
 			runImage, err := random.Image(1, int64(1))
 			require.NoError(t, err)
@@ -174,7 +174,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 			runImageDigest = rawDigest.Hex
 
-			registryClient.AddImage(runImageTag, runImage, "index.docker.io/kpack/run@sha256:"+runImageDigest, keychain)
+			registryClient.AddImage(runImageTag, runImage, keychain)
 		})
 
 		it("creates a custom builder", func() {

@@ -4,15 +4,13 @@ import (
 	"sort"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
 type StoreBuildpackRepository struct {
-	Keychain       authn.Keychain
-	RegistryClient RegistryClient
+	Keychain authn.Keychain
 
 	Store *v1alpha1.Store
 }
@@ -23,17 +21,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		return RemoteBuildpackInfo{}, err
 	}
 
-	buildPackageImage, _, err := s.RegistryClient.Fetch(s.Keychain, storeBuildpack.StoreImage.Image)
-	if err != nil {
-		return RemoteBuildpackInfo{}, err
-	}
-
-	diffID, err := v1.NewHash(storeBuildpack.LayerDiffID)
-	if err != nil {
-		return RemoteBuildpackInfo{}, err
-	}
-
-	layer, err := buildPackageImage.LayerByDiffID(diffID)
+	layer, err := layerFromStoreBuildpack(s.Keychain, storeBuildpack)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}

@@ -105,7 +105,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				APIVersion: "v1alpha1",
 			},
 			Status: v1alpha1.BuilderStatus{
-				LatestImage: "some/builde@sha256:1234",
+				LatestImage: "some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4",
 			},
 		}
 
@@ -122,7 +122,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			image, _ = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, `{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
 			image, _ = imagehelpers.SetEnv(image, "CNB_USER_ID=1234")
 			image, _ = imagehelpers.SetEnv(image, "CNB_GROUP_ID=5678")
-			imageFetcher.AddImage("some/builde@sha256:1234", image, "some/builder@sha256:1234", keychain)
+			imageFetcher.AddImage("some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4", image, keychain)
 
 			buildPodConfig := v1alpha1.BuildPodImages{}
 			generator := &buildpod.Generator{

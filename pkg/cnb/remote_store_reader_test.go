@@ -1,15 +1,15 @@
-package cnb_test
+package cnb
 
 import (
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -21,13 +21,13 @@ func TestRemoteStoreReader(t *testing.T) {
 func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 	when("Remote Store Reader", func() {
 		const (
-			buildpackageA = "build/packageA"
-			buildpackageB = "build/packageB"
+			buildpackageA = "build/package_a"
+			buildpackageB = "build/package_b"
 		)
 
 		var (
 			fakeClient        = registryfakes.NewFakeClient()
-			remoteStoreReader = &cnb.RemoteStoreReader{
+			remoteStoreReader = &RemoteStoreReader{
 				RegistryClient: fakeClient,
 			}
 
@@ -35,10 +35,29 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		it.Before(func() {
-			buildPackageA, err := random.Image(10, int64(10))
+			buildPackageAImage, err := random.Image(10, int64(10))
 			require.NoError(t, err)
 
-			buildPackageA, err = imagehelpers.SetStringLabels(buildPackageA, map[string]string{
+			buildPackageAImage, err = mutate.AppendLayers(buildPackageAImage,
+				fakeLayer{
+					digest: "sha256:c375a5c675104fe85cbd3042f5cfa6b1e56573c6d4e5d11224a62598532f3cc1",
+					diffID: "sha256:1c6d357a885d873824545b40e1ccc9fd228c2dd38ba0acb9649955daf2941f94",
+					size:   10,
+				},
+				fakeLayer{
+					digest: "sha256:52f341c7c36e21e5c344856dd61bc8c2d1188647f259eaba6d375e37c9aed08e",
+					diffID: "sha256:114e397795eceac649afc159afb229211a9ad97b908f7ace225736b8774d9b00",
+					size:   20,
+				},
+				fakeLayer{
+					digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
+					diffID: "sha256:fcc1dd482e41209737dadce3afd276a93d10d974c174fb72adddd3925b2f31d5",
+					size:   30,
+				},
+			)
+			require.NoError(t, err)
+
+			buildPackageAImage, err = imagehelpers.SetStringLabels(buildPackageAImage, map[string]string{
 				"io.buildpacks.buildpack.layers": //language=json
 				`{
   "org.buildpack.meta": {
@@ -77,12 +96,20 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			fakeClient.AddImage(buildpackageA, buildPackageA, "", expectedKeychain)
+			fakeClient.AddImage(buildpackageA, buildPackageAImage, expectedKeychain)
 
-			buildPackageB, err := random.Image(10, int64(10))
+			buildPackageBImage, err := random.Image(10, int64(10))
 			require.NoError(t, err)
 
-			buildPackageB, err = imagehelpers.SetStringLabels(buildPackageB, map[string]string{
+			buildPackageBImage, err = mutate.AppendLayers(buildPackageAImage,
+				fakeLayer{
+					digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
+					diffID: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+					size:   40,
+				},
+			)
+
+			buildPackageBImage, err = imagehelpers.SetStringLabels(buildPackageBImage, map[string]string{
 				"io.buildpacks.buildpack.layers": //language=json
 				`{
   "org.buildpack.simple": {
@@ -95,7 +122,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			fakeClient.AddImage(buildpackageB, buildPackageB, "", expectedKeychain)
+			fakeClient.AddImage(buildpackageB, buildPackageBImage, expectedKeychain)
 		})
 
 		it("returns all buildpacks from multiple images", func() {
@@ -115,17 +142,21 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					ID:      "org.buildpack.multi",
 					Version: "0.0.1",
 				},
-				LayerDiffID: "sha256:114e397795eceac649afc159afb229211a9ad97b908f7ace225736b8774d9b00",
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
+				DiffId: "sha256:114e397795eceac649afc159afb229211a9ad97b908f7ace225736b8774d9b00",
+				Digest: "sha256:52f341c7c36e21e5c344856dd61bc8c2d1188647f259eaba6d375e37c9aed08e",
+				Size:   20,
 			})
 			require.Contains(t, storeBuildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					ID:      "org.buildpack.multi",
 					Version: "0.0.2",
 				},
-				LayerDiffID: "sha256:fcc1dd482e41209737dadce3afd276a93d10d974c174fb72adddd3925b2f31d5",
+				DiffId: "sha256:fcc1dd482e41209737dadce3afd276a93d10d974c174fb72adddd3925b2f31d5",
+				Digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
+				Size:   30,
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
@@ -136,7 +167,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						ID:      "org.buildpack.meta",
 						Version: "0.0.2",
 					},
-					LayerDiffID: "sha256:1c6d357a885d873824545b40e1ccc9fd228c2dd38ba0acb9649955daf2941f94",
+					DiffId: "sha256:1c6d357a885d873824545b40e1ccc9fd228c2dd38ba0acb9649955daf2941f94",
+					Digest: "sha256:c375a5c675104fe85cbd3042f5cfa6b1e56573c6d4e5d11224a62598532f3cc1",
+					Size:   10,
 					StoreImage: v1alpha1.StoreImage{
 						Image: buildpackageA,
 					},
@@ -169,7 +202,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					ID:      "org.buildpack.simple",
 					Version: "0.0.1",
 				},
-				LayerDiffID: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+				DiffId: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+				Digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
+				Size:   40,
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageB,
 				},

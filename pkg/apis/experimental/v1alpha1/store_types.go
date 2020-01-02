@@ -35,9 +35,11 @@ type StoreStatus struct {
 
 type StoreBuildpack struct {
 	BuildpackInfo
-	LayerDiffID string       `json:"layerDiffId"`
-	StoreImage  StoreImage   `json:"storeImage"`
-	Order       []OrderEntry `json:"order"`
+	StoreImage StoreImage   `json:"storeImage"`
+	Order      []OrderEntry `json:"order"`
+	DiffId     string       `json:"diffId"`
+	Digest     string       `json:"digest"`
+	Size       int64        `json:"size"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
