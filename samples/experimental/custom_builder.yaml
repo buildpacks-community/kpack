@@ -6,8 +6,7 @@ metadata:
 spec:
   serviceAccount: default
   tag: sample/custom-builder
-  stack:
-    baseBuilderImage: cloudfoundry/cnb:bionic
+  stack: bionic-stack
   store: sample-store
   order:
   - group:

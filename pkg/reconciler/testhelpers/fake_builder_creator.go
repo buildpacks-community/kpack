@@ -21,7 +21,7 @@ type CreateBuilderArgs struct {
 	CustomBuilderSpec   expv1alpha1.CustomBuilderSpec
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, builder expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, stack *expv1alpha1.Stack, builder expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Keychain:            keychain,
 		BuildpackRepository: repo,

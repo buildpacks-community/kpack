@@ -2,6 +2,7 @@ package imagehelpers
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func GetEnv(image v1.Image, key string) (string, error) {
 	return "", nil
 }
 
-func SetEnv(image v1.Image, value string) (v1.Image, error) {
+func SetEnv(image v1.Image, key, value string) (v1.Image, error) {
 	cfg, err := configFile(image)
 	if err != nil {
 		return nil, err
@@ -40,7 +41,7 @@ func SetEnv(image v1.Image, value string) (v1.Image, error) {
 
 	config := *cfg.Config.DeepCopy()
 
-	config.Env = append(config.Env, value)
+	config.Env = append(config.Env, fmt.Sprintf("%s=%s", key, value))
 
 	return mutate.Config(image, config)
 }
@@ -124,6 +125,27 @@ func SetLabels(image v1.Image, labels map[string]interface{}) (v1.Image, error) 
 	}
 
 	return mutate.Config(image, config)
+}
+
+func SetWorkingDir(image v1.Image, dir string) (v1.Image, error) {
+	configFile, err := image.ConfigFile()
+	if err != nil {
+		return nil, err
+	}
+
+	config := *configFile.Config.DeepCopy()
+	config.WorkingDir = dir
+	return mutate.Config(image, config)
+}
+
+func GetWorkingDir(image v1.Image) (string, error) {
+	configFile, err := image.ConfigFile()
+	if err != nil {
+		return "", err
+	}
+
+	config := *configFile.Config.DeepCopy()
+	return config.WorkingDir, nil
 }
 
 func configFile(image v1.Image) (*v1.ConfigFile, error) {

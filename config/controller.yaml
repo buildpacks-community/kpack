@@ -27,3 +27,5 @@ spec:
           value: #@ data.values.rebase_image
         - name: COMPLETION_IMAGE
           value: #@ data.values.completion_image
+        - name: LIFECYCLE_IMAGE
+          value: #@ data.values.lifecycle_image

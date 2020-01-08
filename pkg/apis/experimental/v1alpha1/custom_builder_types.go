@@ -23,7 +23,7 @@ type CustomBuilder struct {
 
 type CustomBuilderSpec struct {
 	Tag   string       `json:"tag"`
-	Stack Stack        `json:"stack"`
+	Stack string       `json:"stack"`
 	Store string       `json:"store"`
 	Order []OrderEntry `json:"order"`
 }
@@ -35,10 +35,6 @@ type CustomNamespacedBuilderSpec struct {
 
 type CustomBuilderStatus struct {
 	v1alpha1.BuilderStatus
-}
-
-type Stack struct {
-	BaseBuilderImage string `json:"baseBuilderImage"` //todo rename, maybe?
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

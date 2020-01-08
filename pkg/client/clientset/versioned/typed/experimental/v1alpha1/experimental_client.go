@@ -28,6 +28,7 @@ type ExperimentalV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CustomBuildersGetter
 	CustomClusterBuildersGetter
+	StacksGetter
 	StoresGetter
 }
 
@@ -42,6 +43,10 @@ func (c *ExperimentalV1alpha1Client) CustomBuilders(namespace string) CustomBuil
 
 func (c *ExperimentalV1alpha1Client) CustomClusterBuilders() CustomClusterBuilderInterface {
 	return newCustomClusterBuilders(c)
+}
+
+func (c *ExperimentalV1alpha1Client) Stacks() StackInterface {
+	return newStacks(c)
 }
 
 func (c *ExperimentalV1alpha1Client) Stores() StoreInterface {

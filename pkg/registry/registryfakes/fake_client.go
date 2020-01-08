@@ -24,9 +24,14 @@ type FakeClient struct {
 
 	savedImages    map[string]v1.Image
 	writeKeychains map[string]authn.Keychain
+	fetchError     error
 }
 
 func (f *FakeClient) Fetch(keychain authn.Keychain, repoName string) (v1.Image, string, error) {
+	if f.fetchError != nil {
+		return nil, "", f.fetchError
+	}
+
 	if expectedKeychain, ok := f.readKeychains[repoName]; !ok || keychain != expectedKeychain {
 		return nil, "", errors.New("unexpected keychain")
 	}
@@ -71,4 +76,8 @@ func (f *FakeClient) AddSaveKeychain(tag string, keychain authn.Keychain) {
 
 func (f *FakeClient) SavedImages() map[string]v1.Image {
 	return f.savedImages
+}
+
+func (f *FakeClient) SetFetchError(err error) {
+	f.fetchError = err
 }

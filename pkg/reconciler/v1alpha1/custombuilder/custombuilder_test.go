@@ -61,6 +61,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				KeychainFactory:     keychainFactory,
 				Tracker:             fakeTracker,
 				StoreLister:         listers.GetStoreLister(),
+				StackLister:         listers.GetStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
@@ -73,6 +74,12 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		Status: expv1alpha1.StoreStatus{},
 	}
 
+	stack := &expv1alpha1.Stack{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-stack",
+		},
+	}
+
 	customBuilder := &expv1alpha1.CustomBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       customBuilderName,
@@ -81,10 +88,8 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.CustomNamespacedBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag: customBuilderTag,
-				Stack: expv1alpha1.Stack{
-					BaseBuilderImage: "example.com/some-base-image",
-				},
+				Tag:   customBuilderTag,
+				Stack: "some-stack",
 				Store: "some-store",
 				Order: []expv1alpha1.OrderEntry{
 					{
@@ -176,6 +181,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},
@@ -194,7 +200,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
-		it("tracks the store for a custom builder", func() {
+		it("tracks the stack and store for a custom builder", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: customBuilderIdentifier,
 				Stack: v1alpha1.BuildStack{
@@ -231,6 +237,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					expectedBuilder,
 				},
@@ -238,6 +245,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.True(t, fakeTracker.IsTracking(store, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(stack, customBuilder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -281,6 +289,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},
@@ -313,6 +322,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
+					stack,
 					store,
 					customBuilder,
 				},

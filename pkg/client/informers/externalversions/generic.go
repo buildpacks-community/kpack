@@ -70,6 +70,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().CustomBuilders().Informer()}, nil
 	case experimentalv1alpha1.SchemeGroupVersion.WithResource("customclusterbuilders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().CustomClusterBuilders().Informer()}, nil
+	case experimentalv1alpha1.SchemeGroupVersion.WithResource("stacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().Stacks().Informer()}, nil
 	case experimentalv1alpha1.SchemeGroupVersion.WithResource("stores"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().Stores().Informer()}, nil
 

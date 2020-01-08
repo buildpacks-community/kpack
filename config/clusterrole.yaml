@@ -54,6 +54,8 @@ rules:
   - customclusterbuilders/status
   - stores
   - stores/status
+  - stacks
+  - stacks/status
   verbs:
   - get
   - list

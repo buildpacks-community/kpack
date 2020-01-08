@@ -22,4 +22,6 @@ type CustomBuilderExpansion interface{}
 
 type CustomClusterBuilderExpansion interface{}
 
+type StackExpansion interface{}
+
 type StoreExpansion interface{}

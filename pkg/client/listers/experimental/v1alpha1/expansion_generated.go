@@ -30,6 +30,10 @@ type CustomBuilderNamespaceListerExpansion interface{}
 // CustomClusterBuilderLister.
 type CustomClusterBuilderListerExpansion interface{}
 
+// StackListerExpansion allows custom methods to be added to
+// StackLister.
+type StackListerExpansion interface{}
+
 // StoreListerExpansion allows custom methods to be added to
 // StoreLister.
 type StoreListerExpansion interface{}

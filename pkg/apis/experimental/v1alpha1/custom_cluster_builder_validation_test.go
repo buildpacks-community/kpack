@@ -23,10 +23,8 @@ func testCustomBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: CustomClusterBuilderSpec{
 			CustomBuilderSpec: CustomBuilderSpec{
-				Tag: "some-registry.io/custom-builder",
-				Stack: Stack{
-					BaseBuilderImage: "some-registry.io/base-builder",
-				},
+				Tag:   "some-registry.io/custom-builder",
+				Stack: "some-stack-ref",
 				Store: "some-registry.io/store",
 				Order: nil, // No order validation
 			},

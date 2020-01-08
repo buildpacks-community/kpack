@@ -1,0 +1,10 @@
+apiVersion: experimental.kpack.pivotal.io/v1alpha1
+kind: Stack
+metadata:
+  name: bionic-stack
+spec:
+  id: "io.buildpacks.stacks.bionic"
+  buildImage:
+    image: "cloudfoundry/build@sha256:b30b850f5b4d2e11313f0ec152952eace285ce7a3bc203ca5cdcfa8e5bb232a6"
+  runImage:
+    image: "cloudfoundry/run@sha256:ba9998ae4bb32ab43a7966c537aa1be153092ab0c7536eeef63bcd6336cbd0db"

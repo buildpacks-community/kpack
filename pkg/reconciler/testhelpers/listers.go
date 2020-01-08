@@ -81,6 +81,10 @@ func (l *Listers) GetStoreLister() expv1alpha1Listers.StoreLister {
 	return expv1alpha1Listers.NewStoreLister(l.indexerFor(&expv1alpha1.Store{}))
 }
 
+func (l *Listers) GetStackLister() expv1alpha1Listers.StackLister {
+	return expv1alpha1Listers.NewStackLister(l.indexerFor(&expv1alpha1.Stack{}))
+}
+
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {
 	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha1.SourceResolver{}))
 }

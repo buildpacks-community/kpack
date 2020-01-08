@@ -24,15 +24,11 @@ func (cb *CustomBuilder) Validate(ctx context.Context) *apis.FieldError {
 
 func (s *CustomBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Tag(s.Tag).
-		Also(s.Stack.Validate(ctx).ViaField("stack")).
+		Also(validate.FieldNotEmpty(s.Stack, "stack")).
 		Also(validate.FieldNotEmpty(s.Store, "store"))
 }
 
 func (s *CustomNamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return s.CustomBuilderSpec.Validate(ctx).
 		Also(validate.FieldNotEmpty(s.ServiceAccount, "serviceAccount"))
-}
-
-func (s *Stack) Validate(ctx context.Context) *apis.FieldError {
-	return validate.Image(s.BaseBuilderImage)
 }

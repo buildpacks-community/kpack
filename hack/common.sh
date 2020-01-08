@@ -39,5 +39,11 @@ function compile() {
   pack_build ${completion_image} "./cmd/completion"
   completion_image=${resolved_image_name}
 
-  ytt -f config/. -v controller_image=${controller_image} -v webhook_image=${webhook_image} -v build_init_image=${build_init_image} -v rebase_image=${rebase_image} -v completion_image=${completion_image} > $output
+  ytt -f config/. \
+    -v controller_image=${controller_image} \
+    -v webhook_image=${webhook_image} \
+    -v build_init_image=${build_init_image} \
+    -v rebase_image=${rebase_image} \
+    -v completion_image=${completion_image} \
+    -v lifecycle_image="gcr.io/cf-build-service-public/lifecycle-0.5.0" > $output
 }

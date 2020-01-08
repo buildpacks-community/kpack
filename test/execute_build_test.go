@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +34,8 @@ import (
 )
 
 func TestCreateImage(t *testing.T) {
+	rand.Seed(time.Now().Unix())
+
 	spec.Run(t, "CreateImage", testCreateImage)
 }
 
@@ -45,6 +48,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		serviceAccountName       = "image-service-account"
 		builderImage             = "cloudfoundry/cnb:bionic"
 		storeName                = "store"
+		stackName                = "stack"
 		customBuilderName        = "custom-builder"
 		customClusterBuilderName = "custom-cluster-builder"
 	)
@@ -60,6 +64,16 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		var err error
 		clients, err = newClients(t)
 		require.NoError(t, err)
+
+		err = clients.client.ExperimentalV1alpha1().Stores().Delete(storeName, &metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.ExperimentalV1alpha1().Stacks().Delete(stackName, &metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
 
 		err = clients.client.BuildV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
@@ -127,7 +141,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		clients.client.ExperimentalV1alpha1().Stores().Create(&expv1alpha1.Store{
+		_, err = clients.client.ExperimentalV1alpha1().Stores().Create(&expv1alpha1.Store{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: storeName,
 			},
@@ -139,6 +153,23 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		})
+		require.NoError(t, err)
+
+		_, err = clients.client.ExperimentalV1alpha1().Stacks().Create(&expv1alpha1.Stack{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: stackName,
+			},
+			Spec: expv1alpha1.StackSpec{
+				Id: "io.buildpacks.stacks.bionic",
+				BuildImage: expv1alpha1.StackSpecImage{
+					Image: "cloudfoundry/build:base-cnb",
+				},
+				RunImage: expv1alpha1.StackSpecImage{
+					Image: "cloudfoundry/run:base-cnb",
+				},
+			},
+		})
+		require.NoError(t, err)
 
 		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
@@ -157,10 +188,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.CustomNamespacedBuilderSpec{
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-					Tag: cfg.newImageTag(),
-					Stack: expv1alpha1.Stack{
-						BaseBuilderImage: builderImage,
-					},
+					Tag:   cfg.newImageTag(),
+					Stack: stackName,
 					Store: storeName,
 					Order: []expv1alpha1.OrderEntry{
 						{
@@ -205,10 +234,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.CustomClusterBuilderSpec{
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-					Tag: cfg.newImageTag(),
-					Stack: expv1alpha1.Stack{
-						BaseBuilderImage: builderImage,
-					},
+					Tag:   cfg.newImageTag(),
+					Stack: stackName,
 					Store: storeName,
 					Order: []expv1alpha1.OrderEntry{
 						{

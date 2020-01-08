@@ -22,10 +22,8 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: CustomNamespacedBuilderSpec{
 			CustomBuilderSpec: CustomBuilderSpec{
-				Tag: "some-registry.io/custom-builder",
-				Stack: Stack{
-					BaseBuilderImage: "some-registry.io/base-builder",
-				},
+				Tag:   "some-registry.io/custom-builder",
+				Stack: "some-stack",
 				Store: "some-registry.io/store",
 				Order: nil, // No order validation
 			},
@@ -77,17 +75,8 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("missing field stack", func() {
-			customBuilder.Spec.Stack = Stack{
-				BaseBuilderImage: "",
-			}
-			assertValidationError(customBuilder, apis.ErrMissingField("image").ViaField("spec", "stack"))
-		})
-
-		it("invalid stack image", func() {
-			customBuilder.Spec.Stack = Stack{
-				BaseBuilderImage: "ftp//invalid/tag@@",
-			}
-			assertValidationError(customBuilder, apis.ErrInvalidValue(customBuilder.Spec.Stack.BaseBuilderImage, "image").ViaField("spec", "stack"))
+			customBuilder.Spec.Stack = ""
+			assertValidationError(customBuilder, apis.ErrMissingField("stack").ViaField("spec"))
 		})
 
 		it("missing field store", func() {
