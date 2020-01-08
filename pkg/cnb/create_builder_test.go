@@ -3,6 +3,7 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -28,12 +29,14 @@ func TestCreateBuilder(t *testing.T) {
 func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
 		tag                  = "custom/example"
-		lifecycleImageRef    = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
-		buildImageRef        = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
-		runImageRef          = "index.docker.io/cloudfoundry/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
+		lifecycleImage       = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		buildImage           = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		runImage             = "index.docker.io/cloudfoundry/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
-		stackTomlLayers      = 1
+
+		cnbGroupId = 3000
+		cnbUserId  = 4000
 	)
 
 	var (
@@ -65,16 +68,16 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.StackSpec{
 				Id: "io.buildpacks.stacks.cflinuxfs3",
-				BuildImage: expv1alpha1.StackImage{
+				BuildImage: expv1alpha1.StackSpecImage{
 					Image: "cloudfoundry/build:full-cnb",
 				},
-				RunImage: expv1alpha1.StackImage{
+				RunImage: expv1alpha1.StackSpecImage{
 					Image: "cloudfoundry/run:full-cnb",
 				},
 			},
 			Status: expv1alpha1.StackStatus{
-				BuildImageRef: buildImageRef,
-				RunImageRef:   runImageRef,
+				BuildImage: expv1alpha1.StackStatusImage{LatestImage: buildImage},
+				RunImage:   expv1alpha1.StackStatusImage{LatestImage: runImage},
 			},
 		}
 
@@ -105,7 +108,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		subject = RemoteBuilderCreator{
 			RegistryClient: registryClient,
-			LifecycleImage: lifecycleImageRef,
+			LifecycleImage: lifecycleImage,
 		}
 	)
 
@@ -154,10 +157,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	when("CreateBuilder", func() {
 		var (
 			lifecycleImg v1.Image
+			buildImg     v1.Image
 		)
 
 		it.Before(func() {
 			var err error
+
 			lifecycleImg, err = random.Image(10, int64(lifecycleImageLayers))
 			require.NoError(t, err)
 
@@ -174,12 +179,17 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			registryClient.AddImage(lifecycleImageRef, lifecycleImg, keychain)
+			registryClient.AddImage(lifecycleImage, lifecycleImg, keychain)
 
-			buildImage, err := random.Image(1, int64(buildImageLayers))
+			buildImg, err = random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
 
-			registryClient.AddImage(buildImageRef, buildImage, keychain)
+			buildImg, err := imagehelpers.SetEnv(buildImg, "CNB_USER_ID", strconv.Itoa(cnbUserId))
+			require.NoError(t, err)
+			buildImg, err = imagehelpers.SetEnv(buildImg, "CNB_GROUP_ID", strconv.Itoa(cnbGroupId))
+			require.NoError(t, err)
+
+			registryClient.AddImage(buildImage, buildImg, keychain)
 		})
 
 		it("creates a custom builder", func() {
@@ -190,10 +200,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.1", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.2", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.3", Version: "v2"})
-			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImageRef, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
+			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
 			savedImage := registryClient.SavedImages()[tag]
+
+			workingDir, err := imagehelpers.GetWorkingDir(savedImage)
+			require.NoError(t, err)
+			assert.Equal(t, "/layers", workingDir)
 
 			hash, err := savedImage.Digest()
 			require.NoError(t, err)
@@ -202,17 +216,119 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			layers, err := savedImage.Layers()
 			require.NoError(t, err)
 
-			numberOfBuildpackLayers := 3
-			numberOrderLayers := 1
-			assert.Len(t, layers, buildImageLayers+lifecycleImageLayers+stackTomlLayers+numberOfBuildpackLayers+numberOrderLayers)
-			assert.Contains(t, layers, buildpack1Layer)
-			assert.Contains(t, layers, buildpack2Layer)
-			assert.Contains(t, layers, buildpack3Layer)
+			buildpackLayerCount := 3
+			defaultDirectoryLayerCount := 1
+			stackTomlLayerCount := 1
+			lifecycleSymlinkLayerCount := 1
+			orderTomlLayerCount := 1
+			assert.Len(t, layers,
+				buildImageLayers+
+					defaultDirectoryLayerCount+
+					lifecycleImageLayers+
+					lifecycleSymlinkLayerCount+
+					stackTomlLayerCount+
+					buildpackLayerCount+
+					orderTomlLayerCount)
 
-			orderLayer := layers[len(layers)-1]
-			assertLayerContents(t, orderLayer, 0644, map[string]string{
-				"/cnb/order.toml": //language=toml
-				`[[order]]
+			var layerTester = layerIteratorTester(0)
+
+			for i := 0; i < buildImageLayers; i++ {
+				layerTester.testNextLayer("Build Image Layer", func(index int) {
+					buildImgLayers, err := buildImg.Layers()
+					require.NoError(t, err)
+
+					assert.Equal(t, layers[i], buildImgLayers[i])
+				})
+			}
+
+			layerTester.testNextLayer("Default Directory Layer", func(index int) {
+				defaultDirectoryLayer := layers[index]
+
+				assertLayerContents(t, defaultDirectoryLayer, map[string]content{
+					"/workspace": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+						uid:      cnbUserId,
+						gid:      cnbGroupId,
+					},
+					"/layers": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+						uid:      cnbUserId,
+						gid:      cnbGroupId,
+					},
+					"/cnb": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+					},
+					"/cnb/buildpacks": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+					},
+					"/platform": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+					},
+					"/platform/env": {
+						typeflag: tar.TypeDir,
+						mode:     0755,
+					},
+				})
+			})
+
+			layerTester.testNextLayer("Lifecycle Layer", func(index int) {
+				lifecycleLayers, err := lifecycleImg.Layers()
+				require.NoError(t, err)
+
+				assert.Equal(t, layers[index], lifecycleLayers[0])
+			})
+
+			layerTester.testNextLayer("Lifecycle Symlink", func(index int) {
+				assertLayerContents(t, layers[index], map[string]content{
+					"/lifecycle": {
+						linkname: "/cnb/lifecycle",
+						typeflag: tar.TypeSymlink,
+						mode:     0644,
+					},
+				})
+
+			})
+
+			layerTester.testNextLayer("stack Layer", func(index int) {
+				assertLayerContents(t, layers[index], map[string]content{
+					"/cnb/stack.toml": //language=toml
+					{
+						typeflag: tar.TypeReg,
+						mode:     0644,
+						fileContent: //language=toml
+						`[run-image]
+  image = "cloudfoundry/run:full-cnb"
+`,
+					},
+				})
+			})
+
+			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack3Layer)
+			})
+
+			layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack2Layer)
+			})
+
+			layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack1Layer)
+			})
+
+			layerTester.testNextLayer("stack Layer", func(index int) {
+				assert.Equal(t, len(layers)-1, index)
+
+				assertLayerContents(t, layers[index], map[string]content{
+					"/cnb/order.toml": {
+						typeflag: tar.TypeReg,
+						mode:     0644,
+						fileContent: //language=toml
+						`[[order]]
 
   [[order.group]]
     id = "io.buildpack.1"
@@ -222,14 +338,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     id = "io.buildpack.2"
     version = "v2"
     optional = true
-`})
+`}})
 
-			stackLayer := layers[buildImageLayers+lifecycleImageLayers]
-			assertLayerContents(t, stackLayer, 0644, map[string]string{
-				"/cnb/stack.toml": //language=toml
-				`[run-image]
-  image = "cloudfoundry/run:full-cnb"
-`})
+			})
 
 			buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
 			assert.NoError(t, err)
@@ -349,7 +460,15 @@ func (f *fakeBuildpackRepository) AddBP(id, version string, layers []buildpackLa
 	f.buildpacks[fmt.Sprintf("%s@%s", id, version)] = layers
 }
 
-func assertLayerContents(t *testing.T, layer v1.Layer, expectedMode int64, expectedContents map[string]string) {
+type content struct {
+	typeflag    byte
+	fileContent string
+	uid, gid    int
+	mode        int64
+	linkname    string
+}
+
+func assertLayerContents(t *testing.T, layer v1.Layer, expectedContents map[string]content) {
 	t.Helper()
 	uncompressed, err := layer.Uncompressed()
 	require.NoError(t, err)
@@ -366,17 +485,32 @@ func assertLayerContents(t *testing.T, layer v1.Layer, expectedMode int64, expec
 			t.Fatalf("unexpected file %s", header.Name)
 		}
 
-		fileContents := make([]byte, header.Size)
-		_, _ = reader.Read(fileContents) //todo check error
+		require.Equal(t, expectedContent.typeflag, header.Typeflag)
 
-		require.Equal(t, expectedContent, string(fileContents))
-		require.Equal(t, header.Mode, expectedMode)
+		if header.Typeflag == tar.TypeReg {
+			fileContents := make([]byte, header.Size)
+			_, _ = reader.Read(fileContents) //todo check error
+
+			require.Equal(t, expectedContent.fileContent, string(fileContents))
+		} else if header.Typeflag == tar.TypeSymlink {
+			require.Equal(t, expectedContent.linkname, header.Linkname)
+		}
+
+		require.Equal(t, header.Uid, expectedContent.uid)
+		require.Equal(t, header.Gid, expectedContent.gid)
+		require.Equal(t, header.Mode, expectedContent.mode)
 		require.True(t, header.ModTime.Equal(time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)))
-
 		delete(expectedContents, header.Name)
 	}
 
 	for fileName := range expectedContents {
 		t.Fatalf("file %s not in layer", fileName)
 	}
+}
+
+type layerIteratorTester int
+
+func (i *layerIteratorTester) testNextLayer(name string, test func(index int)) {
+	test(int(*i))
+	*i++
 }

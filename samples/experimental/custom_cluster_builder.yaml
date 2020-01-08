@@ -4,7 +4,7 @@ metadata:
   name: my-cluster-builder
 spec:
   tag: buildingbuilder/custom-builder
-  stack: cflinuxfs3-stack
+  stack: bionic-stack
   store: sample-store
   order:
   - group:

@@ -23,7 +23,7 @@ type RemoteBuilderCreator struct {
 }
 
 func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, stack *expv1alpha1.Stack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
-	buildImage, _, err := r.RegistryClient.Fetch(keychain, stack.Status.BuildImageRef)
+	buildImage, _, err := r.RegistryClient.Fetch(keychain, stack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -65,7 +65,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
-			RunImage: stack.Status.RunImageRef,
+			RunImage: stack.Status.RunImage.LatestImage,
 			ID:       stack.Spec.Id,
 		},
 		Buildpacks: builderBuilder.buildpacks(),

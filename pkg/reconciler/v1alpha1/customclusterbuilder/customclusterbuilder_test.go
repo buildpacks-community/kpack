@@ -201,7 +201,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
-		it("tracks the store for a custom builder", func() {
+		it("tracks the stack and store for a custom builder", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: customBuilderIdentifier,
 				Stack: v1alpha1.BuildStack{
@@ -246,6 +246,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.True(t, fakeTracker.IsTracking(store, expectedBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(stack, customBuilder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {

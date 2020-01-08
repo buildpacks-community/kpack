@@ -84,7 +84,7 @@ func testImageHelpers(t *testing.T, when spec.G, it spec.S) {
 				env string
 			)
 
-			image, err = imagehelpers.SetEnv(image, "FOO=BAR")
+			image, err = imagehelpers.SetEnv(image, "FOO", "BAR")
 			require.NoError(t, err)
 
 			env, err = imagehelpers.GetEnv(image, "FOO")

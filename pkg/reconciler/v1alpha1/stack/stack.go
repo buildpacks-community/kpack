@@ -98,8 +98,12 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 	}
 
 	stack.Status = expv1alpha1.StackStatus{
-		BuildImageRef: baseImageId,
-		RunImageRef:   runImageId,
+		BuildImage: expv1alpha1.StackStatusImage{
+			LatestImage: baseImageId,
+		},
+		RunImage: expv1alpha1.StackStatusImage{
+			LatestImage: runImageId,
+		},
 		Status: duckv1alpha1.Status{
 			ObservedGeneration: stack.Generation,
 			Conditions: duckv1alpha1.Conditions{

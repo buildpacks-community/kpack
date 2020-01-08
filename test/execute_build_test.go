@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +34,8 @@ import (
 )
 
 func TestCreateImage(t *testing.T) {
+	rand.Seed(time.Now().Unix())
+
 	spec.Run(t, "CreateImage", testCreateImage)
 }
 
@@ -158,10 +161,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.StackSpec{
 				Id: "io.buildpacks.stacks.bionic",
-				BuildImage: expv1alpha1.StackImage{
+				BuildImage: expv1alpha1.StackSpecImage{
 					Image: "cloudfoundry/build:base-cnb",
 				},
-				RunImage: expv1alpha1.StackImage{
+				RunImage: expv1alpha1.StackSpecImage{
 					Image: "cloudfoundry/run:base-cnb",
 				},
 			},

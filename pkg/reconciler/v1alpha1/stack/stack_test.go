@@ -66,10 +66,10 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.StackSpec{
 			Id: "some.stack.id",
-			BuildImage: expv1alpha1.StackImage{
+			BuildImage: expv1alpha1.StackSpecImage{
 				Image: "some-registry.io/build-image",
 			},
-			RunImage: expv1alpha1.StackImage{
+			RunImage: expv1alpha1.StackSpecImage{
 				Image: "some-registry.io/run-image",
 			},
 		},
@@ -108,8 +108,8 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildImageRef: "some-registry.io/build-image@" + buildImageSha,
-								RunImageRef:   "some-registry.io/run-image@" + runImageSha,
+								BuildImage: expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/build-image@" + buildImageSha},
+								RunImage:   expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/run-image@" + runImageSha},
 							},
 						},
 					},
@@ -128,8 +128,8 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				BuildImageRef: "some-registry.io/build-image@" + buildImageSha,
-				RunImageRef:   "some-registry.io/run-image@" + runImageSha,
+				BuildImage: expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/build-image@" + buildImageSha},
+				RunImage:   expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/run-image@" + runImageSha},
 			}
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,

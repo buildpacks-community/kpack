@@ -4,17 +4,37 @@ import (
 	"archive/tar"
 	"bytes"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
+
+const (
+	workspaceDir        = "/workspace"
+	layersDir           = "/layers"
+	cnbDir              = "/cnb"
+	cnbLifecycleDir     = "/cnb/lifecycle"
+	lifecycleSymlinkDir = "/lifecycle"
+	platformDir         = "/platform"
+	platformEnvDir      = platformDir + "/env"
+	buildpacksDir       = "/cnb/buildpacks"
+	orderTomlPath       = "/cnb/order.toml"
+	stackTomlPath       = "/cnb/stack.toml"
+
+	cnbUserId  = "CNB_USER_ID"
+	cnbGroupId = "CNB_GROUP_ID"
+)
+
+var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 
 type BuilderBuilder struct {
 	baseImage         v1.Image
@@ -23,11 +43,23 @@ type BuilderBuilder struct {
 	stack             *expv1alpha1.Stack
 	order             []expv1alpha1.OrderEntry
 	buildpackLayers   map[expv1alpha1.BuildpackInfo]buildpackLayer
+	cnbUserId         int
+	cnbGroupId        int
 }
 
 func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1alpha1.Stack) (*BuilderBuilder, error) {
 	lifecycleMd := LifecycleMetadata{}
 	err := imagehelpers.GetLabel(lifecycleImage, lifecycleMetadataLabel, &lifecycleMd)
+	if err != nil {
+		return nil, err
+	}
+
+	userId, err := parseCNBID(baseImage, cnbUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	groupId, err := parseCNBID(baseImage, cnbGroupId)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +70,8 @@ func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1
 		LifecycleMetadata: lifecycleMd,
 		stack:             stack,
 		buildpackLayers:   map[expv1alpha1.BuildpackInfo]buildpackLayer{},
+		cnbGroupId:        groupId,
+		cnbUserId:         userId,
 	}, nil
 }
 
@@ -62,22 +96,28 @@ func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
 			Version: bp.Version,
 		})
 	}
-
 	return buildpacks
 }
 
 func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
-	buildpackLayerMetadata := make(BuildpackLayerMetadata)
-	buildpacks := make([]expv1alpha1.BuildpackInfo, 0, len(bb.buildpackLayers))
-	layers := make([]v1.Layer, 0, len(bb.buildpackLayers)+1)
+	buildpackLayers, buildpacks, buildpackLayerMetadata, err := bb.configureBuildpackLayerInfo()
+	if err != nil {
+		return nil, err
+	}
 
-	for _, key := range deterministicSortBySize(bb.buildpackLayers) {
-		layer := bb.buildpackLayers[key]
-		if err := buildpackLayerMetadata.add(layer); err != nil {
-			return nil, err
-		}
-		buildpacks = append(buildpacks, key)
-		layers = append(layers, layer.v1Layer)
+	defaultLayer, err := bb.defaultDirsLayer()
+	if err != nil {
+		return nil, err
+	}
+
+	lifecycleLayer, err := bb.lifecycleLayer()
+	if err != nil {
+		return nil, err
+	}
+
+	compatLayer, err := bb.lifecycleCompatLayer()
+	if err != nil {
+		return nil, err
 	}
 
 	stackLayer, err := bb.stackLayer()
@@ -90,17 +130,24 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	lifecycleLayers, err := bb.lifecycleImage.Layers()
+	image, err := mutate.AppendLayers(bb.baseImage,
+		layers(
+			[]v1.Layer{
+				defaultLayer,
+				lifecycleLayer,
+				compatLayer,
+				stackLayer,
+			},
+			buildpackLayers,
+			[]v1.Layer{
+				orderLayer,
+			},
+		)...)
 	if err != nil {
 		return nil, err
 	}
 
-	image, err := mutate.AppendLayers(bb.baseImage, append(lifecycleLayers, stackLayer)...)
-	if err != nil {
-		return nil, err
-	}
-
-	image, err = mutate.AppendLayers(image, append(layers, orderLayer)...)
+	image, err = imagehelpers.SetWorkingDir(image, layersDir)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +173,28 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 	})
 }
 
+func (bb *BuilderBuilder) lifecycleLayer() (v1.Layer, error) {
+	layers, err := bb.lifecycleImage.Layers()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(layers) != 1 {
+		return nil, errors.New("invalid lifecycle image")
+	}
+
+	return layers[0], nil
+}
+
 func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
+	type tomlRunImage struct {
+		Image string `toml:"image"`
+	}
+
+	type tomlStackFile struct {
+		RunImage tomlRunImage `toml:"run-image"`
+	}
+
 	stackBuf := &bytes.Buffer{}
 	stackFile := tomlStackFile{
 		RunImage: tomlRunImage{
@@ -140,15 +208,23 @@ func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
 	return singeFileLayer(stackTomlPath, stackBuf.Bytes())
 }
 
-type tomlStackFile struct {
-	RunImage tomlRunImage `toml:"run-image"`
-}
-
-type tomlRunImage struct {
-	Image string `toml:"image"`
-}
-
 func (bb *BuilderBuilder) orderLayer() (v1.Layer, error) {
+	type tomlBuildpack struct {
+		ID       string `toml:"id"`
+		Version  string `toml:"version"`
+		Optional bool   `toml:"optional,omitempty"`
+	}
+
+	type tomlOrderEntry struct {
+		Group []tomlBuildpack `toml:"group"`
+	}
+
+	type tomlOrder []tomlOrderEntry
+
+	type tomlOrderFile struct {
+		Order tomlOrder `toml:"order"`
+	}
+
 	orderBuf := &bytes.Buffer{}
 
 	order := make(tomlOrder, 0, len(bb.order))
@@ -170,24 +246,6 @@ func (bb *BuilderBuilder) orderLayer() (v1.Layer, error) {
 	}
 	return singeFileLayer(orderTomlPath, orderBuf.Bytes())
 }
-
-type tomlOrder []tomlOrderEntry
-
-type tomlOrderEntry struct {
-	Group []tomlBuildpack `toml:"group"`
-}
-
-type tomlBuildpack struct {
-	ID       string `toml:"id"`
-	Version  string `toml:"version"`
-	Optional bool   `toml:"optional,omitempty"`
-}
-
-type tomlOrderFile struct {
-	Order tomlOrder `toml:"order"`
-}
-
-var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 
 func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	b := &bytes.Buffer{}
@@ -212,6 +270,87 @@ func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
+func (bb *BuilderBuilder) defaultDirsLayer() (v1.Layer, error) {
+	dirs := []*tar.Header{
+		bb.kpackOwnedDir(workspaceDir),
+		bb.kpackOwnedDir(layersDir),
+		bb.rootOwnedDir(cnbDir),
+		bb.rootOwnedDir(buildpacksDir),
+		bb.rootOwnedDir(platformDir),
+		bb.rootOwnedDir(platformEnvDir),
+	}
+
+	b := &bytes.Buffer{}
+	tw := tar.NewWriter(b)
+
+	for _, header := range dirs {
+		if err := tw.WriteHeader(header); err != nil {
+			return nil, errors.Wrapf(err, "creating %s dir in layer", header.Name)
+		}
+	}
+
+	if err := tw.Close(); err != nil {
+		return nil, err
+	}
+
+	return tarball.LayerFromReader(b)
+}
+
+func (bb *BuilderBuilder) kpackOwnedDir(path string) *tar.Header {
+	return &tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     path,
+		Mode:     0755,
+		ModTime:  normalizedTime,
+		Uid:      bb.cnbUserId,
+		Gid:      bb.cnbGroupId,
+	}
+}
+
+func (bb *BuilderBuilder) rootOwnedDir(path string) *tar.Header {
+	return &tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     path,
+		Mode:     0755,
+		ModTime:  normalizedTime,
+	}
+}
+
+func (bb *BuilderBuilder) lifecycleCompatLayer() (v1.Layer, error) {
+	b := &bytes.Buffer{}
+	tw := tar.NewWriter(b)
+
+	if err := tw.WriteHeader(&tar.Header{
+		Typeflag: tar.TypeSymlink,
+		Name:     lifecycleSymlinkDir,
+		Linkname: cnbLifecycleDir,
+		ModTime:  normalizedTime,
+		Mode:     0644,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "creating %s dir in layer", lifecycleSymlinkDir)
+	}
+	if err := tw.Close(); err != nil {
+		return nil, err
+	}
+
+	return tarball.LayerFromReader(b)
+}
+
+func (bb *BuilderBuilder) configureBuildpackLayerInfo() ([]v1.Layer, []expv1alpha1.BuildpackInfo, BuildpackLayerMetadata, error) {
+	buildpackLayerMetadata := make(BuildpackLayerMetadata)
+	buildpacks := make([]expv1alpha1.BuildpackInfo, 0, len(bb.buildpackLayers))
+	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers)+1)
+	for _, key := range deterministicSortBySize(bb.buildpackLayers) {
+		layer := bb.buildpackLayers[key]
+		if err := buildpackLayerMetadata.add(layer); err != nil {
+			return nil, nil, nil, err
+		}
+		buildpacks = append(buildpacks, key)
+		buildpackLayers = append(buildpackLayers, layer.v1Layer)
+	}
+	return buildpackLayers, buildpacks, buildpackLayerMetadata, nil
+}
+
 func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer) []expv1alpha1.BuildpackInfo {
 	keys := make([]expv1alpha1.BuildpackInfo, 0, len(layers))
 	sizes := make(map[expv1alpha1.BuildpackInfo]int64, len(layers))
@@ -233,4 +372,20 @@ func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer
 	})
 
 	return keys
+}
+
+func parseCNBID(image v1.Image, env string) (int, error) {
+	v, err := imagehelpers.GetEnv(image, env)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(v)
+}
+
+func layers(layers ...[]v1.Layer) []v1.Layer {
+	var appendedLayers []v1.Layer
+	for _, l := range layers {
+		appendedLayers = append(appendedLayers, l...)
+	}
+	return appendedLayers
 }

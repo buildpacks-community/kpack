@@ -21,20 +21,24 @@ type Stack struct {
 }
 
 type StackSpec struct {
-	Id         string     `json:"id"`
-	BuildImage StackImage `json:"buildImage"`
-	RunImage   StackImage `json:"runImage"`
+	Id         string         `json:"id"`
+	BuildImage StackSpecImage `json:"buildImage"`
+	RunImage   StackSpecImage `json:"runImage"`
 }
 
-type StackImage struct {
+type StackSpecImage struct {
 	Image string `json:"image"`
 }
 
 type StackStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
-	BuildImageRef string `json:"buildImageRef"`
-	RunImageRef   string `json:"runImageRef"`
+	BuildImage StackStatusImage `json:"buildImage"`
+	RunImage   StackStatusImage `json:"runImage"`
+}
+
+type StackStatusImage struct {
+	LatestImage string `json:"latestImage"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
