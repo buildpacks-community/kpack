@@ -11,4 +11,7 @@ spec:
   order:
   - group:
     - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.yarn
+  - group:
+    - id: org.cloudfoundry.node-engine
     - id: org.cloudfoundry.npm  

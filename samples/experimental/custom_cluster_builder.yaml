@@ -6,10 +6,13 @@ spec:
   tag: buildingbuilder/custom-builder
   stack: bionic-stack
   store: sample-store
-  order:
-  - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.npm
   serviceAccountRef:
     name: default
     namespace: default
+  order:
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.yarn
+  - group:
+    - id: org.cloudfoundry.node-engine
+    - id: org.cloudfoundry.npm
