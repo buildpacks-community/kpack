@@ -123,7 +123,7 @@ func lastBuild(latestBuild *Build) *LastBuild {
 
 	return &LastBuild{
 		Image:   latestBuild.BuiltImage(),
-		StackID: latestBuild.Stack(),
+		StackId: latestBuild.Stack(),
 	}
 }
 

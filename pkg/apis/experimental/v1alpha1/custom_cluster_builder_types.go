@@ -13,6 +13,7 @@ const CustomClusterBuilderKind = "CustomClusterBuilder"
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
+// +k8s:openapi-gen=true
 type CustomClusterBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -21,16 +22,20 @@ type CustomClusterBuilder struct {
 	Status CustomBuilderStatus      `json:"status"`
 }
 
+// +k8s:openapi-gen=true
 type CustomClusterBuilderSpec struct {
-	CustomBuilderSpec
+	CustomBuilderSpec `json:",inline"`
 	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +k8s:openapi-gen=true
 type CustomClusterBuilderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
+	// +listType
 	Items []CustomClusterBuilder `json:"items"`
 }
 

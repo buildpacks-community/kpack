@@ -9,10 +9,9 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
@@ -98,13 +97,13 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 	buildpacks, err := c.getBuildpacks(store.Spec.Sources)
 	if err != nil {
 		store.Status = expv1alpha1.StoreStatus{
-			Status: duckv1alpha1.Status{
+			Status: kpackcore.Status{
 				ObservedGeneration: store.Generation,
-				Conditions: duckv1alpha1.Conditions{
+				Conditions: kpackcore.Conditions{
 					{
-						Type:               duckv1alpha1.ConditionReady,
+						Type:               kpackcore.ConditionReady,
 						Status:             corev1.ConditionFalse,
-						LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
+						LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
 						Message:            err.Error(),
 					},
 				},
@@ -115,12 +114,12 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 
 	store.Status = expv1alpha1.StoreStatus{
 		Buildpacks: buildpacks,
-		Status: duckv1alpha1.Status{
+		Status: kpackcore.Status{
 			ObservedGeneration: store.Generation,
-			Conditions: duckv1alpha1.Conditions{
+			Conditions: kpackcore.Conditions{
 				{
-					LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
-					Type:               duckv1alpha1.ConditionReady,
+					LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+					Type:               kpackcore.ConditionReady,
 					Status:             corev1.ConditionTrue,
 				},
 			},

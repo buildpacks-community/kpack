@@ -11,11 +11,10 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 	v1Listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -129,30 +128,30 @@ func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, erro
 	return pod, nil
 }
 
-func conditionForPod(pod *corev1.Pod) duckv1alpha1.Conditions {
+func conditionForPod(pod *corev1.Pod) kpackcore.Conditions {
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		return duckv1alpha1.Conditions{
+		return kpackcore.Conditions{
 			{
-				Type:               duckv1alpha1.ConditionSucceeded,
+				Type:               kpackcore.ConditionSucceeded,
 				Status:             corev1.ConditionTrue,
-				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	case corev1.PodFailed:
-		return duckv1alpha1.Conditions{
+		return kpackcore.Conditions{
 			{
-				Type:               duckv1alpha1.ConditionSucceeded,
+				Type:               kpackcore.ConditionSucceeded,
 				Status:             corev1.ConditionFalse,
-				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	default:
-		return duckv1alpha1.Conditions{
+		return kpackcore.Conditions{
 			{
-				Type:               duckv1alpha1.ConditionSucceeded,
+				Type:               kpackcore.ConditionSucceeded,
 				Status:             corev1.ConditionUnknown,
-				LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	}
@@ -195,7 +194,7 @@ func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetad
 	buildpackMetadata := make([]v1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
 		buildpackMetadata = append(buildpackMetadata, v1alpha1.BuildpackMetadata{
-			ID:      metadata.ID,
+			Key:     metadata.ID,
 			Version: metadata.Version,
 		})
 	}

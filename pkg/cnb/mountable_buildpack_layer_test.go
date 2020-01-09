@@ -66,7 +66,7 @@ func testMountableBuildpackLayer(t *testing.T, when spec.G, it spec.S) {
 
 		layer, err = layerFromStoreBuildpack(authn.DefaultKeychain, v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
-				ID:      "id.buildpack",
+				Id:      "id.buildpack",
 				Version: "1.0",
 			},
 			DiffId: diffID.String(),

@@ -5,8 +5,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const (
@@ -14,14 +14,14 @@ const (
 	BuilderNotReady = "BuilderNotReady"
 )
 
-func (im *Image) BuilderNotFound() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
+func (im *Image) BuilderNotFound() kpackcore.Conditions {
+	return kpackcore.Conditions{
 		{
-			Type:               duckv1alpha1.ConditionReady,
+			Type:               kpackcore.ConditionReady,
 			Status:             corev1.ConditionFalse,
 			Reason:             BuilderNotFound,
 			Message:            fmt.Sprintf("Unable to find builder %s.", im.Spec.Builder.Name),
-			LastTransitionTime: apis.VolatileTime{Inner: metav1.Now()},
+			LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
 		},
 	}
 }

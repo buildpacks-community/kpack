@@ -13,10 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
-	"knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -99,11 +99,11 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: stack.ObjectMeta,
 							Spec:       stack.Spec,
 							Status: expv1alpha1.StackStatus{
-								Status: v1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: 1,
-									Conditions: v1alpha1.Conditions{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   v1alpha1.ConditionReady,
+											Type:   kpackcore.ConditionReady,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -119,11 +119,11 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("does not update the status with no status change", func() {
 			stack.Status = expv1alpha1.StackStatus{
-				Status: v1alpha1.Status{
+				Status: kpackcore.Status{
 					ObservedGeneration: 1,
-					Conditions: v1alpha1.Conditions{
+					Conditions: kpackcore.Conditions{
 						{
-							Type:   v1alpha1.ConditionReady,
+							Type:   kpackcore.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
@@ -155,12 +155,12 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: stack.ObjectMeta,
 							Spec:       stack.Spec,
 							Status: expv1alpha1.StackStatus{
-								Status: v1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: 1,
-									Conditions: v1alpha1.Conditions{
+									Conditions: kpackcore.Conditions{
 										{
 											Message: "some fetch error",
-											Type:    v1alpha1.ConditionReady,
+											Type:    kpackcore.ConditionReady,
 											Status:  corev1.ConditionFalse,
 										},
 									},

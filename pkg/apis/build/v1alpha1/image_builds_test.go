@@ -10,7 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestImageBuilds(t *testing.T) {
@@ -34,11 +35,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 	sourceResolver := &SourceResolver{
 		Status: SourceResolverStatus{
-			Status: duckv1alpha1.Status{
+			Status: kpackcore.Status{
 				ObservedGeneration: 0,
-				Conditions: []duckv1alpha1.Condition{
+				Conditions: []kpackcore.Condition{
 					{
-						Type:   duckv1alpha1.ConditionReady,
+						Type:   kpackcore.ConditionReady,
 						Status: v1.ConditionTrue,
 					},
 				},
@@ -51,7 +52,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
 		BuilderMetadata: []BuildpackMetadata{
-			{ID: "buildpack.matches", Version: "1"},
+			{Key: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 	}
@@ -66,16 +67,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			ServiceAccount: "some/serviceaccount",
 		},
 		Status: BuildStatus{
-			Status: duckv1alpha1.Status{
-				Conditions: duckv1alpha1.Conditions{
+			Status: kpackcore.Status{
+				Conditions: kpackcore.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionSucceeded,
+						Type:   kpackcore.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
 					},
 				},
 			},
 			BuildMetadata: []BuildpackMetadata{
-				{ID: "buildpack.matches", Version: "1"},
+				{Key: "buildpack.matches", Version: "1"},
 			},
 			Stack: BuildStack{
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -90,9 +91,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it.Before(func() {
 				sourceResolver.Status.Source = ResolvedSourceConfig{
 					Git: &ResolvedGitSource{
-						URL:      "https://some.git/url",
-						Revision: "revision",
-						Type:     Commit,
+						URL:    "https://some.git/url",
+						Commit: "revision",
+						Type:   Commit,
 					},
 				}
 
@@ -142,7 +143,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true for different GitRevision", func() {
-				sourceResolver.Status.Source.Git.Revision = "different"
+				sourceResolver.Status.Source.Git.Commit = "different"
 
 				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
 				require.NoError(t, err)
@@ -152,10 +153,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("false if source resolver is not ready", func() {
-				sourceResolver.Status.Source.Git.Revision = "different"
-				sourceResolver.Status.Conditions = []duckv1alpha1.Condition{
+				sourceResolver.Status.Source.Git.Commit = "different"
+				sourceResolver.Status.Conditions = []kpackcore.Condition{
 					{
-						Type:   duckv1alpha1.ConditionReady,
+						Type:   kpackcore.ConditionReady,
 						Status: v1.ConditionFalse,
 					}}
 
@@ -176,8 +177,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("false if source resolver has not resolved", func() {
-				sourceResolver.Status.Source.Git.Revision = "different"
-				sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
+				sourceResolver.Status.Source.Git.Commit = "different"
+				sourceResolver.Status.Conditions = []kpackcore.Condition{}
 
 				reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
 				require.NoError(t, err)
@@ -186,8 +187,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("false if source resolver has not resolved and there is no previous build", func() {
-				sourceResolver.Status.Source.Git.Revision = "different"
-				sourceResolver.Status.Conditions = []duckv1alpha1.Condition{}
+				sourceResolver.Status.Source.Git.Commit = "different"
+				sourceResolver.Status.Conditions = []kpackcore.Condition{}
 
 				reasons, needed, err := image.buildNeeded(nil, sourceResolver, builder)
 				require.NoError(t, err)
@@ -196,7 +197,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("false if source resolver has not processed current generation", func() {
-				sourceResolver.Status.Source.Git.Revision = "different"
+				sourceResolver.Status.Source.Git.Commit = "different"
 				sourceResolver.ObjectMeta.Generation = 2
 				sourceResolver.Status.ObservedGeneration = 1
 
@@ -279,8 +280,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			when("Builder Metadata changes", func() {
 				it("false if builder has additional unused buildpack metadata", func() {
 					builder.BuilderMetadata = []BuildpackMetadata{
-						{ID: "buildpack.matches", Version: "1"},
-						{ID: "buildpack.unused", Version: "unused"},
+						{Key: "buildpack.matches", Version: "1"},
+						{Key: "buildpack.unused", Version: "unused"},
 					}
 
 					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
@@ -291,8 +292,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				it("true if builder metadata has different buildpack from used buildpack", func() {
 					builder.BuilderMetadata = []BuildpackMetadata{
-						{ID: "buildpack.matches", Version: "NEW_VERSION"},
-						{ID: "buildpack.different", Version: "different"},
+						{Key: "buildpack.matches", Version: "NEW_VERSION"},
+						{Key: "buildpack.different", Version: "different"},
 					}
 
 					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
@@ -314,8 +315,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				it("true if builder does not have all most recent used buildpacks and is not currently building", func() {
 					builder.BuilderMetadata = []BuildpackMetadata{
-						{ID: "buildpack.only.new.buildpacks", Version: "1"},
-						{ID: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
+						{Key: "buildpack.only.new.buildpacks", Version: "1"},
+						{Key: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 					}
 
 					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
@@ -327,7 +328,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 				it("true if both config and commit have changed", func() {
 					sourceResolver.Status.Source.Git.URL = "different"
-					sourceResolver.Status.Source.Git.Revision = "different"
+					sourceResolver.Status.Source.Git.Commit = "different"
 
 					reasons, needed, err := image.buildNeeded(build, sourceResolver, builder)
 					require.NoError(t, err)
@@ -412,9 +413,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			sourceResolver.Status.Source = ResolvedSourceConfig{
 				Git: &ResolvedGitSource{
-					URL:      "https://some.git/url",
-					Revision: "revision",
-					Type:     Commit,
+					URL:    "https://some.git/url",
+					Commit: "revision",
+					Type:   Commit,
 				},
 			}
 
@@ -540,7 +541,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			expectedBuild := image.build(sourceResolver, builder, build, []string{BuildReasonConfig, BuildReasonCommit}, 1)
 
 			assert.Equal(t, "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb", expectedBuild.Spec.LastBuild.Image)
-			assert.Equal(t, "io.buildpacks.stack.bionic", expectedBuild.Spec.LastBuild.StackID)
+			assert.Equal(t, "io.buildpacks.stack.bionic", expectedBuild.Spec.LastBuild.StackId)
 		})
 
 		it("adds build resources", func() {

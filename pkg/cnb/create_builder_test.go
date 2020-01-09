@@ -90,13 +90,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Group: []expv1alpha1.BuildpackRef{
 						{
 							BuildpackInfo: expv1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.1",
+								Id:      "io.buildpack.1",
 								Version: "v1",
 							},
 						},
 						{
 							BuildpackInfo: expv1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.2",
+								Id:      "io.buildpack.2",
 								Version: "v2",
 							},
 							Optional: true,
@@ -116,7 +116,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				ID:      "io.buildpack.1",
+				Id:      "io.buildpack.1",
 				Version: "v1",
 			},
 		},
@@ -126,14 +126,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack3Layer,
 			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				ID:      "io.buildpack.3",
+				Id:      "io.buildpack.3",
 				Version: "v2",
 			},
 		},
 		{
 			v1Layer: buildpack2Layer,
 			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				ID:      "io.buildpack.2",
+				Id:      "io.buildpack.2",
 				Version: "v1",
 			},
 			Order: expv1alpha1.Order{
@@ -141,7 +141,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Group: []expv1alpha1.BuildpackRef{
 						{
 							BuildpackInfo: expv1alpha1.BuildpackInfo{
-								ID:      "io.buildpack.3",
+								Id:      "io.buildpack.3",
 								Version: "v2",
 							},
 							Optional: false,
@@ -197,9 +197,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.1", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.2", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{ID: "io.buildpack.3", Version: "v2"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.1", Version: "v1"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.2", Version: "v1"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.3", Version: "v2"})
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
@@ -449,7 +449,7 @@ func (f *fakeBuildpackRepository) FindByIdAndVersion(id, version string) (Remote
 
 	return RemoteBuildpackInfo{
 		BuildpackInfo: expv1alpha1.BuildpackInfo{
-			ID:      id,
+			Id:      id,
 			Version: version,
 		},
 		Layers: layers,

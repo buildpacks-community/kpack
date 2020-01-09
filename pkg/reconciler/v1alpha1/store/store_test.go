@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
-	"knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -80,7 +80,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		readBuildpacks := []expv1alpha1.StoreBuildpack{
 			{
 				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					ID:      "org.cloudfoundry.node-engine",
+					Id:      "org.cloudfoundry.node-engine",
 					Version: "0.0.116",
 				},
 				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
@@ -91,7 +91,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 			{
 				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					ID:      "org.cloudfoundry.npm",
+					Id:      "org.cloudfoundry.npm",
 					Version: "0.0.71",
 				},
 				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
@@ -117,11 +117,11 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
 							Status: expv1alpha1.StoreStatus{
-								Status: v1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: 1,
-									Conditions: v1alpha1.Conditions{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   v1alpha1.ConditionReady,
+											Type:   kpackcore.ConditionReady,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -145,11 +145,11 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
 
 			store.Status = expv1alpha1.StoreStatus{
-				Status: v1alpha1.Status{
+				Status: kpackcore.Status{
 					ObservedGeneration: 1,
-					Conditions: v1alpha1.Conditions{
+					Conditions: kpackcore.Conditions{
 						{
-							Type:   v1alpha1.ConditionReady,
+							Type:   kpackcore.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
@@ -180,12 +180,12 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
 							Status: expv1alpha1.StoreStatus{
-								Status: v1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: 1,
-									Conditions: v1alpha1.Conditions{
+									Conditions: kpackcore.Conditions{
 										{
 											Message: "no buildpacks left",
-											Type:    v1alpha1.ConditionReady,
+											Type:    kpackcore.ConditionReady,
 											Status:  corev1.ConditionFalse,
 										},
 									},

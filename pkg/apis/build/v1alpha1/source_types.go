@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
+// +k8s:openapi-gen=true
 type SourceConfig struct {
 	Git      *Git      `json:"git,omitempty"`
 	Blob     *Blob     `json:"blob,omitempty"`
@@ -28,6 +29,7 @@ type Source interface {
 	ImagePullSecretsVolume() corev1.Volume
 }
 
+// +k8s:openapi-gen=true
 type Git struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
@@ -55,6 +57,7 @@ func (in *Git) ImagePullSecretsVolume() corev1.Volume {
 	}
 }
 
+// +k8s:openapi-gen=true
 type Blob struct {
 	URL string `json:"url"`
 }
@@ -77,8 +80,12 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 	}
 }
 
+// +k8s:openapi-gen=true
 type Registry struct {
-	Image            string                        `json:"image"`
+	Image string `json:"image"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
@@ -111,6 +118,7 @@ func (r *Registry) BuildEnvVars() []corev1.EnvVar {
 	}
 }
 
+// +k8s:openapi-gen=true
 type ResolvedSourceConfig struct {
 	Git      *ResolvedGitSource      `json:"git,omitempty"`
 	Blob     *ResolvedBlobSource     `json:"blob,omitempty"`
@@ -145,18 +153,19 @@ const (
 	Commit  GitSourceKind = "Commit"
 )
 
+// +k8s:openapi-gen=true
 type ResolvedGitSource struct {
-	URL      string        `json:"url"`
-	Revision string        `json:"commit"`
-	SubPath  string        `json:"subPath,omitempty"`
-	Type     GitSourceKind `json:"type"`
+	URL     string        `json:"url"`
+	Commit  string        `json:"commit"`
+	SubPath string        `json:"subPath,omitempty"`
+	Type    GitSourceKind `json:"type"`
 }
 
 func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Git: &Git{
 			URL:      gs.URL,
-			Revision: gs.Revision,
+			Revision: gs.Commit,
 		},
 		SubPath: gs.SubPath,
 	}
@@ -184,9 +193,10 @@ func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
 		return true
 	}
 
-	return gs.Revision != lastBuild.Spec.Source.Git.Revision
+	return gs.Commit != lastBuild.Spec.Source.Git.Revision
 }
 
+// +k8s:openapi-gen=true
 type ResolvedBlobSource struct {
 	URL     string `json:"url"`
 	SubPath string `json:"subPath,omitempty"`
@@ -221,10 +231,14 @@ func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
 	return false
 }
 
+// +k8s:openapi-gen=true
 type ResolvedRegistrySource struct {
-	Image            string                        `json:"image"`
+	Image   string `json:"image"`
+	SubPath string `json:"subPath,omitempty"`
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-	SubPath          string                        `json:"subPath,omitempty"`
 }
 
 func (rs *ResolvedRegistrySource) SourceConfig() SourceConfig {

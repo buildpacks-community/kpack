@@ -139,7 +139,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.Len(t, storeBuildpacks, 4)
 			require.Contains(t, storeBuildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
-					ID:      "org.buildpack.multi",
+					Id:      "org.buildpack.multi",
 					Version: "0.0.1",
 				},
 				StoreImage: v1alpha1.StoreImage{
@@ -151,7 +151,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.Contains(t, storeBuildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
-					ID:      "org.buildpack.multi",
+					Id:      "org.buildpack.multi",
 					Version: "0.0.2",
 				},
 				DiffId: "sha256:fcc1dd482e41209737dadce3afd276a93d10d974c174fb72adddd3925b2f31d5",
@@ -164,7 +164,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.Contains(t, storeBuildpacks,
 				v1alpha1.StoreBuildpack{
 					BuildpackInfo: v1alpha1.BuildpackInfo{
-						ID:      "org.buildpack.meta",
+						Id:      "org.buildpack.meta",
 						Version: "0.0.2",
 					},
 					DiffId: "sha256:1c6d357a885d873824545b40e1ccc9fd228c2dd38ba0acb9649955daf2941f94",
@@ -178,7 +178,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 							Group: []v1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: v1alpha1.BuildpackInfo{
-										ID:      "org.buildpack.multi",
+										Id:      "org.buildpack.multi",
 										Version: "0.0.1",
 									},
 								},
@@ -188,7 +188,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 							Group: []v1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: v1alpha1.BuildpackInfo{
-										ID:      "org.buildpack.multi",
+										Id:      "org.buildpack.multi",
 										Version: "0.0.2",
 									},
 								},
@@ -199,7 +199,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 
 			require.Contains(t, storeBuildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
-					ID:      "org.buildpack.simple",
+					Id:      "org.buildpack.simple",
 					Version: "0.0.1",
 				},
 				DiffId: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",

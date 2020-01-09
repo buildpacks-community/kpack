@@ -53,7 +53,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			Status: v1alpha1.BuilderStatus{
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
 					{
-						ID:      "some-buildpack",
+						Key:     "some-buildpack",
 						Version: "some-version",
 					},
 				},
@@ -70,7 +70,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			Status: v1alpha1.BuilderStatus{
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
 					{
-						ID:      "some-other-buildpack",
+						Key:     "some-other-buildpack",
 						Version: "some-other-version",
 					},
 				},
@@ -89,7 +89,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
-							ID:      "another-buildpack",
+							Key:     "another-buildpack",
 							Version: "another-version",
 						},
 					},
@@ -108,7 +108,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
-							ID:      "another-buildpack",
+							Key:     "another-buildpack",
 							Version: "another-version",
 						},
 					},

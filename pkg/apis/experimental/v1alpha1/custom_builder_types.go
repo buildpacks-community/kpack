@@ -13,6 +13,7 @@ const CustomBuilderKind = "CustomBuilder"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
+// +k8s:openapi-gen=true
 type CustomBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -21,27 +22,34 @@ type CustomBuilder struct {
 	Status CustomBuilderStatus         `json:"status"`
 }
 
+// +k8s:openapi-gen=true
 type CustomBuilderSpec struct {
-	Tag   string       `json:"tag"`
-	Stack string       `json:"stack"`
-	Store string       `json:"store"`
+	Tag   string `json:"tag"`
+	Stack string `json:"stack"`
+	Store string `json:"store"`
+	// +listType
 	Order []OrderEntry `json:"order"`
 }
 
+// +k8s:openapi-gen=true
 type CustomNamespacedBuilderSpec struct {
-	CustomBuilderSpec
-	ServiceAccount string `json:"serviceAccount"`
+	CustomBuilderSpec `json:",inline"`
+	ServiceAccount    string `json:"serviceAccount"`
 }
 
+// +k8s:openapi-gen=true
 type CustomBuilderStatus struct {
-	v1alpha1.BuilderStatus
+	v1alpha1.BuilderStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +k8s:openapi-gen=true
 type CustomBuilderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
+	// +listType
 	Items []CustomBuilder `json:"items"`
 }
 

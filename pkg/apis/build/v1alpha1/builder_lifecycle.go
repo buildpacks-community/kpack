@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 type BuilderRecord struct {
@@ -17,10 +17,10 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.Stack = record.Stack
 	bs.BuilderMetadata = record.Buildpacks
 	bs.LatestImage = record.Image
-	bs.Conditions = duckv1alpha1.Conditions{
+	bs.Conditions = kpackcore.Conditions{
 		{
-			LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
-			Type:               duckv1alpha1.ConditionReady,
+			LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+			Type:               kpackcore.ConditionReady,
 			Status:             corev1.ConditionTrue,
 		},
 	}

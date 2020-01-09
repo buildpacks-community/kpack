@@ -42,7 +42,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
 		for _, buildpack := range group.Group {
-			remoteBuildpack, err := buildpackRepo.FindByIdAndVersion(buildpack.ID, buildpack.Version)
+			remoteBuildpack, err := buildpackRepo.FindByIdAndVersion(buildpack.Id, buildpack.Version)
 			if err != nil {
 				return v1alpha1.BuilderRecord{}, err
 			}

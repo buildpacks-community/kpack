@@ -32,7 +32,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 	}
 
 	info := v1alpha1.BuildpackInfo{
-		ID:      storeBuildpack.ID,
+		Id:      storeBuildpack.Id,
 		Version: storeBuildpack.Version,
 	}
 
@@ -49,7 +49,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.StoreBuildpack, error) {
 	var matchingBuildpacks []v1alpha1.StoreBuildpack
 	for _, buildpack := range s.Store.Status.Buildpacks {
-		if buildpack.ID == id {
+		if buildpack.Id == id {
 			matchingBuildpacks = append(matchingBuildpacks, buildpack)
 		}
 	}
@@ -76,7 +76,7 @@ func (s *StoreBuildpackRepository) layersForOrder(order v1alpha1.Order) ([]build
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
-			buildpackInfo, err := s.FindByIdAndVersion(buildpackRef.ID, buildpackRef.Version)
+			buildpackInfo, err := s.FindByIdAndVersion(buildpackRef.Id, buildpackRef.Version)
 			if err != nil {
 				return nil, err
 			}

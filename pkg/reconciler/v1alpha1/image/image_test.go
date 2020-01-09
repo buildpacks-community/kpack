@@ -17,12 +17,12 @@ import (
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -106,7 +106,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Build:                    &v1alpha1.ImageBuild{},
 		},
 		Status: v1alpha1.ImageStatus{
-			Status: duckv1alpha1.Status{
+			Status: kpackcore.Status{
 				ObservedGeneration: originalGeneration,
 				Conditions:         conditionReadyUnknown(),
 			},
@@ -126,7 +126,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			LatestImage: "some/builder@sha256:acf123",
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
-					ID:      "buildpack.version",
+					Key:     "buildpack.version",
 					Version: "version",
 				},
 			},
@@ -134,10 +134,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stacks.bionic",
 			},
-			Status: duckv1alpha1.Status{
-				Conditions: duckv1alpha1.Conditions{
+			Status: kpackcore.Status{
+				Conditions: kpackcore.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
+						Type:   kpackcore.ConditionReady,
 						Status: corev1.ConditionTrue,
 					},
 				},
@@ -156,7 +156,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			LatestImage: "some/clusterbuilder@sha256:acf123",
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
-					ID:      "buildpack.version",
+					Key:     "buildpack.version",
 					Version: "version",
 				},
 			},
@@ -165,10 +165,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				ID:       "io.buildpacks.stacks.bionic",
 			},
 
-			Status: duckv1alpha1.Status{
-				Conditions: duckv1alpha1.Conditions{
+			Status: kpackcore.Status{
+				Conditions: kpackcore.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
+						Type:   kpackcore.ConditionReady,
 						Status: corev1.ConditionTrue,
 					},
 				},
@@ -186,7 +186,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				LatestImage: "some/custombuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
 					{
-						ID:      "buildpack.version",
+						Key:     "buildpack.version",
 						Version: "version",
 					},
 				},
@@ -195,10 +195,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:       "io.buildpacks.stacks.bionic",
 				},
 
-				Status: duckv1alpha1.Status{
-					Conditions: duckv1alpha1.Conditions{
+				Status: kpackcore.Status{
+					Conditions: kpackcore.Conditions{
 						{
-							Type:   duckv1alpha1.ConditionReady,
+							Type:   kpackcore.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
@@ -216,7 +216,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				LatestImage: "some/customclusterbuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
 					{
-						ID:      "buildpack.version",
+						Key:     "buildpack.version",
 						Version: "version",
 					},
 				},
@@ -225,10 +225,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:       "io.buildpacks.stacks.bionic",
 				},
 
-				Status: duckv1alpha1.Status{
-					Conditions: duckv1alpha1.Conditions{
+				Status: kpackcore.Status{
+					Conditions: kpackcore.Conditions{
 						{
-							Type:   duckv1alpha1.ConditionReady,
+							Type:   kpackcore.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
@@ -257,7 +257,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: image.ObjectMeta,
 							Spec:       image.Spec,
 							Status: v1alpha1.ImageStatus{
-								Status: duckv1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: updatedGeneration,
 									Conditions:         conditionReadyUnknown(),
 								},
@@ -309,11 +309,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: image.ObjectMeta,
 							Spec:       image.Spec,
 							Status: v1alpha1.ImageStatus{
-								Status: duckv1alpha1.Status{
+								Status: kpackcore.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: duckv1alpha1.Conditions{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:    duckv1alpha1.ConditionReady,
+											Type:    kpackcore.ConditionReady,
 											Status:  corev1.ConditionFalse,
 											Reason:  "BuilderNotFound",
 											Message: "Unable to find builder builder-name.",
@@ -502,7 +502,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
 									BuildCacheName: image.CacheName(),
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -662,7 +662,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -702,11 +702,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: duckv1alpha1.Conditions{
+										Conditions: kpackcore.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
+												Type:   kpackcore.ConditionReady,
 												Status: corev1.ConditionUnknown,
 											},
 											{
@@ -761,7 +761,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
@@ -773,7 +773,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -828,7 +828,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
@@ -840,7 +840,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -895,7 +895,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
@@ -907,7 +907,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -963,7 +963,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
@@ -975,7 +975,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -1030,7 +1030,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 								CacheName: image.CacheName(),
@@ -1043,11 +1043,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: duckv1alpha1.Conditions{
+										Conditions: kpackcore.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
+												Type:   kpackcore.ConditionReady,
 												Status: corev1.ConditionUnknown,
 											},
 											{
@@ -1109,10 +1109,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionSucceeded,
+											Type:   kpackcore.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -1148,12 +1148,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
-									StackID: "io.buildpacks.stacks.bionic",
+									StackId: "io.buildpacks.stacks.bionic",
 								},
 							},
 						},
@@ -1164,7 +1164,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -1185,9 +1185,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver := image.SourceResolver()
 				sourceResolver.ResolvedSource(v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:      image.Spec.Source.Git.URL,
-						Revision: "new-commit",
-						Type:     v1alpha1.Branch,
+						URL:    image.Spec.Source.Git.URL,
+						Commit: "new-commit",
+						Type:   v1alpha1.Branch,
 					},
 				})
 
@@ -1232,10 +1232,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionSucceeded,
+											Type:   kpackcore.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -1271,12 +1271,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
-									StackID: "io.buildpacks.stacks.bionic",
+									StackId: "io.buildpacks.stacks.bionic",
 								},
 							},
 						},
@@ -1287,7 +1287,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -1321,10 +1321,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ImagePullSecrets: nil,
 							},
 							Status: v1alpha1.BuilderStatus{
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionReady,
+											Type:   kpackcore.ConditionReady,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -1336,7 +1336,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								BuilderMetadata: v1alpha1.BuildpackMetadataList{
 									{
-										ID:      "io.buildpack",
+										Key:     "io.buildpack",
 										Version: "newversion",
 									},
 								},
@@ -1364,16 +1364,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
 							Status: v1alpha1.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionSucceeded,
+											Type:   kpackcore.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -1384,7 +1384,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								BuildMetadata: v1alpha1.BuildpackMetadataList{
 									{
-										ID:      "io.buildpack",
+										Key:     "io.buildpack",
 										Version: "oldversion",
 									},
 								},
@@ -1418,12 +1418,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 								LastBuild: &v1alpha1.LastBuild{
 									Image:   "some/image@sha256:just-built",
-									StackID: "io.buildpacks.stacks.bionic",
+									StackId: "io.buildpacks.stacks.bionic",
 								},
 							},
 						},
@@ -1434,7 +1434,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
 									},
@@ -1487,10 +1487,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: v1alpha1.BuildStatus{
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionSucceeded,
+											Type:   kpackcore.ConditionSucceeded,
 											Status: corev1.ConditionUnknown,
 										},
 									},
@@ -1538,7 +1538,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Source: v1alpha1.SourceConfig{
 									Git: &v1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
-										Revision: sourceResolver.Status.Source.Git.Revision,
+										Revision: sourceResolver.Status.Source.Git.Commit,
 									},
 								},
 							},
@@ -1548,10 +1548,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Status: duckv1alpha1.Status{
-									Conditions: duckv1alpha1.Conditions{
+								Status: kpackcore.Status{
+									Conditions: kpackcore.Conditions{
 										{
-											Type:   duckv1alpha1.ConditionSucceeded,
+											Type:   kpackcore.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 										{
@@ -1654,11 +1654,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: v1alpha1.ImageStatus{
-									Status: duckv1alpha1.Status{
+									Status: kpackcore.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: duckv1alpha1.Conditions{
+										Conditions: kpackcore.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
+												Type:   kpackcore.ConditionReady,
 												Status: corev1.ConditionTrue,
 											},
 											{
@@ -1703,9 +1703,9 @@ func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 	sr := image.SourceResolver()
 	sr.ResolvedSource(v1alpha1.ResolvedSourceConfig{
 		Git: &v1alpha1.ResolvedGitSource{
-			URL:      image.Spec.Source.Git.URL + "-resolved",
-			Revision: image.Spec.Source.Git.Revision + "-resolved",
-			Type:     v1alpha1.Branch,
+			URL:    image.Spec.Source.Git.URL + "-resolved",
+			Commit: image.Spec.Source.Git.Revision + "-resolved",
+			Type:   v1alpha1.Branch,
 		},
 	})
 	return sr
@@ -1716,25 +1716,25 @@ func unresolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 }
 
 func notReadyBuilder(builder *v1alpha1.Builder) runtime.Object {
-	builder.Status.Conditions = duckv1alpha1.Conditions{}
+	builder.Status.Conditions = kpackcore.Conditions{}
 	return builder
 }
 
 func failedBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
-	return builds(image, sourceResolver, count, duckv1alpha1.Condition{
-		Type:   duckv1alpha1.ConditionSucceeded,
+	return builds(image, sourceResolver, count, kpackcore.Condition{
+		Type:   kpackcore.ConditionSucceeded,
 		Status: corev1.ConditionFalse,
 	})
 }
 
 func successfulBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
-	return builds(image, sourceResolver, count, duckv1alpha1.Condition{
-		Type:   duckv1alpha1.ConditionSucceeded,
+	return builds(image, sourceResolver, count, kpackcore.Condition{
+		Type:   kpackcore.ConditionSucceeded,
 		Status: corev1.ConditionTrue,
 	})
 }
 
-func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int, condition duckv1alpha1.Condition) []runtime.Object {
+func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int, condition kpackcore.Condition) []runtime.Object {
 	var builds []runtime.Object
 	const runImageRef = "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb"
 
@@ -1761,7 +1761,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 				Source: v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
 						URL:      sourceResolver.Status.Source.Git.URL,
-						Revision: sourceResolver.Status.Source.Git.Revision,
+						Revision: sourceResolver.Status.Source.Git.Commit,
 					},
 				},
 			},
@@ -1771,8 +1771,8 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 					RunImage: runImageRef,
 					ID:       "io.buildpacks.stacks.bionic",
 				},
-				Status: duckv1alpha1.Status{
-					Conditions: duckv1alpha1.Conditions{
+				Status: kpackcore.Status{
+					Conditions: kpackcore.Conditions{
 						condition,
 					},
 				},
@@ -1791,10 +1791,10 @@ func limit(limit int64) *int64 {
 	return &limit
 }
 
-func conditionReadyUnknown() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
+func conditionReadyUnknown() kpackcore.Conditions {
+	return kpackcore.Conditions{
 		{
-			Type:   duckv1alpha1.ConditionReady,
+			Type:   kpackcore.ConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 		{
@@ -1804,10 +1804,10 @@ func conditionReadyUnknown() duckv1alpha1.Conditions {
 	}
 }
 
-func conditionReady() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
+func conditionReady() kpackcore.Conditions {
+	return kpackcore.Conditions{
 		{
-			Type:   duckv1alpha1.ConditionReady,
+			Type:   kpackcore.ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
 		{
@@ -1817,10 +1817,10 @@ func conditionReady() duckv1alpha1.Conditions {
 	}
 }
 
-func conditionNotReady() duckv1alpha1.Conditions {
-	return duckv1alpha1.Conditions{
+func conditionNotReady() kpackcore.Conditions {
+	return kpackcore.Conditions{
 		{
-			Type:   duckv1alpha1.ConditionReady,
+			Type:   kpackcore.ConditionReady,
 			Status: corev1.ConditionFalse,
 		},
 		{

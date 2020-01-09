@@ -92,7 +92,7 @@ func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
 
 	for _, bp := range deterministicSortBySize(bb.buildpackLayers) {
 		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
-			ID:      bp.ID,
+			Key:     bp.Id,
 			Version: bp.Version,
 		})
 	}
@@ -232,7 +232,7 @@ func (bb *BuilderBuilder) orderLayer() (v1.Layer, error) {
 		bps := make([]tomlBuildpack, 0, len(o.Group))
 		for _, b := range o.Group {
 			bps = append(bps, tomlBuildpack{
-				ID:       b.ID,
+				ID:       b.Id,
 				Version:  b.Version,
 				Optional: b.Optional,
 			})

@@ -8,11 +8,10 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -115,13 +114,13 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 	builderRecord, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
-			Status: duckv1alpha1.Status{
+			Status: kpackcore.Status{
 				ObservedGeneration: builder.Generation,
-				Conditions: duckv1alpha1.Conditions{
+				Conditions: kpackcore.Conditions{
 					{
-						Type:               duckv1alpha1.ConditionReady,
+						Type:               kpackcore.ConditionReady,
 						Status:             corev1.ConditionFalse,
-						LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
+						LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
 						Message:            err.Error(),
 					},
 				},
@@ -131,12 +130,12 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
-		Status: duckv1alpha1.Status{
+		Status: kpackcore.Status{
 			ObservedGeneration: builder.Generation,
-			Conditions: duckv1alpha1.Conditions{
+			Conditions: kpackcore.Conditions{
 				{
-					LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
-					Type:               duckv1alpha1.ConditionReady,
+					LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+					Type:               kpackcore.ConditionReady,
 					Status:             corev1.ConditionTrue,
 				},
 			},

@@ -88,7 +88,7 @@ func transform(infos []expv1alpha1.BuildpackInfo) v1alpha1.BuildpackMetadataList
 	buildpacks := make(v1alpha1.BuildpackMetadataList, 0, len(infos))
 	for _, buildpack := range infos {
 		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
-			ID:      buildpack.ID,
+			Key:     buildpack.Id,
 			Version: buildpack.Version,
 		})
 	}
