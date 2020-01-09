@@ -28,7 +28,7 @@ import (
 
 const (
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
-	lifecycleLocation      = "/cnb/lifecycle"
+	lifecycleLocation      = "/cnb/lifecycle/"
 )
 
 var (
