@@ -11,6 +11,14 @@ function pack_build() {
     resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
 }
 
+function lifecycle_image_build() {
+    image=$1
+    go run hack/lifecycle/main.go --tag=${image}
+
+    docker pull ${image}
+    resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
+}
+
 function compile() {
   registry=$1
   output=$2
@@ -23,6 +31,7 @@ function compile() {
   build_init_image=${IMAGE_PREFIX}build-init
   rebase_image=${IMAGE_PREFIX}rebase
   completion_image=${IMAGE_PREFIX}completion
+  lifecycle_image=${IMAGE_PREFIX}lifecycle
 
   pack_build ${controller_image} "./cmd/controller"
   controller_image=${resolved_image_name}
@@ -39,11 +48,14 @@ function compile() {
   pack_build ${completion_image} "./cmd/completion"
   completion_image=${resolved_image_name}
 
+  lifecycle_image_build ${lifecycle_image}
+  lifecycle_image=${resolved_image_name}
+
   ytt -f config/. \
     -v controller_image=${controller_image} \
     -v webhook_image=${webhook_image} \
     -v build_init_image=${build_init_image} \
     -v rebase_image=${rebase_image} \
     -v completion_image=${completion_image} \
-    -v lifecycle_image="gcr.io/cf-build-service-public/lifecycle-0.5.0" > $output
+    -v lifecycle_image=${lifecycle_image} > $output
 }
