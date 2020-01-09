@@ -28,7 +28,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -466,7 +466,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
 
-		return build.Status.GetCondition(kpackcore.ConditionSucceeded).IsTrue()
+		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
 	}, 5*time.Second, 1*time.Minute)
 }
 

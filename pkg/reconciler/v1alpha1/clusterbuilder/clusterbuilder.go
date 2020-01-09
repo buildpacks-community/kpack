@@ -11,7 +11,7 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -114,13 +114,13 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 	builderRecord, err := c.MetadataRetriever.GetBuilderImage(builder)
 	if err != nil {
 		builder.Status = v1alpha1.BuilderStatus{
-			Status: kpackcore.Status{
+			Status: corev1alpha1.Status{
 				ObservedGeneration: builder.Generation,
-				Conditions: kpackcore.Conditions{
+				Conditions: corev1alpha1.Conditions{
 					{
-						Type:               kpackcore.ConditionReady,
+						Type:               corev1alpha1.ConditionReady,
 						Status:             corev1.ConditionFalse,
-						LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+						LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
 						Message:            err.Error(),
 					},
 				},
@@ -130,12 +130,12 @@ func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuil
 	}
 
 	builder.Status = v1alpha1.BuilderStatus{
-		Status: kpackcore.Status{
+		Status: corev1alpha1.Status{
 			ObservedGeneration: builder.Generation,
-			Conditions: kpackcore.Conditions{
+			Conditions: corev1alpha1.Conditions{
 				{
-					LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
-					Type:               kpackcore.ConditionReady,
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+					Type:               corev1alpha1.ConditionReady,
 					Status:             corev1.ConditionTrue,
 				},
 			},

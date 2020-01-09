@@ -6,17 +6,17 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func (cb *CustomBuilderStatus) ErrorCreate(err error) {
 	cb.BuilderStatus = v1alpha1.BuilderStatus{
-		Status: kpackcore.Status{
-			Conditions: kpackcore.Conditions{
+		Status: corev1alpha1.Status{
+			Conditions: corev1alpha1.Conditions{
 				{
-					Type:               kpackcore.ConditionReady,
+					Type:               corev1alpha1.ConditionReady,
 					Status:             corev1.ConditionFalse,
-					LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
 					Message:            err.Error(),
 				},
 			},

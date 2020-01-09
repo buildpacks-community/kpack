@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const ActivePolling = "ActivePolling"
@@ -17,8 +17,8 @@ func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
 
 	sr.Status.Source = config
 
-	sr.Status.Conditions = []kpackcore.Condition{{
-		Type:   kpackcore.ConditionReady,
+	sr.Status.Conditions = []corev1alpha1.Condition{{
+		Type:   corev1alpha1.ConditionReady,
 		Status: corev1.ConditionTrue,
 	}}
 
@@ -26,7 +26,7 @@ func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
 	if resolvedSource.IsPollable() {
 		pollingStatus = corev1.ConditionTrue
 	}
-	sr.Status.Conditions = append(sr.Status.Conditions, kpackcore.Condition{
+	sr.Status.Conditions = append(sr.Status.Conditions, corev1alpha1.Condition{
 		Type:   ActivePolling,
 		Status: pollingStatus,
 	})
@@ -45,7 +45,7 @@ func (sr *SourceResolver) PollingReady() bool {
 }
 
 func (sr *SourceResolver) Ready() bool {
-	return sr.Status.GetCondition(kpackcore.ConditionReady).IsTrue() &&
+	return sr.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() &&
 		(sr.Generation == sr.Status.ObservedGeneration)
 }
 

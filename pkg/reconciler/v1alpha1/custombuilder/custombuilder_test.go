@@ -16,7 +16,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/cnb"
@@ -135,11 +135,11 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 				Buildpacks: v1alpha1.BuildpackMetadataList{
 					{
-						Key:     "buildpack.id.1",
+						Id:      "buildpack.id.1",
 						Version: "1.0.0",
 					},
 					{
-						Key:     "buildpack.id.2",
+						Id:      "buildpack.id.2",
 						Version: "2.0.0",
 					},
 				},
@@ -150,22 +150,22 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Spec:       customBuilder.Spec,
 				Status: expv1alpha1.CustomBuilderStatus{
 					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: kpackcore.Status{
+						Status: corev1alpha1.Status{
 							ObservedGeneration: 1,
-							Conditions: kpackcore.Conditions{
+							Conditions: corev1alpha1.Conditions{
 								{
-									Type:   kpackcore.ConditionReady,
+									Type:   corev1alpha1.ConditionReady,
 									Status: corev1.ConditionTrue,
 								},
 							},
 						},
 						BuilderMetadata: []v1alpha1.BuildpackMetadata{
 							{
-								Key:     "buildpack.id.1",
+								Id:      "buildpack.id.1",
 								Version: "1.0.0",
 							},
 							{
-								Key:     "buildpack.id.2",
+								Id:      "buildpack.id.2",
 								Version: "2.0.0",
 							},
 						},
@@ -215,11 +215,11 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Spec:       customBuilder.Spec,
 				Status: expv1alpha1.CustomBuilderStatus{
 					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: kpackcore.Status{
+						Status: corev1alpha1.Status{
 							ObservedGeneration: 1,
-							Conditions: kpackcore.Conditions{
+							Conditions: corev1alpha1.Conditions{
 								{
-									Type:   kpackcore.ConditionReady,
+									Type:   corev1alpha1.ConditionReady,
 									Status: corev1.ConditionTrue,
 								},
 							},
@@ -257,25 +257,25 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 				Buildpacks: v1alpha1.BuildpackMetadataList{
 					{
-						Key:     "buildpack.id.1",
+						Id:      "buildpack.id.1",
 						Version: "1.0.0",
 					},
 				},
 			}
 
 			customBuilder.Status.BuilderStatus = v1alpha1.BuilderStatus{
-				Status: kpackcore.Status{
+				Status: corev1alpha1.Status{
 					ObservedGeneration: customBuilder.Generation,
-					Conditions: kpackcore.Conditions{
+					Conditions: corev1alpha1.Conditions{
 						{
-							Type:   kpackcore.ConditionReady,
+							Type:   corev1alpha1.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
 				},
 				BuilderMetadata: []v1alpha1.BuildpackMetadata{
 					{
-						Key:     "buildpack.id.1",
+						Id:      "buildpack.id.1",
 						Version: "1.0.0",
 					},
 				},
@@ -305,11 +305,11 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Spec:       customBuilder.Spec,
 				Status: expv1alpha1.CustomBuilderStatus{
 					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: kpackcore.Status{
+						Status: corev1alpha1.Status{
 							ObservedGeneration: 1,
-							Conditions: kpackcore.Conditions{
+							Conditions: corev1alpha1.Conditions{
 								{
-									Type:    kpackcore.ConditionReady,
+									Type:    corev1alpha1.ConditionReady,
 									Status:  corev1.ConditionFalse,
 									Message: "create error",
 								},

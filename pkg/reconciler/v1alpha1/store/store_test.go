@@ -14,7 +14,7 @@ import (
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -117,11 +117,11 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
 							Status: expv1alpha1.StoreStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionReady,
+											Type:   corev1alpha1.ConditionReady,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -145,11 +145,11 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
 
 			store.Status = expv1alpha1.StoreStatus{
-				Status: kpackcore.Status{
+				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
-					Conditions: kpackcore.Conditions{
+					Conditions: corev1alpha1.Conditions{
 						{
-							Type:   kpackcore.ConditionReady,
+							Type:   corev1alpha1.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
 					},
@@ -180,12 +180,12 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
 							Status: expv1alpha1.StoreStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
 											Message: "no buildpacks left",
-											Type:    kpackcore.ConditionReady,
+											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
 										},
 									},

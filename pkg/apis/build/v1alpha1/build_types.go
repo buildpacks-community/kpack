@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 // +genclient
@@ -80,11 +80,11 @@ type BuildStack struct {
 
 // +k8s:openapi-gen=true
 type BuildStatus struct {
-	kpackcore.Status `json:",inline"`
-	BuildMetadata    BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack            BuildStack            `json:"stack,omitempty"`
-	LatestImage      string                `json:"latestImage,omitempty"`
-	PodName          string                `json:"podName,omitempty"`
+	corev1alpha1.Status `json:",inline"`
+	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	Stack               BuildStack            `json:"stack,omitempty"`
+	LatestImage         string                `json:"latestImage,omitempty"`
+	PodName             string                `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType

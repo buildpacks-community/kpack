@@ -7,7 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder BuilderResource) (BuildApplier, error) {
@@ -45,7 +45,7 @@ type ReconciledBuild struct {
 	Build        *Build
 	BuildCounter int64
 	LatestImage  string
-	Conditions   kpackcore.Conditions
+	Conditions   corev1alpha1.Conditions
 }
 
 type BuildApplier interface {
@@ -68,38 +68,38 @@ func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
 	}, nil
 }
 
-func (r upToDateBuild) conditions() kpackcore.Conditions {
-	if r.build == nil || r.build.Status.GetCondition(kpackcore.ConditionSucceeded) == nil {
-		return kpackcore.Conditions{
+func (r upToDateBuild) conditions() corev1alpha1.Conditions {
+	if r.build == nil || r.build.Status.GetCondition(corev1alpha1.ConditionSucceeded) == nil {
+		return corev1alpha1.Conditions{
 			{
-				Type:               kpackcore.ConditionReady,
+				Type:               corev1alpha1.ConditionReady,
 				Status:             corev1.ConditionUnknown,
-				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			}, r.builderCondition(),
 		}
 	}
 
-	condition := r.build.Status.GetCondition(kpackcore.ConditionSucceeded)
+	condition := r.build.Status.GetCondition(corev1alpha1.ConditionSucceeded)
 
-	return kpackcore.Conditions{
+	return corev1alpha1.Conditions{
 		{
-			Type:               kpackcore.ConditionReady,
+			Type:               corev1alpha1.ConditionReady,
 			Status:             condition.Status,
-			LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		}, r.builderCondition(),
 	}
 }
 
-func (r upToDateBuild) builderCondition() kpackcore.Condition {
+func (r upToDateBuild) builderCondition() corev1alpha1.Condition {
 	if !r.builder.Ready() {
-		return kpackcore.Condition{
+		return corev1alpha1.Condition{
 			Type:    ConditionBuilderReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  BuilderNotReady,
 			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
 		}
 	}
-	return kpackcore.Condition{
+	return corev1alpha1.Condition{
 		Type:   ConditionBuilderReady,
 		Status: corev1.ConditionTrue,
 	}
@@ -122,17 +122,17 @@ func (r newBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
 	}, err
 }
 
-func (r newBuild) conditions() kpackcore.Conditions {
-	return kpackcore.Conditions{
+func (r newBuild) conditions() corev1alpha1.Conditions {
+	return corev1alpha1.Conditions{
 		{
-			Type:               kpackcore.ConditionReady,
+			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionUnknown,
-			LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		{
 			Type:               ConditionBuilderReady,
 			Status:             corev1.ConditionTrue,
-			LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 	}
 }

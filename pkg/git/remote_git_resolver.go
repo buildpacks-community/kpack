@@ -26,10 +26,10 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig v1alph
 	if err != nil {
 		return v1alpha1.ResolvedSourceConfig{
 			Git: &v1alpha1.ResolvedGitSource{
-				URL:     sourceConfig.Git.URL,
-				Commit:  sourceConfig.Git.Revision, // maybe
-				Type:    v1alpha1.Unknown,
-				SubPath: sourceConfig.SubPath,
+				URL:      sourceConfig.Git.URL,
+				Revision: sourceConfig.Git.Revision, // maybe
+				Type:     v1alpha1.Unknown,
+				SubPath:  sourceConfig.SubPath,
 			},
 		}, nil
 	}
@@ -38,10 +38,10 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig v1alph
 		if string(ref.Name().Short()) == sourceConfig.Git.Revision {
 			return v1alpha1.ResolvedSourceConfig{
 				Git: &v1alpha1.ResolvedGitSource{
-					URL:     sourceConfig.Git.URL,
-					Commit:  ref.Hash().String(),
-					Type:    sourceType(ref),
-					SubPath: sourceConfig.SubPath,
+					URL:      sourceConfig.Git.URL,
+					Revision: ref.Hash().String(),
+					Type:     sourceType(ref),
+					SubPath:  sourceConfig.SubPath,
 				},
 			}, nil
 		}
@@ -49,10 +49,10 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig v1alph
 
 	return v1alpha1.ResolvedSourceConfig{
 		Git: &v1alpha1.ResolvedGitSource{
-			URL:     sourceConfig.Git.URL,
-			Commit:  sourceConfig.Git.Revision,
-			Type:    v1alpha1.Commit,
-			SubPath: sourceConfig.SubPath,
+			URL:      sourceConfig.Git.URL,
+			Revision: sourceConfig.Git.Revision,
+			Type:     v1alpha1.Commit,
+			SubPath:  sourceConfig.SubPath,
 		},
 	}, nil
 }

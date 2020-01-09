@@ -155,17 +155,17 @@ const (
 
 // +k8s:openapi-gen=true
 type ResolvedGitSource struct {
-	URL     string        `json:"url"`
-	Commit  string        `json:"commit"`
-	SubPath string        `json:"subPath,omitempty"`
-	Type    GitSourceKind `json:"type"`
+	URL      string        `json:"url"`
+	Revision string        `json:"revision"`
+	SubPath  string        `json:"subPath,omitempty"`
+	Type     GitSourceKind `json:"type"`
 }
 
 func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Git: &Git{
 			URL:      gs.URL,
-			Revision: gs.Commit,
+			Revision: gs.Revision,
 		},
 		SubPath: gs.SubPath,
 	}
@@ -193,7 +193,7 @@ func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
 		return true
 	}
 
-	return gs.Commit != lastBuild.Spec.Source.Git.Revision
+	return gs.Revision != lastBuild.Spec.Source.Git.Revision
 }
 
 // +k8s:openapi-gen=true

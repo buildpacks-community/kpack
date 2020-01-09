@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
@@ -97,13 +97,13 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 	buildpacks, err := c.getBuildpacks(store.Spec.Sources)
 	if err != nil {
 		store.Status = expv1alpha1.StoreStatus{
-			Status: kpackcore.Status{
+			Status: corev1alpha1.Status{
 				ObservedGeneration: store.Generation,
-				Conditions: kpackcore.Conditions{
+				Conditions: corev1alpha1.Conditions{
 					{
-						Type:               kpackcore.ConditionReady,
+						Type:               corev1alpha1.ConditionReady,
 						Status:             corev1.ConditionFalse,
-						LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
+						LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
 						Message:            err.Error(),
 					},
 				},
@@ -114,12 +114,12 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 
 	store.Status = expv1alpha1.StoreStatus{
 		Buildpacks: buildpacks,
-		Status: kpackcore.Status{
+		Status: corev1alpha1.Status{
 			ObservedGeneration: store.Generation,
-			Conditions: kpackcore.Conditions{
+			Conditions: corev1alpha1.Conditions{
 				{
-					LastTransitionTime: kpackcore.VolatileTime{Inner: v1.Now()},
-					Type:               kpackcore.ConditionReady,
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+					Type:               corev1alpha1.ConditionReady,
 					Status:             corev1.ConditionTrue,
 				},
 			},

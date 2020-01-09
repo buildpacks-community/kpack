@@ -689,7 +689,7 @@ func schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref common.ReferenceCallba
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"key": {
+					"id": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -702,7 +702,7 @@ func schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"key", "version"},
+				Required: []string{"id", "version"},
 			},
 		},
 	}
@@ -1228,7 +1228,7 @@ func schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref common.ReferenceCallba
 							Format: "",
 						},
 					},
-					"commit": {
+					"revision": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -1247,7 +1247,7 @@ func schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"url", "commit", "type"},
+				Required: []string{"url", "revision", "type"},
 			},
 		},
 	}

@@ -92,7 +92,7 @@ func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
 
 	for _, bp := range deterministicSortBySize(bb.buildpackLayers) {
 		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
-			Key:     bp.Id,
+			Id:      bp.Id,
 			Version: bp.Version,
 		})
 	}

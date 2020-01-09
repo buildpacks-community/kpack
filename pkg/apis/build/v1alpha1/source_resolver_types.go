@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 // +genclient
@@ -26,8 +26,8 @@ type SourceResolverSpec struct {
 
 // +k8s:openapi-gen=true
 type SourceResolverStatus struct {
-	kpackcore.Status `json:",inline"`
-	Source           ResolvedSourceConfig `json:"source,omitempty"`
+	corev1alpha1.Status `json:",inline"`
+	Source              ResolvedSourceConfig `json:"source,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

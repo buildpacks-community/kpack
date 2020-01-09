@@ -197,9 +197,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.1", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.2", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Key: "io.buildpack.3", Version: "v2"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v1"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v2"})
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)

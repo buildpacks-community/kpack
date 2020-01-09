@@ -94,7 +94,7 @@ func main() {
 			ListRef: "#/definitions/kpack.build.v1alpha1.ClusterBuilderList",
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "experimental.pivotal.io",
+			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
 			Kind:    "CustomBuilder",
 			Plural:  "custombuilders",
@@ -102,7 +102,7 @@ func main() {
 			ListRef: "#/definitions/kpack.experimental.v1alpha1.CustomBuilderList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.pivotal.io",
+			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
 			Kind:    "CustomClusterBuilder",
 			Plural:  "customclusterbuilders",
@@ -110,7 +110,7 @@ func main() {
 			ListRef: "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilderList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.pivotal.io",
+			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
 			Kind:    "Stack",
 			Plural:  "stacks",
@@ -118,7 +118,7 @@ func main() {
 			ListRef: "#/definitions/kpack.experimental.v1alpha1.StackList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.pivotal.io",
+			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
 			Kind:    "Store",
 			Plural:  "stores",
@@ -187,6 +187,7 @@ func combineCRDPaths(paths ...map[string]spec.PathItem) map[string]spec.PathItem
 	return combined
 }
 
+// The following are the kubernetes schema definitions required by kpack. They have been cherry-picked from: https://github.com/kubernetes/kubernetes/tree/master/api/openapi-spec
 const k8sOpenAPIDefinitions = `{
   "io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta": {
     "description": "ListMeta describes metadata that synthetic resources must have, including lists and various status objects. A resource may have only one of {ObjectMeta, ListMeta}.",

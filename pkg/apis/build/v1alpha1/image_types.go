@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 // +genclient
@@ -73,12 +73,12 @@ type ImageBuild struct {
 
 // +k8s:openapi-gen=true
 type ImageStatus struct {
-	kpackcore.Status `json:",inline"`
-	LatestBuildRef   string `json:"latestBuildRef,omitempty"`
-	LatestImage      string `json:"latestImage,omitempty"`
-	LatestStack      string `json:"latestStack,omitempty"`
-	BuildCounter     int64  `json:"buildCounter,omitempty"`
-	BuildCacheName   string `json:"buildCacheName,omitempty"`
+	corev1alpha1.Status `json:",inline"`
+	LatestBuildRef      string `json:"latestBuildRef,omitempty"`
+	LatestImage         string `json:"latestImage,omitempty"`
+	LatestStack         string `json:"latestStack,omitempty"`
+	BuildCounter        int64  `json:"buildCounter,omitempty"`
+	BuildCacheName      string `json:"buildCacheName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -100,4 +100,4 @@ func (i *Image) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: i.Namespace, Name: i.Name}
 }
 
-const ConditionBuilderReady kpackcore.ConditionType = "BuilderReady"
+const ConditionBuilderReady corev1alpha1.ConditionType = "BuilderReady"

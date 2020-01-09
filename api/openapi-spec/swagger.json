@@ -2564,7 +2564,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/custombuilders": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/custombuilders": {
       "get": {
         "description": "list or watch custombuilders",
         "consumes": [
@@ -2654,7 +2654,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/customclusterbuilders": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders": {
       "get": {
         "description": "list or watch cluster scoped customclusterbuilders",
         "consumes": [
@@ -2779,7 +2779,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/customclusterbuilders/{name}": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders/{name}": {
       "get": {
         "description": "Returns a cluster scoped CustomClusterBuilder",
         "consumes": [
@@ -2951,7 +2951,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/customclusterbuilders/{name}/status": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders/{name}/status": {
       "get": {
         "description": "read status of the specified cluster scoped CustomClusterBuilder",
         "consumes": [
@@ -3077,7 +3077,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders": {
       "get": {
         "description": "list or watch namespace scoped custombuilders",
         "consumes": [
@@ -3209,7 +3209,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders/{name}": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders/{name}": {
       "get": {
         "description": "Returns a namespace scoped custom object",
         "consumes": [
@@ -3388,7 +3388,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders/{name}/status": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/namespaces/{namespace}/custombuilders/{name}/status": {
       "get": {
         "description": "read status of the specified namespace scoped CustomBuilder",
         "consumes": [
@@ -3521,7 +3521,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stacks": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stacks": {
       "get": {
         "description": "list or watch cluster scoped stacks",
         "consumes": [
@@ -3646,7 +3646,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stacks/{name}": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stacks/{name}": {
       "get": {
         "description": "Returns a cluster scoped Stack",
         "consumes": [
@@ -3818,7 +3818,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stacks/{name}/status": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stacks/{name}/status": {
       "get": {
         "description": "read status of the specified cluster scoped Stack",
         "consumes": [
@@ -3944,7 +3944,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stores": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stores": {
       "get": {
         "description": "list or watch cluster scoped stores",
         "consumes": [
@@ -4069,7 +4069,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stores/{name}": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stores/{name}": {
       "get": {
         "description": "Returns a cluster scoped Store",
         "consumes": [
@@ -4241,7 +4241,7 @@
         }
       ]
     },
-    "/apis/experimental.pivotal.io/v1alpha1/stores/{name}/status": {
+    "/apis/experimental.kpack.pivotal.io/v1alpha1/stores/{name}/status": {
       "get": {
         "description": "read status of the specified cluster scoped Store",
         "consumes": [
@@ -5522,11 +5522,11 @@
     "kpack.build.v1alpha1.BuildpackMetadata": {
       "type": "object",
       "required": [
-        "key",
+        "id",
         "version"
       ],
       "properties": {
-        "key": {
+        "id": {
           "type": "string"
         },
         "version": {
@@ -5809,11 +5809,11 @@
       "type": "object",
       "required": [
         "url",
-        "commit",
+        "revision",
         "type"
       ],
       "properties": {
-        "commit": {
+        "revision": {
           "type": "string"
         },
         "subPath": {

@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestDuckBuilder(t *testing.T) {
@@ -29,18 +29,18 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Status: v1alpha1.BuilderStatus{
-			Status: kpackcore.Status{
+			Status: corev1alpha1.Status{
 				ObservedGeneration: 1,
-				Conditions: kpackcore.Conditions{
+				Conditions: corev1alpha1.Conditions{
 					{
-						Type:   kpackcore.ConditionReady,
+						Type:   corev1alpha1.ConditionReady,
 						Status: corev1.ConditionTrue,
 					},
 				},
 			},
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
-					Key:     "test.builder",
+					Id:      "test.builder",
 					Version: "test.version",
 				},
 			},
@@ -64,9 +64,9 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("not ready when not ready", func() {
-			duckBuilder.Status.Conditions = kpackcore.Conditions{
+			duckBuilder.Status.Conditions = corev1alpha1.Conditions{
 				{
-					Type:   kpackcore.ConditionReady,
+					Type:   corev1alpha1.ConditionReady,
 					Status: corev1.ConditionUnknown,
 				},
 			}
@@ -95,7 +95,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	it("BuildpackMetadata provides buildpack metadata", func() {
 		require.Equal(t, v1alpha1.BuildpackMetadataList{
 			{
-				Key:     "test.builder",
+				Id:      "test.builder",
 				Version: "test.version",
 			},
 		}, duckBuilder.BuildpackMetadata())

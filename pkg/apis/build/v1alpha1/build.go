@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
 
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func (bi *BuildBuilderSpec) getBuilderSecretVolume() corev1.Volume {
@@ -41,7 +41,7 @@ func (b *Build) IsRunning() bool {
 		return false
 	}
 
-	return b.Status.GetCondition(kpackcore.ConditionSucceeded).IsUnknown()
+	return b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown()
 }
 
 func (b *Build) BuildRef() string {
@@ -77,14 +77,14 @@ func (b *Build) IsSuccess() bool {
 	if b == nil {
 		return false
 	}
-	return b.Status.GetCondition(kpackcore.ConditionSucceeded).IsTrue()
+	return b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
 }
 
 func (b *Build) IsFailure() bool {
 	if b == nil {
 		return false
 	}
-	return b.Status.GetCondition(kpackcore.ConditionSucceeded).IsFalse()
+	return b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsFalse()
 }
 
 func (b *Build) PodName() string {
@@ -92,12 +92,12 @@ func (b *Build) PodName() string {
 }
 
 func (b *Build) MetadataReady(pod *corev1.Pod) bool {
-	return !b.Status.GetCondition(kpackcore.ConditionSucceeded).IsTrue() &&
+	return !b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue() &&
 		pod.Status.Phase == "Succeeded"
 }
 
 func (b *Build) Finished() bool {
-	return !b.Status.GetCondition(kpackcore.ConditionSucceeded).IsUnknown()
+	return !b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown()
 }
 
 func (b *Build) SourceEnvVars() []corev1.EnvVar {

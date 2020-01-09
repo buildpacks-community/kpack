@@ -14,7 +14,7 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -128,30 +128,30 @@ func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, erro
 	return pod, nil
 }
 
-func conditionForPod(pod *corev1.Pod) kpackcore.Conditions {
+func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		return kpackcore.Conditions{
+		return corev1alpha1.Conditions{
 			{
-				Type:               kpackcore.ConditionSucceeded,
+				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionTrue,
-				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	case corev1.PodFailed:
-		return kpackcore.Conditions{
+		return corev1alpha1.Conditions{
 			{
-				Type:               kpackcore.ConditionSucceeded,
+				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionFalse,
-				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	default:
-		return kpackcore.Conditions{
+		return corev1alpha1.Conditions{
 			{
-				Type:               kpackcore.ConditionSucceeded,
+				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionUnknown,
-				LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
 	}
@@ -194,7 +194,7 @@ func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetad
 	buildpackMetadata := make([]v1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
 		buildpackMetadata = append(buildpackMetadata, v1alpha1.BuildpackMetadata{
-			Key:     metadata.ID,
+			Id:      metadata.ID,
 			Version: metadata.Version,
 		})
 	}

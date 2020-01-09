@@ -20,7 +20,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	kpackcore "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -136,13 +136,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:               kpackcore.ConditionSucceeded,
+											Type:               corev1alpha1.ConditionSucceeded,
 											Status:             corev1.ConditionUnknown,
-											LastTransitionTime: kpackcore.VolatileTime{Inner: metav1.Now()},
+											LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 										},
 									},
 								},
@@ -171,11 +171,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionSucceeded,
+											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionUnknown,
 										},
 									},
@@ -206,11 +206,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: 3,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionSucceeded,
+											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionUnknown,
 										},
 									},
@@ -228,11 +228,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			build.Status = v1alpha1.BuildStatus{
-				Status: kpackcore.Status{
+				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
-					Conditions: kpackcore.Conditions{
+					Conditions: corev1alpha1.Conditions{
 						{
-							Type:   kpackcore.ConditionSucceeded,
+							Type:   corev1alpha1.ConditionSucceeded,
 							Status: corev1.ConditionUnknown,
 						},
 					},
@@ -300,11 +300,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
 								Status: v1alpha1.BuildStatus{
-									Status: kpackcore.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: kpackcore.Conditions{
+										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   kpackcore.ConditionSucceeded,
+												Type:   corev1alpha1.ConditionSucceeded,
 												Status: corev1.ConditionUnknown,
 											},
 										},
@@ -401,18 +401,18 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
 								Status: v1alpha1.BuildStatus{
-									Status: kpackcore.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: kpackcore.Conditions{
+										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   kpackcore.ConditionSucceeded,
+												Type:   corev1alpha1.ConditionSucceeded,
 												Status: corev1.ConditionTrue,
 											},
 										},
 									},
 									PodName: "build-name-build-pod",
 									BuildMetadata: v1alpha1.BuildpackMetadataList{{
-										Key:     "io.buildpack.executed",
+										Id:      "io.buildpack.executed",
 										Version: "1.1",
 									}},
 									LatestImage: identifier,
@@ -487,17 +487,17 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionSucceeded,
+											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
 								},
 								BuildMetadata: v1alpha1.BuildpackMetadataList{{
-									Key:     "io.buildpack.previouslyfetched",
+									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
 								PodName:     "build-name-build-pod",
@@ -543,17 +543,17 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionSucceeded,
+											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
 										},
 									},
 								},
 								BuildMetadata: v1alpha1.BuildpackMetadataList{{
-									Key:     "io.buildpack.previouslyfetched",
+									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
 								PodName:     "build-name-build-pod",
@@ -630,11 +630,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
 								Status: v1alpha1.BuildStatus{
-									Status: kpackcore.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: kpackcore.Conditions{
+										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   kpackcore.ConditionSucceeded,
+												Type:   corev1alpha1.ConditionSucceeded,
 												Status: corev1.ConditionFalse,
 											},
 										},
@@ -674,11 +674,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
 							Status: v1alpha1.BuildStatus{
-								Status: kpackcore.Status{
+								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
-									Conditions: kpackcore.Conditions{
+									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   kpackcore.ConditionSucceeded,
+											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionFalse,
 										},
 									},

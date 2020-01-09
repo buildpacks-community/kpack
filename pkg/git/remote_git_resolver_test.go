@@ -42,10 +42,10 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:     repo.URL,
-						Commit:  nonHEADCommit,
-						SubPath: "/foo/bar",
-						Type:    v1alpha1.Commit,
+						URL:      repo.URL,
+						Revision: nonHEADCommit,
+						SubPath:  "/foo/bar",
+						Type:     v1alpha1.Commit,
 					},
 				})
 			})
@@ -68,10 +68,10 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:     repo.URL,
-						Commit:  fixtureHEADMasterCommit,
-						Type:    v1alpha1.Branch,
-						SubPath: "/foo/bar",
+						URL:      repo.URL,
+						Revision: fixtureHEADMasterCommit,
+						Type:     v1alpha1.Branch,
+						SubPath:  "/foo/bar",
 					},
 				})
 			})
@@ -94,10 +94,10 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:     repo.URL,
-						Commit:  tagCommit,
-						Type:    v1alpha1.Tag,
-						SubPath: "/foo/bar",
+						URL:      repo.URL,
+						Revision: tagCommit,
+						Type:     v1alpha1.Tag,
+						SubPath:  "/foo/bar",
 					},
 				})
 			})
@@ -123,10 +123,10 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:     repo.URL,
-						Commit:  tag,
-						Type:    v1alpha1.Unknown,
-						SubPath: "/foo/bar",
+						URL:      repo.URL,
+						Revision: tag,
+						Type:     v1alpha1.Unknown,
+						SubPath:  "/foo/bar",
 					},
 				})
 			})
