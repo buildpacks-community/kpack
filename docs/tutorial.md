@@ -119,7 +119,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     ```
 
    - Make sure to replace `<DOCKER-IMAGE>` with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
-   - Make sure to replace `<YOUR-GITHUB-URL>` with the publicly accessible github url to your fork from step #3
+   - Make sure to replace `<YOUR-BULIDPACK-SAMPLE-APP-FORK>` with the publicly accessible github url to your fork from step #3
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
    Apply that image to the cluster 
