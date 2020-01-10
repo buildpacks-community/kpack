@@ -1,6 +1,8 @@
 package k8sdockercreds
 
 import (
+	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
+
 	"encoding/base64"
 	"fmt"
 	"testing"
