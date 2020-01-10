@@ -50,7 +50,7 @@ func testStoreValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(store, apis.ErrMissingField("sources").ViaField("spec"))
 		})
 
-		it("sources should contain a fully qualified digest", func() {
+		it("sources should contain a valid image", func() {
 			store.Spec.Sources = append(store.Spec.Sources, StoreImage{Image: "some-registry.io/store-image-4"})
 			assertValidationError(store, apis.ErrInvalidArrayValue(store.Spec.Sources[3], "sources", 3).ViaField("spec"))
 		})
