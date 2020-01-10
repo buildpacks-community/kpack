@@ -15,7 +15,7 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-openapi/spec v0.0.0-20160808142527-6aced65f8501
 	github.com/gogo/protobuf v1.3.0 // indirect
-	github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp v0.4.0
 	github.com/google/go-containerregistry v0.0.0-20190910142231-b02d448a3705
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
