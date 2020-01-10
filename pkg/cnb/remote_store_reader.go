@@ -32,7 +32,7 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []v1alpha1
 		for id := range layerMetadata {
 			for version, metadata := range layerMetadata[id] {
 				info := v1alpha1.BuildpackInfo{
-					ID:      id,
+					Id:      id,
 					Version: version,
 				}
 

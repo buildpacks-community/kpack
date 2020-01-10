@@ -12,6 +12,7 @@ const ClusterBuilderKind = "ClusterBuilder"
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
+// +k8s:openapi-gen=true
 type ClusterBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -23,10 +24,12 @@ type ClusterBuilder struct {
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +k8s:openapi-gen=true
 type ClusterBuilderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
+	// +listType
 	Items []ClusterBuilder `json:"items"`
 }
 

@@ -22,12 +22,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +k8s:openapi-gen=true
 type Image struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -36,6 +38,7 @@ type Image struct {
 	Status ImageStatus `json:"status,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImageSpec struct {
 	Tag                      string                 `json:"tag"`
 	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
@@ -48,6 +51,7 @@ type ImageSpec struct {
 	Build                    *ImageBuild            `json:"build,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImageBuilder struct {
 	metav1.TypeMeta `json:",inline"`
 	Name            string `json:"name"`
@@ -60,13 +64,16 @@ const (
 	BuildNumber ImageTaggingStrategy = "BuildNumber"
 )
 
+// +k8s:openapi-gen=true
 type ImageBuild struct {
+	// +listType
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImageStatus struct {
-	duckv1alpha1.Status `json:",inline"`
+	corev1alpha1.Status `json:",inline"`
 	LatestBuildRef      string `json:"latestBuildRef,omitempty"`
 	LatestImage         string `json:"latestImage,omitempty"`
 	LatestStack         string `json:"latestStack,omitempty"`
@@ -76,10 +83,12 @@ type ImageStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +k8s:openapi-gen=true
 type ImageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
+	// +listType
 	Items []Image `json:"items"`
 }
 
@@ -91,4 +100,4 @@ func (i *Image) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: i.Namespace, Name: i.Name}
 }
 
-const ConditionBuilderReady duckv1alpha1.ConditionType = "BuilderReady"
+const ConditionBuilderReady corev1alpha1.ConditionType = "BuilderReady"

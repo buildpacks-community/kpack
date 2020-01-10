@@ -25,3 +25,9 @@ bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   "build:v1alpha1 experimental:v1alpha1" \
   --output-base "${TMP_DIR}/src" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.go.txt
+
+bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy" \
+  github.com/pivotal/kpack/pkg/client github.com/pivotal/kpack/pkg/apis \
+  "core:v1alpha1" \
+  --output-base "${TMP_DIR}/src" \
+  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.go.txt

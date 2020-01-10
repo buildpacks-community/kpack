@@ -4,20 +4,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func (cb *CustomBuilderStatus) ErrorCreate(err error) {
 	cb.BuilderStatus = v1alpha1.BuilderStatus{
-		Status: duckv1alpha1.Status{
-			Conditions: duckv1alpha1.Conditions{
+		Status: corev1alpha1.Status{
+			Conditions: corev1alpha1.Conditions{
 				{
-					Type:               duckv1alpha1.ConditionReady,
+					Type:               corev1alpha1.ConditionReady,
 					Status:             corev1.ConditionFalse,
-					LastTransitionTime: apis.VolatileTime{Inner: v1.Now()},
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
 					Message:            err.Error(),
 				},
 			},

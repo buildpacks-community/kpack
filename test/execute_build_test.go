@@ -28,6 +28,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -196,7 +197,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.nodejs",
+										Id: "org.cloudfoundry.nodejs",
 									},
 								},
 							},
@@ -205,18 +206,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.openjdk",
+										Id: "org.cloudfoundry.openjdk",
 									},
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.buildsystem",
+										Id: "org.cloudfoundry.buildsystem",
 									},
 									Optional: true,
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.jvmapplication",
+										Id: "org.cloudfoundry.jvmapplication",
 									},
 								},
 							},
@@ -242,7 +243,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.nodejs",
+										Id: "org.cloudfoundry.nodejs",
 									},
 								},
 							},
@@ -251,18 +252,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.openjdk",
+										Id: "org.cloudfoundry.openjdk",
 									},
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.buildsystem",
+										Id: "org.cloudfoundry.buildsystem",
 									},
 									Optional: true,
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										ID: "org.cloudfoundry.jvmapplication",
+										Id: "org.cloudfoundry.jvmapplication",
 									},
 								},
 							},
@@ -447,7 +448,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 	rebaseBuildBuildSpec := build.Spec.DeepCopy()
 	rebaseBuildBuildSpec.LastBuild = &v1alpha1.LastBuild{
 		Image:   build.Status.LatestImage,
-		StackID: build.Status.Stack.ID,
+		StackId: build.Status.Stack.ID,
 	}
 
 	_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
@@ -465,7 +466,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
 
-		return build.Status.GetCondition(duckv1alpha1.ConditionSucceeded).IsTrue()
+		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
 	}, 5*time.Second, 1*time.Minute)
 }
 

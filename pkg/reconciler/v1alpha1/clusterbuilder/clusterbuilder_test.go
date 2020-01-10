@@ -12,11 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/clusterbuilder"
@@ -82,7 +82,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					Buildpacks: v1alpha1.BuildpackMetadataList{
 						{
-							ID:      "buildpack.version",
+							Id:      "buildpack.version",
 							Version: "version",
 						},
 					},
@@ -93,18 +93,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						ObjectMeta: clusterBuilder.ObjectMeta,
 						Spec:       clusterBuilder.Spec,
 						Status: v1alpha1.BuilderStatus{
-							Status: duckv1alpha1.Status{
+							Status: corev1alpha1.Status{
 								ObservedGeneration: 1,
-								Conditions: duckv1alpha1.Conditions{
+								Conditions: corev1alpha1.Conditions{
 									{
-										Type:   duckv1alpha1.ConditionReady,
+										Type:   corev1alpha1.ConditionReady,
 										Status: corev1.ConditionTrue,
 									},
 								},
 							},
 							BuilderMetadata: []v1alpha1.BuildpackMetadata{
 								{
-									ID:      "buildpack.version",
+									Id:      "buildpack.version",
 									Version: "version",
 								},
 							},
@@ -136,18 +136,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: clusterBuilder.ObjectMeta,
 									Spec:       clusterBuilder.Spec,
 									Status: v1alpha1.BuilderStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: 1,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 											},
 										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
-												ID:      "buildpack.version",
+												Id:      "buildpack.version",
 												Version: "version",
 											},
 										},
@@ -172,18 +172,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: clusterBuilder.ObjectMeta,
 									Spec:       clusterBuilder.Spec,
 									Status: v1alpha1.BuilderStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: 1,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 											},
 										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
-												ID:      "buildpack.version",
+												Id:      "buildpack.version",
 												Version: "version",
 											},
 										},
@@ -208,18 +208,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: clusterBuilder.ObjectMeta,
 									Spec:       clusterBuilder.Spec,
 									Status: v1alpha1.BuilderStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: 1,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 											},
 										},
 										BuilderMetadata: []v1alpha1.BuildpackMetadata{
 											{
-												ID:      "buildpack.version",
+												Id:      "buildpack.version",
 												Version: "version",
 											},
 										},
@@ -235,18 +235,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				it("does not update the status with no status change", func() {
 					clusterBuilder.Status = v1alpha1.BuilderStatus{
-						Status: duckv1alpha1.Status{
+						Status: corev1alpha1.Status{
 							ObservedGeneration: clusterBuilder.Generation,
-							Conditions: duckv1alpha1.Conditions{
+							Conditions: corev1alpha1.Conditions{
 								{
-									Type:   duckv1alpha1.ConditionReady,
+									Type:   corev1alpha1.ConditionReady,
 									Status: corev1.ConditionTrue,
 								},
 							},
 						},
 						BuilderMetadata: []v1alpha1.BuildpackMetadata{
 							{
-								ID:      "buildpack.version",
+								Id:      "buildpack.version",
 								Version: "version",
 							},
 						},
@@ -275,11 +275,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: clusterBuilder.ObjectMeta,
 									Spec:       clusterBuilder.Spec,
 									Status: v1alpha1.BuilderStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: 1,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:    duckv1alpha1.ConditionReady,
+													Type:    corev1alpha1.ConditionReady,
 													Status:  corev1.ConditionFalse,
 													Message: "unavailable metadata",
 												},

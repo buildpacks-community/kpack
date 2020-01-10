@@ -74,7 +74,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 
 				require.Len(t, builderRecord.Buildpacks, 1)
-				assert.Equal(t, builderRecord.Buildpacks[0].ID, "test.id")
+				assert.Equal(t, builderRecord.Buildpacks[0].Id, "test.id")
 				assert.Equal(t, builderRecord.Buildpacks[0].Version, "1.2.3")
 
 				digest, err := builderImage.Digest()

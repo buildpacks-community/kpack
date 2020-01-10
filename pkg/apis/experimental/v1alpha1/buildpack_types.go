@@ -4,20 +4,24 @@ import "fmt"
 
 type Order []OrderEntry
 
+// +k8s:openapi-gen=true
 type OrderEntry struct {
+	// +listType
 	Group []BuildpackRef `json:"group"`
 }
 
+// +k8s:openapi-gen=true
 type BuildpackRef struct {
-	BuildpackInfo
-	Optional bool `json:"optional,omitempty"`
+	BuildpackInfo `json:",inline"`
+	Optional      bool `json:"optional,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type BuildpackInfo struct {
-	ID      string `json:"id"`
+	Id      string `json:"id"`
 	Version string `json:"version,omitempty"`
 }
 
 func (b BuildpackInfo) String() string {
-	return fmt.Sprintf("%s@%s", b.ID, b.Version)
+	return fmt.Sprintf("%s@%s", b.Id, b.Version)
 }

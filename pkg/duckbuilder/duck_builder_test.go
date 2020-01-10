@@ -1,14 +1,15 @@
 package duckbuilder
 
 import (
+	"testing"
+
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"testing"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestDuckBuilder(t *testing.T) {
@@ -28,18 +29,18 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Status: v1alpha1.BuilderStatus{
-			Status: duckv1alpha1.Status{
+			Status: corev1alpha1.Status{
 				ObservedGeneration: 1,
-				Conditions: duckv1alpha1.Conditions{
+				Conditions: corev1alpha1.Conditions{
 					{
-						Type:   duckv1alpha1.ConditionReady,
+						Type:   corev1alpha1.ConditionReady,
 						Status: corev1.ConditionTrue,
 					},
 				},
 			},
 			BuilderMetadata: v1alpha1.BuildpackMetadataList{
 				{
-					ID:      "test.builder",
+					Id:      "test.builder",
 					Version: "test.version",
 				},
 			},
@@ -63,9 +64,9 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("not ready when not ready", func() {
-			duckBuilder.Status.Conditions = duckv1alpha1.Conditions{
+			duckBuilder.Status.Conditions = corev1alpha1.Conditions{
 				{
-					Type:   duckv1alpha1.ConditionReady,
+					Type:   corev1alpha1.ConditionReady,
 					Status: corev1.ConditionUnknown,
 				},
 			}
@@ -94,7 +95,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	it("BuildpackMetadata provides buildpack metadata", func() {
 		require.Equal(t, v1alpha1.BuildpackMetadataList{
 			{
-				ID:      "test.builder",
+				Id:      "test.builder",
 				Version: "test.version",
 			},
 		}, duckBuilder.BuildpackMetadata())

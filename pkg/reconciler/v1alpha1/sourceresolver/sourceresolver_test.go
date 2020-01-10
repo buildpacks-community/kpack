@@ -11,11 +11,11 @@ import (
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/sourceresolver"
@@ -111,7 +111,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: sourceResolver.ObjectMeta,
 								Spec:       sourceResolver.Spec,
 								Status: v1alpha1.SourceResolverStatus{
-									Status: duckv1alpha1.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: 2,
 										Conditions:         sourceResolver.Status.Conditions,
 									},
@@ -160,11 +160,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: sourceResolver.ObjectMeta,
 									Spec:       sourceResolver.Spec,
 									Status: v1alpha1.SourceResolverStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: originalGeneration,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 												{
@@ -218,11 +218,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: sourceResolver.ObjectMeta,
 									Spec:       sourceResolver.Spec,
 									Status: v1alpha1.SourceResolverStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: originalGeneration,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 												{
@@ -275,11 +275,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 									ObjectMeta: sourceResolver.ObjectMeta,
 									Spec:       sourceResolver.Spec,
 									Status: v1alpha1.SourceResolverStatus{
-										Status: duckv1alpha1.Status{
+										Status: corev1alpha1.Status{
 											ObservedGeneration: 1,
-											Conditions: duckv1alpha1.Conditions{
+											Conditions: corev1alpha1.Conditions{
 												{
-													Type:   duckv1alpha1.ConditionReady,
+													Type:   corev1alpha1.ConditionReady,
 													Status: corev1.ConditionTrue,
 												},
 												{
@@ -363,11 +363,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: sourceResolver.ObjectMeta,
 								Spec:       sourceResolver.Spec,
 								Status: v1alpha1.SourceResolverStatus{
-									Status: duckv1alpha1.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: duckv1alpha1.Conditions{
+										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
+												Type:   corev1alpha1.ConditionReady,
 												Status: corev1.ConditionTrue,
 											},
 											{
@@ -428,11 +428,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: sourceResolver.ObjectMeta,
 								Spec:       sourceResolver.Spec,
 								Status: v1alpha1.SourceResolverStatus{
-									Status: duckv1alpha1.Status{
+									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: duckv1alpha1.Conditions{
+										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   duckv1alpha1.ConditionReady,
+												Type:   corev1alpha1.ConditionReady,
 												Status: corev1.ConditionTrue,
 											},
 											{
