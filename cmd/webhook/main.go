@@ -60,6 +60,7 @@ func main() {
 		v1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
 		v1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
 		v1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
+		v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
 	}
 
 	admissionControllers := map[string]webhook.AdmissionController{
