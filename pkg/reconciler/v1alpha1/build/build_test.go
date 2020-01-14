@@ -16,11 +16,11 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -717,16 +717,12 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 type testPodGenerator struct {
 }
 
-func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
+func (testPodGenerator) Generate(build buildpod.BuildPodable) (*corev1.Pod, error) {
 	return &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      build.PodName(),
-			Namespace: build.Namespace,
-			Labels:    build.Labels,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(build),
-			},
+			Name:      build.GetName() + "-build-pod",
+			Namespace: build.GetNamespace(),
 		},
 		Spec: corev1.PodSpec{
 			InitContainers: []corev1.Container{
@@ -740,7 +736,7 @@ func (testPodGenerator) Generate(build *v1alpha1.Build) (*corev1.Pod, error) {
 					Name: "step-3",
 				},
 			},
-			ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
+			ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		},
 	}, nil
 }

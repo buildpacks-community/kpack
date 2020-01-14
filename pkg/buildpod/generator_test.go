@@ -7,16 +7,16 @@ import (
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
@@ -97,31 +97,55 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
-
-		builder := &duckbuilder.DuckBuilder{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       v1alpha1.BuilderKind,
-				APIVersion: "v1alpha1",
-			},
-			Status: v1alpha1.BuilderStatus{
-				LatestImage: "some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4",
+		builderPullSecrets := []v1.LocalObjectReference{
+			{
+				Name: "some-builder-pull-secrets",
 			},
 		}
 
+		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
+
 		it("returns pod config with secrets on build's service account", func() {
 			secretRef := registry.SecretRef{
+				ServiceAccount:   serviceAccountName,
 				Namespace:        namespace,
-				ImagePullSecrets: builder.Spec.ImagePullSecrets,
+				ImagePullSecrets: builderPullSecrets,
 			}
 			keychain := &registryfakes.FakeKeychain{}
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
 			image := randomImage(t)
-			image, _ = imagehelpers.SetStringLabel(image, metadata.StackMetadataLabel, "some.stack.id")
-			image, _ = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, `{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
-			image, _ = imagehelpers.SetEnv(image, "CNB_USER_ID", "1234")
-			image, _ = imagehelpers.SetEnv(image, "CNB_GROUP_ID", "5678")
+			var err error
+			image, err = imagehelpers.SetStringLabel(image, metadata.StackMetadataLabel, "some.stack.id")
+			require.NoError(t, err)
+
+			image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+				`{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
+			require.NoError(t, err)
+
+			image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+				`{
+  "stack": {
+    "runImage": {
+      "image": "some-registry.io/run-image"
+    }
+  },
+  "lifecycle": {
+    "version": "0.9.0",
+    "api": {
+      "buildpack": "0.7",
+      "platform": "0.5"
+    }
+  }
+}`)
+			require.NoError(t, err)
+
+			image, err = imagehelpers.SetEnv(image, "CNB_USER_ID", "1234")
+			require.NoError(t, err)
+
+			image, err = imagehelpers.SetEnv(image, "CNB_GROUP_ID", "5678")
+			require.NoError(t, err)
+
 			imageFetcher.AddImage("some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4", image, keychain)
 
 			buildPodConfig := v1alpha1.BuildPodImages{}
@@ -132,58 +156,33 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				ImageFetcher:    imageFetcher,
 			}
 
-			build := &v1alpha1.Build{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "simple-build",
-					Namespace: namespace,
-				},
-				Spec: v1alpha1.BuildSpec{
-					Tags: []string{
-						"builderImage/name",
-						"additional/names",
-					},
-					Builder:        builder.BuildBuilderSpec(),
-					ServiceAccount: serviceAccountName,
-					Source: v1alpha1.SourceConfig{
-						Git: &v1alpha1.Git{
-							URL:      "http://www.google.com",
-							Revision: "master",
-						},
-					},
-					CacheName: "some-cache-name",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "ENV",
-							Value: "NAME",
-						},
-					},
-					Resources: corev1.ResourceRequirements{
-						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("256M"),
-						},
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("1"),
-							corev1.ResourceMemory: resource.MustParse("128M"),
-						},
-					},
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: v1alpha1.BuildBuilderSpec{
+					Image:            "some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4",
+					ImagePullSecrets: builderPullSecrets,
 				},
 			}
+
 			pod, err := generator.Generate(build)
 			require.NoError(t, err)
+			assert.NotNil(t, pod)
 
-			expectedPod, err := build.BuildPod(buildPodConfig, []corev1.Secret{
-				*gitSecret,
-				*dockerSecret,
-			}, v1alpha1.BuildPodBuilderConfig{
-				BuilderSpec: builder.BuildBuilderSpec(),
-				StackID:     "some.stack.id",
-				RunImage:    "some-registry.io/run-image",
-				Uid:         1234,
-				Gid:         5678,
-			})
-			require.NoError(t, err)
-			require.Equal(t, expectedPod, pod)
+			assert.Equal(t, []buildPodCall{{
+				BuildPodImages: buildPodConfig,
+				Secrets: []corev1.Secret{
+					*gitSecret,
+					*dockerSecret,
+				},
+				BuildPodBuilderConfig: v1alpha1.BuildPodBuilderConfig{
+					StackID:     "some.stack.id",
+					RunImage:    "some-registry.io/run-image",
+					Uid:         1234,
+					Gid:         5678,
+					PlatformAPI: "0.5",
+				},
+			}}, build.buildPodCalls)
 		})
 	})
 }
@@ -192,4 +191,42 @@ func randomImage(t *testing.T) ggcrv1.Image {
 	image, err := random.Image(5, 10)
 	require.NoError(t, err)
 	return image
+}
+
+type testBuildPodable struct {
+	buildBuilderSpec v1alpha1.BuildBuilderSpec
+	serviceAccount   string
+	namespace        string
+	buildPodCalls    []buildPodCall
+}
+
+type buildPodCall struct {
+	BuildPodImages        v1alpha1.BuildPodImages
+	Secrets               []corev1.Secret
+	BuildPodBuilderConfig v1alpha1.BuildPodBuilderConfig
+}
+
+func (tb *testBuildPodable) GetName() string {
+	panic("should not be used in this test")
+}
+
+func (tb *testBuildPodable) GetNamespace() string {
+	return tb.namespace
+}
+
+func (tb *testBuildPodable) ServiceAccount() string {
+	return tb.serviceAccount
+}
+
+func (tb *testBuildPodable) BuilderSpec() v1alpha1.BuildBuilderSpec {
+	return tb.buildBuilderSpec
+}
+
+func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []corev1.Secret, config v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error) {
+	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
+		BuildPodImages:        images,
+		Secrets:               secrets,
+		BuildPodBuilderConfig: config,
+	})
+	return &corev1.Pod{}, nil
 }

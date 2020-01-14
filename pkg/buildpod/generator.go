@@ -34,7 +34,16 @@ type Generator struct {
 	ImageFetcher    ImageFetcher
 }
 
-func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
+type BuildPodable interface {
+	GetName() string
+	GetNamespace() string
+	ServiceAccount() string
+	BuilderSpec() v1alpha1.BuildBuilderSpec
+
+	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
+}
+
+func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	secrets, err := g.fetchBuildSecrets(build)
 	if err != nil {
 		return nil, err
@@ -48,14 +57,14 @@ func (g *Generator) Generate(build *v1alpha1.Build) (*v1.Pod, error) {
 	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig)
 }
 
-func (g *Generator) fetchBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, error) {
+func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, error) {
 	var secrets []corev1.Secret
-	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.Namespace).Get(build.Spec.ServiceAccount, metav1.GetOptions{})
+	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).Get(build.ServiceAccount(), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, secretRef := range serviceAccount.Secrets {
-		secret, err := g.K8sClient.CoreV1().Secrets(build.Namespace).Get(secretRef.Name, metav1.GetOptions{})
+		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(secretRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -64,16 +73,17 @@ func (g *Generator) fetchBuildSecrets(build *v1alpha1.Build) ([]corev1.Secret, e
 	return secrets, nil
 }
 
-func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPodBuilderConfig, error) {
+func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha1.BuildPodBuilderConfig, error) {
 	keychain, err := g.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
-		Namespace:        build.Namespace,
-		ImagePullSecrets: build.Spec.Builder.ImagePullSecrets,
+		Namespace:        build.GetNamespace(),
+		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
+		ServiceAccount:   build.ServiceAccount(),
 	})
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to create builder image keychain")
 	}
 
-	image, _, err := g.ImageFetcher.Fetch(keychain, build.Spec.Builder.Image)
+	image, _, err := g.ImageFetcher.Fetch(keychain, build.BuilderSpec().Image)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
@@ -100,9 +110,9 @@ func (g *Generator) fetchBuilderConfig(build *v1alpha1.Build) (v1alpha1.BuildPod
 	}
 
 	return v1alpha1.BuildPodBuilderConfig{
-		BuilderSpec: build.Spec.Builder,
 		StackID:     stackId,
 		RunImage:    metadata.Stack.RunImage.Image,
+		PlatformAPI: metadata.Lifecycle.API.PlatformVersion,
 		Uid:         uid,
 		Gid:         gid,
 	}, nil
