@@ -3,6 +3,7 @@ package dockercreds
 import (
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pivotal/kpack/pkg/secret"
 	"github.com/pkg/errors"
 )
@@ -22,7 +23,7 @@ func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCr
 			return nil, err
 		}
 
-		dockerCreds[domain] = entry{
+		dockerCreds[domain] = authn.AuthConfig{
 			Username: auth.Username,
 			Password: auth.Password,
 		}
