@@ -109,6 +109,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		subject = RemoteBuilderCreator{
 			RegistryClient: registryClient,
 			LifecycleImage: lifecycleImage,
+			KpackVersion:   "v1.2.3 (git sha: abcdefg123456)",
 		}
 	)
 
@@ -367,7 +368,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   },
   "createdBy": {
     "name": "kpack CustomBuilder",
-    "version": ""
+    "version": "v1.2.3 (git sha: abcdefg123456)"
   },
   "buildpacks": [
     {

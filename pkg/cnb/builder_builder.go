@@ -45,9 +45,10 @@ type BuilderBuilder struct {
 	buildpackLayers   map[expv1alpha1.BuildpackInfo]buildpackLayer
 	cnbUserId         int
 	cnbGroupId        int
+	kpackVersion      string
 }
 
-func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1alpha1.Stack) (*BuilderBuilder, error) {
+func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1alpha1.Stack, kpackVersion string) (*BuilderBuilder, error) {
 	lifecycleMd := LifecycleMetadata{}
 	err := imagehelpers.GetLabel(lifecycleImage, lifecycleMetadataLabel, &lifecycleMd)
 	if err != nil {
@@ -72,6 +73,7 @@ func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1
 		buildpackLayers:   map[expv1alpha1.BuildpackInfo]buildpackLayer{},
 		cnbGroupId:        groupId,
 		cnbUserId:         userId,
+		kpackVersion:      kpackVersion,
 	}, nil
 }
 
@@ -166,7 +168,7 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 			Lifecycle: bb.LifecycleMetadata,
 			CreatedBy: CreatorMetadata{
 				Name:    "kpack CustomBuilder",
-				Version: "",
+				Version: bb.kpackVersion,
 			},
 			Buildpacks: buildpacks,
 		},
