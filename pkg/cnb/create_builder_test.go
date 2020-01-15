@@ -295,6 +295,18 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 			})
 
+			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack3Layer)
+			})
+
+			layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack2Layer)
+			})
+
+			layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
+				assert.Equal(t, layers[index], buildpack1Layer)
+			})
+
 			layerTester.testNextLayer("stack Layer", func(index int) {
 				assertLayerContents(t, layers[index], map[string]content{
 					"/cnb/stack.toml": //language=toml
@@ -309,19 +321,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
-				assert.Equal(t, layers[index], buildpack3Layer)
-			})
-
-			layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
-				assert.Equal(t, layers[index], buildpack2Layer)
-			})
-
-			layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
-				assert.Equal(t, layers[index], buildpack1Layer)
-			})
-
-			layerTester.testNextLayer("stack Layer", func(index int) {
+			layerTester.testNextLayer("order Layer", func(index int) {
 				assert.Equal(t, len(layers)-1, index)
 
 				assertLayerContents(t, layers[index], map[string]content{
