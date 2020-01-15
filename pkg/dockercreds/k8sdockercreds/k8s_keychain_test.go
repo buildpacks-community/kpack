@@ -3,8 +3,6 @@ package k8sdockercreds
 import (
 	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
 
-	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -71,11 +69,10 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			authenticator, err := keychain.Resolve(reg)
 			require.NoError(t, err)
 
-			encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", "annotated-username", "annotated-password")))
-
-			auth, err := authenticator.Authorization()
-			require.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf("Basic %s", encoded), auth)
+			assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+				Username: "annotated-username",
+				Password: "annotated-password",
+			}), authenticator)
 		})
 
 		when("no service account is provided", func() {
@@ -123,11 +120,10 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 				authenticator, err := keychain.Resolve(reg)
 				require.NoError(t, err)
 
-				encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", "annotated-username", "annotated-password")))
-
-				auth, err := authenticator.Authorization()
-				require.NoError(t, err)
-				assert.Equal(t, fmt.Sprintf("Basic %s", encoded), auth)
+				assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+					Username: "annotated-username",
+					Password: "annotated-password",
+				}), authenticator)
 			})
 		})
 
@@ -164,11 +160,13 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			authenticator, err := keychain.Resolve(reg)
 			require.NoError(t, err)
 
-			auth, err := authenticator.Authorization()
+			authConfig, err := authenticator.Authorization()
 			require.NoError(t, err)
 
-			encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", "image-pull-user", "image-pull-password")))
-			assert.Equal(t, fmt.Sprintf("Basic %s", encoded), auth)
+			assert.Equal(t, &authn.AuthConfig{
+				Username: "image-pull-user",
+				Password: "image-pull-password",
+			}, authConfig)
 		})
 
 		it("keychain provides Anonymous auth for no matching credentials", func() {

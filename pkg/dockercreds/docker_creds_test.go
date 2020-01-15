@@ -33,7 +33,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 	when("#Save", func() {
 		it("saves secrets to the provided path in json", func() {
 			creds := DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
 					Password: "testpassword",
@@ -62,7 +62,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 	when("#Append", func() {
 		it("creates a new Dockercreds with both creds appended", func() {
 			creds := DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
 					Password: "testpassword",
@@ -70,7 +70,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			newCreds, err := creds.Append(DockerCreds{
-				"appendedcreds.io": entry{
+				"appendedcreds.io": authn.AuthConfig{
 					Auth:     "AppendedCreds=",
 					Username: "appendedUser",
 					Password: "appendedPassword",
@@ -79,12 +79,12 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
 					Password: "testpassword",
 				},
-				"appendedcreds.io": entry{
+				"appendedcreds.io": authn.AuthConfig{
 					Auth:     "AppendedCreds=",
 					Username: "appendedUser",
 					Password: "appendedPassword",
@@ -94,20 +94,20 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 		it("does not overwrite registries in the appended creds if they already exist", func() {
 			creds := DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth: "dontOverwriteMe=",
 				},
 			}
 
 			newCreds, err := creds.Append(DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth: "ToNotBeOverwritten=",
 				},
 			})
 			require.NoError(t, err)
 
 			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth: "dontOverwriteMe=",
 				},
 			})
@@ -115,20 +115,20 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 		it("does not overwrite registries if they already exist in a different format", func() {
 			creds := DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth: "dontOverwriteMe=",
 				},
 			}
 
 			newCreds, err := creds.Append(DockerCreds{
-				"https://gcr.io": entry{
+				"https://gcr.io": authn.AuthConfig{
 					Auth: "ToNotOverwrite=",
 				},
 			})
 			require.NoError(t, err)
 
 			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": entry{
+				"gcr.io": authn.AuthConfig{
 					Auth: "dontOverwriteMe=",
 				},
 			})
@@ -138,10 +138,10 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 	when("#Resolve", func() {
 		it("returns auth for matching registry", func() {
 			creds := DockerCreds{
-				"non.match": entry{
+				"non.match": authn.AuthConfig{
 					Auth: "no-match=",
 				},
-				"some.reg": entry{
+				"some.reg": authn.AuthConfig{
 					Auth: "match-Auth=",
 				},
 			}
@@ -152,15 +152,17 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			auth, err := creds.Resolve(reference.Context().Registry)
 			require.NoError(t, err)
 
-			assert.Equal(t, Auth("match-Auth="), auth)
+			assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+				Auth: "match-Auth=",
+			}), auth)
 		})
 
 		it("returns auth for matching registry with only username and password", func() {
 			creds := DockerCreds{
-				"non.match": entry{
+				"non.match": authn.AuthConfig{
 					Auth: "no-match=",
 				},
-				"some.reg": entry{
+				"some.reg": authn.AuthConfig{
 					Username: "testusername",
 					Password: "testpassword",
 				},
@@ -172,31 +174,15 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			auth, err := creds.Resolve(reference.Context().Registry)
 			require.NoError(t, err)
 
-			assert.Equal(t, &authn.Basic{Username: "testusername", Password: "testpassword"}, auth)
-		})
-
-		it("returns auth for matching registry with no credentials", func() {
-			creds := DockerCreds{
-				"non.match": entry{
-					Auth: "no-match=",
-				},
-				"some.reg": entry{
-					Auth:     "",
-					Username: "",
-					Password: "",
-				},
-			}
-
-			reference, err := name.ParseReference("some.reg/name", name.WeakValidation)
-			require.NoError(t, err)
-
-			_, err = creds.Resolve(reference.Context().Registry)
-			assert.Error(t, err)
+			assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+				Username: "testusername",
+				Password: "testpassword",
+			}), auth)
 		})
 
 		it("returns Anonymous for no matching registry", func() {
 			creds := DockerCreds{
-				"non.match": entry{
+				"non.match": authn.AuthConfig{
 					Auth: "no-match=",
 				},
 			}

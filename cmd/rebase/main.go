@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/buildpack/imgutil/remote"
-	"github.com/buildpack/lifecycle"
-	"github.com/buildpack/lifecycle/cmd"
+	"github.com/buildpacks/imgutil/remote"
+	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/cmd"
 
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"

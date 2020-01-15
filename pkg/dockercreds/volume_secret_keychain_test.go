@@ -59,10 +59,15 @@ func testVolumeSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 			resolved, err := keychain.Resolve(resource)
 			require.NoError(t, err)
 			require.NotNil(t, resolved)
-			assert.Equal(t, &authn.Basic{
+			authn.FromConfig(authn.AuthConfig{
 				Username: "some-username",
 				Password: "some-password",
-			}, resolved)
+			})
+
+			assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+				Username: "some-username",
+				Password: "some-password",
+			}), resolved)
 		})
 
 		it("returns anonymous auth cannot be found", func() {

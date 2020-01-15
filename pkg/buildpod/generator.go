@@ -3,7 +3,7 @@ package buildpod
 import (
 	"strconv"
 
-	"github.com/buildpack/lifecycle/metadata"
+	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
@@ -88,7 +88,7 @@ func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha1.BuildPodBui
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
-	stackId, err := imagehelpers.GetStringLabel(image, metadata.StackMetadataLabel)
+	stackId, err := imagehelpers.GetStringLabel(image, lifecycle.StackIDLabel)
 	if err != nil {
 		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
 	}

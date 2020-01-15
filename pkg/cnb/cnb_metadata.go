@@ -3,7 +3,7 @@ package cnb
 import (
 	"time"
 
-	"github.com/buildpack/lifecycle/metadata"
+	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -50,7 +50,7 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder FetchableBuilder) (v1a
 		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
-	stackId, err := imagehelpers.GetStringLabel(builderImage, metadata.StackMetadataLabel)
+	stackId, err := imagehelpers.GetStringLabel(builderImage, lifecycle.StackIDLabel)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -115,24 +115,24 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltIma
 type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
-	BuildpackMetadata []metadata.BuildpackMetadata
+	BuildpackMetadata []lifecycle.Buildpack
 	Stack             Stack
 }
 
 func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error) {
-	stackId, err := imagehelpers.GetStringLabel(appImage, metadata.StackMetadataLabel)
+	stackId, err := imagehelpers.GetStringLabel(appImage, lifecycle.StackIDLabel)
 	if err != nil {
 		return BuiltImage{}, nil
 	}
 
-	var buildMetadata metadata.BuildMetadata
-	err = imagehelpers.GetLabel(appImage, metadata.BuildMetadataLabel, &buildMetadata)
+	var buildMetadata lifecycle.BuildMetadata
+	err = imagehelpers.GetLabel(appImage, lifecycle.BuildMetadataLabel, &buildMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	var layerMetadata appLayersMetadata
-	err = imagehelpers.GetLabel(appImage, metadata.LayerMetadataLabel, &layerMetadata)
+	err = imagehelpers.GetLabel(appImage, lifecycle.LayerMetadataLabel, &layerMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}

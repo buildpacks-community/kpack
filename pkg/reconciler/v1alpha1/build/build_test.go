@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	lcyclemd "github.com/buildpack/lifecycle/metadata"
+	"github.com/buildpacks/lifecycle"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -348,7 +348,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			builtImage := cnb.BuiltImage{
 				Identifier:  identifier,
 				CompletedAt: time.Now(),
-				BuildpackMetadata: []lcyclemd.BuildpackMetadata{{
+				BuildpackMetadata: []lifecycle.Buildpack{{
 					ID:      "io.buildpack.executed",
 					Version: "1.1",
 				}},

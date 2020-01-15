@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/authn"
 )
 
 func ParseDockerPullSecrets(path string) (DockerCreds, error) {
@@ -45,7 +47,7 @@ func parseDockerCfg(path string) (DockerCreds, error) {
 
 func parseDockerConfigJson(path string) (DockerCreds, error) {
 	config := dockerConfigJson{
-		Auths: map[string]entry{},
+		Auths: map[string]authn.AuthConfig{},
 	}
 
 	configjsonExists, err := fileExists(path)

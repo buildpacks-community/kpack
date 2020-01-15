@@ -112,9 +112,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		basicAuth, err := auth.Authorization()
 		require.NoError(t, err)
 
-		username, password, ok := parseBasicAuth(basicAuth)
-		require.True(t, ok)
-
 		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: dockerSecret,
@@ -123,8 +120,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			StringData: map[string]string{
-				"username": username,
-				"password": password,
+				"username": basicAuth.Username,
+				"password": basicAuth.Password,
 			},
 			Type: v1.SecretTypeBasicAuth,
 		})

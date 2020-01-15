@@ -3,7 +3,7 @@ package buildpod_test
 import (
 	"testing"
 
-	"github.com/buildpack/lifecycle/metadata"
+	"github.com/buildpacks/lifecycle"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
@@ -116,7 +116,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			image := randomImage(t)
 			var err error
-			image, err = imagehelpers.SetStringLabel(image, metadata.StackMetadataLabel, "some.stack.id")
+			image, err = imagehelpers.SetStringLabel(image, lifecycle.StackIDLabel, "some.stack.id")
 			require.NoError(t, err)
 
 			image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json

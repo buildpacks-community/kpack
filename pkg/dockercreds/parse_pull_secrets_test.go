@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +45,7 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": entry{
+			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testusername",
 				Password: "testpassword",
@@ -69,7 +70,7 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": entry{
+			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testusername",
 				Password: "testpassword",
@@ -105,12 +106,12 @@ func parsePullSecrets(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": entry{
+			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testdockerhub",
 				Password: "testdockerhubusername",
 			},
-			"gcr.io": entry{
+			"gcr.io": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 				Username: "testusername",
 				Password: "testpassword",
