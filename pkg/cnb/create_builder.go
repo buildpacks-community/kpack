@@ -20,6 +20,7 @@ type BuildpackRepository interface {
 type RemoteBuilderCreator struct {
 	RegistryClient RegistryClient
 	LifecycleImage string
+	KpackVersion   string
 }
 
 func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, stack *expv1alpha1.Stack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
@@ -33,7 +34,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	builderBuilder, err := newBuilderBuilder(buildImage, lifecycleImage, stack)
+	builderBuilder, err := newBuilderBuilder(buildImage, lifecycleImage, stack, r.KpackVersion)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}

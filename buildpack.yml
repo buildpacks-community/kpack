@@ -1,3 +1,2 @@
 go:
-  import-path: github.com/pivotal/kpack
   targets: ["./cmd/controller"]

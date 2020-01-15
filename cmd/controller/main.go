@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"knative.dev/pkg/controller"
 
+	"github.com/pivotal/kpack/cmd"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
@@ -128,6 +129,7 @@ func main() {
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient: &registry.Client{},
 		LifecycleImage: *lifecycleImage,
+		KpackVersion:   cmd.Version,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
