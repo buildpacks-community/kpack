@@ -131,7 +131,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error
 		return BuiltImage{}, err
 	}
 
-	var layerMetadata metadata.LayersMetadata
+	var layerMetadata appLayersMetadata
 	err = imagehelpers.GetLabel(appImage, metadata.LayerMetadataLabel, &layerMetadata)
 	if err != nil {
 		return BuiltImage{}, err
@@ -161,4 +161,14 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error
 			ID:       stackId,
 		},
 	}, nil
+}
+
+type appLayersMetadata struct {
+	RunImage runImageAppMetadata `json:"runImage" toml:"run-image"`
+	Stack    StackMetadata       `json:"stack" toml:"stack"`
+}
+
+type runImageAppMetadata struct {
+	TopLayer  string `json:"topLayer" toml:"top-layer"`
+	Reference string `json:"reference" toml:"reference"`
 }

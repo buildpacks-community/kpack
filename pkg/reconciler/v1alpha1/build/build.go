@@ -15,6 +15,7 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -33,7 +34,7 @@ type MetadataRetriever interface {
 }
 
 type PodGenerator interface {
-	Generate(*v1alpha1.Build) (*corev1.Pod, error)
+	Generate(build buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
 func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {

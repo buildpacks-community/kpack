@@ -1,47 +1,46 @@
-package v1alpha1_test
+package v1alpha1
 
 import (
 	"testing"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestRebaseable(t *testing.T) {
-	build := &v1alpha1.Build{
+	build := &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+				BuildReasonAnnotation: BuildReasonStack,
 			},
 		},
 	}
-	require.False(t, build.Rebasable("any.stack"))
+	require.False(t, build.rebasable("any.stack"))
 
-	build = &v1alpha1.Build{
-		Spec: v1alpha1.BuildSpec{
-			LastBuild: &v1alpha1.LastBuild{
+	build = &Build{
+		Spec: BuildSpec{
+			LastBuild: &LastBuild{
 				Image:   "some/run",
 				StackId: "matching.stack",
 			},
 		},
 	}
-	require.False(t, build.Rebasable("matching.stack"))
+	require.False(t, build.rebasable("matching.stack"))
 
-	build = &v1alpha1.Build{
+	build = &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+				BuildReasonAnnotation: BuildReasonStack,
 			},
 		},
-		Spec: v1alpha1.BuildSpec{
-			LastBuild: &v1alpha1.LastBuild{
+		Spec: BuildSpec{
+			LastBuild: &LastBuild{
 				Image:   "some/run",
 				StackId: "matching.stack",
 			},
 		},
-		Status: v1alpha1.BuildStatus{},
+		Status: BuildStatus{},
 	}
-	require.True(t, build.Rebasable("matching.stack"))
+	require.True(t, build.rebasable("matching.stack"))
 
 }
