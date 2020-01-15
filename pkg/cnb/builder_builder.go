@@ -138,10 +138,10 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 				defaultLayer,
 				lifecycleLayer,
 				compatLayer,
-				stackLayer,
 			},
 			buildpackLayers,
 			[]v1.Layer{
+				stackLayer,
 				orderLayer,
 			},
 		)...)
