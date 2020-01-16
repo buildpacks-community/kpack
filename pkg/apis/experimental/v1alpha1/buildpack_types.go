@@ -7,7 +7,7 @@ type Order []OrderEntry
 // +k8s:openapi-gen=true
 type OrderEntry struct {
 	// +listType
-	Group []BuildpackRef `json:"group"`
+	Group []BuildpackRef `json:"group,omitempty"`
 }
 
 // +k8s:openapi-gen=true

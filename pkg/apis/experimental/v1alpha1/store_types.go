@@ -25,12 +25,12 @@ type Store struct {
 // +k8s:openapi-gen=true
 type StoreSpec struct {
 	// +listType
-	Sources []StoreImage `json:"sources"`
+	Sources []StoreImage `json:"sources,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type StoreImage struct {
-	Image string `json:"image"`
+	Image string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -38,18 +38,18 @@ type StoreStatus struct {
 	corev1alpha1.Status `json:",inline"`
 
 	// +listType
-	Buildpacks []StoreBuildpack `json:"buildpacks"`
+	Buildpacks []StoreBuildpack `json:"buildpacks,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type StoreBuildpack struct {
 	BuildpackInfo `json:",inline"`
-	StoreImage    StoreImage `json:"storeImage"`
+	StoreImage    StoreImage `json:"storeImage,omitempty"`
 	// +listType
-	Order  []OrderEntry `json:"order"`
-	DiffId string       `json:"diffId"`
-	Digest string       `json:"digest"`
-	Size   int64        `json:"size"`
+	Order  []OrderEntry `json:"order,omitempty"`
+	DiffId string       `json:"diffId,omitempty"`
+	Digest string       `json:"digest,omitempty"`
+	Size   int64        `json:"size,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

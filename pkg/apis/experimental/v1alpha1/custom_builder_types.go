@@ -24,17 +24,17 @@ type CustomBuilder struct {
 
 // +k8s:openapi-gen=true
 type CustomBuilderSpec struct {
-	Tag   string `json:"tag"`
-	Stack string `json:"stack"`
-	Store string `json:"store"`
+	Tag   string `json:"tag,omitempty"`
+	Stack string `json:"stack,omitempty"`
+	Store string `json:"store,omitempty"`
 	// +listType
-	Order []OrderEntry `json:"order"`
+	Order []OrderEntry `json:"order,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type CustomNamespacedBuilderSpec struct {
 	CustomBuilderSpec `json:",inline"`
-	ServiceAccount    string `json:"serviceAccount"`
+	ServiceAccount    string `json:"serviceAccount,omitempty"`
 }
 
 // +k8s:openapi-gen=true
