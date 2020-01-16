@@ -105,9 +105,10 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 		ObjectMeta: v1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace,
-			Labels: b.labels(map[string]string{
+			Labels: combine(b.Labels, map[string]string{
 				BuildLabel: b.Name,
 			}),
+			Annotations: b.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
@@ -404,9 +405,10 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace,
-			Labels: b.labels(map[string]string{
+			Labels: combine(b.Labels, map[string]string{
 				BuildLabel: b.Name,
 			}),
+			Annotations: b.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
@@ -533,18 +535,6 @@ func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {
 			},
 		}
 	}
-}
-
-func (b *Build) labels(additionalLabels map[string]string) map[string]string {
-	labels := make(map[string]string, len(additionalLabels)+len(b.Labels))
-
-	for k, v := range b.Labels {
-		labels[k] = v
-	}
-	for k, v := range additionalLabels {
-		labels[k] = v
-	}
-	return labels
 }
 
 func args(args ...[]string) []string {

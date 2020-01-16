@@ -95,13 +95,13 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
-			Labels: im.labels(map[string]string{
+			Labels: combine(im.Labels, map[string]string{
 				BuildNumberLabel: buildNumber,
 				ImageLabel:       im.Name,
 			}),
-			Annotations: map[string]string{
+			Annotations: combine(im.Annotations, map[string]string{
 				BuildReasonAnnotation: strings.Join(reasons, ","),
-			},
+			}),
 		},
 		Spec: BuildSpec{
 			Tags:           im.generateTags(buildNumber),
@@ -165,7 +165,7 @@ func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
-			Labels: im.labels(nil),
+			Labels: im.Labels,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -190,7 +190,7 @@ func (im *Image) SourceResolver() *SourceResolver {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
-			Labels: im.labels(nil),
+			Labels: im.Labels,
 		},
 		Spec: SourceResolverSpec{
 			ServiceAccount: im.Spec.ServiceAccount,
@@ -225,16 +225,16 @@ func (im *Image) generateBuildName(buildNumber string) string {
 	return im.Name + "-build-" + buildNumber + "-"
 }
 
-func (im *Image) labels(additionalLabels map[string]string) map[string]string {
-	labels := make(map[string]string, len(additionalLabels)+len(im.Labels))
+func combine(map1, map2 map[string]string) map[string]string {
+	combinedMap := make(map[string]string, len(map1)+len(map2))
 
-	for k, v := range im.Labels {
-		labels[k] = v
+	for k, v := range map1 {
+		combinedMap[k] = v
 	}
-	for k, v := range additionalLabels {
-		labels[k] = v
+	for k, v := range map2 {
+		combinedMap[k] = v
 	}
-	return labels
+	return combinedMap
 }
 
 func (im *Image) disableAdditionalImageNames() bool {
