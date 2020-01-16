@@ -53,6 +53,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Labels: map[string]string{
 				"some/label": "to-pass-through",
 			},
+			Annotations: map[string]string{
+				"some/annotation": "to-pass-through",
+			},
 		},
 		Spec: v1alpha1.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
@@ -137,7 +140,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 	when("BuildPod", func() {
 		when("0.2+ platform api", func() {
-			it("creates a pod with a builder owner reference and build label", func() {
+			it("creates a pod with a builder owner reference and build labels and annotations", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
@@ -147,6 +150,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Labels: map[string]string{
 						"some/label":             "to-pass-through",
 						"build.pivotal.io/build": buildName,
+					},
+					Annotations: map[string]string{
+						"some/annotation": "to-pass-through",
 					},
 					OwnerReferences: []metav1.OwnerReference{
 						*kmeta.NewControllerRef(build),
@@ -632,10 +638,26 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("creating a rebase pod", func() {
 			it("creates a pod just to rebase", func() {
-				build.Annotations = map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack}
+				build.Annotations = map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack, "some/annotation": "to-pass-through"}
 
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
+
+				assert.Equal(t, pod.ObjectMeta, metav1.ObjectMeta{
+					Name:      build.PodName(),
+					Namespace: namespace,
+					Labels: map[string]string{
+						"some/label":             "to-pass-through",
+						"build.pivotal.io/build": buildName,
+					},
+					Annotations: map[string]string{
+						"some/annotation":              "to-pass-through",
+						v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+					},
+					OwnerReferences: []metav1.OwnerReference{
+						*kmeta.NewControllerRef(build),
+					},
+				})
 
 				require.Equal(t, corev1.PodSpec{
 					ServiceAccountName: build.Spec.ServiceAccount,
