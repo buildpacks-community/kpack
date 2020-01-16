@@ -25,7 +25,7 @@ type CustomClusterBuilder struct {
 // +k8s:openapi-gen=true
 type CustomClusterBuilderSpec struct {
 	CustomBuilderSpec `json:",inline"`
-	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef"`
+	ServiceAccountRef corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
