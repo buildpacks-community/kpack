@@ -1,9 +1,0 @@
-#@data/values
----
-controller_image: gcr.io/controller
-webhook_image: gcr.io/webhook
-build_init_image: gcr.io/build-init
-rebase_image: gcr.io/rebase
-completion_image: gcr.io/completion
-lifecycle_image: gcr.io/lifecycle
-version: dev

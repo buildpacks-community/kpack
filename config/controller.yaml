@@ -19,13 +19,13 @@ spec:
       serviceAccountName: controller
       containers:
       - name: controller
-        image: #@ data.values.controller_image
+        image: #@ data.values.controller.image
         env:
         - name: BUILD_INIT_IMAGE
-          value: #@ data.values.build_init_image
+          value: #@ data.values.build_init.image
         - name: REBASE_IMAGE
-          value: #@ data.values.rebase_image
+          value: #@ data.values.rebase.image
         - name: COMPLETION_IMAGE
-          value: #@ data.values.completion_image
+          value: #@ data.values.completion.image
         - name: LIFECYCLE_IMAGE
-          value: #@ data.values.lifecycle_image
+          value: #@ data.values.lifecycle.image

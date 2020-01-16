@@ -1,0 +1,15 @@
+#@data/values
+---
+controller:
+  image: ""
+webhook:
+  image: ""
+build_init:
+  image: ""
+rebase:
+  image: ""
+completion:
+  image: ""
+lifecycle:
+  image: ""
+version: dev

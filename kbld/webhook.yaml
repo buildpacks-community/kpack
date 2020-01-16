@@ -33,9 +33,26 @@ spec:
       serviceAccountName: webhook
       containers:
       - name: webhook
-        image: #@ data.values.webhook.image
+        image: webhook_image
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: webhook_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/wehbook"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: webhook_image
+  newImage: gcr.io/cf-build-service-public/testing/webhook

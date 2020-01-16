@@ -1,0 +1,95 @@
+controller:
+  image: controller_image
+webhook:
+  image: webhook_image
+build_init:
+  image: build_init_image
+rebase:
+  image: rebase_image
+completion:
+  image: completion_image
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: webhook_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/wehbook"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: webhook_image
+  newImage: gcr.io/cf-build-service-public/testing/webhook
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: controller_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/controller"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: controller_image
+  newImage: gcr.io/cf-build-service-public/testing/controller
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: build_init_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/build-init"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: build_init_image
+  newImage: gcr.io/cf-build-service-public/testing/build_init
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: completion_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/completion"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: completion_image
+  newImage: gcr.io/cf-build-service-public/testing/completion
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: rebase_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/rebase"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: rebase_image
+  newImage: gcr.io/cf-build-service-public/testing/rebase

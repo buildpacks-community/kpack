@@ -1,0 +1,125 @@
+#@ load("@ytt:data", "data")
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kpack-controller
+  namespace: kpack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kpack-controller
+  template:
+    metadata:
+      labels:
+        app: kpack-controller
+        version: "dev"
+    spec:
+      serviceAccountName: controller
+      containers:
+      - name: controller
+        image: controller_image
+        env:
+        - name: BUILD_INIT_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: image-map
+              key: "build_init.image"
+        - name: REBASE_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: image-map
+              key: "rebase.image"
+        - name: COMPLETION_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: image-map
+              key: "completion.image"
+        - name: LIFECYCLE_IMAGE
+            configMapKeyRef:
+              name: image-map
+              key: "lifecycle.image"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: image-map
+  namespace: kpack
+data:
+  build_init:
+    image: build_init_image
+  rebase:
+    image: rebase_image
+  completion:
+    image: completion_image
+  lifecycle:
+    image: #@ data.values.lifecycle.image
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: controller_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/controller"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: controller_image
+  newImage: gcr.io/cf-build-service-public/testing/controller
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: build_init_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/build-init"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: build_init_image
+  newImage: gcr.io/cf-build-service-public/testing/build_init
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: completion_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/completion"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: completion_image
+  newImage: gcr.io/cf-build-service-public/testing/completion
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Sources
+sources:
+- image: rebase_image
+  path: ./
+  pack:
+    build:
+      builder: cloudfoundry/cnb:bionic
+      rawOptions:
+      - "-e BP_GO_TARGETS=./cmd/rebase"
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: ImageDestinations
+destinations:
+- image: rebase_image
+  newImage: gcr.io/cf-build-service-public/testing/rebase

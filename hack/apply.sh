@@ -15,4 +15,6 @@ TMP_DIR="$(mktemp -d)"
 
 compile $1 ${TMP_DIR}/out.yaml
 
+echo ${TMP_DIR}/out.yaml
+
 kubectl apply -f ${TMP_DIR}/out.yaml
