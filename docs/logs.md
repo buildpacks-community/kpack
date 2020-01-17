@@ -23,4 +23,4 @@ To tail logs from an image in a different namespace
 logs -image <image-name> -namespace <namespace>
 ```
 
-> The log utility will not exit when the build finishes.  
+> Note: The log utility will not exit when the build finishes.  
