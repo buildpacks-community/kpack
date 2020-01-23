@@ -84,6 +84,19 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	build = build.DeepCopy()
 	build.SetDefaults(ctx)
 
+	reconcileErr := c.reconcile(build)
+	if reconcileErr != nil {
+		build.Status.Error(reconcileErr)
+	}
+
+	err = c.updateStatus(build)
+	if err != nil {
+		return err
+	}
+	return reconcileErr
+}
+
+func (c *Reconciler) reconcile(build *v1alpha1.Build) error {
 	if build.Finished() {
 		return nil
 	}
@@ -109,24 +122,22 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	build.Status.StepStates = stepStates(pod)
 	build.Status.StepsCompleted = stepCompleted(pod)
 	build.Status.Conditions = conditionForPod(pod)
-	build.Status.ObservedGeneration = build.Generation
-
-	return c.updateStatus(build)
+	return nil
 }
 
 func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
 	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
-	} else if k8s_errors.IsNotFound(err) {
-		podConfig, err := c.PodGenerator.Generate(build)
-		if err != nil {
-			return nil, err
-		}
-		return c.K8sClient.CoreV1().Pods(build.Namespace).Create(podConfig)
+	} else if !k8s_errors.IsNotFound(err) {
+		return pod, nil
 	}
 
-	return pod, nil
+	podConfig, err := c.PodGenerator.Generate(build)
+	if err != nil {
+		return nil, controller.NewPermanentError(err)
+	}
+	return c.K8sClient.CoreV1().Pods(build.Namespace).Create(podConfig)
 }
 
 func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
@@ -178,6 +189,7 @@ func stepCompleted(pod *corev1.Pod) []string {
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
+	desired.Status.ObservedGeneration = desired.Generation
 	original, err := c.Lister.Builds(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err

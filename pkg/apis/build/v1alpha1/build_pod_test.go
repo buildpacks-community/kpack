@@ -636,6 +636,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("0.3+ platform api", func() {
+			buildPodBuilderConfig.PlatformAPI = "0.3"
+
+			it("returns an error", func() {
+				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.Error(t, err, "incompatible builder platform API version 0.3")
+			})
+		})
+
 		when("creating a rebase pod", func() {
 			it("creates a pod just to rebase", func() {
 				build.Annotations = map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack, "some/annotation": "to-pass-through"}

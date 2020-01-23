@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,6 +83,10 @@ var (
 )
 
 func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig) (*corev1.Pod, error) {
+	if bc.unsupported() {
+		return nil, errors.Errorf("incompatible builder platform API version: %s", bc.PlatformAPI)
+	}
+
 	if b.rebasable(bc.StackID) {
 		return b.rebasePod(secrets, config, bc)
 	}
@@ -515,6 +520,10 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 
 func (bc *BuildPodBuilderConfig) legacy() bool {
 	return bc.PlatformAPI == "0.1"
+}
+
+func (bc *BuildPodBuilderConfig) unsupported() bool {
+	return bc.PlatformAPI != "0.1" && bc.PlatformAPI != "0.2"
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {

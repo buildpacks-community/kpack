@@ -1,6 +1,7 @@
 package build_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -45,9 +46,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	var (
 		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
+		podGenerator          = &testPodGenerator{}
 	)
-
-	podGenerator := &testPodGenerator{}
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
@@ -247,6 +247,38 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					buildPod,
 				},
 				WantErr: false,
+			})
+		})
+
+		it("saves error creating build to status", func() {
+			podGenerator.returnErr = errors.New("display me in the status")
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionSucceeded,
+											Status:  corev1.ConditionFalse,
+											Message: "display me in the status",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			})
 		})
 
@@ -715,9 +747,14 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 }
 
 type testPodGenerator struct {
+	returnErr error
 }
 
-func (testPodGenerator) Generate(build buildpod.BuildPodable) (*corev1.Pod, error) {
+func (tpg testPodGenerator) Generate(build buildpod.BuildPodable) (*corev1.Pod, error) {
+	if tpg.returnErr != nil {
+		return nil, tpg.returnErr
+	}
+
 	return &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
