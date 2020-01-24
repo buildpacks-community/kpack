@@ -27,7 +27,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
       password: <password>
     ```
    
-   > Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `index.docker.io`. 
+   > Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. 
    For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON).
    
    Your secret configuration should look something like this:
@@ -38,7 +38,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    metadata:
      name: tutorial-registry-credentials
      annotations:
-       build.pivotal.io/docker: index.docker.io
+       build.pivotal.io/docker: https://index.docker.io/v1/
    type: kubernetes.io/basic-auth
    stringData:
      username: sample-username
@@ -67,7 +67,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    Apply that credential to the cluster 
    
     ```bash
-   kubectl apply -f <name-of-secret-file.yaml>
+   kubectl apply -f secret.yaml
     ```
    
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md) 
@@ -86,18 +86,16 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     Apply that service account to the cluster 
    
      ```
-     kubectl apply -f <name-of-service-account-file.yaml>
+     kubectl apply -f service-account.yaml
      ```
 
-1. Fork the buildpacks sample app
-    
-    Navigate to https://github.com/buildpack/sample-java-app and fork the repo to your account.
-    
-    You will use this fork to build an app with kpack and watch it update when pushes are made to your fork.   
+1. Apply a kpack image configuration 
 
-1. Apply kpack image configuration 
-
-    An image configuration is the specification for an image that kpack should build and manage. For more info check out the image documentation. We will create a sample image that builds with the default builder setup in the [installing documentation](./install.md).      
+    An image configuration is the specification for an image that kpack should build and manage. 
+    
+    We will create a sample image that builds with the default builder setup in the [installing documentation](./install.md).
+    
+    The example included here utilizes the [Spring Pet Clinic sample app](https://github.com/spring-projects/spring-petclinic). We encourage you to substitute it with your own application.           
       
     Create an image configuration:
     
@@ -109,17 +107,18 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     spec:
       tag: <DOCKER-IMAGE>
       serviceAccount: tutorial-service-account
+      cacheSize: "1.5Gi"
       builder:
-        name: default-builder
+        name: default
         kind: ClusterBuilder
       source:
         git:
-          url: <YOUR-BULIDPACK-SAMPLE-APP-FORK>
-          revision: master
+          url: https://github.com/spring-projects/spring-petclinic
+          revision: 82cb521d636b282340378d80a6307a08e3d4a4c4
     ```
 
    - Make sure to replace `<DOCKER-IMAGE>` with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
-   - Make sure to replace `<YOUR-BULIDPACK-SAMPLE-APP-FORK>` with the publicly accessible github url to your fork from step #3
+   - If you are using your application source, replace `source.git.url` & `source.git.revision`. 
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
    Apply that image to the cluster 
@@ -171,23 +170,36 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    
    You should see the java app start up:
    ```
-       |'-_ _-'|       ____          _  _      _                      _             _
-       |   |   |      |  _ \        (_)| |    | |                    | |           (_)
-        '-_|_-'       | |_) | _   _  _ | |  __| | _ __    __ _   ___ | | __ ___     _   ___
-   |'-_ _-'|'-_ _-'|  |  _ < | | | || || | / _` || '_ \  / _` | / __|| |/ // __|   | | / _ \
-   |   |   |   |   |  | |_) || |_| || || || (_| || |_) || (_| || (__ |   < \__ \ _ | || (_) |
-    '-_|_-' '-_|_-'   |____/  \__,_||_||_| \__,_|| .__/  \__,_| \___||_|\_\|___/(_)|_| \___/
-                                                 | |
-                                                 |_|
-   
-   :: Built with Spring Boot :: 2.1.3.RELEASE
+       
+              |\      _,,,--,,_
+             /,`.-'`'   ._  \-;;,_
+    _______ __|,4-  ) )_   .;.(__`'-'__     ___ __    _ ___ _______
+    |       | '---''(_/._)-'(_\_)   |   |   |   |  |  | |   |       |
+    |    _  |    ___|_     _|       |   |   |   |   |_| |   |       | __ _ _
+    |   |_| |   |___  |   | |       |   |   |   |       |   |       | \ \ \ \
+    |    ___|    ___| |   | |      _|   |___|   |  _    |   |      _|  \ \ \ \
+    |   |   |   |___  |   | |     |_|       |   | | |   |   |     |_    ) ) ) )
+    |___|   |_______| |___| |_______|_______|___|_|  |__|___|_______|  / / / /
+    ==================================================================/_/_/_/
+    
+    :: Built with Spring Boot :: 2.2.2.RELEASE
    ``` 
     
-1. kpack rebuilds with source code updates
+1. kpack rebuilds
     
-   Push any update to the forked sample app repository configured in step #4. In a short amount of time, kpack should recognize the update and automatically rebuild your image.  
+   We recommend updating the kpack image configuration with a CI/CD tool when new commits are ready to be built.
+   > Note: You can also provide a branch or tag as the `spec.git.revision` and kpack will poll and rebuild on updates!  
+
+   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image configured in step #3.
+   
+   If you are using your own application please push an updated commit and use the new commit sha. If you are using Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.         
+  
+   Edit the image configuration with:
+   ```
+   kubectl edit image tutorial-image 
+   ``` 
     
-   You can see this happen by running `kubectl get builds`
+   You should see kpack schedule a new build by running:
    ```
    kubectl get builds
    ``` 
@@ -204,6 +216,8 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    ```
    logs -image tutorial-image -build 2  
    ```
+   
+   > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build. 
     
 1. kpack rebuilds with buildpack updates
     

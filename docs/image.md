@@ -41,6 +41,8 @@ The `builder` field describes the [builder resource](builders.md) that will buil
 
 > Note: This image can only reference builders defined in the same namespace. This is not true for ClusterBuilders because they are not namespace scoped.
 
+* Additionally, an image can be configured with the experimental CustomBuilder & CustomClusterBuilder resources. Check out the [experimental custom builder documentation](custombuilders.md) for more info.  
+
 ### <a id='source-config'></a>Source Configuration
 
 The `source` field is a composition of a source code location and a `subpath`. It can be configured in exactly one of the following ways:
@@ -81,7 +83,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
         - name: ""
       subPath: ""
     ```
-    - `registry` ( Source code is an OCI image in a registry)
+    - `registry` ( Source code is an OCI image in a registry that contains application source)
         - `image`: Location of the source image
         - `imagePullSecrets`: A list of `dockercfg` or `dockerconfigjson` secret names required if the source image is private
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
@@ -181,3 +183,30 @@ spec:
         cpu: 50m
         memory: 512M
 ```
+
+#### Status
+
+When an image has successfully built with its current configuration, its status will report the up to date fully qualified built image reference.
+
+If you are using `kubectl` this information is available with `kubectl get <image-name>` or `kubectl describe <image-name>`. 
+
+```yaml
+status:
+  conditions:
+  - lastTransitionTime: "2020-01-17T16:16:36Z"
+    status: "True"
+    type: Succeeded
+  latestImage: index.docker.io/sample/image@sha256:d3eb15a6fd25cb79039594294419de2328f14b443fa0546fa9e16f5214d61686
+  ...
+``` 
+
+When a build fails its status will report the condition Succeeded=False. 
+
+```yaml
+status:
+  conditions:
+  - lastTransitionTime: "2020-01-17T16:13:48Z"
+    status: "False"
+    type: Succeeded
+  ...
+``` 

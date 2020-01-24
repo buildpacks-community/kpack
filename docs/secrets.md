@@ -27,16 +27,16 @@ kind: Secret
 metadata:
   name: basic-docker-user-pass
   annotations:
-    build.pivotal.io/docker: index.docker.io
+    build.pivotal.io/docker: https://index.docker.io/v1/
 type: kubernetes.io/basic-auth
 stringData:
   username: <username>
   password: <password>
 ```
         
-> Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `index.docker.io`. For GCR this should be `gcr.io`. 
+> Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. For GCR this should be `gcr.io`. 
 
-### Git Registry Secrets
+### Git Secrets
 
 kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/git` annotation that references a remote git location.      
 
