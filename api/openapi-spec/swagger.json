@@ -6121,12 +6121,6 @@
     },
     "kpack.experimental.v1alpha1.CustomBuilderSpec": {
       "type": "object",
-      "required": [
-        "tag",
-        "stack",
-        "store",
-        "order"
-      ],
       "properties": {
         "order": {
           "type": "array",
@@ -6232,13 +6226,6 @@
     },
     "kpack.experimental.v1alpha1.CustomClusterBuilderSpec": {
       "type": "object",
-      "required": [
-        "tag",
-        "stack",
-        "store",
-        "order",
-        "serviceAccountRef"
-      ],
       "properties": {
         "order": {
           "type": "array",
@@ -6263,13 +6250,6 @@
     },
     "kpack.experimental.v1alpha1.CustomNamespacedBuilderSpec": {
       "type": "object",
-      "required": [
-        "tag",
-        "stack",
-        "store",
-        "order",
-        "serviceAccount"
-      ],
       "properties": {
         "order": {
           "type": "array",
@@ -6294,9 +6274,6 @@
     },
     "kpack.experimental.v1alpha1.OrderEntry": {
       "type": "object",
-      "required": [
-        "group"
-      ],
       "properties": {
         "group": {
           "type": "array",
@@ -6362,11 +6339,6 @@
     },
     "kpack.experimental.v1alpha1.StackSpec": {
       "type": "object",
-      "required": [
-        "id",
-        "buildImage",
-        "runImage"
-      ],
       "properties": {
         "buildImage": {
           "$ref": "#/definitions/kpack.experimental.v1alpha1.StackSpecImage"
@@ -6381,9 +6353,6 @@
     },
     "kpack.experimental.v1alpha1.StackSpecImage": {
       "type": "object",
-      "required": [
-        "image"
-      ],
       "properties": {
         "image": {
           "type": "string"
@@ -6392,10 +6361,6 @@
     },
     "kpack.experimental.v1alpha1.StackStatus": {
       "type": "object",
-      "required": [
-        "buildImage",
-        "runImage"
-      ],
       "properties": {
         "buildImage": {
           "$ref": "#/definitions/kpack.experimental.v1alpha1.StackStatusImage"
@@ -6421,9 +6386,6 @@
     },
     "kpack.experimental.v1alpha1.StackStatusImage": {
       "type": "object",
-      "required": [
-        "latestImage"
-      ],
       "properties": {
         "latestImage": {
           "type": "string"
@@ -6459,12 +6421,7 @@
     "kpack.experimental.v1alpha1.StoreBuildpack": {
       "type": "object",
       "required": [
-        "id",
-        "storeImage",
-        "order",
-        "diffId",
-        "digest",
-        "size"
+        "id"
       ],
       "properties": {
         "diffId": {
@@ -6497,9 +6454,6 @@
     },
     "kpack.experimental.v1alpha1.StoreImage": {
       "type": "object",
-      "required": [
-        "image"
-      ],
       "properties": {
         "image": {
           "type": "string"
@@ -6535,9 +6489,6 @@
     },
     "kpack.experimental.v1alpha1.StoreSpec": {
       "type": "object",
-      "required": [
-        "sources"
-      ],
       "properties": {
         "sources": {
           "type": "array",
@@ -6550,9 +6501,6 @@
     },
     "kpack.experimental.v1alpha1.StoreStatus": {
       "type": "object",
-      "required": [
-        "buildpacks"
-      ],
       "properties": {
         "buildpacks": {
           "type": "array",

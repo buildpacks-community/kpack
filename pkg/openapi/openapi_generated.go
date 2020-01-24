@@ -1841,7 +1841,6 @@ func schema_pkg_apis_experimental_v1alpha1_CustomBuilderSpec(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"tag", "stack", "store", "order"},
 			},
 		},
 		Dependencies: []string{
@@ -2054,7 +2053,6 @@ func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderSpec(ref common.R
 						},
 					},
 				},
-				Required: []string{"tag", "stack", "store", "order", "serviceAccountRef"},
 			},
 		},
 		Dependencies: []string{
@@ -2110,7 +2108,6 @@ func schema_pkg_apis_experimental_v1alpha1_CustomNamespacedBuilderSpec(ref commo
 						},
 					},
 				},
-				Required: []string{"tag", "stack", "store", "order", "serviceAccount"},
 			},
 		},
 		Dependencies: []string{
@@ -2142,7 +2139,6 @@ func schema_pkg_apis_experimental_v1alpha1_OrderEntry(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"group"},
 			},
 		},
 		Dependencies: []string{
@@ -2268,7 +2264,6 @@ func schema_pkg_apis_experimental_v1alpha1_StackSpec(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"id", "buildImage", "runImage"},
 			},
 		},
 		Dependencies: []string{
@@ -2289,7 +2284,6 @@ func schema_pkg_apis_experimental_v1alpha1_StackSpecImage(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"image"},
 			},
 		},
 	}
@@ -2338,7 +2332,6 @@ func schema_pkg_apis_experimental_v1alpha1_StackStatus(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"buildImage", "runImage"},
 			},
 		},
 		Dependencies: []string{
@@ -2359,7 +2352,6 @@ func schema_pkg_apis_experimental_v1alpha1_StackStatusImage(ref common.Reference
 						},
 					},
 				},
-				Required: []string{"latestImage"},
 			},
 		},
 	}
@@ -2468,7 +2460,7 @@ func schema_pkg_apis_experimental_v1alpha1_StoreBuildpack(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"id", "storeImage", "order", "diffId", "digest", "size"},
+				Required: []string{"id"},
 			},
 		},
 		Dependencies: []string{
@@ -2489,7 +2481,6 @@ func schema_pkg_apis_experimental_v1alpha1_StoreImage(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"image"},
 			},
 		},
 	}
@@ -2570,7 +2561,6 @@ func schema_pkg_apis_experimental_v1alpha1_StoreSpec(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"sources"},
 			},
 		},
 		Dependencies: []string{
@@ -2628,7 +2618,6 @@ func schema_pkg_apis_experimental_v1alpha1_StoreStatus(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"buildpacks"},
 			},
 		},
 		Dependencies: []string{
