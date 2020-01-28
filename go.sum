@@ -57,12 +57,8 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
-github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b h1:SDsB0hJtURA+5i5vIjLntzRNPEqdoz6q+0MShCWdctw=
-github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b/go.mod h1:E3lXJcNXcRefJQAHW5rqboonet+jtOml4qImbJhYGAo=
 github.com/buildpacks/imgutil v0.0.0-20200115144305-2289fbc194a6 h1:faTLKnJXfBiK7jQlrCw64H1brZ/UABk5BGM5sTwTgdU=
 github.com/buildpacks/imgutil v0.0.0-20200115144305-2289fbc194a6/go.mod h1:E3lXJcNXcRefJQAHW5rqboonet+jtOml4qImbJhYGAo=
-github.com/buildpacks/lifecycle v0.5.1-0.20200110184618-3beb2de620e8 h1:v5wAh700qonBg+REbXUx4X/rBFn/pWsYOaMCHOqOvwo=
-github.com/buildpacks/lifecycle v0.5.1-0.20200110184618-3beb2de620e8/go.mod h1:ZIuIs9B6tjAW4dthhltKVyEUlhRfFWWix9eqoInMGX4=
 github.com/buildpacks/lifecycle v0.6.0 h1:GuFvJiTjiypP/MJoVJ8z9mUdYCjkgHWnHrPYIKuXnLs=
 github.com/buildpacks/lifecycle v0.6.0/go.mod h1:6QD+o2zODTKMFrm1GQBtM8TuLQ1ZQ6Wj9zLA1HU3rbI=
 github.com/census-instrumentation/opencensus-proto v0.2.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

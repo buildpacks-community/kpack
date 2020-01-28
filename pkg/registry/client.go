@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -48,8 +49,17 @@ func (t *Client) Save(keychain authn.Keychain, tag string, image v1.Image) (stri
 	if digest.String() == previousDigest(keychain, ref) {
 		return identifier, nil
 	}
+	err = remote.Write(ref, image, remote.WithAuthFromKeychain(keychain))
+	if err != nil {
+		return "", err
+	}
 
-	return identifier, remote.Write(ref, image, remote.WithAuthFromKeychain(keychain))
+	return identifier, remote.Tag(ref.Context().Tag(timestampTag()), image, remote.WithAuthFromKeychain(keychain))
+}
+
+func timestampTag() string {
+	now := time.Now()
+	return fmt.Sprintf("%s%02d%02d%02d", now.Format("20060102"), now.Hour(), now.Minute(), now.Second())
 }
 
 func getIdentifier(image v1.Image, ref name.Reference) (string, error) {
