@@ -1,8 +1,6 @@
 package k8sdockercreds
 
 import (
-	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
-
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
