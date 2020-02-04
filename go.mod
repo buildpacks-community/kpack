@@ -12,10 +12,10 @@ require (
 	github.com/buildpacks/lifecycle v0.6.1
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
-	github.com/go-openapi/spec v0.0.0-20160808142527-6aced65f8501
+	github.com/go-openapi/spec v0.19.3
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/go-cmp v0.4.0
-	github.com/google/go-containerregistry v0.0.0-20191018211754-b77a90c667af
+	github.com/google/go-containerregistry v0.0.0-20191211193041-0eaa33c3d13c
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
@@ -36,7 +36,6 @@ require (
 	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 	golang.org/x/crypto v0.0.0-20190927123631-a832865fa7ad
-	golang.org/x/net v0.0.0-20190926025831-c00fd9afed17 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0 // indirect
 	google.golang.org/api v0.10.0 // indirect
@@ -47,10 +46,8 @@ require (
 	k8s.io/api v0.0.0-20190819141258-3544db3b9e44
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/client-go v0.0.0-20190819141724-e14f31a72a77
-	k8s.io/code-generator v0.0.0-20190612205613-18da4a14b22b
-	k8s.io/gengo v0.0.0-20190822140433-26a664648505 // indirect
-	k8s.io/klog v1.0.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
+	k8s.io/code-generator v0.0.0-20191121015212-c4c8f8345c7e
+	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/kubernetes v1.11.10
 	k8s.io/utils v0.0.0-20190923111123-69764acb6e8e // indirect
 	knative.dev/pkg v0.0.0-20191107185656-884d50f09454
