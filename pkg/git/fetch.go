@@ -2,6 +2,10 @@ package git
 
 import (
 	"log"
+	"os"
+	"path"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/pkg/errors"
 	"gopkg.in/src-d/go-git.v4"
@@ -15,7 +19,7 @@ type Fetcher struct {
 	Keychain GitKeychain
 }
 
-func (f Fetcher) Fetch(dir, gitURL, gitRevision string) error {
+func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	resolvedAuth, err := f.Keychain.Resolve(gitURL)
 	if err != nil {
 		return err
@@ -61,6 +65,29 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision string) error {
 	})
 	if err != nil {
 		return errors.Wrapf(err, "unable to checkout revision: %s", gitRevision)
+	}
+
+	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
+
+	if err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
+	}
+
+	err = toml.NewEncoder(projectMetadataFile).Encode(map[string]interface{}{
+		"source": map[string]interface{}{
+			"type": "git",
+			"metadata": map[string]interface{}{
+				"repository": gitURL,
+				"revision":   gitRevision,
+			},
+			"version": map[string]interface{}{
+				"commit": hashes.String(),
+			},
+		},
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitRevision)
 	}
 
 	f.Logger.Printf("Successfully cloned %q @ %q in path %q", gitURL, gitRevision, dir)
