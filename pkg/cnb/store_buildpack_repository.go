@@ -41,7 +41,12 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		Layers: append(layers, buildpackLayer{
 			v1Layer:       layer,
 			BuildpackInfo: info,
-			Order:         storeBuildpack.Order,
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				LayerDiffID: storeBuildpack.DiffId,
+				Order:       storeBuildpack.Order,
+				API:         storeBuildpack.API,
+				Stacks:      storeBuildpack.Stacks,
+			},
 		}),
 	}, nil
 }

@@ -1,18 +1,6 @@
 package cnb
 
-import (
-	"github.com/pkg/errors"
-
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
-)
-
 type BuildpackLayerMetadata map[string]map[string]BuildpackLayerInfo
-
-type BuildpackLayerInfo struct {
-	LayerDigest string            `json:"layerDigest"`
-	LayerDiffID string            `json:"layerDiffID"`
-	Order       expv1alpha1.Order `json:"order,omitempty"`
-}
 
 func (l BuildpackLayerMetadata) add(layer buildpackLayer) error {
 	_, ok := l[layer.BuildpackInfo.Id]
@@ -20,21 +8,6 @@ func (l BuildpackLayerMetadata) add(layer buildpackLayer) error {
 		l[layer.BuildpackInfo.Id] = map[string]BuildpackLayerInfo{}
 	}
 
-	diffId, err := layer.v1Layer.DiffID()
-	if err != nil {
-		return errors.Wrapf(err, "fetching %s@%s layer diff id", layer.BuildpackInfo.Id, layer.BuildpackInfo.Version)
-	}
-
-	digest, err := layer.v1Layer.Digest()
-	if err != nil {
-		return errors.Wrapf(err, "fetching %s@%s layer digest", layer.BuildpackInfo.Id, layer.BuildpackInfo.Version)
-	}
-
-	l[layer.BuildpackInfo.Id][layer.BuildpackInfo.Version] = BuildpackLayerInfo{
-		LayerDigest: digest.String(),
-		LayerDiffID: diffId.String(),
-		Order:       layer.Order,
-	}
-
+	l[layer.BuildpackInfo.Id][layer.BuildpackInfo.Version] = layer.BuildpackLayerInfo
 	return nil
 }

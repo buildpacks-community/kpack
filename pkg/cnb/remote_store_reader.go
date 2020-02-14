@@ -58,11 +58,13 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []v1alpha1
 				order := metadata.Order
 				storeBP := v1alpha1.StoreBuildpack{
 					BuildpackInfo: info,
-					DiffId:        metadata.LayerDiffID,
 					StoreImage:    storeImage,
 					Order:         order,
+					DiffId:        metadata.LayerDiffID,
 					Digest:        digest.String(),
 					Size:          size,
+					API:           metadata.API,
+					Stacks:        metadata.Stacks,
 				}
 				buildpacks = append(buildpacks, storeBP)
 			}

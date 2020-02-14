@@ -46,10 +46,12 @@ type StoreBuildpack struct {
 	BuildpackInfo `json:",inline"`
 	StoreImage    StoreImage `json:"storeImage,omitempty"`
 	// +listType
-	Order  []OrderEntry `json:"order,omitempty"`
-	DiffId string       `json:"diffId,omitempty"`
-	Digest string       `json:"digest,omitempty"`
-	Size   int64        `json:"size,omitempty"`
+	API    string           `json:"api,omitempty"`
+	Order  []OrderEntry     `json:"order,omitempty"`
+	Stacks []BuildpackStack `json:"stacks,omitempty"`
+	DiffId string           `json:"diffId,omitempty"`
+	Digest string           `json:"digest,omitempty"`
+	Size   int64            `json:"size,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

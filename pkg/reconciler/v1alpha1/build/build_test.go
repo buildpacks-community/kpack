@@ -384,7 +384,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:      "io.buildpack.executed",
 					Version: "1.1",
 				}},
-				Stack: cnb.Stack{
+				Stack: cnb.BuiltImageStack{
 					RunImage: "somerun/123@sha256:12334563ad",
 					ID:       "io.buildpacks.stacks.bionic",
 				},

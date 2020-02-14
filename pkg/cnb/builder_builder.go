@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
@@ -89,22 +88,23 @@ func (bb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
 	bb.order = append(bb.order, expv1alpha1.OrderEntry{Group: group})
 }
 
-func (bb *BuilderBuilder) buildpacks() v1alpha1.BuildpackMetadataList {
-	buildpacks := make(v1alpha1.BuildpackMetadataList, 0, len(bb.buildpackLayers))
-
-	for _, bp := range deterministicSortBySize(bb.buildpackLayers) {
-		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
-			Id:      bp.Id,
-			Version: bp.Version,
-		})
-	}
-	return buildpacks
+func (bb *BuilderBuilder) buildpacks() []expv1alpha1.BuildpackInfo {
+	return deterministicSortBySize(bb.buildpackLayers)
 }
 
 func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
-	buildpackLayers, buildpacks, buildpackLayerMetadata, err := bb.configureBuildpackLayerInfo()
-	if err != nil {
-		return nil, err
+	buildpacks := bb.buildpacks()
+
+	buildpackLayerMetadata := BuildpackLayerMetadata{}
+	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers))
+
+	for _, key := range buildpacks {
+		layer := bb.buildpackLayers[key]
+		if err := buildpackLayerMetadata.add(layer); err != nil {
+			return nil, err
+		}
+
+		buildpackLayers = append(buildpackLayers, layer.v1Layer)
 	}
 
 	defaultLayer, err := bb.defaultDirsLayer()
@@ -336,21 +336,6 @@ func (bb *BuilderBuilder) lifecycleCompatLayer() (v1.Layer, error) {
 	}
 
 	return tarball.LayerFromReader(b)
-}
-
-func (bb *BuilderBuilder) configureBuildpackLayerInfo() ([]v1.Layer, []expv1alpha1.BuildpackInfo, BuildpackLayerMetadata, error) {
-	buildpackLayerMetadata := make(BuildpackLayerMetadata)
-	buildpacks := make([]expv1alpha1.BuildpackInfo, 0, len(bb.buildpackLayers))
-	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers)+1)
-	for _, key := range deterministicSortBySize(bb.buildpackLayers) {
-		layer := bb.buildpackLayers[key]
-		if err := buildpackLayerMetadata.add(layer); err != nil {
-			return nil, nil, nil, err
-		}
-		buildpacks = append(buildpacks, key)
-		buildpackLayers = append(buildpackLayers, layer.v1Layer)
-	}
-	return buildpackLayers, buildpacks, buildpackLayerMetadata, nil
 }
 
 func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer) []expv1alpha1.BuildpackInfo {
