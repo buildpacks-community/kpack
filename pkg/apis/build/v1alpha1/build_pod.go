@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -65,6 +65,10 @@ var (
 	layersVolume = corev1.VolumeMount{
 		Name:      layersDirName,
 		MountPath: "/layers",
+	}
+	alternativeLayersVolumeMount = corev1.VolumeMount{
+		Name:      layersDirName,
+		MountPath: "/alt-layers",
 	}
 	homeEnv = corev1.EnvVar{
 		Name:  "HOME",
@@ -170,6 +174,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							platformVolume,
 							sourceVolume,
 							homeVolume,
+							alternativeLayersVolumeMount,
 						),
 					},
 				)

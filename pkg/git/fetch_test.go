@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"testing"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
@@ -28,19 +31,25 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 			Keychain: fakeGitKeychain{},
 		}
 		var testDir string
+		var metadataDir string
+
 		it.Before(func() {
 			var err error
 			testDir, err = ioutil.TempDir("", "test-git")
+			require.NoError(t, err)
+
+			metadataDir, err = ioutil.TempDir("", "test-git")
 			require.NoError(t, err)
 		})
 
 		it.After(func() {
 			require.NoError(t, os.RemoveAll(testDir))
+			require.NoError(t, os.RemoveAll(metadataDir))
 		})
 
 		testFetch := func(gitUrl, revision string) func() {
 			return func() {
-				err := fetcher.Fetch(testDir, gitUrl, revision)
+				err := fetcher.Fetch(testDir, gitUrl, revision, metadataDir)
 				require.NoError(t, err)
 
 				repository, err := gogit.PlainOpenWithOptions(testDir, &gogit.PlainOpenOptions{})
@@ -55,6 +64,25 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				require.True(t, status.IsClean())
 
 				require.Contains(t, outpuBuffer.String(), fmt.Sprintf("Successfully cloned \"%s\" @ \"%s\"", gitUrl, revision))
+
+				require.FileExists(t, path.Join(metadataDir, "project-metadata.toml"))
+
+				projectMetadata := map[string]interface{}{}
+				_, err = toml.DecodeFile(path.Join(metadataDir, "project-metadata.toml"), &projectMetadata)
+				require.NoError(t, err)
+
+				require.Equal(t, "git", projectMetadata["source"].(map[string]interface{})["type"])
+				require.Equal(t, map[string]interface{}{
+					"repository": gitUrl,
+					"revision":   revision,
+				}, projectMetadata["source"].(map[string]interface{})["metadata"])
+
+				h, err := repository.Head()
+				require.NoError(t, err)
+
+				require.Equal(t, map[string]interface{}{
+					"commit": h.Hash().String(),
+				}, projectMetadata["source"].(map[string]interface{})["version"])
 			}
 		}
 
@@ -67,7 +95,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		it("fetches a revision", testFetch("https://github.com/git-fixtures/basic", "b029517f6300c2da0f4b651b8642506cd6aaf45d"))
 
 		it("returns invalid credentials to fetch error on authentication required", func() {
-			err := fetcher.Fetch(testDir, "http://github.com/pivotal/kpack-nonexistent-test-repo", "master")
+			err := fetcher.Fetch(testDir, "http://github.com/pivotal/kpack-nonexistent-test-repo", "master", "")
 			require.EqualError(t, err, "invalid credentials to fetch git repository: http://github.com/pivotal/kpack-nonexistent-test-repo")
 		})
 	})
