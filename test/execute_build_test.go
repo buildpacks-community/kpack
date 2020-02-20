@@ -377,6 +377,118 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			}
 		}
 	})
+
+	it("can trigger rebuilds", func() {
+		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
+		require.NoError(t, err)
+
+		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
+		require.NoError(t, err)
+
+		basicAuth, err := auth.Authorization()
+		require.NoError(t, err)
+
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: dockerSecret,
+				Annotations: map[string]string{
+					"build.pivotal.io/docker": reference.Context().RegistryStr(),
+				},
+			},
+			StringData: map[string]string{
+				"username": basicAuth.Username,
+				"password": basicAuth.Password,
+			},
+			Type: v1.SecretTypeBasicAuth,
+		})
+		require.NoError(t, err)
+
+		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: serviceAccountName,
+			},
+			Secrets: []v1.ObjectReference{
+				{
+					Name: dockerSecret,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterBuilderName,
+			},
+			Spec: v1alpha1.BuilderSpec{
+				Image: builderImage,
+			},
+		})
+		require.NoError(t, err)
+
+		waitUntilReady(t, clients, clusterBuilder)
+
+		cacheSize := resource.MustParse("1Gi")
+
+		expectedResources := v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("1G"),
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("512M"),
+			},
+		}
+
+		imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
+
+		imageTag := cfg.newImageTag()
+		image, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: imageName,
+			},
+			Spec: v1alpha1.ImageSpec{
+				Tag: imageTag,
+				Builder: corev1.ObjectReference{
+					Kind:       v1alpha1.ClusterBuilderKind,
+					APIVersion: "build.pivotal.io/v1alpha1",
+					Name:       clusterBuilderName,
+				},
+				ServiceAccount: serviceAccountName,
+				Source: v1alpha1.SourceConfig{
+					Git: &v1alpha1.Git{
+						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+						Revision: "master",
+					},
+				},
+				CacheSize:            &cacheSize,
+				ImageTaggingStrategy: v1alpha1.None,
+				Build: &v1alpha1.ImageBuild{
+					Resources: expectedResources,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		validateImageCreate(t, clients, image, expectedResources)
+
+		list, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+		})
+		require.NoError(t, err)
+		require.Len(t, list.Items, 1)
+
+		build := &list.Items[0]
+		build.Annotations[v1alpha1.BuildNeededAnnotation] = "true"
+		_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Update(build)
+		require.NoError(t, err)
+
+		eventually(t, func() bool {
+			list, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+			})
+			require.NoError(t, err)
+			return len(list.Items) == 2
+		}, 5*time.Second, 1*time.Minute)
+	})
 }
 
 func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefable) {

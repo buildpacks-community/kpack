@@ -18,27 +18,22 @@ const (
 	ImageLabel       = "image.build.pivotal.io/image"
 
 	BuildReasonAnnotation = "image.build.pivotal.io/reason"
-	BuildReasonConfig     = "CONFIG"
-	BuildReasonCommit     = "COMMIT"
-	BuildReasonBuildpack  = "BUILDPACK"
-	BuildReasonStack      = "STACK"
+	BuildNeededAnnotation = "image.build.pivotal.io/additionalBuildNeeded"
+
+	BuildReasonConfig    = "CONFIG"
+	BuildReasonCommit    = "COMMIT"
+	BuildReasonBuildpack = "BUILDPACK"
+	BuildReasonStack     = "STACK"
+	BuildReasonTrigger   = "TRIGGER"
 )
 
-func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool, error) {
-	if !sourceResolver.Ready() {
-		return []string{}, false, nil
+func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool) {
+	if !sourceResolver.Ready() || !builder.Ready() {
+		return []string{}, false
 	}
 
-	if !builder.Ready() {
-		return []string{}, false, nil
-	}
-
-	if lastBuild == nil {
-		return []string{BuildReasonConfig}, true, nil
-	}
-
-	if im.Spec.Tag != lastBuild.Tag() {
-		return []string{BuildReasonConfig}, true, nil
+	if lastBuild == nil || im.Spec.Tag != lastBuild.Tag() {
+		return []string{BuildReasonConfig}, true
 	}
 
 	var reasons []string
@@ -53,37 +48,21 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 		reasons = append(reasons, BuildReasonCommit)
 	}
 
-	if !lastBuildBuiltWithBuilderBuildpacks(builder, lastBuild) {
-		reasons = append(reasons, BuildReasonBuildpack)
-	}
-
-	if lastBuild.Status.Stack.RunImage != "" {
-		lastBuildRunImageRef, err := name.ParseReference(lastBuild.Status.Stack.RunImage)
-		if err != nil {
-			return reasons, false, err
+	if lastBuild.IsSuccess() {
+		if !lastBuild.builtWithBuildpacks(builder.BuildpackMetadata()) {
+			reasons = append(reasons, BuildReasonBuildpack)
 		}
 
-		builderRunImageRef, err := name.ParseReference(builder.RunImage())
-		if err != nil {
-			return reasons, false, err
-		}
-
-		if lastBuildRunImageRef.Identifier() != builderRunImageRef.Identifier() {
+		if !lastBuild.builtWithStack(builder.RunImage()) {
 			reasons = append(reasons, BuildReasonStack)
 		}
 	}
 
-	return reasons, len(reasons) > 0, nil
-}
-
-func lastBuildBuiltWithBuilderBuildpacks(builder BuilderResource, build *Build) bool {
-	for _, bp := range build.Status.BuildMetadata {
-		if !builder.BuildpackMetadata().Include(bp) {
-			return false
-		}
+	if lastBuild.additionalBuildNeeded() {
+		reasons = append(reasons, BuildReasonTrigger)
 	}
 
-	return true
+	return reasons, len(reasons) > 0
 }
 
 func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, nextBuildNumber int64) *Build {
