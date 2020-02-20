@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/google/go-containerregistry/pkg/name"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
@@ -91,4 +92,37 @@ func (b *Build) Finished() bool {
 func (b *Build) rebasable(builderStack string) bool {
 	return b.Spec.LastBuild != nil &&
 		b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackId == builderStack
+}
+
+func (b *Build) builtWithStack(runImage string) bool {
+	if b.Status.Stack.RunImage == "" {
+		return false
+	}
+
+	lastBuildRunImageRef, err := name.ParseReference(b.Status.Stack.RunImage)
+	if err != nil {
+		return false
+	}
+
+	builderRunImageRef, err := name.ParseReference(runImage)
+	if err != nil {
+		return false
+	}
+
+	return lastBuildRunImageRef.Identifier() == builderRunImageRef.Identifier()
+}
+
+func (b *Build) builtWithBuildpacks(buildpacks BuildpackMetadataList) bool {
+	for _, bp := range b.Status.BuildMetadata {
+		if !buildpacks.Include(bp) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (b *Build) additionalBuildNeeded() bool {
+	_, ok := b.Annotations[BuildNeededAnnotation]
+	return ok
 }

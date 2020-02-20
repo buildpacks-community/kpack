@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"testing"
+	"time"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -93,46 +94,135 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#buildNeeded", func() {
-		when("Git", func() {
-			it.Before(func() {
-				sourceResolver.Status.Source = ResolvedSourceConfig{
-					Git: &ResolvedGitSource{
-						URL:      "https://some.git/url",
-						Revision: "revision",
-						Type:     Commit,
+		sourceResolver.Status.Source = ResolvedSourceConfig{
+			Git: &ResolvedGitSource{
+				URL:      "https://some.git/url",
+				Revision: "revision",
+				Type:     Commit,
+			},
+		}
+
+		latestBuild.Spec.Source = SourceConfig{
+			Git: &Git{
+				URL:      "https://some.git/url",
+				Revision: "revision",
+			},
+		}
+
+		it("false for no changes", func() {
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("true for different image", func() {
+			image.Spec.Tag = "different"
+
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonConfig)
+		})
+
+		it("false for different ServiceAccount", func() {
+			image.Spec.ServiceAccount = "different"
+
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("true if build env changes", func() {
+			latestBuild.Spec.Env = []v1.EnvVar{
+				{Name: "keyA", Value: "previous-value"},
+			}
+
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonConfig)
+		})
+
+		it("false if last build failed but no spec changes", func() {
+			latestBuild.Status = BuildStatus{
+				Status: corev1alpha1.Status{
+					Conditions: corev1alpha1.Conditions{
+						{
+							Type:   corev1alpha1.ConditionSucceeded,
+							Status: corev1.ConditionFalse,
+						},
 					},
+				},
+				Stack: BuildStack{},
+			}
+
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.False(t, needed)
+			require.Len(t, reasons, 0)
+		})
+
+		it("true if build is annotated additional build needed", func() {
+			latestBuild.Annotations = map[string]string{
+				BuildNeededAnnotation: time.Now().String(),
+			}
+
+			reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+			assert.True(t, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, BuildReasonTrigger)
+		})
+
+		when("Builder Metadata changes", func() {
+			it("false if builder has additional unused buildpacks", func() {
+				builder.BuilderMetadata = []BuildpackMetadata{
+					{Id: "buildpack.matches", Version: "1"},
+					{Id: "buildpack.unused", Version: "unused"},
 				}
 
-				latestBuild.Spec.Source = SourceConfig{
-					Git: &Git{
-						URL:      "https://some.git/url",
-						Revision: "revision",
-					},
-				}
-			})
-
-			it("false for no changes", func() {
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
 
-			it("true for different image", func() {
-				image.Spec.Tag = "different"
+			it("true if builder metadata has different buildpack version from used buildpack version", func() {
+				builder.BuilderMetadata = []BuildpackMetadata{
+					{Id: "buildpack.matches", Version: "NEW_VERSION"},
+					{Id: "buildpack.different", Version: "different"},
+				}
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, BuildReasonConfig)
+				assert.Contains(t, reasons, BuildReasonBuildpack)
 			})
 
+			it("true if builder does not have all most recent used buildpacks", func() {
+				builder.BuilderMetadata = []BuildpackMetadata{
+					{Id: "buildpack.only.new.buildpacks", Version: "1"},
+					{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
+				}
+
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+				assert.True(t, needed)
+				require.Len(t, reasons, 1)
+				assert.Contains(t, reasons, BuildReasonBuildpack)
+			})
+
+			it("true if builder has a different run image", func() {
+				builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
+				assert.True(t, needed)
+				require.Len(t, reasons, 1)
+				assert.Contains(t, reasons, BuildReasonStack)
+			})
+		})
+
+		when("Git", func() {
 			it("true for different GitURL", func() {
 				sourceResolver.Status.Source.Git.URL = "different"
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -141,8 +231,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Git SubPath", func() {
 				sourceResolver.Status.Source.Git.SubPath = "different"
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -151,8 +240,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different GitRevision", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonCommit)
@@ -166,8 +254,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						Status: v1.ConditionFalse,
 					}}
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -176,8 +263,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.URL = "some-change"
 				builder.BuilderReady = false
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -186,8 +272,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{}
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -196,8 +281,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{}
 
-				reasons, needed, err := image.buildNeeded(nil, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(nil, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
 			})
@@ -207,31 +291,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.ObjectMeta.Generation = 2
 				sourceResolver.Status.ObservedGeneration = 1
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.False(t, needed)
 				require.Len(t, reasons, 0)
-			})
-
-			it("false for different ServiceAccount", func() {
-				image.Spec.ServiceAccount = "different"
-
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
-				assert.False(t, needed)
-				require.Len(t, reasons, 0)
-			})
-
-			it("true if build env changes", func() {
-				latestBuild.Spec.Env = []v1.EnvVar{
-					{Name: "keyA", Value: "previous-value"},
-				}
-
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
-				assert.True(t, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, BuildReasonConfig)
 			})
 
 			it("true if build env order changes and git url changes", func() {
@@ -245,125 +307,38 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 			})
 
-			it("true if build resources change", func() {
-				latestBuild.Spec.Resources = v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("2"),
-						v1.ResourceMemory: resource.MustParse("256M"),
-					},
-					Requests: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("1"),
-						v1.ResourceMemory: resource.MustParse("128M"),
-					},
-				}
+			it("true if both config and commit have changed", func() {
+				sourceResolver.Status.Source.Git.URL = "different"
+				sourceResolver.Status.Source.Git.Revision = "different"
 
-				image.Spec.Build = &ImageBuild{
-					Resources: v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse("3"),
-							v1.ResourceMemory: resource.MustParse("512M"),
-						},
-						Requests: v1.ResourceList{
-							v1.ResourceCPU:    resource.MustParse("2"),
-							v1.ResourceMemory: resource.MustParse("256M"),
-						},
-					},
-				}
-
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
-				require.Len(t, reasons, 1)
+				require.Len(t, reasons, 2)
 				assert.Contains(t, reasons, BuildReasonConfig)
-			})
-
-			when("Builder Metadata changes", func() {
-				it("false if builder has additional unused buildpack metadata", func() {
-					builder.BuilderMetadata = []BuildpackMetadata{
-						{Id: "buildpack.matches", Version: "1"},
-						{Id: "buildpack.unused", Version: "unused"},
-					}
-
-					reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-					require.NoError(t, err)
-					assert.False(t, needed)
-					require.Len(t, reasons, 0)
-				})
-
-				it("true if builder metadata has different buildpack from used buildpack", func() {
-					builder.BuilderMetadata = []BuildpackMetadata{
-						{Id: "buildpack.matches", Version: "NEW_VERSION"},
-						{Id: "buildpack.different", Version: "different"},
-					}
-
-					reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-					require.NoError(t, err)
-					assert.True(t, needed)
-					require.Len(t, reasons, 1)
-					assert.Contains(t, reasons, BuildReasonBuildpack)
-				})
-
-				it("true if builder has a different run image", func() {
-					builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
-
-					reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-					require.NoError(t, err)
-					assert.True(t, needed)
-					require.Len(t, reasons, 1)
-					assert.Contains(t, reasons, BuildReasonStack)
-				})
-
-				it("true if builder does not have all most recent used buildpacks and is not currently building", func() {
-					builder.BuilderMetadata = []BuildpackMetadata{
-						{Id: "buildpack.only.new.buildpacks", Version: "1"},
-						{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
-					}
-
-					reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-					require.NoError(t, err)
-					assert.True(t, needed)
-					require.Len(t, reasons, 1)
-					assert.Contains(t, reasons, BuildReasonBuildpack)
-				})
-
-				it("true if both config and commit have changed", func() {
-					sourceResolver.Status.Source.Git.URL = "different"
-					sourceResolver.Status.Source.Git.Revision = "different"
-
-					reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-					require.NoError(t, err)
-					assert.True(t, needed)
-					require.Len(t, reasons, 2)
-					assert.Contains(t, reasons, BuildReasonConfig)
-					assert.Contains(t, reasons, BuildReasonCommit)
-				})
+				assert.Contains(t, reasons, BuildReasonCommit)
 			})
 		})
 
 		when("Blob", func() {
-			it.Before(func() {
-				sourceResolver.Status.Source = ResolvedSourceConfig{
-					Blob: &ResolvedBlobSource{
-						URL: "different",
-					},
-				}
+			sourceResolver.Status.Source = ResolvedSourceConfig{
+				Blob: &ResolvedBlobSource{
+					URL: "different",
+				},
+			}
 
-				latestBuild.Spec.Source = SourceConfig{
-					Blob: &Blob{
-						URL: "some-url",
-					},
-				}
-			})
+			latestBuild.Spec.Source = SourceConfig{
+				Blob: &Blob{
+					URL: "some-url",
+				},
+			}
 
 			it("true for different BlobURL", func() {
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -372,8 +347,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Blob SubPath", func() {
 				sourceResolver.Status.Source.Blob.SubPath = "different"
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -381,23 +355,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("Registry", func() {
-			it.Before(func() {
-				sourceResolver.Status.Source = ResolvedSourceConfig{
-					Registry: &ResolvedRegistrySource{
-						Image: "different",
-					},
-				}
+			sourceResolver.Status.Source = ResolvedSourceConfig{
+				Registry: &ResolvedRegistrySource{
+					Image: "different",
+				},
+			}
 
-				latestBuild.Spec.Source = SourceConfig{
-					Registry: &Registry{
-						Image: "some-image",
-					},
-				}
-			})
+			latestBuild.Spec.Source = SourceConfig{
+				Registry: &Registry{
+					Image: "some-image",
+				},
+			}
 
 			it("true for different RegistryImage", func() {
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -406,8 +377,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different Registry SubPath", func() {
 				sourceResolver.Status.Source.Registry.SubPath = "different"
 
-				reasons, needed, err := image.buildNeeded(latestBuild, sourceResolver, builder)
-				require.NoError(t, err)
+				reasons, needed := image.buildNeeded(latestBuild, sourceResolver, builder)
 				assert.True(t, needed)
 				require.Len(t, reasons, 1)
 				assert.Contains(t, reasons, BuildReasonConfig)
@@ -416,22 +386,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#build", func() {
-		it.Before(func() {
-			sourceResolver.Status.Source = ResolvedSourceConfig{
-				Git: &ResolvedGitSource{
-					URL:      "https://some.git/url",
-					Revision: "revision",
-					Type:     Commit,
-				},
-			}
+		sourceResolver.Status.Source = ResolvedSourceConfig{
+			Git: &ResolvedGitSource{
+				URL:      "https://some.git/url",
+				Revision: "revision",
+				Type:     Commit,
+			},
+		}
 
-			latestBuild.Spec.Source = SourceConfig{
-				Git: &Git{
-					URL:      "https://some.git/url",
-					Revision: "revision",
-				},
-			}
-		})
+		latestBuild.Spec.Source = SourceConfig{
+			Git: &Git{
+				URL:      "https://some.git/url",
+				Revision: "revision",
+			},
+		}
 
 		it("generates a build name with build number", func() {
 			image.Name = "imageName"
