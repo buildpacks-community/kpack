@@ -31,22 +31,24 @@ func newClients(t *testing.T) (*clients, error) {
 		defaultKubeconfig = path.Join(usr.HomeDir, ".kube/config")
 	}
 
-	kubeconfig := flag.String("kubeconfig", defaultKubeconfig, "Path to a kubeconfig. Only required if out-of-cluster.")
-	masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	setup.Do(func() {
+		kubeconfig := flag.String("kubeconfig", defaultKubeconfig, "Path to a kubeconfig. Only required if out-of-cluster.")
+		masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	flag.Parse()
+		flag.Parse()
 
-	clusterConfig, err = clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
-	require.NoError(t, err)
+		clusterConfig, err = clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+		require.NoError(t, err)
 
-	client, err = versioned.NewForConfig(clusterConfig)
-	require.NoError(t, err)
+		client, err = versioned.NewForConfig(clusterConfig)
+		require.NoError(t, err)
 
-	k8sClient, err = kubernetes.NewForConfig(clusterConfig)
-	require.NoError(t, err)
+		k8sClient, err = kubernetes.NewForConfig(clusterConfig)
+		require.NoError(t, err)
 
-	dynamicClient, err = dynamic.NewForConfig(clusterConfig)
-	require.NoError(t, err)
+		dynamicClient, err = dynamic.NewForConfig(clusterConfig)
+		require.NoError(t, err)
+	})
 
 	return &clients{
 		client:        client,
