@@ -116,7 +116,7 @@ type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
 	BuildpackMetadata []lifecycle.Buildpack
-	Stack             Stack
+	Stack             BuiltImageStack
 }
 
 func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error) {
@@ -156,7 +156,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error
 		Identifier:        appImageId,
 		CompletedAt:       imageCreatedAt,
 		BuildpackMetadata: buildMetadata.Buildpacks,
-		Stack: Stack{
+		Stack: BuiltImageStack{
 			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
 			ID:       stackId,
 		},

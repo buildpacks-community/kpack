@@ -27,7 +27,7 @@ type RemoteBuildpackRef struct {
 }
 
 type buildpackLayer struct {
-	v1Layer       v1.Layer
-	BuildpackInfo v1alpha1.BuildpackInfo
-	Order         v1alpha1.Order
+	v1Layer            v1.Layer
+	BuildpackInfo      v1alpha1.BuildpackInfo
+	BuildpackLayerInfo BuildpackLayerInfo
 }

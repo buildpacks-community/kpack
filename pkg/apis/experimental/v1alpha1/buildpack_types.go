@@ -25,3 +25,11 @@ type BuildpackInfo struct {
 func (b BuildpackInfo) String() string {
 	return fmt.Sprintf("%s@%s", b.Id, b.Version)
 }
+
+// +k8s:openapi-gen=true
+type BuildpackStack struct {
+	ID string `json:"id"`
+
+	// +listType
+	Mixins []string `json:"mixins,omitempty"`
+}

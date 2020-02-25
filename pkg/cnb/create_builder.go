@@ -69,6 +69,17 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 			RunImage: stack.Status.RunImage.LatestImage,
 			ID:       stack.Spec.Id,
 		},
-		Buildpacks: builderBuilder.buildpacks(),
+		Buildpacks: buildpackMetadata(builderBuilder.buildpacks()),
 	}, nil
+}
+
+func buildpackMetadata(buildpacks []expv1alpha1.BuildpackInfo) v1alpha1.BuildpackMetadataList {
+	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
+	for _, b := range buildpacks {
+		m = append(m, v1alpha1.BuildpackMetadata{
+			Id:      b.Id,
+			Version: b.Version,
+		})
+	}
+	return m
 }

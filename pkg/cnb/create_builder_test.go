@@ -120,6 +120,15 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Id:      "io.buildpack.1",
 				Version: "v1",
 			},
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				API:         "0.2",
+				LayerDiffID: buildpack1Layer.diffID,
+				Stacks: []expv1alpha1.BuildpackStack{
+					{
+						ID: "io.buildpacks.stacks.cflinuxfs3",
+					},
+				},
+			},
 		},
 	})
 
@@ -130,6 +139,15 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Id:      "io.buildpack.3",
 				Version: "v2",
 			},
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				API:         "0.2",
+				LayerDiffID: buildpack3Layer.diffID,
+				Stacks: []expv1alpha1.BuildpackStack{
+					{
+						ID: "io.buildpacks.stacks.cflinuxfs3",
+					},
+				},
+			},
 		},
 		{
 			v1Layer: buildpack2Layer,
@@ -137,16 +155,28 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Id:      "io.buildpack.2",
 				Version: "v1",
 			},
-			Order: expv1alpha1.Order{
-				{
-					Group: []expv1alpha1.BuildpackRef{
-						{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.3",
-								Version: "v2",
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				API:         "0.2",
+				LayerDiffID: buildpack2Layer.diffID,
+				Order: expv1alpha1.Order{
+					{
+						Group: []expv1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.3",
+									Version: "v2",
+								},
+								Optional: false,
 							},
-							Optional: false,
 						},
+					},
+				},
+				Stacks: []expv1alpha1.BuildpackStack{
+					{
+						ID: "io.buildpacks.stacks.cflinuxfs3",
+					},
+					{
+						ID: "io.some.other.stack",
 					},
 				},
 			},
@@ -392,13 +422,18 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				`{
   "io.buildpack.1": {
     "v1": {
-      "layerDigest": "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
-      "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462"
+      "api": "0.2",
+      "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.cflinuxfs3"
+        }
+      ]
     }
   },
   "io.buildpack.2": {
     "v1": {
-      "layerDigest": "sha256:2bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
+      "api": "0.2",
       "layerDiffID": "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "order": [
         {
@@ -409,17 +444,29 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
             }
           ]
         }
+      ],
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.cflinuxfs3"
+        },
+        {
+          "id": "io.some.other.stack"
+        }
       ]
     }
   },
   "io.buildpack.3": {
     "v2": {
-      "layerDigest": "sha256:3bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
-      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462"
+      "api": "0.2",
+      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.cflinuxfs3"
+        }
+      ]
     }
   }
-}
-`, buildpackLayers)
+}`, buildpackLayers)
 
 		})
 
