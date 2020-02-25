@@ -28,6 +28,8 @@ func (b BuildpackInfo) String() string {
 
 // +k8s:openapi-gen=true
 type BuildpackStack struct {
-	ID     string   `json:"id"`
+	ID string `json:"id"`
+
+	// +listType
 	Mixins []string `json:"mixins,omitempty"`
 }

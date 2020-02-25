@@ -100,10 +100,7 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 
 	for _, key := range buildpacks {
 		layer := bb.buildpackLayers[key]
-		if err := buildpackLayerMetadata.add(layer); err != nil {
-			return nil, err
-		}
-
+		buildpackLayerMetadata.add(layer)
 		buildpackLayers = append(buildpackLayers, layer.v1Layer)
 	}
 
