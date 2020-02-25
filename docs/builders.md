@@ -14,12 +14,14 @@ apiVersion: build.pivotal.io/v1alpha1
 kind: Builder
 metadata:
   name: sample-builder
+  namespace: default
 spec:
   image: cloudfoundry/cnb:bionic
   # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
   # - name: builder-secret
 ```
 - `name`: The name of the builder that will be used to reference by the image.
+- `namespace`: Namespace where the builder will be created
 - `image`: Builder image tag.
 - `updatePolicy`: Update policy of the builder. Valid options are `polling` and `external`
 The major difference between the options is that `external` require a user to update the resource by applying a new
@@ -42,7 +44,6 @@ spec:
   image: cloudfoundry/cnb:bionic
 ```
 - `name`: The name of the builder that will be used to reference by the image.
-- `namespace`: Namespace where the builder builder will be created
 - `image`: Builder image tag.
 - `updatePolicy`: Update policy of the builder. Valid options are `polling` and `external`
 The major difference between the options is that `external` require a user to update the resource by applying a new
