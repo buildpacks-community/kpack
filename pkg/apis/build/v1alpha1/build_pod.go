@@ -472,11 +472,11 @@ func (b *Build) cacheVolume() corev1.VolumeSource {
 }
 
 func gitAndDockerSecrets(secret corev1.Secret) bool {
-	return secret.Annotations[GITSecretAnnotationPrefix] != "" || secret.Annotations[DOCKERSecretAnnotationPrefix] != ""
+	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret)
 }
 
 func dockerSecrets(secret corev1.Secret) bool {
-	return secret.Annotations[DOCKERSecretAnnotationPrefix] != ""
+	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
 }
 
 func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
@@ -509,6 +509,12 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Annotations[DOCKERSecretAnnotationPrefix] != "":
 			args = append(args,
 				fmt.Sprintf("-basic-%s=%s=%s", "docker", secret.Name, secret.Annotations[DOCKERSecretAnnotationPrefix]))
+		case secret.Type == corev1.SecretTypeDockerConfigJson:
+			args = append(args,
+				fmt.Sprintf("-dockerconfig=%s", fmt.Sprintf(SecretPathName, secret.Name)))
+		case secret.Type == corev1.SecretTypeDockercfg:
+			args = append(args,
+				fmt.Sprintf("-dockercfg=%s", fmt.Sprintf(SecretPathName, secret.Name)))
 		case secret.Type == corev1.SecretTypeBasicAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-basic-%s=%s=%s", "git", secret.Name, annotatedUrl))

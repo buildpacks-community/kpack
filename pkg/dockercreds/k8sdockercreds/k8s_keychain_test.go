@@ -73,6 +73,74 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			}), authenticator)
 		})
 
+		it("keychain provides auth from dockerconfigjson and dockercfg secrets", func() {
+			fakeClient := fake.NewSimpleClientset(&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-1",
+					Namespace: testNamespace,
+				},
+				Type: v1.SecretTypeDockercfg,
+				Data: map[string][]byte{
+					v1.DockerConfigKey: []byte("{\"imagcfg.io\": {\"username\": \"cfg-user\", \"password\":  \"pull-password\"}}"),
+				},
+			},
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: testNamespace,
+					},
+					Type: v1.SecretTypeDockerConfigJson,
+					Data: map[string][]byte{
+						v1.DockerConfigJsonKey: []byte("{\"auths\": {\"imagecfgjson.io\": {\"username\": \"config-json-user\", \"password\":  \"pull-password\"}}}"),
+					},
+				},
+				&v1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      serviceAccountName,
+						Namespace: testNamespace,
+					},
+					Secrets: []v1.ObjectReference{
+						{Name: "secret-1"},
+						{Name: "secret-2"},
+					},
+				})
+			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
+			require.NoError(t, err)
+
+			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+				ServiceAccount: serviceAccountName,
+				Namespace:      testNamespace,
+			})
+
+			dockerCfgReg, err := name.NewRegistry("imagcfg.io")
+			require.NoError(t, err)
+
+			dockerCfgAuth, err := keychain.Resolve(dockerCfgReg)
+			require.NoError(t, err)
+
+			dockerCfgAuthConfig, err := dockerCfgAuth.Authorization()
+			require.NoError(t, err)
+
+			assert.Equal(t, &authn.AuthConfig{
+				Username: "cfg-user",
+				Password: "pull-password",
+			}, dockerCfgAuthConfig)
+
+			dockerConfigReg, err := name.NewRegistry("imagecfgjson.io")
+			require.NoError(t, err)
+
+			dockerConfigAuth, err := keychain.Resolve(dockerConfigReg)
+			require.NoError(t, err)
+
+			dockerConfigAuthCfg, err := dockerConfigAuth.Authorization()
+			require.NoError(t, err)
+
+			assert.Equal(t, &authn.AuthConfig{
+				Username: "config-json-user",
+				Password: "pull-password",
+			}, dockerConfigAuthCfg)
+		})
+
 		when("no service account is provided", func() {
 			it("keychain provides auth from annotated basic auth secrets from the default service account", func() {
 				fakeClient := fake.NewSimpleClientset(&v1.Secret{

@@ -27,15 +27,19 @@ var (
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 
-	basicGitCredentials flaghelpers.CredentialsFlags
-	sshGitCredentials   flaghelpers.CredentialsFlags
-	dockerCredentials   flaghelpers.CredentialsFlags
+	basicGitCredentials     flaghelpers.CredentialsFlags
+	sshGitCredentials       flaghelpers.CredentialsFlags
+	dockerCredentials       flaghelpers.CredentialsFlags
+	dockerCfgCredentials    flaghelpers.CredentialsFlags
+	dockerConfigCredentials flaghelpers.CredentialsFlags
 )
 
 func init() {
 	flag.Var(&basicGitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
 	flag.Var(&sshGitCredentials, "ssh-git", "SSH authentication for git of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
+	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
+	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 }
 
 const (
@@ -56,6 +60,18 @@ func main() {
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
 		logger.Fatal(err)
+	}
+
+	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(c)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		creds, err = creds.Append(dockerCfgCreds)
+		if err != nil {
+			logger.Fatal(err)
+		}
 	}
 
 	hasImageWriteAccess, err := dockercreds.HasWriteAccess(creds, *imageTag)
