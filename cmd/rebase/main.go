@@ -20,11 +20,15 @@ var (
 	runImage       = flag.String("run-image", os.Getenv("RUN_IMAGE"), "The new run image to rebase")
 	lastBuiltImage = flag.String("last-built-image", os.Getenv("LAST_BUILT_IMAGE"), "The previous image to rebase")
 
-	dockerCredentials flaghelpers.CredentialsFlags
+	dockerCredentials       flaghelpers.CredentialsFlags
+	dockerCfgCredentials    flaghelpers.CredentialsFlags
+	dockerConfigCredentials flaghelpers.CredentialsFlags
 )
 
 func init() {
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
+	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
+	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 }
 
 func main() {
@@ -42,6 +46,18 @@ func rebase(tags []string) error {
 	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
+	}
+
+	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(c)
+		if err != nil {
+			return err
+		}
+
+		keychain, err = keychain.Append(dockerCfgCreds)
+		if err != nil {
+			return err
+		}
 	}
 
 	appImage, err := remote.NewImage(tags[0], keychain, remote.FromBaseImage(*lastBuiltImage))
