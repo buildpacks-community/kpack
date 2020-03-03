@@ -36,6 +36,31 @@ stringData:
         
 > Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. For GCR this should be `gcr.io`. 
 
+Additionally, both `kubernetes.io/dockerconfigjson` and `kubernetes.io/dockercfg` type secrets are supported as credentials to write to docker registries.
+These credentials do not need to be annotated with the registry.
+
+Docker Config Json example
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: docker-configjson
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: <contents of .docker/config.json>
+```
+
+Docker Cfg example
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: docker-cfg
+type: kubernetes.io/dockercfg
+stringData:
+  .dockercfg: <contents of .dockercfg>
+```
+
 ### Git Secrets
 
 kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/git` annotation that references a remote git location.      
@@ -94,6 +119,8 @@ metadata:
   name: service-account
 secrets:
   - name: basic-docker-user-pass
+  - name: docker-configjson
+  - name: docker-cfg
   - name: basic-git-user-pass
   - name: git-ssh-auth
 ```
