@@ -22,6 +22,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/stack"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
@@ -59,7 +60,7 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
 
-	stack := &expv1alpha1.Stack{
+	testStack := &expv1alpha1.Stack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       stackName,
 			Generation: initialGeneration,
@@ -79,9 +80,19 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		fakeKeychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{}, expectedKeychain)
 
 		buildImage, buildImageSha = randomImage(t)
+		buildImage, err := imagehelpers.SetStringLabels(buildImage, map[string]string{stack.StackLabel: "some.stack.id"})
+		require.NoError(t, err)
+		buildImageHash, err := buildImage.Digest()
+		require.NoError(t, err)
+		buildImageSha = buildImageHash.String()
 		fakeRegistryClient.AddImage("some-registry.io/build-image", buildImage, expectedKeychain)
 
 		runImage, runImageSha = randomImage(t)
+		runImage, err := imagehelpers.SetStringLabels(runImage, map[string]string{stack.StackLabel: "some.stack.id"})
+		require.NoError(t, err)
+		runImageHash, err := runImage.Digest()
+		require.NoError(t, err)
+		runImageSha = runImageHash.String()
 		fakeRegistryClient.AddImage("some-registry.io/run-image", runImage, expectedKeychain)
 	})
 
@@ -90,14 +101,14 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
 				Objects: []runtime.Object{
-					stack,
+					testStack,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &expv1alpha1.Stack{
-							ObjectMeta: stack.ObjectMeta,
-							Spec:       stack.Spec,
+							ObjectMeta: testStack.ObjectMeta,
+							Spec:       testStack.Spec,
 							Status: expv1alpha1.StackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
@@ -118,7 +129,7 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update the status with no status change", func() {
-			stack.Status = expv1alpha1.StackStatus{
+			testStack.Status = expv1alpha1.StackStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -134,9 +145,48 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
 				Objects: []runtime.Object{
-					stack,
+					testStack,
 				},
 				WantErr: false,
+			})
+		})
+
+		it("sets the status to Ready False if the stacks do not match", func() {
+			testStack.Spec = expv1alpha1.StackSpec{
+				Id: "another.stack.id",
+				BuildImage: expv1alpha1.StackSpecImage{
+					Image: "some-registry.io/build-image",
+				},
+				RunImage: expv1alpha1.StackSpecImage{
+					Image: "some-registry.io/run-image",
+				},
+			}
+			rt.Test(rtesting.TableRow{
+				Key: stackKey,
+				Objects: []runtime.Object{
+					testStack,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &expv1alpha1.Stack{
+							ObjectMeta: testStack.ObjectMeta,
+							Spec:       testStack.Spec,
+							Status: expv1alpha1.StackStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Message: "invalid stack images. expected stack: another.stack.id, build image stack: some.stack.id, run image stack: some.stack.id",
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			})
 		})
 
@@ -146,14 +196,14 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
 				Objects: []runtime.Object{
-					stack,
+					testStack,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &expv1alpha1.Stack{
-							ObjectMeta: stack.ObjectMeta,
-							Spec:       stack.Spec,
+							ObjectMeta: testStack.ObjectMeta,
+							Spec:       testStack.Spec,
 							Status: expv1alpha1.StackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
