@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,11 +20,13 @@ import (
 	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 const (
 	ReconcilerName = "Stacks"
 	Kind           = "Stack"
+	StackLabel     = "io.buildpacks.stack.id"
 )
 
 type ImageFetcher interface {
@@ -78,7 +81,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha1.Stack, error) {
-	baseImageId, runImageId, err := c.getStackImages(stack.Spec)
+	buildImageId, runImageId, err := c.getStackImages(stack.Spec)
 	if err != nil {
 		stack.Status = expv1alpha1.StackStatus{
 			Status: corev1alpha1.Status{
@@ -98,7 +101,7 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 
 	stack.Status = expv1alpha1.StackStatus{
 		BuildImage: expv1alpha1.StackStatusImage{
-			LatestImage: baseImageId,
+			LatestImage: buildImageId,
 		},
 		RunImage: expv1alpha1.StackStatusImage{
 			LatestImage: runImageId,
@@ -123,17 +126,40 @@ func (c *Reconciler) getStackImages(stackSpec expv1alpha1.StackSpec) (string, st
 		return "", "", err
 	}
 
-	_, baseImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.BuildImage.Image)
+	buildImage, buildImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.BuildImage.Image)
 	if err != nil {
 		return "", "", err
 	}
 
-	_, runImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.RunImage.Image)
+	runImage, runImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.RunImage.Image)
 	if err != nil {
 		return "", "", err
 	}
 
-	return baseImageId, runImageId, nil
+	err = validateStackId(stackSpec.Id, buildImage, runImage)
+	if err != nil {
+		return "", "", err
+	}
+
+	return buildImageId, runImageId, nil
+}
+
+func validateStackId(stackId string, buildImage ggcrv1.Image, runImage ggcrv1.Image) error {
+	buildStack, err := imagehelpers.GetStringLabel(buildImage, StackLabel)
+	if err != nil {
+		return errors.Errorf("invalid build image provided for stack: %s", err.Error())
+	}
+
+	runStack, err := imagehelpers.GetStringLabel(runImage, StackLabel)
+	if err != nil {
+		return errors.Errorf("invalid run image provided for stack: %s", err.Error())
+	}
+
+	if (buildStack == stackId) && (runStack == stackId) {
+		return nil
+	} else {
+		return errors.Errorf("invalid stack images. expected stack: %s, build image stack: %s, run image stack: %s", stackId, buildStack, runStack)
+	}
 }
 
 func (c *Reconciler) updateStackStatus(desired *expv1alpha1.Stack) error {

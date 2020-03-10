@@ -7,7 +7,7 @@ Before creating CustomBuilders you will need to create the Stack and Store resou
 
 ### <a id='store'></a>Store
 
-The Store is a cluster scoped resource resource is a repository for buildpacks that can be utilized by CustomBuilders. As an input the store takes a list of images that contain buildpacks.
+The Store is a cluster scoped resource that is a repository for buildpacks that can be utilized by CustomBuilders. As an input the store takes a list of images that contain buildpacks.
 
 ```yaml
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
