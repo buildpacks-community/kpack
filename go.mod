@@ -12,7 +12,7 @@ require (
 	github.com/buildpacks/lifecycle v0.6.1
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
-	github.com/go-openapi/spec v0.19.6
+	github.com/go-openapi/spec v0.19.7
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/google/go-cmp v0.4.0
 	github.com/google/go-containerregistry v0.0.0-20191211193041-0eaa33c3d13c
