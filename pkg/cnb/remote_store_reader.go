@@ -86,6 +86,10 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []v1alpha1
 	}
 
 	sort.Slice(buildpacks, func(i, j int) bool {
+		if buildpacks[i].String() == buildpacks[j].String() {
+			return buildpacks[i].StoreImage.Image < buildpacks[j].StoreImage.Image
+		}
+
 		return buildpacks[i].String() < buildpacks[j].String()
 	})
 

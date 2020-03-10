@@ -35,7 +35,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		it.Before(func() {
-			buildPackageAImage, err := random.Image(10, int64(10))
+			buildPackageAImage, err := random.Image(0, 0)
 			require.NoError(t, err)
 
 			buildPackageAImage, err = mutate.AppendLayers(buildPackageAImage,
@@ -134,10 +134,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 
 			fakeClient.AddImage(buildpackageA, buildPackageAImage, expectedKeychain)
 
-			buildPackageBImage, err := random.Image(10, int64(10))
+			buildPackageBImage, err := random.Image(0, 0)
 			require.NoError(t, err)
 
-			buildPackageBImage, err = mutate.AppendLayers(buildPackageAImage,
+			buildPackageBImage, err = mutate.AppendLayers(buildPackageBImage,
 				fakeLayer{
 					digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
 					diffID: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
@@ -319,6 +319,67 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						Image: buildpackageB,
 					},
 				})
+				require.NoError(t, err)
+
+				require.Equal(t, expectedBuildpackOrder, subsequentOrder)
+			}
+		})
+
+		it("returns all buildpacks in a deterministic order with buildpackages containing duplicates buildpacks", func() {
+			imageWithDuplicates, err := random.Image(0, 0)
+			require.NoError(t, err)
+
+			imageWithDuplicates, err = mutate.AppendLayers(imageWithDuplicates,
+				fakeLayer{
+					digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
+					diffID: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+					size:   40,
+				},
+			)
+
+			imageWithDuplicates, err = imagehelpers.SetStringLabels(imageWithDuplicates, map[string]string{
+				"io.buildpacks.buildpack.layers": //language=json
+				`{
+ "org.buildpack.simple": {
+   "0.0.1": {
+     "layerDiffID": "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+     "api": "0.2",
+     "stacks": [
+       {
+         "id": "org.some.stack",
+         "mixins": [
+           "simple:mixin"
+         ]
+       },
+       {
+         "id": "org.simple.only.stack"
+       }
+     ]
+   }
+ }
+}
+`,
+			})
+			require.NoError(t, err)
+
+			fakeClient.AddImage("image/with_duplicates", imageWithDuplicates, expectedKeychain)
+
+			images := []v1alpha1.StoreImage{
+				{
+					Image: buildpackageA,
+				},
+				{
+					Image: buildpackageB,
+				},
+				{
+					Image: "image/with_duplicates",
+				},
+			}
+			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, images)
+			require.NoError(t, err)
+
+			for i := 1; i <= 50; i++ {
+				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, images)
 				require.NoError(t, err)
 
 				require.Equal(t, expectedBuildpackOrder, subsequentOrder)
