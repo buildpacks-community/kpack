@@ -20,12 +20,14 @@ spec:
   # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
   # - name: builder-secret
 ```
-- `name`: The name of the builder that will be used to reference by the image.
-- `namespace`: Namespace where the builder will be created
-- `image`: Builder image tag.
-- `updatePolicy`: Update policy of the builder. Valid options are `polling` and `external`
+
+#### Builder field descriptions
+- `name`: A required field. The name of the builder that will be referenced by the image.
+- `image`: A required field. This is builder image tag of the buildpacks builder.
+- `namespace`: An optional field. The kubernetes namespace where the builder will be created. Default: default
+- `updatePolicy`: An optional field. must be one of `polling` or `external`
 The major difference between the options is that `external` require a user to update the resource by applying a new
-configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists
+configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists. Default: polling.
 - `imagePullSecrets`: This is an optional parameter that should only be used if the builder image is in a
 private registry. [To create this secret please reference this link](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials)
 
@@ -43,11 +45,13 @@ metadata:
 spec:
   image: cloudfoundry/cnb:bionic
 ```
-- `name`: The name of the builder that will be used to reference by the image.
-- `image`: Builder image tag.
-- `updatePolicy`: Update policy of the builder. Valid options are `polling` and `external`
+
+#### ClusterBuilder field descriptions
+- `name`: A required field. The name of the builder that will be referenced by the image.
+- `image`: A required field. This is builder image tag of the buildpacks builder.
+- `updatePolicy`: An optional field. must be one of `polling` or `external`
 The major difference between the options is that `external` require a user to update the resource by applying a new
-configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists
+configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists. Default: polling.
 
 > Note: ClusterBuilders do not support imagePullSecrets. Therefore the builder image must be available to kpack without credentials.
 
