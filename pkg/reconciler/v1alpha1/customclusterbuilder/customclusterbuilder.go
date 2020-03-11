@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
@@ -120,6 +122,10 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomClu
 	err = c.Tracker.Track(stack, customBuilder.NamespacedName())
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
+	}
+
+	if !stack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
+		return v1alpha1.BuilderRecord{}, errors.Errorf("stack %s is not ready", stack.Name)
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{

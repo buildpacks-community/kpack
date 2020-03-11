@@ -34,10 +34,16 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	builderBuilder, err := newBuilderBuilder(buildImage, lifecycleImage, stack, r.KpackVersion)
+	builderBldr, err := newBuilderBldr(lifecycleImage, r.KpackVersion)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
+
+	builderBldr.AddStack(
+		stack.Spec.Id,
+		buildImage,
+		[]string{},
+		stack.Spec.RunImage.Image)
 
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
@@ -50,10 +56,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 
 			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
 		}
-		builderBuilder.addGroup(buildpacks...)
+		builderBldr.AddGroup(buildpacks...)
 	}
 
-	writeableImage, err := builderBuilder.writeableImage()
+	writeableImage, err := builderBldr.WriteableImage()
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -69,7 +75,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 			RunImage: stack.Status.RunImage.LatestImage,
 			ID:       stack.Spec.Id,
 		},
-		Buildpacks: buildpackMetadata(builderBuilder.buildpacks()),
+		Buildpacks: buildpackMetadata(builderBldr.buildpacks()),
 	}, nil
 }
 
