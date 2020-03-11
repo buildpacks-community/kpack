@@ -78,6 +78,17 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-stack",
 		},
+		Status: expv1alpha1.StackStatus{
+			Status: corev1alpha1.Status{
+				ObservedGeneration: 0,
+				Conditions: []corev1alpha1.Condition{
+					{
+						Type:   corev1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
 	}
 
 	customBuilder := &expv1alpha1.CustomBuilder{
@@ -300,25 +311,6 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("updates status on creation error", func() {
 			builderCreator.CreateErr = errors.New("create error")
 
-			expectedBuilder := &expv1alpha1.CustomBuilder{
-				ObjectMeta: customBuilder.ObjectMeta,
-				Spec:       customBuilder.Spec,
-				Status: expv1alpha1.CustomBuilderStatus{
-					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: corev1alpha1.Status{
-							ObservedGeneration: 1,
-							Conditions: corev1alpha1.Conditions{
-								{
-									Type:    corev1alpha1.ConditionReady,
-									Status:  corev1.ConditionFalse,
-									Message: "create error",
-								},
-							},
-						},
-					},
-				},
-			}
-
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
@@ -329,10 +321,84 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: expectedBuilder,
+						Object: &expv1alpha1.CustomBuilder{
+							ObjectMeta: customBuilder.ObjectMeta,
+							Spec:       customBuilder.Spec,
+							Status: expv1alpha1.CustomBuilderStatus{
+								BuilderStatus: v1alpha1.BuilderStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Message: "create error",
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			})
+
 		})
+
+		it("updates status and doesn't build builder when stack not ready", func() {
+			notReadyStack := &expv1alpha1.Stack{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "some-stack",
+				},
+				Status: expv1alpha1.StackStatus{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: 0,
+						Conditions: []corev1alpha1.Condition{
+							{
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionFalse,
+							},
+						},
+					},
+				},
+			}
+			rt.Test(rtesting.TableRow{
+				Key: customBuilderKey,
+				Objects: []runtime.Object{
+					notReadyStack,
+					store,
+					customBuilder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &expv1alpha1.CustomBuilder{
+							ObjectMeta: customBuilder.ObjectMeta,
+							Spec:       customBuilder.Spec,
+							Status: expv1alpha1.CustomBuilderStatus{
+								BuilderStatus: v1alpha1.BuilderStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: 1,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Message: "stack some-stack is not ready",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			//still track resources
+			require.True(t, fakeTracker.IsTracking(store, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(notReadyStack, customBuilder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
+		})
+
 	})
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -350,9 +349,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				source := imageSources[imageType]
 				builder := builderConfigs[builderType]
 
-				var wg sync.WaitGroup
 				t.Run(imageName, func(t *testing.T) {
-					wg.Add(1)
 					t.Parallel()
 
 					imageTag := cfg.newImageTag()
@@ -375,8 +372,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					require.NoError(t, err)
 
 					validateImageCreate(t, clients, image, expectedResources)
-					wg.Done()
-					wg.Wait()
 					validateRebase(t, clients, image.Name, testNamespace)
 				})
 			}
@@ -511,7 +506,7 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 			require.NoError(t, err)
 
 			return kResource.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue()
-		}, 1*time.Second, 9*time.Minute)
+		}, 1*time.Second, 8*time.Minute)
 	}
 }
 
@@ -581,7 +576,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
 
 		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
-	}, 5*time.Second, 2*time.Minute)
+	}, 5*time.Second, 1*time.Minute)
 }
 
 func deleteImageTag(t *testing.T, deleteImageTag string) {
