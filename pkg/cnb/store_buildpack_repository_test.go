@@ -20,7 +20,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		engineBuildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.engine",
-				Version: "v1",
+				Version: "1.0.0",
 			},
 			DiffId: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
@@ -43,7 +43,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		packageManagerBuildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.package-manager",
-				Version: "v1",
+				Version: "1.0.0",
 			},
 			DiffId: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:7c1213a54d20137a7479e72150c058268a6604b98c011b4fc11ca45927923d7b",
@@ -66,7 +66,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		metaBuildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.meta",
-				Version: "v1",
+				Version: "1.0.0",
 			},
 			DiffId: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:07db84e57fdd7101104c2469984217696fdfe51591cb1edee2928514135920d6",
@@ -80,14 +80,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.engine",
-								Version: "v1",
+								Version: "1.0.0",
 							},
 							Optional: false,
 						},
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.package-manager",
-								Version: "v1",
+								Version: "1.0.0",
 							},
 							Optional: true,
 						},
@@ -108,7 +108,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		v8Buildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.multi",
-				Version: "v8",
+				Version: "8.0.0",
 			},
 			DiffId: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:fc14806eb95d01b6338ba1b9fea605e84db7c8c09561ae360bad5b80b5d0d80b",
@@ -131,7 +131,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		v9Buildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.multi",
-				Version: "v9",
+				Version: "9.0.0",
 			},
 			DiffId: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
@@ -170,7 +170,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("returns layer info from store image", func() {
-			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.engine", "v1")
+			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.engine", "1.0.0")
 			require.NoError(t, err)
 
 			expectedLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
@@ -178,14 +178,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, info, RemoteBuildpackInfo{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.engine",
-					Version: "v1",
+					Version: "1.0.0",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							Id:      "io.buildpack.engine",
-							Version: "v1",
+							Version: "1.0.0",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.1",
@@ -204,7 +204,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		it("returns the alphabetical newest buildpack if version is unspecified", func() {
+		it("returns the semver newest buildpack if version is unspecified", func() {
 			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
 			require.NoError(t, err)
 
@@ -214,14 +214,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, info, RemoteBuildpackInfo{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.multi",
-					Version: "v9",
+					Version: "9.0.0",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							Id:      "io.buildpack.multi",
-							Version: "v9",
+							Version: "9.0.0",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
@@ -240,8 +240,36 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		it("fails to find the buildpack if version is unspecified and not all buildpacks are semver conformant", func() {
+			storeBuildpackRepository.Store.Status.Buildpacks = append(storeBuildpackRepository.Store.Status.Buildpacks, v1alpha1.StoreBuildpack{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.multi",
+					Version: "my-wacky-version",
+				},
+				DiffId: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+				Digest: "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+				Size:   10,
+				StoreImage: v1alpha1.StoreImage{
+					Image: "some.registry.io/build-package",
+				},
+				Order: nil,
+				API:   "0.2",
+				Stacks: []v1alpha1.BuildpackStack{
+					{
+						ID: "io.custom.stack",
+					},
+					{
+						ID: "io.stack.only.v9.works",
+					},
+				},
+			})
+
+			_, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
+			require.Error(t, err, "cannot find buildpack 'io.buildpack.multi' with latest version due to invalid semver 'my-wacky-version'")
+		})
+
 		it("returns all buildpack layers in a meta buildpack", func() {
-			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.meta", "v1")
+			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.meta", "1.0.0")
 			require.NoError(t, err)
 
 			expectedEngineLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
@@ -256,14 +284,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, RemoteBuildpackInfo{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.meta",
-					Version: "v1",
+					Version: "1.0.0",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedEngineLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							Id:      "io.buildpack.engine",
-							Version: "v1",
+							Version: "1.0.0",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.1",
@@ -282,7 +310,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 						v1Layer: expectedPackageManagerLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							Id:      "io.buildpack.package-manager",
-							Version: "v1",
+							Version: "1.0.0",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
@@ -301,7 +329,7 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 						v1Layer: expectedMetaLayer,
 						BuildpackInfo: v1alpha1.BuildpackInfo{
 							Id:      "io.buildpack.meta",
-							Version: "v1",
+							Version: "1.0.0",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.3",
@@ -312,14 +340,14 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 										{
 											BuildpackInfo: v1alpha1.BuildpackInfo{
 												Id:      "io.buildpack.engine",
-												Version: "v1",
+												Version: "1.0.0",
 											},
 											Optional: false,
 										},
 										{
 											BuildpackInfo: v1alpha1.BuildpackInfo{
 												Id:      "io.buildpack.package-manager",
-												Version: "v1",
+												Version: "1.0.0",
 											},
 											Optional: true,
 										},
