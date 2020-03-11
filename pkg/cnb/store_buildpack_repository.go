@@ -3,6 +3,7 @@ package cnb
 import (
 	"sort"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 
@@ -64,7 +65,7 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.S
 	}
 
 	if version == "" {
-		return highestVersion(matchingBuildpacks), nil
+		return highestVersion(matchingBuildpacks)
 	}
 
 	for _, buildpack := range matchingBuildpacks {
@@ -93,9 +94,14 @@ func (s *StoreBuildpackRepository) layersForOrder(order v1alpha1.Order) ([]build
 	return buildpackLayers, nil
 }
 
-func highestVersion(matchingBuildpacks []v1alpha1.StoreBuildpack) v1alpha1.StoreBuildpack {
+func highestVersion(matchingBuildpacks []v1alpha1.StoreBuildpack) (v1alpha1.StoreBuildpack, error) {
+	for _, bp := range matchingBuildpacks {
+		if _, err := semver.NewVersion(bp.Version); err != nil {
+			return v1alpha1.StoreBuildpack{}, errors.Errorf("cannot find buildpack '%s' with latest version due to invalid semver '%s'", bp.Id, bp.Version)
+		}
+	}
 	sort.Sort(byBuildpackVersion(matchingBuildpacks))
-	return matchingBuildpacks[len(matchingBuildpacks)-1]
+	return matchingBuildpacks[len(matchingBuildpacks)-1], nil
 }
 
 type byBuildpackVersion []v1alpha1.StoreBuildpack
@@ -109,5 +115,5 @@ func (b byBuildpackVersion) Swap(i, j int) {
 }
 
 func (b byBuildpackVersion) Less(i, j int) bool {
-	return b[i].Version < b[j].Version
+	return semver.MustParse(b[i].Version).LessThan(semver.MustParse(b[j].Version))
 }
