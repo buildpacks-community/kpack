@@ -482,6 +482,43 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, original.Buildpacks, other.Buildpacks)
 			}
 		})
+
+		it("errors during builder creation if the builder spec specifies a buildpack with an unsupported stack", func() {
+			buildpackRepository.AddBP("io.buildpack.unsupported.stack", "v4", []buildpackLayer{
+				{
+					v1Layer: buildpack1Layer,
+					BuildpackInfo: expv1alpha1.BuildpackInfo{
+						Id:      "io.buildpack.unsupported.stack",
+						Version: "v4",
+					},
+					BuildpackLayerInfo: BuildpackLayerInfo{
+						API:         "0.2",
+						LayerDiffID: buildpack1Layer.diffID,
+						Stacks: []expv1alpha1.BuildpackStack{
+							{
+								ID: "io.buildpacks.stacks.unsupported",
+							},
+						},
+					},
+				},
+			})
+
+			clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+				{
+					Group: []expv1alpha1.BuildpackRef{
+						{
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.stack",
+								Version: "v4",
+							},
+						},
+					},
+				},
+			}
+
+			_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+			require.EqualError(t, err, "validating buildpack: io.buildpack.unsupported.stack@v4: stack: io.buildpacks.stacks.cflinuxfs3 not supported")
+		})
 	})
 }
 

@@ -35,48 +35,46 @@ const (
 
 var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 
-type BuilderBuilder struct {
+type builderBlder struct {
+	err error
+
 	baseImage         v1.Image
 	lifecycleImage    v1.Image
 	LifecycleMetadata LifecycleMetadata
-	stack             *expv1alpha1.Stack
+	stackId           string
 	order             []expv1alpha1.OrderEntry
 	buildpackLayers   map[expv1alpha1.BuildpackInfo]buildpackLayer
 	cnbUserId         int
 	cnbGroupId        int
 	kpackVersion      string
+	runImage          string
 }
 
-func newBuilderBuilder(baseImage v1.Image, lifecycleImage v1.Image, stack *expv1alpha1.Stack, kpackVersion string) (*BuilderBuilder, error) {
+func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder, error) {
 	lifecycleMd := LifecycleMetadata{}
 	err := imagehelpers.GetLabel(lifecycleImage, lifecycleMetadataLabel, &lifecycleMd)
 	if err != nil {
 		return nil, err
 	}
 
-	userId, err := parseCNBID(baseImage, cnbUserId)
-	if err != nil {
-		return nil, err
-	}
-
-	groupId, err := parseCNBID(baseImage, cnbGroupId)
-	if err != nil {
-		return nil, err
-	}
-
-	return &BuilderBuilder{
-		baseImage:         baseImage,
+	return &builderBlder{
 		lifecycleImage:    lifecycleImage,
 		LifecycleMetadata: lifecycleMd,
-		stack:             stack,
 		buildpackLayers:   map[expv1alpha1.BuildpackInfo]buildpackLayer{},
-		cnbGroupId:        groupId,
-		cnbUserId:         userId,
 		kpackVersion:      kpackVersion,
 	}, nil
 }
 
-func (bb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
+func (bb *builderBlder) AddStack(stackId string, baseImage v1.Image, mixins []string, runImage string) {
+	bb.baseImage = baseImage
+	bb.stackId = stackId
+	bb.runImage = runImage
+
+	bb.cnbUserId, bb.err = parseCNBID(baseImage, cnbUserId)
+	bb.cnbGroupId, bb.err = parseCNBID(baseImage, cnbGroupId)
+}
+
+func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 	group := make([]expv1alpha1.BuildpackRef, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		group = append(group, b.BuildpackRef)
@@ -88,11 +86,12 @@ func (bb *BuilderBuilder) addGroup(buildpacks ...RemoteBuildpackRef) {
 	bb.order = append(bb.order, expv1alpha1.OrderEntry{Group: group})
 }
 
-func (bb *BuilderBuilder) buildpacks() []expv1alpha1.BuildpackInfo {
-	return deterministicSortBySize(bb.buildpackLayers)
-}
+func (bb *builderBlder) WriteableImage() (v1.Image, error) {
+	bb.validateBuilder()
+	if bb.err != nil {
+		return nil, bb.err
+	}
 
-func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 	buildpacks := bb.buildpacks()
 
 	buildpackLayerMetadata := BuildpackLayerMetadata{}
@@ -158,7 +157,7 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 			Description: "Custom Builder built with kpack",
 			Stack: StackMetadata{
 				RunImage: RunImageMetadata{
-					Image:   bb.stack.Spec.RunImage.Image,
+					Image:   bb.runImage,
 					Mirrors: nil,
 				},
 			},
@@ -172,7 +171,21 @@ func (bb *BuilderBuilder) writeableImage() (v1.Image, error) {
 	})
 }
 
-func (bb *BuilderBuilder) lifecycleLayer() (v1.Layer, error) {
+func (bb *builderBlder) validateBuilder() {
+	for _, bp := range bb.buildpackLayers {
+		err := bp.BuildpackLayerInfo.supports(bb.stackId)
+		if err != nil {
+			bb.err = errors.Wrapf(err, "validating buildpack: %s", bp.BuildpackInfo)
+			return
+		}
+	}
+}
+
+func (bb *builderBlder) buildpacks() []expv1alpha1.BuildpackInfo {
+	return deterministicSortBySize(bb.buildpackLayers)
+}
+
+func (bb *builderBlder) lifecycleLayer() (v1.Layer, error) {
 	layers, err := bb.lifecycleImage.Layers()
 	if err != nil {
 		return nil, err
@@ -185,7 +198,7 @@ func (bb *BuilderBuilder) lifecycleLayer() (v1.Layer, error) {
 	return layers[0], nil
 }
 
-func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
+func (bb *builderBlder) stackLayer() (v1.Layer, error) {
 	type tomlRunImage struct {
 		Image string `toml:"image"`
 	}
@@ -197,7 +210,7 @@ func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
 	stackBuf := &bytes.Buffer{}
 	stackFile := tomlStackFile{
 		RunImage: tomlRunImage{
-			Image: bb.stack.Spec.RunImage.Image,
+			Image: bb.runImage,
 		},
 	}
 	err := toml.NewEncoder(stackBuf).Encode(stackFile)
@@ -207,7 +220,7 @@ func (bb *BuilderBuilder) stackLayer() (v1.Layer, error) {
 	return singeFileLayer(stackTomlPath, stackBuf.Bytes())
 }
 
-func (bb *BuilderBuilder) orderLayer() (v1.Layer, error) {
+func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 	type tomlBuildpack struct {
 		ID       string `toml:"id"`
 		Version  string `toml:"version"`
@@ -269,7 +282,7 @@ func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
-func (bb *BuilderBuilder) defaultDirsLayer() (v1.Layer, error) {
+func (bb *builderBlder) defaultDirsLayer() (v1.Layer, error) {
 	dirs := []*tar.Header{
 		bb.kpackOwnedDir(workspaceDir),
 		bb.kpackOwnedDir(layersDir),
@@ -295,7 +308,7 @@ func (bb *BuilderBuilder) defaultDirsLayer() (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
-func (bb *BuilderBuilder) kpackOwnedDir(path string) *tar.Header {
+func (bb *builderBlder) kpackOwnedDir(path string) *tar.Header {
 	return &tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     path,
@@ -306,7 +319,7 @@ func (bb *BuilderBuilder) kpackOwnedDir(path string) *tar.Header {
 	}
 }
 
-func (bb *BuilderBuilder) rootOwnedDir(path string) *tar.Header {
+func (bb *builderBlder) rootOwnedDir(path string) *tar.Header {
 	return &tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     path,
@@ -315,7 +328,7 @@ func (bb *BuilderBuilder) rootOwnedDir(path string) *tar.Header {
 	}
 }
 
-func (bb *BuilderBuilder) lifecycleCompatLayer() (v1.Layer, error) {
+func (bb *builderBlder) lifecycleCompatLayer() (v1.Layer, error) {
 	b := &bytes.Buffer{}
 	tw := tar.NewWriter(b)
 
