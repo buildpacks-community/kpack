@@ -37,9 +37,16 @@ type StackSpecImage struct {
 // +k8s:openapi-gen=true
 type StackStatus struct {
 	corev1alpha1.Status `json:",inline"`
+	ResolvedStack       `json:",inline"`
+}
 
+// +k8s:openapi-gen=true
+type ResolvedStack struct {
 	BuildImage StackStatusImage `json:"buildImage,omitempty"`
 	RunImage   StackStatusImage `json:"runImage,omitempty"`
+	Mixins     []string         `json:"mixins,omitempty"`
+	UserID     int              `json:"userId,omitempty"`
+	GroupID    int              `json:"groupId,omitempty"`
 }
 
 // +k8s:openapi-gen=true

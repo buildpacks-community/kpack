@@ -135,8 +135,19 @@ func main() {
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
+
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
+	}
+
 	remoteStoreReader := &cnb.RemoteStoreReader{
 		RegistryClient: &registry.Client{},
+	}
+
+	remoteStackReader := &cnb.RemoteStackReader{
+		RegistryClient: &registry.Client{},
+		Keychain:       kpackKeychain,
 	}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
@@ -147,7 +158,7 @@ func main() {
 	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer, stackInformer)
 	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer, stackInformer)
 	storeController := store.NewController(options, storeInformer, remoteStoreReader, keychainFactory)
-	stackController := stack.NewController(options, stackInformer, keychainFactory, &registry.Client{})
+	stackController := stack.NewController(options, stackInformer, remoteStackReader)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)

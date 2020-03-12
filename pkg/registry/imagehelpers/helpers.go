@@ -30,7 +30,7 @@ func GetEnv(image v1.Image, key string) (string, error) {
 			return parts[1], nil
 		}
 	}
-	return "", nil
+	return "", errors.Errorf("ENV %s not found", key)
 }
 
 func SetEnv(image v1.Image, key, value string) (v1.Image, error) {
@@ -44,6 +44,16 @@ func SetEnv(image v1.Image, key, value string) (v1.Image, error) {
 	config.Env = append(config.Env, fmt.Sprintf("%s=%s", key, value))
 
 	return mutate.Config(image, config)
+}
+
+func HasLabel(image v1.Image, key string) (bool, error) {
+	configFile, err := configFile(image)
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := configFile.Config.Labels[key]
+	return ok, err
 }
 
 func GetStringLabel(image v1.Image, key string) (string, error) {

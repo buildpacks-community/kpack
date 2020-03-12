@@ -45,6 +45,14 @@ func testImageHelpers(t *testing.T, when spec.G, it spec.S) {
 			image, err = imagehelpers.SetStringLabels(image, labels)
 			require.NoError(t, err)
 
+			hasLabel, err := imagehelpers.HasLabel(image, "foo")
+			require.NoError(t, err)
+			require.True(t, hasLabel)
+
+			hasLabel, err = imagehelpers.HasLabel(image, "not-exists")
+			require.NoError(t, err)
+			require.False(t, hasLabel)
+
 			metadata, err = imagehelpers.GetStringLabel(image, "foo")
 			require.NoError(t, err)
 			require.Equal(t, "bar", metadata)
@@ -66,6 +74,14 @@ func testImageHelpers(t *testing.T, when spec.G, it spec.S) {
 
 			image, err = imagehelpers.SetLabels(image, labels)
 			require.NoError(t, err)
+
+			hasLabel, err := imagehelpers.HasLabel(image, "foo")
+			require.NoError(t, err)
+			require.True(t, hasLabel)
+
+			hasLabel, err = imagehelpers.HasLabel(image, "not-exists")
+			require.NoError(t, err)
+			require.False(t, hasLabel)
 
 			err = imagehelpers.GetLabel(image, "foo", &metadata)
 			require.NoError(t, err)

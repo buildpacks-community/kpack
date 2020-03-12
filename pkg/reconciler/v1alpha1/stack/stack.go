@@ -3,9 +3,6 @@ package stack
 import (
 	"context"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,26 +16,23 @@ import (
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 const (
 	ReconcilerName = "Stacks"
 	Kind           = "Stack"
-	StackLabel     = "io.buildpacks.stack.id"
 )
 
-type ImageFetcher interface {
-	Fetch(keychain authn.Keychain, repoName string) (ggcrv1.Image, string, error)
+//go:generate counterfeiter . StackReader
+type StackReader interface {
+	Read(stackSpec expv1alpha1.StackSpec) (expv1alpha1.ResolvedStack, error)
 }
 
-func NewController(opt reconciler.Options, stackInformer v1alpha1expInformers.StackInformer, keychainFactory registry.KeychainFactory, fetcher ImageFetcher) *controller.Impl {
+func NewController(opt reconciler.Options, stackInformer v1alpha1expInformers.StackInformer, stackReader StackReader) *controller.Impl {
 	c := &Reconciler{
-		Client:          opt.Client,
-		KeychainFactory: keychainFactory,
-		ImageFetcher:    fetcher,
-		StackLister:     stackInformer.Lister(),
+		Client:      opt.Client,
+		StackLister: stackInformer.Lister(),
+		StackReader: stackReader,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	stackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -46,10 +40,9 @@ func NewController(opt reconciler.Options, stackInformer v1alpha1expInformers.St
 }
 
 type Reconciler struct {
-	Client          versioned.Interface
-	KeychainFactory registry.KeychainFactory
-	ImageFetcher    ImageFetcher
-	StackLister     v1alpha1expListers.StackLister
+	Client      versioned.Interface
+	StackLister v1alpha1expListers.StackLister
+	StackReader StackReader
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -81,7 +74,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha1.Stack, error) {
-	buildImageId, runImageId, err := c.getStackImages(stack.Spec)
+	resolvedStack, err := c.StackReader.Read(stack.Spec)
 	if err != nil {
 		stack.Status = expv1alpha1.StackStatus{
 			Status: corev1alpha1.Status{
@@ -100,12 +93,6 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 	}
 
 	stack.Status = expv1alpha1.StackStatus{
-		BuildImage: expv1alpha1.StackStatusImage{
-			LatestImage: buildImageId,
-		},
-		RunImage: expv1alpha1.StackStatusImage{
-			LatestImage: runImageId,
-		},
 		Status: corev1alpha1.Status{
 			ObservedGeneration: stack.Generation,
 			Conditions: corev1alpha1.Conditions{
@@ -116,50 +103,9 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 				},
 			},
 		},
+		ResolvedStack: resolvedStack,
 	}
 	return stack, nil
-}
-
-func (c *Reconciler) getStackImages(stackSpec expv1alpha1.StackSpec) (string, string, error) {
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{})
-	if err != nil {
-		return "", "", err
-	}
-
-	buildImage, buildImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.BuildImage.Image)
-	if err != nil {
-		return "", "", err
-	}
-
-	runImage, runImageId, err := c.ImageFetcher.Fetch(keychain, stackSpec.RunImage.Image)
-	if err != nil {
-		return "", "", err
-	}
-
-	err = validateStackId(stackSpec.Id, buildImage, runImage)
-	if err != nil {
-		return "", "", err
-	}
-
-	return buildImageId, runImageId, nil
-}
-
-func validateStackId(stackId string, buildImage ggcrv1.Image, runImage ggcrv1.Image) error {
-	buildStack, err := imagehelpers.GetStringLabel(buildImage, StackLabel)
-	if err != nil {
-		return errors.Errorf("invalid build image provided for stack: %s", err.Error())
-	}
-
-	runStack, err := imagehelpers.GetStringLabel(runImage, StackLabel)
-	if err != nil {
-		return errors.Errorf("invalid run image provided for stack: %s", err.Error())
-	}
-
-	if (buildStack == stackId) && (runStack == stackId) {
-		return nil
-	} else {
-		return errors.Errorf("invalid stack images. expected stack: %s, build image stack: %s, run image stack: %s", stackId, buildStack, runStack)
-	}
 }
 
 func (c *Reconciler) updateStackStatus(desired *expv1alpha1.Stack) error {

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -21,9 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/stack"
-	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
+	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/stack/stackfakes"
 )
 
 func TestStackReconciler(t *testing.T) {
@@ -37,28 +33,7 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		initialGeneration int64 = 1
 	)
 
-	var (
-		fakeKeychainFactory = &registryfakes.FakeKeychainFactory{}
-		expectedKeychain    = &registryfakes.FakeKeychain{Name: "Expected Keychain"}
-		fakeRegistryClient  = registryfakes.NewFakeClient()
-		buildImage          ggcrv1.Image
-		buildImageSha       string
-		runImage            ggcrv1.Image
-		runImageSha         string
-	)
-
-	rt := testhelpers.ReconcilerTester(t,
-		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
-			listers := testhelpers.NewListers(row.Objects)
-			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &stack.Reconciler{
-				ImageFetcher:    fakeRegistryClient,
-				Client:          fakeClient,
-				KeychainFactory: fakeKeychainFactory,
-				StackLister:     listers.GetStackLister(),
-			}
-			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
-		})
+	fakeStackReader := &stackfakes.FakeStackReader{}
 
 	testStack := &expv1alpha1.Stack{
 		ObjectMeta: metav1.ObjectMeta{
@@ -76,28 +51,33 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	it.Before(func() {
-		fakeKeychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{}, expectedKeychain)
-
-		buildImage, buildImageSha = randomImage(t)
-		buildImage, err := imagehelpers.SetStringLabels(buildImage, map[string]string{stack.StackLabel: "some.stack.id"})
-		require.NoError(t, err)
-		buildImageHash, err := buildImage.Digest()
-		require.NoError(t, err)
-		buildImageSha = buildImageHash.String()
-		fakeRegistryClient.AddImage("some-registry.io/build-image", buildImage, expectedKeychain)
-
-		runImage, runImageSha = randomImage(t)
-		runImage, err := imagehelpers.SetStringLabels(runImage, map[string]string{stack.StackLabel: "some.stack.id"})
-		require.NoError(t, err)
-		runImageHash, err := runImage.Digest()
-		require.NoError(t, err)
-		runImageSha = runImageHash.String()
-		fakeRegistryClient.AddImage("some-registry.io/run-image", runImage, expectedKeychain)
-	})
+	rt := testhelpers.ReconcilerTester(t,
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+			listers := testhelpers.NewListers(row.Objects)
+			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
+			r := &stack.Reconciler{
+				Client:      fakeClient,
+				StackLister: listers.GetStackLister(),
+				StackReader: fakeStackReader,
+			}
+			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
+		})
 
 	when("#Reconcile", func() {
 		it("saves metadata to the status", func() {
+			resolvedStack := expv1alpha1.ResolvedStack{
+				BuildImage: expv1alpha1.StackStatusImage{
+					LatestImage: "some-registry.io/build-image@sha245:123",
+				},
+				RunImage: expv1alpha1.StackStatusImage{
+					LatestImage: "some-registry.io/run-image@sha245:123",
+				},
+				Mixins:  []string{"a-nice-mixin"},
+				UserID:  1000,
+				GroupID: 2000,
+			}
+			fakeStackReader.ReadReturns(resolvedStack, nil)
+
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
 				Objects: []runtime.Object{
@@ -119,16 +99,31 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildImage: expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/build-image@" + buildImageSha},
-								RunImage:   expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/run-image@" + runImageSha},
+								ResolvedStack: resolvedStack,
 							},
 						},
 					},
 				},
 			})
+
+			require.Equal(t, 1, fakeStackReader.ReadCallCount())
+			require.Equal(t, testStack.Spec, fakeStackReader.ReadArgsForCall(0))
 		})
 
 		it("does not update the status with no status change", func() {
+			resolvedStack := expv1alpha1.ResolvedStack{
+				BuildImage: expv1alpha1.StackStatusImage{
+					LatestImage: "some-registry.io/build-image@sha245:123",
+				},
+				RunImage: expv1alpha1.StackStatusImage{
+					LatestImage: "some-registry.io/run-image@sha245:123",
+				},
+				Mixins:  []string{"a-nice-mixin"},
+				UserID:  1000,
+				GroupID: 2000,
+			}
+			fakeStackReader.ReadReturns(resolvedStack, nil)
+
 			testStack.Status = expv1alpha1.StackStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
@@ -139,8 +134,7 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				BuildImage: expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/build-image@" + buildImageSha},
-				RunImage:   expv1alpha1.StackStatusImage{LatestImage: "some-registry.io/run-image@" + runImageSha},
+				ResolvedStack: resolvedStack,
 			}
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
@@ -151,47 +145,8 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		it("sets the status to Ready False if the stacks do not match", func() {
-			testStack.Spec = expv1alpha1.StackSpec{
-				Id: "another.stack.id",
-				BuildImage: expv1alpha1.StackSpecImage{
-					Image: "some-registry.io/build-image",
-				},
-				RunImage: expv1alpha1.StackSpecImage{
-					Image: "some-registry.io/run-image",
-				},
-			}
-			rt.Test(rtesting.TableRow{
-				Key: stackKey,
-				Objects: []runtime.Object{
-					testStack,
-				},
-				WantErr: true,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-					{
-						Object: &expv1alpha1.Stack{
-							ObjectMeta: testStack.ObjectMeta,
-							Spec:       testStack.Spec,
-							Status: expv1alpha1.StackStatus{
-								Status: corev1alpha1.Status{
-									ObservedGeneration: 1,
-									Conditions: corev1alpha1.Conditions{
-										{
-											Message: "invalid stack images. expected stack: another.stack.id, build image stack: some.stack.id, run image stack: some.stack.id",
-											Type:    corev1alpha1.ConditionReady,
-											Status:  corev1.ConditionFalse,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-		})
-
-		it("sets the status to Ready False if error reading from registry", func() {
-			fakeRegistryClient.SetFetchError(errors.New("some fetch error"))
+		it("sets the status to Ready False if error reading from stack", func() {
+			fakeStackReader.ReadReturns(expv1alpha1.ResolvedStack{}, errors.New("invalid mixins on run image"))
 
 			rt.Test(rtesting.TableRow{
 				Key: stackKey,
@@ -209,7 +164,7 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
 										{
-											Message: "some fetch error",
+											Message: "invalid mixins on run image",
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
 										},
@@ -222,14 +177,4 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
-}
-
-func randomImage(t *testing.T) (ggcrv1.Image, string) {
-	image, err := random.Image(5, 10)
-	require.NoError(t, err)
-
-	hash, err := image.Digest()
-	require.NoError(t, err)
-
-	return image, hash.String()
 }

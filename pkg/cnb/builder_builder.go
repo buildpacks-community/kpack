@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -28,16 +27,11 @@ const (
 	buildpacksDir       = "/cnb/buildpacks"
 	orderTomlPath       = "/cnb/order.toml"
 	stackTomlPath       = "/cnb/stack.toml"
-
-	cnbUserId  = "CNB_USER_ID"
-	cnbGroupId = "CNB_GROUP_ID"
 )
 
 var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 
 type builderBlder struct {
-	err error
-
 	baseImage         v1.Image
 	lifecycleImage    v1.Image
 	LifecycleMetadata LifecycleMetadata
@@ -48,6 +42,7 @@ type builderBlder struct {
 	cnbGroupId        int
 	kpackVersion      string
 	runImage          string
+	mixins            []string
 }
 
 func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder, error) {
@@ -65,13 +60,13 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 	}, nil
 }
 
-func (bb *builderBlder) AddStack(stackId string, baseImage v1.Image, mixins []string, runImage string) {
+func (bb *builderBlder) AddStack(baseImage v1.Image, stack *expv1alpha1.Stack) {
 	bb.baseImage = baseImage
-	bb.stackId = stackId
-	bb.runImage = runImage
-
-	bb.cnbUserId, bb.err = parseCNBID(baseImage, cnbUserId)
-	bb.cnbGroupId, bb.err = parseCNBID(baseImage, cnbGroupId)
+	bb.stackId = stack.Spec.Id
+	bb.runImage = stack.Spec.RunImage.Image
+	bb.mixins = stack.Status.Mixins
+	bb.cnbUserId = stack.Status.UserID
+	bb.cnbGroupId = stack.Status.GroupID
 }
 
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
@@ -87,12 +82,12 @@ func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 }
 
 func (bb *builderBlder) WriteableImage() (v1.Image, error) {
-	bb.validateBuilder()
-	if bb.err != nil {
-		return nil, bb.err
-	}
-
 	buildpacks := bb.buildpacks()
+
+	err := bb.validateBuilder(buildpacks)
+	if err != nil {
+		return nil, err
+	}
 
 	buildpackLayerMetadata := BuildpackLayerMetadata{}
 	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers))
@@ -171,14 +166,15 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	})
 }
 
-func (bb *builderBlder) validateBuilder() {
-	for _, bp := range bb.buildpackLayers {
-		err := bp.BuildpackLayerInfo.supports(bb.stackId)
+func (bb *builderBlder) validateBuilder(sortedBuildpacks []expv1alpha1.BuildpackInfo) error {
+	for _, bpInfo := range sortedBuildpacks {
+		bpLayerInfo := bb.buildpackLayers[bpInfo].BuildpackLayerInfo
+		err := bpLayerInfo.supports(bb.stackId, bb.mixins)
 		if err != nil {
-			bb.err = errors.Wrapf(err, "validating buildpack: %s", bp.BuildpackInfo)
-			return
+			return errors.Wrapf(err, "validating buildpack %s", bpInfo)
 		}
 	}
+	return nil
 }
 
 func (bb *builderBlder) buildpacks() []expv1alpha1.BuildpackInfo {
@@ -369,14 +365,6 @@ func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer
 	})
 
 	return keys
-}
-
-func parseCNBID(image v1.Image, env string) (int, error) {
-	v, err := imagehelpers.GetEnv(image, env)
-	if err != nil {
-		return 0, err
-	}
-	return strconv.Atoi(v)
 }
 
 func layers(layers ...[]v1.Layer) []v1.Layer {
