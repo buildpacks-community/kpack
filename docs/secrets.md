@@ -104,8 +104,8 @@ metadata:
     build.pivotal.io/git: https://github.com
 type: kubernetes.io/basic-auth
 stringData:
-  username: <generated-token>
-  password: x-oauth-basic
+  username: <your-username>
+  password: <generated-token>
 ```
 
 ### Service Account
