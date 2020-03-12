@@ -3,7 +3,6 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -28,6 +27,8 @@ func TestCreateBuilder(t *testing.T) {
 
 func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
+		stackID              = "io.buildpacks.stacks.cflinuxfs3"
+		mixin                = "some-mixin"
 		tag                  = "custom/example"
 		lifecycleImage       = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
 		buildImage           = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
@@ -67,7 +68,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Name: "sample-stack",
 			},
 			Spec: expv1alpha1.StackSpec{
-				Id: "io.buildpacks.stacks.cflinuxfs3",
+				Id: stackID,
 				BuildImage: expv1alpha1.StackSpecImage{
 					Image: "cloudfoundry/build:full-cnb",
 				},
@@ -76,8 +77,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			Status: expv1alpha1.StackStatus{
-				BuildImage: expv1alpha1.StackStatusImage{LatestImage: buildImage},
-				RunImage:   expv1alpha1.StackStatusImage{LatestImage: runImage},
+				ResolvedStack: expv1alpha1.ResolvedStack{
+					BuildImage: expv1alpha1.StackStatusImage{LatestImage: buildImage},
+					RunImage:   expv1alpha1.StackStatusImage{LatestImage: runImage},
+					Mixins:     []string{"some-unused-mixin", mixin},
+					UserID:     cnbUserId,
+					GroupID:    cnbGroupId,
+				},
 			},
 		}
 
@@ -125,7 +131,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				LayerDiffID: buildpack1Layer.diffID,
 				Stacks: []expv1alpha1.BuildpackStack{
 					{
-						ID: "io.buildpacks.stacks.cflinuxfs3",
+						ID:     stackID,
+						Mixins: []string{mixin},
 					},
 				},
 			},
@@ -144,7 +151,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				LayerDiffID: buildpack3Layer.diffID,
 				Stacks: []expv1alpha1.BuildpackStack{
 					{
-						ID: "io.buildpacks.stacks.cflinuxfs3",
+						ID: stackID,
+					},
+					{
+						ID: "io.some.other.stack",
 					},
 				},
 			},
@@ -169,14 +179,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 								Optional: false,
 							},
 						},
-					},
-				},
-				Stacks: []expv1alpha1.BuildpackStack{
-					{
-						ID: "io.buildpacks.stacks.cflinuxfs3",
-					},
-					{
-						ID: "io.some.other.stack",
 					},
 				},
 			},
@@ -215,11 +217,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			buildImg, err = random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
 
-			buildImg, err := imagehelpers.SetEnv(buildImg, "CNB_USER_ID", strconv.Itoa(cnbUserId))
-			require.NoError(t, err)
-			buildImg, err = imagehelpers.SetEnv(buildImg, "CNB_GROUP_ID", strconv.Itoa(cnbGroupId))
-			require.NoError(t, err)
-
 			registryClient.AddImage(buildImage, buildImg, keychain)
 		})
 
@@ -231,7 +228,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v1"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v2"})
-			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: "io.buildpacks.stacks.cflinuxfs3"}, builderRecord.Stack)
+			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
 			savedImage := registryClient.SavedImages()[tag]
@@ -426,7 +423,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
       "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
         {
-          "id": "io.buildpacks.stacks.cflinuxfs3"
+          "id": "io.buildpacks.stacks.cflinuxfs3",
+          "mixins": ["some-mixin"]
         }
       ]
     }
@@ -444,14 +442,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
             }
           ]
         }
-      ],
-      "stacks": [
-        {
-          "id": "io.buildpacks.stacks.cflinuxfs3"
-        },
-        {
-          "id": "io.some.other.stack"
-        }
       ]
     }
   },
@@ -462,6 +452,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
       "stacks": [
         {
           "id": "io.buildpacks.stacks.cflinuxfs3"
+        },
+        {
+          "id": "io.some.other.stack"
         }
       ]
     }
@@ -483,42 +476,121 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		it("errors during builder creation if the builder spec specifies a buildpack with an unsupported stack", func() {
-			buildpackRepository.AddBP("io.buildpack.unsupported.stack", "v4", []buildpackLayer{
-				{
-					v1Layer: buildpack1Layer,
-					BuildpackInfo: expv1alpha1.BuildpackInfo{
-						Id:      "io.buildpack.unsupported.stack",
-						Version: "v4",
-					},
-					BuildpackLayerInfo: BuildpackLayerInfo{
-						API:         "0.2",
-						LayerDiffID: buildpack1Layer.diffID,
-						Stacks: []expv1alpha1.BuildpackStack{
-							{
-								ID: "io.buildpacks.stacks.unsupported",
+		when("validating buildpacks", func() {
+			it("errors with unsupported stack", func() {
+				buildpackRepository.AddBP("io.buildpack.unsupported.stack", "v4", []buildpackLayer{
+					{
+						v1Layer: buildpack1Layer,
+						BuildpackInfo: expv1alpha1.BuildpackInfo{
+							Id:      "io.buildpack.unsupported.stack",
+							Version: "v4",
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         "0.2",
+							LayerDiffID: buildpack1Layer.diffID,
+							Stacks: []expv1alpha1.BuildpackStack{
+								{
+									ID: "io.buildpacks.stacks.unsupported",
+								},
 							},
 						},
 					},
-				},
+				})
+
+				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+					{
+						Group: []expv1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.unsupported.stack",
+									Version: "v4",
+								},
+							},
+						},
+					},
+				}
+
+				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.cflinuxfs3 is not supported")
 			})
 
-			clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
-				{
-					Group: []expv1alpha1.BuildpackRef{
-						{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.unsupported.stack",
-								Version: "v4",
+			it("errors with unsupported mixin", func() {
+				buildpackRepository.AddBP("io.buildpack.unsupported.mixin", "v4", []buildpackLayer{
+					{
+						v1Layer: buildpack1Layer,
+						BuildpackInfo: expv1alpha1.BuildpackInfo{
+							Id:      "io.buildpack.unsupported.mixin",
+							Version: "v4",
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         "0.2",
+							LayerDiffID: buildpack1Layer.diffID,
+							Stacks: []expv1alpha1.BuildpackStack{
+								{
+									ID:     stackID,
+									Mixins: []string{mixin, "something-missing-mixin", "something-missing-mixin2"},
+								},
 							},
 						},
 					},
-				},
-			}
+				})
 
-			_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
-			require.EqualError(t, err, "validating buildpack: io.buildpack.unsupported.stack@v4: stack: io.buildpacks.stacks.cflinuxfs3 not supported")
+				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+					{
+						Group: []expv1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.unsupported.mixin",
+									Version: "v4",
+								},
+							},
+						},
+					},
+				}
+
+				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
+			})
+
+			it("errors with unsupported buildpack version", func() {
+				buildpackRepository.AddBP("io.buildpack.unsupported.buildpack.api", "v4", []buildpackLayer{
+					{
+						v1Layer: buildpack1Layer,
+						BuildpackInfo: expv1alpha1.BuildpackInfo{
+							Id:      "io.buildpack.unsupported.buildpack.api",
+							Version: "v4",
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         "0.3",
+							LayerDiffID: buildpack1Layer.diffID,
+							Stacks: []expv1alpha1.BuildpackStack{
+								{
+									ID: stackID,
+								},
+							},
+						},
+					},
+				})
+
+				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+					{
+						Group: []expv1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.unsupported.buildpack.api",
+									Version: "v4",
+								},
+							},
+						},
+					},
+				}
+
+				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.2, expecting 0.3")
+			})
+
 		})
+
 	})
 }
 

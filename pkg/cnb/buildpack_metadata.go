@@ -1,8 +1,6 @@
 package cnb
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
@@ -19,19 +17,6 @@ type BuildpackLayerInfo struct {
 	LayerDiffID string                       `json:"layerDiffID"`
 	Order       expv1alpha1.Order            `json:"order,omitempty"`
 	Stacks      []expv1alpha1.BuildpackStack `json:"stacks,omitempty"`
-}
-
-func (bl BuildpackLayerInfo) supports(id string) error {
-	if len(bl.Order) != 0 {
-		return nil //ignore meta-buildpacks
-	}
-
-	for _, s := range bl.Stacks {
-		if s.ID == id {
-			return nil
-		}
-	}
-	return errors.Errorf("stack: %s not supported", id)
 }
 
 type Stack struct {

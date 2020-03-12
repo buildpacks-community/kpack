@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -135,8 +136,20 @@ func main() {
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
+
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
+	}
+
 	remoteStoreReader := &cnb.RemoteStoreReader{
 		RegistryClient: &registry.Client{},
+		Keychain:       kpackKeychain,
+	}
+
+	remoteStackReader := &cnb.RemoteStackReader{
+		RegistryClient: &registry.Client{},
+		Keychain:       kpackKeychain,
 	}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
@@ -144,10 +157,10 @@ func main() {
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer, stackInformer)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(keychainFactory), builderCreator, keychainFactory, storeInformer, stackInformer)
-	storeController := store.NewController(options, storeInformer, remoteStoreReader, keychainFactory)
-	stackController := stack.NewController(options, stackInformer, keychainFactory, &registry.Client{})
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
+	storeController := store.NewController(options, storeInformer, remoteStoreReader)
+	stackController := stack.NewController(options, stackInformer, remoteStackReader)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -216,14 +229,10 @@ func runGroup(fns ...doneFunc) error {
 	return <-result
 }
 
-func newBuildpackRepository(keychainFactory registry.KeychainFactory) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
-	storeKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
-	if err != nil {
-		log.Fatalf("could not create empty keychain %s", err)
-	}
+func newBuildpackRepository(keychain authn.Keychain) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
 	return func(store *expv1alpha1.Store) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
-			Keychain: storeKeychain,
+			Keychain: keychain,
 			Store:    store,
 		}
 	}
