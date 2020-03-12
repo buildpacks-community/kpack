@@ -49,7 +49,7 @@ const (
 	buildSecretsDir       = "/var/build-secrets"
 	imagePullSecretsDir   = "/imagePullSecrets"
 	builderPullSecretsDir = "/builderPullSecrets"
-	layersDir             = "/alt-layers"
+	projectMetadataDir    = "/projectMetadata"
 )
 
 func main() {
@@ -131,7 +131,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 			Logger:   logger,
 			Keychain: gitKeychain,
 		}
-		return fetcher.Fetch(appDir, *gitURL, *gitRevision, layersDir)
+		return fetcher.Fetch(appDir, *gitURL, *gitRevision, projectMetadataDir)
 	case *blobURL != "":
 		fetcher := blob.Fetcher{
 			Logger: logger,

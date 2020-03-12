@@ -60,36 +60,50 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "resolving %s", gitRevision)
 	}
 
-	err = workTree.Checkout(&git.CheckoutOptions{
-		Hash: *hashes,
-	})
-	if err != nil {
+	if err := workTree.Checkout(&git.CheckoutOptions{Hash: *hashes}); err != nil {
 		return errors.Wrapf(err, "unable to checkout revision: %s", gitRevision)
 	}
 
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
-
 	if err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
 	}
 
-	err = toml.NewEncoder(projectMetadataFile).Encode(map[string]interface{}{
-		"source": map[string]interface{}{
-			"type": "git",
-			"metadata": map[string]interface{}{
-				"repository": gitURL,
-				"revision":   gitRevision,
+	projectMd := project{
+		Source: source{
+			Type: "git",
+			Metadata: metadata{
+				Repository: gitURL,
+				Revision:   gitRevision,
 			},
-			"version": map[string]interface{}{
-				"commit": hashes.String(),
+			Version: version{
+				Commit: hashes.String(),
 			},
 		},
-	})
-
-	if err != nil {
+	}
+	if err := toml.NewEncoder(projectMetadataFile).Encode(projectMd); err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitRevision)
 	}
 
 	f.Logger.Printf("Successfully cloned %q @ %q in path %q", gitURL, gitRevision, dir)
 	return nil
+}
+
+type project struct {
+	Source source `toml:"source"`
+}
+
+type source struct {
+	Type     string   `toml:"type"`
+	Metadata metadata `toml:"metadata"`
+	Version  version  `toml:"version"`
+}
+
+type metadata struct {
+	Repository string `toml:"repository"`
+	Revision   string `toml:"revision"`
+}
+
+type version struct {
+	Commit string `toml:"commit"`
 }
