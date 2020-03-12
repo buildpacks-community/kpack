@@ -552,6 +552,43 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
+			it("errors with unsupported buildpack version", func() {
+				buildpackRepository.AddBP("io.buildpack.unsupported.buildpack.api", "v4", []buildpackLayer{
+					{
+						v1Layer: buildpack1Layer,
+						BuildpackInfo: expv1alpha1.BuildpackInfo{
+							Id:      "io.buildpack.unsupported.buildpack.api",
+							Version: "v4",
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         "0.3",
+							LayerDiffID: buildpack1Layer.diffID,
+							Stacks: []expv1alpha1.BuildpackStack{
+								{
+									ID: stackID,
+								},
+							},
+						},
+					},
+				})
+
+				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+					{
+						Group: []expv1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: expv1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.unsupported.buildpack.api",
+									Version: "v4",
+								},
+							},
+						},
+					},
+				}
+
+				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.2, expecting 0.3")
+			})
+
 		})
 
 	})

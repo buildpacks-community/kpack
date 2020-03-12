@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
-func (bl BuildpackLayerInfo) supports(id string, mixins []string) error {
+func (bl BuildpackLayerInfo) supports(buildpackApi string, id string, mixins []string) error {
 	if len(bl.Order) != 0 {
 		return nil //ignore meta-buildpacks
+	}
+
+	if bl.API != buildpackApi {
+		return errors.Errorf("unsupported buildpack api: %s, expecting %s", buildpackApi, bl.API)
 	}
 
 	for _, s := range bl.Stacks {
