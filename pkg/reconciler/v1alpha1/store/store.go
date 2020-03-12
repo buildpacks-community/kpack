@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,7 +16,6 @@ import (
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -27,15 +25,14 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(keychain authn.Keychain, storeImages []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error)
+	Read(storeImages []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error)
 }
 
-func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.StoreInformer, storeReader StoreReader, keychainFactory registry.KeychainFactory) *controller.Impl {
+func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.StoreInformer, storeReader StoreReader) *controller.Impl {
 	c := &Reconciler{
-		Client:          opt.Client,
-		StoreLister:     storeInformer.Lister(),
-		StoreReader:     storeReader,
-		KeychainFactory: keychainFactory,
+		Client:      opt.Client,
+		StoreLister: storeInformer.Lister(),
+		StoreReader: storeReader,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	storeInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -43,10 +40,9 @@ func NewController(opt reconciler.Options, storeInformer v1alpha1expInformers.St
 }
 
 type Reconciler struct {
-	Client          versioned.Interface
-	StoreReader     StoreReader
-	KeychainFactory registry.KeychainFactory
-	StoreLister     v1alpha1expListers.StoreLister
+	Client      versioned.Interface
+	StoreReader StoreReader
+	StoreLister v1alpha1expListers.StoreLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -94,7 +90,7 @@ func (c *Reconciler) updateStoreStatus(desired *expv1alpha1.Store) error {
 }
 
 func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha1.Store, error) {
-	buildpacks, err := c.getBuildpacks(store.Spec.Sources)
+	buildpacks, err := c.StoreReader.Read(store.Spec.Sources)
 	if err != nil {
 		store.Status = expv1alpha1.StoreStatus{
 			Status: corev1alpha1.Status{
@@ -126,13 +122,4 @@ func (c *Reconciler) reconcileStoreStatus(store *expv1alpha1.Store) (*expv1alpha
 		},
 	}
 	return store, nil
-}
-
-func (c *Reconciler) getBuildpacks(sources []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error) {
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{})
-	if err != nil {
-		return nil, err
-	}
-
-	return c.StoreReader.Read(keychain, sources)
 }

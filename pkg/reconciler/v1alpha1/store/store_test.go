@@ -20,8 +20,6 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store"
 	"github.com/pivotal/kpack/pkg/reconciler/v1alpha1/store/storefakes"
-	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestStoreReconciler(t *testing.T) {
@@ -35,9 +33,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		initialGeneration int64 = 1
 	)
 	var (
-		fakeStoreReader     = &storefakes.FakeStoreReader{}
-		fakeKeychainFactory = &registryfakes.FakeKeychainFactory{}
-		expectedKeychain    = &registryfakes.FakeKeychain{Name: "Expected Keychain"}
+		fakeStoreReader = &storefakes.FakeStoreReader{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -47,10 +43,9 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 
 			r := &store.Reconciler{
-				Client:          fakeClient,
-				StoreReader:     fakeStoreReader,
-				KeychainFactory: fakeKeychainFactory,
-				StoreLister:     listers.GetStoreLister(),
+				Client:      fakeClient,
+				StoreReader: fakeStoreReader,
+				StoreLister: listers.GetStoreLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
 		})
@@ -71,10 +66,6 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 	}
-
-	it.Before(func() {
-		fakeKeychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{}, expectedKeychain)
-	})
 
 	when("#Reconcile", func() {
 		readBuildpacks := []expv1alpha1.StoreBuildpack{
@@ -134,11 +125,8 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
-			keychain, storeImages := fakeStoreReader.ReadArgsForCall(0)
 
-			assert.Equal(t, expectedKeychain, keychain)
-
-			assert.Equal(t, store.Spec.Sources, storeImages)
+			assert.Equal(t, store.Spec.Sources, fakeStoreReader.ReadArgsForCall(0))
 		})
 
 		it("does not update the status with no status change", func() {

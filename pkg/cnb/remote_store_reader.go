@@ -14,16 +14,17 @@ import (
 
 type RemoteStoreReader struct {
 	RegistryClient RegistryClient
+	Keychain       authn.Keychain
 }
 
-func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
 	var g errgroup.Group
 
 	c := make(chan v1alpha1.StoreBuildpack)
 	for _, storeImage := range storeImages {
 		storeImage := storeImage
 		g.Go(func() error {
-			image, _, err := r.RegistryClient.Fetch(keychain, storeImage.Image)
+			image, _, err := r.RegistryClient.Fetch(r.Keychain, storeImage.Image)
 			if err != nil {
 				return err
 			}
