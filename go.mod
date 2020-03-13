@@ -8,8 +8,8 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver/v3 v3.0.3
-	github.com/buildpacks/imgutil v0.0.0-20200312171514-a8362f6dd6d5
-	github.com/buildpacks/lifecycle v0.7.0
+	github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
+	github.com/buildpacks/lifecycle v0.7.1-0.20200313172258-8729af11d8c0
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-openapi/spec v0.19.7
