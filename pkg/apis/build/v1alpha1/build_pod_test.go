@@ -151,7 +151,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("BuildPod", func() {
-		when("0.2+ platform api", func() {
+		when(">= 0.2 platform api", func() {
 			it("creates a pod with a builder owner reference and build labels and annotations", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -304,6 +304,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						MountPath: "/builderPullSecrets",
 						ReadOnly:  true,
 					},
+					{
+						Name:      "layers-dir",
+						MountPath: "/projectMetadata",
+					},
 				})
 			})
 
@@ -433,7 +437,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, names(pod.Spec.InitContainers[2].VolumeMounts))
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
 					"-cache-dir=/cache",
@@ -486,7 +489,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
@@ -564,109 +566,41 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("0.1 platform api", func() {
-			buildPodBuilderConfig.PlatformAPI = "0.1"
+		when("0.3 platform api", func() {
+			buildPodBuilderConfig.PlatformAPI = "0.3"
 
-			it("creates init containers with all the build steps", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.NoError(t, err)
-
-				var names []string
-				for _, container := range pod.Spec.InitContainers {
-					names = append(names, container.Name)
-				}
-
-				assert.Equal(t, []string{
-					"prepare",
-					"detect",
-					"restore",
-					"analyze",
-					"build",
-					"export",
-					"cache",
-				}, names)
-			})
-
-			it("configures restore step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.NoError(t, err)
-
-				assert.Equal(t, "restore", pod.Spec.InitContainers[2].Name)
-				assert.Equal(t, builderImage, pod.Spec.InitContainers[2].Image)
-				assert.Equal(t, []string{
-					"layers-dir",
-					"cache-dir",
-				}, names(pod.Spec.InitContainers[2].VolumeMounts))
-
-				assert.Equal(t, []string{
-					"-group=/layers/group.toml",
-					"-layers=/layers",
-					"-path=/cache"},
-					pod.Spec.InitContainers[2].Args)
-			})
-
-			it("configures analyze step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.NoError(t, err)
-
-				assert.Equal(t, pod.Spec.InitContainers[3].Name, "analyze")
-				assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
-				assert.Equal(t, []string{
-					"layers-dir",
-					"workspace-dir",
-					"home-dir",
-				}, names(pod.Spec.InitContainers[3].VolumeMounts))
-				assert.Equal(t, []string{
-					"-layers=/layers",
-					"-helpers=false",
-					"-group=/layers/group.toml",
-					"-analyzed=/layers/analyzed.toml",
-					build.Tag(),
-				}, pod.Spec.InitContainers[3].Args)
-			})
-
-			it("configures export step", func() {
+			it("calls export with project metadata toml file", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 				assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
-				assert.Equal(t, []string{
+				assert.Equal(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 					"layers-dir",
 					"workspace-dir",
 					"home-dir",
-				}, names(pod.Spec.InitContainers[5].VolumeMounts))
+					"cache-dir",
+				})
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
+					"-cache-dir=/cache",
+					"-project-metadata=/layers/project-metadata.toml",
 					build.Tag(),
 					"someimage/name:tag2",
 					"someimage/name:tag3",
 				}, pod.Spec.InitContainers[5].Args)
 			})
-
-			it("configures cache step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.NoError(t, err)
-
-				assert.Equal(t, pod.Spec.InitContainers[6].Name, "cache")
-				assert.Equal(t, pod.Spec.InitContainers[6].Image, builderImage)
-				assert.Equal(t, []string{
-					"layers-dir",
-					"cache-dir",
-				}, names(pod.Spec.InitContainers[6].VolumeMounts))
-			})
 		})
 
-		when("0.3+ platform api", func() {
-			buildPodBuilderConfig.PlatformAPI = "0.3"
+		when("< 0.2 platform api", func() {
+			buildPodBuilderConfig.PlatformAPI = "0.1"
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.Error(t, err, "incompatible builder platform API version 0.3")
+				require.Error(t, err, "incompatible builder platform API version 0.1")
 			})
 		})
 

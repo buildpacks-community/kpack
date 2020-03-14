@@ -66,9 +66,9 @@ var (
 		Name:      layersDirName,
 		MountPath: "/layers",
 	}
-	alternativeLayersVolumeMount = corev1.VolumeMount{
+	projectMetadataVolume = corev1.VolumeMount{
 		Name:      layersDirName,
-		MountPath: "/alt-layers",
+		MountPath: "/projectMetadata",
 	}
 	homeEnv = corev1.EnvVar{
 		Name:  "HOME",
@@ -174,7 +174,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							platformVolume,
 							sourceVolume,
 							homeVolume,
-							alternativeLayersVolumeMount,
+							projectMetadataVolume,
 						),
 					},
 				)
@@ -196,91 +196,47 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 				)
-				if bc.legacy() {
-					step(
-						corev1.Container{
-							Name:    "restore",
-							Image:   builderImage,
-							Command: []string{"/lifecycle/restorer"},
-							Args: []string{
-								"-group=/layers/group.toml",
-								"-layers=/layers",
-								"-path=/cache",
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								cacheVolume,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
+				step(
+					corev1.Container{
+						Name:    "analyze",
+						Image:   builderImage,
+						Command: []string{"/lifecycle/analyzer"},
+						Args: []string{
+							"-layers=/layers",
+							"-group=/layers/group.toml",
+							"-analyzed=/layers/analyzed.toml",
+							"-cache-dir=/cache",
+							b.Tag(),
 						},
-					)
-					step(
-						corev1.Container{
-							Name:    "analyze",
-							Image:   builderImage,
-							Command: []string{"/lifecycle/analyzer"},
-							Args: []string{
-								"-layers=/layers",
-								"-helpers=false",
-								"-group=/layers/group.toml",
-								"-analyzed=/layers/analyzed.toml",
-								b.Tag(),
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								workspaceVolume,
-								homeVolume,
-							},
-							Env: []corev1.EnvVar{
-								homeEnv,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
+						VolumeMounts: []corev1.VolumeMount{
+							layersVolume,
+							workspaceVolume,
+							homeVolume,
+							cacheVolume,
 						},
-					)
-				} else {
-					step(
-						corev1.Container{
-							Name:    "analyze",
-							Image:   builderImage,
-							Command: []string{"/lifecycle/analyzer"},
-							Args: []string{
-								"-layers=/layers",
-								"-helpers=false",
-								"-group=/layers/group.toml",
-								"-analyzed=/layers/analyzed.toml",
-								"-cache-dir=/cache",
-								b.Tag(),
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								workspaceVolume,
-								homeVolume,
-								cacheVolume,
-							},
-							Env: []corev1.EnvVar{
-								homeEnv,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
+						Env: []corev1.EnvVar{
+							homeEnv,
 						},
-					)
-					step(
-						corev1.Container{
-							Name:    "restore",
-							Image:   builderImage,
-							Command: []string{"/lifecycle/restorer"},
-							Args: []string{
-								"-group=/layers/group.toml",
-								"-layers=/layers",
-								"-cache-dir=/cache",
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								cacheVolume,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					},
+				)
+				step(
+					corev1.Container{
+						Name:    "restore",
+						Image:   builderImage,
+						Command: []string{"/lifecycle/restorer"},
+						Args: []string{
+							"-group=/layers/group.toml",
+							"-layers=/layers",
+							"-cache-dir=/cache",
 						},
-					)
-				}
+						VolumeMounts: []corev1.VolumeMount{
+							layersVolume,
+							cacheVolume,
+						},
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					},
+				)
 				step(
 					corev1.Container{
 						Name:    "build",
@@ -308,35 +264,19 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							Command: []string{"/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
-								"-helpers=false",
 								"-app=/workspace",
 								"-group=/layers/group.toml",
 								"-analyzed=/layers/analyzed.toml",
+								"-cache-dir=/cache",
 							}, b.Spec.Tags...),
 							VolumeMounts: []corev1.VolumeMount{
 								layersVolume,
 								workspaceVolume,
 								homeVolume,
+								cacheVolume,
 							},
 							Env: []corev1.EnvVar{
 								homeEnv,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
-						},
-					)
-					step(
-						corev1.Container{
-							Name:    "cache",
-							Image:   builderImage,
-							Command: []string{"/lifecycle/cacher"},
-							Args: []string{
-								"-group=/layers/group.toml",
-								"-layers=/layers",
-								"-path=/cache",
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								cacheVolume,
 							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 						},
@@ -349,11 +289,11 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							Command: []string{"/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
-								"-helpers=false",
 								"-app=/workspace",
 								"-group=/layers/group.toml",
 								"-analyzed=/layers/analyzed.toml",
 								"-cache-dir=/cache",
+								"-project-metadata=/layers/project-metadata.toml",
 							}, b.Spec.Tags...),
 							VolumeMounts: []corev1.VolumeMount{
 								layersVolume,
@@ -530,11 +470,11 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 }
 
 func (bc *BuildPodBuilderConfig) legacy() bool {
-	return bc.PlatformAPI == "0.1"
+	return bc.PlatformAPI == "0.2"
 }
 
 func (bc *BuildPodBuilderConfig) unsupported() bool {
-	return bc.PlatformAPI != "0.1" && bc.PlatformAPI != "0.2"
+	return bc.PlatformAPI != "0.2" && bc.PlatformAPI != "0.3"
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {

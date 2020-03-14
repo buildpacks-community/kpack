@@ -1,8 +1,6 @@
 package setup
 
 import (
-	_ "k8s.io/kubernetes/pkg/credentialprovider/azure"
-
 	"os"
 
 	"github.com/spf13/pflag"

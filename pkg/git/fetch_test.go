@@ -1,4 +1,4 @@
-package git_test
+package git
 
 import (
 	"bytes"
@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-
-	"github.com/pivotal/kpack/pkg/git"
 )
 
 func TestGitCheckout(t *testing.T) {
@@ -26,7 +24,7 @@ func TestGitCheckout(t *testing.T) {
 func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 	when("#Fetch", func() {
 		outpuBuffer := &bytes.Buffer{}
-		fetcher := git.Fetcher{
+		fetcher := Fetcher{
 			Logger:   log.New(outpuBuffer, "", 0),
 			Keychain: fakeGitKeychain{},
 		}
@@ -67,22 +65,17 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 				require.FileExists(t, path.Join(metadataDir, "project-metadata.toml"))
 
-				projectMetadata := map[string]interface{}{}
+				var projectMetadata project
 				_, err = toml.DecodeFile(path.Join(metadataDir, "project-metadata.toml"), &projectMetadata)
 				require.NoError(t, err)
 
-				require.Equal(t, "git", projectMetadata["source"].(map[string]interface{})["type"])
-				require.Equal(t, map[string]interface{}{
-					"repository": gitUrl,
-					"revision":   revision,
-				}, projectMetadata["source"].(map[string]interface{})["metadata"])
+				require.Equal(t, "git", projectMetadata.Source.Type)
+				require.Equal(t, gitUrl, projectMetadata.Source.Metadata.Repository)
+				require.Equal(t, revision, projectMetadata.Source.Metadata.Revision)
 
 				h, err := repository.Head()
 				require.NoError(t, err)
-
-				require.Equal(t, map[string]interface{}{
-					"commit": h.Hash().String(),
-				}, projectMetadata["source"].(map[string]interface{})["version"])
+				require.Equal(t, h.Hash().String(), projectMetadata.Source.Version.Commit)
 			}
 		}
 
