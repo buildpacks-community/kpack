@@ -437,7 +437,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, names(pod.Spec.InitContainers[2].VolumeMounts))
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
 					"-cache-dir=/cache",
@@ -490,7 +489,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
@@ -585,7 +583,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.Equal(t, []string{
 					"-layers=/layers",
-					"-helpers=false",
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",

@@ -203,7 +203,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						Command: []string{"/lifecycle/analyzer"},
 						Args: []string{
 							"-layers=/layers",
-							"-helpers=false",
 							"-group=/layers/group.toml",
 							"-analyzed=/layers/analyzed.toml",
 							"-cache-dir=/cache",
@@ -265,7 +264,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							Command: []string{"/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
-								"-helpers=false",
 								"-app=/workspace",
 								"-group=/layers/group.toml",
 								"-analyzed=/layers/analyzed.toml",
@@ -291,7 +289,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							Command: []string{"/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
-								"-helpers=false",
 								"-app=/workspace",
 								"-group=/layers/group.toml",
 								"-analyzed=/layers/analyzed.toml",
