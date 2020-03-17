@@ -64,11 +64,14 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, v1alpha1.ResolvedStack{
+				Id: stackId,
 				BuildImage: v1alpha1.StackStatusImage{
 					LatestImage: fmt.Sprintf("%s@%s", buildTag, buildDigest),
+					Image:       buildTag,
 				},
 				RunImage: v1alpha1.StackStatusImage{
 					LatestImage: fmt.Sprintf("%s@%s", runTag, runDigest),
+					Image:       runTag,
 				},
 				Mixins:  []string{"shared-mixin", "build:build-mixin", "run:run-mixin"},
 				UserID:  1000,

@@ -69,7 +69,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
 			RunImage: stack.Status.RunImage.LatestImage,
-			ID:       stack.Spec.Id,
+			ID:       stack.Status.Id,
 		},
 		Buildpacks: buildpackMetadata(builderBldr.buildpacks()),
 	}, nil

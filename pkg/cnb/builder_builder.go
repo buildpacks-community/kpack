@@ -62,8 +62,8 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 
 func (bb *builderBlder) AddStack(baseImage v1.Image, stack *expv1alpha1.Stack) {
 	bb.baseImage = baseImage
-	bb.stackId = stack.Spec.Id
-	bb.runImage = stack.Spec.RunImage.Image
+	bb.stackId = stack.Status.Id
+	bb.runImage = stack.Status.RunImage.Image
 	bb.mixins = stack.Status.Mixins
 	bb.cnbUserId = stack.Status.UserID
 	bb.cnbGroupId = stack.Status.GroupID

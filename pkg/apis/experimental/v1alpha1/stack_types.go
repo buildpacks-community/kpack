@@ -42,6 +42,7 @@ type StackStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedStack struct {
+	Id         string           `json:"id,omitempty"`
 	BuildImage StackStatusImage `json:"buildImage,omitempty"`
 	RunImage   StackStatusImage `json:"runImage,omitempty"`
 	Mixins     []string         `json:"mixins,omitempty"`
@@ -52,6 +53,7 @@ type ResolvedStack struct {
 // +k8s:openapi-gen=true
 type StackStatusImage struct {
 	LatestImage string `json:"latestImage,omitempty"`
+	Image       string `json:"image,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
