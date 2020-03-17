@@ -33,6 +33,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		lifecycleImage       = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
 		buildImage           = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
 		runImage             = "index.docker.io/cloudfoundry/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
+		buildImageTag        = "cloudfoundry/build:full-cnb"
+		runImageTag          = "cloudfoundry/run:full-cnb"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
 
@@ -70,19 +72,26 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			Spec: expv1alpha1.StackSpec{
 				Id: stackID,
 				BuildImage: expv1alpha1.StackSpecImage{
-					Image: "cloudfoundry/build:full-cnb",
+					Image: buildImageTag,
 				},
 				RunImage: expv1alpha1.StackSpecImage{
-					Image: "cloudfoundry/run:full-cnb",
+					Image: runImageTag,
 				},
 			},
 			Status: expv1alpha1.StackStatus{
 				ResolvedStack: expv1alpha1.ResolvedStack{
-					BuildImage: expv1alpha1.StackStatusImage{LatestImage: buildImage},
-					RunImage:   expv1alpha1.StackStatusImage{LatestImage: runImage},
-					Mixins:     []string{"some-unused-mixin", mixin},
-					UserID:     cnbUserId,
-					GroupID:    cnbGroupId,
+					Id: stackID,
+					BuildImage: expv1alpha1.StackStatusImage{
+						LatestImage: buildImage,
+						Image:       buildImageTag,
+					},
+					RunImage: expv1alpha1.StackStatusImage{
+						LatestImage: runImage,
+						Image:       runImageTag,
+					},
+					Mixins:  []string{"some-unused-mixin", mixin},
+					UserID:  cnbUserId,
+					GroupID: cnbGroupId,
 				},
 			},
 		}

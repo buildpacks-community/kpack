@@ -1,13 +1,15 @@
 package cnb
 
 import (
-	"github.com/google/go-containerregistry/pkg/authn"
-	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
-	"github.com/pkg/errors"
 	"strconv"
 	"strings"
+
+	"github.com/google/go-containerregistry/pkg/authn"
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pkg/errors"
+
+	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 const (
@@ -62,11 +64,14 @@ func (r *RemoteStackReader) Read(stackSpec v1alpha1.StackSpec) (v1alpha1.Resolve
 	mixins, err := mixins(buildMixins, runMixins)
 
 	return v1alpha1.ResolvedStack{
+		Id: stackSpec.Id,
 		BuildImage: v1alpha1.StackStatusImage{
 			LatestImage: buildIdentifier,
+			Image:       stackSpec.BuildImage.Image,
 		},
 		RunImage: v1alpha1.StackStatusImage{
 			LatestImage: runIdentifier,
+			Image:       stackSpec.RunImage.Image,
 		},
 		Mixins:  mixins,
 		UserID:  userId,
