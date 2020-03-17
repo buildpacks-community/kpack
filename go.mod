@@ -43,7 +43,7 @@ require (
 	gopkg.in/src-d/go-git-fixtures.v3 v3.5.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/api v0.17.0
-	k8s.io/apimachinery v0.17.0
+	k8s.io/apimachinery v0.17.4
 	k8s.io/client-go v0.17.0
 	k8s.io/code-generator v0.17.2
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
