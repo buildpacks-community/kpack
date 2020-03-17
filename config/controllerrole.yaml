@@ -79,7 +79,6 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: controller
-  namespace: kpack
 roleRef:
   kind: ClusterRole
   name: kpack-controller-admin

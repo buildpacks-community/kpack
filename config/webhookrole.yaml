@@ -19,17 +19,12 @@ rules:
   - webhook-certs
   verbs:
   - get
-  - create
-  - update
 - apiGroups:
-  - "admissionregistration.k8s.io"
+  - ""
   resources:
-  - "mutatingwebhookconfigurations"
-  resourceNames:
-  - "resource.webhook.kpack.pivotal.io"
+  - secrets
   verbs:
-  - get
-  - update
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -61,7 +56,7 @@ rules:
   - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: kpack-webhook-certs-mutatingwebhookconfiguration-admin-binding
   namespace: kpack
