@@ -206,7 +206,12 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-group=/layers/group.toml",
 							"-analyzed=/layers/analyzed.toml",
 							"-cache-dir=/cache",
-							b.Tag(),
+							func() string {
+								if b.Spec.LastBuild != nil {
+									return b.Spec.LastBuild.Image
+								}
+								return b.Tag()
+							}(),
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							layersVolume,

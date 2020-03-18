@@ -440,6 +440,29 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
 					"-cache-dir=/cache",
+					build.Spec.LastBuild.Image,
+				}, pod.Spec.InitContainers[2].Args)
+			})
+
+			it("configures analyze step with the current tag if no previous build", func() {
+				build.Spec.LastBuild = nil
+
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
+				assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
+				assert.Equal(t, []string{
+					"layers-dir",
+					"workspace-dir",
+					"home-dir",
+					"cache-dir",
+				}, names(pod.Spec.InitContainers[2].VolumeMounts))
+				assert.Equal(t, []string{
+					"-layers=/layers",
+					"-group=/layers/group.toml",
+					"-analyzed=/layers/analyzed.toml",
+					"-cache-dir=/cache",
 					build.Tag(),
 				}, pod.Spec.InitContainers[2].Args)
 			})
