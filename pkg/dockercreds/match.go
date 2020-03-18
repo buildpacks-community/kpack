@@ -2,6 +2,9 @@ package dockercreds
 
 import (
 	"fmt"
+
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 var registryDomains = []string{
@@ -23,9 +26,16 @@ type RegistryMatcher struct {
 
 func (m RegistryMatcher) Match(reg string) bool {
 	for _, format := range registryDomains {
-		if fmt.Sprintf(format, reg) == m.Registry {
+		if fmt.Sprintf(format, registryString(reg)) == m.Registry {
 			return true
 		}
 	}
 	return false
+}
+
+func registryString(reg string) string {
+	if reg == name.DefaultRegistry {
+		return authn.DefaultAuthKey
+	}
+	return reg
 }

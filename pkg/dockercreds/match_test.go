@@ -36,12 +36,12 @@ func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 			})
 		}
 
-		it("matches on dockerhub references", func() {
-			matcher := RegistryMatcher{Registry: "http://index.docker.io"}
+		it("only matches on fully qualified dockerhub references", func() {
+			matcher := RegistryMatcher{Registry: "https://index.docker.io/v1/"}
 			assert.True(t, matcher.Match("index.docker.io"))
 
 			matcher = RegistryMatcher{Registry: "index.docker.io"}
-			assert.True(t, matcher.Match("index.docker.io"))
+			assert.False(t, matcher.Match("index.docker.io"))
 		})
 	})
 }
