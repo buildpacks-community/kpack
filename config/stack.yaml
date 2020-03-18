@@ -14,3 +14,7 @@ spec:
   scope: Cluster
   subresources:
     status: {}
+  additionalPrinterColumns:
+  - name: Ready
+    type: string
+    JSONPath: #@ ".status.conditions[?(@.type==\"Ready\")].status"
