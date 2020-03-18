@@ -71,7 +71,11 @@ func HasReadAccess(keychain authn.Keychain, tag string) (bool, error) {
 	}
 	_, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport))
 	if err != nil {
-		return false, errors.Wrapf(err, "connect to registry store '%s'", tag)
+		if _, ok := err.(*transport.Error); ok {
+			return false, nil
+		}
+
+		return false, errors.Wrapf(err, "validating read access to: %s", tag)
 	}
 
 	return true, nil

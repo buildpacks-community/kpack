@@ -85,11 +85,11 @@ func main() {
 
 	hasRunImageReadAccess, err := dockercreds.HasReadAccess(creds, *runImage)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal(errors.Wrapf(err, "validating read access to run image"))
 	}
 
 	if !hasRunImageReadAccess {
-		logger.Fatalf("no read access to run image %s", *runImage)
+		logger.Fatalf("could not read run image: %s", *runImage)
 	}
 
 	err = fetchSource(logger, creds)

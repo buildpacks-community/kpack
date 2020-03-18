@@ -144,16 +144,26 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			canRead, err := HasReadAccess(testKeychain{}, tagName)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.False(t, canRead)
 		})
 
-		it("returns false when we cannot reach the server", func() {
+		it("returns false when server responds with 404", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(404)
 			})
 
 			canRead, err := HasReadAccess(testKeychain{}, tagName)
+			require.NoError(t, err)
+			assert.False(t, canRead)
+		})
+
+		it("returns false with error when we cannot reach the server", func() {
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(404)
+			})
+
+			canRead, err := HasReadAccess(testKeychain{}, "localhost:9999/blj")
 			require.Error(t, err)
 			assert.False(t, canRead)
 		})
