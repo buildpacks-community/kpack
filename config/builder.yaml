@@ -13,6 +13,7 @@ spec:
     - cnbbuilder
     - cnbbuilders
     - bldr
+    - bldrs
     categories:
     - kpack
   scope: Namespaced

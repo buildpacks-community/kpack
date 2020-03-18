@@ -12,6 +12,8 @@ spec:
     shortNames:
     - cnbimage
     - cnbimages
+    - img
+    - imgs
     categories:
     - kpack
   scope: Namespaced

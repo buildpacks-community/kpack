@@ -13,6 +13,7 @@ spec:
     - cnbbuild
     - cnbbuilds
     - bld
+    - blds
     categories:
     - kpack
   scope: Namespaced
