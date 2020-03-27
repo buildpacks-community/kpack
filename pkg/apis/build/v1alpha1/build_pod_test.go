@@ -467,6 +467,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, pod.Spec.InitContainers[2].Args)
 			})
 
+			it("configures analyze step with the current tag if previous build is corrupted", func() {
+				build.Spec.LastBuild = &v1alpha1.LastBuild{}
+
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Contains(t, pod.Spec.InitContainers[2].Args, build.Tag())
+			})
+
 			it("configures restore step", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)

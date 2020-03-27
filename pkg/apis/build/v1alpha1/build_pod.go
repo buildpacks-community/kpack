@@ -207,7 +207,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-analyzed=/layers/analyzed.toml",
 							"-cache-dir=/cache",
 							func() string {
-								if b.Spec.LastBuild != nil {
+								if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
 									return b.Spec.LastBuild.Image
 								}
 								return b.Tag()
