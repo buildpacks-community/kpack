@@ -1448,6 +1448,116 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
+			it("schedules a build with previous build's LastBuild if the last build failed", func() {
+				image.Status.BuildCounter = 2
+				image.Status.LatestBuildRef = "image-name-build200001"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						builder,
+						sourceResolver,
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-1-00001",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "2",
+									v1alpha1.ImageLabel:       imageName,
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
+								ServiceAccount: "old-service-account",
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
+										URL:      "out-of-date-git-url",
+										Revision: "out-of-date-git-revision",
+									},
+								},
+								LastBuild: &v1alpha1.LastBuild{
+									Image:   image.Spec.Tag + "@sha256:from-build-before-this-build",
+									StackId: "io.buildpacks.stacks.bionic",
+								},
+							},
+							Status: v1alpha1.BuildStatus{
+								Status: corev1alpha1.Status{
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:   corev1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionFalse,
+										},
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&v1alpha1.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								GenerateName: imageName + "-build-3-",
+								Namespace:    namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									v1alpha1.BuildNumberLabel: "3",
+									v1alpha1.ImageLabel:       imageName,
+									someLabelKey:              someValueToPassThrough,
+								},
+								Annotations: map[string]string{
+									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
+								},
+							},
+							Spec: v1alpha1.BuildSpec{
+								Tags: []string{image.Spec.Tag},
+								Builder: v1alpha1.BuildBuilderSpec{
+									Image:            builder.Status.LatestImage,
+									ImagePullSecrets: builder.Spec.ImagePullSecrets,
+								},
+								ServiceAccount: image.Spec.ServiceAccount,
+								Source: v1alpha1.SourceConfig{
+									Git: &v1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+								LastBuild: &v1alpha1.LastBuild{
+									Image:   "some/image@sha256:from-build-before-this-build",
+									StackId: "io.buildpacks.stacks.bionic",
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionReadyUnknown(),
+									},
+									LatestBuildRef: "image-name-build-3-00001", // GenerateNameReactor
+									BuildCounter:   3,
+								},
+							},
+						},
+					},
+				})
+			})
+
 			it("does not schedule a build if the previous build is running", func() {
 				image.Generation = 2
 				image.Status.BuildCounter = 1

@@ -100,6 +100,10 @@ func lastBuild(latestBuild *Build) *LastBuild {
 		return nil
 	}
 
+	if latestBuild.IsFailure() {
+		return latestBuild.Spec.LastBuild
+	}
+
 	return &LastBuild{
 		Image:   latestBuild.BuiltImage(),
 		StackId: latestBuild.Stack(),
