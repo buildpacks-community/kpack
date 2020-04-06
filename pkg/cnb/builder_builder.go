@@ -108,11 +108,6 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	compatLayer, err := bb.lifecycleCompatLayer()
-	if err != nil {
-		return nil, err
-	}
-
 	stackLayer, err := bb.stackLayer()
 	if err != nil {
 		return nil, err
@@ -128,7 +123,6 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 			[]v1.Layer{
 				defaultLayer,
 				lifecycleLayer,
-				compatLayer,
 			},
 			buildpackLayers,
 			[]v1.Layer{
@@ -324,26 +318,6 @@ func (bb *builderBlder) rootOwnedDir(path string) *tar.Header {
 		Mode:     0755,
 		ModTime:  normalizedTime,
 	}
-}
-
-func (bb *builderBlder) lifecycleCompatLayer() (v1.Layer, error) {
-	b := &bytes.Buffer{}
-	tw := tar.NewWriter(b)
-
-	if err := tw.WriteHeader(&tar.Header{
-		Typeflag: tar.TypeSymlink,
-		Name:     lifecycleSymlinkDir,
-		Linkname: cnbLifecycleDir,
-		ModTime:  normalizedTime,
-		Mode:     0644,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "creating %s dir in layer", lifecycleSymlinkDir)
-	}
-	if err := tw.Close(); err != nil {
-		return nil, err
-	}
-
-	return tarball.LayerFromReader(b)
 }
 
 func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer) []expv1alpha1.BuildpackInfo {
