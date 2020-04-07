@@ -46,9 +46,9 @@ type ResolvedStack struct {
 	BuildImage StackStatusImage `json:"buildImage,omitempty"`
 	RunImage   StackStatusImage `json:"runImage,omitempty"`
 	// +listType
-	Mixins     []string         `json:"mixins,omitempty"`
-	UserID     int              `json:"userId,omitempty"`
-	GroupID    int              `json:"groupId,omitempty"`
+	Mixins  []string `json:"mixins,omitempty"`
+	UserID  int      `json:"userId,omitempty"`
+	GroupID int      `json:"groupId,omitempty"`
 }
 
 // +k8s:openapi-gen=true

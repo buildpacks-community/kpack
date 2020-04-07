@@ -256,13 +256,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			buildpackLayerCount := 3
 			defaultDirectoryLayerCount := 1
 			stackTomlLayerCount := 1
-			lifecycleSymlinkLayerCount := 1
 			orderTomlLayerCount := 1
 			assert.Len(t, layers,
 				buildImageLayers+
 					defaultDirectoryLayerCount+
 					lifecycleImageLayers+
-					lifecycleSymlinkLayerCount+
 					stackTomlLayerCount+
 					buildpackLayerCount+
 					orderTomlLayerCount)
@@ -318,17 +316,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				assert.Equal(t, layers[index], lifecycleLayers[0])
-			})
-
-			layerTester.testNextLayer("Lifecycle Symlink", func(index int) {
-				assertLayerContents(t, layers[index], map[string]content{
-					"/lifecycle": {
-						linkname: "/cnb/lifecycle",
-						typeflag: tar.TypeSymlink,
-						mode:     0644,
-					},
-				})
-
 			})
 
 			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {

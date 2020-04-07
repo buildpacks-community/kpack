@@ -182,7 +182,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 					corev1.Container{
 						Name:    "detect",
 						Image:   builderImage,
-						Command: []string{"/lifecycle/detector"},
+						Command: []string{"/cnb/lifecycle/detector"},
 						Args: []string{
 							"-app=/workspace",
 							"-group=/layers/group.toml",
@@ -200,7 +200,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 					corev1.Container{
 						Name:    "analyze",
 						Image:   builderImage,
-						Command: []string{"/lifecycle/analyzer"},
+						Command: []string{"/cnb/lifecycle/analyzer"},
 						Args: []string{
 							"-layers=/layers",
 							"-group=/layers/group.toml",
@@ -229,7 +229,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 					corev1.Container{
 						Name:    "restore",
 						Image:   builderImage,
-						Command: []string{"/lifecycle/restorer"},
+						Command: []string{"/cnb/lifecycle/restorer"},
 						Args: []string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
@@ -246,7 +246,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 					corev1.Container{
 						Name:    "build",
 						Image:   builderImage,
-						Command: []string{"/lifecycle/builder"},
+						Command: []string{"/cnb/lifecycle/builder"},
 						Args: []string{
 							"-layers=/layers",
 							"-app=/workspace",
@@ -266,7 +266,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						corev1.Container{
 							Name:    "export",
 							Image:   builderImage,
-							Command: []string{"/lifecycle/exporter"},
+							Command: []string{"/cnb/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
 								"-app=/workspace",
@@ -291,7 +291,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						corev1.Container{
 							Name:    "export",
 							Image:   builderImage,
-							Command: []string{"/lifecycle/exporter"},
+							Command: []string{"/cnb/lifecycle/exporter"},
 							Args: append([]string{
 								"-layers=/layers",
 								"-app=/workspace",
