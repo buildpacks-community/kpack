@@ -13,7 +13,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `failedBuildHistoryLimit`: The maximum number of failed builds for an image that will be retained.
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
-- `build`: Configuration that is passed to every image build. See "Build Configuration" section below.
+- `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
 
 ### <a id='builder-config'></a>Builder Configuration
 
@@ -57,7 +57,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
       subPath: ""
     ```
     - `git`: (Source Code is a git repository)
-        - `url`: The git repository url. For now, only https repositories are supported.
+        - `url`: The git repository url. Both https and ssh formats are supported; with ssh format requiring a [ssh secret](secrets.md#git-secrets).
         - `revision`: The git revision to use. This value may be a commit sha, branch name, or tag.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
 
@@ -98,10 +98,10 @@ build:
     - name: "name of env variable"
       value: "value of the env variable"
   resources:
-      limits:
+      requests:
         cpu: "0.25"
         memory: "128M"
-      requests:
+      limits:
         cpu: "0.5"
         memory: "256M"
 ```

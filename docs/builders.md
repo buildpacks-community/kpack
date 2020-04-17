@@ -35,7 +35,7 @@ A sample builder is available in [samples/builder](../samples/builder.yaml)
 
 ### ClusterBuilder
 
-The ClusterBuilder resource is cluster scoped and can only be used in any namespace.   
+The ClusterBuilder resource is cluster scoped and can be used in any namespace.
 
 ```yaml
 apiVersion: build.pivotal.io/v1alpha1
