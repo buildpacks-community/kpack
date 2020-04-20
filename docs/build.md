@@ -61,7 +61,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
       subPath: ""
     ```
     - `git`: (Source Code is a git repository)
-        - `url`: The git repository url. For now, only https repositories are supported.
+        - `url`: The git repository url. Both https and ssh formats are supported; with ssh format requiring a [ssh secret](secrets.md#git-secrets).
         - `revision`: The git revision to use. This value may be a commit sha, branch name, or tag.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
 
