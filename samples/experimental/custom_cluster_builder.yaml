@@ -12,7 +12,7 @@ spec:
   order:
   - group:
     - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
+    - id: org.cloudfoundry.yarn-install
   - group:
     - id: org.cloudfoundry.node-engine
     - id: org.cloudfoundry.npm
