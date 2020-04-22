@@ -71,7 +71,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		readBuildpacks := []expv1alpha1.StoreBuildpack{
 			{
 				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					Id:      "org.cloudfoundry.node-engine",
+					Id:      "paketo-buildpacks/node-engine",
 					Version: "0.0.116",
 				},
 				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
@@ -82,7 +82,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 			{
 				BuildpackInfo: expv1alpha1.BuildpackInfo{
-					Id:      "org.cloudfoundry.npm",
+					Id:      "paketo-buildpacks/npm",
 					Version: "0.0.71",
 				},
 				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",

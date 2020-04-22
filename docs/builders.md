@@ -16,7 +16,7 @@ metadata:
   name: sample-builder
   namespace: default
 spec:
-  image: cloudfoundry/cnb:bionic
+  image: gcr.io/paketo-buildpacks/builder:base
   # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
   # - name: builder-secret
 ```
@@ -43,7 +43,7 @@ kind: ClusterBuilder
 metadata:
   name: cluster-sample-builder
 spec:
-  image: cloudfoundry/cnb:bionic
+  image: gcr.io/paketo-buildpacks/builder:base
 ```
 
 #### ClusterBuilder field descriptions
@@ -59,7 +59,7 @@ A sample cluster builder is available in [samples/cluster_builder.yaml](../sampl
 
 ### Suggested builders
 
-The most commonly used builders are [cloudfoundry/cnb:bionic](https://hub.docker.com/r/cloudfoundry/cnb) and [cloudfoundry/cnb](https://hub.docker.com/r/cloudfoundry/cnb).
+The most commonly used builders are [paketo builders](https://paketo.io/).
  
 ### Creating your own builder  
 

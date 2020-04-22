@@ -7,7 +7,7 @@ spec:
   - sample/image
   serviceAccount: serviceaccount
   builder:
-    image: cloudfoundry/cnb:bionic
+    image: gcr.io/paketo-buildpacks/builder:base
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

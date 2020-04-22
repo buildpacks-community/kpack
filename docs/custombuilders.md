@@ -18,7 +18,7 @@ spec:
   sources:
   - image: gcr.io/cf-build-service-public/node-engine-buildpackage@sha256:95ff756f0ef0e026440a8523f4bab02fd8b45dc1a8a3a7ba063cefdba5cb9493
   - image: gcr.io/cf-build-service-public/npm-buildpackage@sha256:5058ceb9a562ec647ea5a41008b0d11e32a56e13e8c9ec20c4db63d220373e33
-  - image: cloudfoundry/cnb:bionic
+  - image: gcr.io/paketo-buildpacks/build:base
 ```
 
 * `sources`:  List of builder images or buildpackage images to make available in the store. Each image is an object with the key image.   
@@ -39,9 +39,9 @@ metadata:
 spec:
   id: "io.buildpacks.stacks.bionic"
   buildImage:
-    image: "cloudfoundry/build@sha256:b30b850f5b4d2e11313f0ec152952eace285ce7a3bc203ca5cdcfa8e5bb232a6"
+    image: "gcr.io/paketo-buildpacks/build@sha256:84f3eb6655aa126d827c07a3badbad3192288a50986be1b28ad2526bd38c93c7"
   runImage:
-    image: "cloudfoundry/run@sha256:ba9998ae4bb32ab43a7966c537aa1be153092ab0c7536eeef63bcd6336cbd0db"
+    image: "gcr.io/paketo-buildpacks/run@sha256:e30db2d9b15e0da9f4171e48430ce9249319c126ce6b670b68443e6c13e91aa5"
 ```
 
 * `id`:  The 'id' of the stack
@@ -66,13 +66,22 @@ spec:
   store: sample-store
   order:
   - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
+    - id: paketo-buildpacks/node-engine
+    - id: paketo-buildpacks/yarn
   - group:
-    - id: org.cloudfoundry.openjdk
-    - id: org.cloudfoundry.buildsystem
+    - id: paketo-buildpacks/adopt-openjdk
+    - id: paketo-buildpacks/gradle
       optional: true
-    - id: org.cloudfoundry.jvmapplication 
+    - id: paketo-buildpacks/maven
+      optional: true
+    - id: paketo-buildpacks/executable-jar
+      optional: true
+    - id: paketo-buildpacks/apache-tomcat
+      optional: true
+    - id: paketo-buildpacks/spring-boot
+      optional: true
+    - id: paketo-buildpacks/dist-zip
+      optional: true
 ```
 
 * `tag`: The tag to save the custom builder image. You must have access via the referenced service account.   
@@ -107,11 +116,22 @@ spec:
     namespace: default
   order:
   - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
+    - id: paketo-buildpacks/node-engine
+    - id: paketo-buildpacks/yarn
   - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.npm
+    - id: paketo-buildpacks/adopt-openjdk
+    - id: paketo-buildpacks/gradle
+      optional: true
+    - id: paketo-buildpacks/maven
+      optional: true
+    - id: paketo-buildpacks/executable-jar
+      optional: true
+    - id: paketo-buildpacks/apache-tomcat
+      optional: true
+    - id: paketo-buildpacks/spring-boot
+      optional: true
+    - id: paketo-buildpacks/dist-zip
+      optional: true
 ```
 
 * `serviceAccountRef`: An object reference to a service account in any namespace. The object reference must contain `name` and `namespace`.

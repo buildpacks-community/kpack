@@ -16,7 +16,7 @@ spec:
   - sample/image
   serviceAccount: service-account
   builder:
-    image: cloudfoundry/cnb:bionic
+    image: gcr.io/paketo-buildpacks/builder:base
     imagePullSecrets: 
     - name: builder-secret  
   cacheName: persisent-volume-claim-name

@@ -30,11 +30,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		stackID              = "io.buildpacks.stacks.cflinuxfs3"
 		mixin                = "some-mixin"
 		tag                  = "custom/example"
-		lifecycleImage       = "index.docker.io/cloudfoundry/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
-		buildImage           = "index.docker.io/cloudfoundry/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
-		runImage             = "index.docker.io/cloudfoundry/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
-		buildImageTag        = "cloudfoundry/build:full-cnb"
-		runImageTag          = "cloudfoundry/run:full-cnb"
+		lifecycleImage       = "index.docker.io/kpack/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		buildImage           = "index.docker.io/paketo-buildpacks/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
+		runImage             = "index.docker.io/paketo-buildpacks/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
+		buildImageTag        = "paketo-buildpacks/build:full-cnb"
+		runImageTag          = "paketo-buildpacks/run:full-cnb"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
 
@@ -338,7 +338,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 						mode:     0644,
 						fileContent: //language=toml
 						`[run-image]
-  image = "cloudfoundry/run:full-cnb"
+  image = "paketo-buildpacks/run:full-cnb"
 `,
 					},
 				})
@@ -378,7 +378,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   "description": "Custom Builder built with kpack",
   "stack": {
     "runImage": {
-      "image": "cloudfoundry/run:full-cnb",
+      "image": "paketo-buildpacks/run:full-cnb",
       "mirrors": null
     }
   },

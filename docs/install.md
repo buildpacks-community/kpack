@@ -22,7 +22,7 @@
    ```
 
 1. Create a [ClusterBuilder](builders.md) resource. A ClusterBuilder is a reference to a [Cloud Native Buildpacks builder image](https://buildpacks.io/docs/using-pack/working-with-builders/). 
-The Builder image contains buildpacks that will be used to build images with kpack. We recommend starting with the [cloudfoundry/cnb:bionic](https://hub.docker.com/r/cloudfoundry/cnb) image which has support for Java, Node and Go.         
+The Builder image contains buildpacks that will be used to build images with kpack. We recommend starting with the [gcr.io/paketo-buildpacks/builder:base](https://paketo.io/) image which has support for Java, Node and Go.         
 
 ```yaml
 apiVersion: build.pivotal.io/v1alpha1
@@ -30,7 +30,7 @@ kind: ClusterBuilder
 metadata:
   name: default
 spec:
-  image: cloudfoundry/cnb:bionic
+  image: gcr.io/paketo-buildpacks/builder:base
 ```
 
 Apply the ClusterBuilder yaml to the cluster
@@ -51,89 +51,84 @@ You should see output similar to the following:
 Name:         default
 Namespace:    
 Labels:       <none>
-Annotations:  kubectl.kubernetes.io/last-applied-configuration:
-                {"apiVersion":"build.pivotal.io/v1alpha1","kind":"ClusterBuilder","metadata":{"annotations":{},"name":"default"},"spec":{"image":"cloudfou...
-API Version:  build.pivotal.io/v1alpha1
+Annotations:  API Version:  build.pivotal.io/v1alpha1
 Kind:         ClusterBuilder
 Metadata:
-  Creation Timestamp:  2020-01-17T17:52:19Z
+  Creation Timestamp:  2020-04-22T15:59:14Z
   Generation:          1
-  Resource Version:    80893
+  Resource Version:    1733945
   Self Link:           /apis/build.pivotal.io/v1alpha1/clusterbuilders/default
-  UID:                 1af16b4f-3952-11ea-89bb-025000000001
+  UID:                 79ac5b87-9eb0-4e8c-a275-1f20137b911b
 Spec:
-  Image:          cloudfoundry/cnb:bionic
+  Image:          gcr.io/paketo-buildpacks/builder:base
   Update Policy:  polling
 Status:
   Builder Metadata:
-    Id:       org.cloudfoundry.debug
-    Version:  v1.1.17
-    Id:       org.cloudfoundry.dotnet-core
-    Version:  v0.0.4
-    Id:       org.cloudfoundry.go
-    Version:  v0.0.2
-    Id:       org.cloudfoundry.springautoreconfiguration
-    Version:  v1.0.159
-    Id:       org.cloudfoundry.buildsystem
-    Version:  v1.0.186
-    Id:       org.cloudfoundry.procfile
-    Version:  v1.0.62
-    Id:       org.cloudfoundry.nodejs
-    Version:  v1.0.0
-    Id:       org.cloudfoundry.distzip
-    Version:  v1.0.144
-    Id:       org.cloudfoundry.jdbc
-    Version:  v1.0.153
-    Id:       org.cloudfoundry.azureapplicationinsights
-    Version:  v1.0.151
-    Id:       org.cloudfoundry.springboot
-    Version:  v1.0.157
-    Id:       org.cloudfoundry.openjdk
-    Version:  v1.0.80
-    Id:       org.cloudfoundry.tomcat
-    Version:  v1.1.74
-    Id:       org.cloudfoundry.googlestackdriver
-    Version:  v1.0.96
-    Id:       org.cloudfoundry.jmx
-    Version:  v1.0.153
-    Id:       org.cloudfoundry.archiveexpanding
-    Version:  v1.0.102
-    Id:       org.cloudfoundry.jvmapplication
-    Version:  v1.0.113
-    Id:       org.cloudfoundry.dotnet-core-aspnet
-    Version:  0.0.97
-    Id:       org.cloudfoundry.dotnet-core-build
-    Version:  0.0.55
-    Id:       org.cloudfoundry.dotnet-core-conf
-    Version:  0.0.98
-    Id:       org.cloudfoundry.dotnet-core-runtime
-    Version:  0.0.106
-    Id:       org.cloudfoundry.dotnet-core-sdk
-    Version:  0.0.99
-    Id:       org.cloudfoundry.icu
-    Version:  0.0.25
-    Id:       org.cloudfoundry.node-engine
+    Id:       paketo-buildpacks/nodejs
+    Version:  v0.0.1
+    Id:       paketo-buildpacks/dotnet-core
+    Version:  v0.0.1
+    Id:       paketo-buildpacks/go
+    Version:  v0.0.1
+    Id:       paketo-buildpacks/node-engine
+    Version:  0.0.178
+    Id:       paketo-buildpacks/npm
+    Version:  0.1.11
+    Id:       paketo-buildpacks/yarn-install
+    Version:  0.1.19
+    Id:       paketo-buildpacks/dotnet-core-conf
+    Version:  0.0.122
+    Id:       paketo-buildpacks/dotnet-core-runtime
+    Version:  0.0.135
+    Id:       paketo-buildpacks/dotnet-core-sdk
     Version:  0.0.133
-    Id:       org.cloudfoundry.dep
-    Version:  0.0.64
-    Id:       org.cloudfoundry.go-compiler
-    Version:  0.0.55
-    Id:       org.cloudfoundry.go-mod
-    Version:  0.0.58
-    Id:       org.cloudfoundry.nodejs-compat
-    Version:  0.0.68
-    Id:       org.cloudfoundry.npm
-    Version:  0.0.83
-    Id:       org.cloudfoundry.yarn
-    Version:  0.0.94
+    Id:       paketo-buildpacks/icu
+    Version:  0.0.52
+    Id:       paketo-buildpacks/node-engine
+    Version:  0.0.178
+    Id:       paketo-buildpacks/dotnet-core-aspnet
+    Version:  0.0.128
+    Id:       paketo-buildpacks/dotnet-core-build
+    Version:  0.0.70
+    Id:       paketo-buildpacks/dep
+    Version:  0.0.109
+    Id:       paketo-buildpacks/go-compiler
+    Version:  0.0.112
+    Id:       paketo-buildpacks/go-mod
+    Version:  0.0.96
+    Id:       paketo-buildpacks/executable-jar
+    Version:  1.2.0
+    Id:       paketo-buildpacks/jmx
+    Version:  1.1.0
+    Id:       paketo-buildpacks/dist-zip
+    Version:  1.2.0
+    Id:       paketo-buildpacks/google-stackdriver
+    Version:  1.1.0
+    Id:       paketo-buildpacks/bellsoft-liberica
+    Version:  2.3.0
+    Id:       paketo-buildpacks/spring-boot
+    Version:  1.3.0
+    Id:       paketo-buildpacks/encrypt-at-rest
+    Version:  1.2.0
+    Id:       paketo-buildpacks/build-system
+    Version:  1.2.0
+    Id:       paketo-buildpacks/debug
+    Version:  1.2.0
+    Id:       paketo-buildpacks/procfile
+    Version:  1.3.0
+    Id:       paketo-buildpacks/azure-application-insights
+    Version:  1.1.0
+    Id:       paketo-buildpacks/apache-tomcat
+    Version:  1.1.0
   Conditions:
-    Last Transition Time:  2020-01-17T17:52:19Z
+    Last Transition Time:  2020-04-22T15:59:14Z
     Status:                True
     Type:                  Ready
-  Latest Image:            index.docker.io/cloudfoundry/cnb@sha256:c983fb9602a7fb95b07d35ef432c04ad61ae8458263e7fb4ce62ca10de367c3b
+  Latest Image:            gcr.io/paketo-buildpacks/builder@sha256:fc6c76f22d6d9d2afd654625b63607453cf3ccb65af485905ddfccd812e9eb97
   Observed Generation:     1
   Stack:
     Id:         io.buildpacks.stacks.bionic
-    Run Image:  index.docker.io/cloudfoundry/run@sha256:ba9998ae4bb32ab43a7966c537aa1be153092ab0c7536eeef63bcd6336cbd0db
+    Run Image:  gcr.io/paketo-buildpacks/run@sha256:bfe49e7d1c2c47d980af9dd684047616db872a982dcb2c5515a960d1a962a599
+Events:         <none>
 ```
 

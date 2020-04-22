@@ -24,7 +24,7 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: BuilderWithSecretsSpec{
 			BuilderSpec: BuilderSpec{
-				Image:        "cloudfoundry/cnb:bionic",
+				Image:        "paketo-buildpacks/cnb:bionic",
 				UpdatePolicy: "external",
 			},
 			ImagePullSecrets: nil,
@@ -39,7 +39,7 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 			Name: "builder-name",
 		},
 		Spec: BuilderSpec{
-			Image:        "cloudfoundry/cnb:bionic",
+			Image:        "paketo-buildpacks/cnb:bionic",
 			UpdatePolicy: "external",
 		},
 	}
