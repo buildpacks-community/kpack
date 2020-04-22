@@ -9,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
-	github.com/buildpacks/lifecycle v0.7.2
+	github.com/buildpacks/lifecycle v0.7.3
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-openapi/spec v0.19.7
