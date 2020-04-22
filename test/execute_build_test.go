@@ -47,7 +47,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		builderName              = "build-service-builder"
 		clusterBuilderName       = "cluster-builder"
 		serviceAccountName       = "image-service-account"
-		builderImage             = "cloudfoundry/cnb:bionic"
+		builderImage             = "gcr.io/paketo-buildpacks/builder:base"
 		storeName                = "store"
 		stackName                = "stack"
 		customBuilderName        = "custom-builder"
@@ -148,6 +148,9 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					{
 						Image: builderImage,
 					},
+					{
+						Image: "gcr.io/paketo-buildpacks/gradle",
+					},
 				},
 			},
 		})
@@ -160,10 +163,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			Spec: expv1alpha1.StackSpec{
 				Id: "io.buildpacks.stacks.bionic",
 				BuildImage: expv1alpha1.StackSpecImage{
-					Image: "cloudfoundry/build:base-cnb",
+					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
 				},
 				RunImage: expv1alpha1.StackSpecImage{
-					Image: "cloudfoundry/run:base-cnb",
+					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
 				},
 			},
 		})
@@ -194,7 +197,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.nodejs",
+										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
@@ -203,18 +206,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.openjdk",
+										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.buildsystem",
+										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.jvmapplication",
+										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
 							},
@@ -240,7 +243,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.nodejs",
+										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
@@ -249,18 +252,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Group: []expv1alpha1.BuildpackRef{
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.openjdk",
+										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.buildsystem",
+										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
 									BuildpackInfo: expv1alpha1.BuildpackInfo{
-										Id: "org.cloudfoundry.jvmapplication",
+										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
 							},
@@ -321,24 +324,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		builderConfigs := map[string]corev1.ObjectReference{
 			"custom-builder": {
-				Kind:       expv1alpha1.CustomBuilderKind,
-				APIVersion: "experimental.kpack.pivotal.io/v1alpha1",
-				Name:       customBuilderName,
+				Kind: expv1alpha1.CustomBuilderKind,
+				Name: customBuilderName,
 			},
 			"builder": {
-				Kind:       v1alpha1.BuilderKind,
-				APIVersion: "build.pivotal.io/v1alpha1",
-				Name:       builderName,
+				Kind: v1alpha1.BuilderKind,
+				Name: builderName,
 			},
 			"cluster-builder": {
-				Kind:       v1alpha1.ClusterBuilderKind,
-				APIVersion: "build.pivotal.io/v1alpha1",
-				Name:       clusterBuilderName,
+				Kind: v1alpha1.ClusterBuilderKind,
+				Name: clusterBuilderName,
 			},
 			"custom-cluster-builder": {
-				Kind:       expv1alpha1.CustomClusterBuilderKind,
-				APIVersion: "build.pivotal.io/v1alpha1",
-				Name:       customClusterBuilderName,
+				Kind: expv1alpha1.CustomClusterBuilderKind,
+				Name: customClusterBuilderName,
 			},
 		}
 
