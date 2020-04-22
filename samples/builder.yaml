@@ -3,5 +3,5 @@ kind: Builder
 metadata:
   name: sample-builder
 spec:
-  image: cloudfoundry/cnb:bionic
+  image: gcr.io/paketo-buildpacks/builder:base
   updatePolicy: polling

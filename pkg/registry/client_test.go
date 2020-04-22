@@ -36,18 +36,18 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 	when("Fetch", func() {
 		when("#Identifer", func() {
 			it("includes digest if repoName does not have a digest", func() {
-				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "cloudfoundry/cnb:bionic")
+				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder:base")
 				require.NoError(t, err)
 
 				require.Len(t, imageId, 104)
-				require.Equal(t, imageId[0:40], "index.docker.io/cloudfoundry/cnb@sha256:")
+				require.Equal(t, imageId[0:40], "gcr.io/paketo-buildpacks/builder@sha256:")
 			})
 
 			it("includes digest if repoName already has a digest", func() {
-				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "cloudfoundry/cnb:bionic@sha256:33c3ad8676530f864d51d78483b510334ccc4f03368f7f5bb9d517ff4cbd630f")
+				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder@sha256:fc6c76f22d6d9d2afd654625b63607453cf3ccb65af485905ddfccd812e9eb97")
 				require.NoError(t, err)
 
-				require.Equal(t, imageId, "index.docker.io/cloudfoundry/cnb@sha256:33c3ad8676530f864d51d78483b510334ccc4f03368f7f5bb9d517ff4cbd630f")
+				require.Equal(t, imageId, "gcr.io/paketo-buildpacks/builder@sha256:fc6c76f22d6d9d2afd654625b63607453cf3ccb65af485905ddfccd812e9eb97")
 			})
 		})
 	})

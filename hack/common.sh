@@ -3,7 +3,7 @@
 function pack_build() {
     image=$1
     target=$2
-    builder="cloudfoundry/cnb:tiny"
+    builder="gcr.io/cf-build-service-public/ci/tiny-builder" # builder used ci
 
     pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish
 

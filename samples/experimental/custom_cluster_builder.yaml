@@ -11,8 +11,16 @@ spec:
     namespace: default
   order:
   - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.yarn
-  - group:
-    - id: org.cloudfoundry.node-engine
-    - id: org.cloudfoundry.npm
+    - id: paketo-buildpacks/adopt-openjdk
+    - id: paketo-buildpacks/gradle
+      optional: true
+    - id: paketo-buildpacks/maven
+      optional: true
+    - id: paketo-buildpacks/executable-jar
+      optional: true
+    - id: paketo-buildpacks/apache-tomcat
+      optional: true
+    - id: paketo-buildpacks/spring-boot
+      optional: true
+    - id: paketo-buildpacks/dist-zip
+      optional: true

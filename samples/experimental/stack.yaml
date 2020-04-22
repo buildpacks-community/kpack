@@ -5,6 +5,6 @@ metadata:
 spec:
   id: "io.buildpacks.stacks.bionic"
   buildImage:
-    image: "cloudfoundry/build@sha256:b30b850f5b4d2e11313f0ec152952eace285ce7a3bc203ca5cdcfa8e5bb232a6"
+    image: "gcr.io/paketo-buildpacks/build@sha256:84f3eb6655aa126d827c07a3badbad3192288a50986be1b28ad2526bd38c93c7"
   runImage:
-    image: "cloudfoundry/run@sha256:ba9998ae4bb32ab43a7966c537aa1be153092ab0c7536eeef63bcd6336cbd0db"
+    image: "gcr.io/paketo-buildpacks/run@sha256:e30db2d9b15e0da9f4171e48430ce9249319c126ce6b670b68443e6c13e91aa5"
