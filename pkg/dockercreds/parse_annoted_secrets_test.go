@@ -1,7 +1,9 @@
 package dockercreds_test
 
 import (
+	"bytes"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"testing"
@@ -44,10 +46,16 @@ func testParseAnnotatedSecrets(t *testing.T, when spec.G, it spec.S) {
 
 		when("ParseMountedAnnotatedSecrets", func() {
 			it("parses the volume mounted creds", func() {
+
+				logger := log.New(&bytes.Buffer{}, "", 0)
+
 				creds, err := dockercreds.ParseMountedAnnotatedSecrets(testDir,
 					[]string{
 						"gcr-creds=gcr.io",
-						"dockerhub-creds=index.docker.io"})
+						"dockerhub-creds=index.docker.io",
+					},
+					logger,
+				)
 				require.NoError(t, err)
 
 				assert.Equal(t, dockercreds.DockerCreds{

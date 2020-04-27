@@ -1,14 +1,16 @@
 package dockercreds
 
 import (
+	"log"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pivotal/kpack/pkg/secret"
 	"github.com/pkg/errors"
+
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
-func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCreds, error) {
+func ParseMountedAnnotatedSecrets(volumeName string, secrets []string, logger *log.Logger) (DockerCreds, error) {
 	var dockerCreds = DockerCreds{}
 	for _, s := range secrets {
 		splitSecret := strings.Split(s, "=")
@@ -18,6 +20,7 @@ func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCr
 		secretName := splitSecret[0]
 		domain := splitSecret[1]
 
+		logger.Printf("Loading secrets for %q from secret %q", domain, secretName)
 		auth, err := secret.ReadBasicAuthSecret(volumeName, secretName)
 		if err != nil {
 			return nil, err

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 
 	"github.com/buildpacks/imgutil/remote"
@@ -34,16 +35,17 @@ func init() {
 func main() {
 	flag.Parse()
 	tags := flag.Args()
+	logger := log.New(os.Stdout, "", 0)
 
-	cmd.Exit(rebase(tags))
+	cmd.Exit(rebase(tags, logger))
 }
 
-func rebase(tags []string) error {
+func rebase(tags []string, logger *log.Logger) error {
 	if len(tags) < 1 {
 		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
 	}
 
-	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
+	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials, logger)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}

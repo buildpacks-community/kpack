@@ -55,9 +55,9 @@ const (
 func main() {
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "prepare:", log.Lshortfile)
+	logger := log.New(os.Stdout, "", 0)
 
-	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
+	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
