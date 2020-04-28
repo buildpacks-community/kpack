@@ -82,6 +82,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
         }
       ],
       "api": "0.2",
+      "homepage": "buildpack.meta.com",
       "stacks": [
         {
           "id": "org.some.stack",
@@ -99,6 +100,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
     "0.0.1": {
       "layerDiffID": "sha256:114e397795eceac649afc159afb229211a9ad97b908f7ace225736b8774d9b00",
       "api": "0.2",
+      "homepage": "buildpack.multi.com/v1",
       "stacks": [
         {
           "id": "org.some.stack",
@@ -114,6 +116,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
     "0.0.2": {
       "layerDiffID": "sha256:fcc1dd482e41209737dadce3afd276a93d10d974c174fb72adddd3925b2f31d5",
       "api": "0.2",
+      "homepage": "buildpack.multi.com/v2",
       "stacks": [
         {
           "id": "org.some.stack",
@@ -152,6 +155,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
     "0.0.1": {
       "layerDiffID": "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
       "api": "0.2",
+      "homepage": "buildpack.simple.com",
       "stacks": [
         {
           "id": "org.some.stack",
@@ -193,7 +197,8 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
-				API: "0.2",
+				API:      "0.2",
+				Homepage: "buildpack.multi.com/v1",
 				Stacks: []v1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
@@ -215,7 +220,8 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
-				API: "0.2",
+				API:      "0.2",
+				Homepage: "buildpack.multi.com/v2",
 				Stacks: []v1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
@@ -229,6 +235,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				Digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
 				Size:   30,
 			})
+
 			require.Contains(t, storeBuildpacks,
 				v1alpha1.StoreBuildpack{
 					BuildpackInfo: v1alpha1.BuildpackInfo{
@@ -238,7 +245,8 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					StoreImage: v1alpha1.StoreImage{
 						Image: buildpackageA,
 					},
-					API: "0.2",
+					API:      "0.2",
+					Homepage: "buildpack.meta.com",
 					Order: []v1alpha1.OrderEntry{
 						{
 							Group: []v1alpha1.BuildpackRef{
@@ -280,10 +288,11 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Id:      "org.buildpack.simple",
 					Version: "0.0.1",
 				},
-				DiffId: "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
-				Digest: "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
-				Size:   40,
-				API:    "0.2",
+				DiffId:   "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
+				Digest:   "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",
+				Size:     40,
+				API:      "0.2",
+				Homepage: "buildpack.simple.com",
 				Stacks: []v1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
@@ -344,6 +353,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
    "0.0.1": {
      "layerDiffID": "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
      "api": "0.2",
+	 "homepage": "builpack.simple.com",
      "stacks": [
        {
          "id": "org.some.stack",

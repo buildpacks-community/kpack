@@ -45,11 +45,12 @@ type StoreStatus struct {
 type StoreBuildpack struct {
 	BuildpackInfo `json:",inline"`
 	StoreImage    StoreImage `json:"storeImage,omitempty"`
-	API           string     `json:"api,omitempty"`
 	DiffId        string     `json:"diffId,omitempty"`
 	Digest        string     `json:"digest,omitempty"`
 	Size          int64      `json:"size,omitempty"`
 
+	API      string `json:"api,omitempty"`
+	Homepage string `json:"homepage,omitempty"`
 	// +listType
 	Order []OrderEntry `json:"order,omitempty"`
 	// +listType

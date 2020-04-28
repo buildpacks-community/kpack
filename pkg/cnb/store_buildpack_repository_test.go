@@ -12,10 +12,10 @@ import (
 )
 
 func TestBuildpackRepository(t *testing.T) {
-	spec.Run(t, "TestBuildpackRepository", testBuildpackRetriever)
+	spec.Run(t, "TestBuildpackRepository", testBuildpackRepository)
 }
 
-func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
+func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 	when("FindByIdAndVersion", func() {
 		engineBuildpack := v1alpha1.StoreBuildpack{
 			BuildpackInfo: v1alpha1.BuildpackInfo{
@@ -28,8 +28,9 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			StoreImage: v1alpha1.StoreImage{
 				Image: "some.registry.io/build-package",
 			},
-			Order: nil,
-			API:   "0.1",
+			Order:    nil,
+			Homepage: "buildpack.engine.com",
+			API:      "0.1",
 			Stacks: []v1alpha1.BuildpackStack{
 				{
 					ID: "io.custom.stack",
@@ -51,8 +52,9 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			StoreImage: v1alpha1.StoreImage{
 				Image: "some.registry.io/build-package",
 			},
-			Order: nil,
-			API:   "0.2",
+			Order:    nil,
+			Homepage: "buildpack.package-manager.com",
+			API:      "0.2",
 			Stacks: []v1alpha1.BuildpackStack{
 				{
 					ID: "io.custom.stack",
@@ -94,7 +96,8 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			API: "0.3",
+			Homepage: "buildpack.meta.com",
+			API:      "0.3",
 			Stacks: []v1alpha1.BuildpackStack{
 				{
 					ID: "io.custom.stack",
@@ -116,8 +119,9 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			StoreImage: v1alpha1.StoreImage{
 				Image: "some.registry.io/build-package",
 			},
-			Order: nil,
-			API:   "0.2",
+			Order:    nil,
+			Homepage: "buildpack.multi.com",
+			API:      "0.2",
 			Stacks: []v1alpha1.BuildpackStack{
 				{
 					ID: "io.custom.stack",
@@ -139,8 +143,9 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			StoreImage: v1alpha1.StoreImage{
 				Image: "some.registry.io/build-package",
 			},
-			Order: nil,
-			API:   "0.2",
+			Order:    nil,
+			Homepage: "buildpack.multi.com",
+			API:      "0.2",
 			Stacks: []v1alpha1.BuildpackStack{
 				{
 					ID: "io.custom.stack",
@@ -176,20 +181,27 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			expectedLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: v1alpha1.BuildpackInfo{
-					Id:      "io.buildpack.engine",
-					Version: "1.0.0",
+				BuildpackInfo: DescriptiveBuildpackInfo{
+					BuildpackInfo: v1alpha1.BuildpackInfo{
+						Id:      "io.buildpack.engine",
+						Version: "1.0.0",
+					},
+					Homepage: "buildpack.engine.com",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedLayer,
-						BuildpackInfo: v1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.engine",
-							Version: "1.0.0",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.engine",
+								Version: "1.0.0",
+							},
+							Homepage: "buildpack.engine.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.1",
 							LayerDiffID: diffID(t, expectedLayer),
+							Homepage:    "buildpack.engine.com",
 							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID: "io.custom.stack",
@@ -212,20 +224,27 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
-				BuildpackInfo: v1alpha1.BuildpackInfo{
-					Id:      "io.buildpack.multi",
-					Version: "9.0.0",
+				BuildpackInfo: DescriptiveBuildpackInfo{
+					BuildpackInfo: v1alpha1.BuildpackInfo{
+						Id:      "io.buildpack.multi",
+						Version: "9.0.0",
+					},
+					Homepage: "buildpack.multi.com",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedLayer,
-						BuildpackInfo: v1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.multi",
-							Version: "9.0.0",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.multi",
+								Version: "9.0.0",
+							},
+							Homepage: "buildpack.multi.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: diffID(t, expectedLayer),
+							Homepage:    "buildpack.multi.com",
 							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID: "io.custom.stack",
@@ -282,16 +301,22 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{
-				BuildpackInfo: v1alpha1.BuildpackInfo{
-					Id:      "io.buildpack.meta",
-					Version: "1.0.0",
+				BuildpackInfo: DescriptiveBuildpackInfo{
+					BuildpackInfo: v1alpha1.BuildpackInfo{
+						Id:      "io.buildpack.meta",
+						Version: "1.0.0",
+					},
+					Homepage: "buildpack.meta.com",
 				},
 				Layers: []buildpackLayer{
 					{
 						v1Layer: expectedEngineLayer,
-						BuildpackInfo: v1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.engine",
-							Version: "1.0.0",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.engine",
+								Version: "1.0.0",
+							},
+							Homepage: "buildpack.engine.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.1",
@@ -304,17 +329,22 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 									ID: "io.stack.only.engine.works",
 								},
 							},
+							Homepage: "buildpack.engine.com",
 						},
 					},
 					{
 						v1Layer: expectedPackageManagerLayer,
-						BuildpackInfo: v1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.package-manager",
-							Version: "1.0.0",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.package-manager",
+								Version: "1.0.0",
+							},
+							Homepage: "buildpack.package-manager.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: diffID(t, expectedPackageManagerLayer),
+							Homepage:    "buildpack.package-manager.com",
 							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID: "io.custom.stack",
@@ -327,13 +357,17 @@ func testBuildpackRetriever(t *testing.T, when spec.G, it spec.S) {
 					},
 					{
 						v1Layer: expectedMetaLayer,
-						BuildpackInfo: v1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.meta",
-							Version: "1.0.0",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.meta",
+								Version: "1.0.0",
+							},
+							Homepage: "buildpack.meta.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.3",
 							LayerDiffID: diffID(t, expectedMetaLayer),
+							Homepage:    "buildpack.meta.com",
 							Order: v1alpha1.Order{
 								{
 									Group: []v1alpha1.BuildpackRef{

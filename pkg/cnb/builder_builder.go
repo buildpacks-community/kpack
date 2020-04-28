@@ -17,16 +17,14 @@ import (
 )
 
 const (
-	workspaceDir        = "/workspace"
-	layersDir           = "/layers"
-	cnbDir              = "/cnb"
-	cnbLifecycleDir     = "/cnb/lifecycle"
-	lifecycleSymlinkDir = "/lifecycle"
-	platformDir         = "/platform"
-	platformEnvDir      = platformDir + "/env"
-	buildpacksDir       = "/cnb/buildpacks"
-	orderTomlPath       = "/cnb/order.toml"
-	stackTomlPath       = "/cnb/stack.toml"
+	workspaceDir   = "/workspace"
+	layersDir      = "/layers"
+	cnbDir         = "/cnb"
+	platformDir    = "/platform"
+	platformEnvDir = platformDir + "/env"
+	buildpacksDir  = "/cnb/buildpacks"
+	orderTomlPath  = "/cnb/order.toml"
+	stackTomlPath  = "/cnb/stack.toml"
 )
 
 var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
@@ -37,7 +35,7 @@ type builderBlder struct {
 	LifecycleMetadata LifecycleMetadata
 	stackId           string
 	order             []expv1alpha1.OrderEntry
-	buildpackLayers   map[expv1alpha1.BuildpackInfo]buildpackLayer
+	buildpackLayers   map[DescriptiveBuildpackInfo]buildpackLayer
 	cnbUserId         int
 	cnbGroupId        int
 	kpackVersion      string
@@ -55,7 +53,7 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 	return &builderBlder{
 		lifecycleImage:    lifecycleImage,
 		LifecycleMetadata: lifecycleMd,
-		buildpackLayers:   map[expv1alpha1.BuildpackInfo]buildpackLayer{},
+		buildpackLayers:   map[DescriptiveBuildpackInfo]buildpackLayer{},
 		kpackVersion:      kpackVersion,
 	}, nil
 }
@@ -72,7 +70,7 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, stack *expv1alpha1.Stack) {
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 	group := make([]expv1alpha1.BuildpackRef, 0, len(buildpacks))
 	for _, b := range buildpacks {
-		group = append(group, b.BuildpackRef)
+		group = append(group, b.buildpackRef())
 
 		for _, layer := range b.Layers {
 			bb.buildpackLayers[layer.BuildpackInfo] = layer
@@ -160,7 +158,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	})
 }
 
-func (bb *builderBlder) validateBuilder(sortedBuildpacks []expv1alpha1.BuildpackInfo) error {
+func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
 	buildpackApi := bb.LifecycleMetadata.API.BuildpackVersion
 
 	for _, bpInfo := range sortedBuildpacks {
@@ -173,7 +171,7 @@ func (bb *builderBlder) validateBuilder(sortedBuildpacks []expv1alpha1.Buildpack
 	return nil
 }
 
-func (bb *builderBlder) buildpacks() []expv1alpha1.BuildpackInfo {
+func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {
 	return deterministicSortBySize(bb.buildpackLayers)
 }
 
@@ -320,9 +318,9 @@ func (bb *builderBlder) rootOwnedDir(path string) *tar.Header {
 	}
 }
 
-func deterministicSortBySize(layers map[expv1alpha1.BuildpackInfo]buildpackLayer) []expv1alpha1.BuildpackInfo {
-	keys := make([]expv1alpha1.BuildpackInfo, 0, len(layers))
-	sizes := make(map[expv1alpha1.BuildpackInfo]int64, len(layers))
+func deterministicSortBySize(layers map[DescriptiveBuildpackInfo]buildpackLayer) []DescriptiveBuildpackInfo {
+	keys := make([]DescriptiveBuildpackInfo, 0, len(layers))
+	sizes := make(map[DescriptiveBuildpackInfo]int64, len(layers))
 	for k, layer := range layers {
 		keys = append(keys, k)
 		size, _ := layer.v1Layer.Size()

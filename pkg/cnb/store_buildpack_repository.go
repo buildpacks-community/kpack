@@ -32,9 +32,12 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 		return RemoteBuildpackInfo{}, err
 	}
 
-	info := v1alpha1.BuildpackInfo{
-		Id:      storeBuildpack.Id,
-		Version: storeBuildpack.Version,
+	info := DescriptiveBuildpackInfo{
+		BuildpackInfo: v1alpha1.BuildpackInfo{
+			Id:      storeBuildpack.Id,
+			Version: storeBuildpack.Version,
+		},
+		Homepage: storeBuildpack.Homepage,
 	}
 
 	return RemoteBuildpackInfo{
@@ -47,6 +50,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 				Order:       storeBuildpack.Order,
 				API:         storeBuildpack.API,
 				Stacks:      storeBuildpack.Stacks,
+				Homepage:    storeBuildpack.Homepage,
 			},
 		}),
 	}, nil

@@ -75,7 +75,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 	}, nil
 }
 
-func buildpackMetadata(buildpacks []expv1alpha1.BuildpackInfo) v1alpha1.BuildpackMetadataList {
+func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha1.BuildpackMetadataList {
 	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		m = append(m, v1alpha1.BuildpackMetadata{

@@ -17,6 +17,12 @@ type BuildpackLayerInfo struct {
 	LayerDiffID string                       `json:"layerDiffID"`
 	Order       expv1alpha1.Order            `json:"order,omitempty"`
 	Stacks      []expv1alpha1.BuildpackStack `json:"stacks,omitempty"`
+	Homepage    string                       `json:"homepage,omitempty"`
+}
+
+type DescriptiveBuildpackInfo struct {
+	v1alpha1.BuildpackInfo
+	Homepage string `json:"homepage,omitempty"`
 }
 
 type Stack struct {
@@ -25,11 +31,11 @@ type Stack struct {
 }
 
 type BuilderImageMetadata struct {
-	Description string                   `json:"description"`
-	Stack       StackMetadata            `json:"stack"`
-	Lifecycle   LifecycleMetadata        `json:"lifecycle"`
-	CreatedBy   CreatorMetadata          `json:"createdBy"`
-	Buildpacks  []v1alpha1.BuildpackInfo `json:"buildpacks"`
+	Description string                     `json:"description"`
+	Stack       StackMetadata              `json:"stack"`
+	Lifecycle   LifecycleMetadata          `json:"lifecycle"`
+	CreatedBy   CreatorMetadata            `json:"createdBy"`
+	Buildpacks  []DescriptiveBuildpackInfo `json:"buildpacks"`
 }
 
 type StackMetadata struct {

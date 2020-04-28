@@ -64,12 +64,14 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 					c <- v1alpha1.StoreBuildpack{
 						BuildpackInfo: info,
 						StoreImage:    storeImage,
-						Order:         metadata.Order,
-						DiffId:        metadata.LayerDiffID,
 						Digest:        digest.String(),
+						DiffId:        metadata.LayerDiffID,
 						Size:          size,
-						API:           metadata.API,
-						Stacks:        metadata.Stacks,
+
+						Order:    metadata.Order,
+						Homepage: metadata.Homepage,
+						API:      metadata.API,
+						Stacks:   metadata.Stacks,
 					}
 				}
 			}
