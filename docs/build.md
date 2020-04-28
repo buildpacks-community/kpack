@@ -28,10 +28,10 @@ spec:
   - name: "JAVA_BP_ENV"
     value: "value"
   resources:
-    limits:
+    requests:
       cpu: "0.25"
       memory: "128M"
-    requests:
+    limits:
       cpu: "0.5"
       memory: "256M"
 ```
