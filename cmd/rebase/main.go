@@ -45,7 +45,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
 	}
 
-	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials, logger)
+	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}

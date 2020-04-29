@@ -455,11 +455,9 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			args = append(args,
 				fmt.Sprintf("-basic-%s=%s=%s", "docker", secret.Name, secret.Annotations[DOCKERSecretAnnotationPrefix]))
 		case secret.Type == corev1.SecretTypeDockerConfigJson:
-			args = append(args,
-				fmt.Sprintf("-dockerconfig=%s", fmt.Sprintf(SecretPathName, secret.Name)))
+			args = append(args, fmt.Sprintf("-dockerconfig=%s", secret.Name))
 		case secret.Type == corev1.SecretTypeDockercfg:
-			args = append(args,
-				fmt.Sprintf("-dockercfg=%s", fmt.Sprintf(SecretPathName, secret.Name)))
+			args = append(args, fmt.Sprintf("-dockercfg=%s", secret.Name))
 		case secret.Type == corev1.SecretTypeBasicAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-basic-%s=%s=%s", "git", secret.Name, annotatedUrl))
