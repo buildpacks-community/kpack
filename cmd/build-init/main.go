@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -51,21 +53,25 @@ const (
 	builderPullSecretsDir = "/builderPullSecrets"
 	projectMetadataDir    = "/projectMetadata"
 )
-
 func main() {
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "prepare:", log.Lshortfile)
+	logger := log.New(os.Stdout, "", 0)
 
+	logLoadingSecrets(logger, dockerCredentials)
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(c)
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(filepath.Join(buildSecretsDir, c))
 		if err != nil {
 			logger.Fatal(err)
+		}
+
+		for domain := range dockerCfgCreds {
+			logger.Printf("Loading secrets for %q from secret %q", domain, c)
 		}
 
 		creds, err = creds.Append(dockerCfgCreds)
@@ -122,6 +128,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 
 	switch {
 	case *gitURL != "":
+		logLoadingSecrets(logger, basicGitCredentials, sshGitCredentials)
 		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, basicGitCredentials, sshGitCredentials)
 		if err != nil {
 			return err
@@ -152,3 +159,17 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		return errors.New("no git url, blob url, or registry image provided")
 	}
 }
+
+func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
+	for _, secretsSlice := range secretsSlices {
+		for _, secret := range secretsSlice {
+			splitSecret := strings.Split(secret, "=")
+			if len(splitSecret) == 2 {
+				secretName := splitSecret[0]
+				domain := splitSecret[1]
+				logger.Printf("Loading secrets for %q from secret %q", domain, secretName)
+			}
+		}
+	}
+}
+

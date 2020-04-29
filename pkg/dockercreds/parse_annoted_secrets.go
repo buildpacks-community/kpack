@@ -4,8 +4,9 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pivotal/kpack/pkg/secret"
 	"github.com/pkg/errors"
+
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 func ParseMountedAnnotatedSecrets(volumeName string, secrets []string) (DockerCreds, error) {

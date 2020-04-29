@@ -44,10 +44,14 @@ func testParseAnnotatedSecrets(t *testing.T, when spec.G, it spec.S) {
 
 		when("ParseMountedAnnotatedSecrets", func() {
 			it("parses the volume mounted creds", func() {
-				creds, err := dockercreds.ParseMountedAnnotatedSecrets(testDir,
+
+				creds, err := dockercreds.ParseMountedAnnotatedSecrets(
+					testDir,
 					[]string{
 						"gcr-creds=gcr.io",
-						"dockerhub-creds=index.docker.io"})
+						"dockerhub-creds=index.docker.io",
+					},
+				)
 				require.NoError(t, err)
 
 				assert.Equal(t, dockercreds.DockerCreds{

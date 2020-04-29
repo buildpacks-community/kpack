@@ -234,8 +234,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-basic-git=git-secret-1=https://github.com",
 					"-ssh-git=git-secret-2=https://bitbucket.com",
 					"-basic-docker=docker-secret-1=acr.io",
-					"-dockerconfig=/var/build-secrets/docker-secret-2",
-					"-dockercfg=/var/build-secrets/docker-secret-3",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
 				}, pod.Spec.InitContainers[0].Args)
 
 				assert.Contains(t,
@@ -708,8 +708,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"--last-built-image",
 								build.Spec.LastBuild.Image,
 								"-basic-docker=docker-secret-1=acr.io",
-								"-dockerconfig=/var/build-secrets/docker-secret-2",
-								"-dockercfg=/var/build-secrets/docker-secret-3",
+								"-dockerconfig=docker-secret-2",
+								"-dockercfg=docker-secret-3",
 								"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							WorkingDir:      "/workspace",
