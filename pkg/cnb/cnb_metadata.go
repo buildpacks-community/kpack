@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
@@ -84,7 +83,7 @@ func (r *RemoteMetadataRetriever) GetBuilderImage(builder FetchableBuilder) (v1a
 	}, nil
 }
 
-func transform(infos []expv1alpha1.BuildpackInfo) v1alpha1.BuildpackMetadataList {
+func transform(infos []DescriptiveBuildpackInfo) v1alpha1.BuildpackMetadataList {
 	buildpacks := make(v1alpha1.BuildpackMetadataList, 0, len(infos))
 	for _, buildpack := range infos {
 		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{

@@ -44,10 +44,10 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("includes digest if repoName already has a digest", func() {
-				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder@sha256:fc6c76f22d6d9d2afd654625b63607453cf3ccb65af485905ddfccd812e9eb97")
+				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder@sha256:31e8de150acb4f204cc26cf8cbca93bd6fd78d5cdad8fc41f0f6b51a9606f08e")
 				require.NoError(t, err)
 
-				require.Equal(t, imageId, "gcr.io/paketo-buildpacks/builder@sha256:fc6c76f22d6d9d2afd654625b63607453cf3ccb65af485905ddfccd812e9eb97")
+				require.Equal(t, imageId, "gcr.io/paketo-buildpacks/builder@sha256:31e8de150acb4f204cc26cf8cbca93bd6fd78d5cdad8fc41f0f6b51a9606f08e")
 			})
 		})
 	})

@@ -131,9 +131,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	buildpackRepository.AddBP("io.buildpack.1", "v1", []buildpackLayer{
 		{
 			v1Layer: buildpack1Layer,
-			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				Id:      "io.buildpack.1",
-				Version: "v1",
+			BuildpackInfo: DescriptiveBuildpackInfo{
+				BuildpackInfo: expv1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.1",
+					Version: "v1",
+				},
+				Homepage: "buildpack.1.com",
 			},
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
@@ -151,9 +154,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	buildpackRepository.AddBP("io.buildpack.2", "v2", []buildpackLayer{
 		{
 			v1Layer: buildpack3Layer,
-			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				Id:      "io.buildpack.3",
-				Version: "v2",
+			BuildpackInfo: DescriptiveBuildpackInfo{
+				BuildpackInfo: expv1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.3",
+					Version: "v3",
+				},
+				Homepage: "buildpack.3.com",
 			},
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
@@ -170,9 +176,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		},
 		{
 			v1Layer: buildpack2Layer,
-			BuildpackInfo: expv1alpha1.BuildpackInfo{
-				Id:      "io.buildpack.2",
-				Version: "v1",
+			BuildpackInfo: DescriptiveBuildpackInfo{
+				BuildpackInfo: expv1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.2",
+					Version: "v2",
+				},
+				Homepage: "buildpack.2.com",
 			},
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
@@ -235,8 +244,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v1"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v2"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3"})
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
@@ -396,15 +405,18 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   "buildpacks": [
     {
       "id": "io.buildpack.3",
-      "version": "v2"
+      "version": "v3",
+	  "homepage": "buildpack.3.com"
     },
     {
       "id": "io.buildpack.2",
-      "version": "v1"
+      "version": "v2",
+	  "homepage": "buildpack.2.com"
     },
     {
       "id": "io.buildpack.1",
-      "version": "v1"
+      "version": "v1",
+	  "homepage": "buildpack.1.com"
     }
   ]
 }`, buildpackMetadata)
@@ -426,7 +438,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     }
   },
   "io.buildpack.2": {
-    "v1": {
+    "v2": {
       "api": "0.2",
       "layerDiffID": "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "order": [
@@ -442,7 +454,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     }
   },
   "io.buildpack.3": {
-    "v2": {
+    "v3": {
       "api": "0.2",
       "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
@@ -477,9 +489,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				buildpackRepository.AddBP("io.buildpack.unsupported.stack", "v4", []buildpackLayer{
 					{
 						v1Layer: buildpack1Layer,
-						BuildpackInfo: expv1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.unsupported.stack",
-							Version: "v4",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.stack",
+								Version: "v4",
+							},
+							Homepage: "buildpack.4.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
@@ -514,9 +529,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				buildpackRepository.AddBP("io.buildpack.unsupported.mixin", "v4", []buildpackLayer{
 					{
 						v1Layer: buildpack1Layer,
-						BuildpackInfo: expv1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.unsupported.mixin",
-							Version: "v4",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.mixin",
+								Version: "v4",
+							},
+							Homepage: "buildpack.1.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
@@ -552,9 +570,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				buildpackRepository.AddBP("io.buildpack.unsupported.buildpack.api", "v4", []buildpackLayer{
 					{
 						v1Layer: buildpack1Layer,
-						BuildpackInfo: expv1alpha1.BuildpackInfo{
-							Id:      "io.buildpack.unsupported.buildpack.api",
-							Version: "v4",
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: expv1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.buildpack.api",
+								Version: "v4",
+							},
+							Homepage: "buildpack.4.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.3",
@@ -601,12 +622,18 @@ func (f *fakeBuildpackRepository) FindByIdAndVersion(id, version string) (Remote
 	}
 
 	return RemoteBuildpackInfo{
-		BuildpackInfo: expv1alpha1.BuildpackInfo{
-			Id:      id,
-			Version: version,
-		},
-		Layers: layers,
+		BuildpackInfo: buildpackInfoInLayers(layers, id, version),
+		Layers:        layers,
 	}, nil
+}
+
+func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string) DescriptiveBuildpackInfo {
+	for _, b := range buildpackLayers {
+		if b.BuildpackInfo.Id == id && b.BuildpackInfo.Version == version {
+			return b.BuildpackInfo
+		}
+	}
+	panic("unexpected missing buildpack info")
 }
 
 func (f *fakeBuildpackRepository) AddBP(id, version string, layers []buildpackLayer) {
