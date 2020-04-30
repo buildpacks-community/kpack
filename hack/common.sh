@@ -2,13 +2,19 @@
 
 function pack_build() {
     image=$1
+    app=./hack/staging
     target=$2
-    builder="gcr.io/cf-build-service-public/ci/tiny-builder" # builder used ci
+    builder="gcr.io/paketo-buildpacks/builder:base"
 
-    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish
+    mkdir -p ${app}
+    GOOS=linux go build -o ${app}/$target ./cmd/$target
+    echo "web: /workspace/$target" > $app/Procfile
 
+    pack build ${image} -p ${app} --builder ${builder} -e --default-process=${target} --publish
     docker pull ${image}
     resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
+
+    rm -rf ./hack/staging
 }
 
 function lifecycle_image_build() {
@@ -33,19 +39,19 @@ function compile() {
   completion_image=${IMAGE_PREFIX}completion
   lifecycle_image=${IMAGE_PREFIX}lifecycle
 
-  pack_build ${controller_image} "./cmd/controller"
+  pack_build ${controller_image} "controller"
   controller_image=${resolved_image_name}
 
-  pack_build ${webhook_image} "./cmd/webhook"
+  pack_build ${webhook_image} "webhook"
   webhook_image=${resolved_image_name}
 
-  pack_build ${build_init_image} "./cmd/build-init"
+  pack_build ${build_init_image} "build-init"
   build_init_image=${resolved_image_name}
 
-  pack_build ${rebase_image} "./cmd/rebase"
+  pack_build ${rebase_image} "rebase"
   rebase_image=${resolved_image_name}
 
-  pack_build ${completion_image} "./cmd/completion"
+  pack_build ${completion_image} "completion"
   completion_image=${resolved_image_name}
 
   lifecycle_image_build ${lifecycle_image}

@@ -11,3 +11,4 @@ bazel-*
 coverage.txt
 
 vendor
+hack/staging
