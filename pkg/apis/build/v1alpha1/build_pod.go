@@ -84,6 +84,10 @@ var (
 		MountPath: "/builderPullSecrets",
 		ReadOnly:  true,
 	}
+	bindingsEnv = corev1.EnvVar{
+		Name:  "CNB_BINDINGS",
+		Value: "/var/bindings",
+	}
 )
 
 func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig) (*corev1.Pod, error) {
@@ -108,6 +112,51 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 		Name:      sourceVolume.Name,
 		MountPath: sourceVolume.MountPath,
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
+	}
+
+	bindingVolumes := []corev1.Volume{}
+	bindingVolumeMounts := []corev1.VolumeMount{}
+	for _, binding := range b.Spec.Bindings {
+		metadataVolume := fmt.Sprintf("binding-metadata-%s", binding.Name)
+		bindingVolumes = append(bindingVolumes,
+			corev1.Volume{
+				Name: metadataVolume,
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: binding.MetadataRef.Name,
+						},
+					},
+				},
+			},
+		)
+		bindingVolumeMounts = append(bindingVolumeMounts,
+			corev1.VolumeMount{
+				Name:      metadataVolume,
+				MountPath: fmt.Sprintf("%s/%s/metadata", bindingsEnv.Value, binding.Name),
+				ReadOnly:  true,
+			},
+		)
+		if binding.SecretRef != nil {
+			secretVolume := fmt.Sprintf("binding-secret-%s", binding.Name)
+			bindingVolumes = append(bindingVolumes,
+				corev1.Volume{
+					Name: secretVolume,
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: binding.SecretRef.Name,
+						},
+					},
+				},
+			)
+			bindingVolumeMounts = append(bindingVolumeMounts,
+				corev1.VolumeMount{
+					Name:      secretVolume,
+					MountPath: fmt.Sprintf("%s/%s/secret", bindingsEnv.Value, binding.Name),
+					ReadOnly:  true,
+				},
+			)
+		}
 	}
 
 	return &corev1.Pod{
@@ -188,11 +237,14 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
 						},
-						VolumeMounts: []corev1.VolumeMount{
+						Env: []corev1.EnvVar{
+							bindingsEnv,
+						},
+						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
 							platformVolume,
 							workspaceVolume,
-						},
+						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 				)
@@ -253,11 +305,14 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
 						},
-						VolumeMounts: []corev1.VolumeMount{
+						Env: []corev1.EnvVar{
+							bindingsEnv,
+						},
+						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
 							platformVolume,
 							workspaceVolume,
-						},
+						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 				)
@@ -315,7 +370,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 				}
 			}),
 			ServiceAccountName: b.Spec.ServiceAccount,
-			Volumes: append(
+			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
 					Name:         cacheDirName,
@@ -347,7 +402,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 				},
 				b.Spec.Source.Source().ImagePullSecretsVolume(),
 				builderSecretVolume(b.Spec.Builder),
-			),
+			), bindingVolumes...),
 			ImagePullSecrets: b.Spec.Builder.ImagePullSecrets,
 		},
 	}, nil

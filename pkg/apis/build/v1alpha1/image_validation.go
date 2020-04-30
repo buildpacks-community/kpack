@@ -43,7 +43,8 @@ func (s *Image) Validate(ctx context.Context) *apis.FieldError {
 func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
 		Also(validateBuilder(is.Builder).ViaField("builder")).
-		Also(is.Source.Validate(ctx).ViaField("source"))
+		Also(is.Source.Validate(ctx).ViaField("source")).
+		Also(is.Build.Validate(ctx).ViaField("build"))
 }
 
 func (im *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
@@ -119,4 +120,12 @@ func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return validate.Image(r.Image)
+}
+
+func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
+	if ib == nil {
+		return nil
+	}
+
+	return ib.Bindings.Validate(ctx).ViaField("bindings")
 }

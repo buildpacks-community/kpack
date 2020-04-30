@@ -87,6 +87,7 @@ func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Builder:        builder.BuildBuilderSpec(),
 			Env:            im.env(),
 			Resources:      im.resources(),
+			Bindings:       im.bindings(),
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
@@ -116,6 +117,13 @@ func (im *Image) latestForImage(build *Build) string {
 		latestImage = build.BuiltImage()
 	}
 	return latestImage
+}
+
+func (im *Image) bindings() Bindings {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.Bindings
 }
 
 func (im *Image) env() []corev1.EnvVar {
