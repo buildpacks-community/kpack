@@ -221,6 +221,6 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     
 1. kpack rebuilds with buildpack updates
     
-    The next time the `gcr.io/paketo-buildpacks/build:base` is updated, kpack will detect if it contains buildpack updates to any of the buildpacks used by the tutorial image.
+    The next time the `gcr.io/paketo-buildpacks/builder:base` is updated, kpack will detect if it contains buildpack updates to any of the buildpacks used by the tutorial image.
     If there is a buildpack update, kpack will automatically create a new build to rebuild your image.    
     

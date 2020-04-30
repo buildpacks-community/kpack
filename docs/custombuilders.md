@@ -18,7 +18,7 @@ spec:
   sources:
   - image: gcr.io/cf-build-service-public/node-engine-buildpackage@sha256:95ff756f0ef0e026440a8523f4bab02fd8b45dc1a8a3a7ba063cefdba5cb9493
   - image: gcr.io/cf-build-service-public/npm-buildpackage@sha256:5058ceb9a562ec647ea5a41008b0d11e32a56e13e8c9ec20c4db63d220373e33
-  - image: gcr.io/paketo-buildpacks/build:base
+  - image: gcr.io/paketo-buildpacks/builder:base
 ```
 
 * `sources`:  List of builder images or buildpackage images to make available in the store. Each image is an object with the key image.   
