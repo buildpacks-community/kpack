@@ -132,6 +132,19 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
   }
 }
 `,
+				"io.buildpacks.buildpackage.metadata": //language=json
+				`{
+  "id": "org.buildpack.meta",
+  "version": "0.0.2",
+  "stacks": [
+    {
+      "id": "org.some.stack"
+    },
+    {
+      "id": "org.multi.only.stack"
+    }
+  ]
+}`,
 			})
 			require.NoError(t, err)
 
@@ -171,6 +184,19 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
   }
 }
 `,
+				"io.buildpacks.buildpackage.metadata": //language=json
+				`{
+  "id": "org.buildpack.simple",
+  "version": "0.0.1",
+  "stacks": [
+    {
+      "id": "org.some.stack"
+    },
+    {
+      "id": "org.simple.only.stack"
+    }
+  ]
+}`,
 			})
 			require.NoError(t, err)
 
@@ -193,6 +219,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.multi",
 					Version: "0.0.1",
+				},
+				Buildpackage: v1alpha1.BuildpackageInfo{
+					Id:      "org.buildpack.meta",
+					Version: "0.0.2",
 				},
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
@@ -217,6 +247,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Id:      "org.buildpack.multi",
 					Version: "0.0.2",
 				},
+				Buildpackage: v1alpha1.BuildpackageInfo{
+					Id:      "org.buildpack.meta",
+					Version: "0.0.2",
+				},
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
@@ -239,6 +273,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.Contains(t, storeBuildpacks,
 				v1alpha1.StoreBuildpack{
 					BuildpackInfo: v1alpha1.BuildpackInfo{
+						Id:      "org.buildpack.meta",
+						Version: "0.0.2",
+					},
+					Buildpackage: v1alpha1.BuildpackageInfo{
 						Id:      "org.buildpack.meta",
 						Version: "0.0.2",
 					},
@@ -285,6 +323,10 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 
 			require.Contains(t, storeBuildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
+					Id:      "org.buildpack.simple",
+					Version: "0.0.1",
+				},
+				Buildpackage: v1alpha1.BuildpackageInfo{
 					Id:      "org.buildpack.simple",
 					Version: "0.0.1",
 				},
@@ -353,7 +395,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
    "0.0.1": {
      "layerDiffID": "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
      "api": "0.2",
-	 "homepage": "builpack.simple.com",
+	 "homepage": "buildpack.simple.com",
      "stacks": [
        {
          "id": "org.some.stack",
@@ -369,6 +411,19 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
  }
 }
 `,
+				"io.buildpacks.buildpackage.metadata": //language=json
+				`{
+  "id": "org.buildpack.simple",
+  "version": "0.0.1",
+  "stacks": [
+    {
+      "id": "org.some.stack"
+    },
+    {
+      "id": "org.simple.only.stack"
+    }
+  ]
+}`,
 			})
 			require.NoError(t, err)
 
