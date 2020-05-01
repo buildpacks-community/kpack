@@ -30,9 +30,13 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 			}
 
 			bpMetadata := BuildpackageMetadata{}
-			err = imagehelpers.GetLabel(image, buildpackageMetadataLabel, &bpMetadata)
-			if err != nil {
+			if ok, err := imagehelpers.HasLabel(image, buildpackageMetadataLabel); err != nil {
 				return err
+			} else if ok {
+				err := imagehelpers.GetLabel(image, buildpackageMetadataLabel, &bpMetadata)
+				if err != nil {
+					return err
+				}
 			}
 
 			layerMetadata := BuildpackLayerMetadata{}
