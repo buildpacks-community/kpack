@@ -84,10 +84,6 @@ var (
 		MountPath: "/builderPullSecrets",
 		ReadOnly:  true,
 	}
-	bindingsEnv = corev1.EnvVar{
-		Name:  "CNB_BINDINGS",
-		Value: "/var/bindings",
-	}
 )
 
 func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig) (*corev1.Pod, error) {
@@ -133,7 +129,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 		bindingVolumeMounts = append(bindingVolumeMounts,
 			corev1.VolumeMount{
 				Name:      metadataVolume,
-				MountPath: fmt.Sprintf("%s/%s/metadata", bindingsEnv.Value, binding.Name),
+				MountPath: fmt.Sprintf("%s/bindings/%s/metadata", platformVolume.MountPath, binding.Name),
 				ReadOnly:  true,
 			},
 		)
@@ -152,7 +148,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 			bindingVolumeMounts = append(bindingVolumeMounts,
 				corev1.VolumeMount{
 					Name:      secretVolume,
-					MountPath: fmt.Sprintf("%s/%s/secret", bindingsEnv.Value, binding.Name),
+					MountPath: fmt.Sprintf("%s/bindings/%s/secret", platformVolume.MountPath, binding.Name),
 					ReadOnly:  true,
 				},
 			)
@@ -237,9 +233,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
 						},
-						Env: []corev1.EnvVar{
-							bindingsEnv,
-						},
 						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
 							platformVolume,
@@ -304,9 +297,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							"-app=/workspace",
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
-						},
-						Env: []corev1.EnvVar{
-							bindingsEnv,
 						},
 						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,

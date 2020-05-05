@@ -277,27 +277,20 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				for _, containerIdx := range []int{1 /* detect */, 4 /* build */} {
 					assert.Contains(t,
-						pod.Spec.InitContainers[containerIdx].Env,
-						corev1.EnvVar{
-							Name:  "CNB_BINDINGS",
-							Value: "/var/bindings",
-						},
-					)
-					assert.Contains(t,
 						pod.Spec.InitContainers[containerIdx].VolumeMounts,
 						corev1.VolumeMount{
 							Name:      "binding-metadata-database",
-							MountPath: "/var/bindings/database/metadata",
+							MountPath: "/platform/bindings/database/metadata",
 							ReadOnly:  true,
 						},
 						corev1.VolumeMount{
 							Name:      "binding-metadata-apm",
-							MountPath: "/var/bindings/apm/metadata",
+							MountPath: "/platform/bindings/apm/metadata",
 							ReadOnly:  true,
 						},
 						corev1.VolumeMount{
 							Name:      "binding-secret-apm",
-							MountPath: "/var/bindings/apm/secret",
+							MountPath: "/platform/bindings/apm/secret",
 							ReadOnly:  true,
 						},
 					)
@@ -498,9 +491,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, pod.Spec.InitContainers[1].Name, "detect")
 				assert.Equal(t, pod.Spec.InitContainers[1].Image, builderImage)
-				assert.Equal(t, pod.Spec.InitContainers[1].Env, []corev1.EnvVar{
-					{Name: "CNB_BINDINGS", Value: "/var/bindings"},
-				})
 				assert.Equal(t, []string{
 					"layers-dir",
 					"platform-dir",
