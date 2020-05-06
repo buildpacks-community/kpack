@@ -22,11 +22,21 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 
 	c := make(chan v1alpha1.StoreBuildpack)
 	for _, storeImage := range storeImages {
-		storeImage := storeImage
+		storeImageCopy := storeImage
 		g.Go(func() error {
-			image, _, err := r.RegistryClient.Fetch(r.Keychain, storeImage.Image)
+			image, _, err := r.RegistryClient.Fetch(r.Keychain, storeImageCopy.Image)
 			if err != nil {
 				return err
+			}
+
+			bpMetadata := BuildpackageMetadata{}
+			if ok, err := imagehelpers.HasLabel(image, buildpackageMetadataLabel); err != nil {
+				return err
+			} else if ok {
+				err := imagehelpers.GetLabel(image, buildpackageMetadataLabel, &bpMetadata)
+				if err != nil {
+					return err
+				}
 			}
 
 			layerMetadata := BuildpackLayerMetadata{}
@@ -37,6 +47,11 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 
 			for id := range layerMetadata {
 				for version, metadata := range layerMetadata[id] {
+					packageInfo := v1alpha1.BuildpackageInfo{
+						Id:      bpMetadata.Id,
+						Version: bpMetadata.Version,
+					}
+
 					info := v1alpha1.BuildpackInfo{
 						Id:      id,
 						Version: version,
@@ -46,6 +61,7 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 					if err != nil {
 						return errors.Wrapf(err, "unable to parse layer diffId for %s", info)
 					}
+
 					layer, err := image.LayerByDiffID(diffId)
 					if err != nil {
 						return errors.Wrapf(err, "unable to get layer %s", info)
@@ -63,7 +79,8 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 
 					c <- v1alpha1.StoreBuildpack{
 						BuildpackInfo: info,
-						StoreImage:    storeImage,
+						Buildpackage:  packageInfo,
+						StoreImage:    storeImageCopy,
 						Digest:        digest.String(),
 						DiffId:        metadata.LayerDiffID,
 						Size:          size,

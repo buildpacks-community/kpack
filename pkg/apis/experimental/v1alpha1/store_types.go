@@ -44,10 +44,11 @@ type StoreStatus struct {
 // +k8s:openapi-gen=true
 type StoreBuildpack struct {
 	BuildpackInfo `json:",inline"`
-	StoreImage    StoreImage `json:"storeImage,omitempty"`
-	DiffId        string     `json:"diffId,omitempty"`
-	Digest        string     `json:"digest,omitempty"`
-	Size          int64      `json:"size,omitempty"`
+	Buildpackage  BuildpackageInfo `json:"buildpackage,omitempty"`
+	StoreImage    StoreImage       `json:"storeImage,omitempty"`
+	DiffId        string           `json:"diffId,omitempty"`
+	Digest        string           `json:"digest,omitempty"`
+	Size          int64            `json:"size,omitempty"`
 
 	API      string `json:"api,omitempty"`
 	Homepage string `json:"homepage,omitempty"`
