@@ -1,14 +1,15 @@
 package buildpod
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 
@@ -39,11 +40,16 @@ type BuildPodable interface {
 	GetNamespace() string
 	ServiceAccount() string
 	BuilderSpec() v1alpha1.BuildBuilderSpec
+	Bindings() []v1alpha1.Binding
 
 	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
+	if err := g.buildAllowed(build); err != nil {
+		return nil, fmt.Errorf("build rejected: %w", err)
+	}
+
 	secrets, err := g.fetchBuildSecrets(build)
 	if err != nil {
 		return nil, err
@@ -55,6 +61,36 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	}
 
 	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig)
+}
+
+func (g *Generator) buildAllowed(build BuildPodable) error {
+	serviceAccounts, err := g.fetchServiceAccounts(build)
+	if err != nil {
+		return err
+	}
+
+	var forbiddenSecrets = map[string]bool{}
+	for _, serviceAccount := range serviceAccounts {
+		for _, secret := range serviceAccount.Secrets {
+			forbiddenSecrets[secret.Name] = true
+		}
+	}
+
+	for _, binding := range build.Bindings() {
+		if binding.SecretRef != nil && forbiddenSecrets[binding.SecretRef.Name] {
+			return fmt.Errorf("binding %q uses forbidden secret %q", binding.Name, binding.SecretRef.Name)
+		}
+	}
+
+	return nil
+}
+
+func (g *Generator) fetchServiceAccounts(build BuildPodable) ([]corev1.ServiceAccount, error) {
+	serviceAccounts, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).List(metav1.ListOptions{})
+	if err != nil {
+		return []v1.ServiceAccount{}, err
+	}
+	return serviceAccounts.Items, nil
 }
 
 func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, error) {
