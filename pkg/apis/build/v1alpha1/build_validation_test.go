@@ -187,7 +187,12 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assertValidationError(build, apis.ErrMissingField("spec.bindings[0].secretRef.name"))
+			assertValidationError(build,
+				(&apis.FieldError{}).Also(
+					apis.ErrDisallowedFields("spec.bindings[0].secretRef"),
+					apis.ErrMissingField("spec.bindings[0].secretRef.name"),
+				),
+			)
 		})
 
 		it("validates bindings name uniqueness", func() {
@@ -199,7 +204,6 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				{
 					Name:        "not-apm",
 					MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
-					SecretRef:   &corev1.LocalObjectReference{Name: "secret"},
 				},
 				{
 					Name:        "apm",

@@ -95,6 +95,10 @@ func (b *Binding) Validate(context context.Context) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("metadataRef.name"))
 	}
 
+	if b.SecretRef != nil {
+		// TODO(scothis) allow secrets once the security implications are better understood
+		errs = errs.Also(apis.ErrDisallowedFields("secretRef"))
+	}
 	if b.SecretRef != nil && b.SecretRef.Name == "" {
 		// secretRef is optional
 		errs = errs.Also(apis.ErrMissingField("secretRef.name"))
