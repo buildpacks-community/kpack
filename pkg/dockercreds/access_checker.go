@@ -39,6 +39,7 @@ func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 			}
 		}
 
+		err = errors.Errorf("Error validating write permission to %s. %s", tag, err.Error())
 		return false, errors.WithStack(err)
 	}
 

@@ -65,8 +65,6 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
-
 			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
@@ -83,8 +81,6 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
-
 			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
@@ -99,8 +95,6 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
-
 			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
 			assert.False(t, hasAccess)
@@ -111,10 +105,20 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(404)
 			})
 
-			tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
+			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
+			require.Error(t, err)
+			assert.False(t, hasAccess)
+		})
+
+		it("wraps unhandled server errors with a reasonable error message", func() {
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(500)
+			})
 
 			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
 			require.Error(t, err)
+			expectedErrorMessage := fmt.Sprintf("Error validating write permission to %s. GET %s/v2/: unsupported status code 500", tagName, server.URL)
+			assert.Equal(t, expectedErrorMessage, err.Error())
 			assert.False(t, hasAccess)
 		})
 	})
