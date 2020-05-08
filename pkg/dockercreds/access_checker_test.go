@@ -24,8 +24,8 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 		tagName = fmt.Sprintf("%s/some/image:tag", server.URL[7:])
 	)
 
-	when("HasWriteAccess", func() {
-		it("true when has permission", func() {
+	when("VerifyWriteAccess", func() {
+		it("does not error when has write access", func() {
 			handler.HandleFunc("/v2/some/image/blobs/uploads/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(201)
 			})
@@ -34,9 +34,8 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
-			assert.True(t, hasAccess)
 		})
 
 		it("requests scope push permission", func() {
@@ -51,10 +50,10 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			_, _ = HasWriteAccess(testKeychain{}, tagName)
+			_ = VerifyWriteAccess(testKeychain{}, tagName)
 		})
 
-		it("false when fetching token is unauthorized", func() {
+		it("errors when fetching token is unauthorized", func() {
 			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(401)
 				writer.Write([]byte(`{"errors": [{"code":  "UNAUTHORIZED"}]}`))
@@ -65,12 +64,12 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
-			require.NoError(t, err)
-			assert.False(t, hasAccess)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Unauthorized")
 		})
 
-		it("false when server responds with unauthorized but without a code such as on artifactory", func() {
+		it("errors when server responds with unauthorized but without a code such as on artifactory", func() {
 			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(401)
 				writer.Write([]byte(`{"statusCode":401,"details":"BAD_CREDENTIAL"}`))
@@ -81,12 +80,12 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
-			require.NoError(t, err)
-			assert.False(t, hasAccess)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Unauthorized")
 		})
 
-		it("false when does not have permission", func() {
+		it("errors when does not have permission", func() {
 			handler.HandleFunc("/v2/some/image/blobs/uploads/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(403)
 			})
@@ -95,36 +94,31 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
-			require.NoError(t, err)
-			assert.False(t, hasAccess)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
+			assert.EqualError(t, err, fmt.Sprintf("POST %s/v2/some/image/blobs/uploads/: unsupported status code 403", server.URL))
 		})
 
-		it("false when cannot reach server with an error", func() {
+		it("errors when cannot reach server", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(404)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
-			require.Error(t, err)
-			assert.False(t, hasAccess)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404", server.URL))
 		})
 
-		it("wraps unhandled server errors with a reasonable error message", func() {
+		it("errors when server errors", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(500)
 			})
 
-			hasAccess, err := HasWriteAccess(testKeychain{}, tagName)
-			require.Error(t, err)
-			expectedErrorMessage := fmt.Sprintf("Error validating write permission to %s. GET %s/v2/: unsupported status code 500", tagName, server.URL)
-			assert.Equal(t, expectedErrorMessage, err.Error())
-			assert.False(t, hasAccess)
+			err := VerifyWriteAccess(testKeychain{}, tagName)
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 500", server.URL))
 		})
 	})
 
-	when("#HasReadAccess", func() {
-		it("returns true when we do have read access", func() {
+	when("#VerifyReadAccess", func() {
+		it("does not error when has read access", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(200)
 			})
@@ -133,12 +127,11 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			canRead, err := HasReadAccess(testKeychain{}, tagName)
+			err := VerifyReadAccess(testKeychain{}, tagName)
 			require.NoError(t, err)
-			assert.True(t, canRead)
 		})
 
-		it("returns false when we do not have read access", func() {
+		it("errors when has no read access", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(200)
 			})
@@ -147,29 +140,17 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(401)
 			})
 
-			canRead, err := HasReadAccess(testKeychain{}, tagName)
-			require.NoError(t, err)
-			assert.False(t, canRead)
+			err := VerifyReadAccess(testKeychain{}, tagName)
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/some/image/manifests/tag: unsupported status code 401", server.URL))
 		})
 
-		it("returns false when server responds with 404", func() {
+		it("errors when cannot reach server", func() {
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(404)
 			})
 
-			canRead, err := HasReadAccess(testKeychain{}, tagName)
-			require.NoError(t, err)
-			assert.False(t, canRead)
-		})
-
-		it("returns false with error when we cannot reach the server", func() {
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.WriteHeader(404)
-			})
-
-			canRead, err := HasReadAccess(testKeychain{}, "localhost:9999/blj")
-			require.Error(t, err)
-			assert.False(t, canRead)
+			err := VerifyReadAccess(testKeychain{}, tagName)
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404", server.URL))
 		})
 	})
 }

@@ -12,16 +12,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
+func VerifyWriteAccess(keychain authn.Keychain, tag string) error {
 	var auth authn.Authenticator
 	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {
-		return false, err
+		return errors.Wrapf(err, "Error parsing reference %q", tag)
 	}
 
 	auth, err = keychain.Resolve(ref.Context().Registry)
 	if err != nil {
-		return false, err
+		return errors.Wrap(err, "Error resolving credentials")
 	}
 
 	scopes := []string{ref.Scope(transport.PushScope)}
@@ -30,17 +30,16 @@ func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 		if transportError, ok := err.(*transport.Error); ok {
 			for _, diagnosticError := range transportError.Errors {
 				if diagnosticError.Code == transport.UnauthorizedErrorCode {
-					return false, nil
+					return errors.Wrap(err, "Unauthorized")
 				}
 			}
 
 			if transportError.StatusCode == 401 {
-				return false, nil
+				return errors.Wrap(err, "Unauthorized")
 			}
 		}
 
-		err = errors.Errorf("Error validating write permission to %s. %s", tag, err.Error())
-		return false, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	client := &http.Client{Transport: tr}
@@ -54,30 +53,26 @@ func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 	// Make the request to initiate the blob upload.
 	resp, err := client.Post(u.String(), "application/json", nil)
 	if err != nil {
-		return false, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 	defer resp.Body.Close()
 
-	if err := transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
-		return false, nil
+	if err = transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
+		return errors.WithStack(err)
 	}
 
-	return true, nil
+	return nil
 }
 
-func HasReadAccess(keychain authn.Keychain, tag string) (bool, error) {
+func VerifyReadAccess(keychain authn.Keychain, tag string) error {
 	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {
-		return false, errors.Wrapf(err, "parse reference '%s'", tag)
-	}
-	_, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport))
-	if err != nil {
-		if _, ok := err.(*transport.Error); ok {
-			return false, nil
-		}
-
-		return false, errors.Wrapf(err, "validating read access to: %s", tag)
+		return errors.Wrapf(err, "Error parsing reference %q", tag)
 	}
 
-	return true, nil
+	if _, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport)); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
