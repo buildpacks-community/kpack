@@ -25,6 +25,10 @@ func (b *Build) BuilderSpec() BuildBuilderSpec {
 	return b.Spec.Builder
 }
 
+func (b *Build) Bindings() []Binding {
+	return b.Spec.Bindings
+}
+
 func (b *Build) IsRunning() bool {
 	if b == nil {
 		return false

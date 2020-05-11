@@ -193,6 +193,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, apis.ErrInvalidValue(image.Spec.Source.Registry.Image, "image").ViaField("spec", "source", "registry"))
 		})
 
+		it("validates build bindings", func() {
+			image.Spec.Build.Bindings = []Binding{
+				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
+			}
+
+			assertValidationError(image, apis.ErrMissingField("spec.build.bindings[0].name"))
+		})
+
 		it("combining errors", func() {
 			image.Spec.Tag = ""
 			image.Spec.Builder.Kind = "FakeBuilder"

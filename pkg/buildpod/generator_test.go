@@ -1,6 +1,7 @@
 package buildpod_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/buildpacks/lifecycle"
@@ -184,6 +185,31 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}}, build.buildPodCalls)
 		})
+
+		it("rejects a build with a binding secret that is attached to a service account", func() {
+			buildPodConfig := v1alpha1.BuildPodImages{}
+			generator := &buildpod.Generator{
+				BuildPodConfig:  buildPodConfig,
+				K8sClient:       fakeK8sClient,
+				KeychainFactory: keychainFactory,
+				ImageFetcher:    imageFetcher,
+			}
+
+			var build = &testBuildPodable{
+				namespace: namespace,
+				bindings: []v1alpha1.Binding{
+					{
+						Name:        "naughty",
+						MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
+						SecretRef:   &corev1.LocalObjectReference{Name: dockerSecret.Name},
+					},
+				},
+			}
+
+			pod, err := generator.Generate(build)
+			require.EqualError(t, err, fmt.Sprintf("build rejected: binding %q uses forbidden secret %q", "naughty", dockerSecret.Name))
+			require.Nil(t, pod)
+		})
 	})
 }
 
@@ -198,6 +224,7 @@ type testBuildPodable struct {
 	serviceAccount   string
 	namespace        string
 	buildPodCalls    []buildPodCall
+	bindings         []v1alpha1.Binding
 }
 
 type buildPodCall struct {
@@ -229,4 +256,8 @@ func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []c
 		BuildPodBuilderConfig: config,
 	})
 	return &corev1.Pod{}, nil
+}
+
+func (tb *testBuildPodable) Bindings() []v1alpha1.Binding {
+	return tb.bindings
 }

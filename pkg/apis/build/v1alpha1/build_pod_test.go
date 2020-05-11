@@ -68,6 +68,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			CacheName: "some-cache-name",
+			Bindings: []v1alpha1.Binding{
+				{
+					Name: "database",
+					MetadataRef: &corev1.LocalObjectReference{
+						Name: "database-configmap",
+					},
+				},
+				{
+					Name: "apm",
+					MetadataRef: &corev1.LocalObjectReference{
+						Name: "apm-configmap",
+					},
+					SecretRef: &corev1.LocalObjectReference{
+						Name: "apm-secret",
+					},
+				},
+			},
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
@@ -219,6 +236,64 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					vol := volumeMountFromContainer(t, pod.Spec.InitContainers, containerName, "workspace-dir")
 					assert.Equal(t, "/workspace", vol.MountPath)
 					assert.Equal(t, "some/path", vol.SubPath)
+				}
+			})
+
+			it("configures the bindings", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Contains(t,
+					pod.Spec.Volumes,
+					corev1.Volume{
+						Name: "binding-metadata-database",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "database-configmap",
+								},
+							},
+						},
+					},
+					corev1.Volume{
+						Name: "binding-metadata-apm",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "apm-configmap",
+								},
+							},
+						},
+					},
+					corev1.Volume{
+						Name: "binding-secret-apm",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "apm-secret",
+							},
+						},
+					},
+				)
+
+				for _, containerIdx := range []int{1 /* detect */, 4 /* build */} {
+					assert.Contains(t,
+						pod.Spec.InitContainers[containerIdx].VolumeMounts,
+						corev1.VolumeMount{
+							Name:      "binding-metadata-database",
+							MountPath: "/platform/bindings/database/metadata",
+							ReadOnly:  true,
+						},
+						corev1.VolumeMount{
+							Name:      "binding-metadata-apm",
+							MountPath: "/platform/bindings/apm/metadata",
+							ReadOnly:  true,
+						},
+						corev1.VolumeMount{
+							Name:      "binding-secret-apm",
+							MountPath: "/platform/bindings/apm/secret",
+							ReadOnly:  true,
+						},
+					)
 				}
 			})
 
@@ -420,6 +495,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"layers-dir",
 					"platform-dir",
 					"workspace-dir",
+					"binding-metadata-database",
+					"binding-metadata-apm",
+					"binding-secret-apm",
 				}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			})
 
@@ -504,6 +582,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"layers-dir",
 					"platform-dir",
 					"workspace-dir",
+					"binding-metadata-database",
+					"binding-metadata-apm",
+					"binding-secret-apm",
 				}))
 			})
 
@@ -554,7 +635,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 7)
+				require.Len(t, pod.Spec.Volumes, 10)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -568,7 +649,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 7)
+				require.Len(t, pod.Spec.Volumes, 10)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -590,6 +671,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("attach image pull secrets to pod", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Len(t, pod.Spec.ImagePullSecrets, 1)
+				assert.Equal(t, corev1.LocalObjectReference{Name: "some-image-secret"}, pod.Spec.ImagePullSecrets[0])
+			})
+
+			it("mounts volumes for bindings", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
