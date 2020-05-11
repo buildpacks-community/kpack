@@ -135,7 +135,7 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 		return image, nil
 	}
 
-	image.Status.BuildCacheName, err = c.reconcileBuildCache(image)
+	buildCacheName, err := c.reconcileBuildCache(image)
 	if err != nil {
 		return nil, err
 	}
@@ -145,22 +145,10 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 		return nil, err
 	}
 
-	buildApplier, err := reconcileBuild(image, lastBuild, sourceResolver, builder)
+	image.Status, err = c.reconcileBuild(image, lastBuild, sourceResolver, builder, buildCacheName)
 	if err != nil {
 		return nil, err
 	}
-
-	reconciledBuild, err := buildApplier.Apply(c.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	image.Status.LatestBuildRef = reconciledBuild.Build.BuildRef()
-	image.Status.BuildCounter = reconciledBuild.BuildCounter
-	image.Status.LatestImage = reconciledBuild.LatestImage
-	image.Status.LatestStack = reconciledBuild.Build.Stack()
-	image.Status.Conditions = reconciledBuild.Conditions
-	image.Status.ObservedGeneration = image.Generation
 
 	return image, c.deleteOldBuilds(image)
 }
@@ -276,6 +264,7 @@ func (c *Reconciler) fetchLastBuild(image *v1alpha1.Image) (*v1alpha1.Build, err
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Image) error {
+	desired.Status.ObservedGeneration = desired.Generation
 	original, err := c.ImageLister.Images(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err

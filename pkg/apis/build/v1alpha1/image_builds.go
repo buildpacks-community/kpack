@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 )
@@ -27,45 +26,7 @@ const (
 	BuildReasonTrigger   = "TRIGGER"
 )
 
-func (im *Image) BuildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool) {
-	if !sourceResolver.Ready() || !builder.Ready() {
-		return []string{}, false
-	}
-
-	if lastBuild == nil || im.Spec.Tag != lastBuild.Tag() {
-		return []string{BuildReasonConfig}, true
-	}
-
-	var reasons []string
-
-	if sourceResolver.ConfigChanged(lastBuild) ||
-		!equality.Semantic.DeepEqual(im.env(), lastBuild.Spec.Env) ||
-		!equality.Semantic.DeepEqual(im.resources(), lastBuild.Spec.Resources) {
-		reasons = append(reasons, BuildReasonConfig)
-	}
-
-	if sourceResolver.RevisionChanged(lastBuild) {
-		reasons = append(reasons, BuildReasonCommit)
-	}
-
-	if lastBuild.IsSuccess() {
-		if !lastBuild.builtWithBuildpacks(builder.BuildpackMetadata()) {
-			reasons = append(reasons, BuildReasonBuildpack)
-		}
-
-		if !lastBuild.builtWithStack(builder.RunImage()) {
-			reasons = append(reasons, BuildReasonStack)
-		}
-	}
-
-	if lastBuild.additionalBuildNeeded() {
-		reasons = append(reasons, BuildReasonTrigger)
-	}
-
-	return reasons, len(reasons) > 0
-}
-
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, cacheName string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -86,8 +47,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Tags:           im.generateTags(buildNumber),
 			Builder:        builder.BuildBuilderSpec(),
 			Bindings:       im.bindings(),
-			Env:            im.env(),
-			Resources:      im.resources(),
+			Env:            im.Env(),
+			Resources:      im.Resources(),
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
@@ -125,14 +86,14 @@ func (im *Image) bindings() Bindings {
 	return im.Spec.Build.Bindings
 }
 
-func (im *Image) env() []corev1.EnvVar {
+func (im *Image) Env() []corev1.EnvVar {
 	if im.Spec.Build == nil {
 		return nil
 	}
 	return im.Spec.Build.Env
 }
 
-func (im *Image) resources() corev1.ResourceRequirements {
+func (im *Image) Resources() corev1.ResourceRequirements {
 	if im.Spec.Build == nil {
 		return corev1.ResourceRequirements{}
 	}

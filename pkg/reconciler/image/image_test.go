@@ -1559,7 +1559,6 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not schedule a build if the previous build is running", func() {
-				image.Generation = 2
 				image.Status.BuildCounter = 1
 				image.Status.LatestBuildRef = "image-name-build-1"
 
@@ -1677,6 +1676,148 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
+			it("reports the last successful build on the image when the last build is successful", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LatestBuildRef = "image-name-build-1"
+				image.Status.LatestImage = "some/image@some-old-sha"
+				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: runtimeObjects(
+						successfulBuilds(image, sourceResolver, 1),
+						image,
+						builder,
+						sourceResolver,
+					),
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   v1alpha1.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									LatestBuildRef: "image-name-build-1",
+									LatestImage:    "some/image@sha256:build-1",
+									BuildCounter:   1,
+									LatestStack:    "io.buildpacks.stacks.bionic",
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("reports unknown when last build was successful and source resolver is unknown", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LatestBuildRef = "image-name-build-1"
+				image.Status.LatestImage = "some/image@some-old-sha"
+				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: runtimeObjects(
+						successfulBuilds(image, sourceResolver, 1),
+						image,
+						builder,
+						unresolvedSourceResolver(image),
+					),
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionReady,
+												Status: corev1.ConditionUnknown,
+											},
+											{
+												Type:   v1alpha1.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									LatestBuildRef: "image-name-build-1",
+									LatestImage:    "some/image@sha256:build-1",
+									BuildCounter:   1,
+									LatestStack:    "io.buildpacks.stacks.bionic",
+								},
+							},
+						},
+					},
+				})
+
+			})
+
+			it("reports unknown when last build was successful and builder is not ready", func() {
+				image.Status.BuildCounter = 1
+				image.Status.LatestBuildRef = "image-name-build-1"
+				image.Status.LatestImage = "some/image@some-old-sha"
+				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+
+				sourceResolver := resolvedSourceResolver(image)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: runtimeObjects(
+						successfulBuilds(image, sourceResolver, 1),
+						image,
+						sourceResolver,
+						notReadyBuilder(builder),
+					),
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: v1alpha1.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionReady,
+												Status: corev1.ConditionUnknown,
+											},
+											{
+												Type:    v1alpha1.ConditionBuilderReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  v1alpha1.BuilderNotReady,
+												Message: "Builder builder-name is not ready",
+											},
+										},
+									},
+									LatestBuildRef: "image-name-build-1",
+									LatestImage:    "some/image@sha256:build-1",
+									BuildCounter:   1,
+									LatestStack:    "io.buildpacks.stacks.bionic",
+								},
+							},
+						},
+					},
+				})
+
+			})
+
 			when("reconciling old builds", func() {
 
 				it("deletes a failed build if more than the limit", func() {
@@ -1739,52 +1880,6 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					})
-				})
-			})
-
-			it("updates the last successful build on the image when the last build is successful", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
-				image.Status.LatestImage = "some/image@some-old-sha"
-				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
-
-				sourceResolver := resolvedSourceResolver(image)
-				rt.Test(rtesting.TableRow{
-					Key: key,
-					Objects: runtimeObjects(
-						successfulBuilds(image, sourceResolver, 1),
-						image,
-						builder,
-						sourceResolver,
-					),
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &v1alpha1.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionTrue,
-											},
-											{
-												Type:   v1alpha1.ConditionBuilderReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									LatestBuildRef: "image-name-build-1",
-									LatestImage:    "some/image@sha256:build-1",
-									BuildCounter:   1,
-									LatestStack:    "io.buildpacks.stacks.bionic",
-								},
-							},
-						},
-					},
 				})
 			})
 		})
