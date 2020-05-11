@@ -27,7 +27,7 @@ const (
 	BuildReasonTrigger   = "TRIGGER"
 )
 
-func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool) {
+func (im *Image) BuildNeeded(lastBuild *Build, sourceResolver *SourceResolver, builder BuilderResource) ([]string, bool) {
 	if !sourceResolver.Ready() || !builder.Ready() {
 		return []string{}, false
 	}
@@ -65,7 +65,7 @@ func (im *Image) buildNeeded(lastBuild *Build, sourceResolver *SourceResolver, b
 	return reasons, len(reasons) > 0
 }
 
-func (im *Image) build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -111,12 +111,11 @@ func lastBuild(latestBuild *Build) *LastBuild {
 	}
 }
 
-func (im *Image) latestForImage(build *Build) string {
-	latestImage := im.Status.LatestImage
+func (im *Image) LatestForImage(build *Build) string {
 	if build.IsSuccess() {
-		latestImage = build.BuiltImage()
+		return build.BuiltImage()
 	}
-	return latestImage
+	return im.Status.LatestImage
 }
 
 func (im *Image) bindings() Bindings {

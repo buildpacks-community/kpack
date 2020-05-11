@@ -1,4 +1,4 @@
-package v1alpha1
+package image
 
 import (
 	"fmt"
@@ -7,56 +7,54 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
 
-func (im *Image) ReconcileBuild(latestBuild *Build, resolver *SourceResolver, builder BuilderResource) (BuildApplier, error) {
+func reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1.Build, resolver *v1alpha1.SourceResolver, builder v1alpha1.BuilderResource) (buildApplier, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
 		return nil, err
 	}
 
-	if reasons, needed := im.buildNeeded(latestBuild, resolver, builder); needed {
+	if reasons, needed := image.BuildNeeded(latestBuild, resolver, builder); needed {
 		nextBuildNumber := currentBuildNumber + 1
 		return newBuild{
 			previousBuild: latestBuild,
-			build:         im.build(resolver, builder, latestBuild, reasons, nextBuildNumber),
+			build:         image.Build(resolver, builder, latestBuild, reasons, nextBuildNumber),
 			buildCounter:  nextBuildNumber,
-			latestImage:   im.latestForImage(latestBuild),
+			latestImage:   image.LatestForImage(latestBuild),
 		}, nil
 	}
 
 	return upToDateBuild{
 		build:        latestBuild,
 		buildCounter: currentBuildNumber,
-		latestImage:  im.latestForImage(latestBuild),
+		latestImage:  image.LatestForImage(latestBuild),
 		builder:      builder,
 	}, nil
 }
 
-type BuildCreator interface {
-	CreateBuild(*Build) (*Build, error)
-}
-
 type ReconciledBuild struct {
-	Build        *Build
+	Build        *v1alpha1.Build
 	BuildCounter int64
 	LatestImage  string
 	Conditions   corev1alpha1.Conditions
 }
 
-type BuildApplier interface {
-	Apply(creator BuildCreator) (ReconciledBuild, error)
+type buildApplier interface {
+	Apply(versioned.Interface) (ReconciledBuild, error)
 }
 
 type upToDateBuild struct {
-	build        *Build
+	build        *v1alpha1.Build
 	buildCounter int64
 	latestImage  string
-	builder      BuilderResource
+	builder      v1alpha1.BuilderResource
 }
 
-func (r upToDateBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
+func (r upToDateBuild) Apply(_ versioned.Interface) (ReconciledBuild, error) {
 	return ReconciledBuild{
 		Build:        r.build,
 		BuildCounter: r.buildCounter,
@@ -90,27 +88,27 @@ func (r upToDateBuild) conditions() corev1alpha1.Conditions {
 func (r upToDateBuild) builderCondition() corev1alpha1.Condition {
 	if !r.builder.Ready() {
 		return corev1alpha1.Condition{
-			Type:    ConditionBuilderReady,
+			Type:    v1alpha1.ConditionBuilderReady,
 			Status:  corev1.ConditionFalse,
-			Reason:  BuilderNotReady,
+			Reason:  v1alpha1.BuilderNotReady,
 			Message: fmt.Sprintf("Builder %s is not ready", r.builder.GetName()),
 		}
 	}
 	return corev1alpha1.Condition{
-		Type:   ConditionBuilderReady,
+		Type:   v1alpha1.ConditionBuilderReady,
 		Status: corev1.ConditionTrue,
 	}
 }
 
 type newBuild struct {
-	build         *Build
+	build         *v1alpha1.Build
 	buildCounter  int64
 	latestImage   string
-	previousBuild *Build
+	previousBuild *v1alpha1.Build
 }
 
-func (r newBuild) Apply(creator BuildCreator) (ReconciledBuild, error) {
-	build, err := creator.CreateBuild(r.build)
+func (r newBuild) Apply(client versioned.Interface) (ReconciledBuild, error) {
+	build, err := client.BuildV1alpha1().Builds(r.build.Namespace).Create(r.build)
 	return ReconciledBuild{
 		Build:        build,
 		BuildCounter: r.buildCounter,
@@ -127,18 +125,18 @@ func (r newBuild) conditions() corev1alpha1.Conditions {
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		{
-			Type:               ConditionBuilderReady,
+			Type:               v1alpha1.ConditionBuilderReady,
 			Status:             corev1.ConditionTrue,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 	}
 }
 
-func buildCounter(build *Build) (int64, error) {
+func buildCounter(build *v1alpha1.Build) (int64, error) {
 	if build == nil {
 		return 0, nil
 	}
 
-	buildNumber := build.Labels[BuildNumberLabel]
+	buildNumber := build.Labels[v1alpha1.BuildNumberLabel]
 	return strconv.ParseInt(buildNumber, 10, 64)
 }

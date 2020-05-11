@@ -145,12 +145,12 @@ func (c *Reconciler) reconcileImage(image *v1alpha1.Image) (*v1alpha1.Image, err
 		return nil, err
 	}
 
-	buildApplier, err := image.ReconcileBuild(lastBuild, sourceResolver, builder)
+	buildApplier, err := reconcileBuild(image, lastBuild, sourceResolver, builder)
 	if err != nil {
 		return nil, err
 	}
 
-	reconciledBuild, err := buildApplier.Apply(c)
+	reconciledBuild, err := buildApplier.Apply(c.Client)
 	if err != nil {
 		return nil, err
 	}
