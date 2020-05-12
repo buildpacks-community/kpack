@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -12,34 +13,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
+func VerifyWriteAccess(keychain authn.Keychain, tag string) error {
 	var auth authn.Authenticator
 	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {
-		return false, err
+		return errors.Wrapf(err, "Error parsing reference %q", tag)
 	}
 
 	auth, err = keychain.Resolve(ref.Context().Registry)
 	if err != nil {
-		return false, err
+		return errors.Wrap(err, "Error resolving credentials")
 	}
 
 	scopes := []string{ref.Scope(transport.PushScope)}
 	tr, err := transport.New(ref.Context().Registry, auth, http.DefaultTransport, scopes)
 	if err != nil {
-		if transportError, ok := err.(*transport.Error); ok {
-			for _, diagnosticError := range transportError.Errors {
-				if diagnosticError.Code == transport.UnauthorizedErrorCode {
-					return false, nil
-				}
-			}
-
-			if transportError.StatusCode == 401 {
-				return false, nil
-			}
-		}
-
-		return false, errors.WithStack(err)
+		return diagnoseIfTransportError(err)
 	}
 
 	client := &http.Client{Transport: tr}
@@ -53,30 +42,55 @@ func HasWriteAccess(keychain authn.Keychain, tag string) (bool, error) {
 	// Make the request to initiate the blob upload.
 	resp, err := client.Post(u.String(), "application/json", nil)
 	if err != nil {
-		return false, errors.WithStack(err)
+		return diagnoseIfTransportError(err)
 	}
 	defer resp.Body.Close()
 
-	if err := transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
-		return false, nil
+	if err = transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
-func HasReadAccess(keychain authn.Keychain, tag string) (bool, error) {
+func VerifyReadAccess(keychain authn.Keychain, tag string) error {
 	ref, err := name.ParseReference(tag, name.WeakValidation)
 	if err != nil {
-		return false, errors.Wrapf(err, "parse reference '%s'", tag)
-	}
-	_, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport))
-	if err != nil {
-		if _, ok := err.(*transport.Error); ok {
-			return false, nil
-		}
-
-		return false, errors.Wrapf(err, "validating read access to: %s", tag)
+		return errors.Wrapf(err, "Error parsing reference %q", tag)
 	}
 
-	return true, nil
+	if _, err = remote.Get(ref, remote.WithAuthFromKeychain(keychain), remote.WithTransport(http.DefaultTransport)); err != nil {
+		return diagnoseIfTransportError(err)
+	}
+
+	return nil
+}
+
+func diagnoseIfTransportError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// transport.Error implements error to support the following error specification:
+	// https://github.com/docker/distribution/blob/master/docs/spec/api.md#errors
+	transportError, ok := err.(*transport.Error)
+	if !ok {
+		return err
+	}
+
+	// handle artifactory. refer test case
+	if transportError.StatusCode == 401 {
+		return errors.New(string(transport.UnauthorizedErrorCode))
+	}
+
+	if len(transportError.Errors) == 0 {
+		return err
+	}
+
+	var messageBuilder strings.Builder
+	for _, diagnosticError := range transportError.Errors {
+		messageBuilder.WriteString(fmt.Sprintf("%s. ", diagnosticError.Message))
+	}
+
+	return errors.New(messageBuilder.String())
 }

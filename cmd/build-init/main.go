@@ -53,6 +53,7 @@ const (
 	builderPullSecretsDir = "/builderPullSecrets"
 	projectMetadataDir    = "/projectMetadata"
 )
+
 func main() {
 	flag.Parse()
 
@@ -80,22 +81,14 @@ func main() {
 		}
 	}
 
-	hasImageWriteAccess, err := dockercreds.HasWriteAccess(creds, *imageTag)
+	err = dockercreds.VerifyWriteAccess(creds, *imageTag)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
 	}
 
-	if !hasImageWriteAccess {
-		logger.Fatalf("invalid credentials to build to %s", *imageTag)
-	}
-
-	hasRunImageReadAccess, err := dockercreds.HasReadAccess(creds, *runImage)
+	err = dockercreds.VerifyReadAccess(creds, *runImage)
 	if err != nil {
-		logger.Fatal(errors.Wrapf(err, "validating read access to run image"))
-	}
-
-	if !hasRunImageReadAccess {
-		logger.Fatalf("could not read run image: %s", *runImage)
+		logger.Fatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
 	}
 
 	err = fetchSource(logger, creds)
@@ -172,4 +165,3 @@ func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
 		}
 	}
 }
-
