@@ -7,7 +7,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.2 // indirect
 	github.com/BurntSushi/toml v0.3.1
-	github.com/Masterminds/semver/v3 v3.0.3
+	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
 	github.com/buildpacks/lifecycle v0.7.3
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
