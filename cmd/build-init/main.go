@@ -53,6 +53,7 @@ const (
 	builderPullSecretsDir = "/builderPullSecrets"
 	projectMetadataDir    = "/projectMetadata"
 )
+
 func main() {
 	flag.Parse()
 
@@ -164,4 +165,3 @@ func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
 		}
 	}
 }
-

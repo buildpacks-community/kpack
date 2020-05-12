@@ -65,8 +65,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "Unauthorized")
+			assert.EqualError(t, err, "UNAUTHORIZED")
 		})
 
 		it("errors when server responds with unauthorized but without a code such as on artifactory", func() {
@@ -81,8 +80,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "Unauthorized")
+			assert.EqualError(t, err, "UNAUTHORIZED")
 		})
 
 		it("errors when does not have permission", func() {
@@ -141,7 +139,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyReadAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/some/image/manifests/tag: unsupported status code 401", server.URL))
+			assert.EqualError(t, err, "UNAUTHORIZED")
 		})
 
 		it("errors when cannot reach server", func() {
