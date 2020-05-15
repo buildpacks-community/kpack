@@ -1,19 +1,30 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
+	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/profiling"
+	"knative.dev/pkg/signals"
 
 	"github.com/pivotal/kpack/cmd"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -41,6 +52,7 @@ import (
 
 const (
 	routinesPerController = 2
+	component             = "controller"
 )
 
 var (
@@ -55,25 +67,25 @@ var (
 
 func main() {
 	flag.Parse()
-	devLogger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatalf("Couldn't create logger: %s", err)
-	}
-	logger := devLogger.Sugar()
 
 	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
 	if err != nil {
-		logger.Fatalf("Error building kubeconfig: %v", err)
+		log.Fatalf("Error building kubeconfig: %v", err)
 	}
+
+	ctx := signals.NewContext()
+	logger, configMapWatcher, profilingServer := genericControllerSetup(ctx, clusterConfig)
+	defer logger.Sync()
+	defer metrics.FlushExporter()
 
 	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Fatalf("could not get Build client: %s", err.Error())
+		log.Fatalf("could not get Build client: %s", err)
 	}
 
 	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Fatalf("could not get kubernetes client: %s", err.Error())
+		log.Fatalf("could not get kubernetes client: %s", err)
 	}
 
 	options := reconciler.Options{
@@ -181,6 +193,8 @@ func main() {
 	)
 
 	err = runGroup(
+		ctx,
+		run(stackController, routinesPerController),
 		run(imageController, routinesPerController),
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),
@@ -188,17 +202,18 @@ func main() {
 		run(customBuilderController, routinesPerController),
 		run(customClusterBuilderController, routinesPerController),
 		run(storeController, routinesPerController),
-		run(stackController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
+		configMapWatcher.Start,
+		func(done <-chan struct{}) error {
+			return profilingServer.ListenAndServe()
+		},
+		func(done <-chan struct{}) error {
+			<-done
+			return profilingServer.Shutdown(ctx)
+		},
 	)
-	if err != nil {
+	if err != nil && err != http.ErrServerClosed {
 		logger.Fatalw("Error running controller", zap.Error(err))
-	}
-}
-
-func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInformer) {
-	for _, informer := range indexFormers {
-		cache.WaitForCacheSync(stopCh, informer.HasSynced)
 	}
 }
 
@@ -210,23 +225,16 @@ func run(ctrl *controller.Impl, threadiness int) doneFunc {
 
 type doneFunc func(done <-chan struct{}) error
 
-func runGroup(fns ...doneFunc) error {
-	var wg sync.WaitGroup
-	wg.Add(len(fns))
-
-	done := make(chan struct{})
-	result := make(chan error, len(fns))
+func runGroup(ctx context.Context, fns ...doneFunc) error {
+	eg, egCtx := errgroup.WithContext(ctx)
 	for _, fn := range fns {
-		go func(fn doneFunc) {
-			defer wg.Done()
-			result <- fn(done)
-		}(fn)
+		fnCopy := fn
+		eg.Go(func() error {
+			return fnCopy(egCtx.Done())
+		})
 	}
 
-	defer close(result)
-	defer wg.Wait()
-	defer close(done)
-	return <-result
+	return eg.Wait()
 }
 
 func newBuildpackRepository(keychain authn.Keychain) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
@@ -235,5 +243,35 @@ func newBuildpackRepository(keychain authn.Keychain) func(store *expv1alpha1.Sto
 			Keychain: keychain,
 			Store:    store,
 		}
+	}
+}
+
+const controllerCount = 9
+
+//lifted from knative.dev/pkg/injection/sharedmain
+func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *configmap.InformedWatcher, *http.Server) {
+	sharedmain.MemStatsOrDie(ctx)
+
+	// Adjust our client's rate limits based on the number of controllers we are running.
+	cfg.QPS = float32(controllerCount) * rest.DefaultQPS
+	cfg.Burst = controllerCount * rest.DefaultBurst
+	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
+
+	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, component)
+	ctx = logging.WithLogger(ctx, logger)
+	profilingHandler := profiling.NewHandler(logger, false)
+	profilingServer := profiling.NewServer(profilingHandler)
+
+	sharedmain.CheckK8sClientMinimumVersionOrDie(ctx, logger)
+	cmw := sharedmain.SetupConfigMapWatchOrDie(ctx, logger)
+	sharedmain.WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)
+	sharedmain.WatchObservabilityConfigOrDie(ctx, cmw, profilingHandler, logger, component)
+
+	return logger, cmw, profilingServer
+}
+
+func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInformer) {
+	for _, informer := range indexFormers {
+		cache.WaitForCacheSync(stopCh, informer.HasSynced)
 	}
 }

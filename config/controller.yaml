@@ -21,6 +21,17 @@ spec:
       - name: controller
         image: #@ data.values.controller_image
         env:
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: kpack.io
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+
         - name: BUILD_INIT_IMAGE
           value: #@ data.values.build_init_image
         - name: REBASE_IMAGE
