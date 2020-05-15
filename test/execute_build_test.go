@@ -23,8 +23,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -500,11 +501,11 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
 			require.NoError(t, err)
 
-			kResource := &duckv1alpha1.KResource{}
+			kResource := &duckv1.KResource{}
 			err = duck.FromUnstructured(unstructured, kResource)
 			require.NoError(t, err)
 
-			return kResource.Status.GetCondition(duckv1alpha1.ConditionReady).IsTrue()
+			return kResource.Status.GetCondition(apis.ConditionReady).IsTrue()
 		}, 1*time.Second, 8*time.Minute)
 	}
 }

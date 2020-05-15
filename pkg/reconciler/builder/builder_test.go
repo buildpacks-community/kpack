@@ -33,7 +33,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	fakeEnqueuer := &builderfakes.FakeEnqueuer{}
 
 	rt := testhelpers.ReconcilerTester(t,
-		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
@@ -48,7 +48,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Enqueuer:          fakeEnqueuer,
 			}
 
-			return r, actionRecorderList, eventList, &rtesting.FakeStatsReporter{}
+			return r, actionRecorderList, eventList
 		})
 
 	const (

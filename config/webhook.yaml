@@ -2,7 +2,7 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: resource.webhook.kpack.pivotal.io
+  name: defaults.webhook.kpack.pivotal.io
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -11,7 +11,29 @@ webhooks:
       name: kpack-webhook
       namespace: kpack
   failurePolicy: Fail
-  name: resource.webhook.kpack.pivotal.io
+  sideEffects: None
+  name: defaults.webhook.kpack.pivotal.io
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validation.webhook.kpack.pivotal.io
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: kpack-webhook
+      namespace: kpack
+  failurePolicy: Fail
+  sideEffects: None
+  name: validation.webhook.kpack.pivotal.io
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhook-certs
+  namespace: kpack
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,7 +56,16 @@ spec:
       containers:
       - name: webhook
         image: #@ data.values.webhook_image
+        ports:
+        - name: https-webhook
+          containerPort: 8443
         env:
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: kpack.io
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

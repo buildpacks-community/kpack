@@ -15,16 +15,26 @@ rules:
   - ""
   resources:
   - secrets
-  resourceNames:
-  - webhook-certs
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
   - secrets
+  resourceNames:
+  - webhook-certs
   verbs:
-  - create
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -50,10 +60,34 @@ rules:
   resources:
   - "mutatingwebhookconfigurations"
   resourceNames:
-  - "resource.webhook.kpack.pivotal.io"
+  - "defaults.webhook.kpack.pivotal.io"
+  verbs:
+  - update
+- apiGroups:
+  - "admissionregistration.k8s.io"
+  resources:
+  - "mutatingwebhookconfigurations"
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - "admissionregistration.k8s.io"
+  resources:
+  - "validatingwebhookconfigurations"
+  resourceNames:
+  - "validation.webhook.kpack.pivotal.io"
+  verbs:
   - update
+- apiGroups:
+  - "admissionregistration.k8s.io"
+  resources:
+  - "validatingwebhookconfigurations"
+  verbs:
+  - get
+  - list
+  - watch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -67,4 +101,3 @@ roleRef:
   kind: ClusterRole
   name: kpack-webhook-mutatingwebhookconfiguration-admin
   apiGroup: rbac.authorization.k8s.io
-

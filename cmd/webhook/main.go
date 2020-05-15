@@ -1,80 +1,79 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"context"
 
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/certificates"
+	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/resourcesemantics/defaulting"
+	"knative.dev/pkg/webhook/resourcesemantics/validation"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
-var (
-	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-)
+var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
+	v1alpha1.SchemeGroupVersion.WithKind("Image"):                &v1alpha1.Image{},
+	v1alpha1.SchemeGroupVersion.WithKind("Build"):                &v1alpha1.Build{},
+	v1alpha1.SchemeGroupVersion.WithKind("Builder"):              &v1alpha1.Builder{},
+	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"):       &v1alpha1.ClusterBuilder{},
+	v1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
+	v1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
+	v1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
+	v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
+}
 
 func main() {
-	flag.Parse()
-	devLogger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatalf("Couldn't create logger: %s", err)
-	}
-	logger := devLogger.Sugar()
+	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
+		ServiceName: "kpack-webhook",
+		Port:        8443,
+		SecretName:  "webhook-certs",
+	})
 
-	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
-	if err != nil {
-		logger.Fatalf("Error building kubeconfig: %v", err)
-	}
+	sharedmain.WebhookMainWithConfig(ctx, "webhook",
+		sharedmain.ParseAndGetConfigOrDie(),
+		certificates.NewController,
+		defaultingAdmissionController,
+		validatingAdmissionController,
+	)
+}
 
-	client, err := kubernetes.NewForConfig(clusterConfig)
-	if err != nil {
-		log.Fatalf("could not get kubernetes client: %s", err.Error())
-	}
+func defaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+	return defaulting.NewAdmissionController(ctx,
+		// Name of the resource webhook.
+		"defaults.webhook.kpack.pivotal.io",
+		// The path on which to serve the webhook.
+		"/defaults",
+		// The resources to default.
+		types,
+		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
+		func(ctx context.Context) context.Context {
+			return ctx
+		},
+		// Whether to disallow unknown fields.
+		false,
+	)
+}
 
-	options := webhook.ControllerOptions{
-		ServiceName:                     "kpack-webhook",
-		Namespace:                       system.Namespace(),
-		Port:                            8443,
-		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     "resource.webhook.kpack.pivotal.io",
-		ResourceAdmissionControllerPath: "/",
-
-		//unused config validation
-		ConfigValidationWebhookName:    "config.webhook.kpack.pivotal.io",
-		ConfigValidationControllerPath: "/config-validation",
-	}
-
-	resourceHandlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		v1alpha1.SchemeGroupVersion.WithKind("Image"):                &v1alpha1.Image{},
-		v1alpha1.SchemeGroupVersion.WithKind("Build"):                &v1alpha1.Build{},
-		v1alpha1.SchemeGroupVersion.WithKind("Builder"):              &v1alpha1.Builder{},
-		v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"):       &v1alpha1.ClusterBuilder{},
-		v1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
-		v1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
-		v1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
-		v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
-	}
-
-	admissionControllers := map[string]webhook.AdmissionController{
-		options.ResourceAdmissionControllerPath: webhook.NewResourceAdmissionController(resourceHandlers, options, false),
-	}
-
-	controller, err := webhook.New(client, options, admissionControllers, logger, nil)
-	if err != nil {
-		logger.Fatalw("Failed to create admission controller", zap.Error(err))
-	}
-
-	if err = controller.Run(signals.SetupSignalHandler()); err != nil {
-		logger.Fatalw("Error running admission controller", zap.Error(err))
-	}
-
-	logger.Infow("Webhook stopping")
+func validatingAdmissionController(ctx context.Context, watcher configmap.Watcher) *controller.Impl {
+	return validation.NewAdmissionController(ctx,
+		// Name of the resource webhook.
+		"validation.webhook.kpack.pivotal.io",
+		// The path on which to serve the webhook.
+		"/validate",
+		// The resources to default.
+		types,
+		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
+		func(ctx context.Context) context.Context {
+			return ctx
+		},
+		// Whether to disallow unknown fields.
+		false,
+	)
 }

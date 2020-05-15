@@ -37,7 +37,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
-		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList, reporter *rtesting.FakeStatsReporter) {
+		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
@@ -47,7 +47,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				StoreReader: fakeStoreReader,
 				StoreLister: listers.GetStoreLister(),
 			}
-			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}, &rtesting.FakeStatsReporter{}
+			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
 	store := &expv1alpha1.Store{
