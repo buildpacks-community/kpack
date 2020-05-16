@@ -26,7 +26,7 @@ require (
 	github.com/sclevine/spec v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
-	github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4
+	github.com/vdemeester/k8s-pkg-credentialprovider v1.18.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e

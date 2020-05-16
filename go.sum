@@ -503,6 +503,8 @@ github.com/vdemeester/k8s-pkg-credentialprovider v0.0.0-20200107171650-7c61ffa44
 github.com/vdemeester/k8s-pkg-credentialprovider v0.0.0-20200107171650-7c61ffa44238/go.mod h1:JwQJCMWpUDqjZrB5jpw0f5VbN7U95zxFy1ZDpoEarGo=
 github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4 h1:czKEIG2Q3YRTgs6x/8xhjVMJD5byPo6cZuostkbTM74=
 github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4/go.mod h1:inCTmtUdr5KJbreVojo06krnTgaeAz/Z7lynpPk/Q2c=
+github.com/vdemeester/k8s-pkg-credentialprovider v1.18.0 h1:tYAaW837dfJKMtIkmqB43DS0NNiE2b7kH1JcvRQfsLw=
+github.com/vdemeester/k8s-pkg-credentialprovider v1.18.0/go.mod h1:inCTmtUdr5KJbreVojo06krnTgaeAz/Z7lynpPk/Q2c=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/vmware/govmomi v0.20.3/go.mod h1:URlwyTFZX72RmxtxuaFL2Uj3fD1JTvZdx59bHWk6aFU=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
