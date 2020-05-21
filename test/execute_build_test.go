@@ -318,7 +318,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			"test-registry-image": {
 				Registry: &v1alpha1.Registry{
-					Image: "gcr.io/cf-build-service-public/test-fixtures/registry-source@sha256:1140e5a0761c2b07ff98b605407b2bc03ac78831a59da4339ed976ed65700364",
+					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 				},
 			},
 		}
