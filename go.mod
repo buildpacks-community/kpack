@@ -40,7 +40,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.17.5 // indirect
 	k8s.io/apimachinery v0.17.5
 	k8s.io/client-go v0.17.5
-	k8s.io/code-generator v0.17.5
-	k8s.io/kube-openapi v0.0.0-20200316234421-82d701f24f9d
+	k8s.io/code-generator v0.18.3
+	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	knative.dev/pkg v0.0.0-20200513151758-7b6bb61326ae
 )
