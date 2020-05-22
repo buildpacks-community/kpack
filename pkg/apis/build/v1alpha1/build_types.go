@@ -75,7 +75,7 @@ type Bindings []Binding
 type Binding struct {
 	Name        string                       `json:"name",omitempty"`
 	MetadataRef *corev1.LocalObjectReference `json:"metadataRef,omitempty"`
-	SecretRef   *corev1.LocalObjectReference `json:"secretRed,omitempty"`
+	SecretRef   *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true

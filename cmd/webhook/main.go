@@ -74,6 +74,6 @@ func validatingAdmissionController(ctx context.Context, watcher configmap.Watche
 			return ctx
 		},
 		// Whether to disallow unknown fields.
-		false,
+		true,
 	)
 }
