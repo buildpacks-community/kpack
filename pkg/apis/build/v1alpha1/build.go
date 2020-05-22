@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strconv"
+
 	"github.com/google/go-containerregistry/pkg/name"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,6 +45,22 @@ func (b *Build) BuildRef() string {
 	}
 
 	return b.GetName()
+}
+
+func (b *Build) ImageGeneration() int64 {
+	if b == nil {
+		return 0
+	}
+	generation, ok := b.Labels[ImageGenerationLabel]
+	if !ok {
+		return 0
+	}
+	atoi, err := strconv.Atoi(generation)
+	if err != nil {
+		return 0
+	}
+
+	return int64(atoi)
 }
 
 func (b *Build) Stack() string {

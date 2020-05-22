@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	BuildNumberLabel = "image.build.pivotal.io/buildNumber"
-	ImageLabel       = "image.build.pivotal.io/image"
+	BuildNumberLabel     = "image.build.pivotal.io/buildNumber"
+	ImageLabel           = "image.build.pivotal.io/image"
+	ImageGenerationLabel = "image.build.pivotal.io/imageGeneration"
 
 	BuildReasonAnnotation = "image.build.pivotal.io/reason"
 	BuildNeededAnnotation = "image.build.pivotal.io/additionalBuildNeeded"
@@ -36,8 +37,9 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 				*kmeta.NewControllerRef(im),
 			},
 			Labels: combine(im.Labels, map[string]string{
-				BuildNumberLabel: buildNumber,
-				ImageLabel:       im.Name,
+				BuildNumberLabel:     buildNumber,
+				ImageLabel:           im.Name,
+				ImageGenerationLabel: strconv.Itoa(int(im.Generation)),
 			}),
 			Annotations: combine(im.Annotations, map[string]string{
 				BuildReasonAnnotation: strings.Join(reasons, ","),
