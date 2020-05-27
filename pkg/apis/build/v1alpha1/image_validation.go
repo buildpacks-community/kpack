@@ -4,19 +4,29 @@ import (
 	"context"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"knative.dev/pkg/apis"
 
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
+type ImageContextKey string
+
 const (
+	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
+
 	defaultServiceAccount = "default"
 )
 
 var (
 	defaultFailedBuildHistoryLimit     int64 = 10
 	defaultSuccessfulBuildHistoryLimit int64 = 10
+	defaultCacheSize                   resource.Quantity
 )
+
+func init() {
+	defaultCacheSize = resource.MustParse("2G")
+}
 
 func (s *Image) SetDefaults(ctx context.Context) {
 	if s.Spec.ServiceAccount == "" {
@@ -33,6 +43,10 @@ func (s *Image) SetDefaults(ctx context.Context) {
 
 	if s.Spec.SuccessBuildHistoryLimit == nil {
 		s.Spec.SuccessBuildHistoryLimit = &defaultSuccessfulBuildHistoryLimit
+	}
+
+	if s.Spec.CacheSize == nil && ctx.Value(HasDefaultStorageClass) != nil {
+		s.Spec.CacheSize = &defaultCacheSize
 	}
 }
 

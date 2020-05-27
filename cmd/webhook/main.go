@@ -2,8 +2,14 @@ package main
 
 import (
 	"context"
+	"log"
+	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/listers/storage/v1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
@@ -29,7 +35,25 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
 }
 
+var (
+	storageClassLister v1.StorageClassLister
+)
+
 func main() {
+	restConfig := sharedmain.ParseAndGetConfigOrDie()
+
+	k8sClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		log.Fatalf("could not get kubernetes client: %s", err)
+	}
+
+	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, 10*time.Hour)
+	storageClassLister = k8sInformerFactory.Storage().V1().StorageClasses().Lister()
+
+	stopChan := make(chan struct{})
+	k8sInformerFactory.Start(stopChan)
+	k8sInformerFactory.WaitForCacheSync(stopChan)
+
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
 		ServiceName: "kpack-webhook",
 		Port:        8443,
@@ -37,14 +61,14 @@ func main() {
 	})
 
 	sharedmain.WebhookMainWithConfig(ctx, "webhook",
-		sharedmain.ParseAndGetConfigOrDie(),
+		restConfig,
 		certificates.NewController,
 		defaultingAdmissionController,
 		validatingAdmissionController,
 	)
 }
 
-func defaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return defaulting.NewAdmissionController(ctx,
 		// Name of the resource webhook.
 		"defaults.webhook.kpack.pivotal.io",
@@ -54,6 +78,23 @@ func defaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 		func(ctx context.Context) context.Context {
+			storageClasses, err := storageClassLister.List(labels.NewSelector())
+			if err != nil {
+				log.Printf("failed to list storage classes: %s\n", err)
+				return ctx
+			}
+
+			for _, sc := range storageClasses {
+				if sc.Annotations == nil {
+					continue
+				}
+
+				if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
+					ctx = context.WithValue(ctx, v1alpha1.HasDefaultStorageClass, true)
+					break
+				}
+			}
+
 			return ctx
 		},
 		// Whether to disallow unknown fields.
@@ -61,7 +102,7 @@ func defaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *
 	)
 }
 
-func validatingAdmissionController(ctx context.Context, watcher configmap.Watcher) *controller.Impl {
+func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return validation.NewAdmissionController(ctx,
 		// Name of the resource webhook.
 		"validation.webhook.kpack.pivotal.io",
