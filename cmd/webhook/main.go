@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/listers/storage/v1"
+	v1 "k8s.io/client-go/informers/storage/v1"
+	"knative.dev/pkg/client/injection/kube/informers/factory"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/certificates"
@@ -35,25 +35,11 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
 }
 
-var (
-	storageClassLister v1.StorageClassLister
-)
+func init() {
+	injection.Default.RegisterInformer(withStorageClassInformer)
+}
 
 func main() {
-	restConfig := sharedmain.ParseAndGetConfigOrDie()
-
-	k8sClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		log.Fatalf("could not get kubernetes client: %s", err)
-	}
-
-	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, 10*time.Hour)
-	storageClassLister = k8sInformerFactory.Storage().V1().StorageClasses().Lister()
-
-	stopChan := make(chan struct{})
-	k8sInformerFactory.Start(stopChan)
-	k8sInformerFactory.WaitForCacheSync(stopChan)
-
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
 		ServiceName: "kpack-webhook",
 		Port:        8443,
@@ -61,7 +47,7 @@ func main() {
 	})
 
 	sharedmain.WebhookMainWithConfig(ctx, "webhook",
-		restConfig,
+		sharedmain.ParseAndGetConfigOrDie(),
 		certificates.NewController,
 		defaultingAdmissionController,
 		validatingAdmissionController,
@@ -69,6 +55,8 @@ func main() {
 }
 
 func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+	storageClassLister := getStorageClassInformer(ctx).Lister()
+
 	return defaulting.NewAdmissionController(ctx,
 		// Name of the resource webhook.
 		"defaults.webhook.kpack.pivotal.io",
@@ -117,4 +105,21 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		// Whether to disallow unknown fields.
 		true,
 	)
+}
+
+// storageClassInformerKey is used for associating the Informer inside the context.Context.
+type storageClassInformerKey struct{}
+
+func withStorageClassInformer(ctx context.Context) (context.Context, controller.Informer) {
+	f := factory.Get(ctx)
+	inf := f.Storage().V1().StorageClasses()
+	return context.WithValue(ctx, storageClassInformerKey{}, inf), inf.Informer()
+}
+
+func getStorageClassInformer(ctx context.Context) v1.StorageClassInformer {
+	untyped := ctx.Value(storageClassInformerKey{})
+	if untyped == nil {
+		logging.FromContext(ctx).Panic("Unable to storage class informer from context.")
+	}
+	return untyped.(v1.StorageClassInformer)
 }
