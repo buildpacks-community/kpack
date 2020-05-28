@@ -97,7 +97,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("failed attempting to fetch image with name %s: %s", imageName, err)
+		return err
 	}
 
 	image = image.DeepCopy()

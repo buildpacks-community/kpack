@@ -30,13 +30,14 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 		}
 		return v1alpha1.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: scheduledBuildCondition(),
+				Conditions: scheduledBuildCondition(build),
 			},
-			LatestBuildRef: build.BuildRef(),
-			LatestImage:    image.LatestForImage(latestBuild),
-			LatestStack:    build.Stack(),
-			BuildCounter:   nextBuildNumber,
-			BuildCacheName: buildCacheName,
+			BuildCounter:               nextBuildNumber,
+			BuildCacheName:             buildCacheName,
+			LatestBuildRef:             build.BuildRef(),
+			LatestImage:                image.LatestForImage(latestBuild),
+			LatestStack:                build.Stack(),
+			LatestBuildImageGeneration: build.ImageGeneration(),
 		}, nil
 	case corev1.ConditionUnknown:
 		fallthrough
@@ -45,11 +46,12 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 			Status: corev1alpha1.Status{
 				Conditions: noScheduledBuild(needed, builder, latestBuild),
 			},
-			LatestBuildRef: latestBuild.BuildRef(),
-			LatestImage:    image.LatestForImage(latestBuild),
-			LatestStack:    latestBuild.Stack(),
-			BuildCounter:   currentBuildNumber,
-			BuildCacheName: buildCacheName,
+			LatestBuildRef:             latestBuild.BuildRef(),
+			LatestBuildImageGeneration: latestBuild.ImageGeneration(),
+			LatestImage:                image.LatestForImage(latestBuild),
+			LatestStack:                latestBuild.Stack(),
+			BuildCounter:               currentBuildNumber,
+			BuildCacheName:             buildCacheName,
 		}, nil
 	default:
 		return v1alpha1.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", needed)
@@ -57,8 +59,8 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 
 }
 
-func noScheduledBuild(needed corev1.ConditionStatus, builder v1alpha1.BuilderResource, build *v1alpha1.Build) corev1alpha1.Conditions {
-	if needed == corev1.ConditionUnknown {
+func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder v1alpha1.BuilderResource, build *v1alpha1.Build) corev1alpha1.Conditions {
+	if buildNeeded == corev1.ConditionUnknown {
 		return corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionReady,
@@ -104,12 +106,13 @@ func builderCondition(builder v1alpha1.BuilderResource) corev1alpha1.Condition {
 	}
 }
 
-func scheduledBuildCondition() corev1alpha1.Conditions {
+func scheduledBuildCondition(build *v1alpha1.Build) corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionUnknown,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+			Message:            fmt.Sprintf("%s is executing", build.Name),
 		},
 		{
 			Type:               v1alpha1.ConditionBuilderReady,

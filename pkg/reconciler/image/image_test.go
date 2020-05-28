@@ -2,6 +2,7 @@ package image_test
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -46,7 +47,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		key                            = "some-namespace/image-name"
 		someLabelKey                   = "some/label"
 		someValueToPassThrough         = "to-pass-through"
-		originalGeneration       int64 = 0
+		originalGeneration       int64 = 1
 	)
 	var (
 		fakeTracker = testhelpers.FakeTracker{}
@@ -81,8 +82,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	image := &v1alpha1.Image{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      imageName,
-			Namespace: namespace,
+			Name:       imageName,
+			Namespace:  namespace,
+			Generation: originalGeneration,
 			Labels: map[string]string{
 				someLabelKey: someValueToPassThrough,
 			},
@@ -239,7 +241,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("Reconcile", func() {
 		it("updates observed generation after processing an update", func() {
-			const updatedGeneration int64 = 1
+			const updatedGeneration int64 = 2
 			image.ObjectMeta.Generation = updatedGeneration
 
 			rt.Test(rtesting.TableRow{
@@ -743,9 +745,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "1",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
@@ -775,10 +778,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
 									},
-									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
-									BuildCounter:   1,
+									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               1,
 								},
 							},
 						},
@@ -811,9 +815,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "1",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
@@ -842,10 +847,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
 									},
-									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
-									BuildCounter:   1,
+									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               1,
 								},
 							},
 						},
@@ -878,9 +884,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "1",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
@@ -909,10 +916,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
 									},
-									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
-									BuildCounter:   1,
+									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               1,
 								},
 							},
 						},
@@ -946,9 +954,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "1",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
@@ -977,10 +986,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
 									},
-									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
-									BuildCounter:   1,
+									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               1,
 								},
 							},
 						},
@@ -1012,9 +1022,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "1",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
@@ -1045,20 +1056,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
-											},
-											{
-												Type:   v1alpha1.ConditionBuilderReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
+										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
 									},
-									LatestBuildRef: "image-name-build-1-00001", // GenerateNameReactor
-									BuildCounter:   1,
-									BuildCacheName: image.CacheName(),
+									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               1,
+									BuildCacheName:             image.CacheName(),
 								},
 							},
 						},
@@ -1130,9 +1133,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "2",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "2",
+									v1alpha1.ImageLabel:           imageName,
+									someLabelKey:                  someValueToPassThrough,
+									v1alpha1.ImageGenerationLabel: generation(image),
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
@@ -1166,11 +1170,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
 									},
-									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
-									LatestImage:    image.Spec.Tag + "@sha256:just-built",
-									BuildCounter:   2,
+									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									BuildCounter:               2,
 								},
 							},
 						},
@@ -1253,9 +1258,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "2",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "2",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonCommit,
@@ -1289,11 +1295,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
 									},
-									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
-									LatestImage:    image.Spec.Tag + "@sha256:just-built",
-									BuildCounter:   2,
+									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									BuildCounter:               2,
 								},
 							},
 						},
@@ -1401,9 +1408,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "2",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "2",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonBuildpack,
@@ -1436,11 +1444,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
 									},
-									LatestBuildRef: "image-name-build-2-00001", // GenerateNameReactor
-									LatestImage:    image.Spec.Tag + "@sha256:just-built",
-									BuildCounter:   2,
+									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									BuildCounter:               2,
 								},
 							},
 						},
@@ -1511,9 +1520,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "3",
-									v1alpha1.ImageLabel:       imageName,
-									someLabelKey:              someValueToPassThrough,
+									v1alpha1.BuildNumberLabel:     "3",
+									v1alpha1.ImageLabel:           imageName,
+									v1alpha1.ImageGenerationLabel: generation(image),
+									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
@@ -1547,10 +1557,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: v1alpha1.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionReadyUnknown(),
+										Conditions:         conditionBuildExecuting("image-name-build-3-00001"),
 									},
-									LatestBuildRef: "image-name-build-3-00001", // GenerateNameReactor
-									BuildCounter:   3,
+									LatestBuildRef:             "image-name-build-3-00001", // GenerateNameReactor
+									LatestBuildImageGeneration: originalGeneration,
+									BuildCounter:               3,
 								},
 							},
 						},
@@ -1904,6 +1915,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
+func generation(i *v1alpha1.Image) string {
+	return strconv.Itoa(int(i.Generation))
+}
+
 func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 	sr := image.SourceResolver()
 	sr.ResolvedSource(v1alpha1.ResolvedSourceConfig{
@@ -2001,6 +2016,20 @@ func conditionReadyUnknown() corev1alpha1.Conditions {
 		{
 			Type:   corev1alpha1.ConditionReady,
 			Status: corev1.ConditionUnknown,
+		},
+		{
+			Type:   v1alpha1.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
+		},
+	}
+}
+
+func conditionBuildExecuting(buildName string) corev1alpha1.Conditions {
+	return corev1alpha1.Conditions{
+		{
+			Type:    corev1alpha1.ConditionReady,
+			Status:  corev1.ConditionUnknown,
+			Message: fmt.Sprintf("%s is executing", buildName),
 		},
 		{
 			Type:   v1alpha1.ConditionBuilderReady,
