@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -18,6 +19,7 @@ func TestImageValidation(t *testing.T) {
 
 func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 	var limit int64 = 90
+	cacheSize := resource.MustParse("5G")
 	image := &Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
@@ -35,6 +37,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 					Revision: "master",
 				},
 			},
+			CacheSize:                &cacheSize,
 			FailedBuildHistoryLimit:  &limit,
 			SuccessBuildHistoryLimit: &limit,
 			ImageTaggingStrategy:     None,
@@ -87,6 +90,29 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, *image.Spec.FailedBuildHistoryLimit, int64(10))
 		})
 
+		when("the cache is not provided", func() {
+			image.Spec.CacheSize = nil
+
+			when("the context has the default storage class key", func() {
+				it("sets the default cache size", func() {
+					ctx := context.TODO()
+					ctx = context.WithValue(ctx, HasDefaultStorageClass, true)
+
+					image.SetDefaults(ctx)
+
+					assert.NotNil(t, image.Spec.CacheSize)
+					assert.Equal(t, image.Spec.CacheSize.String(), "2G")
+				})
+			})
+
+			when("the context does not have the default storage class key", func() {
+				it("does not set the default cache size", func() {
+					image.SetDefaults(context.TODO())
+
+					assert.Nil(t, image.Spec.CacheSize)
+				})
+			})
+		})
 	})
 
 	when("Validate", func() {
