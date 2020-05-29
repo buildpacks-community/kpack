@@ -75,12 +75,13 @@ type ImageBuild struct {
 
 // +k8s:openapi-gen=true
 type ImageStatus struct {
-	corev1alpha1.Status `json:",inline"`
-	LatestBuildRef      string `json:"latestBuildRef,omitempty"`
-	LatestImage         string `json:"latestImage,omitempty"`
-	LatestStack         string `json:"latestStack,omitempty"`
-	BuildCounter        int64  `json:"buildCounter,omitempty"`
-	BuildCacheName      string `json:"buildCacheName,omitempty"`
+	corev1alpha1.Status        `json:",inline"`
+	LatestBuildRef             string `json:"latestBuildRef,omitempty"`
+	LatestBuildImageGeneration int64  `json:"latestBuildImageGeneration,omitempty"`
+	LatestImage                string `json:"latestImage,omitempty"`
+	LatestStack                string `json:"latestStack,omitempty"`
+	BuildCounter               int64  `json:"buildCounter,omitempty"`
+	BuildCacheName             string `json:"buildCacheName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
