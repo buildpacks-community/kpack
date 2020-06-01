@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle"
@@ -51,7 +52,7 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(c)
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(filepath.Join(buildSecretsDir, c))
 		if err != nil {
 			return err
 		}
