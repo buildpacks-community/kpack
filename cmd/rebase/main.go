@@ -52,9 +52,15 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(filepath.Join(buildSecretsDir, c))
+		credPath := filepath.Join(buildSecretsDir, c)
+
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
 		if err != nil {
 			return err
+		}
+
+		for domain := range dockerCfgCreds {
+			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 
 		keychain, err = keychain.Append(dockerCfgCreds)

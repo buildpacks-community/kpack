@@ -66,13 +66,15 @@ func main() {
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(filepath.Join(buildSecretsDir, c))
+		credPath := filepath.Join(buildSecretsDir, c)
+
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
 		if err != nil {
 			logger.Fatal(err)
 		}
 
 		for domain := range dockerCfgCreds {
-			logger.Printf("Loading secrets for %q from secret %q", domain, c)
+			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 
 		creds, err = creds.Append(dockerCfgCreds)
