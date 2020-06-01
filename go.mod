@@ -8,7 +8,7 @@ require (
 	github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
 	github.com/buildpacks/lifecycle v0.7.5
 	github.com/go-openapi/spec v0.19.7
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.4.1
 	github.com/google/go-containerregistry v0.0.0-20200430153450-5cbd060f5c92
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
