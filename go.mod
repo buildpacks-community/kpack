@@ -5,10 +5,11 @@ go 1.14
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver/v3 v3.1.0
-	github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
-	github.com/buildpacks/lifecycle v0.7.5
+	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
+	github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24
+	github.com/buildpacks/lifecycle v0.8.0
 	github.com/go-openapi/spec v0.19.7
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.4.1
 	github.com/google/go-containerregistry v0.0.0-20200430153450-5cbd060f5c92
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
