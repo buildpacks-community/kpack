@@ -20,7 +20,7 @@ func (s *StoreSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 	var errors *apis.FieldError = nil
 	for i, source := range s.Sources {
-		_, err := name.NewDigest(source.Image, name.WeakValidation)
+		_, err := name.ParseReference(source.Image, name.WeakValidation)
 		if err != nil {
 			//noinspection GoNilness
 			errors = errors.Also(apis.ErrInvalidArrayValue(source, "sources", i))
