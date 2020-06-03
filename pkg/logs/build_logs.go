@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,8 +143,13 @@ func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.
 	if err != nil {
 		return err
 	}
-
 	defer logReadCloser.Close()
+
+	_, err = writer.Write([]byte(cyan(fmt.Sprintf("===> %s\n", strings.ToUpper(readyContainer.containerName)))))
+	if err != nil {
+		return err
+	}
+
 	r := bufio.NewReader(logReadCloser)
 	for {
 		select {
@@ -159,7 +165,7 @@ func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.
 				return nil
 			}
 
-			_, err = writer.Write([]byte(fmt.Sprintf("[%s] %s", cyan(readyContainer.containerName), line)))
+			_, err = writer.Write(line)
 			if err != nil {
 				return err
 			}
