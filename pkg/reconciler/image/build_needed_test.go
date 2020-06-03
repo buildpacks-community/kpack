@@ -143,6 +143,22 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
 		})
 
+		it("true if build bindings changes", func() {
+			latestBuild.Spec.Bindings = v1alpha1.Bindings{
+				{
+					Name: "some-old-value",
+					MetadataRef: &corev1.LocalObjectReference{
+						Name: "some-old-config-map",
+					},
+				},
+			}
+
+			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			assert.Equal(t, corev1.ConditionTrue, needed)
+			require.Len(t, reasons, 1)
+			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+		})
+
 		it("false if last build failed but no spec changes", func() {
 			latestBuild.Status = v1alpha1.BuildStatus{
 				Status: corev1alpha1.Status{
