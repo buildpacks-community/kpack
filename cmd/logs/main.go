@@ -6,13 +6,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/pivotal/kpack/pkg/logs"
-
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+
+	"github.com/pivotal/kpack/pkg/logs"
 )
 
 var (
@@ -36,7 +36,12 @@ func main() {
 		log.Fatalf("could not get kubernetes client: %s", err.Error())
 	}
 
-	err = logs.NewBuildLogsClient(k8sClient).Tail(context.Background(), os.Stdout, *image, *build, *namespace)
+	if (*build) == "" {
+		err = logs.NewBuildLogsClient(k8sClient).TailImage(context.Background(), os.Stdout, *image, *namespace)
+	} else {
+		err = logs.NewBuildLogsClient(k8sClient).Tail(context.Background(), os.Stdout, *image, *build, *namespace)
+	}
+
 	if err != nil {
 		log.Fatalf("error tailing logs %s", err)
 	}
