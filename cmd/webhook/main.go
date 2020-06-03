@@ -25,14 +25,14 @@ import (
 )
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1alpha1.SchemeGroupVersion.WithKind("Image"):                &v1alpha1.Image{},
-	v1alpha1.SchemeGroupVersion.WithKind("Build"):                &v1alpha1.Build{},
-	v1alpha1.SchemeGroupVersion.WithKind("Builder"):              &v1alpha1.Builder{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"):       &v1alpha1.ClusterBuilder{},
-	v1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
-	v1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
-	v1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
-	v1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
+	v1alpha1.SchemeGroupVersion.WithKind("Image"):                   &v1alpha1.Image{},
+	v1alpha1.SchemeGroupVersion.WithKind("Build"):                   &v1alpha1.Build{},
+	v1alpha1.SchemeGroupVersion.WithKind("Builder"):                 &v1alpha1.Builder{},
+	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"):          &v1alpha1.ClusterBuilder{},
+	expv1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
+	expv1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
+	expv1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
+	expv1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
 }
 
 func init() {
