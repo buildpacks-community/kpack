@@ -27,18 +27,41 @@ func NewBuildLogsClient(k8sClient k8sclient.Interface) *BuildLogsClient {
 	}
 }
 
-func (c *BuildLogsClient) Tail(context context.Context, writer io.Writer, image, build, namespace string) error {
+func (c *BuildLogsClient) Tail(ctx context.Context, writer io.Writer, image, build, namespace string) error {
+	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
+		Watch:         true,
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", v1alpha1.ImageLabel, image, v1alpha1.BuildNumberLabel, build),
+	}, true)
+}
+
+func (c *BuildLogsClient) TailImage(ctx context.Context, writer io.Writer, image, namespace string) error {
+	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
+		Watch:         true,
+		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image),
+	}, false)
+}
+
+func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, namespace string, buildName string) error {
+	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
+		Watch:         true,
+		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.BuildLabel, buildName),
+	}, true)
+}
+
+func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool) error {
 	readyContainers := make(chan readyContainer)
 
 	go func() {
-		err := c.watchReadyContainers(context, readyContainers, image, build, namespace)
+		defer close(readyContainers)
+
+		err := c.watchReadyContainers(ctx, readyContainers, namespace, listOptions, exitPodComplete)
 		if err != nil {
 			log.Fatalf("error watching ready containers %s", err)
 		}
 	}()
 
 	for container := range readyContainers {
-		err := c.streamLogsForContainer(context, writer, container)
+		err := c.streamLogsForContainer(ctx, writer, container)
 		if err != nil {
 			return err
 		}
@@ -53,11 +76,9 @@ type readyContainer struct {
 	namespace     string
 }
 
-func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContainers chan<- readyContainer, image, build, namespace string) error {
-	watcher, err := c.k8sClient.CoreV1().Pods(namespace).Watch(metav1.ListOptions{
-		Watch:         true,
-		LabelSelector: labelSelector(image, build),
-	})
+func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContainers chan<- readyContainer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool) error {
+
+	watcher, err := c.k8sClient.CoreV1().Pods(namespace).Watch(listOptions)
 	if err != nil {
 		return err
 	}
@@ -96,17 +117,17 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 						}
 					}
 				}
+
+				if finished(pod) && exitPodComplete {
+					return nil
+				}
 			}
 		}
 	}
 }
 
-func labelSelector(image string, build string) string {
-	if build == "" {
-		return fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image)
-	}
-
-	return fmt.Sprintf("%s=%s,%s=%s", v1alpha1.ImageLabel, image, v1alpha1.BuildNumberLabel, build)
+func finished(pod *corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded
 }
 
 func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.Writer, readyContainer readyContainer) error {
