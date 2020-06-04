@@ -21,7 +21,8 @@ func buildNeeded(im *v1alpha1.Image, lastBuild *v1alpha1.Build, sourceResolver *
 
 	if sourceResolver.ConfigChanged(lastBuild) ||
 		!equality.Semantic.DeepEqual(im.Env(), lastBuild.Spec.Env) ||
-		!equality.Semantic.DeepEqual(im.Resources(), lastBuild.Spec.Resources) {
+		!equality.Semantic.DeepEqual(im.Resources(), lastBuild.Spec.Resources) ||
+		!equality.Semantic.DeepEqual(im.Bindings(), lastBuild.Spec.Bindings) {
 		reasons = append(reasons, v1alpha1.BuildReasonConfig)
 	}
 
