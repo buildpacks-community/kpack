@@ -5220,6 +5220,23 @@
       "type": "string",
       "format": "date-time"
     },
+    "kpack.build.v1alpha1.Binding": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "metadataRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        },
+        "name": {
+          "type": "string"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        }
+      }
+    },
     "kpack.build.v1alpha1.Blob": {
       "type": "object",
       "required": [
@@ -5306,6 +5323,13 @@
         "source"
       ],
       "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
+          },
+          "x-kubernetes-list-type": ""
+        },
         "builder": {
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildBuilderSpec"
         },
@@ -5629,6 +5653,13 @@
     "kpack.build.v1alpha1.ImageBuild": {
       "type": "object",
       "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
+          },
+          "x-kubernetes-list-type": ""
+        },
         "env": {
           "type": "array",
           "items": {
@@ -5743,6 +5774,10 @@
           },
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "latestBuildImageGeneration": {
+          "type": "integer",
+          "format": "int64"
         },
         "latestBuildRef": {
           "type": "string"
@@ -6081,6 +6116,17 @@
             "type": "string"
           },
           "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.experimental.v1alpha1.BuildpackageInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
@@ -6495,10 +6541,16 @@
         "api": {
           "type": "string"
         },
+        "buildpackage": {
+          "$ref": "#/definitions/kpack.experimental.v1alpha1.BuildpackageInfo"
+        },
         "diffId": {
           "type": "string"
         },
         "digest": {
+          "type": "string"
+        },
+        "homepage": {
           "type": "string"
         },
         "id": {

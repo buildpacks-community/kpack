@@ -29,6 +29,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding":                            schema_pkg_apis_build_v1alpha1_Binding(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob":                               schema_pkg_apis_build_v1alpha1_Blob(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build":                              schema_pkg_apis_build_v1alpha1_Build(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec":                   schema_pkg_apis_build_v1alpha1_BuildBuilderSpec(ref),
@@ -68,6 +69,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackInfo":               schema_pkg_apis_experimental_v1alpha1_BuildpackInfo(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackRef":                schema_pkg_apis_experimental_v1alpha1_BuildpackRef(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackStack":              schema_pkg_apis_experimental_v1alpha1_BuildpackStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackageInfo":            schema_pkg_apis_experimental_v1alpha1_BuildpackageInfo(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilder":               schema_pkg_apis_experimental_v1alpha1_CustomBuilder(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderList":           schema_pkg_apis_experimental_v1alpha1_CustomBuilderList(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderSpec":           schema_pkg_apis_experimental_v1alpha1_CustomBuilderSpec(ref),
@@ -90,6 +92,37 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreList":                   schema_pkg_apis_experimental_v1alpha1_StoreList(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreSpec":                   schema_pkg_apis_experimental_v1alpha1_StoreSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreStatus":                 schema_pkg_apis_experimental_v1alpha1_StoreStatus(ref),
+	}
+}
+
+func schema_pkg_apis_build_v1alpha1_Binding(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"metadataRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -292,6 +325,23 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
+					"bindings": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding"),
+									},
+								},
+							},
+						},
+					},
 					"env": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -324,7 +374,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -880,6 +930,23 @@ func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) com
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"bindings": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding"),
+									},
+								},
+							},
+						},
+					},
 					"env": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -906,7 +973,7 @@ func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -1095,6 +1162,12 @@ func schema_pkg_apis_build_v1alpha1_ImageStatus(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"latestBuildImageGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
 						},
 					},
 					"latestImage": {
@@ -1738,6 +1811,30 @@ func schema_pkg_apis_experimental_v1alpha1_BuildpackStack(ref common.ReferenceCa
 					},
 				},
 				Required: []string{"id"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_experimental_v1alpha1_BuildpackageInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -2560,15 +2657,14 @@ func schema_pkg_apis_experimental_v1alpha1_StoreBuildpack(ref common.ReferenceCa
 							Format: "",
 						},
 					},
+					"buildpackage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackageInfo"),
+						},
+					},
 					"storeImage": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreImage"),
-						},
-					},
-					"api": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
 						},
 					},
 					"diffId": {
@@ -2587,6 +2683,18 @@ func schema_pkg_apis_experimental_v1alpha1_StoreBuildpack(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int64",
+						},
+					},
+					"api": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"homepage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"order": {
@@ -2628,7 +2736,7 @@ func schema_pkg_apis_experimental_v1alpha1_StoreBuildpack(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackStack", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.OrderEntry", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreImage"},
+			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackStack", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackageInfo", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.OrderEntry", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreImage"},
 	}
 }
 
