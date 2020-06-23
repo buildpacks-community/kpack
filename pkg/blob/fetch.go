@@ -93,12 +93,13 @@ func extractTar(reader io.Reader, dir string) error {
 				return err
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(filePath)
+			outFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, header.FileInfo().Mode())
 			if err != nil {
 				return err
 			}
 			defer outFile.Close()
-			if _, err := io.Copy(outFile, tarReader); err != nil {
+			_, err = io.Copy(outFile, tarReader)
+			if err != nil {
 				return err
 			}
 		}
