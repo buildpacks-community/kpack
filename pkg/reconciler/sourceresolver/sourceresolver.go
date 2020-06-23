@@ -33,11 +33,13 @@ func NewController(
 	gitResolver Resolver,
 	blobResolver Resolver,
 	registryResolver Resolver,
+	s3Resolver Resolver,
 ) *controller.Impl {
 	c := &Reconciler{
 		GitResolver:          gitResolver,
 		BlobResolver:         blobResolver,
 		RegistryResolver:     registryResolver,
+		S3Resolver:           s3Resolver,
 		Client:               opt.Client,
 		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
@@ -63,6 +65,7 @@ type Reconciler struct {
 	GitResolver          Resolver
 	BlobResolver         Resolver
 	RegistryResolver     Resolver
+	S3Resolver           Resolver
 	Enqueuer             Enqueuer
 	Client               versioned.Interface
 	SourceResolverLister v1alpha1listers.SourceResolverLister
@@ -113,6 +116,8 @@ func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (
 		return c.BlobResolver, nil
 	} else if c.RegistryResolver.CanResolve(sourceResolver) {
 		return c.RegistryResolver, nil
+	} else if c.S3Resolver.CanResolve(sourceResolver) {
+		return c.S3Resolver, nil
 	}
 	return nil, errors.New("invalid source type")
 }

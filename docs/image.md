@@ -88,6 +88,29 @@ The `source` field is a composition of a source code location and a `subpath`. I
         - `imagePullSecrets`: A list of `dockercfg` or `dockerconfigjson` secret names required if the source image is private
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
 
+* S3
+
+    ```yaml
+    source:
+      s3:
+        url: ""
+        accesskey: ""
+        secretkey: ""
+        bucket: ""
+        file: ""
+        forcepathstyle: ""
+        region: ""
+      subpath: ""
+    ```
+    - `s3` (Source code is residing in a S3-compatible Object Storage bucket)
+      - `url`: Endpoint of S3 Object Storage
+      - `accesskey`: Access key with permissions to read bucket
+      - `secretkey`: Secret key associated to access key
+      - `bucket`: Bucket where resides the file with application source code.
+      - `file`: Compressed file with source code. Format must be `tar.gz`, `zip` or plain `tar`
+      - `forcepathstyle`: Within S3 SDK, it tells if the bucket is part of domain name or is a path in the url. Defaults to false (will translate to bucket.url instead of url/bucket)
+      - `region`: It relates which S3 region the bucket is located. Defaults to `us-west-2`
+
 ### <a id='build-config'></a>Build Configuration
 
 The `build` field on the `image` resource can be used to configure env variables required during the build process and to configure resource limits on `CPU` and `memory`.

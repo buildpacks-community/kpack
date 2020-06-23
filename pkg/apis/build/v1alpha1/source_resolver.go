@@ -61,6 +61,10 @@ func (sr SourceResolver) IsRegistry() bool {
 	return sr.Spec.Source.Registry != nil
 }
 
+func (sr SourceResolver) IsS3() bool {
+	return sr.Spec.Source.S3 != nil
+}
+
 func (st *SourceResolver) SourceConfig() SourceConfig {
 	return st.Status.Source.ResolvedSource().SourceConfig()
 }

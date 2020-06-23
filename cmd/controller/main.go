@@ -48,6 +48,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/stack"
 	"github.com/pivotal/kpack/pkg/reconciler/store"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/s3"
 )
 
 const (
@@ -148,6 +149,7 @@ func main() {
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
+	s3Resolver := &s3.Resolver{}
 
 	kpackKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
 	if err != nil {
@@ -168,7 +170,7 @@ func main() {
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
-	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
+	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver, s3Resolver)
 	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
 	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
 	storeController := store.NewController(options, storeInformer, remoteStoreReader)

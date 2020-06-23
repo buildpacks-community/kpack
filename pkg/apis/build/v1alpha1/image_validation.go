@@ -97,9 +97,12 @@ func (s *SourceConfig) Validate(ctx context.Context) *apis.FieldError {
 	if s.Registry != nil {
 		sources = append(sources, "registry")
 	}
+	if s.S3 != nil {
+		sources = append(sources, "s3")
+	}
 
 	if len(sources) == 0 {
-		return apis.ErrMissingOneOf("git", "blob", "registry")
+		return apis.ErrMissingOneOf("git", "blob", "registry", "s3")
 	}
 
 	if len(sources) != 1 {
@@ -108,7 +111,9 @@ func (s *SourceConfig) Validate(ctx context.Context) *apis.FieldError {
 
 	return (s.Git.Validate(ctx).ViaField("git")).
 		Also(s.Blob.Validate(ctx).ViaField("blob")).
-		Also(s.Registry.Validate(ctx).ViaField("registry"))
+		Also(s.Registry.Validate(ctx).ViaField("registry")).
+		Also(s.Registry.Validate(ctx).ViaField("s3"))
+
 }
 
 func (g *Git) Validate(ctx context.Context) *apis.FieldError {
@@ -142,4 +147,15 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return ib.Bindings.Validate(ctx).ViaField("bindings")
+}
+
+func (s *S3) Validate(ctx context.Context) *apis.FieldError {
+	if s == nil {
+		return nil
+	}
+	return validate.FieldNotEmpty(s.URL, "url").
+		Also(validate.FieldNotEmpty(s.AccessKey, "accesskey")).
+		Also(validate.FieldNotEmpty(s.SecretKey, "secretkey")).
+		Also(validate.FieldNotEmpty(s.Bucket, "bucket")).
+		Also(validate.FieldNotEmpty(s.File, "file"))
 }

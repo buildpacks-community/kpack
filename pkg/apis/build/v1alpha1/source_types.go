@@ -11,6 +11,7 @@ type SourceConfig struct {
 	Blob     *Blob     `json:"blob,omitempty"`
 	Registry *Registry `json:"registry,omitempty"`
 	SubPath  string    `json:"subPath,omitempty"`
+	S3       *S3       `json:"s3,omitempty"`
 }
 
 func (sc *SourceConfig) Source() Source {
@@ -20,6 +21,8 @@ func (sc *SourceConfig) Source() Source {
 		return sc.Blob
 	} else if sc.Registry != nil {
 		return sc.Registry
+	} else if sc.S3 != nil {
+		return sc.S3
 	}
 	return nil
 }
@@ -119,10 +122,64 @@ func (r *Registry) BuildEnvVars() []corev1.EnvVar {
 }
 
 // +k8s:openapi-gen=true
+type S3 struct {
+	URL            string `json:"url"`
+	AccessKey      string `json:"accesskey"`
+	SecretKey      string `json:"secretkey"`
+	Bucket         string `json:"bucket"`
+	File           string `json:"file"`
+	Region         string `json:"region"`
+	ForcePathStyle string `json:"forcePathStyle"`
+}
+
+func (s *S3) ImagePullSecretsVolume() corev1.Volume {
+	return corev1.Volume{
+		Name: imagePullSecretsDirName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+}
+
+func (s *S3) BuildEnvVars() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "S3_URL",
+			Value: s.URL,
+		},
+		{
+			Name:  "S3_ACCESS_KEY",
+			Value: s.AccessKey,
+		},
+		{
+			Name:  "S3_SECRET_KEY",
+			Value: s.SecretKey,
+		},
+		{
+			Name:  "S3_BUCKET",
+			Value: s.Bucket,
+		},
+		{
+			Name:  "S3_FILE",
+			Value: s.File,
+		},
+		{
+			Name: "S3_FORCE_PATH_STYLE",
+			Value: s.ForcePathStyle,
+		},
+		{
+			Name: "S3_REGION",
+			Value: s.Region,
+		}
+	}
+}
+
+// +k8s:openapi-gen=true
 type ResolvedSourceConfig struct {
 	Git      *ResolvedGitSource      `json:"git,omitempty"`
 	Blob     *ResolvedBlobSource     `json:"blob,omitempty"`
 	Registry *ResolvedRegistrySource `json:"registry,omitempty"`
+	S3       *ResolvedS3Source       `json:"s3,omitempty"`
 }
 
 func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
@@ -132,6 +189,8 @@ func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
 		return sc.Blob
 	} else if sc.Registry != nil {
 		return sc.Registry
+	} else if sc.S3 != nil {
+		return sc.S3
 	}
 	return nil
 }
@@ -270,5 +329,58 @@ func (rs *ResolvedRegistrySource) ConfigChanged(lastBuild *Build) bool {
 }
 
 func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {
+	return false
+}
+
+type ResolvedS3Source struct {
+	URL            string `json:"string"`
+	AccessKey      string `json:"accessKey"`
+	SecretKey      string `json:"secretKey"`
+	Bucket         string `json:"bucket"`
+	File           string `json:"file"`
+	SubPath        string `json:"subPath,omitempty"`
+	Region         string `json:"region,omitempty"`
+	ForcePathStyle string `json:"forcePathStyle,omitempty"`
+}
+
+func (rs *ResolvedS3Source) SourceConfig() SourceConfig {
+	return SourceConfig{
+		S3: &S3{
+			URL:       rs.URL,
+			AccessKey: rs.AccessKey,
+			SecretKey: rs.SecretKey,
+			Bucket:    rs.Bucket,
+			File:      rs.File,
+			ForcePathStyle: rs.ForcePathStyle,
+			Region: rs.Region,
+		},
+		SubPath: rs.SubPath,
+	}
+}
+
+func (rs *ResolvedS3Source) IsUnknown() bool {
+	return false
+}
+
+func (rs *ResolvedS3Source) IsPollable() bool {
+	return false
+}
+
+func (rs *ResolvedS3Source) ConfigChanged(lastBuild *Build) bool {
+	if lastBuild.Spec.Source.S3 == nil {
+		return true
+	}
+
+	return rs.URL != lastBuild.Spec.Source.S3.URL ||
+		rs.AccessKey != lastBuild.Spec.Source.S3.AccessKey ||
+		rs.SecretKey != lastBuild.Spec.Source.S3.SecretKey ||
+		rs.Bucket != lastBuild.Spec.Source.S3.Bucket ||
+		rs.File != lastBuild.Spec.Source.S3.File ||
+		rs.SubPath != lastBuild.Spec.Source.SubPath ||
+		rs.ForcePathStyle != lastBuild.Spec.Source.S3.ForcePathStyle ||
+		rs.Region != lastBuild.Spec.Source.S3.Region
+}
+
+func (rs *ResolvedS3Source) RevisionChanged(lastBuild *Build) bool {
 	return false
 }
