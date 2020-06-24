@@ -7,11 +7,11 @@ import (
 	"encoding/pem"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	ssh2 "golang.org/x/crypto/ssh"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
