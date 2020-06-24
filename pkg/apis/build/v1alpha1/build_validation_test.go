@@ -100,12 +100,17 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				Image: "registry.com/image",
 			}
 			assertValidationError(build, apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
+
+			build.Spec.Source.S3 = &S3{
+				URL: "http://s3-host.com",
+			}
+			assertValidationError(build, apis.ErrMultipleOneOf("git", "blob", "registry", "s3").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
 			build.Spec.Source = SourceConfig{}
 
-			assertValidationError(build, apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
+			assertValidationError(build, apis.ErrMissingOneOf("git", "blob", "registry", "s3").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {

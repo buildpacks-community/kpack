@@ -164,13 +164,13 @@ func (s *S3) BuildEnvVars() []corev1.EnvVar {
 			Value: s.File,
 		},
 		{
-			Name: "S3_FORCE_PATH_STYLE",
+			Name:  "S3_FORCE_PATH_STYLE",
 			Value: s.ForcePathStyle,
 		},
 		{
-			Name: "S3_REGION",
+			Name:  "S3_REGION",
 			Value: s.Region,
-		}
+		},
 	}
 }
 
@@ -346,13 +346,13 @@ type ResolvedS3Source struct {
 func (rs *ResolvedS3Source) SourceConfig() SourceConfig {
 	return SourceConfig{
 		S3: &S3{
-			URL:       rs.URL,
-			AccessKey: rs.AccessKey,
-			SecretKey: rs.SecretKey,
-			Bucket:    rs.Bucket,
-			File:      rs.File,
+			URL:            rs.URL,
+			AccessKey:      rs.AccessKey,
+			SecretKey:      rs.SecretKey,
+			Bucket:         rs.Bucket,
+			File:           rs.File,
 			ForcePathStyle: rs.ForcePathStyle,
-			Region: rs.Region,
+			Region:         rs.Region,
 		},
 		SubPath: rs.SubPath,
 	}

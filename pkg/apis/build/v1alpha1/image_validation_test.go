@@ -6,8 +6,8 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -172,12 +172,17 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				Image: "registry.com/image",
 			}
 			assertValidationError(image, apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
+
+			image.Spec.Source.S3 = &S3{
+				URL: "http://s3-host.com",
+			}
+			assertValidationError(image, apis.ErrMultipleOneOf("git", "blob", "registry", "s3").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
 			image.Spec.Source = SourceConfig{}
 
-			assertValidationError(image, apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
+			assertValidationError(image, apis.ErrMissingOneOf("git", "blob", "registry", "s3").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {

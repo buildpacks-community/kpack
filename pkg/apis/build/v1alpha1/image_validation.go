@@ -112,7 +112,7 @@ func (s *SourceConfig) Validate(ctx context.Context) *apis.FieldError {
 	return (s.Git.Validate(ctx).ViaField("git")).
 		Also(s.Blob.Validate(ctx).ViaField("blob")).
 		Also(s.Registry.Validate(ctx).ViaField("registry")).
-		Also(s.Registry.Validate(ctx).ViaField("s3"))
+		Also(s.S3.Validate(ctx).ViaField("s3"))
 
 }
 
