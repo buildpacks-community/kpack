@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
@@ -129,7 +131,7 @@ type S3 struct {
 	Bucket         string `json:"bucket"`
 	File           string `json:"file"`
 	Region         string `json:"region"`
-	ForcePathStyle string `json:"forcePathStyle"`
+	ForcePathStyle bool   `json:"forcePathStyle"`
 }
 
 func (s *S3) ImagePullSecretsVolume() corev1.Volume {
@@ -165,7 +167,7 @@ func (s *S3) BuildEnvVars() []corev1.EnvVar {
 		},
 		{
 			Name:  "S3_FORCE_PATH_STYLE",
-			Value: s.ForcePathStyle,
+			Value: strconv.FormatBool(s.ForcePathStyle),
 		},
 		{
 			Name:  "S3_REGION",
@@ -340,7 +342,7 @@ type ResolvedS3Source struct {
 	File           string `json:"file"`
 	SubPath        string `json:"subPath,omitempty"`
 	Region         string `json:"region,omitempty"`
-	ForcePathStyle string `json:"forcePathStyle,omitempty"`
+	ForcePathStyle bool   `json:"forcePathStyle,omitempty"`
 }
 
 func (rs *ResolvedS3Source) SourceConfig() SourceConfig {

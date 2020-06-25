@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -21,9 +22,10 @@ import (
 )
 
 var (
-	platformEnvVars = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
-	imageTag        = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
-	runImage        = flag.String("runImage", os.Getenv("RUN_IMAGE"), "run image that the build the image on")
+	s3ForcePathStyleEnv, _ = strconv.ParseBool(os.Getenv("S3_FORCE_PATH_STYLE"))
+	platformEnvVars        = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
+	imageTag               = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
+	runImage               = flag.String("runImage", os.Getenv("RUN_IMAGE"), "run image that the build the image on")
 
 	gitURL           = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
 	gitRevision      = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
@@ -34,8 +36,8 @@ var (
 	s3File           = flag.String("s3-file", os.Getenv("S3_FILE"), "The source code file")
 	s3AccessKey      = flag.String("s3-access-key", os.Getenv("S3_ACCESS_KEY"), "The S3 access key")
 	s3SecretKey      = flag.String("s3-secret-key", os.Getenv("S3_SECRET_KEY"), "The S3 secret key")
-	s3ForcePathStyle = flag.String("s3-force-path-style", os.Getenv("S3_FORCE_PATH_STYLE"), "The S3 secret key")
-	s3Region         = flag.String("s3-region", os.Getenv("S3_REGION"), "The S3 secret key")
+	s3ForcePathStyle = flag.Bool("s3-force-path-style", s3ForcePathStyleEnv, "Use the S3 path-style (V1) request URI")
+	s3Region         = flag.String("s3-region", os.Getenv("S3_REGION"), "The S3 region")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags

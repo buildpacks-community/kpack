@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -24,7 +23,7 @@ type Fetcher struct {
 	Logger *log.Logger
 }
 
-func (f *Fetcher) Fetch(dir string, s3URL string, s3AccessKey string, s3SecretKey string, s3Bucket string, s3File string, s3ForcePathStyle string, s3Region string) error {
+func (f *Fetcher) Fetch(dir string, s3URL string, s3AccessKey string, s3SecretKey string, s3Bucket string, s3File string, s3ForcePathStyle bool, s3Region string) error {
 	blob, err := url.Parse(s3URL)
 	if err != nil {
 		return err
@@ -34,19 +33,14 @@ func (f *Fetcher) Fetch(dir string, s3URL string, s3AccessKey string, s3SecretKe
 		SharedConfigState: session.SharedConfigEnable,
 	}
 
-	forcePath, err := strconv.ParseBool(s3ForcePathStyle)
-	if err != nil {
-		forcePath = false
-	}
-
 	region := s3Region
 	if region == "" {
-		region = "us-west-2"
+		region = "s3RegionStub" // Needed by amazon-sdk
 	}
 
 	option.Config = aws.Config{
 		Endpoint:         aws.String(s3URL),
-		S3ForcePathStyle: aws.Bool(forcePath),
+		S3ForcePathStyle: aws.Bool(s3ForcePathStyle),
 		Credentials:      credentials.NewStaticCredentials(s3AccessKey, s3SecretKey, ""),
 		Region:           aws.String(region),
 	}

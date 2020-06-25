@@ -98,7 +98,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
         secretkey: ""
         bucket: ""
         file: ""
-        forcepathstyle: ""
+        forcePathStyle: true
         region: ""
       subpath: ""
     ```
@@ -108,7 +108,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
       - `secretkey`: Secret key associated to access key
       - `bucket`: Bucket where resides the file with application source code.
       - `file`: Compressed file with source code. Format must be `tar.gz`, `zip` or plain `tar`
-      - `forcepathstyle`: Within S3 SDK, it tells if the bucket is part of domain name or is a path in the url. Defaults to false (will translate to bucket.url instead of url/bucket)
+      - `forcePathStyle`: Within S3 SDK, it tells if the bucket is part of domain name or is a path in the url. Defaults to false (will translate to bucket.url instead of url/bucket)
       - `region`: It relates which S3 region the bucket is located. Defaults to `us-west-2`
 
 ### <a id='build-config'></a>Build Configuration
