@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	gitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	gitSsh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
 	"github.com/pivotal/kpack/pkg/secret"
 )

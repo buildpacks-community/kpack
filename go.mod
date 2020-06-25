@@ -8,6 +8,8 @@ require (
 	github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24
 	github.com/buildpacks/lifecycle v0.8.0
 	github.com/docker/docker v17.12.0-ce-rc1.0.20190924003213-a8608b5b67c7+incompatible // indirect
+	github.com/go-git/go-git-fixtures v3.5.0+incompatible
+	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-openapi/spec v0.19.8
 	github.com/google/go-cmp v0.4.1
 	github.com/google/go-containerregistry v0.1.0
@@ -22,8 +24,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
-	gopkg.in/src-d/go-git-fixtures.v3 v3.5.0
-	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/api v0.17.5
 	k8s.io/apiextensions-apiserver v0.17.5 // indirect
 	k8s.io/apimachinery v0.17.5
