@@ -3,11 +3,11 @@ package git
 import (
 	"testing"
 
+	fixtures "github.com/go-git/go-git-fixtures"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	fixtures "gopkg.in/src-d/go-git-fixtures.v3"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
