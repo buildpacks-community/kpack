@@ -433,9 +433,27 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		args         []string
 	)
 	for _, secret := range secrets {
-		if !filter(secret) {
+		switch {
+		case !filter(secret):
+			continue
+		case secret.Type == corev1.SecretTypeBasicAuth && secret.Annotations[DOCKERSecretAnnotationPrefix] != "":
+			args = append(args,
+				fmt.Sprintf("-basic-%s=%s=%s", "docker", secret.Name, secret.Annotations[DOCKERSecretAnnotationPrefix]))
+		case secret.Type == corev1.SecretTypeDockerConfigJson:
+			args = append(args, fmt.Sprintf("-dockerconfig=%s", secret.Name))
+		case secret.Type == corev1.SecretTypeDockercfg:
+			args = append(args, fmt.Sprintf("-dockercfg=%s", secret.Name))
+		case secret.Type == corev1.SecretTypeBasicAuth && secret.Annotations[GITSecretAnnotationPrefix] != "":
+			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
+			args = append(args, fmt.Sprintf("-basic-%s=%s=%s", "git", secret.Name, annotatedUrl))
+		case secret.Type == corev1.SecretTypeSSHAuth:
+			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
+			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
+		default:
+			//ignoring secret
 			continue
 		}
+
 		volumeName := fmt.Sprintf(SecretTemplateName, secret.Name)
 
 		volumes = append(volumes, corev1.Volume{
@@ -451,24 +469,6 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			Name:      volumeName,
 			MountPath: fmt.Sprintf(SecretPathName, secret.Name),
 		})
-
-		switch {
-		case secret.Annotations[DOCKERSecretAnnotationPrefix] != "":
-			args = append(args,
-				fmt.Sprintf("-basic-%s=%s=%s", "docker", secret.Name, secret.Annotations[DOCKERSecretAnnotationPrefix]))
-		case secret.Type == corev1.SecretTypeDockerConfigJson:
-			args = append(args, fmt.Sprintf("-dockerconfig=%s", secret.Name))
-		case secret.Type == corev1.SecretTypeDockercfg:
-			args = append(args, fmt.Sprintf("-dockercfg=%s", secret.Name))
-		case secret.Type == corev1.SecretTypeBasicAuth:
-			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
-			args = append(args, fmt.Sprintf("-basic-%s=%s=%s", "git", secret.Name, annotatedUrl))
-		case secret.Type == corev1.SecretTypeSSHAuth:
-			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
-			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
-		default:
-			//ignoring secret
-		}
 	}
 
 	return volumes, volumeMounts, args
