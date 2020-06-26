@@ -152,6 +152,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 			Type: corev1.SecretTypeDockercfg,
 		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "secret-to-ignore",
+				Annotations: map[string]string{
+					v1alpha1.DOCKERSecretAnnotationPrefix: "ignoreme.com",
+				},
+			},
+			Type: corev1.SecretTypeBootstrapToken,
+		},
 	}
 
 	config := v1alpha1.BuildPodImages{
