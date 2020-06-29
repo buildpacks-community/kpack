@@ -9,6 +9,7 @@ import (
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/cmd"
+	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -74,9 +75,17 @@ func rebase(tags []string, logger *log.Logger) error {
 		return err
 	}
 
+	if !appImage.Found() {
+		return errors.Errorf("could not access previous image: %s", *lastBuiltImage)
+	}
+
 	newBaseImage, err := remote.NewImage(*runImage, keychain, remote.FromBaseImage(*runImage))
 	if err != nil {
 		return err
+	}
+
+	if !newBaseImage.Found() {
+		return errors.Errorf("could not access run image: %s", *runImage)
 	}
 
 	rebaser := lifecycle.Rebaser{
