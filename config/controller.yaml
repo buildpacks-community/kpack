@@ -1,5 +1,38 @@
 #@ load("@ytt:data", "data")
 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  build-init-image
+  namespace: kpack
+data:
+  image: #@ data.values.build_init_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  rebase-image
+  namespace: kpack
+data:
+  image: #@ data.values.rebase_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  lifecycle-image
+  namespace: kpack
+data:
+  image: #@ data.values.lifecycle_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  completion-image
+  namespace: kpack
+data:
+  image: #@ data.values.completion_image
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,12 +64,23 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-
         - name: BUILD_INIT_IMAGE
-          value: #@ data.values.build_init_image
+          valueFrom:
+            configMapKeyRef:
+              name: build-init-image
+              key: image
         - name: REBASE_IMAGE
-          value: #@ data.values.rebase_image
+          valueFrom:
+            configMapKeyRef:
+              name: rebase-image
+              key: image
         - name: COMPLETION_IMAGE
-          value: #@ data.values.completion_image
+          valueFrom:
+            configMapKeyRef:
+              name: completion-image
+              key: image
         - name: LIFECYCLE_IMAGE
-          value: #@ data.values.lifecycle_image
+          valueFrom:
+            configMapKeyRef:
+              name: lifecycle-image
+              key: image
