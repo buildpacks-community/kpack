@@ -97,9 +97,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
-			Tag:   "custom/example",
-			Stack: "some-stack",
-			Store: "some-buildpackRepository",
+			Tag:          "custom/example",
+			Stack:        "some-stack",
+			ClusterStore: "some-buildpackRepository",
 			Order: []expv1alpha1.OrderEntry{
 				{
 					Group: []expv1alpha1.BuildpackRef{

@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestEnqueueAfter(t *testing.T) {
 	builder := &v1alpha1.ClusterBuilder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "name",
 		},
 	}

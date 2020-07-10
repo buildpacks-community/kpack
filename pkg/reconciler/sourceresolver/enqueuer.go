@@ -1,8 +1,9 @@
 package sourceresolver
 
 import (
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"time"
+
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type workQueueEnqueuer struct {

@@ -41,12 +41,12 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/custombuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/reconciler/stack"
-	"github.com/pivotal/kpack/pkg/reconciler/store"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -104,7 +104,7 @@ func main() {
 	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
-	storeInformer := informerFactory.Experimental().V1alpha1().Stores()
+	clusterStoreInformer := informerFactory.Experimental().V1alpha1().ClusterStores()
 	stackInformer := informerFactory.Experimental().V1alpha1().Stacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
@@ -169,9 +169,9 @@ func main() {
 	builderController := builder.NewController(options, builderInformer, metadataRetriever)
 	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, storeInformer, stackInformer)
-	storeController := store.NewController(options, storeInformer, remoteStoreReader)
+	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, stackInformer)
+	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, stackInformer)
+	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	stackController := stack.NewController(options, stackInformer, remoteStackReader)
 
 	stopChan := make(chan struct{})
@@ -188,7 +188,7 @@ func main() {
 		podInformer.Informer(),
 		customBuilderInformer.Informer(),
 		customClusterBuilderInformer.Informer(),
-		storeInformer.Informer(),
+		clusterStoreInformer.Informer(),
 		stackInformer.Informer(),
 	)
 
@@ -201,7 +201,7 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(customBuilderController, routinesPerController),
 		run(customClusterBuilderController, routinesPerController),
-		run(storeController, routinesPerController),
+		run(clusterStoreController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		configMapWatcher.Start,
 		func(done <-chan struct{}) error {
@@ -237,11 +237,11 @@ func runGroup(ctx context.Context, fns ...doneFunc) error {
 	return eg.Wait()
 }
 
-func newBuildpackRepository(keychain authn.Keychain) func(store *expv1alpha1.Store) cnb.BuildpackRepository {
-	return func(store *expv1alpha1.Store) cnb.BuildpackRepository {
+func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+	return func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
-			Keychain: keychain,
-			Store:    store,
+			Keychain:     keychain,
+			ClusterStore: clusterStore,
 		}
 	}
 }

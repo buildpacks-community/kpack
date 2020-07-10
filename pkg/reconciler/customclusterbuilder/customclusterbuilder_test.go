@@ -43,8 +43,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		fakeTracker     = testhelpers.FakeTracker{}
-		fakeRepoFactory = func(store *expv1alpha1.Store) cnb.BuildpackRepository {
-			return testhelpers.FakeBuildpackRepository{Store: store}
+		fakeRepoFactory = func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
 		}
 	)
 
@@ -59,18 +59,18 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				BuilderCreator:             builderCreator,
 				KeychainFactory:            keychainFactory,
 				Tracker:                    fakeTracker,
-				StoreLister:                listers.GetStoreLister(),
+				ClusterStoreLister:         listers.GetClusterStoreLister(),
 				StackLister:                listers.GetStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	store := &expv1alpha1.Store{
+	clusterStore := &expv1alpha1.ClusterStore{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-store",
 		},
-		Spec:   expv1alpha1.StoreSpec{},
-		Status: expv1alpha1.StoreStatus{},
+		Spec:   expv1alpha1.ClusterStoreSpec{},
+		Status: expv1alpha1.ClusterStoreStatus{},
 	}
 
 	stack := &expv1alpha1.Stack{
@@ -97,9 +97,9 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.CustomClusterBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag:   customBuilderTag,
-				Stack: "some-stack",
-				Store: "some-store",
+				Tag:          customBuilderTag,
+				Stack:        "some-stack",
+				ClusterStore: "some-store",
 				Order: []expv1alpha1.OrderEntry{
 					{
 						Group: []expv1alpha1.BuildpackRef{
@@ -194,7 +194,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
 					stack,
-					store,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: false,
@@ -207,7 +207,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
 				Keychain:            &registryfakes.FakeKeychain{},
-				BuildpackRepository: testhelpers.FakeBuildpackRepository{Store: store},
+				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
 				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
@@ -250,13 +250,13 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
 					stack,
-					store,
+					clusterStore,
 					expectedBuilder,
 				},
 				WantErr: false,
 			})
 
-			require.True(t, fakeTracker.IsTracking(store, expectedBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStore, expectedBuilder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(stack, customBuilder.NamespacedName()))
 		})
 
@@ -302,7 +302,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
 					stack,
-					store,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: false,
@@ -335,7 +335,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
 					stack,
-					store,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: true,
@@ -368,7 +368,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
 					notReadyStack,
-					store,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: true,
@@ -397,7 +397,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			//still track resources
-			require.True(t, fakeTracker.IsTracking(store, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStore, customBuilder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(notReadyStack, customBuilder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})

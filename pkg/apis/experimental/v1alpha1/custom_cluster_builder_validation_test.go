@@ -6,7 +6,7 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -23,12 +23,12 @@ func testCustomBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: CustomClusterBuilderSpec{
 			CustomBuilderSpec: CustomBuilderSpec{
-				Tag:   "some-registry.io/custom-builder",
-				Stack: "some-stack-ref",
-				Store: "some-registry.io/store",
-				Order: nil, // No order validation
+				Tag:          "some-registry.io/custom-builder",
+				Stack:        "some-stack-ref",
+				ClusterStore: "some-registry.io/store",
+				Order:        nil, // No order validation
 			},
-			ServiceAccountRef: v1.ObjectReference{
+			ServiceAccountRef: corev1.ObjectReference{
 				Name:      "some-sa-name",
 				Namespace: "some-sa-namespace",
 			},

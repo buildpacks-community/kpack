@@ -31,7 +31,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"):          &v1alpha1.ClusterBuilder{},
 	expv1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &expv1alpha1.CustomBuilder{},
 	expv1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &expv1alpha1.CustomClusterBuilder{},
-	expv1alpha1.SchemeGroupVersion.WithKind("Store"):                &expv1alpha1.Store{},
+	expv1alpha1.SchemeGroupVersion.WithKind("ClusterStore"):         &expv1alpha1.ClusterStore{},
 	expv1alpha1.SchemeGroupVersion.WithKind("Stack"):                &expv1alpha1.Stack{},
 }
 

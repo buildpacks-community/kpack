@@ -6,7 +6,7 @@ import (
 )
 
 type FakeBuildpackRepository struct {
-	Store *expv1alpha1.Store
+	ClusterStore *expv1alpha1.ClusterStore
 }
 
 func (f FakeBuildpackRepository) FindByIdAndVersion(id, version string) (cnb.RemoteBuildpackInfo, error) {

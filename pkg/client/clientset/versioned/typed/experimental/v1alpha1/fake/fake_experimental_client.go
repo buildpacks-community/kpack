@@ -28,6 +28,10 @@ type FakeExperimentalV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeExperimentalV1alpha1) ClusterStores() v1alpha1.ClusterStoreInterface {
+	return &FakeClusterStores{c}
+}
+
 func (c *FakeExperimentalV1alpha1) CustomBuilders(namespace string) v1alpha1.CustomBuilderInterface {
 	return &FakeCustomBuilders{c, namespace}
 }
@@ -38,10 +42,6 @@ func (c *FakeExperimentalV1alpha1) CustomClusterBuilders() v1alpha1.CustomCluste
 
 func (c *FakeExperimentalV1alpha1) Stacks() v1alpha1.StackInterface {
 	return &FakeStacks{c}
-}
-
-func (c *FakeExperimentalV1alpha1) Stores() v1alpha1.StoreInterface {
-	return &FakeStores{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

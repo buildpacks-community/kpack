@@ -65,8 +65,8 @@ rules:
   - custombuilders/status
   - customclusterbuilders
   - customclusterbuilders/status
-  - stores
-  - stores/status
+  - clusterstores
+  - clusterstores/status
   - stacks
   - stacks/status
   verbs:

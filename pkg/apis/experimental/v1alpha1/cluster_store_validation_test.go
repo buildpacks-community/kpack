@@ -10,16 +10,16 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestStoreValidation(t *testing.T) {
-	spec.Run(t, "Store Validation", testStoreValidation)
+func TestClusterStoreValidation(t *testing.T) {
+	spec.Run(t, "ClusterStore Validation", testClusterStoreValidation)
 }
 
-func testStoreValidation(t *testing.T, when spec.G, it spec.S) {
-	store := &Store{
+func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
+	clusterStore := &ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "store-name",
 		},
-		Spec: StoreSpec{
+		Spec: ClusterStoreSpec{
 			Sources: []StoreImage{
 				{
 					Image: "some-registry.io/store-image-1@sha256:78c1b9419976227e05be9d243b7fa583bea44a5258e52018b2af4cdfe23d148d",
@@ -36,23 +36,23 @@ func testStoreValidation(t *testing.T, when spec.G, it spec.S) {
 
 	when("Validate", func() {
 		it("returns nil on no validation error", func() {
-			assert.Nil(t, store.Validate(context.TODO()))
+			assert.Nil(t, clusterStore.Validate(context.TODO()))
 		})
 
-		assertValidationError := func(store *Store, expectedError *apis.FieldError) {
+		assertValidationError := func(clusterStore *ClusterStore, expectedError *apis.FieldError) {
 			t.Helper()
-			err := store.Validate(context.TODO())
+			err := clusterStore.Validate(context.TODO())
 			assert.EqualError(t, err, expectedError.Error())
 		}
 
 		it("missing field sources", func() {
-			store.Spec.Sources = nil
-			assertValidationError(store, apis.ErrMissingField("sources").ViaField("spec"))
+			clusterStore.Spec.Sources = nil
+			assertValidationError(clusterStore, apis.ErrMissingField("sources").ViaField("spec"))
 		})
 
 		it("sources should contain a valid image", func() {
-			store.Spec.Sources = append(store.Spec.Sources, StoreImage{Image: "invalid image"})
-			assertValidationError(store, apis.ErrInvalidArrayValue(store.Spec.Sources[3], "sources", 3).ViaField("spec"))
+			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, StoreImage{Image: "invalid image"})
+			assertValidationError(clusterStore, apis.ErrInvalidArrayValue(clusterStore.Spec.Sources[3], "sources", 3).ViaField("spec"))
 		})
 	})
 }

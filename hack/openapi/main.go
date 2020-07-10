@@ -120,10 +120,10 @@ func main() {
 		getCRDPaths(clusterTemplate, CRD{
 			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
-			Kind:    "Store",
-			Plural:  "stores",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.Store",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.StoreList",
+			Kind:    "ClusterStore",
+			Plural:  "clusterstores",
+			Ref:     "#/definitions/kpack.experimental.v1alpha1.ClusterStore",
+			ListRef: "#/definitions/kpack.experimental.v1alpha1.ClusterStoreList",
 		}),
 	)
 

@@ -24,14 +24,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ClusterStores returns a ClusterStoreInformer.
+	ClusterStores() ClusterStoreInformer
 	// CustomBuilders returns a CustomBuilderInformer.
 	CustomBuilders() CustomBuilderInformer
 	// CustomClusterBuilders returns a CustomClusterBuilderInformer.
 	CustomClusterBuilders() CustomClusterBuilderInformer
 	// Stacks returns a StackInformer.
 	Stacks() StackInformer
-	// Stores returns a StoreInformer.
-	Stores() StoreInformer
 }
 
 type version struct {
@@ -43,6 +43,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// ClusterStores returns a ClusterStoreInformer.
+func (v *version) ClusterStores() ClusterStoreInformer {
+	return &clusterStoreInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CustomBuilders returns a CustomBuilderInformer.
@@ -58,9 +63,4 @@ func (v *version) CustomClusterBuilders() CustomClusterBuilderInformer {
 // Stacks returns a StackInformer.
 func (v *version) Stacks() StackInformer {
 	return &stackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// Stores returns a StoreInformer.
-func (v *version) Stores() StoreInformer {
-	return &storeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

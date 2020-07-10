@@ -7,7 +7,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,7 +46,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				Conditions: []corev1alpha1.Condition{
 					{
 						Type:   corev1alpha1.ConditionReady,
-						Status: v1.ConditionTrue,
+						Status: corev1.ConditionTrue,
 					},
 				},
 			},
@@ -133,7 +132,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true if build env changes", func() {
-			latestBuild.Spec.Env = []v1.EnvVar{
+			latestBuild.Spec.Env = []corev1.EnvVar{
 				{Name: "keyA", Value: "previous-value"},
 			}
 
@@ -267,7 +266,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{
 					{
 						Type:   corev1alpha1.ConditionReady,
-						Status: v1.ConditionFalse,
+						Status: corev1.ConditionFalse,
 					}}
 
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
@@ -314,11 +313,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			it("true if build env order changes and git url changes", func() {
 				latestBuild.Spec.Source.Git.URL = "old-git.com/url"
-				latestBuild.Spec.Env = []v1.EnvVar{
+				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
 				image.Spec.Build = &v1alpha1.ImageBuild{
-					Env: []v1.EnvVar{
+					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},
 				}

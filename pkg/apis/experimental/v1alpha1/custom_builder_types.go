@@ -24,9 +24,9 @@ type CustomBuilder struct {
 
 // +k8s:openapi-gen=true
 type CustomBuilderSpec struct {
-	Tag   string `json:"tag,omitempty"`
-	Stack string `json:"stack,omitempty"`
-	Store string `json:"store,omitempty"`
+	Tag          string `json:"tag,omitempty"`
+	Stack        string `json:"stack,omitempty"`
+	ClusterStore string `json:"clusterStore,omitempty"`
 	// +listType
 	Order []OrderEntry `json:"order,omitempty"`
 }

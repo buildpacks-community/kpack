@@ -51,8 +51,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CustomBuilderList{},
 		&CustomClusterBuilder{},
 		&CustomClusterBuilderList{},
-		&Store{},
-		&StoreList{},
+		&ClusterStore{},
+		&ClusterStoreList{},
 		&Stack{},
 		&StackList{},
 	)

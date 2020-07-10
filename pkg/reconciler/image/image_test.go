@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -81,7 +80,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	image := &v1alpha1.Image{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
 			Generation: originalGeneration,
@@ -116,7 +115,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	builder := &v1alpha1.Builder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      builderName,
 			Namespace: namespace,
 		},
@@ -148,7 +147,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	clusterBuilder := &v1alpha1.ClusterBuilder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterBuilderName,
 		},
 		Spec: v1alpha1.BuilderSpec{
@@ -179,7 +178,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	customBuilder := &expv1alpha1.CustomBuilder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      customBuilderName,
 			Namespace: namespace,
 		},
@@ -210,7 +209,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	customClusterBuilder := &expv1alpha1.CustomClusterBuilder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: customClusterBuilderName,
 		},
 		Status: expv1alpha1.CustomBuilderStatus{
@@ -545,7 +544,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image.SourceResolver(),
 						builder,
 						&corev1.PersistentVolumeClaim{
-							ObjectMeta: v1.ObjectMeta{
+							ObjectMeta: metav1.ObjectMeta{
 								Name:      imageCacheName,
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
@@ -566,7 +565,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &corev1.PersistentVolumeClaim{
-								ObjectMeta: v1.ObjectMeta{
+								ObjectMeta: metav1.ObjectMeta{
 									Name:      imageCacheName,
 									Namespace: namespace,
 									Labels: map[string]string{
@@ -610,7 +609,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &corev1.PersistentVolumeClaim{
-								ObjectMeta: v1.ObjectMeta{
+								ObjectMeta: metav1.ObjectMeta{
 									Name: imageCacheName,
 									OwnerReferences: []metav1.OwnerReference{
 										*kmeta.NewControllerRef(image),
@@ -1319,7 +1318,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					Objects: []runtime.Object{
 						image,
 						&v1alpha1.Builder{
-							ObjectMeta: v1.ObjectMeta{
+							ObjectMeta: metav1.ObjectMeta{
 								Name:      builderName,
 								Namespace: namespace,
 							},

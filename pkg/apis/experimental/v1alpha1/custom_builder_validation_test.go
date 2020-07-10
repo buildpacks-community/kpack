@@ -22,10 +22,10 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: CustomNamespacedBuilderSpec{
 			CustomBuilderSpec: CustomBuilderSpec{
-				Tag:   "some-registry.io/custom-builder",
-				Stack: "some-stack",
-				Store: "some-registry.io/store",
-				Order: nil, // No order validation
+				Tag:          "some-registry.io/custom-builder",
+				Stack:        "some-stack",
+				ClusterStore: "some-registry.io/store",
+				Order:        nil, // No order validation
 			},
 			ServiceAccount: "some-service-account",
 		},
@@ -79,9 +79,9 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(customBuilder, apis.ErrMissingField("stack").ViaField("spec"))
 		})
 
-		it("missing field store", func() {
-			customBuilder.Spec.Store = ""
-			assertValidationError(customBuilder, apis.ErrMissingField("store").ViaField("spec"))
+		it("missing field clusterStore", func() {
+			customBuilder.Spec.ClusterStore = ""
+			assertValidationError(customBuilder, apis.ErrMissingField("clusterStore").ViaField("spec"))
 		})
 	})
 }

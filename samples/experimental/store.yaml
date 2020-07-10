@@ -1,7 +1,7 @@
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
-kind: Store
+kind: ClusterStore
 metadata:
-  name: sample-store
+  name: sample-cluster-store
 spec:
   sources:
   - image: gcr.io/paketo-buildpacks/adopt-openjdk
