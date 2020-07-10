@@ -82,6 +82,7 @@ type ImageStatus struct {
 	LatestStack                string `json:"latestStack,omitempty"`
 	BuildCounter               int64  `json:"buildCounter,omitempty"`
 	BuildCacheName             string `json:"buildCacheName,omitempty"`
+	LatestBuildReason          string `json:"latestBuildReason,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

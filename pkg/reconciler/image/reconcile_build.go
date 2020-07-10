@@ -35,6 +35,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 			BuildCounter:               nextBuildNumber,
 			BuildCacheName:             buildCacheName,
 			LatestBuildRef:             build.BuildRef(),
+			LatestBuildReason:          build.BuildReason(),
 			LatestImage:                image.LatestForImage(latestBuild),
 			LatestStack:                build.Stack(),
 			LatestBuildImageGeneration: build.ImageGeneration(),
