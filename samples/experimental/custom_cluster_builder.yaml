@@ -5,7 +5,9 @@ metadata:
 spec:
   tag: buildingbuilder/custom-builder
   stack: bionic-stack
-  clusterStore: sample-cluster-store
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
   serviceAccountRef:
     name: default
     namespace: default

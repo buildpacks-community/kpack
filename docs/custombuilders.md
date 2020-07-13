@@ -63,7 +63,9 @@ spec:
   tag: gcr.io/sample/custom-builder
   serviceAccount: default
   stack: bionic-stack
-  clusterStore: sample-cluster-store
+  store: 
+    name: sample-cluster-store
+    kind: ClusterStore
   order:
   - group:
     - id: paketo-buildpacks/node-engine
@@ -86,9 +88,10 @@ spec:
 
 * `tag`: The tag to save the custom builder image. You must have access via the referenced service account.   
 * `serviceAccount`: A service account with credentials to write to the custom builder tag. 
-* `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/). 
-* `stack`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the stack.   
-* `clusterStore`: The name of the ClusterStore resource to fetch buildpacks from.
+* `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/).
+* `stack`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the stack. 
+* `store.name`: The name of the ClusterStore resource in kubernetes.
+* `store.kind`: The type as defined in kubernetes. This will always be ClusterStore.
 
 The custom builder can be referenced in an image configuration like this:
 
@@ -110,7 +113,9 @@ metadata:
 spec:
   tag: sample/custom-builder
   stack: bionic-stack
-  clusterStore: sample-cluster-store
+  store:
+      name: sample-cluster-store
+      kind: ClusterStore
   serviceAccountRef:
     name: default
     namespace: default

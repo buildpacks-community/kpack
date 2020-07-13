@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -22,10 +23,13 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: CustomNamespacedBuilderSpec{
 			CustomBuilderSpec: CustomBuilderSpec{
-				Tag:          "some-registry.io/custom-builder",
-				Stack:        "some-stack",
-				ClusterStore: "some-registry.io/store",
-				Order:        nil, // No order validation
+				Tag:   "some-registry.io/custom-builder",
+				Stack: "some-stack",
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-registry.io/store",
+				},
+				Order: nil, // No order validation
 			},
 			ServiceAccount: "some-service-account",
 		},
@@ -79,9 +83,14 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(customBuilder, apis.ErrMissingField("stack").ViaField("spec"))
 		})
 
-		it("missing field clusterStore", func() {
-			customBuilder.Spec.ClusterStore = ""
-			assertValidationError(customBuilder, apis.ErrMissingField("clusterStore").ViaField("spec"))
+		it("missing store name", func() {
+			customBuilder.Spec.Store.Name = ""
+			assertValidationError(customBuilder, apis.ErrMissingField("name").ViaField("spec", "store"))
+		})
+
+		it("invalid store kind", func() {
+			customBuilder.Spec.Store.Kind = "FakeStore"
+			assertValidationError(customBuilder, apis.ErrInvalidValue("FakeStore", "kind").ViaField("spec", "store"))
 		})
 	})
 }

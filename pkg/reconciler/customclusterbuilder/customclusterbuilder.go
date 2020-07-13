@@ -104,7 +104,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomClusterBuilder) (v1alpha1.BuilderRecord, error) {
-	clusterStore, err := c.ClusterStoreLister.Get(customBuilder.Spec.ClusterStore)
+	clusterStore, err := c.ClusterStoreLister.Get(customBuilder.Spec.Store.Name)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}

@@ -99,7 +99,10 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
 				Tag:          customBuilderTag,
 				Stack:        "some-stack",
-				ClusterStore: "some-store",
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-store",
+				},
 				Order: []expv1alpha1.OrderEntry{
 					{
 						Group: []expv1alpha1.BuildpackRef{

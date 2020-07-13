@@ -99,9 +99,12 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.CustomNamespacedBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag:          customBuilderTag,
-				Stack:        "some-stack",
-				ClusterStore: "some-store",
+				Tag:   customBuilderTag,
+				Stack: "some-stack",
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-store",
+				},
 				Order: []expv1alpha1.OrderEntry{
 					{
 						Group: []expv1alpha1.BuildpackRef{

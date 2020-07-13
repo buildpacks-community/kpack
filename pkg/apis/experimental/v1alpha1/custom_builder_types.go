@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,9 +25,9 @@ type CustomBuilder struct {
 
 // +k8s:openapi-gen=true
 type CustomBuilderSpec struct {
-	Tag          string `json:"tag,omitempty"`
-	Stack        string `json:"stack,omitempty"`
-	ClusterStore string `json:"clusterStore,omitempty"`
+	Tag   string                 `json:"tag,omitempty"`
+	Stack string                 `json:"stack,omitempty"`
+	Store corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
 	Order []OrderEntry `json:"order,omitempty"`
 }

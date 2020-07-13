@@ -25,7 +25,10 @@ func testCustomBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 			CustomBuilderSpec: CustomBuilderSpec{
 				Tag:          "some-registry.io/custom-builder",
 				Stack:        "some-stack-ref",
-				ClusterStore: "some-registry.io/store",
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-registry.io/store",
+				},
 				Order:        nil, // No order validation
 			},
 			ServiceAccountRef: corev1.ObjectReference{

@@ -3,6 +3,7 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 	"time"
 
@@ -97,9 +98,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
-			Tag:          "custom/example",
-			Stack:        "some-stack",
-			ClusterStore: "some-buildpackRepository",
+			Tag:   "custom/example",
+			Stack: "some-stack",
+			Store: corev1.ObjectReference{
+				Name: "some-buildpackRepository",
+				Kind: "ClusterStore",
+			},
 			Order: []expv1alpha1.OrderEntry{
 				{
 					Group: []expv1alpha1.BuildpackRef{

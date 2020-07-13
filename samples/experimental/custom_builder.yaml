@@ -7,7 +7,9 @@ spec:
   serviceAccount: default
   tag: sample/custom-builder
   stack: bionic-stack
-  clusterStore: sample-cluster-store
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
   order:
   - group:
     - id: paketo-buildpacks/adopt-openjdk
