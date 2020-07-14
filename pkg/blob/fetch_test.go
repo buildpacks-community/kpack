@@ -69,4 +69,10 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 			require.Contains(t, output.String(), "Successfully downloaded")
 		})
 	}
+
+	it("errors when url is inaccessible", func() {
+		url := fmt.Sprintf("%s/%s", server.URL, "invalid.zip")
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"))
+		require.EqualError(t, err, fmt.Sprintf("failed to get blob %s", url))
+	})
 }
