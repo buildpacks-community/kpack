@@ -253,6 +253,8 @@ github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24 h1:5JJD0uW/I2yf
 github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24/go.mod h1:rkRDOGpntpFhgj0gIUhQnEt5DYvi7xUTHkZWSxbWJP0=
 github.com/buildpacks/lifecycle v0.8.0 h1:hQ7UkImyZ/TDcOYC7+TBKWiV5e9XgK5orOh7BzeR9uQ=
 github.com/buildpacks/lifecycle v0.8.0/go.mod h1:Spd3VyskOqUNXx76FKMRU3L3PLHxVGQBJ/JqXlFeLh8=
+github.com/buildpacks/lifecycle v0.8.1 h1:sRyb9281MrrJNfuaQBTI8hu1ERz9iiYtaDmp5xm6VyQ=
+github.com/buildpacks/lifecycle v0.8.1/go.mod h1:Spd3VyskOqUNXx76FKMRU3L3PLHxVGQBJ/JqXlFeLh8=
 github.com/bwmarrin/snowflake v0.0.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
 github.com/caarlos0/ctrlc v1.0.0/go.mod h1:CdXpj4rmq0q/1Eb44M9zi2nKB0QraNKuRGYGrrHhcQw=
 github.com/campoy/unique v0.0.0-20180121183637-88950e537e7e/go.mod h1:9IOqJGCPMSc6E5ydlp5NIonxObaeu/Iub/X03EKPVYo=
