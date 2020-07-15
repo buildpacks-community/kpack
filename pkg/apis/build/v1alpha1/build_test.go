@@ -50,6 +50,17 @@ func TestRebaseable(t *testing.T) {
 
 }
 
+func TestBuildReason(t *testing.T) {
+	build := &Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				BuildReasonAnnotation: BuildReasonStack,
+			},
+		},
+	}
+	require.True(t, build.BuildReason() == BuildReasonStack)
+}
+
 func TestBuildLifecycle(t *testing.T) {
 	build := &Build{
 		ObjectMeta: metav1.ObjectMeta{

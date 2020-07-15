@@ -47,6 +47,14 @@ func (b *Build) BuildRef() string {
 	return b.GetName()
 }
 
+func (b *Build) BuildReason() string {
+	if b == nil {
+		return ""
+	}
+
+	return b.GetAnnotations()[BuildReasonAnnotation]
+}
+
 func (b *Build) ImageGeneration() int64 {
 	if b == nil {
 		return 0
