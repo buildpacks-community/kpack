@@ -3,17 +3,17 @@
 kpack provides the experimental CustomBuilder and CustomClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api. 
 This allows more granular control of the buildpacks and buildpack versions utilized without relying on pre-existing Builder resources. 
 
-Before creating CustomBuilders you will need to create the Stack and Store resources described below. 
+Before creating CustomBuilders you will need to create the ClusterStack and ClusterStore resources described below. 
 
-### <a id='store'></a>Store
+### <a id='clusterstore'></a>ClusterStore
 
-The Store is a cluster scoped resource that is a repository for buildpacks that can be utilized by CustomBuilders. As an input the store takes a list of images that contain buildpacks.
+The ClusterStore is a cluster scoped resource that is a repository for buildpacks that can be utilized by CustomBuilders. As an input the ClusterStore takes a list of images that contain buildpacks.
 
 ```yaml
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
-kind: Store
+kind: ClusterStore
 metadata:
-  name: sample-store
+  name: sample-cluster-store
 spec:
   sources:
   - image: gcr.io/cf-build-service-public/node-engine-buildpackage@sha256:95ff756f0ef0e026440a8523f4bab02fd8b45dc1a8a3a7ba063cefdba5cb9493
@@ -21,19 +21,19 @@ spec:
   - image: gcr.io/paketo-buildpacks/builder:base
 ```
 
-* `sources`:  List of builder images or buildpackage images to make available in the store. Each image is an object with the key image.   
+* `sources`:  List of builder images or buildpackage images to make available in the ClusterStore. Each image is an object with the key image.   
  
-For kpack to use an image in the store it, the OCI image label 'io.buildpacks.buildpack.layers' must contain buildpacks and buildpack metadata (this label is viewable via docker inspect).
+For kpack to use an image in the ClusterStore it, the OCI image label 'io.buildpacks.buildpack.layers' must contain buildpacks and buildpack metadata (this label is viewable via docker inspect).
  
-### <a id='store'></a>Stack
+### <a id='clusterstack'></a>ClusterStack
 
-The Stack is a cluster scoped resource that provides the configuration for a [Cloud Native Buildpack stack](https://buildpacks.io/docs/concepts/components/stack/) that is available to be used in a Custom Builder.   
+The ClusterStack is a cluster scoped resource that provides the configuration for a [Cloud Native Buildpack stack](https://buildpacks.io/docs/concepts/components/stack/) that is available to be used in a Custom Builder.   
 
 The [pack CLI](https://github.com/buildpacks/pack) command: `pack suggest-stacks` will display a list of recommended stacks that can be used. We recommend starting with the `io.buildpacks.stacks.bionic` stack. 
 
 ```yaml
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
-kind: Stack
+kind: ClusterStack
 metadata:
   name: bionic-stack
 spec:
@@ -48,11 +48,11 @@ spec:
 * `buildImage.image`: The build image of stack.   
 * `runImage.image`: The run image of stack.
 
-> Note: The stack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.     
+> Note: The clusterstack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.     
 
-### <a id='store'></a>Custom Builders
+### <a id='custom-builders'></a>Custom Builders
 
-The CustomBuilder uses a [Store](#store), a [Stack](#stack), and an order definition to construct a builder image.
+The CustomBuilder uses a [ClusterStore](#clusterstore), a [ClusterStack](#clusterstack), and an order definition to construct a builder image.
 
 ```yaml
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
@@ -62,8 +62,12 @@ metadata:
 spec:
   tag: gcr.io/sample/custom-builder
   serviceAccount: default
-  stack: bionic-stack
-  store: sample-store
+  stack: 
+    name: bionic-stack
+    kind: ClusterStack
+  store: 
+    name: sample-cluster-store
+    kind: ClusterStore
   order:
   - group:
     - id: paketo-buildpacks/node-engine
@@ -86,9 +90,11 @@ spec:
 
 * `tag`: The tag to save the custom builder image. You must have access via the referenced service account.   
 * `serviceAccount`: A service account with credentials to write to the custom builder tag. 
-* `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/). 
-* `stack`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the stack.   
-* `store`: The name of the store resource to fetch buildpacks from.
+* `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/).
+* `stack.name`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the clusterStack.
+* `stack.kind`: The type as defined in kubernetes. This will always be ClusterStack. 
+* `store.name`: The name of the ClusterStore resource in kubernetes.
+* `store.kind`: The type as defined in kubernetes. This will always be ClusterStore.
 
 The custom builder can be referenced in an image configuration like this:
 
@@ -98,7 +104,7 @@ builder:
   kind: CustomBuilder
 ```
 
-### <a id='store'></a>Custom Cluster Builders
+### <a id='custom-cluster-builders'></a>Custom Cluster Builders
 
 The CustomClusterBuilder resource is almost identical to a CustomBuilder but, it is a cluster scoped resource that can be referenced by an image in any namespace. Because CustomClusterBuilders are not in a namespace they cannot reference local service accounts. Instead the `serviceAccount` field is replaced with a `serviceAccountRef` field which is an object reference to a service account in any namespace.    
 
@@ -109,8 +115,12 @@ metadata:
   name: my-cluster-builder
 spec:
   tag: sample/custom-builder
-  stack: bionic-stack
-  store: sample-store
+  stack: 
+    name: bionic-stack
+    kind: ClusterStack
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
   serviceAccountRef:
     name: default
     namespace: default
