@@ -284,7 +284,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			_, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
-			require.Error(t, err, "cannot find buildpack 'io.buildpack.multi' with latest version due to invalid semver 'my-wacky-version'")
+			require.EqualError(t, err, "cannot find buildpack 'io.buildpack.multi' with latest version due to invalid semver 'my-wacky-version'")
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {

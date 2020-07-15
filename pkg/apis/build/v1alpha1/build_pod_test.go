@@ -730,7 +730,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.Error(t, err, "incompatible builder platform API version 0.1")
+				require.EqualError(t, err, "incompatible builder platform API version: 0.1")
 			})
 		})
 

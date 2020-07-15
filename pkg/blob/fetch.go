@@ -11,7 +11,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
+
+var unexpectedBlobTypeError error = errors.New("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 
 type Fetcher struct {
 	Logger *log.Logger
@@ -28,6 +32,10 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to get blob %s", blobURL)
+	}
 
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -65,7 +73,18 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 		if err != nil {
 			return err
 		}
+
+		if !isTar(r){
+			return unexpectedBlobTypeError
+		}
+
+		if _, err := r.Seek(0,0); err != nil {
+			return err
+		}
+
 		err = extractTar(r, dir)
+	default:
+		return unexpectedBlobTypeError
 	}
 
 	if err != nil {
@@ -73,6 +92,12 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 	}
 	f.Logger.Printf("Successfully downloaded %s in path %q", blob.Host+blob.Path, dir)
 	return nil
+}
+
+func isTar(reader io.Reader) bool {
+	tr := tar.NewReader(reader)
+	_, err := tr.Next()
+	return err == nil
 }
 
 func extractTar(reader io.Reader, dir string) error {
