@@ -18,6 +18,14 @@
 
 package v1alpha1
 
+// ClusterStackListerExpansion allows custom methods to be added to
+// ClusterStackLister.
+type ClusterStackListerExpansion interface{}
+
+// ClusterStoreListerExpansion allows custom methods to be added to
+// ClusterStoreLister.
+type ClusterStoreListerExpansion interface{}
+
 // CustomBuilderListerExpansion allows custom methods to be added to
 // CustomBuilderLister.
 type CustomBuilderListerExpansion interface{}
@@ -29,11 +37,3 @@ type CustomBuilderNamespaceListerExpansion interface{}
 // CustomClusterBuilderListerExpansion allows custom methods to be added to
 // CustomClusterBuilderLister.
 type CustomClusterBuilderListerExpansion interface{}
-
-// StackListerExpansion allows custom methods to be added to
-// StackLister.
-type StackListerExpansion interface{}
-
-// StoreListerExpansion allows custom methods to be added to
-// StoreLister.
-type StoreListerExpansion interface{}

@@ -25,41 +25,41 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// StoreLister helps list Stores.
-type StoreLister interface {
-	// List lists all Stores in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.Store, err error)
-	// Get retrieves the Store from the index for a given name.
-	Get(name string) (*v1alpha1.Store, error)
-	StoreListerExpansion
+// ClusterStackLister helps list ClusterStacks.
+type ClusterStackLister interface {
+	// List lists all ClusterStacks in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.ClusterStack, err error)
+	// Get retrieves the Stack from the index for a given name.
+	Get(name string) (*v1alpha1.ClusterStack, error)
+	ClusterStackListerExpansion
 }
 
-// storeLister implements the StoreLister interface.
-type storeLister struct {
+// clusterStackLister implements the ClusterStackLister interface.
+type clusterStackLister struct {
 	indexer cache.Indexer
 }
 
-// NewStoreLister returns a new StoreLister.
-func NewStoreLister(indexer cache.Indexer) StoreLister {
-	return &storeLister{indexer: indexer}
+// NewClusterStackLister returns a new ClusterStackLister.
+func NewClusterStackLister(indexer cache.Indexer) ClusterStackLister {
+	return &clusterStackLister{indexer: indexer}
 }
 
-// List lists all Stores in the indexer.
-func (s *storeLister) List(selector labels.Selector) (ret []*v1alpha1.Store, err error) {
+// List lists all ClusterStacks in the indexer.
+func (s *clusterStackLister) List(selector labels.Selector) (ret []*v1alpha1.ClusterStack, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Store))
+		ret = append(ret, m.(*v1alpha1.ClusterStack))
 	})
 	return ret, err
 }
 
-// Get retrieves the Store from the index for a given name.
-func (s *storeLister) Get(name string) (*v1alpha1.Store, error) {
+// Get retrieves the Stack from the index for a given name.
+func (s *clusterStackLister) Get(name string) (*v1alpha1.ClusterStack, error) {
 	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("store"), name)
+		return nil, errors.NewNotFound(v1alpha1.Resource("clusterstack"), name)
 	}
-	return obj.(*v1alpha1.Store), nil
+	return obj.(*v1alpha1.ClusterStack), nil
 }

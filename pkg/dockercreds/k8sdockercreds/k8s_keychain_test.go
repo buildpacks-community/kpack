@@ -9,7 +9,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -30,7 +30,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 
 	when("#KeychainForSecretRef", func() {
 		it("keychain provides auth from annotated basic auth secrets", func() {
-			fakeClient := fake.NewSimpleClientset(&v1.Secret{
+			fakeClient := fake.NewSimpleClientset(&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-1",
 					Namespace: testNamespace,
@@ -38,18 +38,18 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 						v1alpha1.DOCKERSecretAnnotationPrefix: "annotated.io",
 					},
 				},
-				Type: v1.SecretTypeBasicAuth,
+				Type: corev1.SecretTypeBasicAuth,
 				Data: map[string][]byte{
-					v1.BasicAuthUsernameKey: []byte("annotated-username"),
-					v1.BasicAuthPasswordKey: []byte("annotated-password"),
+					corev1.BasicAuthUsernameKey: []byte("annotated-username"),
+					corev1.BasicAuthPasswordKey: []byte("annotated-password"),
 				},
 			},
-				&v1.ServiceAccount{
+				&corev1.ServiceAccount{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      serviceAccountName,
 						Namespace: testNamespace,
 					},
-					Secrets: []v1.ObjectReference{
+					Secrets: []corev1.ObjectReference{
 						{Name: "secret-1"},
 					},
 				})
@@ -74,32 +74,32 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("keychain provides auth from dockerconfigjson and dockercfg secrets", func() {
-			fakeClient := fake.NewSimpleClientset(&v1.Secret{
+			fakeClient := fake.NewSimpleClientset(&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-1",
 					Namespace: testNamespace,
 				},
-				Type: v1.SecretTypeDockercfg,
+				Type: corev1.SecretTypeDockercfg,
 				Data: map[string][]byte{
-					v1.DockerConfigKey: []byte("{\"imagcfg.io\": {\"username\": \"cfg-user\", \"password\":  \"pull-password\"}}"),
+					corev1.DockerConfigKey: []byte("{\"imagcfg.io\": {\"username\": \"cfg-user\", \"password\":  \"pull-password\"}}"),
 				},
 			},
-				&v1.Secret{
+				&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "secret-2",
 						Namespace: testNamespace,
 					},
-					Type: v1.SecretTypeDockerConfigJson,
+					Type: corev1.SecretTypeDockerConfigJson,
 					Data: map[string][]byte{
-						v1.DockerConfigJsonKey: []byte("{\"auths\": {\"imagecfgjson.io\": {\"username\": \"config-json-user\", \"password\":  \"pull-password\"}}}"),
+						corev1.DockerConfigJsonKey: []byte("{\"auths\": {\"imagecfgjson.io\": {\"username\": \"config-json-user\", \"password\":  \"pull-password\"}}}"),
 					},
 				},
-				&v1.ServiceAccount{
+				&corev1.ServiceAccount{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      serviceAccountName,
 						Namespace: testNamespace,
 					},
-					Secrets: []v1.ObjectReference{
+					Secrets: []corev1.ObjectReference{
 						{Name: "secret-1"},
 						{Name: "secret-2"},
 					},
@@ -143,7 +143,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 
 		when("no service account is provided", func() {
 			it("keychain provides auth from annotated basic auth secrets from the default service account", func() {
-				fakeClient := fake.NewSimpleClientset(&v1.Secret{
+				fakeClient := fake.NewSimpleClientset(&corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "secret-1",
 						Namespace: testNamespace,
@@ -151,24 +151,24 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 							v1alpha1.DOCKERSecretAnnotationPrefix: "annotated.io",
 						},
 					},
-					Type: v1.SecretTypeBasicAuth,
+					Type: corev1.SecretTypeBasicAuth,
 					Data: map[string][]byte{
-						v1.BasicAuthUsernameKey: []byte("annotated-username"),
-						v1.BasicAuthPasswordKey: []byte("annotated-password"),
+						corev1.BasicAuthUsernameKey: []byte("annotated-username"),
+						corev1.BasicAuthPasswordKey: []byte("annotated-password"),
 					},
 				},
-					&v1.ServiceAccount{
+					&corev1.ServiceAccount{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "non-default",
 							Namespace: testNamespace,
 						},
 					},
-					&v1.ServiceAccount{
+					&corev1.ServiceAccount{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "default",
 							Namespace: testNamespace,
 						},
-						Secrets: []v1.ObjectReference{
+						Secrets: []corev1.ObjectReference{
 							{Name: "secret-1"},
 						},
 					})
@@ -194,17 +194,17 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("keychain provides auth from ImagePull secrets", func() {
-			fakeClient := fake.NewSimpleClientset(&v1.Secret{
+			fakeClient := fake.NewSimpleClientset(&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "image-pull-secret",
 					Namespace: testNamespace,
 				},
-				Type: v1.SecretTypeDockerConfigJson,
+				Type: corev1.SecretTypeDockerConfigJson,
 				Data: map[string][]byte{
-					v1.DockerConfigJsonKey: []byte("{\"auths\": {\"imagepull.io\": {\"username\": \"image-pull-user\", \"password\":  \"image-pull-password\"}}}"),
+					corev1.DockerConfigJsonKey: []byte("{\"auths\": {\"imagepull.io\": {\"username\": \"image-pull-user\", \"password\":  \"image-pull-password\"}}}"),
 				},
 			},
-				&v1.ServiceAccount{
+				&corev1.ServiceAccount{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      serviceAccountName,
 						Namespace: testNamespace,
@@ -216,7 +216,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        testNamespace,
-				ImagePullSecrets: []v1.LocalObjectReference{{"image-pull-secret"}},
+				ImagePullSecrets: []corev1.LocalObjectReference{{"image-pull-secret"}},
 			})
 			require.NoError(t, err)
 
@@ -236,7 +236,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("keychain provides Anonymous auth for no matching credentials", func() {
-			keychainFactory, err := NewSecretKeychainFactory(fake.NewSimpleClientset(&v1.ServiceAccount{
+			keychainFactory, err := NewSecretKeychainFactory(fake.NewSimpleClientset(&corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      serviceAccountName,
 					Namespace: testNamespace,

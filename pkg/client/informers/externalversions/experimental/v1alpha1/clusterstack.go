@@ -31,58 +31,58 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// StoreInformer provides access to a shared informer and lister for
-// Stores.
-type StoreInformer interface {
+// ClusterStackInformer provides access to a shared informer and lister for
+// ClusterStacks.
+type ClusterStackInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.StoreLister
+	Lister() v1alpha1.ClusterStackLister
 }
 
-type storeInformer struct {
+type clusterStackInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
-// NewStoreInformer constructs a new informer for Store type.
+// NewClusterStackInformer constructs a new informer for Stack type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewStoreInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredStoreInformer(client, resyncPeriod, indexers, nil)
+func NewClusterStackInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredClusterStackInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredStoreInformer constructs a new informer for Store type.
+// NewFilteredClusterStackInformer constructs a new informer for Stack type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredStoreInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredClusterStackInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().Stores().List(options)
+				return client.ExperimentalV1alpha1().ClusterStacks().List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().Stores().Watch(options)
+				return client.ExperimentalV1alpha1().ClusterStacks().Watch(options)
 			},
 		},
-		&experimentalv1alpha1.Store{},
+		&experimentalv1alpha1.ClusterStack{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *storeInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredStoreInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *clusterStackInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredClusterStackInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *storeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&experimentalv1alpha1.Store{}, f.defaultInformer)
+func (f *clusterStackInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&experimentalv1alpha1.ClusterStack{}, f.defaultInformer)
 }
 
-func (f *storeInformer) Lister() v1alpha1.StoreLister {
-	return v1alpha1.NewStoreLister(f.Informer().GetIndexer())
+func (f *clusterStackInformer) Lister() v1alpha1.ClusterStackLister {
+	return v1alpha1.NewClusterStackLister(f.Informer().GetIndexer())
 }

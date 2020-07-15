@@ -18,10 +18,10 @@
 
 package v1alpha1
 
+type ClusterStackExpansion interface{}
+
+type ClusterStoreExpansion interface{}
+
 type CustomBuilderExpansion interface{}
 
 type CustomClusterBuilderExpansion interface{}
-
-type StackExpansion interface{}
-
-type StoreExpansion interface{}

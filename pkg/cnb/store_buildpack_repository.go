@@ -13,7 +13,7 @@ import (
 type StoreBuildpackRepository struct {
 	Keychain authn.Keychain
 
-	Store *v1alpha1.Store
+	ClusterStore *v1alpha1.ClusterStore
 }
 
 func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error) {
@@ -58,7 +58,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 
 func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.StoreBuildpack, error) {
 	var matchingBuildpacks []v1alpha1.StoreBuildpack
-	for _, buildpack := range s.Store.Status.Buildpacks {
+	for _, buildpack := range s.ClusterStore.Status.Buildpacks {
 		if buildpack.Id == id {
 			matchingBuildpacks = append(matchingBuildpacks, buildpack)
 		}

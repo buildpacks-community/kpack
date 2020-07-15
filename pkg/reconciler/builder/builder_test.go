@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -62,7 +62,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	builder := &v1alpha1.Builder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Namespace:  namespace,
 			Generation: initalGeneration,
@@ -103,7 +103,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 								{
 									Type:               corev1alpha1.ConditionReady,
 									Status:             corev1.ConditionTrue,
-									LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+									LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 								},
 							},
 						},

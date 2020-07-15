@@ -113,17 +113,17 @@ func main() {
 			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
 			Kind:    "Stack",
-			Plural:  "stacks",
+			Plural:  "clusterstacks",
 			Ref:     "#/definitions/kpack.experimental.v1alpha1.Stack",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.StackList",
+			ListRef: "#/definitions/kpack.experimental.v1alpha1.ClusterStackList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
 			Group:   "experimental.kpack.pivotal.io",
 			Version: "v1alpha1",
-			Kind:    "Store",
-			Plural:  "stores",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.Store",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.StoreList",
+			Kind:    "ClusterStore",
+			Plural:  "clusterstores",
+			Ref:     "#/definitions/kpack.experimental.v1alpha1.ClusterStore",
+			ListRef: "#/definitions/kpack.experimental.v1alpha1.ClusterStoreList",
 		}),
 	)
 

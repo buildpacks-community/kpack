@@ -1,4 +1,4 @@
-package stack
+package clusterstack
 
 import (
 	"context"
@@ -23,46 +23,46 @@ const (
 	Kind           = "Stack"
 )
 
-//go:generate counterfeiter . StackReader
-type StackReader interface {
-	Read(stackSpec expv1alpha1.StackSpec) (expv1alpha1.ResolvedStack, error)
+//go:generate counterfeiter . ClusterStackReader
+type ClusterStackReader interface {
+	Read(clusterStackSpec expv1alpha1.ClusterStackSpec) (expv1alpha1.ResolvedClusterStack, error)
 }
 
-func NewController(opt reconciler.Options, stackInformer v1alpha1expInformers.StackInformer, stackReader StackReader) *controller.Impl {
+func NewController(opt reconciler.Options, clusterStackInformer v1alpha1expInformers.ClusterStackInformer, clusterStackReader ClusterStackReader) *controller.Impl {
 	c := &Reconciler{
-		Client:      opt.Client,
-		StackLister: stackInformer.Lister(),
-		StackReader: stackReader,
+		Client:             opt.Client,
+		ClusterStackLister: clusterStackInformer.Lister(),
+		ClusterStackReader: clusterStackReader,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
-	stackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }
 
 type Reconciler struct {
-	Client      versioned.Interface
-	StackLister v1alpha1expListers.StackLister
-	StackReader StackReader
+	Client             versioned.Interface
+	ClusterStackLister v1alpha1expListers.ClusterStackLister
+	ClusterStackReader ClusterStackReader
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
-	_, stackName, err := cache.SplitMetaNamespaceKey(key)
+	_, clusterStackName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return err
 	}
 
-	stack, err := c.StackLister.Get(stackName)
+	clusterStack, err := c.ClusterStackLister.Get(clusterStackName)
 	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	stack = stack.DeepCopy()
+	clusterStack = clusterStack.DeepCopy()
 
-	stack, err = c.reconcileStackStatus(stack)
+	clusterStack, err = c.reconcileClusterStackStatus(clusterStack)
 
-	updateErr := c.updateStackStatus(stack)
+	updateErr := c.updateClusterStackStatus(clusterStack)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -73,12 +73,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha1.Stack, error) {
-	resolvedStack, err := c.StackReader.Read(stack.Spec)
+func (c *Reconciler) reconcileClusterStackStatus(clusterStack *expv1alpha1.ClusterStack) (*expv1alpha1.ClusterStack, error) {
+	resolvedClusterStack, err := c.ClusterStackReader.Read(clusterStack.Spec)
 	if err != nil {
-		stack.Status = expv1alpha1.StackStatus{
+		clusterStack.Status = expv1alpha1.ClusterStackStatus{
 			Status: corev1alpha1.Status{
-				ObservedGeneration: stack.Generation,
+				ObservedGeneration: clusterStack.Generation,
 				Conditions: corev1alpha1.Conditions{
 					{
 						Type:               corev1alpha1.ConditionReady,
@@ -89,12 +89,12 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 				},
 			},
 		}
-		return stack, err
+		return clusterStack, err
 	}
 
-	stack.Status = expv1alpha1.StackStatus{
+	clusterStack.Status = expv1alpha1.ClusterStackStatus{
 		Status: corev1alpha1.Status{
-			ObservedGeneration: stack.Generation,
+			ObservedGeneration: clusterStack.Generation,
 			Conditions: corev1alpha1.Conditions{
 				{
 					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
@@ -103,15 +103,15 @@ func (c *Reconciler) reconcileStackStatus(stack *expv1alpha1.Stack) (*expv1alpha
 				},
 			},
 		},
-		ResolvedStack: resolvedStack,
+		ResolvedClusterStack: resolvedClusterStack,
 	}
-	return stack, nil
+	return clusterStack, nil
 }
 
-func (c *Reconciler) updateStackStatus(desired *expv1alpha1.Stack) error {
+func (c *Reconciler) updateClusterStackStatus(desired *expv1alpha1.ClusterStack) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
-	original, err := c.StackLister.Get(desired.Name)
+	original, err := c.ClusterStackLister.Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -120,6 +120,6 @@ func (c *Reconciler) updateStackStatus(desired *expv1alpha1.Stack) error {
 		return nil
 	}
 
-	_, err = c.Client.ExperimentalV1alpha1().Stacks().UpdateStatus(desired)
+	_, err = c.Client.ExperimentalV1alpha1().ClusterStacks().UpdateStatus(desired)
 	return err
 }

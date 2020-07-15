@@ -6,7 +6,6 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +41,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			SuccessBuildHistoryLimit: &limit,
 			ImageTaggingStrategy:     None,
 			Build: &ImageBuild{
-				Env: []v1.EnvVar{
+				Env: []corev1.EnvVar{
 					{
 						Name:  "keyA",
 						Value: "ValueA",
