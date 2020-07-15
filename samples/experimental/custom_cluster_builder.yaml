@@ -4,8 +4,12 @@ metadata:
   name: my-cluster-builder
 spec:
   tag: buildingbuilder/custom-builder
-  stack: bionic-stack
-  store: sample-store
+  stack:
+    name: bionic-stack
+    kind: ClusterStack
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
   serviceAccountRef:
     name: default
     namespace: default

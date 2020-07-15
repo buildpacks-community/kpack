@@ -1,5 +1,5 @@
 apiVersion: experimental.kpack.pivotal.io/v1alpha1
-kind: Stack
+kind: ClusterStack
 metadata:
   name: bionic-stack
 spec:
