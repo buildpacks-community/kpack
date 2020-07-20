@@ -160,7 +160,7 @@ func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.S
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "cannot retrieve source resolver")
 	} else if k8serrors.IsNotFound(err) {
-		sourceResolver, err = c.Client.BuildV1alpha1().SourceResolvers(image.Namespace).Create(desiredSourceResolver)
+		sourceResolver, err = c.Client.KpackV1alpha1().SourceResolvers(image.Namespace).Create(desiredSourceResolver)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot create source resolver")
 		}
@@ -173,7 +173,7 @@ func (c *Reconciler) reconcileSourceResolver(image *v1alpha1.Image) (*v1alpha1.S
 	sourceResolver = sourceResolver.DeepCopy()
 	sourceResolver.Spec = desiredSourceResolver.Spec
 	sourceResolver.Labels = desiredSourceResolver.Labels
-	return c.Client.BuildV1alpha1().SourceResolvers(image.Namespace).Update(sourceResolver)
+	return c.Client.KpackV1alpha1().SourceResolvers(image.Namespace).Update(sourceResolver)
 }
 
 func (c *Reconciler) reconcileBuildCache(image *v1alpha1.Image) (string, error) {
@@ -222,7 +222,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	if builds.NumberFailedBuilds() > *image.Spec.FailedBuildHistoryLimit {
 		oldestFailedBuild := builds.OldestFailure()
 
-		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &metav1.DeleteOptions{})
+		err := c.Client.KpackV1alpha1().Builds(image.Namespace).Delete(oldestFailedBuild.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting failed build: %s", err)
 		}
@@ -231,7 +231,7 @@ func (c *Reconciler) deleteOldBuilds(image *v1alpha1.Image) error {
 	if builds.NumberSuccessfulBuilds() > *image.Spec.SuccessBuildHistoryLimit {
 		oldestSuccess := builds.OldestSuccess()
 
-		err := c.Client.BuildV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &metav1.DeleteOptions{})
+		err := c.Client.KpackV1alpha1().Builds(image.Namespace).Delete(oldestSuccess.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting successful build: %s", err)
 		}
@@ -274,7 +274,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Image) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Images(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().Images(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 
@@ -289,5 +289,5 @@ func buildCacheEqual(desiredBuildCache *corev1.PersistentVolumeClaim, buildCache
 }
 
 func (c *Reconciler) CreateBuild(build *v1alpha1.Build) (*v1alpha1.Build, error) {
-	return c.Client.BuildV1alpha1().Builds(build.Namespace).Create(build)
+	return c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
 }

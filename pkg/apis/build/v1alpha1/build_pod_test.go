@@ -186,8 +186,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Name:      build.PodName(),
 					Namespace: namespace,
 					Labels: map[string]string{
-						"some/label":             "to-pass-through",
-						"build.pivotal.io/build": buildName,
+						"some/label":     "to-pass-through",
+						"kpack.io/build": buildName,
 					},
 					Annotations: map[string]string{
 						"some/annotation": "to-pass-through",
@@ -745,8 +745,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Name:      build.PodName(),
 					Namespace: namespace,
 					Labels: map[string]string{
-						"some/label":             "to-pass-through",
-						"build.pivotal.io/build": buildName,
+						"some/label":     "to-pass-through",
+						"kpack.io/build": buildName,
 					},
 					Annotations: map[string]string{
 						"some/annotation":              "to-pass-through",

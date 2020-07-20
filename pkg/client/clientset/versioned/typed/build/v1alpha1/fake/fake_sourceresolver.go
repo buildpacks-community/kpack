@@ -30,13 +30,13 @@ import (
 
 // FakeSourceResolvers implements SourceResolverInterface
 type FakeSourceResolvers struct {
-	Fake *FakeBuildV1alpha1
+	Fake *FakeKpackV1alpha1
 	ns   string
 }
 
-var sourceresolversResource = schema.GroupVersionResource{Group: "build.pivotal.io", Version: "v1alpha1", Resource: "sourceresolvers"}
+var sourceresolversResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "sourceresolvers"}
 
-var sourceresolversKind = schema.GroupVersionKind{Group: "build.pivotal.io", Version: "v1alpha1", Kind: "SourceResolver"}
+var sourceresolversKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "SourceResolver"}
 
 // Get takes name of the sourceResolver, and returns the corresponding sourceResolver object, and an error if there is any.
 func (c *FakeSourceResolvers) Get(name string, options v1.GetOptions) (result *v1alpha1.SourceResolver, err error) {

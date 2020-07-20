@@ -59,7 +59,7 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 
 	return defaulting.NewAdmissionController(ctx,
 		// Name of the resource webhook.
-		"defaults.webhook.kpack.pivotal.io",
+		"defaults.webhook.kpack.io",
 		// The path on which to serve the webhook.
 		"/defaults",
 		// The resources to default.
@@ -93,7 +93,7 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return validation.NewAdmissionController(ctx,
 		// Name of the resource webhook.
-		"validation.webhook.kpack.pivotal.io",
+		"validation.webhook.kpack.io",
 		// The path on which to serve the webhook.
 		"/validate",
 		// The resources to default.
