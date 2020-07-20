@@ -56,7 +56,7 @@ type sourceResolvers struct {
 }
 
 // newSourceResolvers returns a SourceResolvers
-func newSourceResolvers(c *BuildV1alpha1Client, namespace string) *sourceResolvers {
+func newSourceResolvers(c *KpackV1alpha1Client, namespace string) *sourceResolvers {
 	return &sourceResolvers{
 		client: c.RESTClient(),
 		ns:     namespace,

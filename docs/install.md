@@ -25,7 +25,7 @@
 The Builder image contains buildpacks that will be used to build images with kpack. We recommend starting with the [gcr.io/paketo-buildpacks/builder:base](https://paketo.io/) image which has support for Java, Node and Go.         
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: ClusterBuilder
 metadata:
   name: default
@@ -51,13 +51,13 @@ You should see output similar to the following:
 Name:         default
 Namespace:    
 Labels:       <none>
-Annotations:  API Version:  build.pivotal.io/v1alpha1
+Annotations:  API Version:  kpack.io/v1alpha1
 Kind:         ClusterBuilder
 Metadata:
   Creation Timestamp:  2020-04-22T15:59:14Z
   Generation:          1
   Resource Version:    1733945
-  Self Link:           /apis/build.pivotal.io/v1alpha1/clusterbuilders/default
+  Self Link:           /apis/kpack.io/v1alpha1/clusterbuilders/default
   UID:                 79ac5b87-9eb0-4e8c-a275-1f20137b911b
 Spec:
   Image:          gcr.io/paketo-buildpacks/builder:base

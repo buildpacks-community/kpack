@@ -56,7 +56,7 @@ type builders struct {
 }
 
 // newBuilders returns a Builders
-func newBuilders(c *BuildV1alpha1Client, namespace string) *builders {
+func newBuilders(c *KpackV1alpha1Client, namespace string) *builders {
 	return &builders{
 		client: c.RESTClient(),
 		ns:     namespace,

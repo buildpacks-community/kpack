@@ -5,7 +5,7 @@
     "version": "v0.0.1"
   },
   "paths": {
-    "/apis/build.pivotal.io/v1alpha1/builders": {
+    "/apis/kpack.io/v1alpha1/builders": {
       "get": {
         "description": "list or watch builders",
         "consumes": [
@@ -95,7 +95,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/builds": {
+    "/apis/kpack.io/v1alpha1/builds": {
       "get": {
         "description": "list or watch builds",
         "consumes": [
@@ -185,7 +185,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/clusterbuilders": {
+    "/apis/kpack.io/v1alpha1/clusterbuilders": {
       "get": {
         "description": "list or watch cluster scoped clusterbuilders",
         "consumes": [
@@ -310,7 +310,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/clusterbuilders/{name}": {
+    "/apis/kpack.io/v1alpha1/clusterbuilders/{name}": {
       "get": {
         "description": "Returns a cluster scoped ClusterBuilder",
         "consumes": [
@@ -482,7 +482,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/clusterbuilders/{name}/status": {
+    "/apis/kpack.io/v1alpha1/clusterbuilders/{name}/status": {
       "get": {
         "description": "read status of the specified cluster scoped ClusterBuilder",
         "consumes": [
@@ -608,7 +608,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/images": {
+    "/apis/kpack.io/v1alpha1/images": {
       "get": {
         "description": "list or watch images",
         "consumes": [
@@ -698,7 +698,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builders": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builders": {
       "get": {
         "description": "list or watch namespace scoped builders",
         "consumes": [
@@ -830,7 +830,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builders/{name}": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builders/{name}": {
       "get": {
         "description": "Returns a namespace scoped custom object",
         "consumes": [
@@ -1009,7 +1009,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builders/{name}/status": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builders/{name}/status": {
       "get": {
         "description": "read status of the specified namespace scoped Builder",
         "consumes": [
@@ -1142,7 +1142,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builds": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builds": {
       "get": {
         "description": "list or watch namespace scoped builds",
         "consumes": [
@@ -1274,7 +1274,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builds/{name}": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builds/{name}": {
       "get": {
         "description": "Returns a namespace scoped custom object",
         "consumes": [
@@ -1453,7 +1453,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/builds/{name}/status": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/builds/{name}/status": {
       "get": {
         "description": "read status of the specified namespace scoped Build",
         "consumes": [
@@ -1586,7 +1586,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/images": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/images": {
       "get": {
         "description": "list or watch namespace scoped images",
         "consumes": [
@@ -1718,7 +1718,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/images/{name}": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/images/{name}": {
       "get": {
         "description": "Returns a namespace scoped custom object",
         "consumes": [
@@ -1897,7 +1897,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/images/{name}/status": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/images/{name}/status": {
       "get": {
         "description": "read status of the specified namespace scoped Image",
         "consumes": [
@@ -2030,7 +2030,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/sourceresolvers": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/sourceresolvers": {
       "get": {
         "description": "list or watch namespace scoped sourceresolvers",
         "consumes": [
@@ -2162,7 +2162,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/sourceresolvers/{name}": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/sourceresolvers/{name}": {
       "get": {
         "description": "Returns a namespace scoped custom object",
         "consumes": [
@@ -2341,7 +2341,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/namespaces/{namespace}/sourceresolvers/{name}/status": {
+    "/apis/kpack.io/v1alpha1/namespaces/{namespace}/sourceresolvers/{name}/status": {
       "get": {
         "description": "read status of the specified namespace scoped SourceResolver",
         "consumes": [
@@ -2474,7 +2474,7 @@
         }
       ]
     },
-    "/apis/build.pivotal.io/v1alpha1/sourceresolvers": {
+    "/apis/kpack.io/v1alpha1/sourceresolvers": {
       "get": {
         "description": "list or watch sourceresolvers",
         "consumes": [

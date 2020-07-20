@@ -4,7 +4,7 @@ kpack utilizes kubernetes secrets to configure credentials to publish images to 
 
 ### Docker Registry Secrets
 
-kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/docker` annotation that references a docker registry.      
+kubernetes.io/basic-auth secrets are used with a `kpack.io/docker` annotation that references a docker registry.      
 
 GCR example
   ```yaml
@@ -13,7 +13,7 @@ GCR example
   metadata:
     name: basic-docker-user-pass
     annotations:
-      build.pivotal.io/docker: gcr.io
+      kpack.io/docker: gcr.io
   type: kubernetes.io/basic-auth
   stringData:
     username: <username>
@@ -27,7 +27,7 @@ kind: Secret
 metadata:
   name: basic-docker-user-pass
   annotations:
-    build.pivotal.io/docker: https://index.docker.io/v1/
+    kpack.io/docker: https://index.docker.io/v1/
 type: kubernetes.io/basic-auth
 stringData:
   username: <username>
@@ -63,7 +63,7 @@ stringData:
 
 ### Git Secrets
 
-kubernetes.io/basic-auth secrets are used with a `build.pivotal.io/git` annotation that references a remote git location.      
+kubernetes.io/basic-auth secrets are used with a `kpack.io/git` annotation that references a remote git location.      
 
 For github, the basic auth secret would look like
 ```yaml
@@ -72,7 +72,7 @@ kind: Secret
 metadata:
   name: basic-git-user-pass
   annotations:
-    build.pivotal.io/git: https://github.com
+    kpack.io/git: https://github.com
 type: kubernetes.io/basic-auth
 stringData:
   username: <username>
@@ -86,7 +86,7 @@ kind: Secret
 metadata:
   name: git-ssh-auth
   annotations:
-    build.pivotal.io/git: git@github.com
+    kpack.io/git: git@github.com
 type: kubernetes.io/ssh-auth
 stringData:
   ssh-privatekey: <x509-private-key>
@@ -101,7 +101,7 @@ kind: Secret
 metadata:
   name: basic-git-user-pass
   annotations:
-    build.pivotal.io/git: https://github.com
+    kpack.io/git: https://github.com
 type: kubernetes.io/basic-auth
 stringData:
   username: <your-username>

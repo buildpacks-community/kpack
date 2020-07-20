@@ -129,8 +129,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	factory := externalversions.NewSharedInformerFactory(client, 10*time.Hour)
 
 	subject := DuckBuilderInformer{
-		BuilderInformer:              factory.Build().V1alpha1().Builders(),
-		ClusterBuilderInformer:       factory.Build().V1alpha1().ClusterBuilders(),
+		BuilderInformer:              factory.Kpack().V1alpha1().Builders(),
+		ClusterBuilderInformer:       factory.Kpack().V1alpha1().ClusterBuilders(),
 		CustomBuilderInformer:        factory.Experimental().V1alpha1().CustomBuilders(),
 		CustomClusterBuilderInformer: factory.Experimental().V1alpha1().CustomClusterBuilders(),
 	}
