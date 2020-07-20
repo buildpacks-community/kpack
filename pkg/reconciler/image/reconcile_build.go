@@ -24,7 +24,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 		nextBuildNumber := currentBuildNumber + 1
 		build := image.Build(sourceResolver, builder, latestBuild, reasons, buildCacheName, nextBuildNumber)
 
-		build, err := c.Client.BuildV1alpha1().Builds(build.Namespace).Create(build)
+		build, err := c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
 		if err != nil {
 			return v1alpha1.ImageStatus{}, err
 		}

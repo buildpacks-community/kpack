@@ -15,6 +15,6 @@
  */
 
 // +k8s:deepcopy-gen=package
-// +groupName=build.pivotal.io
+// +groupName=kpack.io
 
 package v1alpha1

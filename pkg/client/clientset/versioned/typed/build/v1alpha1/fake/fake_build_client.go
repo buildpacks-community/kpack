@@ -24,33 +24,33 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeBuildV1alpha1 struct {
+type FakeKpackV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeBuildV1alpha1) Builds(namespace string) v1alpha1.BuildInterface {
+func (c *FakeKpackV1alpha1) Builds(namespace string) v1alpha1.BuildInterface {
 	return &FakeBuilds{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface {
+func (c *FakeKpackV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface {
 	return &FakeBuilders{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
+func (c *FakeKpackV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
 	return &FakeClusterBuilders{c}
 }
 
-func (c *FakeBuildV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
+func (c *FakeKpackV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
 	return &FakeImages{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) SourceResolvers(namespace string) v1alpha1.SourceResolverInterface {
+func (c *FakeKpackV1alpha1) SourceResolvers(namespace string) v1alpha1.SourceResolverInterface {
 	return &FakeSourceResolvers{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeBuildV1alpha1) RESTClient() rest.Interface {
+func (c *FakeKpackV1alpha1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

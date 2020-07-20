@@ -30,13 +30,13 @@ import (
 
 // FakeImages implements ImageInterface
 type FakeImages struct {
-	Fake *FakeBuildV1alpha1
+	Fake *FakeKpackV1alpha1
 	ns   string
 }
 
-var imagesResource = schema.GroupVersionResource{Group: "build.pivotal.io", Version: "v1alpha1", Resource: "images"}
+var imagesResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "images"}
 
-var imagesKind = schema.GroupVersionKind{Group: "build.pivotal.io", Version: "v1alpha1", Kind: "Image"}
+var imagesKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "Image"}
 
 // Get takes name of the image, and returns the corresponding image object, and an error if there is any.
 func (c *FakeImages) Get(name string, options v1.GetOptions) (result *v1alpha1.Image, err error) {

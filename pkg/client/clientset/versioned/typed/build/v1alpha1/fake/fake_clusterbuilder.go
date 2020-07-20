@@ -30,12 +30,12 @@ import (
 
 // FakeClusterBuilders implements ClusterBuilderInterface
 type FakeClusterBuilders struct {
-	Fake *FakeBuildV1alpha1
+	Fake *FakeKpackV1alpha1
 }
 
-var clusterbuildersResource = schema.GroupVersionResource{Group: "build.pivotal.io", Version: "v1alpha1", Resource: "clusterbuilders"}
+var clusterbuildersResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "clusterbuilders"}
 
-var clusterbuildersKind = schema.GroupVersionKind{Group: "build.pivotal.io", Version: "v1alpha1", Kind: "ClusterBuilder"}
+var clusterbuildersKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "ClusterBuilder"}
 
 // Get takes name of the clusterBuilder, and returns the corresponding clusterBuilder object, and an error if there is any.
 func (c *FakeClusterBuilders) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterBuilder, err error) {

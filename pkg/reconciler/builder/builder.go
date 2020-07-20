@@ -106,7 +106,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 

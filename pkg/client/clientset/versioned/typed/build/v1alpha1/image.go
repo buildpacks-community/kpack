@@ -56,7 +56,7 @@ type images struct {
 }
 
 // newImages returns a Images
-func newImages(c *BuildV1alpha1Client, namespace string) *images {
+func newImages(c *KpackV1alpha1Client, namespace string) *images {
 	return &images{
 		client: c.RESTClient(),
 		ns:     namespace,

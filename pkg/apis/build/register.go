@@ -18,7 +18,5 @@
 package build
 
 const (
-	GroupName = "build.pivotal.io"
-
-	BuildLabelKey = GroupName + "/build"
+	GroupName = "kpack.io"
 )

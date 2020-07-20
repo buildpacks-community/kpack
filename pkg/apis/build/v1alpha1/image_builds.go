@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	BuildNumberLabel     = "image.build.pivotal.io/buildNumber"
-	ImageLabel           = "image.build.pivotal.io/image"
-	ImageGenerationLabel = "image.build.pivotal.io/imageGeneration"
+	BuildNumberLabel     = "image.kpack.io/buildNumber"
+	ImageLabel           = "image.kpack.io/image"
+	ImageGenerationLabel = "image.kpack.io/imageGeneration"
 
-	BuildReasonAnnotation = "image.build.pivotal.io/reason"
-	BuildNeededAnnotation = "image.build.pivotal.io/additionalBuildNeeded"
+	BuildReasonAnnotation = "image.kpack.io/reason"
+	BuildNeededAnnotation = "image.kpack.io/additionalBuildNeeded"
 
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
