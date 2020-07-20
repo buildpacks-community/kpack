@@ -97,11 +97,11 @@ func main() {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
-	buildInformer := informerFactory.Build().V1alpha1().Builds()
-	imageInformer := informerFactory.Build().V1alpha1().Images()
-	builderInformer := informerFactory.Build().V1alpha1().Builders()
-	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
-	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
+	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha1().Images()
+	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
+	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
+	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
 	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
 	storeInformer := informerFactory.Experimental().V1alpha1().Stores()

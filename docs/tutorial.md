@@ -20,7 +20,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     metadata:
       name: tutorial-registry-credentials
       annotations:
-        build.pivotal.io/docker: <registry-prefix>
+        kpack.io/docker: <registry-prefix>
     type: kubernetes.io/basic-auth
     stringData:
       username: <username>
@@ -38,7 +38,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    metadata:
      name: tutorial-registry-credentials
      annotations:
-       build.pivotal.io/docker: https://index.docker.io/v1/
+       kpack.io/docker: https://index.docker.io/v1/
    type: kubernetes.io/basic-auth
    stringData:
      username: sample-username
@@ -53,7 +53,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    metadata:
      name: tutorial-registry-credentials
      annotations:
-       build.pivotal.io/docker: gcr.io
+       kpack.io/docker: gcr.io
    type: kubernetes.io/basic-auth
    stringData:
      username: _json_key
@@ -100,7 +100,7 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     Create an image configuration:
     
     ```yaml
-    apiVersion: build.pivotal.io/v1alpha1
+    apiVersion: kpack.io/v1alpha1
     kind: Image
     metadata:
       name: tutorial-image

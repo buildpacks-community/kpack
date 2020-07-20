@@ -1,4 +1,4 @@
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: SourceResolver
 metadata:
   name: sample

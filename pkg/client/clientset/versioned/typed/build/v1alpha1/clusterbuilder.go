@@ -55,7 +55,7 @@ type clusterBuilders struct {
 }
 
 // newClusterBuilders returns a ClusterBuilders
-func newClusterBuilders(c *BuildV1alpha1Client) *clusterBuilders {
+func newClusterBuilders(c *KpackV1alpha1Client) *clusterBuilders {
 	return &clusterBuilders{
 		client: c.RESTClient(),
 	}

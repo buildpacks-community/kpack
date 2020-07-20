@@ -18,9 +18,9 @@ const (
 
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
-	BuildLabel                   = "build.pivotal.io/build"
-	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
-	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
+	BuildLabel                   = "kpack.io/build"
+	DOCKERSecretAnnotationPrefix = "kpack.io/docker"
+	GITSecretAnnotationPrefix    = "kpack.io/git"
 
 	cacheDirName              = "cache-dir"
 	layersDirName             = "layers-dir"

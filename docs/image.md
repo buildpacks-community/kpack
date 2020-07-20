@@ -111,7 +111,7 @@ See the kubernetes documentation on [setting environment variables](https://kube
 ### Sample Image with a Git Source
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-image
@@ -154,7 +154,7 @@ Source for github can also be specified in the ssh format if there is a correspo
 ### Sample Image with hosted zip or jar as a source
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-image

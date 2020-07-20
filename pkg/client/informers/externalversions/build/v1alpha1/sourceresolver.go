@@ -61,13 +61,13 @@ func NewFilteredSourceResolverInformer(client versioned.Interface, namespace str
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().SourceResolvers(namespace).List(options)
+				return client.KpackV1alpha1().SourceResolvers(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().SourceResolvers(namespace).Watch(options)
+				return client.KpackV1alpha1().SourceResolvers(namespace).Watch(options)
 			},
 		},
 		&buildv1alpha1.SourceResolver{},

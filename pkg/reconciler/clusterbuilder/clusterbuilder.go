@@ -106,7 +106,7 @@ func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().ClusterBuilders().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(desired)
 	return err
 }
 

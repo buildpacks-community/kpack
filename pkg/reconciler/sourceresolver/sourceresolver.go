@@ -127,6 +127,6 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().SourceResolvers(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().SourceResolvers(desired.Namespace).UpdateStatus(desired)
 	return err
 }

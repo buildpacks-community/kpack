@@ -7,7 +7,7 @@ Unlike with the [Image resource](image.md), using Builds directly allows granula
 ### Configuration
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Build
 metadata:
   name: sample-build

@@ -5,7 +5,7 @@ function pack_build() {
     target=$2
     builder="gcr.io/cf-build-service-public/ci/tiny-builder" # builder used ci
 
-    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish
+#    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish --trust-builder
 
     docker pull ${image}
     resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
@@ -50,6 +50,8 @@ function compile() {
 
   lifecycle_image_build ${lifecycle_image}
   lifecycle_image=${resolved_image_name}
+
+  echo $lifecycle_image
 
   ytt -f config/. \
     -v controller_image=${controller_image} \

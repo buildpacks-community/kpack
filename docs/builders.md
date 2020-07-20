@@ -10,7 +10,7 @@ These Builder resources need to be created prior to the creation of any Image Re
 The Builder resource is namespace scoped and can only be used by images in the same namespace.   
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Builder
 metadata:
   name: sample-builder
@@ -38,7 +38,7 @@ A sample builder is available in [samples/builder](../samples/builder.yaml)
 The ClusterBuilder resource is cluster scoped and can be used in any namespace.
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: ClusterBuilder
 metadata:
   name: cluster-sample-builder
