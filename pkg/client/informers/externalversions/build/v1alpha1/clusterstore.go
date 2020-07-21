@@ -21,68 +21,68 @@ package v1alpha1
 import (
 	time "time"
 
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// CustomClusterBuilderInformer provides access to a shared informer and lister for
-// CustomClusterBuilders.
-type CustomClusterBuilderInformer interface {
+// ClusterStoreInformer provides access to a shared informer and lister for
+// ClusterStores.
+type ClusterStoreInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CustomClusterBuilderLister
+	Lister() v1alpha1.ClusterStoreLister
 }
 
-type customClusterBuilderInformer struct {
+type clusterStoreInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
-// NewCustomClusterBuilderInformer constructs a new informer for CustomClusterBuilder type.
+// NewClusterStoreInformer constructs a new informer for ClusterStore type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewCustomClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredCustomClusterBuilderInformer(client, resyncPeriod, indexers, nil)
+func NewClusterStoreInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredClusterStoreInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredCustomClusterBuilderInformer constructs a new informer for CustomClusterBuilder type.
+// NewFilteredClusterStoreInformer constructs a new informer for ClusterStore type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredCustomClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredClusterStoreInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().CustomClusterBuilders().List(options)
+				return client.KpackV1alpha1().ClusterStores().List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().CustomClusterBuilders().Watch(options)
+				return client.KpackV1alpha1().ClusterStores().Watch(options)
 			},
 		},
-		&experimentalv1alpha1.CustomClusterBuilder{},
+		&buildv1alpha1.ClusterStore{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *customClusterBuilderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredCustomClusterBuilderInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *clusterStoreInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredClusterStoreInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *customClusterBuilderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&experimentalv1alpha1.CustomClusterBuilder{}, f.defaultInformer)
+func (f *clusterStoreInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&buildv1alpha1.ClusterStore{}, f.defaultInformer)
 }
 
-func (f *customClusterBuilderInformer) Lister() v1alpha1.CustomClusterBuilderLister {
-	return v1alpha1.NewCustomClusterBuilderLister(f.Informer().GetIndexer())
+func (f *clusterStoreInformer) Lister() v1alpha1.ClusterStoreLister {
+	return v1alpha1.NewClusterStoreLister(f.Informer().GetIndexer())
 }

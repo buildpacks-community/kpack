@@ -17,7 +17,6 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -66,27 +65,27 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
-		stack = &expv1alpha1.ClusterStack{
+		stack = &v1alpha1.ClusterStack{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "sample-stack",
 			},
-			Spec: expv1alpha1.ClusterStackSpec{
+			Spec: v1alpha1.ClusterStackSpec{
 				Id: stackID,
-				BuildImage: expv1alpha1.ClusterStackSpecImage{
+				BuildImage: v1alpha1.ClusterStackSpecImage{
 					Image: buildImageTag,
 				},
-				RunImage: expv1alpha1.ClusterStackSpecImage{
+				RunImage: v1alpha1.ClusterStackSpecImage{
 					Image: runImageTag,
 				},
 			},
-			Status: expv1alpha1.ClusterStackStatus{
-				ResolvedClusterStack: expv1alpha1.ResolvedClusterStack{
+			Status: v1alpha1.ClusterStackStatus{
+				ResolvedClusterStack: v1alpha1.ResolvedClusterStack{
 					Id: stackID,
-					BuildImage: expv1alpha1.ClusterStackStatusImage{
+					BuildImage: v1alpha1.ClusterStackStatusImage{
 						LatestImage: buildImage,
 						Image:       buildImageTag,
 					},
-					RunImage: expv1alpha1.ClusterStackStatusImage{
+					RunImage: v1alpha1.ClusterStackStatusImage{
 						LatestImage: runImage,
 						Image:       runImageTag,
 					},
@@ -97,7 +96,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
+		clusterBuilderSpec = v1alpha1.CustomBuilderSpec{
 			Tag: "custom/example",
 			Stack: corev1.ObjectReference{
 				Kind: "Stack",
@@ -107,17 +106,17 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Name: "some-buildpackRepository",
 				Kind: "ClusterStore",
 			},
-			Order: []expv1alpha1.OrderEntry{
+			Order: []v1alpha1.OrderEntry{
 				{
-					Group: []expv1alpha1.BuildpackRef{
+					Group: []v1alpha1.BuildpackRef{
 						{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.1",
 								Version: "v1",
 							},
 						},
 						{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.2",
 								Version: "v2",
 							},
@@ -139,7 +138,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.1",
 					Version: "v1",
 				},
@@ -148,7 +147,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
 				LayerDiffID: buildpack1Layer.diffID,
-				Stacks: []expv1alpha1.BuildpackStack{
+				Stacks: []v1alpha1.BuildpackStack{
 					{
 						ID:     stackID,
 						Mixins: []string{mixin},
@@ -162,7 +161,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack3Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.3",
 					Version: "v3",
 				},
@@ -171,7 +170,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
 				LayerDiffID: buildpack3Layer.diffID,
-				Stacks: []expv1alpha1.BuildpackStack{
+				Stacks: []v1alpha1.BuildpackStack{
 					{
 						ID: stackID,
 					},
@@ -184,7 +183,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack2Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.2",
 					Version: "v2",
 				},
@@ -193,11 +192,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
 				LayerDiffID: buildpack2Layer.diffID,
-				Order: expv1alpha1.Order{
+				Order: v1alpha1.Order{
 					{
-						Group: []expv1alpha1.BuildpackRef{
+						Group: []v1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.3",
 									Version: "v2",
 								},
@@ -497,7 +496,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.stack",
 								Version: "v4",
 							},
@@ -506,7 +505,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []expv1alpha1.BuildpackStack{
+							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID: "io.buildpacks.stacks.unsupported",
 								},
@@ -515,11 +514,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+				clusterBuilderSpec.Order = []v1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.BuildpackRef{
+						Group: []v1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.stack",
 									Version: "v4",
 								},
@@ -537,7 +536,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.mixin",
 								Version: "v4",
 							},
@@ -546,7 +545,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []expv1alpha1.BuildpackStack{
+							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID:     stackID,
 									Mixins: []string{mixin, "something-missing-mixin", "something-missing-mixin2"},
@@ -556,11 +555,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+				clusterBuilderSpec.Order = []v1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.BuildpackRef{
+						Group: []v1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.mixin",
 									Version: "v4",
 								},
@@ -578,7 +577,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: expv1alpha1.BuildpackInfo{
+							BuildpackInfo: v1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.buildpack.api",
 								Version: "v4",
 							},
@@ -587,7 +586,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.3",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []expv1alpha1.BuildpackStack{
+							Stacks: []v1alpha1.BuildpackStack{
 								{
 									ID: stackID,
 								},
@@ -596,11 +595,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []expv1alpha1.OrderEntry{
+				clusterBuilderSpec.Order = []v1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.BuildpackRef{
+						Group: []v1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.buildpack.api",
 									Version: "v4",
 								},

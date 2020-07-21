@@ -4,7 +4,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 )
 
@@ -18,10 +17,10 @@ type FakeBuilderCreator struct {
 type CreateBuilderArgs struct {
 	Keychain            authn.Keychain
 	BuildpackRepository cnb.BuildpackRepository
-	CustomBuilderSpec   expv1alpha1.CustomBuilderSpec
+	CustomBuilderSpec   v1alpha1.CustomBuilderSpec
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, clusterStack *expv1alpha1.ClusterStack, builder expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, builder v1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Keychain:            keychain,
 		BuildpackRepository: repo,

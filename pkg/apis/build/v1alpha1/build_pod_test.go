@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -11,8 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestBuildPod(t *testing.T) {

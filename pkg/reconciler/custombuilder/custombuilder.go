@@ -12,10 +12,9 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
-	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -27,10 +26,10 @@ const (
 	Kind           = "CustomBuilder"
 )
 
-type NewBuildpackRepository func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository
+type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
 
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *expv1alpha1.ClusterStack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options,
@@ -102,7 +101,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(customBuilder)
 }
 
-func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
+func (c *Reconciler) reconcileCustomBuilder(customBuilder *v1alpha1.CustomBuilder) (v1alpha1.BuilderRecord, error) {
 	clusterStore, err := c.ClusterStoreLister.Get(customBuilder.Spec.Store.Name)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
@@ -138,7 +137,7 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *expv1alpha1.CustomBui
 	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, customBuilder.Spec.CustomBuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(desired *expv1alpha1.CustomBuilder) error {
+func (c *Reconciler) updateStatus(desired *v1alpha1.CustomBuilder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.CustomBuilderLister.CustomBuilders(desired.Namespace).Get(desired.Name)
@@ -150,6 +149,6 @@ func (c *Reconciler) updateStatus(desired *expv1alpha1.CustomBuilder) error {
 		return nil
 	}
 
-	_, err = c.Client.ExperimentalV1alpha1().CustomBuilders(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().CustomBuilders(desired.Namespace).UpdateStatus(desired)
 	return err
 }

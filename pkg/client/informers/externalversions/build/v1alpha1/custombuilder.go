@@ -21,10 +21,10 @@ package v1alpha1
 import (
 	time "time"
 
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -61,16 +61,16 @@ func NewFilteredCustomBuilderInformer(client versioned.Interface, namespace stri
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().CustomBuilders(namespace).List(options)
+				return client.KpackV1alpha1().CustomBuilders(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExperimentalV1alpha1().CustomBuilders(namespace).Watch(options)
+				return client.KpackV1alpha1().CustomBuilders(namespace).Watch(options)
 			},
 		},
-		&experimentalv1alpha1.CustomBuilder{},
+		&buildv1alpha1.CustomBuilder{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *customBuilderInformer) defaultInformer(client versioned.Interface, resy
 }
 
 func (f *customBuilderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&experimentalv1alpha1.CustomBuilder{}, f.defaultInformer)
+	return f.factory.InformerFor(&buildv1alpha1.CustomBuilder{}, f.defaultInformer)
 }
 
 func (f *customBuilderInformer) Lister() v1alpha1.CustomBuilderLister {

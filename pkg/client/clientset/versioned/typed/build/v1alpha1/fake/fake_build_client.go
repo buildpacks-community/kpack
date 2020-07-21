@@ -40,6 +40,22 @@ func (c *FakeKpackV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
 	return &FakeClusterBuilders{c}
 }
 
+func (c *FakeKpackV1alpha1) ClusterStacks() v1alpha1.ClusterStackInterface {
+	return &FakeClusterStacks{c}
+}
+
+func (c *FakeKpackV1alpha1) ClusterStores() v1alpha1.ClusterStoreInterface {
+	return &FakeClusterStores{c}
+}
+
+func (c *FakeKpackV1alpha1) CustomBuilders(namespace string) v1alpha1.CustomBuilderInterface {
+	return &FakeCustomBuilders{c, namespace}
+}
+
+func (c *FakeKpackV1alpha1) CustomClusterBuilders() v1alpha1.CustomClusterBuilderInterface {
+	return &FakeCustomClusterBuilders{c}
+}
+
 func (c *FakeKpackV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
 	return &FakeImages{c, namespace}
 }
