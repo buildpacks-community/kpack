@@ -5,8 +5,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 const CustomBuilderKind = "CustomBuilder"
@@ -40,7 +38,7 @@ type CustomNamespacedBuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type CustomBuilderStatus struct {
-	v1alpha1.BuilderStatus `json:",inline"`
+	BuilderStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

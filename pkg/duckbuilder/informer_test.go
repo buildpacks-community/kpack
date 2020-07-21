@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 )
@@ -79,13 +78,13 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		customBuilder = &expv1alpha1.CustomBuilder{
+		customBuilder = &v1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
 				Namespace: customBuilderNamespace,
 			},
-			Spec: expv1alpha1.CustomNamespacedBuilderSpec{},
-			Status: expv1alpha1.CustomBuilderStatus{
+			Spec: v1alpha1.CustomNamespacedBuilderSpec{},
+			Status: v1alpha1.CustomBuilderStatus{
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
@@ -99,12 +98,12 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		customClusterbuilder = &expv1alpha1.CustomClusterBuilder{
+		customClusterbuilder = &v1alpha1.CustomClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: customClusterBuilderName,
 			},
-			Spec: expv1alpha1.CustomClusterBuilderSpec{},
-			Status: expv1alpha1.CustomBuilderStatus{
+			Spec: v1alpha1.CustomClusterBuilderSpec{},
+			Status: v1alpha1.CustomBuilderStatus{
 				BuilderStatus: v1alpha1.BuilderStatus{
 					BuilderMetadata: v1alpha1.BuildpackMetadataList{
 						{
@@ -131,8 +130,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	subject := DuckBuilderInformer{
 		BuilderInformer:              factory.Kpack().V1alpha1().Builders(),
 		ClusterBuilderInformer:       factory.Kpack().V1alpha1().ClusterBuilders(),
-		CustomBuilderInformer:        factory.Experimental().V1alpha1().CustomBuilders(),
-		CustomClusterBuilderInformer: factory.Experimental().V1alpha1().CustomClusterBuilders(),
+		CustomBuilderInformer:        factory.Kpack().V1alpha1().CustomBuilders(),
+		CustomClusterBuilderInformer: factory.Kpack().V1alpha1().CustomClusterBuilders(),
 	}
 	duckBuilderLister := subject.Lister()
 	factory.Start(stopCh)
@@ -171,7 +170,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("can return a builder of type CustomBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace(customBuilderNamespace).Get(v1.ObjectReference{
-				Kind:      expv1alpha1.CustomBuilderKind,
+				Kind:      v1alpha1.CustomBuilderKind,
 				Namespace: customBuilderNamespace,
 				Name:      customBuilderName,
 			})
@@ -184,7 +183,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("can return a builder of type CustomClusterBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace("").Get(v1.ObjectReference{
-				Kind: expv1alpha1.CustomClusterBuilderKind,
+				Kind: v1alpha1.CustomClusterBuilderKind,
 				Name: customClusterBuilderName,
 			})
 			require.NoError(t, err)
@@ -196,8 +195,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns a k8s not found error on missing builder", func() {
 			for _, typ := range []string{
-				expv1alpha1.CustomClusterBuilderKind,
-				expv1alpha1.CustomBuilderKind,
+				v1alpha1.CustomClusterBuilderKind,
+				v1alpha1.CustomBuilderKind,
 				v1alpha1.BuilderKind,
 				v1alpha1.ClusterBuilderKind,
 			} {

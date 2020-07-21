@@ -6,18 +6,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	informerv1alpha1 "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	informerexpv1alpha1 "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
-	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 )
 
 type DuckBuilderInformer struct {
 	BuilderInformer              informerv1alpha1.BuilderInformer
 	ClusterBuilderInformer       informerv1alpha1.ClusterBuilderInformer
-	CustomBuilderInformer        informerexpv1alpha1.CustomBuilderInformer
-	CustomClusterBuilderInformer informerexpv1alpha1.CustomClusterBuilderInformer
+	CustomBuilderInformer        informerv1alpha1.CustomBuilderInformer
+	CustomClusterBuilderInformer informerv1alpha1.CustomClusterBuilderInformer
 }
 
 func (di *DuckBuilderInformer) AddEventHandler(handler cache.ResourceEventHandler) {
@@ -39,8 +36,8 @@ func (di *DuckBuilderInformer) Lister() *DuckBuilderLister {
 type DuckBuilderLister struct {
 	BuilderLister              v1alpha1Listers.BuilderLister
 	ClusterBuilderLister       v1alpha1Listers.ClusterBuilderLister
-	CustomBuilderLister        expv1alpha1Listers.CustomBuilderLister
-	CustomClusterBuilderLister expv1alpha1Listers.CustomClusterBuilderLister
+	CustomBuilderLister        v1alpha1Listers.CustomBuilderLister
+	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
 }
 
 func (bl *DuckBuilderLister) Namespace(namespace string) *DuckBuilderNamespaceLister {
@@ -63,10 +60,10 @@ func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*Du
 	case v1alpha1.ClusterBuilderKind:
 		builder, err := bl.DuckBuilderLister.ClusterBuilderLister.Get(reference.Name)
 		return convertClusterBuilder(builder), err
-	case expv1alpha1.CustomBuilderKind:
+	case v1alpha1.CustomBuilderKind:
 		builder, err := bl.DuckBuilderLister.CustomBuilderLister.CustomBuilders(bl.namespace).Get(reference.Name)
 		return convertCustomBuilder(builder), err
-	case expv1alpha1.CustomClusterBuilderKind:
+	case v1alpha1.CustomClusterBuilderKind:
 		builder, err := bl.DuckBuilderLister.CustomClusterBuilderLister.Get(reference.Name)
 		return convertCustomClusterBuilder(builder), err
 	default:
@@ -99,7 +96,7 @@ func convertClusterBuilder(builder *v1alpha1.ClusterBuilder) *DuckBuilder {
 	}
 }
 
-func convertCustomBuilder(builder *expv1alpha1.CustomBuilder) *DuckBuilder {
+func convertCustomBuilder(builder *v1alpha1.CustomBuilder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}
@@ -111,7 +108,7 @@ func convertCustomBuilder(builder *expv1alpha1.CustomBuilder) *DuckBuilder {
 	}
 }
 
-func convertCustomClusterBuilder(builder *expv1alpha1.CustomClusterBuilder) *DuckBuilder {
+func convertCustomClusterBuilder(builder *v1alpha1.CustomClusterBuilder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}

@@ -14,8 +14,8 @@ import (
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore/clusterstorefakes"
@@ -50,13 +50,13 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	store := &expv1alpha1.ClusterStore{
+	store := &v1alpha1.ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       storeName,
 			Generation: initialGeneration,
 		},
-		Spec: expv1alpha1.ClusterStoreSpec{
-			Sources: []expv1alpha1.StoreImage{
+		Spec: v1alpha1.ClusterStoreSpec{
+			Sources: []v1alpha1.StoreImage{
 				{
 					Image: "some.registry/some-image-1",
 				},
@@ -68,25 +68,25 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-		readBuildpacks := []expv1alpha1.StoreBuildpack{
+		readBuildpacks := []v1alpha1.StoreBuildpack{
 			{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "paketo-buildpacks/node-engine",
 					Version: "0.0.116",
 				},
 				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
-				StoreImage: expv1alpha1.StoreImage{
+				StoreImage: v1alpha1.StoreImage{
 					Image: "some.registry/some-image-1",
 				},
 				Order: nil,
 			},
 			{
-				BuildpackInfo: expv1alpha1.BuildpackInfo{
+				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "paketo-buildpacks/npm",
 					Version: "0.0.71",
 				},
 				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
-				StoreImage: expv1alpha1.StoreImage{
+				StoreImage: v1alpha1.StoreImage{
 					Image: "some.registry/some-image-2",
 				},
 				Order: nil,
@@ -104,10 +104,10 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.ClusterStore{
+						Object: &v1alpha1.ClusterStore{
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
-							Status: expv1alpha1.ClusterStoreStatus{
+							Status: v1alpha1.ClusterStoreStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -132,7 +132,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("does not update the status with no status change", func() {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
 
-			store.Status = expv1alpha1.ClusterStoreStatus{
+			store.Status = v1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -164,10 +164,10 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.ClusterStore{
+						Object: &v1alpha1.ClusterStore{
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
-							Status: expv1alpha1.ClusterStoreStatus{
+							Status: v1alpha1.ClusterStoreStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

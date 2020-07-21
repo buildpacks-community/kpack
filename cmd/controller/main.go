@@ -28,7 +28,6 @@ import (
 
 	"github.com/pivotal/kpack/cmd"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -102,10 +101,10 @@ func main() {
 	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
 	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
-	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
-	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
-	clusterStoreInformer := informerFactory.Experimental().V1alpha1().ClusterStores()
-	clusterStackInformer := informerFactory.Experimental().V1alpha1().ClusterStacks()
+	customBuilderInformer := informerFactory.Kpack().V1alpha1().CustomBuilders()
+	customClusterBuilderInformer := informerFactory.Kpack().V1alpha1().CustomClusterBuilders()
+	clusterStoreInformer := informerFactory.Kpack().V1alpha1().ClusterStores()
+	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
 		BuilderInformer:              builderInformer,
@@ -237,8 +236,8 @@ func runGroup(ctx context.Context, fns ...doneFunc) error {
 	return eg.Wait()
 }
 
-func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
-	return func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
+	return func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
 			Keychain:     keychain,
 			ClusterStore: clusterStore,

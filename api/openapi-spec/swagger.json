@@ -5,852 +5,6 @@
     "version": "v0.0.1"
   },
   "paths": {
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstacks": {
-      "get": {
-        "description": "list or watch cluster scoped clusterstacks",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/json;stream=watch"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "listAllClusterstacks",
-        "parameters": [
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
-            "name": "continue",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
-            "name": "fieldSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
-            "name": "labelSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
-            "name": "resourceVersion",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
-            "name": "timeoutSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
-            "name": "watch",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStackList"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a cluster scoped Stack",
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "createStack",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to create.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "uniqueItems": true,
-          "type": "string",
-          "description": "If 'true', then the output is pretty printed.",
-          "name": "pretty",
-          "in": "query"
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstacks/{name}": {
-      "get": {
-        "description": "Returns a cluster scoped Stack",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getStack",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace the specified cluster scoped Stack",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceStack",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to replace.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "delete": {
-        "description": "Deletes the specified cluster scoped Stack",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "deleteStack",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
-            }
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
-            "name": "gracePeriodSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
-            "name": "orphanDependents",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
-            "name": "propagationPolicy",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "patch the specified cluster scoped Stack",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchStack",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to patch.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstacks/{name}/status": {
-      "get": {
-        "description": "read status of the specified cluster scoped Stack",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getStackStatus",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace status of the specified cluster scoped Stack",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceStackStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "partially update status of the specified cluster scoped Stack",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchClusterCustomObjectStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "description": "The JSON schema of the Resource to patch.",
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.Stack"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstores": {
-      "get": {
-        "description": "list or watch cluster scoped clusterstores",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/json;stream=watch"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "listAllClusterstores",
-        "parameters": [
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
-            "name": "continue",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
-            "name": "fieldSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
-            "name": "labelSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
-            "name": "resourceVersion",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
-            "name": "timeoutSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
-            "name": "watch",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStoreList"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a cluster scoped ClusterStore",
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "createClusterStore",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to create.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "uniqueItems": true,
-          "type": "string",
-          "description": "If 'true', then the output is pretty printed.",
-          "name": "pretty",
-          "in": "query"
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstores/{name}": {
-      "get": {
-        "description": "Returns a cluster scoped ClusterStore",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getClusterStore",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace the specified cluster scoped ClusterStore",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceClusterStore",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to replace.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "delete": {
-        "description": "Deletes the specified cluster scoped ClusterStore",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "deleteClusterStore",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
-            }
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
-            "name": "gracePeriodSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
-            "name": "orphanDependents",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
-            "name": "propagationPolicy",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "patch the specified cluster scoped ClusterStore",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchClusterStore",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to patch.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/clusterstores/{name}/status": {
-      "get": {
-        "description": "read status of the specified cluster scoped ClusterStore",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getClusterStoreStatus",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace status of the specified cluster scoped ClusterStore",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceClusterStoreStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "partially update status of the specified cluster scoped ClusterStore",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchClusterCustomObjectStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "description": "The JSON schema of the Resource to patch.",
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.ClusterStore"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
     "/apis/experimental.kpack.pivotal.io/v1alpha1/custombuilders": {
       "get": {
         "description": "list or watch custombuilders",
@@ -923,7 +77,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilderList"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilderList"
             }
           },
           "401": {
@@ -938,429 +92,6 @@
           "description": "If 'true', then the output is pretty printed.",
           "name": "pretty",
           "in": "query"
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders": {
-      "get": {
-        "description": "list or watch cluster scoped customclusterbuilders",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/json;stream=watch"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "listAllCustomclusterbuilders",
-        "parameters": [
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
-            "name": "continue",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
-            "name": "fieldSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
-            "name": "labelSelector",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
-            "name": "resourceVersion",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
-            "name": "timeoutSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
-            "name": "watch",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilderList"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a cluster scoped CustomClusterBuilder",
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "createCustomClusterBuilder",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to create.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "uniqueItems": true,
-          "type": "string",
-          "description": "If 'true', then the output is pretty printed.",
-          "name": "pretty",
-          "in": "query"
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders/{name}": {
-      "get": {
-        "description": "Returns a cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getCustomClusterBuilder",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceCustomClusterBuilder",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to replace.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "delete": {
-        "description": "Deletes the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "deleteCustomClusterBuilder",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
-            }
-          },
-          {
-            "uniqueItems": true,
-            "type": "integer",
-            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
-            "name": "gracePeriodSeconds",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "boolean",
-            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
-            "name": "orphanDependents",
-            "in": "query"
-          },
-          {
-            "uniqueItems": true,
-            "type": "string",
-            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
-            "name": "propagationPolicy",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "patch the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchCustomClusterBuilder",
-        "parameters": [
-          {
-            "description": "The JSON schema of the Resource to patch.",
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/apis/experimental.kpack.pivotal.io/v1alpha1/customclusterbuilders/{name}/status": {
-      "get": {
-        "description": "read status of the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "getCustomClusterBuilderStatus",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "put": {
-        "description": "replace status of the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "*/*"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "replaceCustomClusterBuilderStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "patch": {
-        "description": "partially update status of the specified cluster scoped CustomClusterBuilder",
-        "consumes": [
-          "application/json-patch+json",
-          "application/merge-patch+json"
-        ],
-        "produces": [
-          "application/json",
-          "application/yaml",
-          "application/vnd.kubernetes.protobuf"
-        ],
-        "schemes": [
-          "https"
-        ],
-        "tags": [
-          "kpack"
-        ],
-        "operationId": "patchClusterCustomObjectStatus",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "description": "The JSON schema of the Resource to patch.",
-              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "description": "the custom object's name",
-          "name": "name",
-          "in": "path",
-          "required": true
         }
       ]
     },
@@ -1436,7 +167,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilderList"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilderList"
             }
           },
           "401": {
@@ -1463,7 +194,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           }
         ],
@@ -1471,7 +202,7 @@
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1516,7 +247,7 @@
           "200": {
             "description": "A single Resource",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1546,7 +277,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           }
         ],
@@ -1554,7 +285,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1650,7 +381,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1697,7 +428,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1728,7 +459,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           }
         ],
@@ -1736,13 +467,13 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -1783,7 +514,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/kpack.experimental.v1alpha1.CustomBuilder"
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomBuilder"
             }
           },
           "401": {
@@ -2394,6 +1125,1275 @@
             "description": "OK",
             "schema": {
               "$ref": "#/definitions/kpack.build.v1alpha1.ClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstacks": {
+      "get": {
+        "description": "list or watch cluster scoped clusterstacks",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/json;stream=watch"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "listAllClusterstacks",
+        "parameters": [
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
+            "name": "continue",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
+            "name": "fieldSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
+            "name": "labelSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
+            "name": "resourceVersion",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
+            "name": "timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
+            "name": "watch",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackList"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a cluster scoped Stack",
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "createStack",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to create.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "uniqueItems": true,
+          "type": "string",
+          "description": "If 'true', then the output is pretty printed.",
+          "name": "pretty",
+          "in": "query"
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstacks/{name}": {
+      "get": {
+        "description": "Returns a cluster scoped Stack",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getStack",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace the specified cluster scoped Stack",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceStack",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to replace.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the specified cluster scoped Stack",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "deleteStack",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
+            }
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
+            "name": "gracePeriodSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
+            "name": "orphanDependents",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
+            "name": "propagationPolicy",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "patch the specified cluster scoped Stack",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchStack",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to patch.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstacks/{name}/status": {
+      "get": {
+        "description": "read status of the specified cluster scoped Stack",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getStackStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace status of the specified cluster scoped Stack",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceStackStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "partially update status of the specified cluster scoped Stack",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchClusterCustomObjectStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "description": "The JSON schema of the Resource to patch.",
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.Stack"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstores": {
+      "get": {
+        "description": "list or watch cluster scoped clusterstores",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/json;stream=watch"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "listAllClusterstores",
+        "parameters": [
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
+            "name": "continue",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
+            "name": "fieldSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
+            "name": "labelSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
+            "name": "resourceVersion",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
+            "name": "timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
+            "name": "watch",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStoreList"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a cluster scoped ClusterStore",
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "createClusterStore",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to create.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "uniqueItems": true,
+          "type": "string",
+          "description": "If 'true', then the output is pretty printed.",
+          "name": "pretty",
+          "in": "query"
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstores/{name}": {
+      "get": {
+        "description": "Returns a cluster scoped ClusterStore",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getClusterStore",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace the specified cluster scoped ClusterStore",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceClusterStore",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to replace.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the specified cluster scoped ClusterStore",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "deleteClusterStore",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
+            }
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
+            "name": "gracePeriodSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
+            "name": "orphanDependents",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
+            "name": "propagationPolicy",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "patch the specified cluster scoped ClusterStore",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchClusterStore",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to patch.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/clusterstores/{name}/status": {
+      "get": {
+        "description": "read status of the specified cluster scoped ClusterStore",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getClusterStoreStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace status of the specified cluster scoped ClusterStore",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceClusterStoreStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "partially update status of the specified cluster scoped ClusterStore",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchClusterCustomObjectStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "description": "The JSON schema of the Resource to patch.",
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/customclusterbuilders": {
+      "get": {
+        "description": "list or watch cluster scoped customclusterbuilders",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/json;stream=watch"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "listAllCustomclusterbuilders",
+        "parameters": [
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
+            "name": "continue",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields. Defaults to everything.",
+            "name": "fieldSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels. Defaults to everything.",
+            "name": "labelSelector",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the server will set the 'continue' field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv.",
+            "name": "resourceVersion",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.",
+            "name": "timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of add, update, and remove notifications.",
+            "name": "watch",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilderList"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a cluster scoped CustomClusterBuilder",
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "createCustomClusterBuilder",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to create.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "uniqueItems": true,
+          "type": "string",
+          "description": "If 'true', then the output is pretty printed.",
+          "name": "pretty",
+          "in": "query"
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/customclusterbuilders/{name}": {
+      "get": {
+        "description": "Returns a cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getCustomClusterBuilder",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceCustomClusterBuilder",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to replace.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "deleteCustomClusterBuilder",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions"
+            }
+          },
+          {
+            "uniqueItems": true,
+            "type": "integer",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.",
+            "name": "gracePeriodSeconds",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "boolean",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.",
+            "name": "orphanDependents",
+            "in": "query"
+          },
+          {
+            "uniqueItems": true,
+            "type": "string",
+            "description": "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy.",
+            "name": "propagationPolicy",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Status"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "patch the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchCustomClusterBuilder",
+        "parameters": [
+          {
+            "description": "The JSON schema of the Resource to patch.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the custom object's name",
+          "name": "name",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/apis/kpack.io/v1alpha1/customclusterbuilders/{name}/status": {
+      "get": {
+        "description": "read status of the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "getCustomClusterBuilderStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "description": "replace status of the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "*/*"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "replaceCustomClusterBuilderStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "description": "partially update status of the specified cluster scoped CustomClusterBuilder",
+        "consumes": [
+          "application/json-patch+json",
+          "application/merge-patch+json"
+        ],
+        "produces": [
+          "application/json",
+          "application/yaml",
+          "application/vnd.kubernetes.protobuf"
+        ],
+        "schemes": [
+          "https"
+        ],
+        "tags": [
+          "kpack"
+        ],
+        "operationId": "patchClusterCustomObjectStatus",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "description": "The JSON schema of the Resource to patch.",
+              "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/kpack.build.v1alpha1.CustomClusterBuilder"
             }
           },
           "401": {

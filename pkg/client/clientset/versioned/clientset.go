@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	kpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/experimental/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -31,25 +30,18 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface
-	ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	kpackV1alpha1        *kpackv1alpha1.KpackV1alpha1Client
-	experimentalV1alpha1 *experimentalv1alpha1.ExperimentalV1alpha1Client
+	kpackV1alpha1 *kpackv1alpha1.KpackV1alpha1Client
 }
 
 // KpackV1alpha1 retrieves the KpackV1alpha1Client
 func (c *Clientset) KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface {
 	return c.kpackV1alpha1
-}
-
-// ExperimentalV1alpha1 retrieves the ExperimentalV1alpha1Client
-func (c *Clientset) ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface {
-	return c.experimentalV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -77,10 +69,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.experimentalV1alpha1, err = experimentalv1alpha1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -94,7 +82,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.kpackV1alpha1 = kpackv1alpha1.NewForConfigOrDie(c)
-	cs.experimentalV1alpha1 = experimentalv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -104,7 +91,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.kpackV1alpha1 = kpackv1alpha1.New(c)
-	cs.experimentalV1alpha1 = experimentalv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

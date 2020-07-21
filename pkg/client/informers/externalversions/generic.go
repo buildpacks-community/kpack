@@ -21,8 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -53,26 +52,24 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=experimental.kpack.pivotal.io, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("clusterstacks"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().ClusterStacks().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("clusterstores"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().ClusterStores().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("custombuilders"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().CustomBuilders().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("customclusterbuilders"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Experimental().V1alpha1().CustomClusterBuilders().Informer()}, nil
-
-		// Group=kpack.io, Version=v1alpha1
-	case buildv1alpha1.SchemeGroupVersion.WithResource("builds"):
+	// Group=kpack.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("builds"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Builds().Informer()}, nil
-	case buildv1alpha1.SchemeGroupVersion.WithResource("builders"):
+	case v1alpha1.SchemeGroupVersion.WithResource("builders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Builders().Informer()}, nil
-	case buildv1alpha1.SchemeGroupVersion.WithResource("clusterbuilders"):
+	case v1alpha1.SchemeGroupVersion.WithResource("clusterbuilders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterBuilders().Informer()}, nil
-	case buildv1alpha1.SchemeGroupVersion.WithResource("images"):
+	case v1alpha1.SchemeGroupVersion.WithResource("clusterstacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterStacks().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("clusterstores"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterStores().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("custombuilders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().CustomBuilders().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("customclusterbuilders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().CustomClusterBuilders().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("images"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Images().Informer()}, nil
-	case buildv1alpha1.SchemeGroupVersion.WithResource("sourceresolvers"):
+	case v1alpha1.SchemeGroupVersion.WithResource("sourceresolvers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().SourceResolvers().Informer()}, nil
 
 	}

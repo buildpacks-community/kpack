@@ -10,13 +10,9 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
-const (
-	defaultServiceAccount = "default"
-)
-
 func (cb *CustomBuilder) SetDefaults(context.Context) {
 	if cb.Spec.ServiceAccount == "" {
-		cb.Spec.ServiceAccount = defaultServiceAccount
+		cb.Spec.ServiceAccount = "default"
 	}
 	if cb.Spec.Stack.Kind == "" {
 		cb.Spec.Stack.Kind = ClusterStackKind

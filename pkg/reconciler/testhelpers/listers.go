@@ -9,10 +9,8 @@ import (
 	"knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
-	expv1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 )
 
@@ -69,20 +67,20 @@ func (l *Listers) GetClusterBuilderLister() v1alpha1Listers.ClusterBuilderLister
 	return v1alpha1Listers.NewClusterBuilderLister(l.indexerFor(&v1alpha1.ClusterBuilder{}))
 }
 
-func (l *Listers) GetCustomBuilderLister() expv1alpha1Listers.CustomBuilderLister {
-	return expv1alpha1Listers.NewCustomBuilderLister(l.indexerFor(&expv1alpha1.CustomBuilder{}))
+func (l *Listers) GetCustomBuilderLister() v1alpha1Listers.CustomBuilderLister {
+	return v1alpha1Listers.NewCustomBuilderLister(l.indexerFor(&v1alpha1.CustomBuilder{}))
 }
 
-func (l *Listers) GetCustomClusterBuilderLister() expv1alpha1Listers.CustomClusterBuilderLister {
-	return expv1alpha1Listers.NewCustomClusterBuilderLister(l.indexerFor(&expv1alpha1.CustomClusterBuilder{}))
+func (l *Listers) GetCustomClusterBuilderLister() v1alpha1Listers.CustomClusterBuilderLister {
+	return v1alpha1Listers.NewCustomClusterBuilderLister(l.indexerFor(&v1alpha1.CustomClusterBuilder{}))
 }
 
-func (l *Listers) GetClusterStoreLister() expv1alpha1Listers.ClusterStoreLister {
-	return expv1alpha1Listers.NewClusterStoreLister(l.indexerFor(&expv1alpha1.ClusterStore{}))
+func (l *Listers) GetClusterStoreLister() v1alpha1Listers.ClusterStoreLister {
+	return v1alpha1Listers.NewClusterStoreLister(l.indexerFor(&v1alpha1.ClusterStore{}))
 }
 
-func (l *Listers) GetClusterStackLister() expv1alpha1Listers.ClusterStackLister {
-	return expv1alpha1Listers.NewClusterStackLister(l.indexerFor(&expv1alpha1.ClusterStack{}))
+func (l *Listers) GetClusterStackLister() v1alpha1Listers.ClusterStackLister {
+	return v1alpha1Listers.NewClusterStackLister(l.indexerFor(&v1alpha1.ClusterStack{}))
 }
 
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {

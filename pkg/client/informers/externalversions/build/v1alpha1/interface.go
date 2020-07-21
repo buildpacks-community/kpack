@@ -30,6 +30,14 @@ type Interface interface {
 	Builders() BuilderInformer
 	// ClusterBuilders returns a ClusterBuilderInformer.
 	ClusterBuilders() ClusterBuilderInformer
+	// ClusterStacks returns a ClusterStackInformer.
+	ClusterStacks() ClusterStackInformer
+	// ClusterStores returns a ClusterStoreInformer.
+	ClusterStores() ClusterStoreInformer
+	// CustomBuilders returns a CustomBuilderInformer.
+	CustomBuilders() CustomBuilderInformer
+	// CustomClusterBuilders returns a CustomClusterBuilderInformer.
+	CustomClusterBuilders() CustomClusterBuilderInformer
 	// Images returns a ImageInformer.
 	Images() ImageInformer
 	// SourceResolvers returns a SourceResolverInformer.
@@ -60,6 +68,26 @@ func (v *version) Builders() BuilderInformer {
 // ClusterBuilders returns a ClusterBuilderInformer.
 func (v *version) ClusterBuilders() ClusterBuilderInformer {
 	return &clusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterStacks returns a ClusterStackInformer.
+func (v *version) ClusterStacks() ClusterStackInformer {
+	return &clusterStackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterStores returns a ClusterStoreInformer.
+func (v *version) ClusterStores() ClusterStoreInformer {
+	return &clusterStoreInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// CustomBuilders returns a CustomBuilderInformer.
+func (v *version) CustomBuilders() CustomBuilderInformer {
+	return &customBuilderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CustomClusterBuilders returns a CustomClusterBuilderInformer.
+func (v *version) CustomClusterBuilders() CustomClusterBuilderInformer {
+	return &customClusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Images returns a ImageInformer.

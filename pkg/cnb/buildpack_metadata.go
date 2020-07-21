@@ -1,8 +1,7 @@
 package cnb
 
 import (
-	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 const (
@@ -13,11 +12,11 @@ const (
 )
 
 type BuildpackLayerInfo struct {
-	API         string                       `json:"api"`
-	LayerDiffID string                       `json:"layerDiffID"`
-	Order       expv1alpha1.Order            `json:"order,omitempty"`
-	Stacks      []expv1alpha1.BuildpackStack `json:"stacks,omitempty"`
-	Homepage    string                       `json:"homepage,omitempty"`
+	API         string                    `json:"api"`
+	LayerDiffID string                    `json:"layerDiffID"`
+	Order       v1alpha1.Order            `json:"order,omitempty"`
+	Stacks      []v1alpha1.BuildpackStack `json:"stacks,omitempty"`
+	Homepage    string                    `json:"homepage,omitempty"`
 }
 
 type DescriptiveBuildpackInfo struct {

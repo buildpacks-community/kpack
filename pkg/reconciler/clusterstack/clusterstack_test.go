@@ -14,8 +14,8 @@ import (
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack/clusterstackfakes"
@@ -35,17 +35,17 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	fakeClusterStackReader := &clusterstackfakes.FakeClusterStackReader{}
 
-	testClusterStack := &expv1alpha1.ClusterStack{
+	testClusterStack := &v1alpha1.ClusterStack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       clusterStackName,
 			Generation: initialGeneration,
 		},
-		Spec: expv1alpha1.ClusterStackSpec{
+		Spec: v1alpha1.ClusterStackSpec{
 			Id: "some.clusterStack.id",
-			BuildImage: expv1alpha1.ClusterStackSpecImage{
+			BuildImage: v1alpha1.ClusterStackSpecImage{
 				Image: "some-registry.io/build-image",
 			},
-			RunImage: expv1alpha1.ClusterStackSpecImage{
+			RunImage: v1alpha1.ClusterStackSpecImage{
 				Image: "some-registry.io/run-image",
 			},
 		},
@@ -65,11 +65,11 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		it("saves metadata to the status", func() {
-			resolvedClusterStack := expv1alpha1.ResolvedClusterStack{
-				BuildImage: expv1alpha1.ClusterStackStatusImage{
+			resolvedClusterStack := v1alpha1.ResolvedClusterStack{
+				BuildImage: v1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/build-image@sha245:123",
 				},
-				RunImage: expv1alpha1.ClusterStackStatusImage{
+				RunImage: v1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/run-image@sha245:123",
 				},
 				Mixins:  []string{"a-nice-mixin"},
@@ -86,10 +86,10 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.ClusterStack{
+						Object: &v1alpha1.ClusterStack{
 							ObjectMeta: testClusterStack.ObjectMeta,
 							Spec:       testClusterStack.Spec,
-							Status: expv1alpha1.ClusterStackStatus{
+							Status: v1alpha1.ClusterStackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -111,11 +111,11 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update the status with no status change", func() {
-			resolvedClusterStack := expv1alpha1.ResolvedClusterStack{
-				BuildImage: expv1alpha1.ClusterStackStatusImage{
+			resolvedClusterStack := v1alpha1.ResolvedClusterStack{
+				BuildImage: v1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/build-image@sha245:123",
 				},
-				RunImage: expv1alpha1.ClusterStackStatusImage{
+				RunImage: v1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/run-image@sha245:123",
 				},
 				Mixins:  []string{"a-nice-mixin"},
@@ -124,7 +124,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
 
-			testClusterStack.Status = expv1alpha1.ClusterStackStatus{
+			testClusterStack.Status = v1alpha1.ClusterStackStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -146,7 +146,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets the status to Ready False if error reading from clusterStack", func() {
-			fakeClusterStackReader.ReadReturns(expv1alpha1.ResolvedClusterStack{}, errors.New("invalid mixins on run image"))
+			fakeClusterStackReader.ReadReturns(v1alpha1.ResolvedClusterStack{}, errors.New("invalid mixins on run image"))
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -156,10 +156,10 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.ClusterStack{
+						Object: &v1alpha1.ClusterStack{
 							ObjectMeta: testClusterStack.ObjectMeta,
 							Spec:       testClusterStack.Spec,
-							Status: expv1alpha1.ClusterStackStatus{
+							Status: v1alpha1.ClusterStackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

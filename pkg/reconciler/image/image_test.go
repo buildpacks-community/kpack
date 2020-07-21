@@ -23,7 +23,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -177,12 +176,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customBuilder := &expv1alpha1.CustomBuilder{
+	customBuilder := &v1alpha1.CustomBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      customBuilderName,
 			Namespace: namespace,
 		},
-		Status: expv1alpha1.CustomBuilderStatus{
+		Status: v1alpha1.CustomBuilderStatus{
 			BuilderStatus: v1alpha1.BuilderStatus{
 				LatestImage: "some/custombuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
@@ -208,11 +207,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customClusterBuilder := &expv1alpha1.CustomClusterBuilder{
+	customClusterBuilder := &v1alpha1.CustomClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: customClusterBuilderName,
 		},
-		Status: expv1alpha1.CustomBuilderStatus{
+		Status: v1alpha1.CustomBuilderStatus{
 			BuilderStatus: v1alpha1.BuilderStatus{
 				LatestImage: "some/customclusterbuilder@sha256:acf123",
 				BuilderMetadata: v1alpha1.BuildpackMetadataList{
@@ -862,7 +861,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a custom builder", func() {
 				image.Spec.Builder = corev1.ObjectReference{
-					Kind: expv1alpha1.CustomBuilderKind,
+					Kind: v1alpha1.CustomBuilderKind,
 					Name: customBuilderName,
 				}
 
@@ -932,7 +931,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a custom cluster builder", func() {
 				image.Spec.Builder = corev1.ObjectReference{
-					Kind: expv1alpha1.CustomClusterBuilderKind,
+					Kind: v1alpha1.CustomClusterBuilderKind,
 					Name: customClusterBuilderName,
 				}
 
