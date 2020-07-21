@@ -35,7 +35,7 @@ type FakeClusterStacks struct {
 
 var clusterstacksResource = schema.GroupVersionResource{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Resource: "clusterstacks"}
 
-var clusterstacksKind = schema.GroupVersionKind{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Kind: "Stack"}
+var clusterstacksKind = schema.GroupVersionKind{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Kind: "ClusterStack"}
 
 // Get takes name of the clusterStack, and returns the corresponding clusterStack object, and an error if there is any.
 func (c *FakeClusterStacks) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterStack, err error) {

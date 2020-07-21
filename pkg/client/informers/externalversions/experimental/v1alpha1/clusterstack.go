@@ -43,14 +43,14 @@ type clusterStackInformer struct {
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
-// NewClusterStackInformer constructs a new informer for Stack type.
+// NewClusterStackInformer constructs a new informer for ClusterStack type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewClusterStackInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredClusterStackInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredClusterStackInformer constructs a new informer for Stack type.
+// NewFilteredClusterStackInformer constructs a new informer for ClusterStack type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredClusterStackInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {

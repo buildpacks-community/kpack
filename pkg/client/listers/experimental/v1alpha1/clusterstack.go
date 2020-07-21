@@ -29,7 +29,7 @@ import (
 type ClusterStackLister interface {
 	// List lists all ClusterStacks in the indexer.
 	List(selector labels.Selector) (ret []*v1alpha1.ClusterStack, err error)
-	// Get retrieves the Stack from the index for a given name.
+	// Get retrieves the ClusterStack from the index for a given name.
 	Get(name string) (*v1alpha1.ClusterStack, error)
 	ClusterStackListerExpansion
 }
@@ -52,7 +52,7 @@ func (s *clusterStackLister) List(selector labels.Selector) (ret []*v1alpha1.Clu
 	return ret, err
 }
 
-// Get retrieves the Stack from the index for a given name.
+// Get retrieves the ClusterStack from the index for a given name.
 func (s *clusterStackLister) Get(name string) (*v1alpha1.ClusterStack, error) {
 	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {

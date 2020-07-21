@@ -35,7 +35,7 @@ type ClusterStacksGetter interface {
 	ClusterStacks() ClusterStackInterface
 }
 
-// ClusterStackInterface has methods to work with Stack resources.
+// ClusterStackInterface has methods to work with ClusterStack resources.
 type ClusterStackInterface interface {
 	Create(*v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error)
 	Update(*v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error)
