@@ -79,8 +79,9 @@ func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha1.Buildpack
 	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		m = append(m, v1alpha1.BuildpackMetadata{
-			Id:      b.Id,
-			Version: b.Version,
+			Id:       b.Id,
+			Version:  b.Version,
+			Homepage: b.Homepage,
 		})
 	}
 	return m
