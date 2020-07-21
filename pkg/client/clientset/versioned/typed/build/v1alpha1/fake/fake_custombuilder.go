@@ -19,7 +19,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,13 +30,13 @@ import (
 
 // FakeCustomBuilders implements CustomBuilderInterface
 type FakeCustomBuilders struct {
-	Fake *FakeExperimentalV1alpha1
+	Fake *FakeKpackV1alpha1
 	ns   string
 }
 
-var custombuildersResource = schema.GroupVersionResource{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Resource: "custombuilders"}
+var custombuildersResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "custombuilders"}
 
-var custombuildersKind = schema.GroupVersionKind{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Kind: "CustomBuilder"}
+var custombuildersKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "CustomBuilder"}
 
 // Get takes name of the customBuilder, and returns the corresponding customBuilder object, and an error if there is any.
 func (c *FakeCustomBuilders) Get(name string, options v1.GetOptions) (result *v1alpha1.CustomBuilder, err error) {

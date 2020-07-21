@@ -10,11 +10,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental/v1alpha1"
-	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/experimental/v1alpha1"
+	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	v1alpha1expListers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -25,7 +25,7 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(storeImages []expv1alpha1.StoreImage) ([]expv1alpha1.StoreBuildpack, error)
+	Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 }
 
 func NewController(opt reconciler.Options, clusterStoreInformer v1alpha1expInformers.ClusterStoreInformer, storeReader StoreReader) *controller.Impl {
@@ -73,7 +73,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) updateClusterStoreStatus(desired *expv1alpha1.ClusterStore) error {
+func (c *Reconciler) updateClusterStoreStatus(desired *v1alpha1.ClusterStore) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.ClusterStoreLister.Get(desired.Name)
@@ -85,14 +85,14 @@ func (c *Reconciler) updateClusterStoreStatus(desired *expv1alpha1.ClusterStore)
 		return nil
 	}
 
-	_, err = c.Client.ExperimentalV1alpha1().ClusterStores().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterStores().UpdateStatus(desired)
 	return err
 }
 
-func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *expv1alpha1.ClusterStore) (*expv1alpha1.ClusterStore, error) {
+func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterStore) (*v1alpha1.ClusterStore, error) {
 	buildpacks, err := c.StoreReader.Read(clusterStore.Spec.Sources)
 	if err != nil {
-		clusterStore.Status = expv1alpha1.ClusterStoreStatus{
+		clusterStore.Status = v1alpha1.ClusterStoreStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: clusterStore.Generation,
 				Conditions: corev1alpha1.Conditions{
@@ -108,7 +108,7 @@ func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *expv1alpha1.Clust
 		return clusterStore, err
 	}
 
-	clusterStore.Status = expv1alpha1.ClusterStoreStatus{
+	clusterStore.Status = v1alpha1.ClusterStoreStatus{
 		Buildpacks: buildpacks,
 		Status: corev1alpha1.Status{
 			ObservedGeneration: clusterStore.Generation,

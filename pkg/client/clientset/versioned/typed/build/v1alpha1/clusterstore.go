@@ -21,7 +21,7 @@ package v1alpha1
 import (
 	"time"
 
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	scheme "github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -55,7 +55,7 @@ type clusterStores struct {
 }
 
 // newClusterStores returns a ClusterStores
-func newClusterStores(c *ExperimentalV1alpha1Client) *clusterStores {
+func newClusterStores(c *KpackV1alpha1Client) *clusterStores {
 	return &clusterStores{
 		client: c.RESTClient(),
 	}

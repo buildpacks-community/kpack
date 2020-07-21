@@ -9,7 +9,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )

@@ -17,7 +17,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/custombuilder"
@@ -44,7 +43,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		fakeTracker     = testhelpers.FakeTracker{}
-		fakeRepoFactory = func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+		fakeRepoFactory = func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
 			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
 		}
 	)
@@ -66,19 +65,19 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	clusterStore := &expv1alpha1.ClusterStore{
+	clusterStore := &v1alpha1.ClusterStore{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-store",
 		},
-		Spec:   expv1alpha1.ClusterStoreSpec{},
-		Status: expv1alpha1.ClusterStoreStatus{},
+		Spec:   v1alpha1.ClusterStoreSpec{},
+		Status: v1alpha1.ClusterStoreStatus{},
 	}
 
-	clusterStack := &expv1alpha1.ClusterStack{
+	clusterStack := &v1alpha1.ClusterStack{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-stack",
 		},
-		Status: expv1alpha1.ClusterStackStatus{
+		Status: v1alpha1.ClusterStackStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -91,14 +90,14 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customBuilder := &expv1alpha1.CustomBuilder{
+	customBuilder := &v1alpha1.CustomBuilder{
 		ObjectMeta: v1.ObjectMeta{
 			Name:       customBuilderName,
 			Generation: initialGeneration,
 			Namespace:  testNamespace,
 		},
-		Spec: expv1alpha1.CustomNamespacedBuilderSpec{
-			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+		Spec: v1alpha1.CustomNamespacedBuilderSpec{
+			CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
 				Tag: customBuilderTag,
 				Stack: corev1.ObjectReference{
 					Kind: "Stack",
@@ -108,18 +107,18 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					Kind: "ClusterStore",
 					Name: "some-store",
 				},
-				Order: []expv1alpha1.OrderEntry{
+				Order: []v1alpha1.OrderEntry{
 					{
-						Group: []expv1alpha1.BuildpackRef{
+						Group: []v1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "buildpack.id.1",
 									Version: "1.0.0",
 								},
 								Optional: false,
 							},
 							{
-								BuildpackInfo: expv1alpha1.BuildpackInfo{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
 									Id:      "buildpack.id.2",
 									Version: "2.0.0",
 								},
@@ -162,10 +161,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			expectedBuilder := &expv1alpha1.CustomBuilder{
+			expectedBuilder := &v1alpha1.CustomBuilder{
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
-				Status: expv1alpha1.CustomBuilderStatus{
+				Status: v1alpha1.CustomBuilderStatus{
 					BuilderStatus: v1alpha1.BuilderStatus{
 						Status: corev1alpha1.Status{
 							ObservedGeneration: 1,
@@ -227,10 +226,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Buildpacks: v1alpha1.BuildpackMetadataList{},
 			}
 
-			expectedBuilder := &expv1alpha1.CustomBuilder{
+			expectedBuilder := &v1alpha1.CustomBuilder{
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
-				Status: expv1alpha1.CustomBuilderStatus{
+				Status: v1alpha1.CustomBuilderStatus{
 					BuilderStatus: v1alpha1.BuilderStatus{
 						Status: corev1alpha1.Status{
 							ObservedGeneration: 1,
@@ -327,10 +326,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.CustomBuilder{
+						Object: &v1alpha1.CustomBuilder{
 							ObjectMeta: customBuilder.ObjectMeta,
 							Spec:       customBuilder.Spec,
-							Status: expv1alpha1.CustomBuilderStatus{
+							Status: v1alpha1.CustomBuilderStatus{
 								BuilderStatus: v1alpha1.BuilderStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: 1,
@@ -352,11 +351,11 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("updates status and doesn't build builder when stack not ready", func() {
-			notReadyClusterStack := &expv1alpha1.ClusterStack{
+			notReadyClusterStack := &v1alpha1.ClusterStack{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "some-stack",
 				},
-				Status: expv1alpha1.ClusterStackStatus{
+				Status: v1alpha1.ClusterStackStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 0,
 						Conditions: []corev1alpha1.Condition{
@@ -378,10 +377,10 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.CustomBuilder{
+						Object: &v1alpha1.CustomBuilder{
 							ObjectMeta: customBuilder.ObjectMeta,
 							Spec:       customBuilder.Spec,
-							Status: expv1alpha1.CustomBuilderStatus{
+							Status: v1alpha1.CustomBuilderStatus{
 								BuilderStatus: v1alpha1.BuilderStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: 1,

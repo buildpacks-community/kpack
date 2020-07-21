@@ -13,7 +13,7 @@ import (
 
 func (b *Build) SetDefaults(ctx context.Context) {
 	if b.Spec.ServiceAccount == "" {
-		b.Spec.ServiceAccount = defaultServiceAccount
+		b.Spec.ServiceAccount = "default"
 	}
 }
 

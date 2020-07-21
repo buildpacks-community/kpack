@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: custombuilders.experimental.kpack.pivotal.io
+  name: custombuilders.kpack.io
 spec:
-  group: experimental.kpack.pivotal.io
+  group: kpack.io
   version: v1alpha1
   names:
     kind: CustomBuilder

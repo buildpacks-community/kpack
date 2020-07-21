@@ -21,7 +21,7 @@ package v1alpha1
 import (
 	"time"
 
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	scheme "github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -56,7 +56,7 @@ type customBuilders struct {
 }
 
 // newCustomBuilders returns a CustomBuilders
-func newCustomBuilders(c *ExperimentalV1alpha1Client, namespace string) *customBuilders {
+func newCustomBuilders(c *KpackV1alpha1Client, namespace string) *customBuilders {
 	return &customBuilders{
 		client: c.RESTClient(),
 		ns:     namespace,

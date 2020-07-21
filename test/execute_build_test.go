@@ -29,7 +29,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -66,12 +65,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients(t)
 		require.NoError(t, err)
 
-		err = clients.client.ExperimentalV1alpha1().ClusterStores().Delete(clusterStoreName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterStores().Delete(clusterStoreName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.ExperimentalV1alpha1().ClusterStacks().Delete(clusterStackName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterStacks().Delete(clusterStackName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -81,7 +80,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -139,12 +138,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().ClusterStores().Create(&expv1alpha1.ClusterStore{
+		_, err = clients.client.KpackV1alpha1().ClusterStores().Create(&v1alpha1.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStoreName,
 			},
-			Spec: expv1alpha1.ClusterStoreSpec{
-				Sources: []expv1alpha1.StoreImage{
+			Spec: v1alpha1.ClusterStoreSpec{
+				Sources: []v1alpha1.StoreImage{
 					{
 						Image: builderImage,
 					},
@@ -156,16 +155,16 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().ClusterStacks().Create(&expv1alpha1.ClusterStack{
+		_, err = clients.client.KpackV1alpha1().ClusterStacks().Create(&v1alpha1.ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStackName,
 			},
-			Spec: expv1alpha1.ClusterStackSpec{
+			Spec: v1alpha1.ClusterStackSpec{
 				Id: "io.buildpacks.stacks.bionic",
-				BuildImage: expv1alpha1.ClusterStackSpecImage{
+				BuildImage: v1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
 				},
-				RunImage: expv1alpha1.ClusterStackSpecImage{
+				RunImage: v1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
 				},
 			},
@@ -182,13 +181,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customBuilder, err := clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&expv1alpha1.CustomBuilder{
+		customBuilder, err := clients.client.KpackV1alpha1().CustomBuilders(testNamespace).Create(&v1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
 				Namespace: testNamespace,
 			},
-			Spec: expv1alpha1.CustomNamespacedBuilderSpec{
-				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.CustomNamespacedBuilderSpec{
+				CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -198,31 +197,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []expv1alpha1.OrderEntry{
+					Order: []v1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -235,12 +234,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customClusterBuilder, err := clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Create(&expv1alpha1.CustomClusterBuilder{
+		customClusterBuilder, err := clients.client.KpackV1alpha1().CustomClusterBuilders().Create(&v1alpha1.CustomClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: customClusterBuilderName,
 			},
-			Spec: expv1alpha1.CustomClusterBuilderSpec{
-				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.CustomClusterBuilderSpec{
+				CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -250,31 +249,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []expv1alpha1.OrderEntry{
+					Order: []v1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -336,7 +335,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		builderConfigs := map[string]corev1.ObjectReference{
 			"custom-builder": {
-				Kind: expv1alpha1.CustomBuilderKind,
+				Kind: v1alpha1.CustomBuilderKind,
 				Name: customBuilderName,
 			},
 			"builder": {
@@ -348,7 +347,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterBuilderName,
 			},
 			"custom-cluster-builder": {
-				Kind: expv1alpha1.CustomClusterBuilderKind,
+				Kind: v1alpha1.CustomClusterBuilderKind,
 				Name: customClusterBuilderName,
 			},
 		}
