@@ -64,4 +64,26 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
+
+	when("#readOpaqueSecret", func() {
+		it("returns the values from the secret", func() {
+			testDir, err := ioutil.TempDir("", "secret-volume")
+			require.NoError(t, err)
+
+			defer func() {
+				require.NoError(t, os.RemoveAll(testDir))
+			}()
+			require.NoError(t, os.MkdirAll(path.Join(testDir, "creds"), 0777))
+
+			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", "key1"), []byte("key1-value"), 0600))
+			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", "key2"), []byte("key2-value"), 0600))
+
+			auth, err := secret.ReadOpaqueSecret(testDir, "creds", []string{"key1", "key2"})
+			require.NoError(t, err)
+
+			assert.Equal(t, auth, secret.OpaqueSecret{
+				StringData: map[string]string{"key1": "key1-value", "key2": "key2-value"},
+			})
+		})
+	})
 }

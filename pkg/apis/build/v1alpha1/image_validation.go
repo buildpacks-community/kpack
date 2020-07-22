@@ -154,8 +154,7 @@ func (s *S3) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 	return validate.FieldNotEmpty(s.URL, "url").
-		Also(validate.FieldNotEmpty(s.AccessKey, "accesskey")).
-		Also(validate.FieldNotEmpty(s.SecretKey, "secretkey")).
 		Also(validate.FieldNotEmpty(s.Bucket, "bucket")).
-		Also(validate.FieldNotEmpty(s.File, "file"))
+		Also(validate.FieldNotEmpty(s.File, "file")).
+		Also(validate.FieldNotEmpty(s.Credentials, "credentials"))
 }

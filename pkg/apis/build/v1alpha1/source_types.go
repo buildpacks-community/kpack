@@ -126,12 +126,11 @@ func (r *Registry) BuildEnvVars() []corev1.EnvVar {
 // +k8s:openapi-gen=true
 type S3 struct {
 	URL            string `json:"url"`
-	AccessKey      string `json:"accesskey"`
-	SecretKey      string `json:"secretkey"`
 	Bucket         string `json:"bucket"`
 	File           string `json:"file"`
 	Region         string `json:"region"`
 	ForcePathStyle bool   `json:"forcePathStyle"`
+	Credentials    string `json:"credentials"`
 }
 
 func (s *S3) ImagePullSecretsVolume() corev1.Volume {
@@ -148,14 +147,6 @@ func (s *S3) BuildEnvVars() []corev1.EnvVar {
 		{
 			Name:  "S3_URL",
 			Value: s.URL,
-		},
-		{
-			Name:  "S3_ACCESS_KEY",
-			Value: s.AccessKey,
-		},
-		{
-			Name:  "S3_SECRET_KEY",
-			Value: s.SecretKey,
 		},
 		{
 			Name:  "S3_BUCKET",
@@ -336,25 +327,23 @@ func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {
 
 type ResolvedS3Source struct {
 	URL            string `json:"string"`
-	AccessKey      string `json:"accessKey"`
-	SecretKey      string `json:"secretKey"`
 	Bucket         string `json:"bucket"`
 	File           string `json:"file"`
 	SubPath        string `json:"subPath,omitempty"`
 	Region         string `json:"region,omitempty"`
 	ForcePathStyle bool   `json:"forcePathStyle,omitempty"`
+	Credentials    string `json:"credentials"`
 }
 
 func (rs *ResolvedS3Source) SourceConfig() SourceConfig {
 	return SourceConfig{
 		S3: &S3{
 			URL:            rs.URL,
-			AccessKey:      rs.AccessKey,
-			SecretKey:      rs.SecretKey,
 			Bucket:         rs.Bucket,
 			File:           rs.File,
 			ForcePathStyle: rs.ForcePathStyle,
 			Region:         rs.Region,
+			Credentials:    rs.Credentials,
 		},
 		SubPath: rs.SubPath,
 	}
@@ -374,13 +363,12 @@ func (rs *ResolvedS3Source) ConfigChanged(lastBuild *Build) bool {
 	}
 
 	return rs.URL != lastBuild.Spec.Source.S3.URL ||
-		rs.AccessKey != lastBuild.Spec.Source.S3.AccessKey ||
-		rs.SecretKey != lastBuild.Spec.Source.S3.SecretKey ||
 		rs.Bucket != lastBuild.Spec.Source.S3.Bucket ||
 		rs.File != lastBuild.Spec.Source.S3.File ||
 		rs.SubPath != lastBuild.Spec.Source.SubPath ||
 		rs.ForcePathStyle != lastBuild.Spec.Source.S3.ForcePathStyle ||
-		rs.Region != lastBuild.Spec.Source.S3.Region
+		rs.Region != lastBuild.Spec.Source.S3.Region ||
+		rs.Credentials != lastBuild.Spec.Source.S3.Credentials
 }
 
 func (rs *ResolvedS3Source) RevisionChanged(lastBuild *Build) bool {

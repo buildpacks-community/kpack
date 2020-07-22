@@ -9,12 +9,11 @@ func (*Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.Reso
 	return v1alpha1.ResolvedSourceConfig{
 		S3: &v1alpha1.ResolvedS3Source{
 			URL:            sourceResolver.Spec.Source.S3.URL,
-			AccessKey:      sourceResolver.Spec.Source.S3.AccessKey,
-			SecretKey:      sourceResolver.Spec.Source.S3.SecretKey,
 			Bucket:         sourceResolver.Spec.Source.S3.Bucket,
 			File:           sourceResolver.Spec.Source.S3.File,
 			SubPath:        sourceResolver.Spec.Source.SubPath,
 			ForcePathStyle: sourceResolver.Spec.Source.S3.ForcePathStyle,
+			Credentials:    sourceResolver.Spec.Source.S3.Credentials,
 		},
 	}, nil
 }

@@ -93,13 +93,12 @@ The `source` field is a composition of a source code location and a `subpath`. I
     ```yaml
     source:
       s3:
-        url: ""
-        accesskey: ""
-        secretkey: ""
+        url: ""        
         bucket: ""
         file: ""
         forcePathStyle: true
         region: ""
+        credentials: ""
       subpath: ""
     ```
     - `s3` (Source code is residing in a S3-compatible Object Storage bucket)
@@ -110,6 +109,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
       - `file`: Compressed file with source code. Format must be `tar.gz`, `zip` or plain `tar`
       - `forcePathStyle`: Within S3 SDK, it tells if the bucket is part of domain name or is a path in the url. Defaults to false (will translate to bucket.url instead of url/bucket)
       - `region`: It relates which S3 region the bucket is located. Defaults to `us-west-2`
+      - `credentials`: Name of the secret containing S3 Credentials (accesskey and secretkey)
 
 ### <a id='build-config'></a>Build Configuration
 

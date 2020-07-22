@@ -26,24 +26,22 @@ var (
 	platformEnvVars        = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
 	imageTag               = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
 	runImage               = flag.String("runImage", os.Getenv("RUN_IMAGE"), "run image that the build the image on")
-
-	gitURL           = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
-	gitRevision      = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
-	blobURL          = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
-	registryImage    = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
-	s3Url            = flag.String("s3-url", os.Getenv("S3_URL"), "The url of the S3 server")
-	s3Bucket         = flag.String("s3-bucket", os.Getenv("S3_BUCKET"), "The bucket that has the source code")
-	s3File           = flag.String("s3-file", os.Getenv("S3_FILE"), "The source code file")
-	s3AccessKey      = flag.String("s3-access-key", os.Getenv("S3_ACCESS_KEY"), "The S3 access key")
-	s3SecretKey      = flag.String("s3-secret-key", os.Getenv("S3_SECRET_KEY"), "The S3 secret key")
-	s3ForcePathStyle = flag.Bool("s3-force-path-style", s3ForcePathStyleEnv, "Use the S3 path-style (V1) request URI")
-	s3Region         = flag.String("s3-region", os.Getenv("S3_REGION"), "The S3 region")
+	gitURL                 = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
+	gitRevision            = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
+	blobURL                = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	registryImage          = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
+	s3Url                  = flag.String("s3-url", os.Getenv("S3_URL"), "The url of the S3 server")
+	s3Bucket               = flag.String("s3-bucket", os.Getenv("S3_BUCKET"), "The bucket that has the source code")
+	s3File                 = flag.String("s3-file", os.Getenv("S3_FILE"), "The source code file")
+	s3ForcePathStyle       = flag.Bool("s3-force-path-style", s3ForcePathStyleEnv, "Use the S3 path-style (V1) request URI")
+	s3Region               = flag.String("s3-region", os.Getenv("S3_REGION"), "The S3 region")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
+	s3Credentials           flaghelpers.CredentialsFlags
 )
 
 func init() {
@@ -52,6 +50,7 @@ func init() {
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
+	flag.Var(&s3Credentials, "s3-credentials", "Secret name with credentials for S3")
 }
 
 const (
@@ -161,10 +160,16 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		}
 		return fetcher.Fetch(appDir, *registryImage)
 	case *s3Url != "":
-		fetcher := s3.Fetcher{
-			Logger: logger,
+		s3CredSecrets, err := s3.ParseMountedCredentialsSecret(buildSecretsDir, s3Credentials.String())
+		if err != nil {
+			return err
 		}
-		return fetcher.Fetch(appDir, *s3Url, *s3AccessKey, *s3SecretKey, *s3Bucket, *s3File, *s3ForcePathStyle, *s3Region)
+
+		fetcher := s3.Fetcher{
+			Logger:      logger,
+			Credentials: s3CredSecrets,
+		}
+		return fetcher.Fetch(appDir, *s3Url, *s3Bucket, *s3File, *s3ForcePathStyle, *s3Region)
 	default:
 		return errors.New("no git url, blob url, s3 url, or registry image provided")
 	}

@@ -40,6 +40,24 @@ func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 	}, nil
 }
 
+func ReadOpaqueSecret(secretVolume, secretName string, keys []string) (OpaqueSecret, error) {
+	opSec := OpaqueSecret{}
+
+	opaqueData := make(map[string]string)
+	secretPath := volumeName(secretVolume, secretName)
+	for _, v := range keys {
+		key, err := ioutil.ReadFile(filepath.Join(secretPath, v))
+		if err != nil {
+			return opSec, err
+		}
+		opaqueData[v] = string(key)
+	}
+
+	opSec.StringData = opaqueData
+
+	return opSec, nil
+}
+
 func volumeName(VolumePath, secretName string) string {
 	return fmt.Sprintf("%s/%s", VolumePath, secretName)
 }

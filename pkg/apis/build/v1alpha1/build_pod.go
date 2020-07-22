@@ -21,6 +21,7 @@ const (
 	BuildLabel                   = "build.pivotal.io/build"
 	DOCKERSecretAnnotationPrefix = "build.pivotal.io/docker"
 	GITSecretAnnotationPrefix    = "build.pivotal.io/git"
+	S3SecretAnnotationPrefix     = "build.pivotal.io/s3"
 
 	cacheDirName              = "cache-dir"
 	layersDirName             = "layers-dir"
@@ -100,7 +101,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 		return nil, err
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitDockerOrS3Secrets)
 
 	bindingVolumes, bindingVolumeMounts := b.setupBindings()
 
@@ -426,6 +427,14 @@ func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
 }
 
+func s3Secrets(secret corev1.Secret) bool {
+	return secret.Annotations[S3SecretAnnotationPrefix] != ""
+}
+
+func gitDockerOrS3Secrets(secret corev1.Secret) bool {
+	return gitAndDockerSecrets(secret) || s3Secrets(secret)
+}
+
 func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
 	var (
 		volumes      []corev1.Volume
@@ -456,6 +465,9 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Annotations[DOCKERSecretAnnotationPrefix] != "":
 			args = append(args,
 				fmt.Sprintf("-basic-%s=%s=%s", "docker", secret.Name, secret.Annotations[DOCKERSecretAnnotationPrefix]))
+		case s3Secrets(secret):
+			args = append(args,
+				fmt.Sprintf("-s3-credentials=%s", secret.Name))
 		case secret.Type == corev1.SecretTypeDockerConfigJson:
 			args = append(args, fmt.Sprintf("-dockerconfig=%s", secret.Name))
 		case secret.Type == corev1.SecretTypeDockercfg:

@@ -8,3 +8,7 @@ type BasicAuth struct {
 type SSH struct {
 	PrivateKey []byte
 }
+
+type OpaqueSecret struct {
+	StringData map[string]string
+}

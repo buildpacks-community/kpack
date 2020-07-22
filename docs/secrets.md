@@ -1,6 +1,6 @@
 # Secrets
 
-kpack utilizes kubernetes secrets to configure credentials to publish images to docker registries and access private github repositories.   
+kpack utilizes kubernetes secrets to configure credentials to publish images to docker registries and access private github repositories or to fetch source from S3-compatible storage.  
 
 ### Docker Registry Secrets
 
@@ -108,6 +108,23 @@ stringData:
   password: <generated-token>
 ```
 
+### S3 Secrets
+
+Opaque secrets are used with a `build.pivotal.io/s3` annotation. Secret must contain `accesskey` and `secretkey` data
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: some-s3-credential
+  annotations:
+    build.pivotal.io/s3: https://some-s3-url
+type: Opaque
+stringData:
+  accesskey: <accesskey>
+  secretkey: <secretkey>
+```
+
 ### Service Account
 
 To use these secrets with kpack create a service account and reference the service account in image and build config. When configuring the image resource, reference the `name` of your registry credential and the `name` of your git credential.   
@@ -123,4 +140,5 @@ secrets:
   - name: docker-cfg
   - name: basic-git-user-pass
   - name: git-ssh-auth
+  - name: some-s3-credential
 ```

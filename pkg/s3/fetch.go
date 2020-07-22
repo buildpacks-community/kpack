@@ -15,10 +15,11 @@ import (
 )
 
 type Fetcher struct {
-	Logger *log.Logger
+	Logger      *log.Logger
+	Credentials Credentials
 }
 
-func (f *Fetcher) Fetch(dir string, s3URL string, s3AccessKey string, s3SecretKey string, s3Bucket string, s3File string, s3ForcePathStyle bool, s3Region string) error {
+func (f *Fetcher) Fetch(dir string, s3URL string, s3Bucket string, s3File string, s3ForcePathStyle bool, s3Region string) error {
 	blob, err := url.Parse(s3URL)
 	if err != nil {
 		return err
@@ -36,7 +37,7 @@ func (f *Fetcher) Fetch(dir string, s3URL string, s3AccessKey string, s3SecretKe
 	option.Config = aws.Config{
 		Endpoint:         aws.String(s3URL),
 		S3ForcePathStyle: aws.Bool(s3ForcePathStyle),
-		Credentials:      credentials.NewStaticCredentials(s3AccessKey, s3SecretKey, ""),
+		Credentials:      credentials.NewStaticCredentials(f.Credentials.AccessKey, f.Credentials.SecretKey, ""),
 		Region:           aws.String(region),
 	}
 
