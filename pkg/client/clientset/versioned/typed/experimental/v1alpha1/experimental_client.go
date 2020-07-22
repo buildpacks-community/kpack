@@ -26,15 +26,23 @@ import (
 
 type ExperimentalV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	ClusterStacksGetter
+	ClusterStoresGetter
 	CustomBuildersGetter
 	CustomClusterBuildersGetter
-	StacksGetter
-	StoresGetter
 }
 
 // ExperimentalV1alpha1Client is used to interact with features provided by the experimental.kpack.pivotal.io group.
 type ExperimentalV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *ExperimentalV1alpha1Client) ClusterStacks() ClusterStackInterface {
+	return newClusterStacks(c)
+}
+
+func (c *ExperimentalV1alpha1Client) ClusterStores() ClusterStoreInterface {
+	return newClusterStores(c)
 }
 
 func (c *ExperimentalV1alpha1Client) CustomBuilders(namespace string) CustomBuilderInterface {
@@ -43,14 +51,6 @@ func (c *ExperimentalV1alpha1Client) CustomBuilders(namespace string) CustomBuil
 
 func (c *ExperimentalV1alpha1Client) CustomClusterBuilders() CustomClusterBuilderInterface {
 	return newCustomClusterBuilders(c)
-}
-
-func (c *ExperimentalV1alpha1Client) Stacks() StackInterface {
-	return newStacks(c)
-}
-
-func (c *ExperimentalV1alpha1Client) Stores() StoreInterface {
-	return newStores(c)
 }
 
 // NewForConfig creates a new ExperimentalV1alpha1Client for the given config.

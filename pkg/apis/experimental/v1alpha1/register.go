@@ -51,10 +51,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CustomBuilderList{},
 		&CustomClusterBuilder{},
 		&CustomClusterBuilderList{},
-		&Store{},
-		&StoreList{},
-		&Stack{},
-		&StackList{},
+		&ClusterStore{},
+		&ClusterStoreList{},
+		&ClusterStack{},
+		&ClusterStackList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -1,11 +1,13 @@
 package sourceresolver
 
 import (
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestEnqueueAfter(t *testing.T) {

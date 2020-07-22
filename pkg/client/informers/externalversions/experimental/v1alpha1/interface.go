@@ -24,14 +24,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ClusterStacks returns a ClusterStackInformer.
+	ClusterStacks() ClusterStackInformer
+	// ClusterStores returns a ClusterStoreInformer.
+	ClusterStores() ClusterStoreInformer
 	// CustomBuilders returns a CustomBuilderInformer.
 	CustomBuilders() CustomBuilderInformer
 	// CustomClusterBuilders returns a CustomClusterBuilderInformer.
 	CustomClusterBuilders() CustomClusterBuilderInformer
-	// Stacks returns a StackInformer.
-	Stacks() StackInformer
-	// Stores returns a StoreInformer.
-	Stores() StoreInformer
 }
 
 type version struct {
@@ -45,6 +45,16 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// ClusterStacks returns a ClusterStackInformer.
+func (v *version) ClusterStacks() ClusterStackInformer {
+	return &clusterStackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterStores returns a ClusterStoreInformer.
+func (v *version) ClusterStores() ClusterStoreInformer {
+	return &clusterStoreInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // CustomBuilders returns a CustomBuilderInformer.
 func (v *version) CustomBuilders() CustomBuilderInformer {
 	return &customBuilderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -53,14 +63,4 @@ func (v *version) CustomBuilders() CustomBuilderInformer {
 // CustomClusterBuilders returns a CustomClusterBuilderInformer.
 func (v *version) CustomClusterBuilders() CustomClusterBuilderInformer {
 	return &customClusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// Stacks returns a StackInformer.
-func (v *version) Stacks() StackInformer {
-	return &stackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// Stores returns a StoreInformer.
-func (v *version) Stores() StoreInformer {
-	return &storeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

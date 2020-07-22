@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
@@ -65,7 +65,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 	return authn.NewMultiKeychain(basicAuthKeychain, dockerCfgKeychain, f.volumeKeychain, k8sKeychain), nil
 }
 
-func toStringPullSecrets(secrets []v1.LocalObjectReference) []string {
+func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
 	var stringSecrets []string
 	for _, s := range secrets {
 		stringSecrets = append(stringSecrets, s.Name)
@@ -90,11 +90,11 @@ func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenti
 
 	for _, s := range secrets {
 		matcher := dockercreds.RegistryMatcher{Registry: s.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix]}
-		if matcher.Match(res.RegistryStr()) && s.Type == v1.SecretTypeBasicAuth {
+		if matcher.Match(res.RegistryStr()) && s.Type == corev1.SecretTypeBasicAuth {
 
 			return authn.FromConfig(authn.AuthConfig{
-				Username: string(s.Data[v1.BasicAuthUsernameKey]),
-				Password: string(s.Data[v1.BasicAuthPasswordKey]),
+				Username: string(s.Data[corev1.BasicAuthUsernameKey]),
+				Password: string(s.Data[corev1.BasicAuthPasswordKey]),
 			}), nil
 		}
 	}
@@ -122,12 +122,12 @@ func (d *dockerConfigKeychain) Resolve(res authn.Resource) (authn.Authenticator,
 
 	for _, s := range secrets {
 		switch s.Type {
-		case v1.SecretTypeDockerConfigJson:
+		case corev1.SecretTypeDockerConfigJson:
 			config := dockerConfigJson{
 				Auths: map[string]authn.AuthConfig{},
 			}
 
-			err = json.Unmarshal(s.Data[v1.DockerConfigJsonKey], &config)
+			err = json.Unmarshal(s.Data[corev1.DockerConfigJsonKey], &config)
 			if err != nil {
 				return nil, err
 			}
@@ -136,10 +136,10 @@ func (d *dockerConfigKeychain) Resolve(res authn.Resource) (authn.Authenticator,
 			if err != nil {
 				return nil, err
 			}
-		case v1.SecretTypeDockercfg:
+		case corev1.SecretTypeDockercfg:
 			var cred dockercreds.DockerCreds
 
-			err = json.Unmarshal(s.Data[v1.DockerConfigKey], &cred)
+			err = json.Unmarshal(s.Data[corev1.DockerConfigKey], &cred)
 			if err != nil {
 				return nil, err
 			}

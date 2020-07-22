@@ -13,6 +13,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -65,27 +66,27 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
-		stack = &expv1alpha1.Stack{
+		stack = &expv1alpha1.ClusterStack{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "sample-stack",
 			},
-			Spec: expv1alpha1.StackSpec{
+			Spec: expv1alpha1.ClusterStackSpec{
 				Id: stackID,
-				BuildImage: expv1alpha1.StackSpecImage{
+				BuildImage: expv1alpha1.ClusterStackSpecImage{
 					Image: buildImageTag,
 				},
-				RunImage: expv1alpha1.StackSpecImage{
+				RunImage: expv1alpha1.ClusterStackSpecImage{
 					Image: runImageTag,
 				},
 			},
-			Status: expv1alpha1.StackStatus{
-				ResolvedStack: expv1alpha1.ResolvedStack{
+			Status: expv1alpha1.ClusterStackStatus{
+				ResolvedClusterStack: expv1alpha1.ResolvedClusterStack{
 					Id: stackID,
-					BuildImage: expv1alpha1.StackStatusImage{
+					BuildImage: expv1alpha1.ClusterStackStatusImage{
 						LatestImage: buildImage,
 						Image:       buildImageTag,
 					},
-					RunImage: expv1alpha1.StackStatusImage{
+					RunImage: expv1alpha1.ClusterStackStatusImage{
 						LatestImage: runImage,
 						Image:       runImageTag,
 					},
@@ -97,9 +98,15 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		clusterBuilderSpec = expv1alpha1.CustomBuilderSpec{
-			Tag:   "custom/example",
-			Stack: "some-stack",
-			Store: "some-buildpackRepository",
+			Tag: "custom/example",
+			Stack: corev1.ObjectReference{
+				Kind: "Stack",
+				Name: "some-stack",
+			},
+			Store: corev1.ObjectReference{
+				Name: "some-buildpackRepository",
+				Kind: "ClusterStore",
+			},
 			Order: []expv1alpha1.OrderEntry{
 				{
 					Group: []expv1alpha1.BuildpackRef{

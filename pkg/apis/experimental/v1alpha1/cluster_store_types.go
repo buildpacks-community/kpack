@@ -7,23 +7,23 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-const StoreKind = "Store"
+const ClusterStoreKind = "ClusterStore"
 
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
 // +k8s:openapi-gen=true
-type Store struct {
+type ClusterStore struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StoreSpec   `json:"spec"`
-	Status StoreStatus `json:"status"`
+	Spec   ClusterStoreSpec   `json:"spec"`
+	Status ClusterStoreStatus `json:"status"`
 }
 
 // +k8s:openapi-gen=true
-type StoreSpec struct {
+type ClusterStoreSpec struct {
 	// +listType
 	Sources []StoreImage `json:"sources,omitempty"`
 }
@@ -34,7 +34,7 @@ type StoreImage struct {
 }
 
 // +k8s:openapi-gen=true
-type StoreStatus struct {
+type ClusterStoreStatus struct {
 	corev1alpha1.Status `json:",inline"`
 
 	// +listType
@@ -61,14 +61,14 @@ type StoreBuildpack struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +k8s:openapi-gen=true
-type StoreList struct {
+type ClusterStoreList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	// +listType
-	Items []Store `json:"items"`
+	Items []ClusterStore `json:"items"`
 }
 
-func (*Store) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind(StoreKind)
+func (*ClusterStore) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(ClusterStoreKind)
 }

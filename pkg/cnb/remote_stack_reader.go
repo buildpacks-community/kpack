@@ -25,53 +25,53 @@ type RemoteStackReader struct {
 	Keychain       authn.Keychain
 }
 
-func (r *RemoteStackReader) Read(stackSpec v1alpha1.StackSpec) (v1alpha1.ResolvedStack, error) {
-	buildImage, buildIdentifier, err := r.RegistryClient.Fetch(r.Keychain, stackSpec.BuildImage.Image)
+func (r *RemoteStackReader) Read(clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
+	buildImage, buildIdentifier, err := r.RegistryClient.Fetch(r.Keychain, clusterStackSpec.BuildImage.Image)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, err
+		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
-	runImage, runIdentifier, err := r.RegistryClient.Fetch(r.Keychain, stackSpec.RunImage.Image)
+	runImage, runIdentifier, err := r.RegistryClient.Fetch(r.Keychain, clusterStackSpec.RunImage.Image)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, err
+		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
-	err = validateStackId(stackSpec.Id, buildImage, runImage)
+	err = validateStackId(clusterStackSpec.Id, buildImage, runImage)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, err
+		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
 	userId, err := parseCNBID(buildImage, cnbUserId)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, errors.Wrap(err, "validating build image")
+		return v1alpha1.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
 	}
 
 	groupId, err := parseCNBID(buildImage, cnbGroupId)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, errors.Wrap(err, "validating build image")
+		return v1alpha1.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
 	}
 
 	buildMixins, err := readMixins(buildImage)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, err
+		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
 	runMixins, err := readMixins(runImage)
 	if err != nil {
-		return v1alpha1.ResolvedStack{}, err
+		return v1alpha1.ResolvedClusterStack{}, err
 	}
 
 	mixins, err := mixins(buildMixins, runMixins)
 
-	return v1alpha1.ResolvedStack{
-		Id: stackSpec.Id,
-		BuildImage: v1alpha1.StackStatusImage{
+	return v1alpha1.ResolvedClusterStack{
+		Id: clusterStackSpec.Id,
+		BuildImage: v1alpha1.ClusterStackStatusImage{
 			LatestImage: buildIdentifier,
-			Image:       stackSpec.BuildImage.Image,
+			Image:       clusterStackSpec.BuildImage.Image,
 		},
-		RunImage: v1alpha1.StackStatusImage{
+		RunImage: v1alpha1.ClusterStackStatusImage{
 			LatestImage: runIdentifier,
-			Image:       stackSpec.RunImage.Image,
+			Image:       clusterStackSpec.RunImage.Image,
 		},
 		Mixins:  mixins,
 		UserID:  userId,

@@ -58,13 +58,13 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 	}, nil
 }
 
-func (bb *builderBlder) AddStack(baseImage v1.Image, stack *expv1alpha1.Stack) {
+func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *expv1alpha1.ClusterStack) {
 	bb.baseImage = baseImage
-	bb.stackId = stack.Status.Id
-	bb.runImage = stack.Status.RunImage.Image
-	bb.mixins = stack.Status.Mixins
-	bb.cnbUserId = stack.Status.UserID
-	bb.cnbGroupId = stack.Status.GroupID
+	bb.stackId = clusterStack.Status.Id
+	bb.runImage = clusterStack.Status.RunImage.Image
+	bb.mixins = clusterStack.Status.Mixins
+	bb.cnbUserId = clusterStack.Status.UserID
+	bb.cnbGroupId = clusterStack.Status.GroupID
 }
 
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
