@@ -74,11 +74,11 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 			return err
 		}
 
-		if !isTar(r){
+		if !isTar(r) {
 			return unexpectedBlobTypeError
 		}
 
-		if _, err := r.Seek(0,0); err != nil {
+		if _, err := r.Seek(0, 0); err != nil {
 			return err
 		}
 

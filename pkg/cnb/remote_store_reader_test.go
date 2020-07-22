@@ -136,6 +136,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				`{
   "id": "org.buildpack.meta",
   "version": "0.0.2",
+  "homepage": "some-homepage",
   "stacks": [
     {
       "id": "org.some.stack"
@@ -188,6 +189,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				`{
   "id": "org.buildpack.simple",
   "version": "0.0.1",
+  "homepage": "some-homepage",
   "stacks": [
     {
       "id": "org.some.stack"
@@ -221,8 +223,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Version: "0.0.1",
 				},
 				Buildpackage: v1alpha1.BuildpackageInfo{
-					Id:      "org.buildpack.meta",
-					Version: "0.0.2",
+					Id:       "org.buildpack.meta",
+					Version:  "0.0.2",
+					Homepage: "some-homepage",
 				},
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
@@ -248,8 +251,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Version: "0.0.2",
 				},
 				Buildpackage: v1alpha1.BuildpackageInfo{
-					Id:      "org.buildpack.meta",
-					Version: "0.0.2",
+					Id:       "org.buildpack.meta",
+					Version:  "0.0.2",
+					Homepage: "some-homepage",
 				},
 				StoreImage: v1alpha1.StoreImage{
 					Image: buildpackageA,
@@ -277,8 +281,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						Version: "0.0.2",
 					},
 					Buildpackage: v1alpha1.BuildpackageInfo{
-						Id:      "org.buildpack.meta",
-						Version: "0.0.2",
+						Id:       "org.buildpack.meta",
+						Version:  "0.0.2",
+						Homepage: "some-homepage",
 					},
 					StoreImage: v1alpha1.StoreImage{
 						Image: buildpackageA,
@@ -327,8 +332,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Version: "0.0.1",
 				},
 				Buildpackage: v1alpha1.BuildpackageInfo{
-					Id:      "org.buildpack.simple",
-					Version: "0.0.1",
+					Id:       "org.buildpack.simple",
+					Version:  "0.0.1",
+					Homepage: "some-homepage",
 				},
 				DiffId:   "sha256:1fe2cf74b742ec16c76b9e996c247c78aa41905fe86b744db998094b4bcaf38a",
 				Digest:   "sha256:6aa3691a73805f608e5fce69fb6bc89aec8362f58a6b4be2682515e9cfa3cc1a",

@@ -5,6 +5,7 @@ const (
 )
 
 type BuildpackageMetadata struct {
-	Id      string `json:"id"`
-	Version string `json:"version"`
+	Id       string `json:"id"`
+	Version  string `json:"version"`
+	Homepage string `json:"homepage"`
 }

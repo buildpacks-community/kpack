@@ -48,8 +48,9 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 			for id := range layerMetadata {
 				for version, metadata := range layerMetadata[id] {
 					packageInfo := v1alpha1.BuildpackageInfo{
-						Id:      bpMetadata.Id,
-						Version: bpMetadata.Version,
+						Id:       bpMetadata.Id,
+						Version:  bpMetadata.Version,
+						Homepage: bpMetadata.Homepage,
 					}
 
 					info := v1alpha1.BuildpackInfo{
