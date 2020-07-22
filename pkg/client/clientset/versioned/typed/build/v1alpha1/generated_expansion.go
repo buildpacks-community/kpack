@@ -20,10 +20,6 @@ package v1alpha1
 
 type BuildExpansion interface{}
 
-type BuilderExpansion interface{}
-
-type ClusterBuilderExpansion interface{}
-
 type ClusterStackExpansion interface{}
 
 type ClusterStoreExpansion interface{}

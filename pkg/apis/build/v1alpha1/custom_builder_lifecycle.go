@@ -9,17 +9,14 @@ import (
 )
 
 func (cb *CustomBuilderStatus) ErrorCreate(err error) {
-	cb.BuilderStatus = BuilderStatus{
-		Status: corev1alpha1.Status{
-			Conditions: corev1alpha1.Conditions{
-				{
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionFalse,
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
-					Message:            err.Error(),
-				},
+	cb.Status = corev1alpha1.Status{
+		Conditions: corev1alpha1.Conditions{
+			{
+				Type:               corev1alpha1.ConditionReady,
+				Status:             corev1.ConditionFalse,
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+				Message:            err.Error(),
 			},
 		},
 	}
-
 }

@@ -28,7 +28,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		},
-		Status: v1alpha1.BuilderStatus{
+		Status: v1alpha1.CustomBuilderStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 1,
 				Conditions: corev1alpha1.Conditions{

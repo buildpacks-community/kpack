@@ -43,8 +43,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
 		testNamespace            = "test"
 		dockerSecret             = "docker-secret"
-		builderName              = "build-service-builder"
-		clusterBuilderName       = "cluster-builder"
 		serviceAccountName       = "image-service-account"
 		builderImage             = "gcr.io/paketo-buildpacks/builder:base"
 		clusterStoreName         = "store"
@@ -75,11 +73,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.KpackV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
-		if !errors.IsNotFound(err) {
-			require.NoError(t, err)
-		}
-
 		err = clients.client.KpackV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
@@ -101,7 +94,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it("builds and rebases git, blob, and registry based images", func() {
+	it.Before(func() {
 		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 		require.NoError(t, err)
 
@@ -167,16 +160,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				RunImage: v1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
 				},
-			},
-		})
-		require.NoError(t, err)
-
-		clusterBuilder, err := clients.client.KpackV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: v1alpha1.BuilderSpec{
-				Image: builderImage,
 			},
 		})
 		require.NoError(t, err)
@@ -289,19 +272,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		builder, err := clients.client.KpackV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      builderName,
-				Namespace: testNamespace,
-			},
-			Spec: v1alpha1.BuilderWithSecretsSpec{
-				BuilderSpec:      v1alpha1.BuilderSpec{Image: builderImage},
-				ImagePullSecrets: nil,
-			},
-		})
-		require.NoError(t, err)
+		waitUntilReady(t, clients, customBuilder, customClusterBuilder)
+	})
 
-		waitUntilReady(t, clients, builder, customBuilder, clusterBuilder, customClusterBuilder)
+	it("builds and rebases git, blob, and registry based images", func() {
 
 		cacheSize := resource.MustParse("1Gi")
 
@@ -337,14 +311,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			"custom-builder": {
 				Kind: v1alpha1.CustomBuilderKind,
 				Name: customBuilderName,
-			},
-			"builder": {
-				Kind: v1alpha1.BuilderKind,
-				Name: builderName,
-			},
-			"cluster-builder": {
-				Kind: v1alpha1.ClusterBuilderKind,
-				Name: clusterBuilderName,
 			},
 			"custom-cluster-builder": {
 				Kind: v1alpha1.CustomClusterBuilderKind,
@@ -388,55 +354,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it("can trigger rebuilds", func() {
-		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
-		require.NoError(t, err)
-
-		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-		require.NoError(t, err)
-
-		basicAuth, err := auth.Authorization()
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
-				Annotations: map[string]string{
-					"kpack.io/docker": reference.Context().RegistryStr(),
-				},
-			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
-			},
-			Type: corev1.SecretTypeBasicAuth,
-		})
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: serviceAccountName,
-			},
-			Secrets: []corev1.ObjectReference{
-				{
-					Name: dockerSecret,
-				},
-			},
-		})
-		require.NoError(t, err)
-
-		clusterBuilder, err := clients.client.KpackV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: v1alpha1.BuilderSpec{
-				Image: builderImage,
-			},
-		})
-		require.NoError(t, err)
-
-		waitUntilReady(t, clients, clusterBuilder)
-
+	it.Focus("can trigger rebuilds", func() {
 		cacheSize := resource.MustParse("1Gi")
 
 		expectedResources := corev1.ResourceRequirements{
@@ -458,9 +376,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			Spec: v1alpha1.ImageSpec{
 				Tag: imageTag,
 				Builder: corev1.ObjectReference{
-					Kind:       v1alpha1.ClusterBuilderKind,
-					APIVersion: "kpack.io/v1alpha1",
-					Name:       clusterBuilderName,
+					Kind: v1alpha1.CustomClusterBuilderKind,
+					Name: customClusterBuilderName,
 				},
 				ServiceAccount: serviceAccountName,
 				Source: v1alpha1.SourceConfig{

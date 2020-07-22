@@ -165,32 +165,30 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
 				Status: v1alpha1.CustomBuilderStatus{
-					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: corev1alpha1.Status{
-							ObservedGeneration: 1,
-							Conditions: corev1alpha1.Conditions{
-								{
-									Type:   corev1alpha1.ConditionReady,
-									Status: corev1.ConditionTrue,
-								},
-							},
-						},
-						BuilderMetadata: []v1alpha1.BuildpackMetadata{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: 1,
+						Conditions: corev1alpha1.Conditions{
 							{
-								Id:      "buildpack.id.1",
-								Version: "1.0.0",
-							},
-							{
-								Id:      "buildpack.id.2",
-								Version: "2.0.0",
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
 							},
 						},
-						Stack: v1alpha1.BuildStack{
-							RunImage: "example.com/run-image@sha256:123456",
-							ID:       "fake.stack.id",
-						},
-						LatestImage: customBuilderIdentifier,
 					},
+					BuilderMetadata: []v1alpha1.BuildpackMetadata{
+						{
+							Id:      "buildpack.id.1",
+							Version: "1.0.0",
+						},
+						{
+							Id:      "buildpack.id.2",
+							Version: "2.0.0",
+						},
+					},
+					Stack: v1alpha1.BuildStack{
+						RunImage: "example.com/run-image@sha256:123456",
+						ID:       "fake.stack.id",
+					},
+					LatestImage: customBuilderIdentifier,
 				},
 			}
 
@@ -230,23 +228,21 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ObjectMeta: customBuilder.ObjectMeta,
 				Spec:       customBuilder.Spec,
 				Status: v1alpha1.CustomBuilderStatus{
-					BuilderStatus: v1alpha1.BuilderStatus{
-						Status: corev1alpha1.Status{
-							ObservedGeneration: 1,
-							Conditions: corev1alpha1.Conditions{
-								{
-									Type:   corev1alpha1.ConditionReady,
-									Status: corev1.ConditionTrue,
-								},
+					Status: corev1alpha1.Status{
+						ObservedGeneration: 1,
+						Conditions: corev1alpha1.Conditions{
+							{
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
 							},
 						},
-						BuilderMetadata: []v1alpha1.BuildpackMetadata{},
-						Stack: v1alpha1.BuildStack{
-							RunImage: "example.com/run-image@sha256:123456",
-							ID:       "fake.stack.id",
-						},
-						LatestImage: customBuilderIdentifier,
 					},
+					BuilderMetadata: []v1alpha1.BuildpackMetadata{},
+					Stack: v1alpha1.BuildStack{
+						RunImage: "example.com/run-image@sha256:123456",
+						ID:       "fake.stack.id",
+					},
+					LatestImage: customBuilderIdentifier,
 				},
 			}
 
@@ -279,7 +275,7 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			customBuilder.Status.BuilderStatus = v1alpha1.BuilderStatus{
+			customBuilder.Status = v1alpha1.CustomBuilderStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: customBuilder.Generation,
 					Conditions: corev1alpha1.Conditions{
@@ -330,15 +326,13 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: customBuilder.ObjectMeta,
 							Spec:       customBuilder.Spec,
 							Status: v1alpha1.CustomBuilderStatus{
-								BuilderStatus: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:    corev1alpha1.ConditionReady,
-												Status:  corev1.ConditionFalse,
-												Message: "create error",
-											},
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: "create error",
 										},
 									},
 								},
@@ -381,15 +375,13 @@ func testCustomBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: customBuilder.ObjectMeta,
 							Spec:       customBuilder.Spec,
 							Status: v1alpha1.CustomBuilderStatus{
-								BuilderStatus: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:    corev1alpha1.ConditionReady,
-												Status:  corev1.ConditionFalse,
-												Message: "stack some-stack is not ready",
-											},
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: "stack some-stack is not ready",
 										},
 									},
 								},

@@ -38,8 +38,6 @@ import (
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
-	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/custombuilder"
@@ -98,8 +96,6 @@ func main() {
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
 	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
 	imageInformer := informerFactory.Kpack().V1alpha1().Images()
-	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
-	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
 	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
 	customBuilderInformer := informerFactory.Kpack().V1alpha1().CustomBuilders()
 	customClusterBuilderInformer := informerFactory.Kpack().V1alpha1().CustomClusterBuilders()
@@ -107,8 +103,6 @@ func main() {
 	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
-		BuilderInformer:              builderInformer,
-		ClusterBuilderInformer:       clusterBuilderInformer,
 		CustomBuilderInformer:        customBuilderInformer,
 		CustomClusterBuilderInformer: customClusterBuilderInformer,
 	}
@@ -165,8 +159,6 @@ func main() {
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
-	builderController := builder.NewController(options, builderInformer, metadataRetriever)
-	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
@@ -180,8 +172,6 @@ func main() {
 	waitForSync(stopChan,
 		buildInformer.Informer(),
 		imageInformer.Informer(),
-		builderInformer.Informer(),
-		clusterBuilderInformer.Informer(),
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
@@ -196,8 +186,6 @@ func main() {
 		run(clusterStackController, routinesPerController),
 		run(imageController, routinesPerController),
 		run(buildController, routinesPerController),
-		run(builderController, routinesPerController),
-		run(clusterBuilderController, routinesPerController),
 		run(customBuilderController, routinesPerController),
 		run(customClusterBuilderController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
@@ -245,7 +233,7 @@ func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *v1alpha1
 	}
 }
 
-const controllerCount = 9
+const controllerCount = 7
 
 //lifted from knative.dev/pkg/injection/sharedmain
 func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *configmap.InformedWatcher, *http.Server) {
