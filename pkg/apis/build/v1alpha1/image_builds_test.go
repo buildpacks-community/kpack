@@ -6,7 +6,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +45,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				Conditions: []corev1alpha1.Condition{
 					{
 						Type:   corev1alpha1.ConditionReady,
-						Status: v1.ConditionTrue,
+						Status: corev1.ConditionTrue,
 					},
 				},
 			},
@@ -219,7 +218,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("adds the env vars to the build spec", func() {
 			image.Spec.Build = &ImageBuild{
-				Env: []v1.EnvVar{
+				Env: []corev1.EnvVar{
 					{Name: "keyA", Value: "new"},
 				},
 			}
@@ -244,14 +243,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("adds build resources", func() {
 			image.Spec.Build = &ImageBuild{
-				Resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("2"),
-						v1.ResourceMemory: resource.MustParse("256M"),
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("2"),
+						corev1.ResourceMemory: resource.MustParse("256M"),
 					},
-					Requests: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("1"),
-						v1.ResourceMemory: resource.MustParse("128M"),
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("1"),
+						corev1.ResourceMemory: resource.MustParse("128M"),
 					},
 				},
 			}

@@ -6,7 +6,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
@@ -68,7 +68,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		when("a git based source config", func() {
 			sourceResolver := &v1alpha1.SourceResolver{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:       sourceResolverName,
 					Namespace:  namespace,
 					Generation: originalGeneration,
@@ -326,7 +326,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("a blob based source config", func() {
 			sourceResolver := &v1alpha1.SourceResolver{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:       sourceResolverName,
 					Namespace:  namespace,
 					Generation: originalGeneration,
@@ -391,7 +391,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("a registry based source config", func() {
 			sourceResolver := &v1alpha1.SourceResolver{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:       sourceResolverName,
 					Namespace:  namespace,
 					Generation: originalGeneration,

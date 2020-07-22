@@ -7,44 +7,44 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-const StackKind = "Stack"
+const ClusterStackKind = "ClusterStack"
 
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
 // +k8s:openapi-gen=true
-type Stack struct {
+type ClusterStack struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StackSpec   `json:"spec"`
-	Status StackStatus `json:"status"`
+	Spec   ClusterStackSpec   `json:"spec"`
+	Status ClusterStackStatus `json:"status"`
 }
 
 // +k8s:openapi-gen=true
-type StackSpec struct {
-	Id         string         `json:"id,omitempty"`
-	BuildImage StackSpecImage `json:"buildImage,omitempty"`
-	RunImage   StackSpecImage `json:"runImage,omitempty"`
+type ClusterStackSpec struct {
+	Id         string                `json:"id,omitempty"`
+	BuildImage ClusterStackSpecImage `json:"buildImage,omitempty"`
+	RunImage   ClusterStackSpecImage `json:"runImage,omitempty"`
 }
 
 // +k8s:openapi-gen=true
-type StackSpecImage struct {
+type ClusterStackSpecImage struct {
 	Image string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true
-type StackStatus struct {
-	corev1alpha1.Status `json:",inline"`
-	ResolvedStack       `json:",inline"`
+type ClusterStackStatus struct {
+	corev1alpha1.Status  `json:",inline"`
+	ResolvedClusterStack `json:",inline"`
 }
 
 // +k8s:openapi-gen=true
-type ResolvedStack struct {
-	Id         string           `json:"id,omitempty"`
-	BuildImage StackStatusImage `json:"buildImage,omitempty"`
-	RunImage   StackStatusImage `json:"runImage,omitempty"`
+type ResolvedClusterStack struct {
+	Id         string                  `json:"id,omitempty"`
+	BuildImage ClusterStackStatusImage `json:"buildImage,omitempty"`
+	RunImage   ClusterStackStatusImage `json:"runImage,omitempty"`
 	// +listType
 	Mixins  []string `json:"mixins,omitempty"`
 	UserID  int      `json:"userId,omitempty"`
@@ -52,7 +52,7 @@ type ResolvedStack struct {
 }
 
 // +k8s:openapi-gen=true
-type StackStatusImage struct {
+type ClusterStackStatusImage struct {
 	LatestImage string `json:"latestImage,omitempty"`
 	Image       string `json:"image,omitempty"`
 }
@@ -60,14 +60,14 @@ type StackStatusImage struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +k8s:openapi-gen=true
-type StackList struct {
+type ClusterStackList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	// +listType
-	Items []Stack `json:"items"`
+	Items []ClusterStack `json:"items"`
 }
 
-func (*Stack) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind(StackKind)
+func (*ClusterStack) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(ClusterStackKind)
 }

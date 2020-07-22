@@ -65,10 +65,10 @@ rules:
   - custombuilders/status
   - customclusterbuilders
   - customclusterbuilders/status
-  - stores
-  - stores/status
-  - stacks
-  - stacks/status
+  - clusterstores
+  - clusterstores/status
+  - clusterstacks
+  - clusterstacks/status
   verbs:
   - get
   - list

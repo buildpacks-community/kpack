@@ -130,6 +130,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			},
 			Type: corev1.SecretTypeOpaque,
 		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "secret-to-ignore",
+				Annotations: map[string]string{
+					v1alpha1.DOCKERSecretAnnotationPrefix: "ignoreme.com",
+				},
+			},
+			Type: corev1.SecretTypeBootstrapToken,
+		},
 	}
 
 	config := v1alpha1.BuildPodImages{
@@ -785,7 +794,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
-				require.Error(t, err, "incompatible builder platform API version 0.1")
+				require.EqualError(t, err, "incompatible builder platform API version: 0.1")
 			})
 		})
 

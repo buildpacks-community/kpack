@@ -3,7 +3,7 @@ package cnb
 import (
 	"testing"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,11 +158,11 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 
 		storeBuildpackRepository := &StoreBuildpackRepository{
 			Keychain: nil,
-			Store: &v1alpha1.Store{
+			ClusterStore: &v1alpha1.ClusterStore{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-store",
 				},
-				Status: v1alpha1.StoreStatus{
+				Status: v1alpha1.ClusterStoreStatus{
 					Buildpacks: []v1alpha1.StoreBuildpack{
 						engineBuildpack,
 						v9Buildpack,
@@ -260,7 +260,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("fails to find the buildpack if version is unspecified and not all buildpacks are semver conformant", func() {
-			storeBuildpackRepository.Store.Status.Buildpacks = append(storeBuildpackRepository.Store.Status.Buildpacks, v1alpha1.StoreBuildpack{
+			storeBuildpackRepository.ClusterStore.Status.Buildpacks = append(storeBuildpackRepository.ClusterStore.Status.Buildpacks, v1alpha1.StoreBuildpack{
 				BuildpackInfo: v1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.multi",
 					Version: "my-wacky-version",
@@ -284,7 +284,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			_, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
-			require.Error(t, err, "cannot find buildpack 'io.buildpack.multi' with latest version due to invalid semver 'my-wacky-version'")
+			require.EqualError(t, err, "cannot find buildpack 'io.buildpack.multi' with latest version due to invalid semver 'my-wacky-version'")
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {

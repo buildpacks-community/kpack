@@ -1,9 +1,10 @@
 package cnb
 
 import (
+	"io"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"io"
 )
 
 type fakeLayer struct {

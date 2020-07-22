@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/pivotal/kpack/pkg/util"
+	"github.com/pkg/errors"
 )
 
 type Fetcher struct {
@@ -26,6 +27,10 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to get blob %s", blobURL)
+	}
 
 	file, err := ioutil.TempFile("", "")
 	if err != nil {

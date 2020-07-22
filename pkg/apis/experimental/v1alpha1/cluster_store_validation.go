@@ -7,14 +7,14 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func (s *Store) SetDefaults(context.Context) {
+func (s *ClusterStore) SetDefaults(context.Context) {
 }
 
-func (s *Store) Validate(ctx context.Context) *apis.FieldError {
+func (s *ClusterStore) Validate(ctx context.Context) *apis.FieldError {
 	return s.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (s *StoreSpec) Validate(ctx context.Context) *apis.FieldError {
+func (s *ClusterStoreSpec) Validate(ctx context.Context) *apis.FieldError {
 	if len(s.Sources) == 0 {
 		return apis.ErrMissingField("sources")
 	}

@@ -1,8 +1,9 @@
 package cnb
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func (bl BuildpackLayerInfo) supports(buildpackApi string, id string, mixins []string) error {

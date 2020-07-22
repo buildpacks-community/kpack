@@ -1,4 +1,4 @@
-package store_test
+package clusterstore_test
 
 import (
 	"fmt"
@@ -17,23 +17,23 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/reconciler/store"
-	"github.com/pivotal/kpack/pkg/reconciler/store/storefakes"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterstore/clusterstorefakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
 
-func TestStoreReconciler(t *testing.T) {
-	spec.Run(t, "Store Reconciler", testStoreReconciler)
+func TestClusterStoreReconciler(t *testing.T) {
+	spec.Run(t, "ClusterStore Reconciler", testClusterStoreReconciler)
 }
 
-func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
+func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
 		storeName               = "some-store"
 		storeKey                = storeName
 		initialGeneration int64 = 1
 	)
 	var (
-		fakeStoreReader = &storefakes.FakeStoreReader{}
+		fakeStoreReader = &clusterstorefakes.FakeStoreReader{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -42,20 +42,20 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 
-			r := &store.Reconciler{
-				Client:      fakeClient,
-				StoreReader: fakeStoreReader,
-				StoreLister: listers.GetStoreLister(),
+			r := &clusterstore.Reconciler{
+				Client:             fakeClient,
+				StoreReader:        fakeStoreReader,
+				ClusterStoreLister: listers.GetClusterStoreLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	store := &expv1alpha1.Store{
+	store := &expv1alpha1.ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       storeName,
 			Generation: initialGeneration,
 		},
-		Spec: expv1alpha1.StoreSpec{
+		Spec: expv1alpha1.ClusterStoreSpec{
 			Sources: []expv1alpha1.StoreImage{
 				{
 					Image: "some.registry/some-image-1",
@@ -104,10 +104,10 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Store{
+						Object: &expv1alpha1.ClusterStore{
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
-							Status: expv1alpha1.StoreStatus{
+							Status: expv1alpha1.ClusterStoreStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -132,7 +132,7 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("does not update the status with no status change", func() {
 			fakeStoreReader.ReadReturns(readBuildpacks, nil)
 
-			store.Status = expv1alpha1.StoreStatus{
+			store.Status = expv1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -164,10 +164,10 @@ func testStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Store{
+						Object: &expv1alpha1.ClusterStore{
 							ObjectMeta: store.ObjectMeta,
 							Spec:       store.Spec,
-							Status: expv1alpha1.StoreStatus{
+							Status: expv1alpha1.ClusterStoreStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

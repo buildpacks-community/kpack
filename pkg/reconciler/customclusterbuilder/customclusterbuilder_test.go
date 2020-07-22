@@ -43,8 +43,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		fakeTracker     = testhelpers.FakeTracker{}
-		fakeRepoFactory = func(store *expv1alpha1.Store) cnb.BuildpackRepository {
-			return testhelpers.FakeBuildpackRepository{Store: store}
+		fakeRepoFactory = func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
 		}
 	)
 
@@ -59,25 +59,25 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				BuilderCreator:             builderCreator,
 				KeychainFactory:            keychainFactory,
 				Tracker:                    fakeTracker,
-				StoreLister:                listers.GetStoreLister(),
-				StackLister:                listers.GetStackLister(),
+				ClusterStoreLister:         listers.GetClusterStoreLister(),
+				ClusterStackLister:         listers.GetClusterStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	store := &expv1alpha1.Store{
+	clusterStore := &expv1alpha1.ClusterStore{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-store",
 		},
-		Spec:   expv1alpha1.StoreSpec{},
-		Status: expv1alpha1.StoreStatus{},
+		Spec:   expv1alpha1.ClusterStoreSpec{},
+		Status: expv1alpha1.ClusterStoreStatus{},
 	}
 
-	stack := &expv1alpha1.Stack{
+	clusterStack := &expv1alpha1.ClusterStack{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "some-stack",
 		},
-		Status: expv1alpha1.StackStatus{
+		Status: expv1alpha1.ClusterStackStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -97,9 +97,15 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: expv1alpha1.CustomClusterBuilderSpec{
 			CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-				Tag:   customBuilderTag,
-				Stack: "some-stack",
-				Store: "some-store",
+				Tag: customBuilderTag,
+				Stack: corev1.ObjectReference{
+					Kind: "Stack",
+					Name: "some-stack",
+				},
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-store",
+				},
 				Order: []expv1alpha1.OrderEntry{
 					{
 						Group: []expv1alpha1.BuildpackRef{
@@ -193,8 +199,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
-					stack,
-					store,
+					clusterStack,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: false,
@@ -207,7 +213,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
 				Keychain:            &registryfakes.FakeKeychain{},
-				BuildpackRepository: testhelpers.FakeBuildpackRepository{Store: store},
+				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
 				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
@@ -249,15 +255,15 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
-					stack,
-					store,
+					clusterStack,
+					clusterStore,
 					expectedBuilder,
 				},
 				WantErr: false,
 			})
 
-			require.True(t, fakeTracker.IsTracking(store, expectedBuilder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(stack, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStore, expectedBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStack, customBuilder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -301,8 +307,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
-					stack,
-					store,
+					clusterStack,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: false,
@@ -334,8 +340,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
-					stack,
-					store,
+					clusterStack,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: true,
@@ -348,11 +354,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("updates status and doesn't build builder when stack not ready", func() {
-			notReadyStack := &expv1alpha1.Stack{
+			notReadyClusterStack := &expv1alpha1.ClusterStack{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "some-stack",
 				},
-				Status: expv1alpha1.StackStatus{
+				Status: expv1alpha1.ClusterStackStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 0,
 						Conditions: []corev1alpha1.Condition{
@@ -367,8 +373,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: customBuilderKey,
 				Objects: []runtime.Object{
-					notReadyStack,
-					store,
+					notReadyClusterStack,
+					clusterStore,
 					customBuilder,
 				},
 				WantErr: true,
@@ -397,8 +403,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			//still track resources
-			require.True(t, fakeTracker.IsTracking(store, customBuilder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(notReadyStack, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStore, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, customBuilder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
 

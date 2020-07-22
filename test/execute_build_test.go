@@ -15,7 +15,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -49,8 +48,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderName       = "cluster-builder"
 		serviceAccountName       = "image-service-account"
 		builderImage             = "gcr.io/paketo-buildpacks/builder:base"
-		storeName                = "store"
-		stackName                = "stack"
+		clusterStoreName         = "store"
+		clusterStackName         = "stack"
 		customBuilderName        = "custom-builder"
 		customClusterBuilderName = "custom-cluster-builder"
 	)
@@ -67,12 +66,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients(t)
 		require.NoError(t, err)
 
-		err = clients.client.ExperimentalV1alpha1().Stores().Delete(storeName, &metav1.DeleteOptions{})
+		err = clients.client.ExperimentalV1alpha1().ClusterStores().Delete(clusterStoreName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.ExperimentalV1alpha1().Stacks().Delete(stackName, &metav1.DeleteOptions{})
+		err = clients.client.ExperimentalV1alpha1().ClusterStacks().Delete(clusterStackName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -89,7 +88,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		deleteNamespace(t, clients, testNamespace)
 
-		_, err = clients.k8sClient.CoreV1().Namespaces().Create(&v1.Namespace{
+		_, err = clients.k8sClient.CoreV1().Namespaces().Create(&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testNamespace,
 			},
@@ -113,7 +112,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		basicAuth, err := auth.Authorization()
 		require.NoError(t, err)
 
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: dockerSecret,
 				Annotations: map[string]string{
@@ -124,15 +123,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				"username": basicAuth.Username,
 				"password": basicAuth.Password,
 			},
-			Type: v1.SecretTypeBasicAuth,
+			Type: corev1.SecretTypeBasicAuth,
 		})
 		require.NoError(t, err)
 
-		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: serviceAccountName,
 			},
-			Secrets: []v1.ObjectReference{
+			Secrets: []corev1.ObjectReference{
 				{
 					Name: dockerSecret,
 				},
@@ -140,11 +139,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().Stores().Create(&expv1alpha1.Store{
+		_, err = clients.client.ExperimentalV1alpha1().ClusterStores().Create(&expv1alpha1.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: storeName,
+				Name: clusterStoreName,
 			},
-			Spec: expv1alpha1.StoreSpec{
+			Spec: expv1alpha1.ClusterStoreSpec{
 				Sources: []expv1alpha1.StoreImage{
 					{
 						Image: builderImage,
@@ -157,16 +156,16 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().Stacks().Create(&expv1alpha1.Stack{
+		_, err = clients.client.ExperimentalV1alpha1().ClusterStacks().Create(&expv1alpha1.ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: stackName,
+				Name: clusterStackName,
 			},
-			Spec: expv1alpha1.StackSpec{
+			Spec: expv1alpha1.ClusterStackSpec{
 				Id: "io.buildpacks.stacks.bionic",
-				BuildImage: expv1alpha1.StackSpecImage{
+				BuildImage: expv1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
 				},
-				RunImage: expv1alpha1.StackSpecImage{
+				RunImage: expv1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
 				},
 			},
@@ -190,9 +189,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.CustomNamespacedBuilderSpec{
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-					Tag:   cfg.newImageTag(),
-					Stack: stackName,
-					Store: storeName,
+					Tag: cfg.newImageTag(),
+					Stack: corev1.ObjectReference{
+						Name: clusterStackName,
+						Kind: "ClusterStack",
+					},
+					Store: corev1.ObjectReference{
+						Name: clusterStoreName,
+						Kind: "ClusterStore",
+					},
 					Order: []expv1alpha1.OrderEntry{
 						{
 							Group: []expv1alpha1.BuildpackRef{
@@ -236,9 +241,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: expv1alpha1.CustomClusterBuilderSpec{
 				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
-					Tag:   cfg.newImageTag(),
-					Stack: stackName,
-					Store: storeName,
+					Tag: cfg.newImageTag(),
+					Stack: corev1.ObjectReference{
+						Name: clusterStackName,
+						Kind: "ClusterStack",
+					},
+					Store: corev1.ObjectReference{
+						Name: clusterStoreName,
+						Kind: "ClusterStore",
+					},
 					Order: []expv1alpha1.OrderEntry{
 						{
 							Group: []expv1alpha1.BuildpackRef{
@@ -271,7 +282,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				ServiceAccountRef: v1.ObjectReference{
+				ServiceAccountRef: corev1.ObjectReference{
 					Namespace: testNamespace,
 					Name:      serviceAccountName,
 				},
@@ -295,12 +306,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		cacheSize := resource.MustParse("1Gi")
 
-		expectedResources := v1.ResourceRequirements{
-			Limits: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("1G"),
+		expectedResources := corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("1G"),
 			},
-			Requests: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("512M"),
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("512M"),
 			},
 		}
 
@@ -388,7 +399,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		basicAuth, err := auth.Authorization()
 		require.NoError(t, err)
 
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&v1.Secret{
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: dockerSecret,
 				Annotations: map[string]string{
@@ -399,15 +410,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				"username": basicAuth.Username,
 				"password": basicAuth.Password,
 			},
-			Type: v1.SecretTypeBasicAuth,
+			Type: corev1.SecretTypeBasicAuth,
 		})
 		require.NoError(t, err)
 
-		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&v1.ServiceAccount{
+		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: serviceAccountName,
 			},
-			Secrets: []v1.ObjectReference{
+			Secrets: []corev1.ObjectReference{
 				{
 					Name: dockerSecret,
 				},
@@ -429,12 +440,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		cacheSize := resource.MustParse("1Gi")
 
-		expectedResources := v1.ResourceRequirements{
-			Limits: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("1G"),
+		expectedResources := corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("1G"),
 			},
-			Requests: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("512M"),
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("512M"),
 			},
 		}
 
@@ -510,7 +521,7 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 	}
 }
 
-func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, expectedResources v1.ResourceRequirements) {
+func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, expectedResources corev1.ResourceRequirements) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -611,7 +622,7 @@ func deleteNamespace(t *testing.T, clients *clients, namespace string) {
 		if evt.Type != watch.Deleted {
 			continue
 		}
-		if ns, ok := evt.Object.(*v1.Namespace); ok {
+		if ns, ok := evt.Object.(*corev1.Namespace); ok {
 			if ns.Name == namespace {
 				closed = true
 				break

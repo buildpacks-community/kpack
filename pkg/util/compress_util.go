@@ -8,18 +8,22 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
+
+var errUnexpectedBlobType error = errors.New("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 
 // ExtractFile Extracts a compressed file into a provided directory
 func ExtractFile(file *os.File, dir string) error {
-	fileType, err := ClassifyFile(file.Name())
+	fileType, err := classifyFile(file.Name())
 	if err != nil {
 		return err
 	}
 
 	switch fileType {
 	case "application/zip":
-		err = ExtractZip(file, dir)
+		err = extractZip(file, dir)
 	case "application/x-gzip":
 		r, err := os.Open(file.Name())
 		if err != nil {
@@ -31,19 +35,39 @@ func ExtractFile(file *os.File, dir string) error {
 			return err
 		}
 
-		err = ExtractTar(gzf, dir)
+		err = extractTar(gzf, dir)
 	case "application/octet-stream":
 		r, err := os.Open(file.Name())
 		if err != nil {
 			return err
 		}
-		err = ExtractTar(r, dir)
+
+		if !isTar(r) {
+			return errUnexpectedBlobType
+		}
+
+		if _, err := r.Seek(0, 0); err != nil {
+			return err
+		}
+
+		err = extractTar(r, dir)
+	default:
+		return errUnexpectedBlobType
+	}
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-// ExtractTar Extracts a tar file into a provided directory
-func ExtractTar(reader io.Reader, dir string) error {
+func isTar(reader io.Reader) bool {
+	tr := tar.NewReader(reader)
+	_, err := tr.Next()
+	return err == nil
+}
+
+func extractTar(reader io.Reader, dir string) error {
 	tarReader := tar.NewReader(reader)
 	for {
 		header, err := tarReader.Next()
@@ -66,8 +90,7 @@ func ExtractTar(reader io.Reader, dir string) error {
 				return err
 			}
 			defer outFile.Close()
-			_, err = io.Copy(outFile, tarReader)
-			if err != nil {
+			if _, err := io.Copy(outFile, tarReader); err != nil {
 				return err
 			}
 		}
@@ -75,8 +98,7 @@ func ExtractTar(reader io.Reader, dir string) error {
 	return nil
 }
 
-// ExtractZip Extracts a zip file into a provided directory
-func ExtractZip(file *os.File, dir string) error {
+func extractZip(file *os.File, dir string) error {
 	zipReader, err := zip.OpenReader(file.Name())
 	if err != nil {
 		return err
@@ -117,8 +139,7 @@ func ExtractZip(file *os.File, dir string) error {
 	return nil
 }
 
-// ClassifyFile Returns the Content-Type of a file
-func ClassifyFile(f string) (string, error) {
+func classifyFile(f string) (string, error) {
 	file, err := os.Open(f)
 	if err != nil {
 		return "", err

@@ -23,8 +23,8 @@ type RemoteBuilderCreator struct {
 	KpackVersion   string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, stack *expv1alpha1.Stack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
-	buildImage, _, err := r.RegistryClient.Fetch(keychain, stack.Status.BuildImage.LatestImage)
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *expv1alpha1.ClusterStack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+	buildImage, _, err := r.RegistryClient.Fetch(keychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -39,7 +39,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	builderBldr.AddStack(buildImage, stack)
+	builderBldr.AddStack(buildImage, clusterStack)
 
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
@@ -68,8 +68,8 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
-			RunImage: stack.Status.RunImage.LatestImage,
-			ID:       stack.Status.Id,
+			RunImage: clusterStack.Status.RunImage.LatestImage,
+			ID:       clusterStack.Status.Id,
 		},
 		Buildpacks: buildpackMetadata(builderBldr.buildpacks()),
 	}, nil
@@ -79,8 +79,9 @@ func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha1.Buildpack
 	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		m = append(m, v1alpha1.BuildpackMetadata{
-			Id:      b.Id,
-			Version: b.Version,
+			Id:       b.Id,
+			Version:  b.Version,
+			Homepage: b.Homepage,
 		})
 	}
 	return m

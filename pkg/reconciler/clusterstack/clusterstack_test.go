@@ -1,4 +1,4 @@
-package stack_test
+package clusterstack_test
 
 import (
 	"errors"
@@ -17,35 +17,35 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/reconciler/stack"
-	"github.com/pivotal/kpack/pkg/reconciler/stack/stackfakes"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterstack/clusterstackfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
 
-func TestStackReconciler(t *testing.T) {
-	spec.Run(t, "Stack Reconciler", testStackReconciler)
+func TestClusterStackReconciler(t *testing.T) {
+	spec.Run(t, "Stack Reconciler", testClusterStackReconciler)
 }
 
-func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
+func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
-		stackName               = "some-stack"
-		stackKey                = stackName
+		clusterStackName        = "some-clusterStack"
+		clusterStackKey         = clusterStackName
 		initialGeneration int64 = 1
 	)
 
-	fakeStackReader := &stackfakes.FakeStackReader{}
+	fakeClusterStackReader := &clusterstackfakes.FakeClusterStackReader{}
 
-	testStack := &expv1alpha1.Stack{
+	testClusterStack := &expv1alpha1.ClusterStack{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       stackName,
+			Name:       clusterStackName,
 			Generation: initialGeneration,
 		},
-		Spec: expv1alpha1.StackSpec{
-			Id: "some.stack.id",
-			BuildImage: expv1alpha1.StackSpecImage{
+		Spec: expv1alpha1.ClusterStackSpec{
+			Id: "some.clusterStack.id",
+			BuildImage: expv1alpha1.ClusterStackSpecImage{
 				Image: "some-registry.io/build-image",
 			},
-			RunImage: expv1alpha1.StackSpecImage{
+			RunImage: expv1alpha1.ClusterStackSpecImage{
 				Image: "some-registry.io/run-image",
 			},
 		},
@@ -55,41 +55,41 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &stack.Reconciler{
-				Client:      fakeClient,
-				StackLister: listers.GetStackLister(),
-				StackReader: fakeStackReader,
+			r := &clusterstack.Reconciler{
+				Client:             fakeClient,
+				ClusterStackLister: listers.GetClusterStackLister(),
+				ClusterStackReader: fakeClusterStackReader,
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
 	when("#Reconcile", func() {
 		it("saves metadata to the status", func() {
-			resolvedStack := expv1alpha1.ResolvedStack{
-				BuildImage: expv1alpha1.StackStatusImage{
+			resolvedClusterStack := expv1alpha1.ResolvedClusterStack{
+				BuildImage: expv1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/build-image@sha245:123",
 				},
-				RunImage: expv1alpha1.StackStatusImage{
+				RunImage: expv1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/run-image@sha245:123",
 				},
 				Mixins:  []string{"a-nice-mixin"},
 				UserID:  1000,
 				GroupID: 2000,
 			}
-			fakeStackReader.ReadReturns(resolvedStack, nil)
+			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
 
 			rt.Test(rtesting.TableRow{
-				Key: stackKey,
+				Key: clusterStackKey,
 				Objects: []runtime.Object{
-					testStack,
+					testClusterStack,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Stack{
-							ObjectMeta: testStack.ObjectMeta,
-							Spec:       testStack.Spec,
-							Status: expv1alpha1.StackStatus{
+						Object: &expv1alpha1.ClusterStack{
+							ObjectMeta: testClusterStack.ObjectMeta,
+							Spec:       testClusterStack.Spec,
+							Status: expv1alpha1.ClusterStackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -99,32 +99,32 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								ResolvedStack: resolvedStack,
+								ResolvedClusterStack: resolvedClusterStack,
 							},
 						},
 					},
 				},
 			})
 
-			require.Equal(t, 1, fakeStackReader.ReadCallCount())
-			require.Equal(t, testStack.Spec, fakeStackReader.ReadArgsForCall(0))
+			require.Equal(t, 1, fakeClusterStackReader.ReadCallCount())
+			require.Equal(t, testClusterStack.Spec, fakeClusterStackReader.ReadArgsForCall(0))
 		})
 
 		it("does not update the status with no status change", func() {
-			resolvedStack := expv1alpha1.ResolvedStack{
-				BuildImage: expv1alpha1.StackStatusImage{
+			resolvedClusterStack := expv1alpha1.ResolvedClusterStack{
+				BuildImage: expv1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/build-image@sha245:123",
 				},
-				RunImage: expv1alpha1.StackStatusImage{
+				RunImage: expv1alpha1.ClusterStackStatusImage{
 					LatestImage: "some-registry.io/run-image@sha245:123",
 				},
 				Mixins:  []string{"a-nice-mixin"},
 				UserID:  1000,
 				GroupID: 2000,
 			}
-			fakeStackReader.ReadReturns(resolvedStack, nil)
+			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
 
-			testStack.Status = expv1alpha1.StackStatus{
+			testClusterStack.Status = expv1alpha1.ClusterStackStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -134,32 +134,32 @@ func testStackReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				ResolvedStack: resolvedStack,
+				ResolvedClusterStack: resolvedClusterStack,
 			}
 			rt.Test(rtesting.TableRow{
-				Key: stackKey,
+				Key: clusterStackKey,
 				Objects: []runtime.Object{
-					testStack,
+					testClusterStack,
 				},
 				WantErr: false,
 			})
 		})
 
-		it("sets the status to Ready False if error reading from stack", func() {
-			fakeStackReader.ReadReturns(expv1alpha1.ResolvedStack{}, errors.New("invalid mixins on run image"))
+		it("sets the status to Ready False if error reading from clusterStack", func() {
+			fakeClusterStackReader.ReadReturns(expv1alpha1.ResolvedClusterStack{}, errors.New("invalid mixins on run image"))
 
 			rt.Test(rtesting.TableRow{
-				Key: stackKey,
+				Key: clusterStackKey,
 				Objects: []runtime.Object{
-					testStack,
+					testClusterStack,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &expv1alpha1.Stack{
-							ObjectMeta: testStack.ObjectMeta,
-							Spec:       testStack.Spec,
-							Status: expv1alpha1.StackStatus{
+						Object: &expv1alpha1.ClusterStack{
+							ObjectMeta: testClusterStack.ObjectMeta,
+							Spec:       testClusterStack.Spec,
+							Status: expv1alpha1.ClusterStackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

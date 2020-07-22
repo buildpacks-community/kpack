@@ -86,12 +86,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StackSpecImage":              schema_pkg_apis_experimental_v1alpha1_StackSpecImage(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StackStatus":                 schema_pkg_apis_experimental_v1alpha1_StackStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StackStatusImage":            schema_pkg_apis_experimental_v1alpha1_StackStatusImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.Store":                       schema_pkg_apis_experimental_v1alpha1_Store(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStore":                schema_pkg_apis_experimental_v1alpha1_ClusterStore(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreBuildpack":              schema_pkg_apis_experimental_v1alpha1_StoreBuildpack(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreImage":                  schema_pkg_apis_experimental_v1alpha1_StoreImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreList":                   schema_pkg_apis_experimental_v1alpha1_StoreList(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreSpec":                   schema_pkg_apis_experimental_v1alpha1_StoreSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreStatus":                 schema_pkg_apis_experimental_v1alpha1_StoreStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreList":            schema_pkg_apis_experimental_v1alpha1_ClusterStoreList(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreSpec":            schema_pkg_apis_experimental_v1alpha1_ClusterStoreSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreStatus":          schema_pkg_apis_experimental_v1alpha1_ClusterStoreStatus(ref),
 	}
 }
 
@@ -2595,7 +2595,7 @@ func schema_pkg_apis_experimental_v1alpha1_StackStatusImage(ref common.Reference
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_Store(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterStore(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2622,12 +2622,12 @@ func schema_pkg_apis_experimental_v1alpha1_Store(ref common.ReferenceCallback) c
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreSpec"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreStatus"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreStatus"),
 						},
 					},
 				},
@@ -2635,7 +2635,7 @@ func schema_pkg_apis_experimental_v1alpha1_Store(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreSpec", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.StoreStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreSpec", "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStoreStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2758,7 +2758,7 @@ func schema_pkg_apis_experimental_v1alpha1_StoreImage(ref common.ReferenceCallba
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_StoreList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterStoreList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2794,7 +2794,7 @@ func schema_pkg_apis_experimental_v1alpha1_StoreList(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.Store"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStore"),
 									},
 								},
 							},
@@ -2805,11 +2805,11 @@ func schema_pkg_apis_experimental_v1alpha1_StoreList(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.Store", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ClusterStore", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_StoreSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterStoreSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2840,7 +2840,7 @@ func schema_pkg_apis_experimental_v1alpha1_StoreSpec(ref common.ReferenceCallbac
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_StoreStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterStoreStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
