@@ -27,8 +27,6 @@ import (
 type KpackV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	BuildsGetter
-	BuildersGetter
-	ClusterBuildersGetter
 	ClusterStacksGetter
 	ClusterStoresGetter
 	CustomBuildersGetter
@@ -44,14 +42,6 @@ type KpackV1alpha1Client struct {
 
 func (c *KpackV1alpha1Client) Builds(namespace string) BuildInterface {
 	return newBuilds(c, namespace)
-}
-
-func (c *KpackV1alpha1Client) Builders(namespace string) BuilderInterface {
-	return newBuilders(c, namespace)
-}
-
-func (c *KpackV1alpha1Client) ClusterBuilders() ClusterBuilderInterface {
-	return newClusterBuilders(c)
 }
 
 func (c *KpackV1alpha1Client) ClusterStacks() ClusterStackInterface {
