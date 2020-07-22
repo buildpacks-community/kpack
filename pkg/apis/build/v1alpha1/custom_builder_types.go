@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,7 +39,10 @@ type CustomNamespacedBuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type CustomBuilderStatus struct {
-	BuilderStatus `json:",inline"`
+	corev1alpha1.Status `json:",inline"`
+	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata,omitempty"`
+	Stack               BuildStack            `json:"stack,omitempty"`
+	LatestImage         string                `json:"latestImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

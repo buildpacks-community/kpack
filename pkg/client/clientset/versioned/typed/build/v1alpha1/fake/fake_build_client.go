@@ -32,14 +32,6 @@ func (c *FakeKpackV1alpha1) Builds(namespace string) v1alpha1.BuildInterface {
 	return &FakeBuilds{c, namespace}
 }
 
-func (c *FakeKpackV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface {
-	return &FakeBuilders{c, namespace}
-}
-
-func (c *FakeKpackV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
-	return &FakeClusterBuilders{c}
-}
-
 func (c *FakeKpackV1alpha1) ClusterStacks() v1alpha1.ClusterStackInterface {
 	return &FakeClusterStacks{c}
 }

@@ -26,10 +26,6 @@ import (
 type Interface interface {
 	// Builds returns a BuildInformer.
 	Builds() BuildInformer
-	// Builders returns a BuilderInformer.
-	Builders() BuilderInformer
-	// ClusterBuilders returns a ClusterBuilderInformer.
-	ClusterBuilders() ClusterBuilderInformer
 	// ClusterStacks returns a ClusterStackInformer.
 	ClusterStacks() ClusterStackInformer
 	// ClusterStores returns a ClusterStoreInformer.
@@ -58,16 +54,6 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Builds returns a BuildInformer.
 func (v *version) Builds() BuildInformer {
 	return &buildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Builders returns a BuilderInformer.
-func (v *version) Builders() BuilderInformer {
-	return &builderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ClusterBuilders returns a ClusterBuilderInformer.
-func (v *version) ClusterBuilders() ClusterBuilderInformer {
-	return &clusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterStacks returns a ClusterStackInformer.

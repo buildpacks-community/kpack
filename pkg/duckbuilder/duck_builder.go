@@ -12,8 +12,8 @@ type DuckBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DuckBuilderSpec        `json:"spec"`
-	Status v1alpha1.BuilderStatus `json:"status"`
+	Spec   DuckBuilderSpec              `json:"spec"`
+	Status v1alpha1.CustomBuilderStatus `json:"status"`
 }
 type DuckBuilderSpec struct {
 	ImagePullSecrets []v1.LocalObjectReference

@@ -37,47 +37,6 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	var (
 		stopCh = make(chan struct{})
 
-		builder = &v1alpha1.Builder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      builderName,
-				Namespace: builderNamespace,
-			},
-			Spec: v1alpha1.BuilderWithSecretsSpec{
-				ImagePullSecrets: []v1.LocalObjectReference{
-					{
-						Name: "some-secret",
-					},
-				},
-			},
-			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
-					{
-						Id:      "some-buildpack",
-						Version: "some-version",
-					},
-				},
-				Stack:       v1alpha1.BuildStack{},
-				LatestImage: "",
-			},
-		}
-
-		clusterBuilder = &v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: v1alpha1.BuilderSpec{},
-			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
-					{
-						Id:      "some-other-buildpack",
-						Version: "some-other-version",
-					},
-				},
-				Stack:       v1alpha1.BuildStack{},
-				LatestImage: "",
-			},
-		}
-
 		customBuilder = &v1alpha1.CustomBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      customBuilderName,
@@ -85,16 +44,14 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: v1alpha1.CustomNamespacedBuilderSpec{},
 			Status: v1alpha1.CustomBuilderStatus{
-				BuilderStatus: v1alpha1.BuilderStatus{
-					BuilderMetadata: v1alpha1.BuildpackMetadataList{
-						{
-							Id:      "another-buildpack",
-							Version: "another-version",
-						},
+				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+					{
+						Id:      "another-buildpack",
+						Version: "another-version",
 					},
-					Stack:       v1alpha1.BuildStack{},
-					LatestImage: "",
 				},
+				Stack:       v1alpha1.BuildStack{},
+				LatestImage: "",
 			},
 		}
 
@@ -104,23 +61,19 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: v1alpha1.CustomClusterBuilderSpec{},
 			Status: v1alpha1.CustomBuilderStatus{
-				BuilderStatus: v1alpha1.BuilderStatus{
-					BuilderMetadata: v1alpha1.BuildpackMetadataList{
-						{
-							Id:      "another-buildpack",
-							Version: "another-version",
-						},
+				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+					{
+						Id:      "another-buildpack",
+						Version: "another-version",
 					},
-					Stack:       v1alpha1.BuildStack{},
-					LatestImage: "",
 				},
+				Stack:       v1alpha1.BuildStack{},
+				LatestImage: "",
 			},
 		}
 	)
 
 	client := fake.NewSimpleClientset(
-		builder,
-		clusterBuilder,
 		customBuilder,
 		customClusterbuilder,
 	)
@@ -128,8 +81,6 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	factory := externalversions.NewSharedInformerFactory(client, 10*time.Hour)
 
 	subject := DuckBuilderInformer{
-		BuilderInformer:              factory.Kpack().V1alpha1().Builders(),
-		ClusterBuilderInformer:       factory.Kpack().V1alpha1().ClusterBuilders(),
 		CustomBuilderInformer:        factory.Kpack().V1alpha1().CustomBuilders(),
 		CustomClusterBuilderInformer: factory.Kpack().V1alpha1().CustomClusterBuilders(),
 	}
@@ -143,31 +94,6 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#Lister", func() {
-		it("can return a builder of type Builder", func() {
-			duckBuilder, err := duckBuilderLister.Namespace(builderNamespace).Get(v1.ObjectReference{
-				Kind:      v1alpha1.BuilderKind,
-				Namespace: builderNamespace,
-				Name:      builderName,
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, builder.ObjectMeta, duckBuilder.ObjectMeta)
-			require.Equal(t, builder.Status, duckBuilder.Status)
-			require.Equal(t, builder.Spec.ImagePullSecrets, duckBuilder.Spec.ImagePullSecrets)
-		})
-
-		it("can return a builder of type ClusterBuilder", func() {
-			duckBuilder, err := duckBuilderLister.Namespace("").Get(v1.ObjectReference{
-				Kind: v1alpha1.ClusterBuilderKind,
-				Name: clusterBuilderName,
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, clusterBuilder.ObjectMeta, duckBuilder.ObjectMeta)
-			require.Equal(t, clusterBuilder.Status, duckBuilder.Status)
-			require.Equal(t, []v1.LocalObjectReference(nil), duckBuilder.Spec.ImagePullSecrets)
-		})
-
 		it("can return a builder of type CustomBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace(customBuilderNamespace).Get(v1.ObjectReference{
 				Kind:      v1alpha1.CustomBuilderKind,
@@ -177,7 +103,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, customBuilder.ObjectMeta, duckBuilder.ObjectMeta)
-			require.Equal(t, customBuilder.Status.BuilderStatus, duckBuilder.Status)
+			require.Equal(t, customBuilder.Status, duckBuilder.Status)
 			require.Equal(t, []v1.LocalObjectReference(nil), duckBuilder.Spec.ImagePullSecrets)
 		})
 
@@ -189,7 +115,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Equal(t, customClusterbuilder.ObjectMeta, duckBuilder.ObjectMeta)
-			require.Equal(t, customClusterbuilder.Status.BuilderStatus, duckBuilder.Status)
+			require.Equal(t, customClusterbuilder.Status, duckBuilder.Status)
 			require.Equal(t, []v1.LocalObjectReference(nil), duckBuilder.Spec.ImagePullSecrets)
 		})
 
@@ -197,8 +123,6 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			for _, typ := range []string{
 				v1alpha1.CustomClusterBuilderKind,
 				v1alpha1.CustomBuilderKind,
-				v1alpha1.BuilderKind,
-				v1alpha1.ClusterBuilderKind,
 			} {
 				_, err := duckBuilderLister.Namespace("some-namespace").Get(v1.ObjectReference{
 					Kind: typ,
@@ -223,11 +147,9 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			subject.AddEventHandler(testHandler)
 
 			assert.Eventually(t, func() bool {
-				return len(testHandler.added) == 4
+				return len(testHandler.added) == 2
 			}, 5*time.Second, time.Millisecond)
 
-			assert.Contains(t, testHandler.added, builder)
-			assert.Contains(t, testHandler.added, clusterBuilder)
 			assert.Contains(t, testHandler.added, customBuilder)
 			assert.Contains(t, testHandler.added, customClusterbuilder)
 		})

@@ -35,66 +35,6 @@ type RemoteMetadataRetriever struct {
 	ImageFetcher    ImageFetcher
 }
 
-func (r *RemoteMetadataRetriever) GetBuilderImage(builder FetchableBuilder) (v1alpha1.BuilderRecord, error) {
-	builderKeychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
-		Namespace:        builder.GetObjectMeta().GetNamespace(),
-		ImagePullSecrets: builder.ImagePullSecrets(),
-	})
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to create builder image keychain")
-	}
-
-	builderImage, builderImageId, err := r.ImageFetcher.Fetch(builderKeychain, builder.Image())
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to fetch remote builder image")
-	}
-
-	stackId, err := imagehelpers.GetStringLabel(builderImage, lifecycle.StackIDLabel)
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
-	}
-
-	var md BuilderImageMetadata
-	err = imagehelpers.GetLabel(builderImage, BuilderMetadataLabel, &md)
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unsupported builder metadata structure")
-	}
-
-	runImageKeychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
-		Namespace:        builder.GetObjectMeta().GetNamespace(),
-		ImagePullSecrets: builder.ImagePullSecrets(),
-	})
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to create run image keychain")
-	}
-
-	_, runImageId, err := r.ImageFetcher.Fetch(runImageKeychain, md.Stack.RunImage.Image)
-	if err != nil {
-		return v1alpha1.BuilderRecord{}, errors.Wrap(err, "unable to fetch remote run image")
-	}
-
-	return v1alpha1.BuilderRecord{
-		Image: builderImageId,
-		Stack: v1alpha1.BuildStack{
-			RunImage: runImageId,
-			ID:       stackId,
-		},
-		Buildpacks: transform(md.Buildpacks),
-	}, nil
-}
-
-func transform(infos []DescriptiveBuildpackInfo) v1alpha1.BuildpackMetadataList {
-	buildpacks := make(v1alpha1.BuildpackMetadataList, 0, len(infos))
-	for _, buildpack := range infos {
-		buildpacks = append(buildpacks, v1alpha1.BuildpackMetadata{
-			Id:       buildpack.Id,
-			Version:  buildpack.Version,
-			Homepage: buildpack.Homepage,
-		})
-	}
-	return buildpacks
-}
-
 func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltImage, error) {
 	keychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		ServiceAccount: build.Spec.ServiceAccount,

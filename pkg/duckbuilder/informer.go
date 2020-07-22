@@ -11,31 +11,23 @@ import (
 )
 
 type DuckBuilderInformer struct {
-	BuilderInformer              informerv1alpha1.BuilderInformer
-	ClusterBuilderInformer       informerv1alpha1.ClusterBuilderInformer
 	CustomBuilderInformer        informerv1alpha1.CustomBuilderInformer
 	CustomClusterBuilderInformer informerv1alpha1.CustomClusterBuilderInformer
 }
 
 func (di *DuckBuilderInformer) AddEventHandler(handler cache.ResourceEventHandler) {
-	di.BuilderInformer.Informer().AddEventHandler(handler)
-	di.ClusterBuilderInformer.Informer().AddEventHandler(handler)
 	di.CustomBuilderInformer.Informer().AddEventHandler(handler)
 	di.CustomClusterBuilderInformer.Informer().AddEventHandler(handler)
 }
 
 func (di *DuckBuilderInformer) Lister() *DuckBuilderLister {
 	return &DuckBuilderLister{
-		BuilderLister:              di.BuilderInformer.Lister(),
-		ClusterBuilderLister:       di.ClusterBuilderInformer.Lister(),
 		CustomBuilderLister:        di.CustomBuilderInformer.Lister(),
 		CustomClusterBuilderLister: di.CustomClusterBuilderInformer.Lister(),
 	}
 }
 
 type DuckBuilderLister struct {
-	BuilderLister              v1alpha1Listers.BuilderLister
-	ClusterBuilderLister       v1alpha1Listers.ClusterBuilderLister
 	CustomBuilderLister        v1alpha1Listers.CustomBuilderLister
 	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
 }
@@ -54,12 +46,6 @@ type DuckBuilderNamespaceLister struct {
 
 func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*DuckBuilder, error) {
 	switch reference.Kind {
-	case v1alpha1.BuilderKind:
-		builder, err := bl.DuckBuilderLister.BuilderLister.Builders(bl.namespace).Get(reference.Name)
-		return convertBuilder(builder), err
-	case v1alpha1.ClusterBuilderKind:
-		builder, err := bl.DuckBuilderLister.ClusterBuilderLister.Get(reference.Name)
-		return convertClusterBuilder(builder), err
 	case v1alpha1.CustomBuilderKind:
 		builder, err := bl.DuckBuilderLister.CustomBuilderLister.CustomBuilders(bl.namespace).Get(reference.Name)
 		return convertCustomBuilder(builder), err
@@ -71,31 +57,6 @@ func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*Du
 	}
 }
 
-func convertBuilder(builder *v1alpha1.Builder) *DuckBuilder {
-	if builder == nil {
-		return nil
-	}
-
-	return &DuckBuilder{
-		TypeMeta:   builder.TypeMeta,
-		ObjectMeta: builder.ObjectMeta,
-		Spec:       DuckBuilderSpec{builder.Spec.ImagePullSecrets},
-		Status:     builder.Status,
-	}
-}
-
-func convertClusterBuilder(builder *v1alpha1.ClusterBuilder) *DuckBuilder {
-	if builder == nil {
-		return nil
-	}
-
-	return &DuckBuilder{
-		TypeMeta:   builder.TypeMeta,
-		ObjectMeta: builder.ObjectMeta,
-		Status:     builder.Status,
-	}
-}
-
 func convertCustomBuilder(builder *v1alpha1.CustomBuilder) *DuckBuilder {
 	if builder == nil {
 		return nil
@@ -104,7 +65,7 @@ func convertCustomBuilder(builder *v1alpha1.CustomBuilder) *DuckBuilder {
 	return &DuckBuilder{
 		TypeMeta:   builder.TypeMeta,
 		ObjectMeta: builder.ObjectMeta,
-		Status:     builder.Status.BuilderStatus,
+		Status:     builder.Status,
 	}
 }
 
@@ -116,6 +77,6 @@ func convertCustomClusterBuilder(builder *v1alpha1.CustomClusterBuilder) *DuckBu
 	return &DuckBuilder{
 		TypeMeta:   builder.TypeMeta,
 		ObjectMeta: builder.ObjectMeta,
-		Status:     builder.Status.BuilderStatus,
+		Status:     builder.Status,
 	}
 }
