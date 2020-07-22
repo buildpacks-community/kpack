@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -46,56 +47,24 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	build := &v1alpha1.Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      buildName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"some/label": "to-pass-through",
-			},
-			Annotations: map[string]string{
-				"some/annotation": "to-pass-through",
-			},
-		},
-		Spec: v1alpha1.BuildSpec{
-			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
-			Builder:        builderImageRef,
-			ServiceAccount: serviceAccount,
-			Source: v1alpha1.SourceConfig{
-				Git: &v1alpha1.Git{
-					URL:      "giturl.com/git.git",
-					Revision: "gitrev1234",
-				},
-			},
-			CacheName: "some-cache-name",
-			Bindings: []v1alpha1.Binding{
-				{
-					Name: "database",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "database-configmap",
-					},
-				},
-				{
-					Name: "apm",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "apm-configmap",
-					},
-					SecretRef: &corev1.LocalObjectReference{
-						Name: "apm-secret",
-					},
-				},
-			},
-			Env: []corev1.EnvVar{
-				{Name: "keyA", Value: "valueA"},
-				{Name: "keyB", Value: "valueB"},
-			},
-			Resources: resources,
-			LastBuild: &v1alpha1.LastBuild{
-				Image:   previousAppImage,
-				StackId: "com.builder.stack.io",
-			},
+	gitSourceConfig := v1alpha1.SourceConfig{
+		Git: &v1alpha1.Git{
+			URL:      "giturl.com/git.git",
+			Revision: "gitrev1234",
 		},
 	}
+
+	s3SourceConfig := v1alpha1.SourceConfig{
+		S3: &v1alpha1.S3{
+			URL:         "s3url.com",
+			Bucket:      "bucket-name",
+			File:        "file.tar.gz",
+			Credentials: "s3-secret-1",
+		},
+	}
+
+	build := createBuild(gitSourceConfig, builderImageRef, resources, buildName, namespace, serviceAccount, previousAppImage)
+	s3Build := createBuild(s3SourceConfig, builderImageRef, resources, buildName, namespace, serviceAccount, previousAppImage)
 
 	secrets := []corev1.Secret{
 		{
@@ -151,6 +120,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Name: "docker-secret-3",
 			},
 			Type: corev1.SecretTypeDockercfg,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "s3-secret-1",
+				Annotations: map[string]string{
+					v1alpha1.S3SecretAnnotationPrefix: "s3s.io",
+				},
+			},
+			Type: corev1.SecretTypeOpaque,
 		},
 	}
 
@@ -311,6 +289,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-basic-docker=docker-secret-1=acr.io",
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
+					"-s3-credentials=s3-secret-1",
 				}, pod.Spec.InitContainers[0].Args)
 
 				assert.Contains(t,
@@ -334,6 +313,52 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					corev1.VolumeMount{
 						Name:      "secret-volume-docker-secret-3",
 						MountPath: "/var/build-secrets/docker-secret-3",
+					},
+				)
+			})
+
+			it("configures prepare with s3, docker and git credentials", func() {
+				pod, err := s3Build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
+				assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
+				assert.Equal(t, []string{
+					directExecute,
+					"build-init",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-s3-credentials=s3-secret-1",
+				}, pod.Spec.InitContainers[0].Args)
+
+				assert.Contains(t,
+					pod.Spec.InitContainers[0].VolumeMounts,
+					corev1.VolumeMount{
+						Name:      "secret-volume-git-secret-1",
+						MountPath: "/var/build-secrets/git-secret-1",
+					},
+					corev1.VolumeMount{
+						Name:      "secret-volume-git-secret-2",
+						MountPath: "/var/build-secrets/git-secret-2",
+					},
+					corev1.VolumeMount{
+						Name:      "secret-volume-docker-secret-1",
+						MountPath: "/var/build-secrets/docker-secret-1",
+					},
+					corev1.VolumeMount{
+						Name:      "secret-volume-docker-secret-2",
+						MountPath: "/var/build-secrets/docker-secret-2",
+					},
+					corev1.VolumeMount{
+						Name:      "secret-volume-docker-secret-3",
+						MountPath: "/var/build-secrets/docker-secret-3",
+					},
+					corev1.VolumeMount{
+						Name:      "secret-volume-s3-secret-1",
+						MountPath: "/var/build-secrets/s3-secret-1",
 					},
 				)
 			})
@@ -483,6 +508,45 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						Name:  "REGISTRY_IMAGE",
 						Value: "some-registry.io/some-image",
 					})
+			})
+
+			it("configures the prepare step for s3 source", func() {
+				pod, err := s3Build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
+				assert.Equal(t, config.BuildInitImage, pod.Spec.InitContainers[0].Image)
+				assert.Contains(t, pod.Spec.InitContainers[0].Env,
+					corev1.EnvVar{
+						Name:  "S3_URL",
+						Value: s3Build.Spec.Source.S3.URL,
+					})
+				assert.Contains(t, pod.Spec.InitContainers[0].Env,
+					corev1.EnvVar{
+						Name:  "S3_BUCKET",
+						Value: s3Build.Spec.Source.S3.Bucket,
+					},
+				)
+				assert.Contains(t, pod.Spec.InitContainers[0].Env,
+					corev1.EnvVar{
+						Name:  "S3_FILE",
+						Value: s3Build.Spec.Source.S3.File,
+					},
+				)
+				assert.Contains(t, pod.Spec.InitContainers[0].Env,
+					corev1.EnvVar{
+						Name:  "S3_FORCE_PATH_STYLE",
+						Value: strconv.FormatBool(s3Build.Spec.Source.S3.ForcePathStyle),
+					},
+				)
+				assert.Contains(t, pod.Spec.InitContainers[0].Env,
+					corev1.EnvVar{
+						Name:  "S3_REGION",
+						Value: s3Build.Spec.Source.S3.Region,
+					},
+				)
+
+				assertSecretPresent(t, pod, "s3-secret-1")
 			})
 
 			it("configures detect step", func() {
@@ -830,6 +894,54 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "completion/image:image", pod.Spec.Containers[0].Image)
 		})
 	})
+}
+
+func createBuild(sourceConfig v1alpha1.SourceConfig, builderImageRef v1alpha1.BuildBuilderSpec, resources corev1.ResourceRequirements, buildName, namespace, serviceAccount, previousAppImage string) *v1alpha1.Build {
+	return &v1alpha1.Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      buildName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"some/label": "to-pass-through",
+			},
+			Annotations: map[string]string{
+				"some/annotation": "to-pass-through",
+			},
+		},
+		Spec: v1alpha1.BuildSpec{
+			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+			Builder:        builderImageRef,
+			ServiceAccount: serviceAccount,
+			Source:         sourceConfig,
+			CacheName:      "some-cache-name",
+			Bindings: []v1alpha1.Binding{
+				{
+					Name: "database",
+					MetadataRef: &corev1.LocalObjectReference{
+						Name: "database-configmap",
+					},
+				},
+				{
+					Name: "apm",
+					MetadataRef: &corev1.LocalObjectReference{
+						Name: "apm-configmap",
+					},
+					SecretRef: &corev1.LocalObjectReference{
+						Name: "apm-secret",
+					},
+				},
+			},
+			Env: []corev1.EnvVar{
+				{Name: "keyA", Value: "valueA"},
+				{Name: "keyB", Value: "valueB"},
+			},
+			Resources: resources,
+			LastBuild: &v1alpha1.LastBuild{
+				Image:   previousAppImage,
+				StackId: "com.builder.stack.io",
+			},
+		},
+	}
 }
 
 func assertSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) {

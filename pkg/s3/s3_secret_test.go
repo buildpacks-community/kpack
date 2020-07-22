@@ -1,6 +1,7 @@
 package s3_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -51,7 +52,7 @@ func testParseCredentialsSecret(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "creds"), 0777))
 
 			_, err = s3.ParseMountedCredentialsSecret(testDir, "secretCreds")
-			require.EqualError(t, err, "Error reading secret")
+			require.EqualError(t, err, fmt.Sprintf("Error reading secret %s at %s", "secretCreds", testDir))
 		})
 
 		it("reads empty accesskey from secret", func() {
