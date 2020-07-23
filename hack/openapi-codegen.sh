@@ -18,7 +18,7 @@ mkdir -p "$(dirname "${TMP_REPO_PATH}")" && ln -s "${SCRIPT_ROOT}" "${TMP_REPO_P
 
 ${OPENAPI_GEN_BIN} \
   -h "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.go.txt \
-  -i github.com/pivotal/kpack/pkg/apis/build/v1alpha1,github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1,github.com/pivotal/kpack/pkg/apis/core/v1alpha1 \
+  -i github.com/pivotal/kpack/pkg/apis/build/v1alpha1,github.com/pivotal/kpack/pkg/apis/core/v1alpha1 \
   -p github.com/pivotal/kpack/pkg/openapi
 
 go run ${SCRIPT_ROOT}/hack/openapi/main.go 1> ${SCRIPT_ROOT}/api/openapi-spec/swagger.json
