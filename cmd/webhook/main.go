@@ -56,7 +56,7 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 
 	return defaulting.NewAdmissionController(ctx,
 		// Name of the resource webhook.
-		"defaults.webhook.kpack.pivotal.io",
+		"defaults.webhook.kpack.io",
 		// The path on which to serve the webhook.
 		"/defaults",
 		// The resources to default.
