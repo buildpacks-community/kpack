@@ -1,4 +1,4 @@
-package customclusterbuilder
+package clusterBuilder
 
 import (
 	"context"
@@ -29,12 +29,12 @@ const (
 type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
 
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(
 	opt reconciler.Options,
-	informer v1alpha1informers.CustomClusterBuilderInformer,
+	informer v1alpha1informers.ClusterBuilderInformer,
 	repoFactory NewBuildpackRepository,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
@@ -42,13 +42,13 @@ func NewController(
 	clusterStackInformer v1alpha1informers.ClusterStackInformer,
 ) *controller.Impl {
 	c := &Reconciler{
-		Client:                     opt.Client,
-		CustomClusterBuilderLister: informer.Lister(),
-		RepoFactory:                repoFactory,
-		BuilderCreator:             builderCreator,
-		KeychainFactory:            keychainFactory,
-		ClusterStoreLister:         clusterStoreInformer.Lister(),
-		ClusterStackLister:         clusterStackInformer.Lister(),
+		Client:               opt.Client,
+		ClusterBuilderLister: informer.Lister(),
+		RepoFactory:          repoFactory,
+		BuilderCreator:       builderCreator,
+		KeychainFactory:      keychainFactory,
+		ClusterStoreLister:   clusterStoreInformer.Lister(),
+		ClusterStackLister:   clusterStackInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -61,14 +61,14 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client                     versioned.Interface
-	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
-	RepoFactory                NewBuildpackRepository
-	BuilderCreator             BuilderCreator
-	KeychainFactory            registry.KeychainFactory
-	Tracker                    reconciler.Tracker
-	ClusterStoreLister         v1alpha1Listers.ClusterStoreLister
-	ClusterStackLister         v1alpha1Listers.ClusterStackLister
+	Client               versioned.Interface
+	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
+	RepoFactory          NewBuildpackRepository
+	BuilderCreator       BuilderCreator
+	KeychainFactory      registry.KeychainFactory
+	Tracker              reconciler.Tracker
+	ClusterStoreLister   v1alpha1Listers.ClusterStoreLister
+	ClusterStackLister   v1alpha1Listers.ClusterStackLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -77,20 +77,20 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return err
 	}
 
-	customBuilder, err := c.CustomClusterBuilderLister.Get(builderName)
+	builder, err := c.ClusterBuilderLister.Get(builderName)
 	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	customBuilder = customBuilder.DeepCopy()
+	builder = builder.DeepCopy()
 
-	builderRecord, creationError := c.reconcileCustomBuilder(customBuilder)
+	builderRecord, creationError := c.reconcileBuilder(builder)
 	if creationError != nil {
-		customBuilder.Status.ErrorCreate(creationError)
+		builder.Status.ErrorCreate(creationError)
 
-		err := c.updateStatus(customBuilder)
+		err := c.updateStatus(builder)
 		if err != nil {
 			return err
 		}
@@ -98,27 +98,27 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return controller.NewPermanentError(creationError)
 	}
 
-	customBuilder.Status.BuilderRecord(builderRecord)
-	return c.updateStatus(customBuilder)
+	builder.Status.BuilderRecord(builderRecord)
+	return c.updateStatus(builder)
 }
 
-func (c *Reconciler) reconcileCustomBuilder(customBuilder *v1alpha1.CustomClusterBuilder) (v1alpha1.BuilderRecord, error) {
-	clusterStore, err := c.ClusterStoreLister.Get(customBuilder.Spec.Store.Name)
+func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha1.BuilderRecord, error) {
+	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	err = c.Tracker.Track(clusterStore, customBuilder.NamespacedName())
+	err = c.Tracker.Track(clusterStore, builder.NamespacedName())
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	clusterStack, err := c.ClusterStackLister.Get(customBuilder.Spec.Stack.Name)
+	clusterStack, err := c.ClusterStackLister.Get(builder.Spec.Stack.Name)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	err = c.Tracker.Track(clusterStack, customBuilder.NamespacedName())
+	err = c.Tracker.Track(clusterStack, builder.NamespacedName())
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
@@ -128,20 +128,20 @@ func (c *Reconciler) reconcileCustomBuilder(customBuilder *v1alpha1.CustomCluste
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
-		ServiceAccount: customBuilder.Spec.ServiceAccountRef.Name,
-		Namespace:      customBuilder.Spec.ServiceAccountRef.Namespace,
+		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
+		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
 	})
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, customBuilder.Spec.CustomBuilderSpec)
+	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, builder.Spec.BuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.CustomClusterBuilder) error {
+func (c *Reconciler) updateStatus(desired *v1alpha1.ClusterBuilder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
-	original, err := c.CustomClusterBuilderLister.Get(desired.Name)
+	original, err := c.ClusterBuilderLister.Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -150,6 +150,6 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.CustomClusterBuilder) error 
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().CustomClusterBuilders().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(desired)
 	return err
 }

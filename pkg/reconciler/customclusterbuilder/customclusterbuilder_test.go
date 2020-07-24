@@ -1,4 +1,4 @@
-package customclusterbuilder_test
+package clusterBuilder_test
 
 import (
 	"errors"
@@ -25,17 +25,17 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
-func TestCustomClusterBuilderReconciler(t *testing.T) {
-	spec.Run(t, "Custom Cluster Builder Reconciler", testCustomClusterBuilderReconciler)
+func TestClusterBuilderReconciler(t *testing.T) {
+	spec.Run(t, "Custom Cluster Builder Reconciler", testClusterBuilderReconciler)
 }
 
-func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
+func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	const (
-		customBuilderName             = "custom-builder"
-		customBuilderKey              = customBuilderName
-		customBuilderTag              = "example.com/custom-builder"
-		customBuilderIdentifier       = "example.com/custom-builder@sha256:resolved-builder-digest"
-		initialGeneration       int64 = 1
+		builderName             = "custom-builder"
+		builderKey              = builderName
+		builderTag              = "example.com/custom-builder"
+		builderIdentifier       = "example.com/custom-builder@sha256:resolved-builder-digest"
+		initialGeneration int64 = 1
 	)
 
 	var (
@@ -51,15 +51,15 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &customclusterbuilder.Reconciler{
-				Client:                     fakeClient,
-				CustomClusterBuilderLister: listers.GetCustomClusterBuilderLister(),
-				RepoFactory:                fakeRepoFactory,
-				BuilderCreator:             builderCreator,
-				KeychainFactory:            keychainFactory,
-				Tracker:                    fakeTracker,
-				ClusterStoreLister:         listers.GetClusterStoreLister(),
-				ClusterStackLister:         listers.GetClusterStackLister(),
+			r := &clusterBuilder.Reconciler{
+				Client:               fakeClient,
+				ClusterBuilderLister: listers.GetClusterBuilderLister(),
+				RepoFactory:          fakeRepoFactory,
+				BuilderCreator:       builderCreator,
+				KeychainFactory:      keychainFactory,
+				Tracker:              fakeTracker,
+				ClusterStoreLister:   listers.GetClusterStoreLister(),
+				ClusterStackLister:   listers.GetClusterStackLister(),
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -89,14 +89,14 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	customBuilder := &v1alpha1.CustomClusterBuilder{
+	builder := &v1alpha1.ClusterBuilder{
 		ObjectMeta: v1.ObjectMeta{
-			Name:       customBuilderName,
+			Name:       builderName,
 			Generation: initialGeneration,
 		},
-		Spec: v1alpha1.CustomClusterBuilderSpec{
-			CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
-				Tag: customBuilderTag,
+		Spec: v1alpha1.ClusterBuilderSpec{
+			BuilderSpec: v1alpha1.BuilderSpec{
+				Tag: builderTag,
 				Stack: corev1.ObjectReference{
 					Kind: "Stack",
 					Name: "some-stack",
@@ -134,8 +134,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	secretRef := registry.SecretRef{
-		ServiceAccount: customBuilder.Spec.ServiceAccountRef.Name,
-		Namespace:      customBuilder.Spec.ServiceAccountRef.Namespace,
+		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
+		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
 	}
 
 	when("#Reconcile", func() {
@@ -145,7 +145,7 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("saves metadata to the status", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
-				Image: customBuilderIdentifier,
+				Image: builderIdentifier,
 				Stack: v1alpha1.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
@@ -162,10 +162,10 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			expectedBuilder := &v1alpha1.CustomClusterBuilder{
-				ObjectMeta: customBuilder.ObjectMeta,
-				Spec:       customBuilder.Spec,
-				Status: v1alpha1.CustomBuilderStatus{
+			expectedBuilder := &v1alpha1.ClusterBuilder{
+				ObjectMeta: builder.ObjectMeta,
+				Spec:       builder.Spec,
+				Status: v1alpha1.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -189,16 +189,16 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
-					LatestImage: customBuilderIdentifier,
+					LatestImage: builderIdentifier,
 				},
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key: customBuilderKey,
+				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
-					customBuilder,
+					builder,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -211,13 +211,13 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
 				Keychain:            &registryfakes.FakeKeychain{},
 				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
-				CustomBuilderSpec:   customBuilder.Spec.CustomBuilderSpec,
+				BuilderSpec:         builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
 		it("tracks the stack and store for a custom builder", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
-				Image: customBuilderIdentifier,
+				Image: builderIdentifier,
 				Stack: v1alpha1.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
@@ -225,10 +225,10 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Buildpacks: v1alpha1.BuildpackMetadataList{},
 			}
 
-			expectedBuilder := &v1alpha1.CustomClusterBuilder{
-				ObjectMeta: customBuilder.ObjectMeta,
-				Spec:       customBuilder.Spec,
-				Status: v1alpha1.CustomBuilderStatus{
+			expectedBuilder := &v1alpha1.ClusterBuilder{
+				ObjectMeta: builder.ObjectMeta,
+				Spec:       builder.Spec,
+				Status: v1alpha1.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -243,12 +243,12 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
-					LatestImage: customBuilderIdentifier,
+					LatestImage: builderIdentifier,
 				},
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key: customBuilderKey,
+				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
@@ -258,12 +258,12 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.True(t, fakeTracker.IsTracking(clusterStore, expectedBuilder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(clusterStack, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStack, builder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
-				Image: customBuilderIdentifier,
+				Image: builderIdentifier,
 				Stack: v1alpha1.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
@@ -276,9 +276,9 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			customBuilder.Status = v1alpha1.CustomBuilderStatus{
+			builder.Status = v1alpha1.BuilderStatus{
 				Status: corev1alpha1.Status{
-					ObservedGeneration: customBuilder.Generation,
+					ObservedGeneration: builder.Generation,
 					Conditions: corev1alpha1.Conditions{
 						{
 							Type:   corev1alpha1.ConditionReady,
@@ -296,15 +296,15 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				LatestImage: customBuilderIdentifier,
+				LatestImage: builderIdentifier,
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key: customBuilderKey,
+				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
-					customBuilder,
+					builder,
 				},
 				WantErr: false,
 			})
@@ -313,10 +313,10 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("updates status on creation error", func() {
 			builderCreator.CreateErr = errors.New("create error")
 
-			expectedBuilder := &v1alpha1.CustomClusterBuilder{
-				ObjectMeta: customBuilder.ObjectMeta,
-				Spec:       customBuilder.Spec,
-				Status: v1alpha1.CustomBuilderStatus{
+			expectedBuilder := &v1alpha1.ClusterBuilder{
+				ObjectMeta: builder.ObjectMeta,
+				Spec:       builder.Spec,
+				Status: v1alpha1.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -331,11 +331,11 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			rt.Test(rtesting.TableRow{
-				Key: customBuilderKey,
+				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
-					customBuilder,
+					builder,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -364,19 +364,19 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 			rt.Test(rtesting.TableRow{
-				Key: customBuilderKey,
+				Key: builderKey,
 				Objects: []runtime.Object{
 					notReadyClusterStack,
 					clusterStore,
-					customBuilder,
+					builder,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.CustomClusterBuilder{
-							ObjectMeta: customBuilder.ObjectMeta,
-							Spec:       customBuilder.Spec,
-							Status: v1alpha1.CustomBuilderStatus{
+						Object: &v1alpha1.ClusterBuilder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: v1alpha1.BuilderStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -394,8 +394,8 @@ func testCustomClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			//still track resources
-			require.True(t, fakeTracker.IsTracking(clusterStore, customBuilder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, customBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
 

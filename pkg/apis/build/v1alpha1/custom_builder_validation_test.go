@@ -11,18 +11,18 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestCustomClusterBuilderValidation(t *testing.T) {
-	spec.Run(t, "Custom Cluster Builder Validation", testCustomClusterBuilderValidation)
+func TestClusterBuilderValidation(t *testing.T) {
+	spec.Run(t, "Custom Cluster Builder Validation", testClusterBuilderValidation)
 }
 
-func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
-	customBuilder := &CustomBuilder{
+func testClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
+	builder := &Builder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "custom-builder-name",
 			Namespace: "custom-builder-namespace",
 		},
 		Spec: CustomNamespacedBuilderSpec{
-			CustomBuilderSpec: CustomBuilderSpec{
+			BuilderSpec: BuilderSpec{
 				Tag: "some-registry.io/custom-builder",
 				Stack: corev1.ObjectReference{
 					Kind: "ClusterStack",
@@ -40,77 +40,77 @@ func testCustomClusterBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 
 	when("Default", func() {
 		it("does not modify already set fields", func() {
-			oldBuilder := customBuilder.DeepCopy()
-			customBuilder.SetDefaults(context.TODO())
+			oldBuilder := builder.DeepCopy()
+			builder.SetDefaults(context.TODO())
 
-			assert.Equal(t, customBuilder, oldBuilder)
+			assert.Equal(t, builder, oldBuilder)
 		})
 
 		it("defaults service account to default", func() {
-			customBuilder.Spec.ServiceAccount = ""
-			customBuilder.SetDefaults(context.TODO())
-			assert.Equal(t, customBuilder.Spec.ServiceAccount, "default")
+			builder.Spec.ServiceAccount = ""
+			builder.SetDefaults(context.TODO())
+			assert.Equal(t, builder.Spec.ServiceAccount, "default")
 		})
 
 		it("defaults stack.kind to ClusterStack", func() {
-			customBuilder.Spec.Stack.Kind = ""
-			customBuilder.SetDefaults(context.TODO())
-			assert.Equal(t, customBuilder.Spec.Stack.Kind, "ClusterStack")
+			builder.Spec.Stack.Kind = ""
+			builder.SetDefaults(context.TODO())
+			assert.Equal(t, builder.Spec.Stack.Kind, "ClusterStack")
 		})
 
 		it("defaults store.kind to ClusterStore", func() {
-			customBuilder.Spec.Store.Kind = ""
-			customBuilder.SetDefaults(context.TODO())
-			assert.Equal(t, customBuilder.Spec.Store.Kind, "ClusterStore")
+			builder.Spec.Store.Kind = ""
+			builder.SetDefaults(context.TODO())
+			assert.Equal(t, builder.Spec.Store.Kind, "ClusterStore")
 		})
 	})
 
 	when("Validate", func() {
 		it("returns nil on no validation error", func() {
-			assert.Nil(t, customBuilder.Validate(context.TODO()))
+			assert.Nil(t, builder.Validate(context.TODO()))
 		})
 
-		assertValidationError := func(customBuilder *CustomBuilder, expectedError *apis.FieldError) {
+		assertValidationError := func(builder *Builder, expectedError *apis.FieldError) {
 			t.Helper()
-			err := customBuilder.Validate(context.TODO())
+			err := builder.Validate(context.TODO())
 			assert.EqualError(t, err, expectedError.Error())
 		}
 
 		it("missing field tag", func() {
-			customBuilder.Spec.Tag = ""
-			assertValidationError(customBuilder, apis.ErrMissingField("tag").ViaField("spec"))
+			builder.Spec.Tag = ""
+			assertValidationError(builder, apis.ErrMissingField("tag").ViaField("spec"))
 		})
 
 		it("invalid image tag", func() {
-			customBuilder.Spec.Tag = "ftp//invalid/tag@@"
+			builder.Spec.Tag = "ftp//invalid/tag@@"
 
-			assertValidationError(customBuilder, apis.ErrInvalidValue(customBuilder.Spec.Tag, "tag").ViaField("spec"))
+			assertValidationError(builder, apis.ErrInvalidValue(builder.Spec.Tag, "tag").ViaField("spec"))
 		})
 
 		it("tag should not contain a fully qualified digest", func() {
-			customBuilder.Spec.Tag = "some/app@sha256:72d10a33e3233657832967acffce652b729961da5247550ea58b2c2389cddc68"
+			builder.Spec.Tag = "some/app@sha256:72d10a33e3233657832967acffce652b729961da5247550ea58b2c2389cddc68"
 
-			assertValidationError(customBuilder, apis.ErrInvalidValue(customBuilder.Spec.Tag, "tag").ViaField("spec"))
+			assertValidationError(builder, apis.ErrInvalidValue(builder.Spec.Tag, "tag").ViaField("spec"))
 		})
 
 		it("missing stack name", func() {
-			customBuilder.Spec.Stack.Name = ""
-			assertValidationError(customBuilder, apis.ErrMissingField("name").ViaField("spec", "stack"))
+			builder.Spec.Stack.Name = ""
+			assertValidationError(builder, apis.ErrMissingField("name").ViaField("spec", "stack"))
 		})
 
 		it("invalid stack kind", func() {
-			customBuilder.Spec.Stack.Kind = "FakeStack"
-			assertValidationError(customBuilder, apis.ErrInvalidValue("FakeStack", "kind").ViaField("spec", "stack"))
+			builder.Spec.Stack.Kind = "FakeStack"
+			assertValidationError(builder, apis.ErrInvalidValue("FakeStack", "kind").ViaField("spec", "stack"))
 		})
 
 		it("missing store name", func() {
-			customBuilder.Spec.Store.Name = ""
-			assertValidationError(customBuilder, apis.ErrMissingField("name").ViaField("spec", "store"))
+			builder.Spec.Store.Name = ""
+			assertValidationError(builder, apis.ErrMissingField("name").ViaField("spec", "store"))
 		})
 
 		it("invalid store kind", func() {
-			customBuilder.Spec.Store.Kind = "FakeStore"
-			assertValidationError(customBuilder, apis.ErrInvalidValue("FakeStore", "kind").ViaField("spec", "store"))
+			builder.Spec.Store.Kind = "FakeStore"
+			assertValidationError(builder, apis.ErrInvalidValue("FakeStore", "kind").ViaField("spec", "store"))
 		})
 	})
 }

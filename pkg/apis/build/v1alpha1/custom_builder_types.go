@@ -8,22 +8,22 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-const CustomBuilderKind = "CustomBuilder"
+const BuilderKind = "Builder"
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object,k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMetaAccessor
 
 // +k8s:openapi-gen=true
-type CustomBuilder struct {
+type Builder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   CustomNamespacedBuilderSpec `json:"spec"`
-	Status CustomBuilderStatus         `json:"status"`
+	Status BuilderStatus               `json:"status"`
 }
 
 // +k8s:openapi-gen=true
-type CustomBuilderSpec struct {
+type BuilderSpec struct {
 	Tag   string                 `json:"tag,omitempty"`
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
 	Store corev1.ObjectReference `json:"store,omitempty"`
@@ -33,12 +33,12 @@ type CustomBuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type CustomNamespacedBuilderSpec struct {
-	CustomBuilderSpec `json:",inline"`
-	ServiceAccount    string `json:"serviceAccount,omitempty"`
+	BuilderSpec    `json:",inline"`
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 }
 
 // +k8s:openapi-gen=true
-type CustomBuilderStatus struct {
+type BuilderStatus struct {
 	corev1alpha1.Status `json:",inline"`
 	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata,omitempty"`
 	Stack               BuildStack            `json:"stack,omitempty"`
@@ -48,18 +48,18 @@ type CustomBuilderStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +k8s:openapi-gen=true
-type CustomBuilderList struct {
+type BuilderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	// +listType
-	Items []CustomBuilder `json:"items"`
+	Items []Builder `json:"items"`
 }
 
-func (*CustomBuilder) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind(CustomBuilderKind)
+func (*Builder) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind(BuilderKind)
 }
 
-func (c *CustomBuilder) NamespacedName() types.NamespacedName {
+func (c *Builder) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
 }

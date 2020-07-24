@@ -97,14 +97,14 @@ func main() {
 	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
 	imageInformer := informerFactory.Kpack().V1alpha1().Images()
 	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
-	customBuilderInformer := informerFactory.Kpack().V1alpha1().CustomBuilders()
-	customClusterBuilderInformer := informerFactory.Kpack().V1alpha1().CustomClusterBuilders()
+	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
+	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
 	clusterStoreInformer := informerFactory.Kpack().V1alpha1().ClusterStores()
 	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
-		CustomBuilderInformer:        customBuilderInformer,
-		CustomClusterBuilderInformer: customClusterBuilderInformer,
+		BuilderInformer:        builderInformer,
+		ClusterBuilderInformer: clusterBuilderInformer,
 	}
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
@@ -160,8 +160,8 @@ func main() {
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController := builder.NewController(options, builderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController := clusterBuilder.NewController(options, clusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
 
@@ -175,8 +175,8 @@ func main() {
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
-		customBuilderInformer.Informer(),
-		customClusterBuilderInformer.Informer(),
+		builderInformer.Informer(),
+		clusterBuilderInformer.Informer(),
 		clusterStoreInformer.Informer(),
 		clusterStackInformer.Informer(),
 	)
@@ -186,8 +186,8 @@ func main() {
 		run(clusterStackController, routinesPerController),
 		run(imageController, routinesPerController),
 		run(buildController, routinesPerController),
-		run(customBuilderController, routinesPerController),
-		run(customClusterBuilderController, routinesPerController),
+		run(builderController, routinesPerController),
+		run(clusterBuilderController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		configMapWatcher.Start,

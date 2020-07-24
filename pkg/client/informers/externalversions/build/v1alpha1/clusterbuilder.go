@@ -31,58 +31,58 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// CustomClusterBuilderInformer provides access to a shared informer and lister for
-// CustomClusterBuilders.
-type CustomClusterBuilderInformer interface {
+// ClusterBuilderInformer provides access to a shared informer and lister for
+// ClusterBuilders.
+type ClusterBuilderInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CustomClusterBuilderLister
+	Lister() v1alpha1.ClusterBuilderLister
 }
 
-type customClusterBuilderInformer struct {
+type clusterBuilderInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
-// NewCustomClusterBuilderInformer constructs a new informer for CustomClusterBuilder type.
+// NewClusterBuilderInformer constructs a new informer for ClusterBuilder type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewCustomClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredCustomClusterBuilderInformer(client, resyncPeriod, indexers, nil)
+func NewClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredClusterBuilderInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredCustomClusterBuilderInformer constructs a new informer for CustomClusterBuilder type.
+// NewFilteredClusterBuilderInformer constructs a new informer for ClusterBuilder type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredCustomClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredClusterBuilderInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().CustomClusterBuilders().List(options)
+				return client.KpackV1alpha1().ClusterBuilders().List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().CustomClusterBuilders().Watch(options)
+				return client.KpackV1alpha1().ClusterBuilders().Watch(options)
 			},
 		},
-		&buildv1alpha1.CustomClusterBuilder{},
+		&buildv1alpha1.ClusterBuilder{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *customClusterBuilderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredCustomClusterBuilderInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *clusterBuilderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredClusterBuilderInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *customClusterBuilderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha1.CustomClusterBuilder{}, f.defaultInformer)
+func (f *clusterBuilderInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&buildv1alpha1.ClusterBuilder{}, f.defaultInformer)
 }
 
-func (f *customClusterBuilderInformer) Lister() v1alpha1.CustomClusterBuilderLister {
-	return v1alpha1.NewCustomClusterBuilderLister(f.Informer().GetIndexer())
+func (f *clusterBuilderInformer) Lister() v1alpha1.ClusterBuilderLister {
+	return v1alpha1.NewClusterBuilderLister(f.Informer().GetIndexer())
 }

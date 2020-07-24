@@ -11,18 +11,18 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestCustomBuilderValidation(t *testing.T) {
-	spec.Run(t, "Custom Builder Validation", testCustomBuilderValidation)
+func TestBuilderValidation(t *testing.T) {
+	spec.Run(t, "Custom Builder Validation", testBuilderValidation)
 }
 
-func testCustomBuilderValidation(t *testing.T, when spec.G, it spec.S) {
-	customClusterBuilder := &CustomClusterBuilder{
+func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
+	clusterBuilder := &ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "custom-builder-name",
 			Namespace: "custom-builder-namespace",
 		},
-		Spec: CustomClusterBuilderSpec{
-			CustomBuilderSpec: CustomBuilderSpec{
+		Spec: ClusterBuilderSpec{
+			BuilderSpec: BuilderSpec{
 				Tag: "some-registry.io/custom-builder",
 				Stack: corev1.ObjectReference{
 					Kind: "ClusterStack",
@@ -43,23 +43,23 @@ func testCustomBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 
 	when("Validate", func() {
 		it("returns nil on no validation error", func() {
-			assert.Nil(t, customClusterBuilder.Validate(context.TODO()))
+			assert.Nil(t, clusterBuilder.Validate(context.TODO()))
 		})
 
-		assertValidationError := func(ccb *CustomClusterBuilder, expectedError *apis.FieldError) {
+		assertValidationError := func(ccb *ClusterBuilder, expectedError *apis.FieldError) {
 			t.Helper()
 			err := ccb.Validate(context.TODO())
 			assert.EqualError(t, err, expectedError.Error())
 		}
 
 		it("missing service account name", func() {
-			customClusterBuilder.Spec.ServiceAccountRef.Name = ""
-			assertValidationError(customClusterBuilder, apis.ErrMissingField("name").ViaField("spec", "serviceAccountRef"))
+			clusterBuilder.Spec.ServiceAccountRef.Name = ""
+			assertValidationError(clusterBuilder, apis.ErrMissingField("name").ViaField("spec", "serviceAccountRef"))
 		})
 
 		it("missing service account namespace", func() {
-			customClusterBuilder.Spec.ServiceAccountRef.Namespace = ""
-			assertValidationError(customClusterBuilder, apis.ErrMissingField("namespace").ViaField("spec", "serviceAccountRef"))
+			clusterBuilder.Spec.ServiceAccountRef.Namespace = ""
+			assertValidationError(clusterBuilder, apis.ErrMissingField("namespace").ViaField("spec", "serviceAccountRef"))
 		})
 	})
 }

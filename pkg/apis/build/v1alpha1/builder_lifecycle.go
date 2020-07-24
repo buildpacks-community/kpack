@@ -13,7 +13,7 @@ type BuilderRecord struct {
 	Buildpacks BuildpackMetadataList
 }
 
-func (bs *CustomBuilderStatus) BuilderRecord(record BuilderRecord) {
+func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.Stack = record.Stack
 	bs.BuilderMetadata = record.Buildpacks
 	bs.LatestImage = record.Image

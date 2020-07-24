@@ -59,12 +59,12 @@ func (l *Listers) GetBuildLister() v1alpha1Listers.BuildLister {
 	return v1alpha1Listers.NewBuildLister(l.indexerFor(&v1alpha1.Build{}))
 }
 
-func (l *Listers) GetCustomBuilderLister() v1alpha1Listers.CustomBuilderLister {
-	return v1alpha1Listers.NewCustomBuilderLister(l.indexerFor(&v1alpha1.CustomBuilder{}))
+func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {
+	return v1alpha1Listers.NewBuilderLister(l.indexerFor(&v1alpha1.Builder{}))
 }
 
-func (l *Listers) GetCustomClusterBuilderLister() v1alpha1Listers.CustomClusterBuilderLister {
-	return v1alpha1Listers.NewCustomClusterBuilderLister(l.indexerFor(&v1alpha1.CustomClusterBuilder{}))
+func (l *Listers) GetClusterBuilderLister() v1alpha1Listers.ClusterBuilderLister {
+	return v1alpha1Listers.NewClusterBuilderLister(l.indexerFor(&v1alpha1.ClusterBuilder{}))
 }
 
 func (l *Listers) GetClusterStoreLister() v1alpha1Listers.ClusterStoreLister {
@@ -89,7 +89,7 @@ func (l *Listers) GetPodLister() corev1listers.PodLister {
 
 func (l *Listers) GetDuckBuilderLister() *duckbuilder.DuckBuilderLister {
 	return &duckbuilder.DuckBuilderLister{
-		CustomBuilderLister:        l.GetCustomBuilderLister(),
-		CustomClusterBuilderLister: l.GetCustomClusterBuilderLister(),
+		BuilderLister:        l.GetBuilderLister(),
+		ClusterBuilderLister: l.GetClusterBuilderLister(),
 	}
 }

@@ -22,7 +22,7 @@ type RemoteBuilderCreator struct {
 	KpackVersion   string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
 	buildImage, _, err := r.RegistryClient.Fetch(keychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err

@@ -8,7 +8,7 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func (cb *CustomBuilderStatus) ErrorCreate(err error) {
+func (cb *BuilderStatus) ErrorCreate(err error) {
 	cb.Status = corev1alpha1.Status{
 		Conditions: corev1alpha1.Conditions{
 			{
