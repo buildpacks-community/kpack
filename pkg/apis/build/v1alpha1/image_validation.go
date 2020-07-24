@@ -74,8 +74,8 @@ func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	}
 
 	switch builder.Kind {
-	case CustomBuilderKind,
-		CustomClusterBuilderKind:
+	case BuilderKind,
+		ClusterBuilderKind:
 		return nil
 	default:
 		return apis.ErrInvalidValue(builder.Kind, "kind")

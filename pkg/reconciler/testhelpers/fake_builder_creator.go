@@ -17,14 +17,14 @@ type FakeBuilderCreator struct {
 type CreateBuilderArgs struct {
 	Keychain            authn.Keychain
 	BuildpackRepository cnb.BuildpackRepository
-	CustomBuilderSpec   v1alpha1.CustomBuilderSpec
+	BuilderSpec         v1alpha1.BuilderSpec
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, builder v1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, repo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, builder v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Keychain:            keychain,
 		BuildpackRepository: repo,
-		CustomBuilderSpec:   builder,
+		BuilderSpec:         builder,
 	})
 
 	return f.Record, f.CreateErr

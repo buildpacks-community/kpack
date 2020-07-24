@@ -1,16 +1,17 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: custombuilders.kpack.io
+  name: builders.kpack.io
 spec:
   group: kpack.io
   version: v1alpha1
   names:
-    kind: CustomBuilder
-    singular: custombuilder
-    plural: custombuilders
+    kind: Builder
+    singular: builder
+    plural: builders
     shortNames:
-    - custmbldr
+    - bldr
+    - bldrs
     categories:
     - kpack
   scope: Namespaced

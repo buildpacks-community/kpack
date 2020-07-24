@@ -96,7 +96,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		clusterBuilderSpec = v1alpha1.CustomBuilderSpec{
+		clusterBuilderSpec = v1alpha1.BuilderSpec{
 			Tag: "custom/example",
 			Stack: corev1.ObjectReference{
 				Kind: "Stack",

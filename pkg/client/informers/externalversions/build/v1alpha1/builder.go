@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// CustomBuilderInformer provides access to a shared informer and lister for
-// CustomBuilders.
-type CustomBuilderInformer interface {
+// BuilderInformer provides access to a shared informer and lister for
+// Builders.
+type BuilderInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CustomBuilderLister
+	Lister() v1alpha1.BuilderLister
 }
 
-type customBuilderInformer struct {
+type builderInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewCustomBuilderInformer constructs a new informer for CustomBuilder type.
+// NewBuilderInformer constructs a new informer for Builder type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewCustomBuilderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredCustomBuilderInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewBuilderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredBuilderInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredCustomBuilderInformer constructs a new informer for CustomBuilder type.
+// NewFilteredBuilderInformer constructs a new informer for Builder type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredCustomBuilderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredBuilderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().CustomBuilders(namespace).List(options)
+				return client.KpackV1alpha1().Builders(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().CustomBuilders(namespace).Watch(options)
+				return client.KpackV1alpha1().Builders(namespace).Watch(options)
 			},
 		},
-		&buildv1alpha1.CustomBuilder{},
+		&buildv1alpha1.Builder{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *customBuilderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredCustomBuilderInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *builderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredBuilderInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *customBuilderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha1.CustomBuilder{}, f.defaultInformer)
+func (f *builderInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&buildv1alpha1.Builder{}, f.defaultInformer)
 }
 
-func (f *customBuilderInformer) Lister() v1alpha1.CustomBuilderLister {
-	return v1alpha1.NewCustomBuilderLister(f.Informer().GetIndexer())
+func (f *builderInformer) Lister() v1alpha1.BuilderLister {
+	return v1alpha1.NewBuilderLister(f.Informer().GetIndexer())
 }
