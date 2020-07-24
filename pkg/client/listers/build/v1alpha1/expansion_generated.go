@@ -26,6 +26,18 @@ type BuildListerExpansion interface{}
 // BuildNamespaceLister.
 type BuildNamespaceListerExpansion interface{}
 
+// BuilderListerExpansion allows custom methods to be added to
+// BuilderLister.
+type BuilderListerExpansion interface{}
+
+// BuilderNamespaceListerExpansion allows custom methods to be added to
+// BuilderNamespaceLister.
+type BuilderNamespaceListerExpansion interface{}
+
+// ClusterBuilderListerExpansion allows custom methods to be added to
+// ClusterBuilderLister.
+type ClusterBuilderListerExpansion interface{}
+
 // ClusterStackListerExpansion allows custom methods to be added to
 // ClusterStackLister.
 type ClusterStackListerExpansion interface{}
@@ -33,18 +45,6 @@ type ClusterStackListerExpansion interface{}
 // ClusterStoreListerExpansion allows custom methods to be added to
 // ClusterStoreLister.
 type ClusterStoreListerExpansion interface{}
-
-// CustomBuilderListerExpansion allows custom methods to be added to
-// CustomBuilderLister.
-type CustomBuilderListerExpansion interface{}
-
-// CustomBuilderNamespaceListerExpansion allows custom methods to be added to
-// CustomBuilderNamespaceLister.
-type CustomBuilderNamespaceListerExpansion interface{}
-
-// CustomClusterBuilderListerExpansion allows custom methods to be added to
-// CustomClusterBuilderLister.
-type CustomClusterBuilderListerExpansion interface{}
 
 // ImageListerExpansion allows custom methods to be added to
 // ImageLister.

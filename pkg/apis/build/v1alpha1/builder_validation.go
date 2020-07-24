@@ -10,7 +10,7 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
-func (cb *CustomBuilder) SetDefaults(context.Context) {
+func (cb *Builder) SetDefaults(context.Context) {
 	if cb.Spec.ServiceAccount == "" {
 		cb.Spec.ServiceAccount = "default"
 	}
@@ -22,18 +22,18 @@ func (cb *CustomBuilder) SetDefaults(context.Context) {
 	}
 }
 
-func (cb *CustomBuilder) Validate(ctx context.Context) *apis.FieldError {
+func (cb *Builder) Validate(ctx context.Context) *apis.FieldError {
 	return cb.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (s *CustomBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
+func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Tag(s.Tag).
 		Also(validateStack(s.Stack).ViaField("stack")).
 		Also(validateStore(s.Store).ViaField("store"))
 }
 
-func (s *CustomNamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return s.CustomBuilderSpec.Validate(ctx).
+func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
+	return s.BuilderSpec.Validate(ctx).
 		Also(validate.FieldNotEmpty(s.ServiceAccount, "serviceAccount"))
 }
 

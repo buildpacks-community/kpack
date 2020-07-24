@@ -26,7 +26,7 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
-				builder := &v1alpha1.CustomBuilder{
+				builder := &v1alpha1.Builder{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "some-name",
 						Namespace: "some-namespace",
@@ -54,7 +54,7 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
-				clusterBuilder := &v1alpha1.CustomClusterBuilder{
+				clusterBuilder := &v1alpha1.ClusterBuilder{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "some-name",
 					},

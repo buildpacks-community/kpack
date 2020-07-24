@@ -55,14 +55,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=kpack.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("builds"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Builds().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("builders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Builders().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("clusterbuilders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterBuilders().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterstacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterStacks().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterstores"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterStores().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("custombuilders"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().CustomBuilders().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("customclusterbuilders"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().CustomClusterBuilders().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("images"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Images().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("sourceresolvers"):

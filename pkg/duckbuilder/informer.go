@@ -11,25 +11,25 @@ import (
 )
 
 type DuckBuilderInformer struct {
-	CustomBuilderInformer        informerv1alpha1.CustomBuilderInformer
-	CustomClusterBuilderInformer informerv1alpha1.CustomClusterBuilderInformer
+	BuilderInformer        informerv1alpha1.BuilderInformer
+	ClusterBuilderInformer informerv1alpha1.ClusterBuilderInformer
 }
 
 func (di *DuckBuilderInformer) AddEventHandler(handler cache.ResourceEventHandler) {
-	di.CustomBuilderInformer.Informer().AddEventHandler(handler)
-	di.CustomClusterBuilderInformer.Informer().AddEventHandler(handler)
+	di.BuilderInformer.Informer().AddEventHandler(handler)
+	di.ClusterBuilderInformer.Informer().AddEventHandler(handler)
 }
 
 func (di *DuckBuilderInformer) Lister() *DuckBuilderLister {
 	return &DuckBuilderLister{
-		CustomBuilderLister:        di.CustomBuilderInformer.Lister(),
-		CustomClusterBuilderLister: di.CustomClusterBuilderInformer.Lister(),
+		BuilderLister:        di.BuilderInformer.Lister(),
+		ClusterBuilderLister: di.ClusterBuilderInformer.Lister(),
 	}
 }
 
 type DuckBuilderLister struct {
-	CustomBuilderLister        v1alpha1Listers.CustomBuilderLister
-	CustomClusterBuilderLister v1alpha1Listers.CustomClusterBuilderLister
+	BuilderLister        v1alpha1Listers.BuilderLister
+	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
 }
 
 func (bl *DuckBuilderLister) Namespace(namespace string) *DuckBuilderNamespaceLister {
@@ -46,18 +46,18 @@ type DuckBuilderNamespaceLister struct {
 
 func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*DuckBuilder, error) {
 	switch reference.Kind {
-	case v1alpha1.CustomBuilderKind:
-		builder, err := bl.DuckBuilderLister.CustomBuilderLister.CustomBuilders(bl.namespace).Get(reference.Name)
-		return convertCustomBuilder(builder), err
-	case v1alpha1.CustomClusterBuilderKind:
-		builder, err := bl.DuckBuilderLister.CustomClusterBuilderLister.Get(reference.Name)
-		return convertCustomClusterBuilder(builder), err
+	case v1alpha1.BuilderKind:
+		builder, err := bl.DuckBuilderLister.BuilderLister.Builders(bl.namespace).Get(reference.Name)
+		return convertBuilder(builder), err
+	case v1alpha1.ClusterBuilderKind:
+		builder, err := bl.DuckBuilderLister.ClusterBuilderLister.Get(reference.Name)
+		return convertClusterBuilder(builder), err
 	default:
 		return nil, errors.Errorf("unknown builder type: %s", reference.Kind)
 	}
 }
 
-func convertCustomBuilder(builder *v1alpha1.CustomBuilder) *DuckBuilder {
+func convertBuilder(builder *v1alpha1.Builder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func convertCustomBuilder(builder *v1alpha1.CustomBuilder) *DuckBuilder {
 	}
 }
 
-func convertCustomClusterBuilder(builder *v1alpha1.CustomClusterBuilder) *DuckBuilder {
+func convertClusterBuilder(builder *v1alpha1.ClusterBuilder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}

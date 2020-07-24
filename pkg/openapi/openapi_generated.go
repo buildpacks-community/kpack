@@ -70,13 +70,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackRef":                schema_pkg_apis_experimental_v1alpha1_BuildpackRef(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackStack":              schema_pkg_apis_experimental_v1alpha1_BuildpackStack(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.BuildpackageInfo":            schema_pkg_apis_experimental_v1alpha1_BuildpackageInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilder":               schema_pkg_apis_experimental_v1alpha1_CustomBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderList":           schema_pkg_apis_experimental_v1alpha1_CustomBuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderSpec":           schema_pkg_apis_experimental_v1alpha1_CustomBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderStatus":         schema_pkg_apis_experimental_v1alpha1_CustomBuilderStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilder":        schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilderList":    schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilderSpec":    schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilder":               schema_pkg_apis_experimental_v1alpha1_Builder(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderList":           schema_pkg_apis_experimental_v1alpha1_BuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderSpec":           schema_pkg_apis_experimental_v1alpha1_BuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomBuilderStatus":         schema_pkg_apis_experimental_v1alpha1_BuilderStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilder":        schema_pkg_apis_experimental_v1alpha1_ClusterBuilder(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilderList":    schema_pkg_apis_experimental_v1alpha1_ClusterBuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomClusterBuilderSpec":    schema_pkg_apis_experimental_v1alpha1_ClusterBuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.CustomNamespacedBuilderSpec": schema_pkg_apis_experimental_v1alpha1_CustomNamespacedBuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.OrderEntry":                  schema_pkg_apis_experimental_v1alpha1_OrderEntry(ref),
 		"github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1.ResolvedStack":               schema_pkg_apis_experimental_v1alpha1_ResolvedStack(ref),
@@ -1840,7 +1840,7 @@ func schema_pkg_apis_experimental_v1alpha1_BuildpackageInfo(ref common.Reference
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomBuilder(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_Builder(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1884,7 +1884,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomBuilder(ref common.ReferenceCal
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomBuilderList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_BuilderList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1935,7 +1935,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomBuilderList(ref common.Referenc
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_BuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1984,7 +1984,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomBuilderSpec(ref common.Referenc
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomBuilderStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_BuilderStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2047,7 +2047,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomBuilderStatus(ref common.Refere
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilder(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterBuilder(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2091,7 +2091,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilder(ref common.Refer
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterBuilderList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2142,7 +2142,7 @@ func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderList(ref common.R
 	}
 }
 
-func schema_pkg_apis_experimental_v1alpha1_CustomClusterBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_experimental_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{

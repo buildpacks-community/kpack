@@ -41,14 +41,14 @@ func TestCreateImage(t *testing.T) {
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
-		testNamespace            = "test"
-		dockerSecret             = "docker-secret"
-		serviceAccountName       = "image-service-account"
-		builderImage             = "gcr.io/paketo-buildpacks/builder:base"
-		clusterStoreName         = "store"
-		clusterStackName         = "stack"
-		customBuilderName        = "custom-builder"
-		customClusterBuilderName = "custom-cluster-builder"
+		testNamespace      = "test"
+		dockerSecret       = "docker-secret"
+		serviceAccountName = "image-service-account"
+		builderImage       = "gcr.io/paketo-buildpacks/builder:base"
+		clusterStoreName   = "store"
+		clusterStackName   = "stack"
+		builderName        = "custom-builder"
+		clusterBuilderName = "custom-cluster-builder"
 	)
 
 	var (
@@ -73,7 +73,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.KpackV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -164,13 +164,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customBuilder, err := clients.client.KpackV1alpha1().CustomBuilders(testNamespace).Create(&v1alpha1.CustomBuilder{
+		builder, err := clients.client.KpackV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      customBuilderName,
+				Name:      builderName,
 				Namespace: testNamespace,
 			},
-			Spec: v1alpha1.CustomNamespacedBuilderSpec{
-				CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.NamespacedBuilderSpec{
+				BuilderSpec: v1alpha1.BuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -217,12 +217,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customClusterBuilder, err := clients.client.KpackV1alpha1().CustomClusterBuilders().Create(&v1alpha1.CustomClusterBuilder{
+		clusterBuilder, err := clients.client.KpackV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: customClusterBuilderName,
+				Name: clusterBuilderName,
 			},
-			Spec: v1alpha1.CustomClusterBuilderSpec{
-				CustomBuilderSpec: v1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.ClusterBuilderSpec{
+				BuilderSpec: v1alpha1.BuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -272,7 +272,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		waitUntilReady(t, clients, customBuilder, customClusterBuilder)
+		waitUntilReady(t, clients, builder, clusterBuilder)
 	})
 
 	it("builds and rebases git, blob, and registry based images", func() {
@@ -309,12 +309,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		builderConfigs := map[string]corev1.ObjectReference{
 			"custom-builder": {
-				Kind: v1alpha1.CustomBuilderKind,
-				Name: customBuilderName,
+				Kind: v1alpha1.BuilderKind,
+				Name: builderName,
 			},
 			"custom-cluster-builder": {
-				Kind: v1alpha1.CustomClusterBuilderKind,
-				Name: customClusterBuilderName,
+				Kind: v1alpha1.ClusterBuilderKind,
+				Name: clusterBuilderName,
 			},
 		}
 
@@ -354,7 +354,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it.Focus("can trigger rebuilds", func() {
+	it("can trigger rebuilds", func() {
 		cacheSize := resource.MustParse("1Gi")
 
 		expectedResources := corev1.ResourceRequirements{
@@ -376,8 +376,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			Spec: v1alpha1.ImageSpec{
 				Tag: imageTag,
 				Builder: corev1.ObjectReference{
-					Kind: v1alpha1.CustomClusterBuilderKind,
-					Name: customClusterBuilderName,
+					Kind: v1alpha1.ClusterBuilderKind,
+					Name: clusterBuilderName,
 				},
 				ServiceAccount: serviceAccountName,
 				Source: v1alpha1.SourceConfig{
@@ -425,6 +425,7 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
 		eventually(t, func() bool {
+
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
 			require.NoError(t, err)
 

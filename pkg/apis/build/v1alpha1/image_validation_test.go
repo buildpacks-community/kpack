@@ -26,7 +26,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		Spec: ImageSpec{
 			Tag: "some/image",
 			Builder: corev1.ObjectReference{
-				Kind: "CustomClusterBuilder",
+				Kind: "ClusterBuilder",
 				Name: "builder-name",
 			},
 			ServiceAccount: "some/service-account",
@@ -118,7 +118,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		it("returns nil on no validation error", func() {
 			assert.Nil(t, image.Validate(context.TODO()))
 
-			for _, builderKind := range []string{"CustomBuilder", "CustomClusterBuilder"} {
+			for _, builderKind := range []string{"Builder", "ClusterBuilder"} {
 				image.Spec.Builder.Kind = builderKind
 				assert.Nil(t, image.Validate(context.TODO()))
 			}
