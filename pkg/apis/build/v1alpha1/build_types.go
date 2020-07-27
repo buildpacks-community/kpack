@@ -109,6 +109,6 @@ type BuildList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	// +listType
+	// +k8s:listType=atomic
 	Items []Build `json:"items"`
 }
