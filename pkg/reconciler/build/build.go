@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -26,6 +27,9 @@ import (
 const (
 	ReconcilerName = "Builds"
 	Kind           = "Build"
+
+	errImagePullMsg     = "ErrImagePull"
+	imagePullBackOffMsg = "ImagePullBackOff"
 )
 
 //go:generate counterfeiter . MetadataRetriever
@@ -158,6 +162,22 @@ func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
+	case corev1.PodPending:
+		for _, c := range pod.Status.InitContainerStatuses {
+			if c.State.Waiting != nil &&
+				(c.State.Waiting.Reason == errImagePullMsg || c.State.Waiting.Reason == imagePullBackOffMsg) {
+				return corev1alpha1.Conditions{
+					{
+						Type:               corev1alpha1.ConditionSucceeded,
+						Status:             corev1.ConditionUnknown,
+						Reason:             c.State.Waiting.Reason,
+						Message:            fmt.Sprintf("A container image currently cannot be pulled: %s", c.State.Waiting.Message),
+						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+					},
+				}
+			}
+		}
+		fallthrough
 	default:
 		return corev1alpha1.Conditions{
 			{
@@ -167,7 +187,6 @@ func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
 			},
 		}
 	}
-
 }
 
 func stepStates(pod *corev1.Pod) []corev1.ContainerState {
