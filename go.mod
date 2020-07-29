@@ -10,7 +10,7 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20190924003213-a8608b5b67c7+incompatible // indirect
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/go-openapi/spec v0.19.8
+	github.com/go-openapi/spec v0.19.9
 	github.com/google/go-cmp v0.5.0
 	github.com/google/go-containerregistry v0.1.1
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
