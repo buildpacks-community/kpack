@@ -51,12 +51,16 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BuildList{},
 		&Image{},
 		&ImageList{},
-		&Builder{},
-		&BuilderList{},
-		&ClusterBuilder{},
-		&ClusterBuilderList{},
 		&SourceResolver{},
 		&SourceResolverList{},
+		&ClusterStack{},
+		&ClusterStackList{},
+		&ClusterStore{},
+		&ClusterStoreList{},
+		&ClusterBuilder{},
+		&ClusterBuilderList{},
+		&Builder{},
+		&BuilderList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

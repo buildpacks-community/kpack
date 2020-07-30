@@ -11,7 +11,7 @@ metadata:
   name: kpack-controller-admin
 rules:
 - apiGroups:
-  - build.pivotal.io
+  - kpack.io
   resources:
   - builds
   - builds/status
@@ -59,7 +59,7 @@ rules:
   - delete
   - watch
 - apiGroups:
-  - experimental.kpack.pivotal.io
+  - kpack.io
   resources:
   - custombuilders
   - custombuilders/status

@@ -21,8 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	buildv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/experimental/v1alpha1"
+	kpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -30,26 +29,19 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface
-	ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface
+	KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	buildV1alpha1        *buildv1alpha1.BuildV1alpha1Client
-	experimentalV1alpha1 *experimentalv1alpha1.ExperimentalV1alpha1Client
+	kpackV1alpha1 *kpackv1alpha1.KpackV1alpha1Client
 }
 
-// BuildV1alpha1 retrieves the BuildV1alpha1Client
-func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
-	return c.buildV1alpha1
-}
-
-// ExperimentalV1alpha1 retrieves the ExperimentalV1alpha1Client
-func (c *Clientset) ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface {
-	return c.experimentalV1alpha1
+// KpackV1alpha1 retrieves the KpackV1alpha1Client
+func (c *Clientset) KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface {
+	return c.kpackV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -73,11 +65,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.buildV1alpha1, err = buildv1alpha1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
-	cs.experimentalV1alpha1, err = experimentalv1alpha1.NewForConfig(&configShallowCopy)
+	cs.kpackV1alpha1, err = kpackv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +81,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.buildV1alpha1 = buildv1alpha1.NewForConfigOrDie(c)
-	cs.experimentalV1alpha1 = experimentalv1alpha1.NewForConfigOrDie(c)
+	cs.kpackV1alpha1 = kpackv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -103,8 +90,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.buildV1alpha1 = buildv1alpha1.New(c)
-	cs.experimentalV1alpha1 = experimentalv1alpha1.New(c)
+	cs.kpackV1alpha1 = kpackv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

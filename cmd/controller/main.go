@@ -28,7 +28,6 @@ import (
 
 	"github.com/pivotal/kpack/cmd"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -43,8 +42,6 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
-	"github.com/pivotal/kpack/pkg/reconciler/custombuilder"
-	"github.com/pivotal/kpack/pkg/reconciler/customclusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -97,21 +94,17 @@ func main() {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
-	buildInformer := informerFactory.Build().V1alpha1().Builds()
-	imageInformer := informerFactory.Build().V1alpha1().Images()
-	builderInformer := informerFactory.Build().V1alpha1().Builders()
-	clusterBuilderInformer := informerFactory.Build().V1alpha1().ClusterBuilders()
-	sourceResolverInformer := informerFactory.Build().V1alpha1().SourceResolvers()
-	customBuilderInformer := informerFactory.Experimental().V1alpha1().CustomBuilders()
-	customClusterBuilderInformer := informerFactory.Experimental().V1alpha1().CustomClusterBuilders()
-	clusterStoreInformer := informerFactory.Experimental().V1alpha1().ClusterStores()
-	clusterStackInformer := informerFactory.Experimental().V1alpha1().ClusterStacks()
+	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha1().Images()
+	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
+	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
+	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
+	clusterStoreInformer := informerFactory.Kpack().V1alpha1().ClusterStores()
+	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
-		BuilderInformer:              builderInformer,
-		ClusterBuilderInformer:       clusterBuilderInformer,
-		CustomBuilderInformer:        customBuilderInformer,
-		CustomClusterBuilderInformer: customClusterBuilderInformer,
+		BuilderInformer:        builderInformer,
+		ClusterBuilderInformer: clusterBuilderInformer,
 	}
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
@@ -166,11 +159,9 @@ func main() {
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
-	builderController := builder.NewController(options, builderInformer, metadataRetriever)
-	clusterBuilderController := clusterbuilder.NewController(options, clusterBuilderInformer, metadataRetriever)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	customBuilderController := custombuilder.NewController(options, customBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	customClusterBuilderController := customclusterbuilder.NewController(options, customClusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController := builder.NewController(options, builderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController := clusterBuilder.NewController(options, clusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
 
@@ -181,13 +172,11 @@ func main() {
 	waitForSync(stopChan,
 		buildInformer.Informer(),
 		imageInformer.Informer(),
-		builderInformer.Informer(),
-		clusterBuilderInformer.Informer(),
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
-		customBuilderInformer.Informer(),
-		customClusterBuilderInformer.Informer(),
+		builderInformer.Informer(),
+		clusterBuilderInformer.Informer(),
 		clusterStoreInformer.Informer(),
 		clusterStackInformer.Informer(),
 	)
@@ -199,8 +188,6 @@ func main() {
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),
 		run(clusterBuilderController, routinesPerController),
-		run(customBuilderController, routinesPerController),
-		run(customClusterBuilderController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		configMapWatcher.Start,
@@ -237,8 +224,8 @@ func runGroup(ctx context.Context, fns ...doneFunc) error {
 	return eg.Wait()
 }
 
-func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
-	return func(clusterStore *expv1alpha1.ClusterStore) cnb.BuildpackRepository {
+func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
+	return func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
 			Keychain:     keychain,
 			ClusterStore: clusterStore,
@@ -246,7 +233,7 @@ func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *expv1alp
 	}
 }
 
-const controllerCount = 9
+const controllerCount = 7
 
 //lifted from knative.dev/pkg/injection/sharedmain
 func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *configmap.InformedWatcher, *http.Server) {

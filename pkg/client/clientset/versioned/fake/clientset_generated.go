@@ -20,10 +20,8 @@ package fake
 
 import (
 	clientset "github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
-	fakebuildv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
-	experimentalv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/experimental/v1alpha1"
-	fakeexperimentalv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/experimental/v1alpha1/fake"
+	kpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	fakekpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,12 +76,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// BuildV1alpha1 retrieves the BuildV1alpha1Client
-func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
-	return &fakebuildv1alpha1.FakeBuildV1alpha1{Fake: &c.Fake}
-}
-
-// ExperimentalV1alpha1 retrieves the ExperimentalV1alpha1Client
-func (c *Clientset) ExperimentalV1alpha1() experimentalv1alpha1.ExperimentalV1alpha1Interface {
-	return &fakeexperimentalv1alpha1.FakeExperimentalV1alpha1{Fake: &c.Fake}
+// KpackV1alpha1 retrieves the KpackV1alpha1Client
+func (c *Clientset) KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface {
+	return &fakekpackv1alpha1.FakeKpackV1alpha1{Fake: &c.Fake}
 }

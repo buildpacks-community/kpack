@@ -19,11 +19,11 @@ type listAndWatchBuild struct {
 func (l *listAndWatchBuild) List(options v1.ListOptions) (runtime.Object, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", l.buildName)
 
-	return l.kpackClient.BuildV1alpha1().Builds(l.namespace).List(options)
+	return l.kpackClient.KpackV1alpha1().Builds(l.namespace).List(options)
 }
 
 func (l *listAndWatchBuild) Watch(options v1.ListOptions) (watch.Interface, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", l.buildName)
 
-	return l.kpackClient.BuildV1alpha1().Builds(l.namespace).Watch(options)
+	return l.kpackClient.KpackV1alpha1().Builds(l.namespace).Watch(options)
 }

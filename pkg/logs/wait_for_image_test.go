@@ -87,7 +87,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("when a build is scheduled", func() {
 		it("returns built image from the build and tails build logs", func() {
-			_, err := clientset.BuildV1alpha1().Builds(imageToWatch.Namespace).Create(
+			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
 				&v1alpha1.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",
@@ -119,7 +119,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns an err if resulting build fails", func() {
-			_, err := clientset.BuildV1alpha1().Builds(imageToWatch.Namespace).Create(
+			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
 				&v1alpha1.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",
@@ -165,7 +165,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
-			_, err := clientset.BuildV1alpha1().Builds(imageToWatch.Namespace).Create(
+			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
 				&v1alpha1.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",

@@ -1,17 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: builders.build.pivotal.io
+  name: builders.kpack.io
 spec:
-  group: build.pivotal.io
+  group: kpack.io
   version: v1alpha1
   names:
     kind: Builder
     singular: builder
     plural: builders
     shortNames:
-    - cnbbuilder
-    - cnbbuilders
     - bldr
     - bldrs
     categories:

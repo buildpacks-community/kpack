@@ -1,11 +1,11 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const BuilderKind = "Builder"
@@ -18,31 +18,24 @@ type Builder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BuilderWithSecretsSpec `json:"spec"`
-	Status BuilderStatus          `json:"status,omitempty"`
-}
-
-// +k8s:openapi-gen=true
-type BuilderWithSecretsSpec struct {
-	BuilderSpec `json:",inline"`
-	// +patchMergeKey=name
-	// +patchStrategy=merge
-	// +listType
-	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+	Spec   NamespacedBuilderSpec `json:"spec"`
+	Status BuilderStatus         `json:"status"`
 }
 
 // +k8s:openapi-gen=true
 type BuilderSpec struct {
-	Image        string              `json:"image"`
-	UpdatePolicy BuilderUpdatePolicy `json:"updatePolicy,omitempty"`
+	Tag   string                 `json:"tag,omitempty"`
+	Stack corev1.ObjectReference `json:"stack,omitempty"`
+	Store corev1.ObjectReference `json:"store,omitempty"`
+	// +listType
+	Order []OrderEntry `json:"order,omitempty"`
 }
 
-type BuilderUpdatePolicy string
-
-const (
-	Polling  BuilderUpdatePolicy = "polling"
-	External BuilderUpdatePolicy = "external"
-)
+// +k8s:openapi-gen=true
+type NamespacedBuilderSpec struct {
+	BuilderSpec    `json:",inline"`
+	ServiceAccount string `json:"serviceAccount,omitempty"`
+}
 
 // +k8s:openapi-gen=true
 type BuilderStatus struct {
@@ -59,10 +52,14 @@ type BuilderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	// +listType
+	// +k8s:listType=atomic
 	Items []Builder `json:"items"`
 }
 
 func (*Builder) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(BuilderKind)
+}
+
+func (c *Builder) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
 }

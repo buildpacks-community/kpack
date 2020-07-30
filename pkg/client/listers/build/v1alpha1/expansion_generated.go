@@ -38,6 +38,14 @@ type BuilderNamespaceListerExpansion interface{}
 // ClusterBuilderLister.
 type ClusterBuilderListerExpansion interface{}
 
+// ClusterStackListerExpansion allows custom methods to be added to
+// ClusterStackLister.
+type ClusterStackListerExpansion interface{}
+
+// ClusterStoreListerExpansion allows custom methods to be added to
+// ClusterStoreLister.
+type ClusterStoreListerExpansion interface{}
+
 // ImageListerExpansion allows custom methods to be added to
 // ImageLister.
 type ImageListerExpansion interface{}

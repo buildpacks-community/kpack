@@ -25,7 +25,6 @@ import (
 
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	build "github.com/pivotal/kpack/pkg/client/informers/externalversions/build"
-	experimental "github.com/pivotal/kpack/pkg/client/informers/externalversions/experimental"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -173,14 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Build() build.Interface
-	Experimental() experimental.Interface
+	Kpack() build.Interface
 }
 
-func (f *sharedInformerFactory) Build() build.Interface {
+func (f *sharedInformerFactory) Kpack() build.Interface {
 	return build.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Experimental() experimental.Interface {
-	return experimental.New(f, f.namespace, f.tweakListOptions)
 }

@@ -104,7 +104,7 @@ type watchOnlyOneImage struct {
 
 func (w watchOnlyOneImage) Watch(options v1.ListOptions) (watch.Interface, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
-	return w.kpackClient.BuildV1alpha1().Images(w.image.Namespace).Watch(options)
+	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).Watch(options)
 }
 
 func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {

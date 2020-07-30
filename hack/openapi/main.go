@@ -54,7 +54,7 @@ func main() {
 
 	paths := combineCRDPaths(
 		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "build.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "Builder",
 			Plural:  "builders",
@@ -62,7 +62,7 @@ func main() {
 			ListRef: "#/definitions/kpack.build.v1alpha1.BuilderList",
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "build.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "Build",
 			Plural:  "builds",
@@ -70,7 +70,7 @@ func main() {
 			ListRef: "#/definitions/kpack.build.v1alpha1.BuildList",
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "build.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "Image",
 			Plural:  "images",
@@ -78,7 +78,7 @@ func main() {
 			ListRef: "#/definitions/kpack.build.v1alpha1.ImageList",
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "build.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "SourceResolver",
 			Plural:  "sourceresolvers",
@@ -86,44 +86,28 @@ func main() {
 			ListRef: "#/definitions/kpack.build.v1alpha1.SourceResolverList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "build.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "ClusterBuilder",
 			Plural:  "clusterbuilders",
 			Ref:     "#/definitions/kpack.build.v1alpha1.ClusterBuilder",
 			ListRef: "#/definitions/kpack.build.v1alpha1.ClusterBuilderList",
 		}),
-		getCRDPaths(namespaceTemplate, CRD{
-			Group:   "experimental.kpack.pivotal.io",
-			Version: "v1alpha1",
-			Kind:    "CustomBuilder",
-			Plural:  "custombuilders",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.CustomBuilder",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.CustomBuilderList",
-		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.kpack.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
-			Kind:    "CustomClusterBuilder",
-			Plural:  "customclusterbuilders",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilder",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.CustomClusterBuilderList",
-		}),
-		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.kpack.pivotal.io",
-			Version: "v1alpha1",
-			Kind:    "Stack",
+			Kind:    "ClusterStack",
 			Plural:  "clusterstacks",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.Stack",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.ClusterStackList",
+			Ref:     "#/definitions/kpack.build.v1alpha1.ClusterStack",
+			ListRef: "#/definitions/kpack.build.v1alpha1.ClusterStackList",
 		}),
 		getCRDPaths(clusterTemplate, CRD{
-			Group:   "experimental.kpack.pivotal.io",
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "ClusterStore",
 			Plural:  "clusterstores",
-			Ref:     "#/definitions/kpack.experimental.v1alpha1.ClusterStore",
-			ListRef: "#/definitions/kpack.experimental.v1alpha1.ClusterStoreList",
+			Ref:     "#/definitions/kpack.build.v1alpha1.ClusterStore",
+			ListRef: "#/definitions/kpack.build.v1alpha1.ClusterStoreList",
 		}),
 	)
 

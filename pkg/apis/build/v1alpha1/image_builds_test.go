@@ -126,7 +126,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("propagates image's annotations onto the build", func() {
 			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 27)
 
-			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.build.pivotal.io/reason": "CONFIG"}, build.Annotations)
+			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/reason": "CONFIG"}, build.Annotations)
 		})
 
 		it("sets labels from image metadata and propagates image labels", func() {
@@ -134,10 +134,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
 
 			assert.Equal(t, map[string]string{
-				"label-key":                              "label-value",
-				"image.build.pivotal.io/buildNumber":     "27",
-				"image.build.pivotal.io/imageGeneration": "22",
-				"image.build.pivotal.io/image":           "image-name"}, build.Labels)
+				"label-key":                      "label-value",
+				"image.kpack.io/buildNumber":     "27",
+				"image.kpack.io/imageGeneration": "22",
+				"image.kpack.io/image":           "image-name"}, build.Labels)
 		})
 
 		it("sets git url and git revision when image source is git", func() {

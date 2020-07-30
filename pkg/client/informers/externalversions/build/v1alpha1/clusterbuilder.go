@@ -60,13 +60,13 @@ func NewFilteredClusterBuilderInformer(client versioned.Interface, resyncPeriod 
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().ClusterBuilders().List(options)
+				return client.KpackV1alpha1().ClusterBuilders().List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().ClusterBuilders().Watch(options)
+				return client.KpackV1alpha1().ClusterBuilders().Watch(options)
 			},
 		},
 		&buildv1alpha1.ClusterBuilder{},

@@ -5,7 +5,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 )
 
 type RegistryClient interface {
@@ -23,7 +22,7 @@ type RemoteBuilderCreator struct {
 	KpackVersion   string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *expv1alpha1.ClusterStack, spec expv1alpha1.CustomBuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
 	buildImage, _, err := r.RegistryClient.Fetch(keychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err

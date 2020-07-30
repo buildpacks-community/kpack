@@ -1,12 +1,12 @@
-package clusterbuilder
+package clusterBuilder
 
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
@@ -17,47 +17,58 @@ import (
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/tracker"
 )
 
 const (
-	ReconcilerName = "ClusterBuilders"
-	Kind           = "ClusterBuilder"
+	ReconcilerName = "CustomBuilders"
+	Kind           = "CustomBuilder"
 )
 
-//go:generate counterfeiter . MetadataRetriever
-type MetadataRetriever interface {
-	GetBuilderImage(builder cnb.FetchableBuilder) (v1alpha1.BuilderRecord, error)
+type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
+
+type BuilderCreator interface {
+	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
-func NewController(opt reconciler.Options, clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer, metadataRetriever MetadataRetriever) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	informer v1alpha1informers.ClusterBuilderInformer,
+	repoFactory NewBuildpackRepository,
+	builderCreator BuilderCreator,
+	keychainFactory registry.KeychainFactory,
+	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
+	clusterStackInformer v1alpha1informers.ClusterStackInformer,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:               opt.Client,
-		MetadataRetriever:    metadataRetriever,
-		ClusterBuilderLister: clusterBuilderInformer.Lister(),
+		ClusterBuilderLister: informer.Lister(),
+		RepoFactory:          repoFactory,
+		BuilderCreator:       builderCreator,
+		KeychainFactory:      keychainFactory,
+		ClusterStoreLister:   clusterStoreInformer.Lister(),
+		ClusterStackLister:   clusterStackInformer.Lister(),
 	}
-
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
-	c.Enqueuer = &workQueueEnqueuer{
-		enqueueAfter: impl.EnqueueAfter,
-		delay:        opt.BuilderPollingFrequency,
-	}
-
-	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
+	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
+	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 
 	return impl
 }
 
-//go:generate counterfeiter . Enqueuer
-type Enqueuer interface {
-	Enqueue(builder *v1alpha1.ClusterBuilder) error
-}
-
 type Reconciler struct {
 	Client               versioned.Interface
-	MetadataRetriever    MetadataRetriever
-	Enqueuer             Enqueuer
 	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
+	RepoFactory          NewBuildpackRepository
+	BuilderCreator       BuilderCreator
+	KeychainFactory      registry.KeychainFactory
+	Tracker              reconciler.Tracker
+	ClusterStoreLister   v1alpha1Listers.ClusterStoreLister
+	ClusterStackLister   v1alpha1Listers.ClusterStackLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -74,75 +85,71 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	builder = builder.DeepCopy()
-	builder.SetDefaults(ctx)
 
-	builder, err = c.reconcileClusterBuilderStatus(builder)
+	builderRecord, creationError := c.reconcileBuilder(builder)
+	if creationError != nil {
+		builder.Status.ErrorCreate(creationError)
 
-	updateErr := c.updateClusterBuilderStatus(builder)
-	if updateErr != nil {
-		return updateErr
-	}
-
-	if builder.Spec.UpdatePolicy != v1alpha1.External {
-		err := c.Enqueuer.Enqueue(builder)
+		err := c.updateStatus(builder)
 		if err != nil {
 			return err
 		}
+
+		return controller.NewPermanentError(creationError)
 	}
 
-	if err != nil {
-		return controller.NewPermanentError(err)
-	}
-	return nil
+	builder.Status.BuilderRecord(builderRecord)
+	return c.updateStatus(builder)
 }
 
-func (c *Reconciler) updateClusterBuilderStatus(desired *v1alpha1.ClusterBuilder) error {
+func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha1.BuilderRecord, error) {
+	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	err = c.Tracker.Track(clusterStore, builder.NamespacedName())
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	clusterStack, err := c.ClusterStackLister.Get(builder.Spec.Stack.Name)
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	err = c.Tracker.Track(clusterStack, builder.NamespacedName())
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	if !clusterStack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
+		return v1alpha1.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
+	}
+
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
+		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
+	})
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
+	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, builder.Spec.BuilderSpec)
+}
+
+func (c *Reconciler) updateStatus(desired *v1alpha1.ClusterBuilder) error {
+	desired.Status.ObservedGeneration = desired.Generation
+
 	original, err := c.ClusterBuilderLister.Get(desired.Name)
 	if err != nil {
 		return err
 	}
 
-	if equality.Semantic.DeepEqual(desired.Status, original.Status) { //this is a bug :(
+	if equality.Semantic.DeepEqual(desired.Status, original.Status) {
 		return nil
 	}
 
-	_, err = c.Client.BuildV1alpha1().ClusterBuilders().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(desired)
 	return err
-}
-
-func (c *Reconciler) reconcileClusterBuilderStatus(builder *v1alpha1.ClusterBuilder) (*v1alpha1.ClusterBuilder, error) {
-	builderRecord, err := c.MetadataRetriever.GetBuilderImage(builder)
-	if err != nil {
-		builder.Status = v1alpha1.BuilderStatus{
-			Status: corev1alpha1.Status{
-				ObservedGeneration: builder.Generation,
-				Conditions: corev1alpha1.Conditions{
-					{
-						Type:               corev1alpha1.ConditionReady,
-						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
-						Message:            err.Error(),
-					},
-				},
-			},
-		}
-		return builder, err
-	}
-
-	builder.Status = v1alpha1.BuilderStatus{
-		Status: corev1alpha1.Status{
-			ObservedGeneration: builder.Generation,
-			Conditions: corev1alpha1.Conditions{
-				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionTrue,
-				},
-			},
-		},
-		BuilderMetadata: builderRecord.Buildpacks,
-		LatestImage:     builderRecord.Image,
-		Stack:           builderRecord.Stack,
-	}
-	return builder, nil
 }

@@ -19,7 +19,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
+	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,12 +30,12 @@ import (
 
 // FakeClusterStacks implements ClusterStackInterface
 type FakeClusterStacks struct {
-	Fake *FakeExperimentalV1alpha1
+	Fake *FakeKpackV1alpha1
 }
 
-var clusterstacksResource = schema.GroupVersionResource{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Resource: "clusterstacks"}
+var clusterstacksResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "clusterstacks"}
 
-var clusterstacksKind = schema.GroupVersionKind{Group: "experimental.kpack.pivotal.io", Version: "v1alpha1", Kind: "ClusterStack"}
+var clusterstacksKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "ClusterStack"}
 
 // Get takes name of the clusterStack, and returns the corresponding clusterStack object, and an error if there is any.
 func (c *FakeClusterStacks) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterStack, err error) {

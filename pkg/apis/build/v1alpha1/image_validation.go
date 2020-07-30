@@ -14,8 +14,6 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
-
-	defaultServiceAccount = "default"
 )
 
 var (
@@ -30,7 +28,7 @@ func init() {
 
 func (s *Image) SetDefaults(ctx context.Context) {
 	if s.Spec.ServiceAccount == "" {
-		s.Spec.ServiceAccount = defaultServiceAccount
+		s.Spec.ServiceAccount = "default"
 	}
 
 	if s.Spec.ImageTaggingStrategy == "" {
@@ -76,10 +74,8 @@ func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	}
 
 	switch builder.Kind {
-	case ClusterBuilderKind,
-		BuilderKind,
-		"CustomBuilder", // TODO : use the const var when the experimental pkg migrates into the build pkg
-		"CustomClusterBuilder":
+	case BuilderKind,
+		ClusterBuilderKind:
 		return nil
 	default:
 		return apis.ErrInvalidValue(builder.Kind, "kind")

@@ -29,7 +29,6 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	expv1alpha1 "github.com/pivotal/kpack/pkg/apis/experimental/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -42,16 +41,14 @@ func TestCreateImage(t *testing.T) {
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
-		testNamespace            = "test"
-		dockerSecret             = "docker-secret"
-		builderName              = "build-service-builder"
-		clusterBuilderName       = "cluster-builder"
-		serviceAccountName       = "image-service-account"
-		builderImage             = "gcr.io/paketo-buildpacks/builder:base"
-		clusterStoreName         = "store"
-		clusterStackName         = "stack"
-		customBuilderName        = "custom-builder"
-		customClusterBuilderName = "custom-cluster-builder"
+		testNamespace      = "test"
+		dockerSecret       = "docker-secret"
+		serviceAccountName = "image-service-account"
+		builderImage       = "gcr.io/paketo-buildpacks/builder:base"
+		clusterStoreName   = "store"
+		clusterStackName   = "stack"
+		builderName        = "custom-builder"
+		clusterBuilderName = "custom-cluster-builder"
 	)
 
 	var (
@@ -66,22 +63,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients(t)
 		require.NoError(t, err)
 
-		err = clients.client.ExperimentalV1alpha1().ClusterStores().Delete(clusterStoreName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterStores().Delete(clusterStoreName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.ExperimentalV1alpha1().ClusterStacks().Delete(clusterStackName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterStacks().Delete(clusterStackName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.BuildV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
-		if !errors.IsNotFound(err) {
-			require.NoError(t, err)
-		}
-
-		err = clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Delete(customClusterBuilderName, &metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha1().ClusterBuilders().Delete(clusterBuilderName, &metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -102,7 +94,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it("builds and rebases git, blob, and registry based images", func() {
+	it.Before(func() {
 		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
 		require.NoError(t, err)
 
@@ -116,7 +108,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: dockerSecret,
 				Annotations: map[string]string{
-					"build.pivotal.io/docker": reference.Context().RegistryStr(),
+					"kpack.io/docker": reference.Context().RegistryStr(),
 				},
 			},
 			StringData: map[string]string{
@@ -139,12 +131,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().ClusterStores().Create(&expv1alpha1.ClusterStore{
+		_, err = clients.client.KpackV1alpha1().ClusterStores().Create(&v1alpha1.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStoreName,
 			},
-			Spec: expv1alpha1.ClusterStoreSpec{
-				Sources: []expv1alpha1.StoreImage{
+			Spec: v1alpha1.ClusterStoreSpec{
+				Sources: []v1alpha1.StoreImage{
 					{
 						Image: builderImage,
 					},
@@ -156,39 +148,29 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		_, err = clients.client.ExperimentalV1alpha1().ClusterStacks().Create(&expv1alpha1.ClusterStack{
+		_, err = clients.client.KpackV1alpha1().ClusterStacks().Create(&v1alpha1.ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStackName,
 			},
-			Spec: expv1alpha1.ClusterStackSpec{
+			Spec: v1alpha1.ClusterStackSpec{
 				Id: "io.buildpacks.stacks.bionic",
-				BuildImage: expv1alpha1.ClusterStackSpecImage{
+				BuildImage: v1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
 				},
-				RunImage: expv1alpha1.ClusterStackSpecImage{
+				RunImage: v1alpha1.ClusterStackSpecImage{
 					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
 				},
 			},
 		})
 		require.NoError(t, err)
 
-		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
+		builder, err := clients.client.KpackV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: v1alpha1.BuilderSpec{
-				Image: builderImage,
-			},
-		})
-		require.NoError(t, err)
-
-		customBuilder, err := clients.client.ExperimentalV1alpha1().CustomBuilders(testNamespace).Create(&expv1alpha1.CustomBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      customBuilderName,
+				Name:      builderName,
 				Namespace: testNamespace,
 			},
-			Spec: expv1alpha1.CustomNamespacedBuilderSpec{
-				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.NamespacedBuilderSpec{
+				BuilderSpec: v1alpha1.BuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -198,31 +180,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []expv1alpha1.OrderEntry{
+					Order: []v1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -235,12 +217,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		customClusterBuilder, err := clients.client.ExperimentalV1alpha1().CustomClusterBuilders().Create(&expv1alpha1.CustomClusterBuilder{
+		clusterBuilder, err := clients.client.KpackV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: customClusterBuilderName,
+				Name: clusterBuilderName,
 			},
-			Spec: expv1alpha1.CustomClusterBuilderSpec{
-				CustomBuilderSpec: expv1alpha1.CustomBuilderSpec{
+			Spec: v1alpha1.ClusterBuilderSpec{
+				BuilderSpec: v1alpha1.BuilderSpec{
 					Tag: cfg.newImageTag(),
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
@@ -250,31 +232,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []expv1alpha1.OrderEntry{
+					Order: []v1alpha1.OrderEntry{
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []expv1alpha1.BuildpackRef{
+							Group: []v1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: expv1alpha1.BuildpackInfo{
+									BuildpackInfo: v1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -290,19 +272,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		require.NoError(t, err)
 
-		builder, err := clients.client.BuildV1alpha1().Builders(testNamespace).Create(&v1alpha1.Builder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      builderName,
-				Namespace: testNamespace,
-			},
-			Spec: v1alpha1.BuilderWithSecretsSpec{
-				BuilderSpec:      v1alpha1.BuilderSpec{Image: builderImage},
-				ImagePullSecrets: nil,
-			},
-		})
-		require.NoError(t, err)
+		waitUntilReady(t, clients, builder, clusterBuilder)
+	})
 
-		waitUntilReady(t, clients, builder, customBuilder, clusterBuilder, customClusterBuilder)
+	it("builds and rebases git, blob, and registry based images", func() {
 
 		cacheSize := resource.MustParse("1Gi")
 
@@ -336,20 +309,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		builderConfigs := map[string]corev1.ObjectReference{
 			"custom-builder": {
-				Kind: expv1alpha1.CustomBuilderKind,
-				Name: customBuilderName,
-			},
-			"builder": {
 				Kind: v1alpha1.BuilderKind,
 				Name: builderName,
 			},
-			"cluster-builder": {
+			"custom-cluster-builder": {
 				Kind: v1alpha1.ClusterBuilderKind,
 				Name: clusterBuilderName,
-			},
-			"custom-cluster-builder": {
-				Kind: expv1alpha1.CustomClusterBuilderKind,
-				Name: customClusterBuilderName,
 			},
 		}
 
@@ -364,7 +329,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					t.Parallel()
 
 					imageTag := cfg.newImageTag()
-					image, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+					image, err := clients.client.KpackV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: imageName,
 						},
@@ -390,54 +355,6 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("can trigger rebuilds", func() {
-		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
-		require.NoError(t, err)
-
-		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-		require.NoError(t, err)
-
-		basicAuth, err := auth.Authorization()
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
-				Annotations: map[string]string{
-					"build.pivotal.io/docker": reference.Context().RegistryStr(),
-				},
-			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
-			},
-			Type: corev1.SecretTypeBasicAuth,
-		})
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(&corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: serviceAccountName,
-			},
-			Secrets: []corev1.ObjectReference{
-				{
-					Name: dockerSecret,
-				},
-			},
-		})
-		require.NoError(t, err)
-
-		clusterBuilder, err := clients.client.BuildV1alpha1().ClusterBuilders().Create(&v1alpha1.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: v1alpha1.BuilderSpec{
-				Image: builderImage,
-			},
-		})
-		require.NoError(t, err)
-
-		waitUntilReady(t, clients, clusterBuilder)
-
 		cacheSize := resource.MustParse("1Gi")
 
 		expectedResources := corev1.ResourceRequirements{
@@ -452,16 +369,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
 
 		imageTag := cfg.newImageTag()
-		image, err := clients.client.BuildV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
+		image, err := clients.client.KpackV1alpha1().Images(testNamespace).Create(&v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: imageName,
 			},
 			Spec: v1alpha1.ImageSpec{
 				Tag: imageTag,
 				Builder: corev1.ObjectReference{
-					Kind:       v1alpha1.ClusterBuilderKind,
-					APIVersion: "build.pivotal.io/v1alpha1",
-					Name:       clusterBuilderName,
+					Kind: v1alpha1.ClusterBuilderKind,
+					Name: clusterBuilderName,
 				},
 				ServiceAccount: serviceAccountName,
 				Source: v1alpha1.SourceConfig{
@@ -481,20 +397,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		validateImageCreate(t, clients, image, expectedResources)
 
-		list, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+		list, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 		})
 		require.NoError(t, err)
 		require.Len(t, list.Items, 1)
 
 		build := &list.Items[0]
 		build.Annotations[v1alpha1.BuildNeededAnnotation] = "true"
-		_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Update(build)
+		_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Update(build)
 		require.NoError(t, err)
 
 		eventually(t, func() bool {
-			list, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+			list, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 			})
 			require.NoError(t, err)
 			return len(list.Items) == 2
@@ -509,6 +425,7 @@ func waitUntilReady(t *testing.T, clients *clients, objects ...kmeta.OwnerRefabl
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
 		eventually(t, func() bool {
+
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
 			require.NoError(t, err)
 
@@ -543,7 +460,7 @@ func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, 
 	}, 1*time.Second, 10*time.Second)
 
 	podList, err := clients.k8sClient.CoreV1().Pods(image.Namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", image.Name),
+		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),
 	})
 	require.NoError(t, err)
 
@@ -557,8 +474,8 @@ func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, 
 func validateRebase(t *testing.T, clients *clients, imageName, testNamespace string) {
 	var rebaseBuildName = imageName + "-rebase"
 
-	buildList, err := clients.client.BuildV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("image.build.pivotal.io/image=%s", imageName),
+	buildList, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 	})
 	require.NoError(t, err)
 
@@ -571,7 +488,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 		StackId: build.Status.Stack.ID,
 	}
 
-	_, err = clients.client.BuildV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
+	_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        rebaseBuildName,
 			Annotations: map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack},
@@ -581,7 +498,7 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
-		build, err := clients.client.BuildV1alpha1().Builds(testNamespace).Get(rebaseBuildName, metav1.GetOptions{})
+		build, err := clients.client.KpackV1alpha1().Builds(testNamespace).Get(rebaseBuildName, metav1.GetOptions{})
 		require.NoError(t, err)
 
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -18,246 +18,155 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/builder/builderfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestBuilderReconciler(t *testing.T) {
-	spec.Run(t, "Builder Reconciler", testBuilderReconciler)
+	spec.Run(t, "Custom Builder Reconciler", testBuilderReconciler)
 }
 
 func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
-	fakeMetadataRetriever := &builderfakes.FakeMetadataRetriever{}
+	const (
+		testNamespace           = "some-namespace"
+		builderName             = "custom-builder"
+		builderKey              = testNamespace + "/" + builderName
+		builderTag              = "example.com/custom-builder"
+		builderIdentifier       = "example.com/custom-builder@sha256:resolved-builder-digest"
+		initialGeneration int64 = 1
+	)
 
-	fakeEnqueuer := &builderfakes.FakeEnqueuer{}
+	var (
+		builderCreator  = &testhelpers.FakeBuilderCreator{}
+		keychainFactory = &registryfakes.FakeKeychainFactory{}
+		fakeTracker     = testhelpers.FakeTracker{}
+		fakeRepoFactory = func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
+			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
+		}
+	)
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
-
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-
-			eventRecorder := record.NewFakeRecorder(10)
-			actionRecorderList := rtesting.ActionRecorderList{fakeClient}
-			eventList := rtesting.EventList{Recorder: eventRecorder}
 			r := &builder.Reconciler{
-				Client:            fakeClient,
-				BuilderLister:     listers.GetBuilderLister(),
-				MetadataRetriever: fakeMetadataRetriever,
-				Enqueuer:          fakeEnqueuer,
+				Client:             fakeClient,
+				BuilderLister:      listers.GetBuilderLister(),
+				RepoFactory:        fakeRepoFactory,
+				BuilderCreator:     builderCreator,
+				KeychainFactory:    keychainFactory,
+				Tracker:            fakeTracker,
+				ClusterStoreLister: listers.GetClusterStoreLister(),
+				ClusterStackLister: listers.GetClusterStackLister(),
 			}
-
-			return r, actionRecorderList, eventList
+			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	const (
-		builderName             = "builder-name"
-		namespace               = "some-namespace"
-		key                     = "some-namespace/builder-name"
-		imageName               = "some/builder"
-		builderIdentifier       = "some/builder@sha256:resolved-builder-digest"
-		runImgIdentifier        = "some/runImage@sha256:resolved-builder-digest"
-		initalGeneration  int64 = 1
-	)
-
-	builder := &v1alpha1.Builder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       builderName,
-			Namespace:  namespace,
-			Generation: initalGeneration,
+	clusterStore := &v1alpha1.ClusterStore{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-store",
 		},
-		Spec: v1alpha1.BuilderWithSecretsSpec{
-			BuilderSpec: v1alpha1.BuilderSpec{
-				Image:        imageName,
-				UpdatePolicy: v1alpha1.Polling,
+		Spec:   v1alpha1.ClusterStoreSpec{},
+		Status: v1alpha1.ClusterStoreStatus{},
+	}
+
+	clusterStack := &v1alpha1.ClusterStack{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "some-stack",
+		},
+		Status: v1alpha1.ClusterStackStatus{
+			Status: corev1alpha1.Status{
+				ObservedGeneration: 0,
+				Conditions: []corev1alpha1.Condition{
+					{
+						Type:   corev1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
 			},
-			ImagePullSecrets: nil,
 		},
 	}
 
+	builder := &v1alpha1.Builder{
+		ObjectMeta: v1.ObjectMeta{
+			Name:       builderName,
+			Generation: initialGeneration,
+			Namespace:  testNamespace,
+		},
+		Spec: v1alpha1.NamespacedBuilderSpec{
+			BuilderSpec: v1alpha1.BuilderSpec{
+				Tag: builderTag,
+				Stack: corev1.ObjectReference{
+					Kind: "Stack",
+					Name: "some-stack",
+				},
+				Store: corev1.ObjectReference{
+					Kind: "ClusterStore",
+					Name: "some-store",
+				},
+				Order: []v1alpha1.OrderEntry{
+					{
+						Group: []v1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
+									Id:      "buildpack.id.1",
+									Version: "1.0.0",
+								},
+								Optional: false,
+							},
+							{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
+									Id:      "buildpack.id.2",
+									Version: "2.0.0",
+								},
+								Optional: false,
+							},
+						},
+					},
+				},
+			},
+			ServiceAccount: "some-service-account",
+		},
+	}
+
+	secretRef := registry.SecretRef{
+		ServiceAccount: builder.Spec.ServiceAccount,
+		Namespace:      builder.Namespace,
+	}
+
 	when("#Reconcile", func() {
-		when("metadata is available", func() {
-			fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{
+		it.Before(func() {
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, &registryfakes.FakeKeychain{})
+		})
+
+		it("saves metadata to the status", func() {
+			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: builderIdentifier,
 				Stack: v1alpha1.BuildStack{
-					RunImage: runImgIdentifier,
-					ID:       "io.buildpacks.stacks.bionic",
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
 				},
 				Buildpacks: v1alpha1.BuildpackMetadataList{
 					{
-						Id:      "buildpack.version",
-						Version: "version",
+						Id:      "buildpack.id.1",
+						Version: "1.0.0",
+					},
+					{
+						Id:      "buildpack.id.2",
+						Version: "2.0.0",
 					},
 				},
-			}, nil)
+			}
 
-			it("saves metadata to the status", func() {
-				testBuilder := &v1alpha1.Builder{
-					ObjectMeta: builder.ObjectMeta,
-					Spec:       builder.Spec,
-					Status: v1alpha1.BuilderStatus{
-						Status: corev1alpha1.Status{
-							ObservedGeneration: 1,
-							Conditions: corev1alpha1.Conditions{
-								{
-									Type:               corev1alpha1.ConditionReady,
-									Status:             corev1.ConditionTrue,
-									LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-								},
-							},
-						},
-						BuilderMetadata: []v1alpha1.BuildpackMetadata{
-							{
-								Id:      "buildpack.version",
-								Version: "version",
-							},
-						},
-						LatestImage: builderIdentifier,
-						Stack: v1alpha1.BuildStack{
-							RunImage: runImgIdentifier,
-							ID:       "io.buildpacks.stacks.bionic",
-						},
-					},
-				}
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: testBuilder,
-						},
-					},
-				})
-
-				require.Equal(t, fakeMetadataRetriever.GetBuilderImageCallCount(), 1)
-			})
-
-			it("schedule next polling when update policy is set to polling", func() {
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &v1alpha1.Builder{
-								ObjectMeta: builder.ObjectMeta,
-								Spec:       builder.Spec,
-								Status: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									BuilderMetadata: []v1alpha1.BuildpackMetadata{
-										{
-											Id:      "buildpack.version",
-											Version: "version",
-										},
-									},
-									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
-									},
-								},
-							},
-						},
-					},
-				})
-				assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
-			})
-
-			it("does schedule polling when update policy is set to polling", func() {
-				builder.Spec.UpdatePolicy = v1alpha1.Polling
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &v1alpha1.Builder{
-								ObjectMeta: builder.ObjectMeta,
-								Spec:       builder.Spec,
-								Status: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									BuilderMetadata: []v1alpha1.BuildpackMetadata{
-										{
-											Id:      "buildpack.version",
-											Version: "version",
-										},
-									},
-									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
-									},
-								},
-							},
-						},
-					},
-				})
-				assert.Equal(t, 1, fakeEnqueuer.EnqueueCallCount())
-			})
-
-			it("does not schedule polling when update policy is set to external", func() {
-				builder.Spec.UpdatePolicy = v1alpha1.External
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &v1alpha1.Builder{
-								ObjectMeta: builder.ObjectMeta,
-								Spec:       builder.Spec,
-								Status: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									BuilderMetadata: []v1alpha1.BuildpackMetadata{
-										{
-											Id:      "buildpack.version",
-											Version: "version",
-										},
-									},
-									LatestImage: builderIdentifier,
-									Stack: v1alpha1.BuildStack{
-										RunImage: runImgIdentifier,
-										ID:       "io.buildpacks.stacks.bionic",
-									},
-								},
-							},
-						},
-					},
-				})
-
-				assert.Equal(t, 0, fakeEnqueuer.EnqueueCallCount())
-			})
-
-			it("does not update the status with no status change", func() {
-				builder.Status = v1alpha1.BuilderStatus{
+			expectedBuilder := &v1alpha1.Builder{
+				ObjectMeta: builder.ObjectMeta,
+				Spec:       builder.Spec,
+				Status: v1alpha1.BuilderStatus{
 					Status: corev1alpha1.Status{
-						ObservedGeneration: builder.Generation,
+						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
 							{
 								Type:   corev1alpha1.ConditionReady,
@@ -267,64 +176,226 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					BuilderMetadata: []v1alpha1.BuildpackMetadata{
 						{
-							Id:      "buildpack.version",
-							Version: "version",
+							Id:      "buildpack.id.1",
+							Version: "1.0.0",
+						},
+						{
+							Id:      "buildpack.id.2",
+							Version: "2.0.0",
 						},
 					},
-					LatestImage: builderIdentifier,
 					Stack: v1alpha1.BuildStack{
-						RunImage: runImgIdentifier,
-						ID:       "io.buildpacks.stacks.bionic",
+						RunImage: "example.com/run-image@sha256:123456",
+						ID:       "fake.stack.id",
 					},
-				}
+					LatestImage: builderIdentifier,
+				},
+			}
 
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: false,
-				})
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					clusterStore,
+					builder,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: expectedBuilder,
+					},
+				},
+			})
+
+			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
+				Keychain:            &registryfakes.FakeKeychain{},
+				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
+				BuilderSpec:         builder.Spec.BuilderSpec,
+			}}, builderCreator.CreateBuilderCalls)
+		})
+
+		it("tracks the stack and store for a custom builder", func() {
+			builderCreator.Record = v1alpha1.BuilderRecord{
+				Image: builderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{},
+			}
+
+			expectedBuilder := &v1alpha1.Builder{
+				ObjectMeta: builder.ObjectMeta,
+				Spec:       builder.Spec,
+				Status: v1alpha1.BuilderStatus{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: 1,
+						Conditions: corev1alpha1.Conditions{
+							{
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
+							},
+						},
+					},
+					BuilderMetadata: []v1alpha1.BuildpackMetadata{},
+					Stack: v1alpha1.BuildStack{
+						RunImage: "example.com/run-image@sha256:123456",
+						ID:       "fake.stack.id",
+					},
+					LatestImage: builderIdentifier,
+				},
+			}
+
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					clusterStore,
+					expectedBuilder,
+				},
+				WantErr: false,
+			})
+
+			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(clusterStack, builder.NamespacedName()))
+		})
+
+		it("does not update the status with no status change", func() {
+			builderCreator.Record = v1alpha1.BuilderRecord{
+				Image: builderIdentifier,
+				Stack: v1alpha1.BuildStack{
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
+				},
+				Buildpacks: v1alpha1.BuildpackMetadataList{
+					{
+						Id:      "buildpack.id.1",
+						Version: "1.0.0",
+					},
+				},
+			}
+
+			builder.Status = v1alpha1.BuilderStatus{
+				Status: corev1alpha1.Status{
+					ObservedGeneration: builder.Generation,
+					Conditions: corev1alpha1.Conditions{
+						{
+							Type:   corev1alpha1.ConditionReady,
+							Status: corev1.ConditionTrue,
+						},
+					},
+				},
+				BuilderMetadata: []v1alpha1.BuildpackMetadata{
+					{
+						Id:      "buildpack.id.1",
+						Version: "1.0.0",
+					},
+				},
+				Stack: v1alpha1.BuildStack{
+					RunImage: "example.com/run-image@sha256:123456",
+					ID:       "fake.stack.id",
+				},
+				LatestImage: builderIdentifier,
+			}
+
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					clusterStore,
+					builder,
+				},
+				WantErr: false,
 			})
 		})
 
-		when("metadata is not available", func() {
-			fakeMetadataRetriever.GetBuilderImageReturns(v1alpha1.BuilderRecord{}, errors.New("unavailable metadata"))
+		it("updates status on creation error", func() {
+			builderCreator.CreateErr = errors.New("create error")
 
-			it("saves not ready to the builder status", func() {
-				rt.Test(rtesting.TableRow{
-					Key:     key,
-					Objects: []runtime.Object{builder},
-					WantErr: true,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &v1alpha1.Builder{
-								ObjectMeta: builder.ObjectMeta,
-								Spec:       builder.Spec,
-								Status: v1alpha1.BuilderStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: 1,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:    corev1alpha1.ConditionReady,
-												Status:  corev1.ConditionFalse,
-												Message: "unavailable metadata",
-											},
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					clusterStore,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: v1alpha1.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: "create error",
 										},
 									},
 								},
 							},
 						},
 					},
-				})
-
-				assert.Equal(t, fakeEnqueuer.EnqueueCallCount(), 1)
+				},
 			})
+
 		})
 
-		it("does not return error on nonexistent builder", func() {
+		it("updates status and doesn't build builder when stack not ready", func() {
+			notReadyClusterStack := &v1alpha1.ClusterStack{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "some-stack",
+				},
+				Status: v1alpha1.ClusterStackStatus{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: 0,
+						Conditions: []corev1alpha1.Condition{
+							{
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionFalse,
+							},
+						},
+					},
+				},
+			}
 			rt.Test(rtesting.TableRow{
-				Key:     key,
-				WantErr: false,
+				Key: builderKey,
+				Objects: []runtime.Object{
+					notReadyClusterStack,
+					clusterStore,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: v1alpha1.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: "stack some-stack is not ready",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			})
+
+			//still track resources
+			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, builder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
+
 	})
 }
