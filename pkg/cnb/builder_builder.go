@@ -150,7 +150,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 			},
 			Lifecycle: bb.LifecycleMetadata,
 			CreatedBy: CreatorMetadata{
-				Name:    "kpack CustomBuilder",
+				Name:    "kpack Builder",
 				Version: bb.kpackVersion,
 			},
 			Buildpacks: buildpacks,
