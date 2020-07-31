@@ -2,7 +2,7 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: defaults.webhook.kpack.pivotal.io
+  name: defaults.webhook.kpack.io
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -12,12 +12,12 @@ webhooks:
       namespace: kpack
   failurePolicy: Fail
   sideEffects: None
-  name: defaults.webhook.kpack.pivotal.io
+  name: defaults.webhook.kpack.io
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: validation.webhook.kpack.pivotal.io
+  name: validation.webhook.kpack.io
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -27,7 +27,7 @@ webhooks:
       namespace: kpack
   failurePolicy: Fail
   sideEffects: None
-  name: validation.webhook.kpack.pivotal.io
+  name: validation.webhook.kpack.io
 ---
 apiVersion: v1
 kind: Secret

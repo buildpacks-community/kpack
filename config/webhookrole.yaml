@@ -60,7 +60,7 @@ rules:
   resources:
   - "mutatingwebhookconfigurations"
   resourceNames:
-  - "defaults.webhook.kpack.pivotal.io"
+  - "defaults.webhook.kpack.io"
   verbs:
   - update
 - apiGroups:
@@ -76,7 +76,7 @@ rules:
   resources:
   - "validatingwebhookconfigurations"
   resourceNames:
-  - "validation.webhook.kpack.pivotal.io"
+  - "validation.webhook.kpack.io"
   verbs:
   - update
 - apiGroups:
