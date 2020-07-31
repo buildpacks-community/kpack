@@ -405,7 +405,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     }
   },
   "createdBy": {
-    "name": "kpack CustomBuilder",
+    "name": "kpack Builder",
     "version": "v1.2.3 (git sha: abcdefg123456)"
   },
   "buildpacks": [
