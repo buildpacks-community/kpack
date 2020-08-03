@@ -283,7 +283,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("pod executing", func() {
-			it("updates the status with the status of the pod", func() {
+			it("updates the status step states with the statuses of the containers", func() {
 				pod, err := podGenerator.Generate(build)
 				require.NoError(t, err)
 
@@ -361,6 +361,86 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											Waiting: &corev1.ContainerStateWaiting{
 												Reason:  "Waiting",
 												Message: "My Turn",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"step-1",
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("updates the status with the container status when a container is waiting", func() {
+				pod, err := podGenerator.Generate(build)
+				require.NoError(t, err)
+
+				pod.Status.Phase = corev1.PodPending
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "step-1",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID",
+							},
+						},
+					},
+					{
+						Name: "step-2",
+						State: corev1.ContainerState{
+							Waiting: &corev1.ContainerStateWaiting{
+								Reason:  "ImagePullBackOff",
+								Message: "Can't pull",
+							},
+						},
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						build,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &v1alpha1.Build{
+								ObjectMeta: build.ObjectMeta,
+								Spec:       build.Spec,
+								Status: v1alpha1.BuildStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionUnknown,
+												Reason: "ImagePullBackOff",
+												Message: "Can't pull",
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									StepStates: []corev1.ContainerState{
+										{
+
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     "Message",
+												ContainerID: "container.ID",
+											},
+										},
+										{
+											Waiting: &corev1.ContainerStateWaiting{
+												Reason:  "ImagePullBackOff",
+												Message: "Can't pull",
 											},
 										},
 									},
