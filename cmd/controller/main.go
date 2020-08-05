@@ -135,7 +135,7 @@ func main() {
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient: &registry.Client{},
 		LifecycleImage: *lifecycleImage,
-		KpackVersion:   cmd.Version,
+		KpackVersion:   cmd.Identifer,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
