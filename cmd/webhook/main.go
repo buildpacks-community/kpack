@@ -24,12 +24,12 @@ import (
 )
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1alpha1.SchemeGroupVersion.WithKind("Image"):                &v1alpha1.Image{},
-	v1alpha1.SchemeGroupVersion.WithKind("Build"):                &v1alpha1.Build{},
-	v1alpha1.SchemeGroupVersion.WithKind("CustomBuilder"):        &v1alpha1.Builder{},
-	v1alpha1.SchemeGroupVersion.WithKind("CustomClusterBuilder"): &v1alpha1.ClusterBuilder{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterStore"):         &v1alpha1.ClusterStore{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterStack"):         &v1alpha1.ClusterStack{},
+	v1alpha1.SchemeGroupVersion.WithKind("Image"):          &v1alpha1.Image{},
+	v1alpha1.SchemeGroupVersion.WithKind("Build"):          &v1alpha1.Build{},
+	v1alpha1.SchemeGroupVersion.WithKind("Builder"):        &v1alpha1.Builder{},
+	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"): &v1alpha1.ClusterBuilder{},
+	v1alpha1.SchemeGroupVersion.WithKind("ClusterStore"):   &v1alpha1.ClusterStore{},
+	v1alpha1.SchemeGroupVersion.WithKind("ClusterStack"):   &v1alpha1.ClusterStack{},
 }
 
 func init() {

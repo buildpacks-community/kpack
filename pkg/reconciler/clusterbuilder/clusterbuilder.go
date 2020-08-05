@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	ReconcilerName = "CustomBuilders"
-	Kind           = "CustomBuilder"
+	ReconcilerName = "ClusterBuilders"
+	Kind           = "ClusterBuilder"
 )
 
 type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository

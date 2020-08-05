@@ -89,7 +89,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#Lister", func() {
-		it("can return a builder of type CustomBuilder", func() {
+		it("can return a builder of type Builder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace(builderNamespace).Get(v1.ObjectReference{
 				Kind:      v1alpha1.BuilderKind,
 				Namespace: builderNamespace,
@@ -102,7 +102,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, []v1.LocalObjectReference(nil), duckBuilder.Spec.ImagePullSecrets)
 		})
 
-		it("can return a builder of type CustomClusterBuilder", func() {
+		it("can return a builder of type ClusterBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace("").Get(v1.ObjectReference{
 				Kind: v1alpha1.ClusterBuilderKind,
 				Name: clusterBuilderName,
