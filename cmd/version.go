@@ -6,5 +6,5 @@ import "fmt"
 var (
 	Version   = "0.0.0"
 	Commit    = "000"
-	Identifer = fmt.Sprintf("v%s (git sha: %s})", Version, Commit)
+	Identifer = fmt.Sprintf("v%s (git sha: %s)", Version, Commit)
 )
