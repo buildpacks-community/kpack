@@ -233,8 +233,12 @@ github.com/bugsnag/osext v0.0.0-20130617224835-0dd3f918b21b/go.mod h1:obH5gd0Bsq
 github.com/bugsnag/panicwrap v0.0.0-20151223152923-e2c28503fcd0/go.mod h1:D/8v3kj0zr8ZAKg1AQ6crr+5VwKN5eIywRkfhyM/+dE=
 github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24 h1:5JJD0uW/I2yfYyFqZZdZ4upgonr6q20WWvR1R53c7ec=
 github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24/go.mod h1:rkRDOGpntpFhgj0gIUhQnEt5DYvi7xUTHkZWSxbWJP0=
+github.com/buildpacks/imgutil v0.0.0-20200808231819-bedc3d0cd75a h1:VfNxNjP1Y5nM49gF2UkNTq5CoqELkmxdRUUYn8tZvj4=
+github.com/buildpacks/imgutil v0.0.0-20200808231819-bedc3d0cd75a/go.mod h1:uVv0fNwOEBNgyM9ZvwV0g2Dvzk31q5TtSeoC1GGmW+k=
 github.com/buildpacks/lifecycle v0.8.1 h1:sRyb9281MrrJNfuaQBTI8hu1ERz9iiYtaDmp5xm6VyQ=
 github.com/buildpacks/lifecycle v0.8.1/go.mod h1:Spd3VyskOqUNXx76FKMRU3L3PLHxVGQBJ/JqXlFeLh8=
+github.com/buildpacks/lifecycle v0.9.0 h1:AV7t614cnjJ6TJGf9H12TI0Ewqj16lQduGLlOt7J/Lo=
+github.com/buildpacks/lifecycle v0.9.0/go.mod h1:Vxe/ZCnHhs+DY7eJvrtbNlT8nZyaHYAS+/1D2Q5mM4w=
 github.com/bwmarrin/snowflake v0.0.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
 github.com/caarlos0/ctrlc v1.0.0/go.mod h1:CdXpj4rmq0q/1Eb44M9zi2nKB0QraNKuRGYGrrHhcQw=
 github.com/campoy/unique v0.0.0-20180121183637-88950e537e7e/go.mod h1:9IOqJGCPMSc6E5ydlp5NIonxObaeu/Iub/X03EKPVYo=
@@ -309,6 +313,8 @@ github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017 h1:2HQmlpI3yI9deH18Q6xi
 github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/cli v0.0.0-20200130152716-5d0cf8839492 h1:FwssHbCDJD025h+BchanCwE1Q8fyMgqDr2mOQAWOLGw=
 github.com/docker/cli v0.0.0-20200130152716-5d0cf8839492/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
+github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37 h1:MKHpi6ibJ9V5iuyUABEppUcvP0idDC1klY+UuiSFSPc=
+github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/distribution v0.0.0-20191216044856-a8371794149d/go.mod h1:0+TTO4EOBfRPhZXAeF1Vu+W3hHZ8eLp8PgKVZlcvtFY=
 github.com/docker/distribution v2.7.1+incompatible h1:a5mlkVzth6W5A4fOsS3D2EO5BUmsJpcB+cRlLU7cSug=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
@@ -316,6 +322,7 @@ github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0/go.mod h1:eEKB0N0r
 github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7 h1:Cvj7S8I4Xpx78KAl6TwTmMHuHlZ/0SM60NUneGJQ7IE=
 github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v1.4.2-0.20200203170920-46ec8731fbce/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v1.13.1 h1:IkZjBSIc8hBjLpqeAbeE5mca5mNgeatLHBy3GO78BWo=
 github.com/docker/docker v1.13.1/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v17.12.0-ce-rc1.0.20190924003213-a8608b5b67c7+incompatible h1:iM3aX3UulSt9B8CIvvlCdfoasisj7Zyjz7guJfVCftc=
@@ -524,6 +531,7 @@ github.com/golang/mock v1.4.0/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt
 github.com/golang/mock v1.4.1/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
 github.com/golang/mock v1.4.3 h1:GV+pQPG/EUUbkh47niozDcADz6go/dUwhVzdUQHIVRw=
 github.com/golang/mock v1.4.3/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
+github.com/golang/mock v1.4.4/go.mod h1:l3mdAwkq5BuhzHwde/uurv3sEJeZMXNpwsxVWU71h+4=
 github.com/golang/protobuf v0.0.0-20161109072736-4bd1920723d7/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -582,6 +590,7 @@ github.com/google/go-containerregistry v0.0.0-20200115214256-379933c9c22b/go.mod
 github.com/google/go-containerregistry v0.0.0-20200123184029-53ce695e4179/go.mod h1:Wtl/v6YdQxv397EREtzwgd9+Ud7Q5D8XMbi3Zazgkrs=
 github.com/google/go-containerregistry v0.0.0-20200311163244-4b1985e5ea21 h1:rz5VzU1xKHR8HDtifeAJ+SPwE0v3YW0AEien/Lobgww=
 github.com/google/go-containerregistry v0.0.0-20200311163244-4b1985e5ea21/go.mod h1:m8YvHwSOuBCq25yrj1DaX/fIMrv6ec3CNg8jY8+5PEA=
+github.com/google/go-containerregistry v0.0.0-20200313165449-955bf358a3d8/go.mod h1:pD1UFYs7MCAx+ZLShBdttcaOSbyc8F9Na/9IZLNwJeA=
 github.com/google/go-containerregistry v0.1.1 h1:AG8FSAfXglim2l5qSrqp5VK2Xl03PiBf25NiTGGamws=
 github.com/google/go-containerregistry v0.1.1/go.mod h1:npTSyywOeILcgWqd+rvtzGWflIPPcBQhYoOONaY4ltM=
 github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
@@ -1442,6 +1451,7 @@ golang.org/x/tools v0.0.0-20190606124116-d0a3d012864b/go.mod h1:/rFqwRUd4F7ZHNgw
 golang.org/x/tools v0.0.0-20190614205625-5aca471b1d59/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190617190820-da514acc4774/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
+golang.org/x/tools v0.0.0-20190624222133-a101b041ded4/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190628153133-6cdbf07be9d0/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190706070813-72ffa07ba3db/go.mod h1:jcCCGcm9btYwXyDqrUWc6MKQKKGJCWEQ3AfLSRIbEuI=
 golang.org/x/tools v0.0.0-20190719005602-e377ae9d6386/go.mod h1:jcCCGcm9btYwXyDqrUWc6MKQKKGJCWEQ3AfLSRIbEuI=
@@ -1574,6 +1584,7 @@ google.golang.org/genproto v0.0.0-20200224152610-e50cd9704f63/go.mod h1:55QSHmfG
 google.golang.org/genproto v0.0.0-20200228133532-8c2c7df3a383/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200305110556-506484158171/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200312145019-da6875a35672/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
+google.golang.org/genproto v0.0.0-20200313141609-30c55424f95d/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200317114155-1f3552e48f24/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200326112834-f447254575fd h1:DVCc2PgW9UrvHGZGEv4Mt3uSeQtUrrs7r8pUw+bVwWI=
 google.golang.org/genproto v0.0.0-20200326112834-f447254575fd/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
@@ -1675,6 +1686,8 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c h1:dUUwHk2QECo/6vqA44rthZ8ie
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gotest.tools v2.2.0+incompatible h1:VsBPFP1AI068pPrMxtb/S8Zkgf9xEmTLJjfM+P5UIEo=
 gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=
+gotest.tools/v3 v3.0.2 h1:kG1BFyqVHuQoVQiR1bWGnfz/fmHvvuiSPIV7rvl360E=
+gotest.tools/v3 v3.0.2/go.mod h1:3SzNCllyD9/Y+b5r9JIKQ474KzkZyqLqEfYqMsX94Bk=
 helm.sh/helm/v3 v3.1.1/go.mod h1:WYsFJuMASa/4XUqLyv54s0U/f3mlAaRErGmyy4z921g=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=

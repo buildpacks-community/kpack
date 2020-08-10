@@ -5,8 +5,8 @@ go 1.14
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver/v3 v3.1.0
-	github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24
-	github.com/buildpacks/lifecycle v0.8.1
+	github.com/buildpacks/imgutil v0.0.0-20200808231819-bedc3d0cd75a
+	github.com/buildpacks/lifecycle v0.9.0
 	github.com/docker/docker v17.12.0-ce-rc1.0.20190924003213-a8608b5b67c7+incompatible // indirect
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
