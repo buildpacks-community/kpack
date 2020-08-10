@@ -89,7 +89,8 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	rebaser := lifecycle.Rebaser{
-		Logger: cmd.Logger,
+		Logger: cmd.DefaultLogger,
 	}
-	return rebaser.Rebase(appImage, newBaseImage, tags[1:])
+	_, err = rebaser.Rebase(appImage, newBaseImage, tags[1:])
+	return err
 }
