@@ -1,9 +1,0 @@
-apiVersion: build.pivotal.io/v1alpha1
-kind: SourceResolver
-metadata:
-  name: sample
-spec:
-  source:
-    git:
-      url: https://github.com/matthewmcnew/sample-java-app
-      revision: master

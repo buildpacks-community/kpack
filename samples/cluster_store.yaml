@@ -1,0 +1,8 @@
+apiVersion: kpack.io/v1alpha1
+kind: ClusterStore
+metadata:
+  name: sample-cluster-store
+spec:
+  sources:
+  - image: gcr.io/paketo-buildpacks/java
+  - image: gcr.io/paketo-buildpacks/nodejs

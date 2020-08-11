@@ -1,4 +1,4 @@
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-binding
@@ -18,7 +18,7 @@ spec:
       metadataRef:
         name: sample-binding-metadata
 ---
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-binding-with-secret
