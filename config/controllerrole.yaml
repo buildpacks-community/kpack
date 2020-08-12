@@ -23,6 +23,10 @@ rules:
   - builders/status
   - clusterbuilders
   - clusterbuilders/status
+  - clusterstores
+  - clusterstores/status
+  - clusterstacks
+  - clusterstacks/status
   - sourceresolvers
   - sourceresolvers/status
   verbs:
@@ -57,25 +61,6 @@ rules:
   - create
   - update
   - delete
-  - watch
-- apiGroups:
-  - kpack.io
-  resources:
-  - custombuilders
-  - custombuilders/status
-  - customclusterbuilders
-  - customclusterbuilders/status
-  - clusterstores
-  - clusterstores/status
-  - clusterstacks
-  - clusterstacks/status
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - patch
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
