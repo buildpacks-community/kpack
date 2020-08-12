@@ -77,7 +77,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kubectl apply -f store.yaml
     ```
 
-    > Note: Buildpackages are packaged and distributed as buildpackages which are docker images available on a docker registry. Buildpackages for other language families are available from [paketo](https://github.com/paketo-buildpacks).  
+    > Note: Buildpacks are packaged and distributed as buildpackages which are docker images available on a docker registry. Buildpackages for other languages are available from [paketo](https://github.com/paketo-buildpacks).
 
 1. Create a cluster stack configuration
     
@@ -114,7 +114,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     apiVersion: kpack.io/v1alpha1
     kind: Builder
     metadata:
-      name: my-custom-builder
+      name: my-builder
       namespace: default
     spec:
       serviceAccount: default
@@ -159,8 +159,8 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
       tag: <DOCKER-IMAGE-TAG>
       serviceAccount: tutorial-service-account
       builder:
-        name: default
-        kind: ClusterBuilder
+        name: my-builder
+        kind: Builder
       source:
         git:
           url: https://github.com/spring-projects/spring-petclinic
@@ -173,7 +173,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 
    Apply that image to the cluster 
     ```bash
-    kubectl apply -f <name-of-image-file.yaml>
+    kubectl apply -f image.yaml
     ```
     
    You can now check the status of the image. 
