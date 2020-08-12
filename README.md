@@ -26,6 +26,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
     - [Secrets](docs/secrets.md)
     - [Builders](docs/builders.md)
     - [Builds](docs/build.md)
+    - [Service Bindings](docs/servicebindings.md)
 
 - Tailing logs with the kpack [log utility](docs/logs.md)
  
