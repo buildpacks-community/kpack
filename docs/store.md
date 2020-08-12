@@ -1,0 +1,38 @@
+# Stores
+
+A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build images.
+
+The store will be referenced by a [builder](builders.md) resource. 
+ 
+At this time only a Cluster scoped `ClusterStore` is available. 
+
+### <a id='cluster-store'></a>Cluster Store Configuration
+
+```yaml
+apiVersion: kpack.io1/v1alpha1
+kind: ClusterStore
+metadata:
+  name: sample-cluster-store
+spec:
+  sources:
+  - image: gcr.io/cf-build-service-public/node-engine-buildpackage@sha256:95ff756f0ef0e026440a8523f4bab02fd8b45dc1a8a3a7ba063cefdba5cb9493
+  - image: gcr.io/cf-build-service-public/npm-buildpackage@sha256:5058ceb9a562ec647ea5a41008b0d11e32a56e13e8c9ec20c4db63d220373e33
+  - image: gcr.io/paketo-buildpacks/builder:base
+```
+
+* `sources`:  List of buildpackage images to make available in the ClusterStore. Each image is an object with the key image.   
+ 
+> Note: ClusterBuilders will also work with a prebuilt builder image if a builpack is not available in a buildpackage.
+
+### Updating a stack
+
+The stack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.
+
+### Suggested buildpackages
+
+The most commonly used buildpackages are [paketo buildpacks](https://paketo.io/).
+
+### Creating your own buildpackage
+
+To create your own buildpackage with custom buildpacks follow the instructions on creating them and packaging them using the [pack cli](https://buildpacks.io/docs/buildpack-author-guide/).
+  
