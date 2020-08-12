@@ -4484,7 +4484,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.CustomNamespacedBuilderSpec"
+          "$ref": "#/definitions/kpack.build.v1alpha1.NamespacedBuilderSpec"
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha1.BuilderStatus"
@@ -4944,30 +4944,6 @@
         }
       }
     },
-    "kpack.build.v1alpha1.CustomNamespacedBuilderSpec": {
-      "type": "object",
-      "properties": {
-        "order": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "serviceAccount": {
-          "type": "string"
-        },
-        "stack": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
-        },
-        "store": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
-        },
-        "tag": {
-          "type": "string"
-        }
-      }
-    },
     "kpack.build.v1alpha1.Git": {
       "type": "object",
       "required": [
@@ -5162,6 +5138,30 @@
           "type": "string"
         },
         "stackId": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha1.NamespacedBuilderSpec": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "serviceAccount": {
+          "type": "string"
+        },
+        "stack": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
+        "store": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
+        "tag": {
           "type": "string"
         }
       }
