@@ -56,7 +56,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 
 1. Create a cluster store configuration
     
-    A store resource is a repository of [buildpacks](http://buildpacks.io/) that can be used by kpack to build images. Later in this tutorial you will reference this store in a Builder configuration.   
+   A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build images. Later in this tutorial you will reference this store in a Builder configuration.   
     
     We recommend starting with buildpacks from the [paketo project](https://github.com/paketo-buildpacks). The example below pulls in java and nodejs buildpacks from the paketo project. 
     
@@ -81,7 +81,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 
 1. Create a cluster stack configuration
     
-    A stack resource is the specification for the [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the resulting app image. 
+    A stack resource is the specification for a [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the resulting app image. 
     
     We recommend starting with the [paketo base stack](https://github.com/paketo-buildpacks/stacks) as shown below:
     
@@ -151,7 +151,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     Create an image configuration:
     
     ```yaml
-    apiVersion: build.pivotal.io/v1alpha1
+    apiVersion: kpack.io/v1alpha1
     kind: Image
     metadata:
       name: tutorial-image
