@@ -1,11 +1,11 @@
 apiVersion: kpack.io/v1alpha1
 kind: Builder
 metadata:
-  name: my-custom-builder
+  name: my-builder
   namespace: default
 spec:
   serviceAccount: default
-  tag: sample/custom-builder
+  tag: sample/builder
   stack:
     name: base
     kind: ClusterStack

@@ -1,9 +1,9 @@
 apiVersion: kpack.io/v1alpha1
-kind: CustomBuilder
+kind: ClusterBuilder
 metadata:
   name: my-cluster-builder
 spec:
-  tag: buildingbuilder/custom-builder
+  tag: buildingbuilder/cluster-builder
   stack:
     name: bionic-stack
     kind: ClusterStack

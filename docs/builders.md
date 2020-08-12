@@ -13,11 +13,11 @@ The Builder uses a [ClusterStore](#clusterstore), a [ClusterStack](#clusterstack
 
 ```yaml
 apiVersion: kpack.io/v1alpha1
-kind: CustomBuilder
+kind: Builder
 metadata:
-  name: my-custom-builder
+  name: my-builder
 spec:
-  tag: gcr.io/sample/custom-builder
+  tag: gcr.io/sample/builder
   serviceAccount: default
   stack: 
     name: bionic-stack
@@ -47,7 +47,7 @@ spec:
 
 ### <a id='cluster-builders'></a>Cluster Builders
 
-The ClusterBuilder resource is almost identical to a Builder but, it is a cluster scoped resource that can be referenced by an image in any namespace. Because CustomClusterBuilders are not in a namespace they cannot reference local service accounts. Instead the `serviceAccount` field is replaced with a `serviceAccountRef` field which is an object reference to a service account in any namespace.    
+The ClusterBuilder resource is almost identical to a Builder but, it is a cluster scoped resource that can be referenced by an image in any namespace. Because ClusterBuilders are not in a namespace they cannot reference local service accounts. Instead the `serviceAccount` field is replaced with a `serviceAccountRef` field which is an object reference to a service account in any namespace.
 
 ```yaml
 apiVersion: kpack.io/v1alpha1
