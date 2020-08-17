@@ -235,10 +235,14 @@ github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24 h1:5JJD0uW/I2yf
 github.com/buildpacks/imgutil v0.0.0-20200528211046-5c4cfa56bb24/go.mod h1:rkRDOGpntpFhgj0gIUhQnEt5DYvi7xUTHkZWSxbWJP0=
 github.com/buildpacks/imgutil v0.0.0-20200808231819-bedc3d0cd75a h1:VfNxNjP1Y5nM49gF2UkNTq5CoqELkmxdRUUYn8tZvj4=
 github.com/buildpacks/imgutil v0.0.0-20200808231819-bedc3d0cd75a/go.mod h1:uVv0fNwOEBNgyM9ZvwV0g2Dvzk31q5TtSeoC1GGmW+k=
+github.com/buildpacks/imgutil v0.0.0-20200814190540-04db0a9bb84f h1:obnRAv2tc0ANz20Muuz1ETaRaXe8f8WR6zNplXum2dc=
+github.com/buildpacks/imgutil v0.0.0-20200814190540-04db0a9bb84f/go.mod h1:uVv0fNwOEBNgyM9ZvwV0g2Dvzk31q5TtSeoC1GGmW+k=
 github.com/buildpacks/lifecycle v0.8.1 h1:sRyb9281MrrJNfuaQBTI8hu1ERz9iiYtaDmp5xm6VyQ=
 github.com/buildpacks/lifecycle v0.8.1/go.mod h1:Spd3VyskOqUNXx76FKMRU3L3PLHxVGQBJ/JqXlFeLh8=
 github.com/buildpacks/lifecycle v0.9.0 h1:AV7t614cnjJ6TJGf9H12TI0Ewqj16lQduGLlOt7J/Lo=
 github.com/buildpacks/lifecycle v0.9.0/go.mod h1:Vxe/ZCnHhs+DY7eJvrtbNlT8nZyaHYAS+/1D2Q5mM4w=
+github.com/buildpacks/lifecycle v0.9.1 h1:u6elaPmjWqBhwWb5sU+a9g84/p+a7AIHHPr33nH37s8=
+github.com/buildpacks/lifecycle v0.9.1/go.mod h1:iST+Wdo9UR+TrVQGtTIBToRuh9K7IqqqTw6cB3coC9s=
 github.com/bwmarrin/snowflake v0.0.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
 github.com/caarlos0/ctrlc v1.0.0/go.mod h1:CdXpj4rmq0q/1Eb44M9zi2nKB0QraNKuRGYGrrHhcQw=
 github.com/campoy/unique v0.0.0-20180121183637-88950e537e7e/go.mod h1:9IOqJGCPMSc6E5ydlp5NIonxObaeu/Iub/X03EKPVYo=
