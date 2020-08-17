@@ -1,7 +1,20 @@
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: ClusterBuilder
 metadata:
-  name: cluster-sample-builder
+  name: my-cluster-builder
 spec:
-  image: gcr.io/paketo-buildpacks/builder:base
-  updatePolicy: polling
+  tag: buildingbuilder/cluster-builder
+  stack:
+    name: bionic-stack
+    kind: ClusterStack
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
+  serviceAccountRef:
+    name: default
+    namespace: default
+  order:
+  - group:
+    - id: paketo-buildpacks/java
+  - group:
+    - id: paketo-buildpacks/nodejs

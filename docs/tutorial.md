@@ -1,9 +1,9 @@
 #  kpack Tutorial
 
-This tutorial will walk through creating a kpack [image](image.md) resource to build a docker image from source and allow kpack to keep the image up to date.  
+This tutorial will walk through creating a kpack [builder](builder.md) resource and a [image](image.md) resource to build a docker image from source and allow kpack rebuild the image with updates.  
 
 ###  Prerequisites
-1. kpack is installed and available on a kubernetes cluster with a ClusterBuilder
+1. kpack is installed and available on a kubernetes cluster
 
     > Follow these docs to [install and setup kpack](install.md) 
 
@@ -14,60 +14,25 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
 ###  Tutorial
 1. Create a secret with push credentials for the docker registry that you plan on publishing images to with kpack.  
 
-    ```yaml
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: tutorial-registry-credentials
-      annotations:
-        build.pivotal.io/docker: <registry-prefix>
-    type: kubernetes.io/basic-auth
-    stringData:
-      username: <username>
-      password: <password>
-    ```
-   
-   > Note: The secret must be annotated with the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. 
-   For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON).
-   
-   Your secret configuration should look something like this:
-   
-   ```yaml
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: tutorial-registry-credentials
-     annotations:
-       build.pivotal.io/docker: https://index.docker.io/v1/
-   type: kubernetes.io/basic-auth
-   stringData:
-     username: sample-username
-     password: sample-password
-   ```
-   
-   or
-   
-   ```yaml
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: tutorial-registry-credentials
-     annotations:
-       build.pivotal.io/docker: gcr.io
-   type: kubernetes.io/basic-auth
-   stringData:
-     username: _json_key
-     password: |
-       {
-         "type": "service-account",
-         ... <rest of JSON from GCP>
-       }
-   ```
-   
-   Apply that credential to the cluster 
+   The easiest way to do that is with `kubectl secret create docker-registry`
    
     ```bash
-   kubectl apply -f secret.yaml
+    kubectl create secret docker-registry tutorial-registry-credentials \
+        --docker-username=user \
+        --docker-password=password \
+        --docker-server=string
+    ```
+   
+   > Note: The docker server must be the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. 
+   For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON).
+   
+   Your secret create should look something like this:
+   
+    ```bash
+    kubectl create secret docker-registry tutorial-registry-credentials \
+        --docker-username=my-dockerhub-username \
+        --docker-password=my-dockerhub-password \
+        --docker-server=https://index.docker.io/v1/
     ```
    
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md) 
@@ -85,45 +50,130 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     
     Apply that service account to the cluster 
    
-     ```
+     ```bash
      kubectl apply -f service-account.yaml
+     ```
+
+1. Create a cluster store configuration
+    
+   A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build images. Later in this tutorial you will reference this store in a Builder configuration.   
+    
+    We recommend starting with buildpacks from the [paketo project](https://github.com/paketo-buildpacks). The example below pulls in java and nodejs buildpacks from the paketo project. 
+    
+    ```yaml
+    apiVersion: kpack.io/v1alpha1
+    kind: ClusterStore
+    metadata:
+      name: default
+    spec:
+      sources:
+      - image: gcr.io/paketo-buildpacks/java
+      - image: gcr.io/paketo-buildpacks/nodejs
+    ```
+   
+    Apply this store to the cluster 
+  
+    ```bash
+    kubectl apply -f store.yaml
+    ```
+
+    > Note: Buildpacks are packaged and distributed as buildpackages which are docker images available on a docker registry. Buildpackages for other languages are available from [paketo](https://github.com/paketo-buildpacks).
+
+1. Create a cluster stack configuration
+    
+    A stack resource is the specification for a [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the resulting app image. 
+    
+    We recommend starting with the [paketo base stack](https://github.com/paketo-buildpacks/stacks) as shown below:
+    
+    ```yaml
+    apiVersion: kpack.io/v1alpha1
+    kind: ClusterStack
+    metadata:
+      name: base
+    spec:
+      id: "io.buildpacks.stacks.bionic"
+      buildImage:
+        image: "paketobuildpacks/build:base-cnb"
+      runImage:
+        image: "paketobuildpacks/run:base-cnb"
+    ```
+
+    Apply this stack to the cluster 
+  
+    ```bash
+    kubectl apply -f stack.yaml
+    ```
+
+1. Create a Builder configuration
+    
+    A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/) that includes the stack and buildpacks needed to build an image from your app source code. 
+    
+    The Builder configuration will write to the registry with the secret configured in step one and will reference the stack and store created in step three and four. The builder order will the order in which buildpacks are used in the builder.   
+        
+    ```yaml
+    apiVersion: kpack.io/v1alpha1
+    kind: Builder
+    metadata:
+      name: my-builder
+      namespace: default
+    spec:
+      serviceAccount: default
+      tag: <DOCKER-IMAGE-TAG>
+      stack:
+        name: base
+        kind: ClusterStack
+      store:
+        name: default
+        kind: ClusterStore
+      order:
+      - group:
+        - id: paketo-buildpacks/java
+      - group:
+        - id: paketo-buildpacks/nodejs
+    ```
+
+    - Make sure to replace `<DOCKER-IMAGE>` with the tag in the registry you configured in step #1. Something like: your-name/builder or gcr.io/your-project/builder    
+ 
+    Apply this builder to the cluster 
+   
+     ```bash
+     kubectl apply -f builder.yaml
      ```
 
 1. Apply a kpack image configuration 
 
     An image configuration is the specification for an image that kpack should build and manage. 
     
-    We will create a sample image that builds with the default builder setup in the [installing documentation](./install.md).
+    We will create a sample image that builds with the builder created in step five.
     
     The example included here utilizes the [Spring Pet Clinic sample app](https://github.com/spring-projects/spring-petclinic). We encourage you to substitute it with your own application.           
       
     Create an image configuration:
     
     ```yaml
-    apiVersion: build.pivotal.io/v1alpha1
+    apiVersion: kpack.io/v1alpha1
     kind: Image
     metadata:
       name: tutorial-image
     spec:
-      tag: <DOCKER-IMAGE>
+      tag: <DOCKER-IMAGE-TAG>
       serviceAccount: tutorial-service-account
-      cacheSize: "1.5Gi"
       builder:
-        name: default
-        kind: ClusterBuilder
+        name: my-builder
+        kind: Builder
       source:
         git:
           url: https://github.com/spring-projects/spring-petclinic
           revision: 82cb521d636b282340378d80a6307a08e3d4a4c4
     ```
 
-   - Make sure to replace `<DOCKER-IMAGE>` with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
+   - Make sure to replace `<DOCKER-IMAGE-TAG>` with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
    - If you are using your application source, replace `source.git.url` & `source.git.revision`. 
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
    Apply that image to the cluster 
     ```bash
-    kubectl apply -f <name-of-image-file.yaml>
+    kubectl apply -f image.yaml
     ```
     
    You can now check the status of the image. 
@@ -141,7 +191,6 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
     
     You can tail the logs for image that is currently building using the [logs utility](logs.md)
     
-    > Note: The log utility will not exit when the build finishes. You will need to exit when it finishes.  
     ```
     logs -image tutorial-image  
     ``` 
@@ -219,8 +268,8 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
    
    > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build. 
     
-1. kpack rebuilds with buildpack updates
+1. Next steps
     
-    The next time the `gcr.io/paketo-buildpacks/builder:base` is updated, kpack will detect if it contains buildpack updates to any of the buildpacks used by the tutorial image.
-    If there is a buildpack update, kpack will automatically create a new build to rebuild your image.    
+    The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated buildpacks were used by the tutorial image, kpack will automatically create a new build to rebuild your image.    
     
+ 

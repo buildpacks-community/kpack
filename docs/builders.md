@@ -1,66 +1,100 @@
 # Builders
 
-In kpack the Builder and ClusterBuilder resources are a reference to a [Cloud Native Buildpacks builder image](https://buildpacks.io/docs/using-pack/working-with-builders/). 
-The builder image contains buildpacks that will be used to build images with kpack.
+kpack provides a Builder and ClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api. 
+This allows granular control of how stacks, buildpacks, and buildpack versions utilized and updated.  
 
-The builder resource tracks the buildpacks in the builder image on the registry. This enables kpack to automatically rebuild images when there are relevant buildpack updates.
-These Builder resources need to be created prior to the creation of any Image Resource, because they will define what builder will be used to create these images.      
+Before creating Builders you will need to create a [ClusterStack](stack.md) and [ClusterStore](store.md) resources below.
 
-### Builders
-The Builder resource is namespace scoped and can only be used by images in the same namespace.   
+> Note: The Builder and ClusterBuilder were previously named CustomBuilder and CustomClusterBuilder. The previous Builder and ClusterBuilder resources that utilized pre-built builders were removed and should no longer be used with kpack. This was discussed in an approved [RFC](https://github.com/pivotal/kpack/pull/439).   
+
+### <a id='builders'></a>Builders
+
+The Builder uses a [ClusterStore](#clusterstore), a [ClusterStack](#clusterstack), and an order definition to construct a builder image.
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Builder
 metadata:
-  name: sample-builder
-  namespace: default
+  name: my-builder
 spec:
-  image: gcr.io/paketo-buildpacks/builder:base
-  # imagePullSecrets: # Use these secrets if credentials are required to pull the builder
-  # - name: builder-secret
+  tag: gcr.io/sample/builder
+  serviceAccount: default
+  stack: 
+    name: bionic-stack
+    kind: ClusterStack
+  store: 
+    name: sample-cluster-store
+    kind: ClusterStore
+  order:
+  - group:
+    - id: paketo-buildpacks/java
+  - group:
+    - id: paketo-buildpacks/nodejs
+  - group:
+    - id: kpack/my-custom-buildpack
+      version: 1.2.3
+    - id: kpack/my-optional-custom-buildpack
+      optional: true
 ```
 
-#### Builder field descriptions
-- `name`: A required field. The name of the builder that will be referenced by the image.
-- `image`: A required field. This is builder image tag of the buildpacks builder.
-- `namespace`: An optional field. The kubernetes namespace where the builder will be created. Default: default
-- `updatePolicy`: An optional field. must be one of `polling` or `external`
-The major difference between the options is that `external` require a user to update the resource by applying a new
-configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists. Default: polling.
-- `imagePullSecrets`: This is an optional parameter that should only be used if the builder image is in a
-private registry. [To create this secret please reference this link](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials)
+* `tag`: The tag to save the builder image. You must have access via the referenced service account.   
+* `serviceAccount`: A service account with credentials to write to the builder tag. 
+* `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/). See the [Order](#order) section below.
+* `stack.name`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the clusterStack.
+* `stack.kind`: The type as defined in kubernetes. This will always be ClusterStack. 
+* `store.name`: The name of the ClusterStore resource in kubernetes.
+* `store.kind`: The type as defined in kubernetes. This will always be ClusterStore.
 
-A sample builder is available in [samples/builder](../samples/builder.yaml) 
+### <a id='cluster-builders'></a>Cluster Builders
 
-### ClusterBuilder
-
-The ClusterBuilder resource is cluster scoped and can be used in any namespace.
+The ClusterBuilder resource is almost identical to a Builder but, it is a cluster scoped resource that can be referenced by an image in any namespace. Because ClusterBuilders are not in a namespace they cannot reference local service accounts. Instead the `serviceAccount` field is replaced with a `serviceAccountRef` field which is an object reference to a service account in any namespace.
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: ClusterBuilder
 metadata:
-  name: cluster-sample-builder
+  name: my-cluster-builder
 spec:
-  image: gcr.io/paketo-buildpacks/builder:base
+  tag: gcr.io/sample/builder
+  stack: 
+    name: bionic-stack
+    kind: ClusterStack
+  store:
+    name: sample-cluster-store
+    kind: ClusterStore
+  serviceAccountRef:
+    name: default
+    namespace: default
+  order:
+  - group:
+    - id: paketo-buildpacks/java
+  - group:
+    - id: paketo-buildpacks/nodejs
+  - group:
+    - id: kpack/my-custom-buildpack
+      version: 1.2.3
+    - id: kpack/my-optional-custom-buildpack
+      optional: true
 ```
 
-#### ClusterBuilder field descriptions
-- `name`: A required field. The name of the builder that will be referenced by the image.
-- `image`: A required field. This is builder image tag of the buildpacks builder.
-- `updatePolicy`: An optional field. must be one of `polling` or `external`
-The major difference between the options is that `external` require a user to update the resource by applying a new
-configuration. While `polling` automatically checks every 5 minutes to see if a new version of the builder image exists. Default: polling.
+* `serviceAccountRef`: An object reference to a service account in any namespace. The object reference must contain `name` and `namespace`.
 
-> Note: ClusterBuilders do not support imagePullSecrets. Therefore the builder image must be available to kpack without credentials.
+### <a id='order'></a>Order
 
-A sample cluster builder is available in [samples/cluster_builder.yaml](../samples/cluster_builder.yaml) 
+The `spec.order` is cloud native buildpacks [builder order](https://buildpacks.io/docs/reference/builder-config/) that contains a list of buildpack groups. 
 
-### Suggested builders
+This list determines the order in which groups of buildpacks will be tested during detection. Detection is a phase of the buildpack execution where buildpacks are tested, one group at a time, for compatibility with the provided application source code. The first group whose non-optional buildpacks all pass detection will be the group selected for the remainder of the build.
 
-The most commonly used builders are [paketo builders](https://paketo.io/).
+- **`group`** _(list, required)_\
+  A set of buildpack references. Each buildpack reference specified has the following fields:
+
+    - **`id`** _(string, required)_\
+      The identifier of a buildpack from the configuration's top-level `buildpacks` list. This buildpack *must* be in available in the referenced store.  
+
+    - **`version`** _(string, optional, default: inferred)_\
+      The buildpack version to chose from the store. If this field is omitted, the highest semver version number will be chosen in the store.
+
+    - **`optional`** _(boolean, optional, default: `false`)_\
+      Whether or not this buildpack is optional during detection.
  
-### Creating your own builder  
-
-To create your own builder with custom buildpacks follow the instructions on creating them using the [pack cli](https://buildpacks.io/docs/using-pack/working-with-builders/).
+> Note: Buildpacks with the same ID may appear in multiple groups at once but never in the same group.

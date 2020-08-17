@@ -41,8 +41,6 @@ The `builder` field describes the [builder resource](builders.md) that will buil
 
 > Note: This image can only reference builders defined in the same namespace. This is not true for ClusterBuilders because they are not namespace scoped.
 
-* Additionally, an image can be configured with the experimental CustomBuilder & CustomClusterBuilder resources. Check out the [experimental custom builder documentation](custombuilders.md) for more info.  
-
 ### <a id='source-config'></a>Source Configuration
 
 The `source` field is a composition of a source code location and a `subpath`. It can be configured in exactly one of the following ways:
@@ -111,7 +109,7 @@ See the kubernetes documentation on [setting environment variables](https://kube
 ### Sample Image with a Git Source
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-image
@@ -154,7 +152,7 @@ Source for github can also be specified in the ssh format if there is a correspo
 ### Sample Image with hosted zip or jar as a source
 
 ```yaml
-apiVersion: build.pivotal.io/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: Image
 metadata:
   name: sample-image
