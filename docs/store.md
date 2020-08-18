@@ -9,7 +9,7 @@ At this time only a Cluster scoped `ClusterStore` is available.
 ### <a id='cluster-store'></a>Cluster Store Configuration
 
 ```yaml
-apiVersion: kpack.io1/v1alpha1
+apiVersion: kpack.io/v1alpha1
 kind: ClusterStore
 metadata:
   name: sample-cluster-store
