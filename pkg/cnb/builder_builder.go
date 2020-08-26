@@ -159,11 +159,11 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 }
 
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
-	buildpackApi := bb.LifecycleMetadata.API.BuildpackVersion
+	buildpackApis := append(bb.LifecycleMetadata.APIs.Buildpack.Deprecated, bb.LifecycleMetadata.APIs.Buildpack.Supported...)
 
 	for _, bpInfo := range sortedBuildpacks {
 		bpLayerInfo := bb.buildpackLayers[bpInfo].BuildpackLayerInfo
-		err := bpLayerInfo.supports(buildpackApi, bb.stackId, bb.mixins)
+		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins)
 		if err != nil {
 			return errors.Wrapf(err, "validating buildpack %s", bpInfo)
 		}

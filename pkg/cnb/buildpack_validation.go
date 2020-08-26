@@ -6,13 +6,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (bl BuildpackLayerInfo) supports(buildpackApi string, id string, mixins []string) error {
+func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins []string) error {
 	if len(bl.Order) != 0 {
 		return nil //ignore meta-buildpacks
 	}
 
-	if bl.API != buildpackApi {
-		return errors.Errorf("unsupported buildpack api: %s, expecting %s", buildpackApi, bl.API)
+	if !present(buildpackApis, bl.API) {
+		return errors.Errorf("unsupported buildpack api: %s, expecting: %s", bl.API, strings.Join(buildpackApis, ", "))
 	}
 
 	for _, s := range bl.Stacks {
