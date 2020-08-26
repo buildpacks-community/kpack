@@ -53,7 +53,10 @@ type CreatorMetadata struct {
 
 type LifecycleMetadata struct {
 	LifecycleInfo
-	API LifecycleAPI `json:"api,omitempty"`
+
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `json:"api,omitempty"`
+	APIs LifecycleAPIs `json:"apis,omitempty"`
 }
 
 type LifecycleDescriptor struct {
@@ -69,6 +72,18 @@ type LifecycleAPI struct {
 	BuildpackVersion string `toml:"buildpack" json:"buildpack,omitempty"`
 	PlatformVersion  string `toml:"platform" json:"platform,omitempty"`
 }
+
+type LifecycleAPIs struct {
+	Buildpack APIVersions `toml:"buildpack" json:"buildpack"`
+	Platform  APIVersions `toml:"platform" json:"platform"`
+}
+
+type APIVersions struct {
+	Deprecated APISet `toml:"deprecated" json:"deprecated"`
+	Supported  APISet `toml:"supported" json:"supported"`
+}
+
+type APISet []string
 
 type BuiltImageStack struct {
 	RunImage string

@@ -50,6 +50,16 @@ func main() {
 				BuildpackVersion: "0.2",
 				PlatformVersion:  "0.3",
 			},
+			APIs: cnb.LifecycleAPIs{
+				Buildpack: cnb.APIVersions{
+					Deprecated: []string{},
+					Supported:  []string{"0.2", "0.3", "0.4"},
+				},
+				Platform: cnb.APIVersions{
+					Deprecated: []string{},
+					Supported:  []string{"0.3", "0.4"},
+				},
+			},
 		},
 	)
 	if err != nil {

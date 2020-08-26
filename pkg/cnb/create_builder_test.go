@@ -168,7 +168,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Homepage: "buildpack.3.com",
 			},
 			BuildpackLayerInfo: BuildpackLayerInfo{
-				API:         "0.2",
+				API:         "0.3",
 				LayerDiffID: buildpack3Layer.diffID,
 				Stacks: []v1alpha1.BuildpackStack{
 					{
@@ -190,7 +190,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Homepage: "buildpack.2.com",
 			},
 			BuildpackLayerInfo: BuildpackLayerInfo{
-				API:         "0.2",
+				API:         "0.3",
 				LayerDiffID: buildpack2Layer.diffID,
 				Order: v1alpha1.Order{
 					{
@@ -231,6 +231,16 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					API: LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.1",
+					},
+					APIs: LifecycleAPIs{
+						Buildpack: APIVersions{
+							Deprecated: []string{"0.2"},
+							Supported:  []string{"0.3"},
+						},
+						Platform: APIVersions{
+							Deprecated: []string{"0.1"},
+							Supported:  []string{"0.2"},
+						},
 					},
 				},
 			})
@@ -402,6 +412,16 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
     "api": {
       "buildpack": "0.2",
       "platform": "0.1"
+    },
+    "apis": {
+      "buildpack": {
+		"deprecated": ["0.2"],
+		"supported": ["0.3"]
+      },
+      "platform": {
+        "deprecated": ["0.1"],
+        "supported": ["0.2"]
+      }
     }
   },
   "createdBy": {
@@ -445,7 +465,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   },
   "io.buildpack.2": {
     "v2": {
-      "api": "0.2",
+      "api": "0.3",
       "layerDiffID": "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "order": [
         {
@@ -461,7 +481,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   },
   "io.buildpack.3": {
     "v3": {
-      "api": "0.2",
+      "api": "0.3",
       "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
         {
@@ -584,7 +604,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 							Homepage: "buildpack.4.com",
 						},
 						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.3",
+							API:         "0.1",
 							LayerDiffID: buildpack1Layer.diffID,
 							Stacks: []v1alpha1.BuildpackStack{
 								{
@@ -609,7 +629,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
-				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.2, expecting 0.3")
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 
 		})
