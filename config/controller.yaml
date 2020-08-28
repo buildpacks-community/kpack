@@ -84,3 +84,10 @@ spec:
             configMapKeyRef:
               name: lifecycle-image
               key: image
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 200Mi
