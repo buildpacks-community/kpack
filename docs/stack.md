@@ -1,4 +1,4 @@
-# Stores
+# Stacks
 
 A stack resource is the specification for a [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the resulting app image.
  
