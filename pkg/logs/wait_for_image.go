@@ -3,12 +3,13 @@ package logs
 import (
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/pkg/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"io"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	watchTools "k8s.io/client-go/tools/watch"
+	"time"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -51,6 +52,22 @@ func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, originalImage 
 	return w.resultOfImageWait(ctx, writer, originalImage.Generation, image)
 }
 
+func (w *imageWaiter) WaitForBuild(ctx context.Context, writer io.Writer, image *v1alpha1.Image, latestBuild *v1alpha1.Build) (string, error) {
+	event, err := watchTools.ListWatchUntil(ctx,
+		watchImageBuilds{kpackClient: w.KpackClient, image: image},
+		filterErrors(imageHasNewBuild(latestBuild.CreationTimestamp.Time)))
+	if err != nil {
+		return "", err
+	}
+
+	bld, ok := event.Object.(*v1alpha1.Build)
+	if !ok {
+		return "", errors.New("unexpected object received")
+	}
+
+	return w.waitBuild(ctx, writer, bld.Namespace, bld.Name)
+}
+
 func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, generation int64, image *v1alpha1.Image) (string, error) {
 	if image.Status.LatestBuildImageGeneration == generation {
 		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
@@ -87,6 +104,17 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 	}
 }
 
+func imageHasNewBuild(latestBuildTimestamp time.Time) func(event watch.Event) (bool, error) {
+	return func(event watch.Event) (bool, error) {
+		bld, ok := event.Object.(*v1alpha1.Build)
+		if !ok {
+			return false, errors.New("unexpected object received")
+		}
+
+		return bld.ObjectMeta.CreationTimestamp.After(latestBuildTimestamp), nil
+	}
+}
+
 func filterErrors(condition watchTools.ConditionFunc) watchTools.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		if event.Type == watch.Error {
@@ -102,9 +130,24 @@ type watchOnlyOneImage struct {
 	image       *v1alpha1.Image
 }
 
-func (w watchOnlyOneImage) Watch(options v1.ListOptions) (watch.Interface, error) {
+func (w watchOnlyOneImage) Watch(options metav1.ListOptions) (watch.Interface, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
 	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).Watch(options)
+}
+
+type watchImageBuilds struct {
+	kpackClient versioned.Interface
+	image       *v1alpha1.Image
+}
+
+func (w watchImageBuilds) List(options metav1.ListOptions) (runtime.Object, error) {
+	options.LabelSelector = v1alpha1.ImageLabel + "=" + w.image.Name
+	return w.kpackClient.KpackV1alpha1().Builds(w.image.Namespace).List(options)
+}
+
+func (w watchImageBuilds) Watch(options metav1.ListOptions) (watch.Interface, error) {
+	options.LabelSelector = v1alpha1.ImageLabel + "=" + w.image.Name
+	return w.kpackClient.KpackV1alpha1().Builds(w.image.Namespace).Watch(options)
 }
 
 func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {
