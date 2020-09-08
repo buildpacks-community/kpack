@@ -11,3 +11,5 @@ bazel-*
 coverage.txt
 
 vendor
+
+pkg/openapi/openapi_generated.go.old

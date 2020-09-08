@@ -17,6 +17,9 @@ ${OPENAPI_GEN_BIN} \
   -p ./pkg/openapi \
   -o ./
 
+# VolatileTime has custom json encoding/decoding that does not map to a proper json schema. Use a basic string instead.
+sed -i.old 's/Ref\:         ref(\"github.com\/pivotal\/kpack\/pkg\/apis\/core\/v1alpha1.VolatileTime\"),/Type: []string{\"string\"}, Format: \"\",/g' pkg/openapi/openapi_generated.go
+
 go run ./hack/openapi/main.go 1> ./api/openapi-spec/swagger.json
 
 cd -
