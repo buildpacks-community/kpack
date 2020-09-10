@@ -117,7 +117,7 @@ func main() {
 			Info: &spec.Info{
 				InfoProps: spec.InfoProps{
 					Title:   "kpack",
-					Version: "v0.0.1",
+					Version: "v0.1.3",
 				},
 			},
 			Paths: &spec.Paths{
@@ -1543,7 +1543,6 @@ const namespaceCRDPathsTemplate = `{
           "in": "body",
           "required": true,
           "schema": {
-            "description": "The JSON schema of the Resource to patch.",
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
           }
         }
@@ -1963,14 +1962,13 @@ const clusterCRDPathsTemplate = `{
       "tags": [
         "kpack"
       ],
-      "operationId": "patchClusterCustomObjectStatus",
+      "operationId": "patch{{.Kind}}Status",
       "parameters": [
         {
           "name": "body",
           "in": "body",
           "required": true,
           "schema": {
-            "description": "The JSON schema of the Resource to patch.",
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
           }
         }

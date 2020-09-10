@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "kpack",
-    "version": "v0.0.1"
+    "version": "v0.1.3"
   },
   "paths": {
     "/apis/kpack.io/v1alpha1/builders": {
@@ -574,14 +574,13 @@
         "tags": [
           "kpack"
         ],
-        "operationId": "patchClusterCustomObjectStatus",
+        "operationId": "patchClusterBuilderStatus",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -997,14 +996,13 @@
         "tags": [
           "kpack"
         ],
-        "operationId": "patchClusterCustomObjectStatus",
+        "operationId": "patchClusterStackStatus",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -1420,14 +1418,13 @@
         "tags": [
           "kpack"
         ],
-        "operationId": "patchClusterCustomObjectStatus",
+        "operationId": "patchClusterStoreStatus",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -1954,7 +1951,6 @@
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -2398,7 +2394,6 @@
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -2842,7 +2837,6 @@
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -3286,7 +3280,6 @@
             "in": "body",
             "required": true,
             "schema": {
-              "description": "The JSON schema of the Resource to patch.",
               "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Patch"
             }
           }
@@ -5472,7 +5465,7 @@
       "properties": {
         "lastTransitionTime": {
           "description": "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-          "$ref": "#/definitions/kpack.core.v1alpha1.VolatileTime"
+          "type": "string"
         },
         "message": {
           "description": "A human readable message indicating details about the transition.",
