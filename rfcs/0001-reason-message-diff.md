@@ -12,7 +12,9 @@ Providing more information would reduce the friction in users taking action on n
 
 Propose that a diff or reason-message, as appropriate, be printed in the context of the existing “Reason” attribute. This would apply only to this command
 
+```
 $ kp build status image-name
+```
 
 See mockups below. 
 
@@ -56,6 +58,7 @@ See mockup images attached in comment to thread
 
 ------------------------------
 
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -73,6 +76,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
+```
 
 ------------------------------
 
@@ -82,6 +86,7 @@ paketo-buildpacks/spring-boot           2.5.0
 
 ------------------------------
 
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -101,6 +106,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
+```
 
 ------------------------------
 
@@ -111,6 +117,7 @@ paketo-buildpacks/spring-boot           2.5.0
 
 ------------------------------
 
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -139,6 +146,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
+```
 
 ------------------------------
 
@@ -148,7 +156,7 @@ paketo-buildpacks/spring-boot           2.5.0
 - Print the stack-name after the reason in order to give context 
 
 ------------------------------
-
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -168,6 +176,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
+```
 
 ------------------------------
 
@@ -177,6 +186,7 @@ paketo-buildpacks/spring-boot           2.5.0
 
 ------------------------------
 
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -196,7 +206,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
-
+```
 
 ------------------------------
 
@@ -206,6 +216,7 @@ paketo-buildpacks/spring-boot           2.5.0
 
 ------------------------------
 
+```
 $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
@@ -248,6 +259,7 @@ paketo-buildpacks/executable-jar        2.1.1
 paketo-buildpacks/apache-tomcat         1.5.0
 paketo-buildpacks/dist-zip              1.4.0
 paketo-buildpacks/spring-boot           2.5.0
+```
 
 ------------------------------
 
@@ -255,6 +267,7 @@ paketo-buildpacks/spring-boot           2.5.0
 
 ------------------------------
 
+```
 ===> PREPARE
 Build info: 
 -------------------
@@ -287,6 +300,7 @@ Buildpacks:
 STACK
 - RunImage: index.docker.io/paketobuildpacks/run@sha256:34978twgsui4789et0wh9384erhsg0e798riuhgs0er7iugshe98riugeh99rgaser892
 + RunImage: index.docker.io/paketobuildpacks/run@sha256:fh34578tg29wb645rwhs87e5hrw0e98jtfnws9e7w378qe49tr3g39n5gwe9u5hge549w
+```
 
 -------------------
 
