@@ -113,7 +113,7 @@ paketo-buildpacks/spring-boot           2.5.0
 **For Reason "CONFIG"**
 
 - Print a diff beneath the reason section
-- Print the three lines preceding where the diff begins in order to show context for the change. 
+- Print the whole config, with diffs for specific lines, with "failedBuildHistoryLimit," "successBuildHistoryLimit," "apiVersion" removed (perhaps others also?)
 
 ------------------------------
 
@@ -122,17 +122,33 @@ $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
 Reasons:    CONFIG
-             Build:
+            kind: Image
+            metadata:
+              name: IMAGE
+              namespace: NAMESPACE
+            spec:
+              tag: gcr.io/PROJECT-NAME/app
+              serviceAccount: SERVICE-ACCOUNT
+              builder:
+                name: BUILDER-NAME
+                kind: ClusterBuilder
+              cacheSize: "CACHE-SIZE"
+              source:
+                git:
+                  url: GIT-REPOSITORY-URL
+                  revision: GIT-REVISION
+              build:
                 env:
-                - name: BP_JAVA_VERSION
-            - value: 11.*
-            - resources: {}
-            - CacheSize: 1M
-            + value: 14.*
-            + resources:
-            +   limits:
-            +       cpu: 1M
-            + CacheSize: 12M
+                  - name: ENV-VAR-NAME
+            -       value: ENV-VAR-VALUE-1
+            +       value: ENV-VAR-VALUE-2                    
+                resources:
+                  limits:
+                    cpu: CPU-LIMIT
+                    memory: MEMORY-LIMIT
+                  requests:
+                    cpu: CPU-REQUEST
+                  memory: MEMORY-REQUEST
 
 Builder:    our-special-url.jfrog.io/instance/cluster-builder:default@sha4398ths9rdpfp9sghbne985-s9ed9hgbd9rz4sh98dxbfs
 Run Image:  index.docker.io/paketobuildpacks/run@sha256:34978twgsui4789et0wh9384erhsg0e798riuhgs0er7iugshe98riugeh99rgaser89
