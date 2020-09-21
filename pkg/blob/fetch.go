@@ -118,12 +118,16 @@ func extractTar(reader io.Reader, dir string) error {
 				return err
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(filePath)
+			outFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
+
 			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return err
+			}
+
+			if err := outFile.Close(); err != nil {
 				return err
 			}
 		}
