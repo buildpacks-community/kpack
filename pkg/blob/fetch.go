@@ -144,8 +144,13 @@ func extractZip(file *os.File, dir string) error {
 
 	for _, file := range zipReader.File {
 		filePath := filepath.Join(dir, file.Name)
+		fileMode := file.Mode()
+		if isFatFile(file.FileHeader) {
+			fileMode = 0777
+		}
+
 		if file.FileInfo().IsDir() {
-			err := os.MkdirAll(filePath, file.Mode())
+			err := os.MkdirAll(filePath, fileMode)
 			if err != nil {
 				return err
 			}
@@ -156,7 +161,7 @@ func extractZip(file *os.File, dir string) error {
 			return err
 		}
 
-		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fileMode)
 		if err != nil {
 			return err
 		}
@@ -174,6 +179,17 @@ func extractZip(file *os.File, dir string) error {
 		srcFile.Close()
 	}
 	return nil
+}
+
+func isFatFile(header zip.FileHeader) bool {
+	var (
+		creatorFAT  uint16 = 0
+		creatorVFAT uint16 = 14
+	)
+
+	// This identifies FAT files, based on the `zip` source: https://golang.org/src/archive/zip/struct.go
+	firstByte := header.CreatorVersion >> 8
+	return firstByte == creatorFAT || firstByte == creatorVFAT
 }
 
 func classifyFile(f string) (string, error) {
