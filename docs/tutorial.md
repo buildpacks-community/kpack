@@ -49,6 +49,8 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
       namepace: default
     secrets:
     - name: tutorial-registry-credentials
+    imagePullSecrets:
+    - name: tutorial-registry-credentials
     ```
     
     Apply that service account to the cluster 
