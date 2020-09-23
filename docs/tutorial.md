@@ -119,7 +119,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
       name: my-builder
       namespace: default
     spec:
-      serviceAccount: default
+      serviceAccount: tutorial-service-account
       tag: <DOCKER-IMAGE-TAG>
       stack:
         name: base
