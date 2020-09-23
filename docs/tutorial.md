@@ -20,7 +20,8 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kubectl create secret docker-registry tutorial-registry-credentials \
         --docker-username=user \
         --docker-password=password \
-        --docker-server=string
+        --docker-server=string \
+        --namespace default
     ```
    
    > Note: The docker server must be the registry prefix for its corresponding registry. For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. 
@@ -32,23 +33,25 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kubectl create secret docker-registry tutorial-registry-credentials \
         --docker-username=my-dockerhub-username \
         --docker-password=my-dockerhub-password \
-        --docker-server=https://index.docker.io/v1/
+        --docker-server=https://index.docker.io/v1/ \
+        --namespace default
     ```
    
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md) 
 
 1. Create a service account that references the registry secret created above 
 
-     ```yaml
+    ```yaml
     apiVersion: v1
     kind: ServiceAccount
     metadata:
       name: tutorial-service-account
+      namepace: default
     secrets:
-      - name: tutorial-registry-credentials
+    - name: tutorial-registry-credentials
     imagePullSecrets:
-      - name: tutorial-registry-credentials
-     ```
+    - name: tutorial-registry-credentials
+    ```
     
     Apply that service account to the cluster 
    
@@ -157,6 +160,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kind: Image
     metadata:
       name: tutorial-image
+      namespace: default
     spec:
       tag: <DOCKER-IMAGE-TAG>
       serviceAccount: tutorial-service-account
@@ -181,7 +185,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    You can now check the status of the image. 
    
    ```bash
-   kubectl get images 
+   kubectl -n default get images
    ```
     
    You should see that the image has an unknown READY status as it currently building.
@@ -194,19 +198,19 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     You can tail the logs for image that is currently building using the [logs utility](logs.md)
     
     ```
-    logs -image tutorial-image  
+    logs -image tutorial-image -namespace default
     ``` 
     
     Once the image finishes building you can get the fully resolved built image with `kubectl get`
     
     ```
-    kubectl get image tutorial-image
+    kubectl -n default get image tutorial-image
     ```  
     
     The output should look something like this:
     ```
     NAMESPACE   NAME                  LATESTIMAGE                                        READY
-    test        tutorial-image        index.docker.io/your-project/app@sha256:6744b...   True
+    default     tutorial-image        index.docker.io/your-project/app@sha256:6744b...   True
     ```
     
     The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
@@ -247,12 +251,12 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
   
    Edit the image configuration with:
    ```
-   kubectl edit image tutorial-image 
+   kubectl -n default edit image tutorial-image 
    ``` 
     
    You should see kpack schedule a new build by running:
    ```
-   kubectl get builds
+   kubectl -n default get builds
    ``` 
    You should see a new build with
    
@@ -265,7 +269,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    You can tail the logs for the image with log utility used in step #4.
    
    ```
-   logs -image tutorial-image -build 2  
+   logs -image tutorial-image -namespace default -build 2
    ```
    
    > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build. 
