@@ -120,10 +120,10 @@ func main() {
 }
 
 func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds) error {
-
 	switch {
 	case *gitURL != "":
 		logLoadingSecrets(logger, basicGitCredentials, sshGitCredentials)
+
 		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, basicGitCredentials, sshGitCredentials)
 		if err != nil {
 			return err
@@ -147,6 +147,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 
 		fetcher := registry.Fetcher{
 			Logger:   logger,
+			Client:   &registry.Client{},
 			Keychain: authn.NewMultiKeychain(imagePullSecrets, serviceAccountCreds),
 		}
 		return fetcher.Fetch(appDir, *registryImage)

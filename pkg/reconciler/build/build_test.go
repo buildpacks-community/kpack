@@ -419,9 +419,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   corev1alpha1.ConditionSucceeded,
-												Status: corev1.ConditionUnknown,
-												Reason: "ImagePullBackOff",
+												Type:    corev1alpha1.ConditionSucceeded,
+												Status:  corev1.ConditionUnknown,
+												Reason:  "ImagePullBackOff",
 												Message: "Can't pull",
 											},
 										},
