@@ -70,6 +70,31 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		})
 	}
 
+	it("sets the correct file mode", func() {
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"))
+		require.NoError(t, err)
+
+		files, err := ioutil.ReadDir(dir)
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+
+		testDir := files[0]
+		require.Equal(t, "test-exe", testDir.Name())
+		require.True(t, testDir.IsDir())
+
+		files, err = ioutil.ReadDir(filepath.Join(dir, testDir.Name()))
+		require.NoError(t, err)
+		require.Len(t, files, 1)
+
+		testFile := files[0]
+		require.Equal(t, "runnable", testFile.Name())
+		require.False(t, testFile.IsDir())
+
+		info, err := os.Stat(filepath.Join(dir, testDir.Name(), testFile.Name()))
+		require.NoError(t, err)
+		require.Equal(t, 0755, int(info.Mode()))
+	})
+
 	it("errors when url is inaccessible", func() {
 		url := fmt.Sprintf("%s/%s", server.URL, "invalid.zip")
 		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"))
