@@ -32,12 +32,19 @@ func (c *BuildLogsClient) Tail(ctx context.Context, writer io.Writer, image, bui
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", v1alpha1.ImageLabel, image, v1alpha1.BuildNumberLabel, build),
-	}, true)
+	}, true, true)
 }
 
 func (c *BuildLogsClient) TailImage(ctx context.Context, writer io.Writer, image, namespace string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
+		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image),
+	}, false, true)
+}
+
+func (c *BuildLogsClient) GetImageLogs(ctx context.Context, writer io.Writer, image, namespace string) error {
+	return c.getPodLogs(ctx, writer, namespace, metav1.ListOptions{
+		Watch:         false,
 		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image),
 	}, false)
 }
@@ -46,10 +53,10 @@ func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, n
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.BuildLabel, buildName),
-	}, true)
+	}, true, true)
 }
 
-func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool) error {
+func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool, follow bool) error {
 	readyContainers := make(chan readyContainer)
 
 	go func() {
@@ -62,7 +69,24 @@ func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namesp
 	}()
 
 	for container := range readyContainers {
-		err := c.streamLogsForContainer(ctx, writer, container)
+		err := c.streamLogsForContainer(ctx, writer, container, follow)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *BuildLogsClient) getPodLogs(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, follow bool) error {
+	readyContainers, err := c.getContainers(namespace, listOptions)
+
+	if err != nil {
+		return err
+	}
+
+	for _, container := range readyContainers {
+		err := c.streamLogsForContainer(ctx, writer, container, follow)
 		if err != nil {
 			return err
 		}
@@ -127,11 +151,43 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 	}
 }
 
+func (c *BuildLogsClient) getContainers(namespace string, listOptions metav1.ListOptions) ([]readyContainer, error) {
+
+	readyContainers := make([]readyContainer, 0)
+	pods, err := c.k8sClient.CoreV1().Pods(namespace).List(listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pod := range pods.Items {
+		for _, c := range pod.Status.InitContainerStatuses {
+			if c.State.Waiting == nil {
+				readyContainers = append(readyContainers, readyContainer{
+					podName:       pod.Name,
+					containerName: c.Name,
+					namespace:     pod.Namespace,
+				})
+			}
+		}
+
+		for _, c := range pod.Status.ContainerStatuses {
+			if c.State.Waiting == nil {
+				readyContainers = append(readyContainers, readyContainer{
+					podName:       pod.Name,
+					containerName: c.Name,
+					namespace:     pod.Namespace,
+				})
+			}
+		}
+	}
+	return readyContainers, nil
+}
+
 func finished(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded
 }
 
-func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.Writer, readyContainer readyContainer) error {
+func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.Writer, readyContainer readyContainer, follow bool) error {
 	if _, alreadyProcessed := c.processed[readyContainer]; alreadyProcessed {
 		return nil
 	}
@@ -139,7 +195,7 @@ func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.
 
 	logReadCloser, err := c.k8sClient.CoreV1().Pods(readyContainer.namespace).GetLogs(readyContainer.podName, &corev1.PodLogOptions{
 		Container: readyContainer.containerName,
-		Follow:    true}).Stream()
+		Follow:    follow}).Stream()
 	if err != nil {
 		return err
 	}
