@@ -43,6 +43,8 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		Auth:     resolvedAuth,
 		Depth:    0,
 	}
+
+	f.Logger.Printf("Cloning %q @ %q...", gitURL, gitRevision)
 	err = remote.Fetch(opts)
 	if err != nil && err != transport.ErrAuthenticationRequired {
 		return errors.Wrap(err, "unable to fetch git repository")
