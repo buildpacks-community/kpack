@@ -288,17 +288,27 @@ COMMIT
 + Revision: 43t789wghges87h540eq8378ge
 
 CONFIG
-Build:
-    env:
-    - name: BP_JAVA_VERSION
-- value: 11.*
-- resources: {}
-- CacheSize: 1M
-+ value: 14.*
-+ resources:
-+   limits:
-+       cpu: 1M
-+ CacheSize: 12M
+
+spec:
+ tag: gcr.io/PROJECT-NAME/app
+ serviceAccount: SERVICE-ACCOUNT
+ cacheSize: "CACHE-SIZE"
+ source:
+  git:
+   url: GIT-REPOSITORY-URL
+   revision: GIT-REVISION
+ build:
+  env:
+   - name: ENV-VAR-NAME
+-       value: ENV-VAR-VALUE-1
++       value: ENV-VAR-VALUE-2                    
+  resources:
+   limits:
+    cpu: CPU-LIMIT
+    memory: MEMORY-LIMIT
+   requests:
+    cpu: CPU-REQUEST
+   memory: MEMORY-REQUEST
 
 BUILDPACK
 Buildpacks:
