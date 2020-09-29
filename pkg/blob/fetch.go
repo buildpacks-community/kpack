@@ -20,6 +20,12 @@ type Fetcher struct {
 }
 
 func (f *Fetcher) Fetch(dir string, blobURL string) error {
+	u, err := url.Parse(blobURL)
+	if err != nil {
+		return err
+	}
+	f.Logger.Printf("Downloading %s%s...", u.Host, u.Path)
+
 	file, err := downloadBlob(blobURL)
 	if err != nil {
 		return err
@@ -52,10 +58,6 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 		return err
 	}
 
-	u, err := url.Parse(blobURL)
-	if err != nil {
-		return err
-	}
 	f.Logger.Printf("Successfully downloaded %s%s in path %q", u.Host, u.Path, dir)
 
 	return nil

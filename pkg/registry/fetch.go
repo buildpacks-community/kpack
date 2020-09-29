@@ -36,6 +36,8 @@ type Fetcher struct {
 }
 
 func (f *Fetcher) Fetch(dir, registryImage string) error {
+	f.Logger.Printf("Pulling %s...", registryImage)
+
 	img, _, err := f.Client.Fetch(f.Keychain, registryImage)
 	if err != nil {
 		return err
