@@ -43,8 +43,8 @@ Changes from last mockup:
 -- For TRIGGER, reason-message applies because there is no diff to show. The only context we can give is who and when. 
 
 Notes on implementation: 
-- Lines preceded by a "-" should be printed in red 
-- Lines preceded by a "+" should to be printed in green 
+- Lines preceded by a "-" should be printed in red (Red: \u001b[31m)
+- Lines preceded by a "+" should to be printed in green (Green: \u001b[32m)
 - Indentation should be preserved whenever possible in the diffs 
 
 See mockup images attached in comment to thread 
