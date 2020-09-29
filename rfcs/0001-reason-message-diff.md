@@ -122,16 +122,9 @@ $kp build status petclinic
 Image:      index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
 Status:     SUCCESS
 Reasons:    CONFIG
-            kind: Image
-            metadata:
-              name: IMAGE
-              namespace: NAMESPACE
             spec:
               tag: gcr.io/PROJECT-NAME/app
               serviceAccount: SERVICE-ACCOUNT
-              builder:
-                name: BUILDER-NAME
-                kind: ClusterBuilder
               cacheSize: "CACHE-SIZE"
               source:
                 git:
