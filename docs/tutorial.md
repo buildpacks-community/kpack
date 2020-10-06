@@ -46,7 +46,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kind: ServiceAccount
     metadata:
       name: tutorial-service-account
-      namepace: default
+      namespace: default
     secrets:
     - name: tutorial-registry-credentials
     imagePullSecrets:
