@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"knative.dev/pkg/apis"
@@ -21,12 +22,16 @@ func ListNotEmpty(value []string, field string) *apis.FieldError {
 	return nil
 }
 
-func ImmutableField(original, current interface{}, field string) *apis.FieldError {
+func ImmutableField(original, current interface{}, field string, errDetails ...string) *apis.FieldError {
 	if original != current {
+		details := fmt.Sprintf("got: %v, want: %v", current, original)
+		if len(errDetails) != 0 {
+			details = strings.Join(errDetails, "\n")
+		}
 		return &apis.FieldError{
 			Message: "Immutable field changed",
 			Paths:   []string{field},
-			Details: fmt.Sprintf("got: %v, want: %v", current, original),
+			Details: details,
 		}
 	}
 	return nil

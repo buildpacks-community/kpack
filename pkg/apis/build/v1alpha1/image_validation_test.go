@@ -241,5 +241,13 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			err := image.Validate(apis.WithinUpdate(context.TODO(), original))
 			assert.EqualError(t, err, "Immutable field changed: spec.tag\ngot: something/different, want: some/image")
 		})
+
+		it("image.cacheSize has not changed", func() {
+			original := image.DeepCopy()
+			cacheSize := resource.MustParse("6G")
+			image.Spec.CacheSize = &cacheSize
+			err := image.Validate(apis.WithinUpdate(context.TODO(), original))
+			assert.EqualError(t, err, "Immutable field changed: spec.cacheSize\ngot: 6G, want: 5G")
+		})
 	})
 }
