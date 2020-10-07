@@ -71,6 +71,10 @@ func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 }
 
 func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {
+	if is.CacheSize != nil && ctx.Value(HasDefaultStorageClass) == nil {
+		return apis.ErrGeneric("spec.cacheSize cannot be set with no default StorageClass")
+	}
+
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
 		if original.Spec.CacheSize != nil && is.CacheSize.Cmp(*original.Spec.CacheSize) < 0 {
