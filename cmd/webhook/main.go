@@ -6,7 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	v1 "k8s.io/client-go/informers/storage/v1"
+	informersv1 "k8s.io/client-go/informers/storage/v1"
+	listersv1 "k8s.io/client-go/listers/storage/v1"
 	"knative.dev/pkg/client/injection/kube/informers/factory"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -63,24 +64,7 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 		func(ctx context.Context) context.Context {
-			storageClasses, err := storageClassLister.List(labels.NewSelector())
-			if err != nil {
-				log.Printf("failed to list storage classes: %s\n", err)
-				return ctx
-			}
-
-			for _, sc := range storageClasses {
-				if sc.Annotations == nil {
-					continue
-				}
-
-				if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
-					ctx = context.WithValue(ctx, v1alpha1.HasDefaultStorageClass, true)
-					break
-				}
-			}
-
-			return ctx
+			return withCheckDefaultStorageClass(ctx, storageClassLister)
 		},
 		// Whether to disallow unknown fields.
 		false,
@@ -88,6 +72,8 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 }
 
 func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+	storageClassLister := getStorageClassInformer(ctx).Lister()
+
 	return validation.NewAdmissionController(ctx,
 		// Name of the resource webhook.
 		"validation.webhook.kpack.io",
@@ -97,11 +83,32 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 		func(ctx context.Context) context.Context {
-			return ctx
+			return withCheckDefaultStorageClass(ctx, storageClassLister)
 		},
 		// Whether to disallow unknown fields.
 		true,
 	)
+}
+
+func withCheckDefaultStorageClass(ctx context.Context, storageClassLister listersv1.StorageClassLister) context.Context {
+	storageClasses, err := storageClassLister.List(labels.NewSelector())
+	if err != nil {
+		log.Printf("failed to list storage classes: %s\n", err)
+		return ctx
+	}
+
+	for _, sc := range storageClasses {
+		if sc.Annotations == nil {
+			continue
+		}
+
+		if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
+			ctx = context.WithValue(ctx, v1alpha1.HasDefaultStorageClass, true)
+			break
+		}
+	}
+
+	return ctx
 }
 
 // storageClassInformerKey is used for associating the Informer inside the context.Context.
@@ -113,10 +120,10 @@ func withStorageClassInformer(ctx context.Context) (context.Context, controller.
 	return context.WithValue(ctx, storageClassInformerKey{}, inf), inf.Informer()
 }
 
-func getStorageClassInformer(ctx context.Context) v1.StorageClassInformer {
+func getStorageClassInformer(ctx context.Context) informersv1.StorageClassInformer {
 	untyped := ctx.Value(storageClassInformerKey{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic("Unable to storage class informer from context.")
 	}
-	return untyped.(v1.StorageClassInformer)
+	return untyped.(informersv1.StorageClassInformer)
 }
