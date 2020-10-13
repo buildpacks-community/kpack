@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"flag"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/theupdateframework/notary"
 	"github.com/theupdateframework/notary/client"
+	"github.com/theupdateframework/notary/client/changelist"
 	"github.com/theupdateframework/notary/cryptoservice"
 	"github.com/theupdateframework/notary/storage"
 	"github.com/theupdateframework/notary/trustmanager"
@@ -45,7 +47,7 @@ func main() {
 	}
 
 	target := &client.Target{
-		Name: ref.Context().Tag("latest").Name(),
+		Name: "latest",
 		Hashes: map[string][]byte{
 			notary.SHA256: digestBytes,
 		},
@@ -60,22 +62,35 @@ func main() {
 		},
 	}
 
-	store, err := storage.NewNotaryServerStore(host, gun, tr)
+	remoteStore, err := storage.NewNotaryServerStore(host, gun, tr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	memStore := storage.NewMemoryStore(nil) // TODO : seed from secret volumes
-	cryptoService := cryptoservice.NewCryptoService(trustmanager.NewGenericKeyStore(memStore, noOpPassRetriever))
+	// TODO : don't use a memory store here or for the crypto store
+	localStore := storage.NewMemoryStore(nil)
+
+	clDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cl, err := changelist.NewFileChangelist(clDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cryptoStore := storage.NewMemoryStore(nil)
+	cryptoService := cryptoservice.NewCryptoService(trustmanager.NewGenericKeyStore(cryptoStore, noOpPassRetriever))
 
 	repo, err := client.NewRepository(
 		gun,
 		host,
-		store,
-		store,
+		remoteStore,
+		localStore,
 		trustpinning.TrustPinConfig{},
 		cryptoService,
-		nil,
+		cl,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -104,7 +119,8 @@ func main() {
 
 		err = repo.AddTarget(target, data.CanonicalTargetsRole)
 	case nil:
-		// TODO : repo already exists
+		// FIXME : does not handle delegates
+		err = repo.AddTarget(target, data.CanonicalTargetsRole)
 	default:
 		log.Fatal(err)
 	}
