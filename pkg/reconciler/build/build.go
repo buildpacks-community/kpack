@@ -221,8 +221,9 @@ func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetad
 	buildpackMetadata := make([]v1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
 		buildpackMetadata = append(buildpackMetadata, v1alpha1.BuildpackMetadata{
-			Id:      metadata.ID,
-			Version: metadata.Version,
+			Id:       metadata.ID,
+			Version:  metadata.Version,
+			Homepage: metadata.Homepage,
 		})
 	}
 	return buildpackMetadata

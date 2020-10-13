@@ -5,13 +5,13 @@ go 1.15
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver/v3 v3.1.0
-	github.com/buildpacks/imgutil v0.0.0-20200814190540-04db0a9bb84f
-	github.com/buildpacks/lifecycle v0.9.1
+	github.com/buildpacks/imgutil v0.0.0-20200831154319-afd98bd2f655
+	github.com/buildpacks/lifecycle v0.9.2-0.20201013181814-624786506d68
 	github.com/docker/docker v17.12.0-ce-rc1.0.20190924003213-a8608b5b67c7+incompatible // indirect
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-openapi/spec v0.19.9
-	github.com/google/go-cmp v0.5.1
+	github.com/google/go-cmp v0.5.2
 	github.com/google/go-containerregistry v0.1.1
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad

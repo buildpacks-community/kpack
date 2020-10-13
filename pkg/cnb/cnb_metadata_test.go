@@ -106,7 +106,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					keychainFactory.AddKeychainForSecretRef(t, appImageSecretRef, appImageKeychain)
 
 					appImage := randomImage(t)
-					appImage, _ = imagehelpers.SetStringLabel(appImage, "io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3"}]}`)
+					appImage, _ = imagehelpers.SetStringLabel(appImage, "io.buildpacks.build.metadata", `{"buildpacks": [{"id": "test.id", "version": "1.2.3", "homepage": "test.id.com"}]}`)
 					appImage, _ = imagehelpers.SetStringLabel(appImage, "io.buildpacks.lifecycle.metadata", `{
   "app": [
     {
@@ -141,6 +141,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					require.Len(t, metadata, 1)
 					assert.Equal(t, "test.id", metadata[0].ID)
 					assert.Equal(t, "1.2.3", metadata[0].Version)
+					assert.Equal(t, "test.id.com", metadata[0].Homepage)
 
 					createdAtTime, err := imagehelpers.GetCreatedAt(appImage)
 					assert.NoError(t, err)
