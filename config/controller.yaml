@@ -33,6 +33,14 @@ metadata:
 data:
   image: #@ data.values.completion_image
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  signer-image
+  namespace: kpack
+data:
+  image: #@ data.values.signer_image
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -83,6 +91,11 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: lifecycle-image
+              key: image
+        - name: SIGNER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: signer-image
               key: image
         resources:
           requests:

@@ -14,6 +14,7 @@ import (
 const (
 	directExecute   = "--"
 	buildInitBinary = "build-init"
+	signerBinary    = "image-signer"
 	rebaseBinary    = "rebase"
 
 	SecretTemplateName           = "secret-volume-%s"
@@ -35,6 +36,7 @@ type BuildPodImages struct {
 	BuildInitImage  string
 	CompletionImage string
 	RebaseImage     string
+	SignerImage     string
 }
 
 type BuildPodBuilderConfig struct {
@@ -312,6 +314,30 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 								homeEnv,
 							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
+						},
+					)
+				}
+				if b.Spec.Notary != nil && b.Spec.Notary.V1 != nil {
+					step(
+						corev1.Container{
+							Name:  "sign",
+							Image: config.SignerImage,
+							Args: args(
+								a(directExecute, signerBinary),
+								a(
+									"-image", b.Spec.Tags[0],
+									//"-image-size", // TODO : this should queried from the registry by the image-singer binary (will need secretVolumeMounts)
+									"-host", b.Spec.Notary.V1.Host,
+									"-root-secret", b.Spec.Notary.V1.RootSecretName,
+									"-target-secret", b.Spec.Notary.V1.TargetSecretName,
+									"-namespace", b.Namespace,
+								),
+								//secretArgs,
+							),
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							//VolumeMounts: append(
+							//	secretVolumeMounts,
+							//),
 						},
 					)
 				}

@@ -60,6 +60,7 @@ var (
 	rebaseImage     = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	completionImage = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
 	lifecycleImage  = flag.String("lifecycle-image", os.Getenv("LIFECYCLE_IMAGE"), "The image used to provide lifecycle binaries")
+	signerImage     = flag.String("signer-image", os.Getenv("SIGNER_IMAGE"), "The image used to sign app images")
 )
 
 func main() {
@@ -126,6 +127,7 @@ func main() {
 			BuildInitImage:  *buildInitImage,
 			CompletionImage: *completionImage,
 			RebaseImage:     *rebaseImage,
+			SignerImage:     *signerImage,
 		},
 		K8sClient:       k8sClient,
 		KeychainFactory: keychainFactory,

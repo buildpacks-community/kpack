@@ -7,3 +7,4 @@ rebase_image: gcr.io/rebase
 completion_image: gcr.io/completion
 lifecycle_image: gcr.io/lifecycle
 version: dev
+signer_image: gcr.io/signer

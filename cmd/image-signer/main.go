@@ -56,6 +56,11 @@ func init() {
 func main() {
 	flag.Parse()
 
+	// TODO : this will have to pull the image to get the actual digest as the image flag is just a tag
+
+	// FIXME : get the image size by querying the registry
+	imageSize = 2831
+
 	clusterConfig, err := clientcmd.BuildConfigFromFlags(masterURL, kubeConfig)
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
@@ -197,7 +202,7 @@ func NewK8sStorage(client kubernetes.Interface, rootSecretName, targetSecretName
 }
 
 func (k *K8sStorage) Load() error {
-	for _,  secretName := range []string{k.RootSecretName, k.TargetSecretName} {
+	for _, secretName := range []string{k.RootSecretName, k.TargetSecretName} {
 		secret, err := k.K8sClient.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
