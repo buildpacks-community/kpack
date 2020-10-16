@@ -36,7 +36,7 @@ Based on evidence provided by Jason and conducting user interviews with VMware f
 
 ### Outcome:
 
-Propose an additional feature or set of features that enable users to query kpack images based on their `status` and `latest-reason` such that it is easier for users to perform the workflows in the “Use Cases” section.  In order to make this filtration feature more effective, users should be able to list all images in the cluster (dependent on the user's RBAC permissions). Following a round of feedback during a working group meeting on 10/9, I am additionally proposing the inclusion of `builder` and `clusterbuilder` flags.  This modification addresses the concern that that we expect kpack images to be updating frequently, thereby making it difficult for the end-user to verify a stack or store update if the images have updated more recently based on different `REASON`.  These flags would effectively enable the user to display the last time and image was rebuilt for `Reason` `BUILDPACK` or `STACK` 
+Propose an additional feature or set of features that enable users to query kpack images based on their `status` and `latest-reason` such that it is easier for users to perform the workflows in the “Use Cases” section.  In order to make this filtration feature more effective, users should be able to list all images in the cluster (dependent on the user's RBAC permissions). As an implication of this change, the table should include a `NAMESPACE` column when the user filters for images in all namespaces.  Following a round of feedback during a working group meeting on 10/9, I am additionally proposing the inclusion of `builder` and `clusterbuilder` flags.  This modification addresses the concern that that we expect kpack images to be updating frequently, thereby making it difficult for the end-user to verify a stack or store update if the images have updated more recently based on different `REASON`.  These flags would effectively enable the user to display the last time and image was rebuilt for `Reason` `BUILDPACK` or `STACK` 
 
 Although the feature request stated in the “Problem” section is to query builds, it is probably more productive to query images because end-users most likely care about the current state of their application build and not builds that happened in the past.  Additionally, querying based on builds would pose a technical problem as the CLI would need to present builds and their build numbers outside the context of their associated image.  
 
@@ -46,7 +46,7 @@ Although the feature request stated in the “Problem” section is to query bui
 Below I will cover specific scenarios made possible by a filtering feature. All the following scenarios are derived from this proposed modification to the `kp image list` command:
 
 ```
-kp imag list --status <string> --latest-reason <string1, string2 ...>
+kp image list --status <string1, string 2 ...> --latest-reason <string1, string2 ...>
 ```
 
 Rather than adding an additional subcommand to the `kp image list` path like `filter` or `query`, I propose adding an additional `LATEST REASON` column to the existing output of the `kp image list` table. This would also allow for future design extension. If we wanted to add additional filtering capabilities, we would just create new attribute flags with values as arguments.
@@ -62,7 +62,7 @@ Note: `SHA1` is used in the mockups that display images with a `ready` status so
 ```
 $ kp image list -h
 
-Prints a table of the most important information about images in the provided namespace.
+Prints a table of the most important information about images in the provided namespace or in all namespaces.
 
 The namespace defaults to the kubernetes current-context namespace.
 
@@ -76,7 +76,7 @@ Flags:
      --latest-reason string1, string 2, ...   possible arguments: commit, trigger, config, stack, buildpack
 -h,  --help                                   help for list
 -n,  --namespace string                       kubernetes namespace
---status string, string1                      possible arguments: ready, not-ready, unknown 
+--status string1, string2                     possible arguments: ready, not-ready, unknown 
 ```
 
 ------------------------------
@@ -86,13 +86,13 @@ Flags:
 ```
 $kp image list --status not-ready -A
 
-NAME             READY    LATEST IMAGE     LATEST REASON
+NAME               READY     LATEST REASON    LATEST IMAGE     NAMESPACE    
 
-mg-test-image    False                     CONFIG
-mg-test-image2   False                     BUILDPACK
-mg-test-image3   False                     STACK
-mg-test-image4   False                     TRIGGER
-mg-test-image5   False                     COMMIT 
+mg-test-image      False     CONFIG                            mg-test 
+mg-test-image2     False     BUILDPACK                         some-ns
+mg-test-image3     False     STACK                             workspace
+mg-test-image4     False     TRIGGER                           acceptance
+mg-test-image5     False     COMMIT                            app-team
 ...
 ```
 
@@ -103,13 +103,12 @@ mg-test-image5   False                     COMMIT
 ```
 $kp image list --status ready -A
 
-NAME             READY    LATEST IMAGE                                                                                           LATEST REASON
-
-mg-test-image    True     gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:5163C01DEAF54C2A814C71A2A214A241F3BF680B    CONFIG
-mg-test-image2   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:B75D2E59189B813285726A36CD0A737D2720832C   BUILDPACK
-mg-test-image3   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image3@sha1:32EAA227FBEC2CBF6C1D3C3A84062FB2C41A55D1   STACK
-mg-test-image4   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5   TRIGGER
-mg-test-image5   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image5@sha1:EF305A16C96FF55AA3A9A764FD942D6DDA5B34AF   COMMIT 
+NAME             READY     LATEST REASON     LATEST IMAGE                                                                                            NAMESPACE                                                                                          
+mg-test-image    True      CONFIG            gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:5163C01DEAF54C2A814C71A2A214A241F3BF680B     mg-test
+mg-test-image2   True      BUILDPACK         gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:B75D2E59189B813285726A36CD0A737D2720832C    some-ns
+mg-test-image3   True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image3@sha1:32EAA227FBEC2CBF6C1D3C3A84062FB2C41A55D1    workspace
+mg-test-image4   True      TRIGGER           gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5    acceptance
+mg-test-image5   True      COMMIT            gcr.io/cf-build-service-dev-219913/test/mg-test-image5@sha1:EF305A16C96FF55AA3A9A764FD942D6DDA5B34AF    app-team
 ...
 ```
 
@@ -120,13 +119,14 @@ mg-test-image5   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image5
 ```
 $kp image list --latest-reason stack -A
 
-NAME             READY    LATEST IMAGE                                                                                            LATEST REASON
-
-mg-test-image    False                                                                                                            STACK
-mg-test-image2   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:B75D2E59189B813285726A36CD0A737D2720832C    STACK
-mg-test-image3   False                                                                                                            STACK
-mg-test-image4   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5    STACK
-...
+NAME             READY     LATEST REASON     LATEST IMAGE                                                                                            NAMESPACE   
+ 
+mg-test-image1   False     STACK                                                                                                                     mg-test
+mg-test-image2   True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:B75D2E59189B813285726A36CD0A737D2720832C    some-ns
+mg-test-image3   False     STACK                                                                                                                     workspace
+mg-test-image4   True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5    acceptance
+mg-test-image5   False     STACK                                                                                                                     app-team
+... 
 ```
 
 ------------------------------
@@ -136,13 +136,13 @@ mg-test-image4   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image4
 ```
 $kp image list --status ready --latest-reason stack, buildpack -A
 
-NAME             READY    LATEST IMAGE                                                                                              LATEST REASON
+NAME              READY     LATEST REASON     LATEST IMAGE                                                                                             NAMESPACE                                                                                             
 
-mg-test-image1   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:13D5582884803A7755CEEDCB7478485498C4F1C4       STACK
-mg-test-image2   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:2E46CC4B032552F76ADD7622F63D953F330C428A      BUILDPACK
-mg-test-image3   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image3@sha1:32EAA227FBEC2CBF6C1D3C3A84062FB2C41A55D1      STACK
-mg-test-image4   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5      BUILDPACK
-mg-test-image5   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image5@sha1:EF305A16C96FF55AA3A9A764FD942D6DDA5B34AF      STACK
+mg-test-image1    True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:13D5582884803A7755CEEDCB7478485498C4F1C4      mg-test  
+mg-test-image2    True      BUILDPACK         gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:2E46CC4B032552F76ADD7622F63D953F330C428A     some-ns  
+mg-test-image3    True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image3@sha1:32EAA227FBEC2CBF6C1D3C3A84062FB2C41A55D1     workspace 
+mg-test-image4    True      BUILDPACK         gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5     acceptance 
+mg-test-image5    True      STACK             gcr.io/cf-build-service-dev-219913/test/mg-test-image5@sha1:EF305A16C96FF55AA3A9A764FD942D6DDA5B34AF     app-team 
 ...
 ```
 
@@ -153,23 +153,24 @@ mg-test-image5   True     gcr.io/cf-build-service-dev-219913/test/mg-test-image5
 ```   
 $kp image list --clusterbuilder default -A
 
-NAME             READY     LATEST IMAGE                                                                                              LATEST REASON
+NAME             READY      LATEST REASON     LATEST IMAGE     NAMESPACE                                                                                         
 
-mg-test-image1   False     gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:13D5582884803A7755CEEDCB7478485498C4F1C4       BUILDPACK
-mg-test-image2   False     gcr.io/cf-build-service-dev-219913/test/mg-test-image2@sha1:2E46CC4B032552F76ADD7622F63D953F330C428A      BUILDPACK
-mg-test-image3   False     gcr.io/cf-build-service-dev-219913/test/mg-test-image3@sha1:32EAA227FBEC2CBF6C1D3C3A84062FB2C41A55D1      BUILDPACK
-mg-test-image4   False     gcr.io/cf-build-service-dev-219913/test/mg-test-image4@sha1:B2F2F07F4583C3870131B8A3447C7D04B046A0E5      BUILDPACK
-mg-test-image5   False     gcr.io/cf-build-service-dev-219913/test/mg-test-image5@sha1:EF305A16C96FF55AA3A9A764FD942D6DDA5B34AF      BUILDPACK
+mg-test-image1   False      BUILDPACK                          matt-fun-zone
+mg-test-image2   False      BUILDPACK                          some-ns
+mg-test-image3   False      BUILDPACK                          workspace
+mg-test-image4   False      BUILDPACK                          acceptance
+mg-test-image5   False      BUILDPACK                          app-team
 ...
 ```
 
 **Multiple Latest Reasons Are Listed Even If User Did Not Filter For Them**
+**No Namespace Column if the user specifies a namespace**
 
 ```
-$kp image list --status ready --latest-reason config -A 
+$kp image list --status ready --latest-reason buildpack -n some-ns
 
-NAME             READY    LATEST IMAGE                                                                                              LATEST REASON
+NAME             READY    LATEST REASON      LATEST IMAGE                                                                                              
 
-mg-test-image1   TRUE     gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:13D5582884803A7755CEEDCB7478485498C4F1         CONFIG, BUILDPACK
+mg-test-image1   TRUE     CONFIG+            gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:13D5582884803A7755CEEDCB7478485498C4F1         
 ...
 ```
