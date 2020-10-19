@@ -80,10 +80,8 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			alreadyReadyImage.Status.Conditions[0].Message = "some error"
-
 			_, err := imageWaiter.Wait(context.TODO(), out, alreadyReadyImage)
-			assert.EqualError(t, err, "update to image some-name failed: some error")
+			assert.EqualError(t, err, "update to image some-name failed")
 		})
 	})
 
@@ -130,7 +128,6 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 					Status: conditionSuccess(corev1.ConditionFalse),
 				},
 			}
-			build.Status.Conditions[0].Message = "some error"
 
 			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(build)
 			require.NoError(t, err)
@@ -146,7 +143,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 
 			_, err = imageWaiter.Wait(context.TODO(), out, scheduledBuildImage)
 			assert.Error(t, err)
-			assert.EqualError(t, err, "update to image failed: some error")
+			assert.EqualError(t, err, "update to image failed")
 
 			assert.Equal(t, imageToWatch.Namespace, fakeLogTailer.args[1])
 			assert.Equal(t, "build-to-follow", fakeLogTailer.args[2])
@@ -216,8 +213,9 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("there is no status message for an error", func() {
-		it("does not try to print any extra message", func() {
+	it("surfaces error messages", func() {
+		when("there is a status message for an image error", func() {
+			it("adds the status message to the returned error", func() {
 				alreadyReadyImage := &v1alpha1.Image{
 					ObjectMeta: imageToWatch.ObjectMeta,
 					Status: v1alpha1.ImageStatus{
@@ -225,12 +223,45 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				alreadyReadyImage.Status.Conditions[0].Message = ""
+				alreadyReadyImage.Status.Conditions[0].Message = "some error"
 
 				_, err := imageWaiter.Wait(context.TODO(), out, alreadyReadyImage)
-				assert.EqualError(t, err, "update to image some-name failed")
+				assert.EqualError(t, err, "update to image some-name failed: some error")
+			})
+		})
+		when("there is a status message for a build error", func() {
+			it("adds the status message to the returned error", func() {
+				build := &v1alpha1.Build{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "build-to-follow",
+						Namespace: imageToWatch.Namespace,
+					},
+					Status: v1alpha1.BuildStatus{
+						Status: conditionSuccess(corev1.ConditionFalse),
+					},
+				}
+				build.Status.Conditions[0].Message = "some error"
+
+				_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(build)
+				require.NoError(t, err)
+
+				scheduledBuildImage := &v1alpha1.Image{
+					ObjectMeta: imageToWatch.ObjectMeta,
+					Status: v1alpha1.ImageStatus{
+						LatestBuildRef:             "build-to-follow",
+						LatestBuildImageGeneration: imageToWatch.Generation,
+						Status:                     conditionReady(corev1.ConditionUnknown, imageToWatch.Generation),
+					},
+				}
+
+				_, err = imageWaiter.Wait(context.TODO(), out, scheduledBuildImage)
+				assert.Error(t, err)
+				assert.EqualError(t, err, "update to image failed: some error")
+
+			})
 		})
 	})
+
 }
 
 func conditionReady(status corev1.ConditionStatus, generation int64) corev1alpha1.Status {
