@@ -13,7 +13,7 @@ To use Notary image signing:
   ```
   notary:
     v1:
-        host:      <notary server url>
+        url:       <notary server url>
         secretRef: <secret-name>
   ```
 2. Add a new container after export that uses the notary go client to sign the image. The presence or absence of the notary section in the image config will determine if the notary signing container should be executed.
