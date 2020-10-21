@@ -258,7 +258,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				Objects: []runtime.Object{
 					build,
 				},
-				WantErr: true,
+				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &v1alpha1.Build{
@@ -275,6 +275,41 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
+							},
+						},
+					},
+				},
+			})
+		})
+
+		it("gracefully handles a pod that has already been created", func() {
+			buildPod, err := podGenerator.Generate(build)
+			require.NoError(t, err)
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					build,
+					buildPod,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &v1alpha1.Build{
+							ObjectMeta: build.ObjectMeta,
+							Spec:       build.Spec,
+							Status: v1alpha1.BuildStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: originalGeneration,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:               corev1alpha1.ConditionSucceeded,
+											Status:             corev1.ConditionUnknown,
+											LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+										},
+									},
+								},
+								PodName: "build-name-build-pod",
 							},
 						},
 					},
