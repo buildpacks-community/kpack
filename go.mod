@@ -12,7 +12,7 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-openapi/spec v0.19.9
 	github.com/google/go-cmp v0.5.2
-	github.com/google/go-containerregistry v0.1.2
+	github.com/google/go-containerregistry v0.1.3
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
 	github.com/pkg/errors v0.9.1
