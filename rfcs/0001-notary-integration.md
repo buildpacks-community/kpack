@@ -16,7 +16,7 @@ To use Notary image signing:
         url:       <notary server url>
         secretRef: <secret-name>
   ```
-2. Add a new container after export that uses the notary go client to sign the image. The presence or absence of the notary section in the image config will determine if the notary signing container should be executed.
+2. Add image signing functionality to the completion container by passing notary arguments. The presence or absence of the notary section in the image config will determine if the notary arguments should be passed to the completion container. If the notary arguments are not present, then the completion container should not attempt to sign the image.
 3.
     * The singing container would use `report.toml` to access the image digest. The image size would need to be added to `report.toml` or computed by the signer container.
       The `report.toml` must exist in its own volume as export does quite a bit of mangling to the layers volume.
