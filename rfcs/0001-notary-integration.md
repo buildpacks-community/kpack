@@ -37,7 +37,7 @@ notary publish example.registry.io/my-app
 Users must then upload the encrypted target private key and private key password as a generic k8s secret.
 The secret data must be formatted as follows:
 ```
-kubectl create secret generic notary-secret --from-file=notary-password.txt --from-file=~/.notary/private/<targets-hash>.key
+kubectl create secret generic notary-secret --from-literal=password=<password> --from-file=$HOME/.notary/private/<targets-hash>.key
 ```
 
 That secret will be provided via the image config as described above.
@@ -48,7 +48,7 @@ The secret must be properly annotated with the key `kpack.io/notary.v1` and the 
 Given the secret with credentials, the authentication flow is described [here](https://github.com/theupdateframework/notary/blob/master/docs/service_architecture.md#example-client-server-signer-interaction) and [here](https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md).
 
 # Complexity
-The actual integration with Notary is of low complexity.
+The actual integration with Notary is of medium complexity.
 Most of the necessary code is available in the open source docker CLI; particularly the files `cli/command/image/trust.go` and `cli/trust/trust.go`.
 Additionally, the [notary-poc](https://github.com/pivotal/kpack/tree/notary-poc) branch has a proof-of-concept with example code.
 
