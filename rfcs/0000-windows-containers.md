@@ -21,6 +21,19 @@ nodeSelector:
     kubernetes.io/os: linux
 ```
 
+### kpack should restrict cluster stores and stacks to be os-specific
+
+This would improve simplicity and usability. If you create mixed-os resources, it may be difficult to get out of the situation.
+
+If a user creates a cluster store with buildpackages of mixed os, the resource should be marked as not-ready
+
+If a user creates a cluster stack with build and run images of mixed os, the resource should be marked as not-ready
+
+**Actions to Take**
+
+- Add these validations to the kpack-controller
+- Add the label `os.kpack.io: windows` to each resource for os disambiguation
+
 ### kpack should support creating windows builders
 
 This is currently supported in the [pack cli](https://github.com/buildpacks/pack/issues/469)
