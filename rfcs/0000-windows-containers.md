@@ -9,6 +9,7 @@ kpack does not support building containers that can run on windows
 kpack service pods and build pods for linux images will need to know not to run on the windows workers to work in a mixed-os cluster.
 
 The kpack release configuration should specify to run pods explicitly on linux os.
+
 The kpack controller should schedule linux builds on linux workers.
 
 **Actions to Take**
@@ -79,7 +80,9 @@ Handling these edge cases is outside of the scope of the rfc, mitigated with doc
 [Supported windows versions](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support)
 
 Note:
-- Once they support Windows containers with Hyper-V isolation in Kubernetes, the limitation and compatibility rules will change.
+- Windows Server 2019 (LTSC) aka version 1809 is the only Windows operating system supported currently on all k8s api versions [see](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-containers-in-kubernetes)
+    - Some SAC versions are supported on Kubernetes v1.18 and Kubernetes v1.19 ([docs](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support))
+- Once they support Windows containers with [Hyper-V isolation](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#hyper-v-isolation) in Kubernetes, the limitation and compatibility rules will change.
 
 **A cluster could have multiple windows OS versions across different windows nodes**
 
@@ -103,6 +106,7 @@ Compatibility concerns:
     - This is probably the easiest validation to handle
 - All windows images must match the windows nodes
     - This one seems the hardest and probably out of scope
+    - Risk: unclear if there is a way to determine windows os version of a k8s node
 
 Note:
 - Windows images contain a `os.version` property.
