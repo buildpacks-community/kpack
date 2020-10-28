@@ -44,7 +44,7 @@ func main() {
 		"https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz",
 		cnb.LifecycleMetadata{
 			LifecycleInfo: cnb.LifecycleInfo{
-				Version: "0.9.1",
+				Version: "0.9.2",
 			},
 			API: cnb.LifecycleAPI{
 				BuildpackVersion: "0.2",
