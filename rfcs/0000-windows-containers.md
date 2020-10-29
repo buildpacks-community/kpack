@@ -59,7 +59,7 @@ Notes:
     - `WINDOWS_REBASE_IMAGE` - a windows rebase image
     - These will be optional to remove the dependency on windows images
 - When an Image is created using a windows Builer or ClusterBuilder labeled with `os.kpack.io: windows`, it will create a build with new properties
-    - The Build will use `WINDOWS_BUILD_INIT_IMAGE` and `WINDOWS_COMPLETION_IMAGE` for the respective containers.
+    - The Build will use the windows versions of images for the respective containers.
     - The Build will be labeled with `os.kpack.io: windows` for os disambiguation
  - When a Build is created with the label `os.kpack.io: windows`, it will use the node selector
 
@@ -85,7 +85,8 @@ Windows images can only run on windows nodes with the same OS. ex: Windows Serve
 Ergo:
 
 - Each windows image installed with `kpack` (`build-init`, `rebase`, `completion`, `lifecycle`) must be for the same os version and must match the cluster's windows nodes
-- Stacks and buildpackages must be for the same os version and must match the cluster's windows nodes
+- Stacks must be for the same os version and must match the cluster's windows nodes
+    - Note: Windows Buildpackages should be implemented with a blank `os.version` so that Windows daemons will skip validating against their own version and are able to pull them making buildpackage os version validation not a concern
 - OCI images created on windows nodes will match the os version of the node
 
 Handling these edge cases is outside of the scope of the rfc, mitigated with docs.
@@ -134,3 +135,16 @@ crane config mcr.microsoft.com/windows/servercore:ltsc2019-amd64  | jq
   "created": "2020-10-01T02:26:38.060161+00:00",
 ...
 ```
+
+Some background around windows versioning:
+
+Windows has a Long Term Support Channel (LTSC, 5 years support) and a Semi-Annual Channel (SAC, 18 months support)
+
+Windows versions can be referenced by either of 2 numbers:
+- **Version** which uses the year and month it was released (ex 1903, 1909, 2004)
+- **Build Number** which is just another way to reference the version (ex: `10.0.17763.1518` format: `<major>.<minor>.<build>.<revision>`)
+    - Only matching `<major>.<minor>.<build>` are compatible, `revision` can be bumped with security patches
+
+The current LTSC is usually referenced as "Windows Server 2019" (the actual version is 1809 aka build 10.0.17763)
+
+K8s supports Windows Server 2019 on all k8s versions and SACs per k8s version minor, see [docs](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support).
