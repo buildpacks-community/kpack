@@ -21,19 +21,6 @@ nodeSelector:
     kubernetes.io/os: linux
 ```
 
-### kpack should restrict cluster stacks to be os-specific
-
-This would improve simplicity and usability. If you create mixed-os resources, it may be difficult to get out of the situation.
-
-If a user creates a cluster stack with build and run images of mixed os, the resource should be marked as not-ready
-
-**Actions to Take**
-
-- Add this validations to the kpack-controller
-
-Notes:
-- Stores will not be aware of the buildpackages os. There will be no constraint on creating stores with windows buildpackages and linux buildpackages.
-
 ### kpack should support creating windows builders
 
 This is currently supported in the [pack cli](https://github.com/buildpacks/pack/issues/469)
@@ -56,7 +43,6 @@ Notes:
 - kpack-controller will accept new configuration via environment variable(s) for windows image(s) needed to run builds. The current behavior that must be recreated on windows is contained in the following images:
     - `BUILD_INIT_IMAGE` - getting the build ready with creds and source
     - `COMPLETION_IMAGE` - an image to run as a required regular (non-init) container
-    - `REBASE_IMAGE` - run a rebase
     - We'll call these "helper images"
     - Out of scope:
         - What to name the windows versions of these images
@@ -78,6 +64,7 @@ High
 ## Prior Art:
 
 [pack cli](https://github.com/buildpacks/pack) has support for windows containers
+[example windows stack dockerfile](https://github.com/buildpacks/samples/blob/main/stacks/dotnet-framework-1809/build/Dockerfile)
 
 ## Risks:
 
@@ -89,11 +76,12 @@ Ergo:
 
 - Each windows helper image installed with `kpack` must be for the same os version and must match the cluster's windows nodes
     - We will be providing these images for Windows Server 2019 LTSC
-- Stacks must be for the same os version and must match the cluster's windows nodes (Windows Server 2019 LTSC)
-    - Note: Windows Buildpackages should be implemented with a blank `os.version` so that Windows daemons will skip validating against their own version and are able to pull them making buildpackage os version validation not a concern
 - OCI images created on windows nodes will match the os version of the node
 
 Effectively we will only support Windows Server 2019 LTSC. Handling stacks and nodes that do not use this version is outside of the scope of the rfc, mitigated with docs.
+
+Notes:
+- Stores will not be aware of the buildpackages os. There will be no constraint on creating stores with windows buildpackages and linux buildpackages.
 
 [Supported windows versions](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support)
 
@@ -101,10 +89,6 @@ Note:
 - Windows Server 2019 (LTSC) aka version 1809 is the only Windows operating system supported currently on all k8s api versions [see](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-containers-in-kubernetes)
     - Some SAC versions are supported on Kubernetes v1.18 and Kubernetes v1.19 ([docs](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support))
 - Once they support Windows containers with [Hyper-V isolation](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#hyper-v-isolation) in Kubernetes, the limitation and compatibility rules will change.
-
-**If there are no windows nodes, windows builds will not run**
-
-Handling this edge case is outside the scope of the rfc, mitigated with docs.
 
 **Some background around windows versioning:**
 
@@ -118,6 +102,10 @@ Windows versions can be referenced by either of 2 numbers:
 The current LTSC is usually referenced as "Windows Server 2019" (the actual version is 1809 aka build 10.0.17763)
 
 K8s supports Windows Server 2019 on all k8s versions and SACs per k8s version minor, see [docs](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support).
+
+**If there are no windows nodes, windows builds will not run**
+
+Handling this edge case is outside the scope of the rfc, mitigated with docs.
 
 **Windows stacks may have different ARCH affecting compatibility with kpack**
 
