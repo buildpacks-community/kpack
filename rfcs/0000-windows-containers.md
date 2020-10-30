@@ -119,6 +119,12 @@ The current LTSC is usually referenced as "Windows Server 2019" (the actual vers
 
 K8s supports Windows Server 2019 on all k8s versions and SACs per k8s version minor, see [docs](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#windows-os-version-support).
 
+**Windows stacks may have different ARCH affecting compatibility with kpack**
+
+A windows stack may support x64, ARM or others and may not be compatible with the windows nodes or kpack "helper images"
+
+This concern is considered out of scope of the rfc.
+
 ## Alternatives:
 
 **Restrict Stores to only allow same-os buildpackages**
