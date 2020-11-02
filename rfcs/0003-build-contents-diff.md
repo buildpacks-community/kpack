@@ -9,33 +9,28 @@ Create a new command, `kp build diff`, for printing the difference between two b
 Examples:
 `kp build diff image-name`
 Compares the two most recent builds
-`kp build diff image-name build-number1`
-Compares the stated build and the build minus 1
-`kp build diff image-name build-number1 build-number2`
-Compares the two specified builds
+`kp build diff image-name build-tag-1`
+Compares the most recent build with the specified build or external image
+`kp build diff image-name build-tag-1 build-tag-2`
+Compares the two specified builds or external images
  
 Three use cases that this feature should ideally satisfy:
- 
-- As a DevOps engineer, when I see a new build has been created in a lower environment, I want to evaluate what benefit it provides to my team for me to promote this build to an upper environment. 
- 
+- As a DevOps engineer, when I see a new build has been created in a lower environment, I want to evaluate what benefit it provides to my team for me to promote this build to an upper environment (given the risk that any change implicitly represents). 
 - As a DevOps engineer or App Developer, when I am told there is a problem with a specific build (new build failing in CI or old build failing in production), I want to know what’s different about the problem build than the last one that worked. 
-
 - As an App Developer, I want to see the difference between the commit I built locally with pack yesterday and the build that kpack built for me today based on my commit. 
  
 Implications: 
-- User will need to compare their most recent build to the older build in production
-i.e. builds being compared are non-adjacent 
+- Because the user will need to compare their most recent build or image to the build in production which is older, builds being compared will be non-adjacent 
 - Because the builds are non-adjacent, many things are likely to have changed in the contents and there will have been many “Reasons” that caused the intervening builds. Therefore, it doesn’t make a lot of sense to print the “Reason” as part of the diff
-- I assume that it is easy / possible for users to access the build number associated with a container in production (perhaps there is another build identifier we could use?)
-
+- I assume that it is easy / possible for users to access the tag or digest associated with a container in production (perhaps there is another build identifier we could use?)
 
 
 ## Prior Art 
 Differences from the reason diff RFC that’s been added to `kp build status`:
-COMMIT is the same 
-CONFIG is the same
-BUILDPACK is different because it prints the Bill of Materials which represents the results of the buildpacks used instead of only the buildpack/s that caused the new build to kick off
-STACK is the same now, but will be different once we have more stack metadata such as the dpackage list (and someday a CVE list) that we can print
+- COMMIT can be depicted in the same way
+- CONFIG is the same
+- BUILDPACK is different because it prints the Bill of Materials which represents the results of the buildpacks used instead of only the buildpack/s that caused the new build to kick off
+- STACK is the same now, but will be different once we have more stack metadata such as the dpackage list (and someday a CVE list) that we can print
  
 Competitor examples: 
 https://github.com/GoogleContainerTools/container-diff
@@ -44,56 +39,28 @@ https://github.com/GoogleContainerTools/container-diff
 - Would this be helpful for diagnosing failed builds or builds that don't start? If so, how can we surface this info without a BoM being generated? 
 - How does all this show up in CI, if at all? 
 
-## Alternatives
-- Add information about build contents diff to the kp build status command
-  - Pros:
-Reduce the CLI surface area 
-May be a more intuitive location
-  - Cons:
-Makes a command with long output even longer 
-- Print / pipe out two YAML or JSON files that represent the build contents and allow the user to diff them with the tool of their choice 
-  - Pros:
-Export two image digests and compare them 
-  - Cons: 
-More work for the user
-
-- Everything the same as the proposal, except show the things that didn’t change only with a verbose flag 
- 
-Deliver a feature like this as part of a separate tool:
-- Registry  
-- `Pack`
-
-
 ## Mockups 
-Notes on WIP mockup
-- don’t really love the all caps headers (maybe bold or other color?)
-- should there be some kind of header info to set the stage for the diff? 
+- Lines preceded by + or - will be bolded and colored green or red respectively 
+- Added a table as a header to the diff output that gives context on name, date/time, and tags for the two images (in case you diff builds from two different images)
+- CONFIG CHANGES includes the 5 lines above and below the diff
+- BILL OF MATERIALS (BUILDPACKS) CHANGES prints only info on the buildpacks that have changed 
+- STACK CHANGES includes a diff of mix-ins if they change version names
  
 ------------------
 ``` 
-$kp build diff petclinic 37 13
-COMMIT
+$kp build diff petclinic index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
+
+IMAGE NAME        BUILD TIME                 LATEST IMAGE 
+petclinic         2020-08-04 10:12:46        index.docker.io/username/instance@sha256:afdsniuubadsiugbn3784htw70835qioresgkdjfvba3493w8uiebgd
+petclinic         2020-09-08 12:08:36        index.docker.io/username/instance@sha256:fsdgh39478th0g9tuisodfhgvns938e54iunwuiehfasf9wgiauwsfx
+
+------------------------------
+
+COMMIT CHANGES
 - Revision: 234890hpe9vjsr8gse98rghser
 + Revision: 43t789wghges87h540eq8378ge
  
-CONFIG
-apiVersion: kpack.io/v1alpha1
-kind: Build
-metadata:
-  name: sample-build
-spec:
-  tags:
-  - sample/image
-  serviceAccount: service-account
-  builder:
-    image: gcr.io/paketo-buildpacks/builder:base
-    imagePullSecrets: 
-    - name: builder-secret  
-  cacheName: persisent-volume-claim-name
-  source:
-    git:
-      url: https://github.com/buildpack/sample-java-app.git
-      revision: master
+CONFIG CHANGES
   env:
   - name: "JAVA_BP_ENV"
     value: "value"
@@ -106,7 +73,8 @@ spec:
       cpu: "0.5"
       memory: "256M"
  
-BUILDPACK
+BILL OF MATERIALS (BUILDPACKS) CHANGES
+local:
 - buildpack:
     id: org.cloudfoundry.openjdk
     version: 1.0.0-RC03
@@ -121,13 +89,37 @@ BUILDPACK
     - org.cloudfoundry.stacks.cflinuxfs3
     uri: https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.4%!B(MISSING)11/OpenJDK11U-jdk_x64_linux_hotspot_11.0.4_11.tar.gz
   name: openjdk-jdk
-- version: 11.0.4
-+ version: 11.0.5
- 
-STACK
+-  version: 11.0.4
++  version: 11.0.5
+
+STACK CHANGES
 - RunImage: index.docker.io/paketobuildpacks/run@sha256:34978twgsui4789et0wh9384erhsg0e798riuhgs0er7iugshe98riugeh99rgaser892
 + RunImage: index.docker.io/paketobuildpacks/run@sha256:fh34578tg29wb645rwhs87e5hrw0e98jtfnws9e7w378qe49tr3g39n5gwe9u5hge549w
+
+Mixins:
+- libgts-0.7-4
++ libgts-0.7-5
 ```
+
+## Alternatives
+1. Add information about build contents diff to the kp build status command
+  - Pros:
+   - Reduce the CLI surface area 
+   - May be a more intuitive location
+  - Cons:
+   - Makes a command with long output even longer 
+
+2. Print / pipe out two YAML or JSON files that represent the build contents and allow the user to diff them with the tool of their choice 
+  - Pros:
+   - Export two image digests and compare them 
+  - Cons: 
+   - More work for the user
+
+3. Everything the same as the proposal, except hide most of the output behind a verbose flag 
+ 
+4. Deliver a feature like this as part of a separate tool:
+- Registry  
+- `Pack`
 
 ## Appendix
 There are five reasons a build will have been generated and each has a different fidelity of information that we can provide to our users: 
