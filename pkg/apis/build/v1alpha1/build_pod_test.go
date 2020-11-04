@@ -644,7 +644,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 10)
+				require.Len(t, pod.Spec.Volumes, 13)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -658,7 +658,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 10)
+				require.Len(t, pod.Spec.Volumes, 13)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -710,6 +710,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"workspace-dir",
 					"home-dir",
 					"cache-dir",
+					"report-dir",
 				})
 				assert.Equal(t, []string{
 					"-layers=/layers",
@@ -718,6 +719,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-analyzed=/layers/analyzed.toml",
 					"-cache-dir=/cache",
 					"-project-metadata=/layers/project-metadata.toml",
+					"-report=/var/report/report.toml",
 					build.Tag(),
 					"someimage/name:tag2",
 					"someimage/name:tag3",
@@ -828,6 +830,62 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}, pod.Spec)
+			})
+		})
+
+		when("a notary config is present on the build", func() {
+			it("sets up the completion image to sign the image", func() {
+				build.Spec.Notary.V1 = &v1alpha1.NotaryV1Config{
+					URL: "some-notary-url",
+					SecretRef: v1alpha1.NotarySecretRef{
+						Name: "some-notary-secret",
+					},
+					ConfigMapKeyRef: &v1alpha1.ConfigMapKeyRef{
+						Name: "notary-ca-cert",
+						Key:  "ca.crt",
+					},
+				}
+
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Contains(t, pod.Spec.Containers[0].Args, "-notary-v1-url=some-notary-url")
+				require.Contains(t, pod.Spec.Containers[0].Args, "-ca-cert=/var/notary/certs/ca.crt")
+
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "notary-dir",
+					ReadOnly:  true,
+					MountPath: "/var/notary/v1",
+				})
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "report-dir",
+					ReadOnly:  false,
+					MountPath: "/var/report",
+				})
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "notary-certs-dir",
+					ReadOnly:  true,
+					MountPath: "/var/notary/certs",
+				})
+
+				require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+					Name: "notary-dir",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: "some-notary-secret",
+						},
+					},
+				})
+				require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+					Name: "notary-certs-dir",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "notary-ca-cert",
+							},
+						},
+					},
+				})
 			})
 		})
 

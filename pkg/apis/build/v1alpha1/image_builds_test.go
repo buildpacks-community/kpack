@@ -259,6 +259,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, image.Spec.Build.Resources, build.Spec.Resources)
 		})
+
+		it("sets the notary config when present", func() {
+			image.Spec.Notary = NotaryConfig{
+				V1: &NotaryV1Config{
+					URL: "some-notary-server",
+					SecretRef: NotarySecretRef{
+						Name: "some-secret-name",
+					},
+				},
+			}
+			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
+
+			assert.Equal(t, image.Spec.Notary, build.Spec.Notary)
+		})
 	})
 }
 

@@ -119,6 +119,13 @@ func (b *Build) Finished() bool {
 	return !b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown()
 }
 
+func (b *Build) NotaryV1Config() *NotaryV1Config {
+	if b == nil {
+		return nil
+	}
+	return b.Spec.Notary.V1
+}
+
 func (b *Build) rebasable(builderStack string) bool {
 	return b.Spec.LastBuild != nil &&
 		b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackId == builderStack

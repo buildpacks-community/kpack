@@ -19,6 +19,7 @@ require (
 	github.com/sclevine/spec v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
+	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37

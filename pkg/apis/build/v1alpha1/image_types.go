@@ -49,6 +49,7 @@ type ImageSpec struct {
 	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
 	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
 	Build                    *ImageBuild            `json:"build,omitempty"`
+	Notary                   NotaryConfig           `json:"notary,omitempty"`
 }
 
 // +k8s:openapi-gen=true
