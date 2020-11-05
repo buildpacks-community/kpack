@@ -43,6 +43,10 @@ func ExtractTar(reader io.Reader, dir string) error {
 				return err
 			}
 		case tar.TypeReg:
+			if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+				return err
+			}
+
 			outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
 			if err != nil {
 				return err
