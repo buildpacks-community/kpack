@@ -56,7 +56,11 @@ func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, g
 		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
 	}
 
-	if image.Status.GetCondition(corev1alpha1.ConditionReady).IsFalse() {
+	if condition := image.Status.GetCondition(corev1alpha1.ConditionReady); condition.IsFalse() {
+		if condition.Message != "" {
+			return "", errors.Errorf("update to image %s failed: %s", image.Name, condition.Message)
+		}
+
 		return "", errors.Errorf("update to image %s failed", image.Name)
 	}
 
@@ -138,8 +142,12 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 		return "", errors.New("unexpected object received")
 	}
 
-	if build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsFalse() {
-		return "", errors.Errorf("update to image failed")
+	if condition:= build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
+		if condition.Message != "" {
+			return "", errors.Errorf("update to image failed: %s", condition.Message)
+		}
+
+		return "", errors.New("update to image failed")
 	}
 
 	return build.Status.LatestImage, nil

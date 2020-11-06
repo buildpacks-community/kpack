@@ -9,7 +9,7 @@ Before creating Builders you will need to create a [ClusterStack](stack.md) and 
 
 ### <a id='builders'></a>Builders
 
-The Builder uses a [ClusterStore](#clusterstore), a [ClusterStack](#clusterstack), and an order definition to construct a builder image.
+The Builder uses a [ClusterStore](store.md), a [ClusterStack](stack.md), and an order definition to construct a builder image.
 
 ```yaml
 apiVersion: kpack.io/v1alpha1
