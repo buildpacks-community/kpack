@@ -1,6 +1,6 @@
 ## Problem:
 
-kpack does not support building containers that can run on windows
+kpack does not support building images that can run on windows
 
 ## Outcomes:
 
