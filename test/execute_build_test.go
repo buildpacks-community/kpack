@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"math/rand"
 	"strings"
 	"testing"
@@ -288,20 +289,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		imageSources := map[string]v1alpha1.SourceConfig{
+		imageSources := map[string]v1alpha2.SourceConfig{
 			"test-git-image": {
-				Git: &v1alpha1.Git{
+				Git: &v1alpha2.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 					Revision: "master",
 				},
 			},
 			"test-blob-image": {
-				Blob: &v1alpha1.Blob{
+				Blob: &v1alpha2.Blob{
 					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 				},
 			},
 			"test-registry-image": {
-				Registry: &v1alpha1.Registry{
+				Registry: &v1alpha2.Registry{
 					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 				},
 			},
@@ -380,8 +381,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					Name: clusterBuilderName,
 				},
 				ServiceAccount: serviceAccountName,
-				Source: v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
+				Source: v1alpha2.SourceConfig{
+					Git: &v1alpha2.Git{
 						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 						Revision: "master",
 					},
@@ -483,12 +484,12 @@ func validateRebase(t *testing.T, clients *clients, imageName, testNamespace str
 	build := buildList.Items[0]
 
 	rebaseBuildBuildSpec := build.Spec.DeepCopy()
-	rebaseBuildBuildSpec.LastBuild = &v1alpha1.LastBuild{
+	rebaseBuildBuildSpec.LastBuild = &v1alpha2.LastBuild{
 		Image:   build.Status.LatestImage,
 		StackId: build.Status.Stack.ID,
 	}
 
-	_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Create(&v1alpha1.Build{
+	_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Create(&v1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        rebaseBuildName,
 			Annotations: map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack},

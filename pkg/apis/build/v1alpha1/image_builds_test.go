@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -38,8 +39,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	sourceResolver := &SourceResolver{
-		Status: SourceResolverStatus{
+	sourceResolver := &v1alpha2.SourceResolver{
+		Status: v1alpha2.SourceResolverStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -80,7 +81,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []BuildpackMetadata{
+			BuildMetadata: []v1alpha2.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
 			Stack: BuildStack{
@@ -92,16 +93,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#build", func() {
-		sourceResolver.Status.Source = ResolvedSourceConfig{
-			Git: &ResolvedGitSource{
+		sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+			Git: &v1alpha2.ResolvedGitSource{
 				URL:      "https://some.git/url",
 				Revision: "revision",
-				Type:     Commit,
+				Type:     v1alpha2.Commit,
 			},
 		}
 
-		latestBuild.Spec.Source = SourceConfig{
-			Git: &Git{
+		latestBuild.Spec.Source = v1alpha2.SourceConfig{
+			Git: &v1alpha2.Git{
 				URL:      "https://some.git/url",
 				Revision: "revision",
 			},
@@ -150,8 +151,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets blob url when image source is blob", func() {
-			sourceResolver.Status.Source = ResolvedSourceConfig{
-				Blob: &ResolvedBlobSource{
+			sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+				Blob: &v1alpha2.ResolvedBlobSource{
 					URL: "https://some.place/blob.jar",
 				},
 			}
@@ -163,8 +164,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets registry image when image source is registry", func() {
-			sourceResolver.Status.Source = ResolvedSourceConfig{
-				Registry: &ResolvedRegistrySource{
+			sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+				Registry: &v1alpha2.ResolvedRegistrySource{
 					Image: "some-registry.io/some-image",
 				},
 			}

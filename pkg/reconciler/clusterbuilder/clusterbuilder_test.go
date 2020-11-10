@@ -2,6 +2,7 @@ package clusterBuilder_test
 
 import (
 	"errors"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -146,11 +147,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("saves metadata to the status", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: v1alpha2.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{
+				Buildpacks: v1alpha2.BuildpackMetadataList{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
@@ -175,7 +176,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []v1alpha1.BuildpackMetadata{
+					BuilderMetadata: []v1alpha2.BuildpackMetadata{
 						{
 							Id:      "buildpack.id.1",
 							Version: "1.0.0",
@@ -185,7 +186,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Version: "2.0.0",
 						},
 					},
-					Stack: v1alpha1.BuildStack{
+					Stack: v1alpha2.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
@@ -218,11 +219,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("tracks the stack and store for a custom builder", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: v1alpha2.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{},
+				Buildpacks: v1alpha2.BuildpackMetadataList{},
 			}
 
 			expectedBuilder := &v1alpha1.ClusterBuilder{
@@ -238,8 +239,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []v1alpha1.BuildpackMetadata{},
-					Stack: v1alpha1.BuildStack{
+					BuilderMetadata: []v1alpha2.BuildpackMetadata{},
+					Stack: v1alpha2.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
@@ -264,11 +265,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("does not update the status with no status change", func() {
 			builderCreator.Record = v1alpha1.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: v1alpha2.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{
+				Buildpacks: v1alpha2.BuildpackMetadataList{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
@@ -286,13 +287,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				BuilderMetadata: []v1alpha1.BuildpackMetadata{
+				BuilderMetadata: []v1alpha2.BuildpackMetadata{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
 					},
 				},
-				Stack: v1alpha1.BuildStack{
+				Stack: v1alpha2.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},

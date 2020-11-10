@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,8 +11,8 @@ import (
 
 type BuilderRecord struct {
 	Image      string
-	Stack      BuildStack
-	Buildpacks BuildpackMetadataList
+	Stack      v1alpha2.BuildStack
+	Buildpacks v1alpha2.BuildpackMetadataList
 }
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {

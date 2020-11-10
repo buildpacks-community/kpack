@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"strconv"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -142,7 +143,7 @@ func (b *Build) builtWithStack(runImage string) bool {
 	return lastBuildRunImageRef.Identifier() == builderRunImageRef.Identifier()
 }
 
-func (b *Build) builtWithBuildpacks(buildpacks BuildpackMetadataList) bool {
+func (b *Build) builtWithBuildpacks(buildpacks v1alpha2.BuildpackMetadataList) bool {
 	for _, bp := range b.Status.BuildMetadata {
 		if !buildpacks.Include(bp) {
 			return false

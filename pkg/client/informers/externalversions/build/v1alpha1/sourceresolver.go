@@ -19,9 +19,9 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	time "time"
 
-	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
 	v1alpha1 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -70,7 +70,7 @@ func NewFilteredSourceResolverInformer(client versioned.Interface, namespace str
 				return client.KpackV1alpha1().SourceResolvers(namespace).Watch(options)
 			},
 		},
-		&buildv1alpha1.SourceResolver{},
+		&v1alpha2.SourceResolver{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *sourceResolverInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *sourceResolverInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha1.SourceResolver{}, f.defaultInformer)
+	return f.factory.InformerFor(&v1alpha2.SourceResolver{}, f.defaultInformer)
 }
 
 func (f *sourceResolverInformer) Lister() v1alpha1.SourceResolverLister {

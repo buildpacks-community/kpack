@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ const (
 	BuildReasonTrigger   = "TRIGGER"
 )
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, cacheName string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *v1alpha2.SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, cacheName string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,8 +136,8 @@ func (im *Image) SourceResolverName() string {
 	return kmeta.ChildName(im.Name, "-source")
 }
 
-func (im *Image) SourceResolver() *SourceResolver {
-	return &SourceResolver{
+func (im *Image) SourceResolver() *v1alpha2.SourceResolver {
+	return &v1alpha2.SourceResolver{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      im.SourceResolverName(),
 			Namespace: im.Namespace,
@@ -145,7 +146,7 @@ func (im *Image) SourceResolver() *SourceResolver {
 			},
 			Labels: im.Labels,
 		},
-		Spec: SourceResolverSpec{
+		Spec: v1alpha2.SourceResolverSpec{
 			ServiceAccount: im.Spec.ServiceAccount,
 			Source:         im.Spec.Source,
 		},

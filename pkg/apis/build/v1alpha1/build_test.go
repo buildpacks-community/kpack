@@ -51,7 +51,7 @@ func TestRebaseable(t *testing.T) {
 }
 
 func TestBuildReason(t *testing.T) {
-	build := &Build{
+	build := Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				BuildReasonAnnotation: BuildReasonStack,
@@ -62,14 +62,14 @@ func TestBuildReason(t *testing.T) {
 }
 
 func TestBuildLifecycle(t *testing.T) {
-	build := &Build{
+	build := Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-name",
 		},
 	}
 	build.Status.Error(errors.New("error: display this error"))
 
-	require.True(t, equality.Semantic.DeepEqual(build, &Build{
+	require.True(t, equality.Semantic.DeepEqual(build, Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-name",
 		},

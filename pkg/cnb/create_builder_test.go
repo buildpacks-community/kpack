@@ -3,6 +3,7 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 	"time"
 
@@ -259,10 +260,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
-			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
-			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha2.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha2.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
+			assert.Contains(t, builderRecord.Buildpacks, v1alpha2.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
+			assert.Equal(t, v1alpha2.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 
 			assert.Len(t, registryClient.SavedImages(), 1)
 			savedImage := registryClient.SavedImages()[tag]

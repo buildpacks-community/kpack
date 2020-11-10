@@ -1,6 +1,7 @@
 package git
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	fixtures "github.com/go-git/go-git-fixtures"
@@ -8,8 +9,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestRemoteGitResolver(t *testing.T) {
@@ -31,8 +30,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha2.SourceConfig{
+					Git: &v1alpha2.Git{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
 					},
@@ -40,12 +39,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
-					Git: &v1alpha1.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, v1alpha2.ResolvedSourceConfig{
+					Git: &v1alpha2.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: nonHEADCommit,
 						SubPath:  "/foo/bar",
-						Type:     v1alpha1.Commit,
+						Type:     v1alpha2.Commit,
 					},
 				})
 			})
@@ -57,8 +56,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha2.SourceConfig{
+					Git: &v1alpha2.Git{
 						URL:      repo.URL,
 						Revision: "master",
 					},
@@ -66,11 +65,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
-					Git: &v1alpha1.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, v1alpha2.ResolvedSourceConfig{
+					Git: &v1alpha2.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: fixtureHEADMasterCommit,
-						Type:     v1alpha1.Branch,
+						Type:     v1alpha2.Branch,
 						SubPath:  "/foo/bar",
 					},
 				})
@@ -83,8 +82,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha2.SourceConfig{
+					Git: &v1alpha2.Git{
 						URL:      repo.URL,
 						Revision: tag,
 					},
@@ -92,11 +91,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
-					Git: &v1alpha1.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, v1alpha2.ResolvedSourceConfig{
+					Git: &v1alpha2.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: tagCommit,
-						Type:     v1alpha1.Tag,
+						Type:     v1alpha2.Tag,
 						SubPath:  "/foo/bar",
 					},
 				})
@@ -112,8 +111,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				resolvedGitSource, err := gitResolver.Resolve(&http.BasicAuth{
 					Username: "notgonna",
 					Password: "work",
-				}, v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
+				}, v1alpha2.SourceConfig{
+					Git: &v1alpha2.Git{
 						URL:      repo.URL,
 						Revision: tag,
 					},
@@ -121,11 +120,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
-					Git: &v1alpha1.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, v1alpha2.ResolvedSourceConfig{
+					Git: &v1alpha2.ResolvedGitSource{
 						URL:      repo.URL,
 						Revision: tag,
-						Type:     v1alpha1.Unknown,
+						Type:     v1alpha2.Unknown,
 						SubPath:  "/foo/bar",
 					},
 				})

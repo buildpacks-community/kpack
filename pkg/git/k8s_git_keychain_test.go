@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -15,8 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func Test(t *testing.T) {
@@ -40,7 +39,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-1",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -54,7 +53,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-2",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "noschemegit.com",
+						v1alpha2.GITSecretAnnotationPrefix: "noschemegit.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -68,7 +67,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-3",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://bitbucket.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -81,7 +80,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-4",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -94,7 +93,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-5",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -108,7 +107,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-6",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -121,7 +120,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-7",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+						v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -150,7 +149,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	when("Resolve", func() {
 		it("returns git Auth for matching secrets with basic auth", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
 			})
@@ -163,7 +162,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical first secretRef for basic auth", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
 			})
@@ -177,7 +176,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "git@gitlab.com:org/repo",
 				Revision: "master",
 			})
@@ -196,7 +195,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns git Auth for matching secrets with ssh auth", func() {
-			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "git@bitbucket.com:org/repo",
 				Revision: "master",
 			})
@@ -215,7 +214,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "https://noschemegit.com/org/repo",
 				Revision: "master",
 			})
@@ -228,7 +227,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns anonymous Auth for no matching secret", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha2.Git{
 				URL:      "https://no-creds-github.com/org/repo",
 				Revision: "master",
 			})

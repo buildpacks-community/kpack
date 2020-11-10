@@ -3,6 +3,7 @@ package logs
 import (
 	"context"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"io"
 
 	"github.com/pkg/errors"
@@ -126,7 +127,7 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 	event, err := watchTools.ListWatchUntil(ctx,
 		&listAndWatchBuild{kpackClient: w.KpackClient, namespace: namespace, buildName: buildName},
 		filterErrors(func(event watch.Event) (bool, error) {
-			build, ok := event.Object.(*v1alpha1.Build)
+			build, ok := event.Object.(*v1alpha2.Build)
 			if !ok {
 				return false, errors.New("unexpected object received")
 			}
@@ -137,12 +138,12 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 		return "", err
 	}
 
-	build, ok := event.Object.(*v1alpha1.Build)
+	build, ok := event.Object.(*v1alpha2.Build)
 	if !ok {
 		return "", errors.New("unexpected object received")
 	}
 
-	if condition:= build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
+	if condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
 		if condition.Message != "" {
 			return "", errors.Errorf("update to image failed: %s", condition.Message)
 		}

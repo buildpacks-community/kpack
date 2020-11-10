@@ -1,6 +1,7 @@
 package duckbuilder
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -38,13 +39,13 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuilderMetadata: v1alpha1.BuildpackMetadataList{
+			BuilderMetadata: v1alpha2.BuildpackMetadataList{
 				{
 					Id:      "test.builder",
 					Version: "test.version",
 				},
 			},
-			Stack: v1alpha1.BuildStack{
+			Stack: v1alpha2.BuildStack{
 				RunImage: "some/run@sha256:12345678",
 			},
 			LatestImage: "some/builder@sha256:12345678",
@@ -82,7 +83,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildBuilderSpec provides latest image and pull secrets", func() {
-		require.Equal(t, v1alpha1.BuildBuilderSpec{
+		require.Equal(t, v1alpha2.BuildBuilderSpec{
 			Image: "some/builder@sha256:12345678",
 			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
@@ -93,7 +94,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildpackMetadata provides buildpack metadata", func() {
-		require.Equal(t, v1alpha1.BuildpackMetadataList{
+		require.Equal(t, v1alpha2.BuildpackMetadataList{
 			{
 				Id:      "test.builder",
 				Version: "test.version",

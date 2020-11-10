@@ -1,6 +1,7 @@
 package duckbuilder
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"sync"
 	"testing"
 	"time"
@@ -39,13 +40,13 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: v1alpha1.NamespacedBuilderSpec{},
 			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+				BuilderMetadata: v1alpha2.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",
 					},
 				},
-				Stack:       v1alpha1.BuildStack{},
+				Stack:       v1alpha2.BuildStack{},
 				LatestImage: "",
 			},
 		}
@@ -56,13 +57,13 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: v1alpha1.ClusterBuilderSpec{},
 			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+				BuilderMetadata: v1alpha2.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",
 					},
 				},
-				Stack:       v1alpha1.BuildStack{},
+				Stack:       v1alpha2.BuildStack{},
 				LatestImage: "",
 			},
 		}

@@ -4,16 +4,16 @@ package buildfakes
 import (
 	"sync"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 )
 
 type FakeMetadataRetriever struct {
-	GetBuiltImageStub        func(*v1alpha1.Build) (cnb.BuiltImage, error)
+	GetBuiltImageStub        func(*v1alpha2.Build) (cnb.BuiltImage, error)
 	getBuiltImageMutex       sync.RWMutex
 	getBuiltImageArgsForCall []struct {
-		arg1 *v1alpha1.Build
+		arg1 *v1alpha2.Build
 	}
 	getBuiltImageReturns struct {
 		result1 cnb.BuiltImage
@@ -27,11 +27,11 @@ type FakeMetadataRetriever struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImage(arg1 *v1alpha1.Build) (cnb.BuiltImage, error) {
+func (fake *FakeMetadataRetriever) GetBuiltImage(arg1 *v1alpha2.Build) (cnb.BuiltImage, error) {
 	fake.getBuiltImageMutex.Lock()
 	ret, specificReturn := fake.getBuiltImageReturnsOnCall[len(fake.getBuiltImageArgsForCall)]
 	fake.getBuiltImageArgsForCall = append(fake.getBuiltImageArgsForCall, struct {
-		arg1 *v1alpha1.Build
+		arg1 *v1alpha2.Build
 	}{arg1})
 	fake.recordInvocation("GetBuiltImage", []interface{}{arg1})
 	fake.getBuiltImageMutex.Unlock()
@@ -51,13 +51,13 @@ func (fake *FakeMetadataRetriever) GetBuiltImageCallCount() int {
 	return len(fake.getBuiltImageArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageCalls(stub func(*v1alpha1.Build) (cnb.BuiltImage, error)) {
+func (fake *FakeMetadataRetriever) GetBuiltImageCalls(stub func(*v1alpha2.Build) (cnb.BuiltImage, error)) {
 	fake.getBuiltImageMutex.Lock()
 	defer fake.getBuiltImageMutex.Unlock()
 	fake.GetBuiltImageStub = stub
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageArgsForCall(i int) *v1alpha1.Build {
+func (fake *FakeMetadataRetriever) GetBuiltImageArgsForCall(i int) *v1alpha2.Build {
 	fake.getBuiltImageMutex.RLock()
 	defer fake.getBuiltImageMutex.RUnlock()
 	argsForCall := fake.getBuiltImageArgsForCall[i]

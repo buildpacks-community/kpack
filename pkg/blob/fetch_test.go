@@ -71,7 +71,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		})
 	}
 
-	it("unpacks files with mode 0777 when files are compressed in fat (MSDOS) format", func(){
+	it("unpacks files with mode 0777 when files are compressed in fat (MSDOS) format", func() {
 		// Set no umask to test file mode
 		oldMask := syscall.Umask(0)
 		defer syscall.Umask(oldMask)

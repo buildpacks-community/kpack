@@ -2,13 +2,13 @@ package git
 
 import (
 	"fmt"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/secret"
 )
 
@@ -22,7 +22,7 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
 }
 
-func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
+func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha2.Git) (transport.AuthMethod, error) {
 	secrets, err := k.secretFetcher.SecretsForServiceAccount(serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
@@ -36,7 +36,7 @@ func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 		case v1.SecretTypeBasicAuth:
 			{
 				creds = append(creds, gitBasicAuthCred{
-					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					Domain:      s.Annotations[v1alpha2.GITSecretAnnotationPrefix],
 					SecretName:  s.Name,
 					fetchSecret: fetchBasicAuth(s),
 				})
@@ -44,7 +44,7 @@ func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.
 		case v1.SecretTypeSSHAuth:
 			{
 				creds = append(creds, gitSshAuthCred{
-					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					Domain:      s.Annotations[v1alpha2.GITSecretAnnotationPrefix],
 					SecretName:  s.Name,
 					fetchSecret: fetchSshAuth(s),
 				})

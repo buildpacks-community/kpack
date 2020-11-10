@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -65,8 +66,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().ClusterStores().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("images"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().Images().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("sourceresolvers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha1().SourceResolvers().Informer()}, nil
+
+		// Group=kpack.io, Version=v1alpha2
+	case v1alpha2.SchemeGroupVersion.WithResource("builds"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Builds().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("images"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Images().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("sourceresolvers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().SourceResolvers().Informer()}, nil
 
 	}
 

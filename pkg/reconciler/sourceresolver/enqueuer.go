@@ -1,9 +1,8 @@
 package sourceresolver
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"time"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type workQueueEnqueuer struct {
@@ -11,7 +10,7 @@ type workQueueEnqueuer struct {
 	delay        time.Duration
 }
 
-func (e *workQueueEnqueuer) Enqueue(sr *v1alpha1.SourceResolver) error {
+func (e *workQueueEnqueuer) Enqueue(sr *v1alpha2.SourceResolver) error {
 	e.enqueueAfter(sr, 1*time.Minute)
 	return nil
 }

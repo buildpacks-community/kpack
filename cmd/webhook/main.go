@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"knative.dev/pkg/webhook/resourcesemantics/conversion"
 	"log"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -24,14 +26,29 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
-var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1alpha1.SchemeGroupVersion.WithKind("Image"):          &v1alpha1.Image{},
-	v1alpha1.SchemeGroupVersion.WithKind("Build"):          &v1alpha1.Build{},
-	v1alpha1.SchemeGroupVersion.WithKind("Builder"):        &v1alpha1.Builder{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"): &v1alpha1.ClusterBuilder{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterStore"):   &v1alpha1.ClusterStore{},
-	v1alpha1.SchemeGroupVersion.WithKind("ClusterStack"):   &v1alpha1.ClusterStack{},
-}
+var (
+	types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
+		v1alpha1.SchemeGroupVersion.WithKind("Image"):          &v1alpha1.Image{},
+		v1alpha2.SchemeGroupVersion.WithKind("Image"):          &v1alpha2.Image{},
+		v1alpha1.SchemeGroupVersion.WithKind("Build"):          &v1alpha2.Build{},
+		v1alpha2.SchemeGroupVersion.WithKind("Build"):          &v1alpha2.Build{},
+		v1alpha1.SchemeGroupVersion.WithKind("Builder"):        &v1alpha1.Builder{},
+		v1alpha1.SchemeGroupVersion.WithKind("ClusterBuilder"): &v1alpha1.ClusterBuilder{},
+		v1alpha1.SchemeGroupVersion.WithKind("ClusterStore"):   &v1alpha1.ClusterStore{},
+		v1alpha1.SchemeGroupVersion.WithKind("ClusterStack"):   &v1alpha1.ClusterStack{},
+	}
+
+	convertTypes = map[schema.GroupKind]conversion.GroupKindConversion{
+		v1alpha2.Kind("Image"): {
+			DefinitionName: "images.kpack.io",
+			HubVersion:     "v1alpha2",
+			Zygotes: map[string]conversion.ConvertibleObject{
+				"v1alpha1": &v1alpha1.Image{},
+				"v1alpha2": &v1alpha2.Image{},
+			},
+		},
+	}
+)
 
 func init() {
 	injection.Default.RegisterInformer(withStorageClassInformer)
@@ -49,6 +66,7 @@ func main() {
 		certificates.NewController,
 		defaultingAdmissionController,
 		validatingAdmissionController,
+		conversionAdmissionController,
 	)
 }
 
@@ -87,6 +105,14 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		},
 		// Whether to disallow unknown fields.
 		true,
+	)
+}
+
+func conversionAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+	return conversion.NewConversionController(ctx,
+		"/convert",
+		convertTypes,
+		func(ctx context.Context) context.Context { return ctx },
 	)
 }
 

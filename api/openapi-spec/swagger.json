@@ -5455,6 +5455,379 @@
         }
       }
     },
+    "kpack.build.v1alpha2.Build": {
+      "type": "object",
+      "required": [
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildList": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.Build"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildSpec": {
+      "type": "object",
+      "required": [
+        "source"
+      ],
+      "properties": {
+        "builder": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.BuildBuilderSpec"
+        },
+        "cacheName": {
+          "type": "string"
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "lastBuild": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.LastBuild"
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "serviceAccount": {
+          "type": "string"
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.Service"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "source": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildStack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "runImage": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildStatus": {
+      "type": "object",
+      "properties": {
+        "buildMetadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackMetadata"
+          }
+        },
+        "conditions": {
+          "description": "Conditions the latest available observations of a resource's current state.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
+          },
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "latestImage": {
+          "type": "string"
+        },
+        "observedGeneration": {
+          "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "stack": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildStack"
+        },
+        "stepStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerState"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "stepsCompleted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.Image": {
+      "type": "object",
+      "required": [
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImageSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImageStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ImageBuild": {
+      "type": "object",
+      "properties": {
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.Service"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ImageBuilder": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ImageList": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.Image"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ImageSpec": {
+      "type": "object",
+      "required": [
+        "tag",
+        "source"
+      ],
+      "properties": {
+        "build": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImageBuild"
+        },
+        "builder": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
+        "cacheSize": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "failedBuildHistoryLimit": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "imageTaggingStrategy": {
+          "type": "string"
+        },
+        "serviceAccount": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
+        },
+        "successBuildHistoryLimit": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "tag": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ImageStatus": {
+      "type": "object",
+      "properties": {
+        "buildCacheName": {
+          "type": "string"
+        },
+        "buildCounter": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "conditions": {
+          "description": "Conditions the latest available observations of a resource's current state.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
+          },
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "latestBuildImageGeneration": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "latestBuildReason": {
+          "type": "string"
+        },
+        "latestBuildRef": {
+          "type": "string"
+        },
+        "latestImage": {
+          "type": "string"
+        },
+        "latestStack": {
+          "type": "string"
+        },
+        "observedGeneration": {
+          "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.LastBuild": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "stackId": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.Service": {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "API version of the referent.",
+          "type": "string"
+        },
+        "fieldPath": {
+          "description": "If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a pod, this would take on a value like: \"spec.containers{name}\" (where \"name\" refers to the name of the container that triggered the event) or if no container name is specified \"spec.containers[2]\" (container with index 2 in this pod). This syntax is chosen only to have some well-defined way of referencing a part of an object.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/",
+          "type": "string"
+        },
+        "resourceVersion": {
+          "description": "Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency",
+          "type": "string"
+        },
+        "uid": {
+          "description": "UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids",
+          "type": "string"
+        }
+      }
+    },
     "kpack.core.v1alpha1.Condition": {
       "description": "Conditions defines a readiness condition for a Knative resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties",
       "type": "object",

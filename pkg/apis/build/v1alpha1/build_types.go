@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -55,11 +56,11 @@ type BuildBuilderSpec struct {
 // +k8s:openapi-gen=true
 type BuildSpec struct {
 	// +listType
-	Tags           []string         `json:"tags,omitempty"`
-	Builder        BuildBuilderSpec `json:"builder,omitempty"`
-	ServiceAccount string           `json:"serviceAccount,omitempty"`
-	Source         SourceConfig     `json:"source"`
-	CacheName      string           `json:"cacheName,omitempty"`
+	Tags           []string              `json:"tags,omitempty"`
+	Builder        BuildBuilderSpec      `json:"builder,omitempty"`
+	ServiceAccount string                `json:"serviceAccount,omitempty"`
+	Source         v1alpha2.SourceConfig `json:"source"`
+	CacheName      string                `json:"cacheName,omitempty"`
 	// +listType
 	Bindings Bindings `json:"bindings,omitempty"`
 	// +listType
@@ -93,10 +94,10 @@ type BuildStack struct {
 // +k8s:openapi-gen=true
 type BuildStatus struct {
 	corev1alpha1.Status `json:",inline"`
-	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack               BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                `json:"latestImage,omitempty"`
-	PodName             string                `json:"podName,omitempty"`
+	BuildMetadata       v1alpha2.BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	Stack               BuildStack                     `json:"stack,omitempty"`
+	LatestImage         string                         `json:"latestImage,omitempty"`
+	PodName             string                         `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType

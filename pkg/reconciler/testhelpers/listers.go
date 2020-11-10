@@ -1,6 +1,8 @@
 package testhelpers
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	v1alpha2Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -51,12 +53,12 @@ func (l *Listers) GetKubeObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakekubeclientset.AddToScheme)
 }
 
-func (l *Listers) GetImageLister() v1alpha1Listers.ImageLister {
-	return v1alpha1Listers.NewImageLister(l.indexerFor(&v1alpha1.Image{}))
+func (l *Listers) GetImageLister() v1alpha2Listers.ImageLister {
+	return v1alpha2Listers.NewImageLister(l.indexerFor(&v1alpha2.Image{}))
 }
 
-func (l *Listers) GetBuildLister() v1alpha1Listers.BuildLister {
-	return v1alpha1Listers.NewBuildLister(l.indexerFor(&v1alpha1.Build{}))
+func (l *Listers) GetBuildLister() v1alpha2Listers.BuildLister {
+	return v1alpha2Listers.NewBuildLister(l.indexerFor(&v1alpha2.Build{}))
 }
 
 func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {
@@ -76,7 +78,7 @@ func (l *Listers) GetClusterStackLister() v1alpha1Listers.ClusterStackLister {
 }
 
 func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {
-	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha1.SourceResolver{}))
+	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha2.SourceResolver{}))
 }
 
 func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolumeClaimLister {

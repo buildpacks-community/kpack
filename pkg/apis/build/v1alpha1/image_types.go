@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,7 @@ type ImageSpec struct {
 	Tag                      string                 `json:"tag"`
 	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
 	ServiceAccount           string                 `json:"serviceAccount,omitempty"`
-	Source                   SourceConfig           `json:"source"`
+	Source                   v1alpha2.SourceConfig  `json:"source"`
 	CacheSize                *resource.Quantity     `json:"cacheSize,omitempty"`
 	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
 	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`

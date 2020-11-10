@@ -29,5 +29,3 @@ type ClusterStackExpansion interface{}
 type ClusterStoreExpansion interface{}
 
 type ImageExpansion interface{}
-
-type SourceResolverExpansion interface{}

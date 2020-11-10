@@ -19,7 +19,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,20 +39,20 @@ var sourceresolversResource = schema.GroupVersionResource{Group: "kpack.io", Ver
 var sourceresolversKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "SourceResolver"}
 
 // Get takes name of the sourceResolver, and returns the corresponding sourceResolver object, and an error if there is any.
-func (c *FakeSourceResolvers) Get(name string, options v1.GetOptions) (result *v1alpha1.SourceResolver, err error) {
+func (c *FakeSourceResolvers) Get(name string, options v1.GetOptions) (result *v1alpha2.SourceResolver, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(sourceresolversResource, c.ns, name), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewGetAction(sourceresolversResource, c.ns, name), &v1alpha2.SourceResolver{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.SourceResolver), err
+	return obj.(*v1alpha2.SourceResolver), err
 }
 
 // List takes label and field selectors, and returns the list of SourceResolvers that match those selectors.
-func (c *FakeSourceResolvers) List(opts v1.ListOptions) (result *v1alpha1.SourceResolverList, err error) {
+func (c *FakeSourceResolvers) List(opts v1.ListOptions) (result *v1alpha2.SourceResolverList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(sourceresolversResource, sourceresolversKind, c.ns, opts), &v1alpha1.SourceResolverList{})
+		Invokes(testing.NewListAction(sourceresolversResource, sourceresolversKind, c.ns, opts), &v1alpha2.SourceResolverList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeSourceResolvers) List(opts v1.ListOptions) (result *v1alpha1.Source
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.SourceResolverList{ListMeta: obj.(*v1alpha1.SourceResolverList).ListMeta}
-	for _, item := range obj.(*v1alpha1.SourceResolverList).Items {
+	list := &v1alpha2.SourceResolverList{ListMeta: obj.(*v1alpha2.SourceResolverList).ListMeta}
+	for _, item := range obj.(*v1alpha2.SourceResolverList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,43 +79,43 @@ func (c *FakeSourceResolvers) Watch(opts v1.ListOptions) (watch.Interface, error
 }
 
 // Create takes the representation of a sourceResolver and creates it.  Returns the server's representation of the sourceResolver, and an error, if there is any.
-func (c *FakeSourceResolvers) Create(sourceResolver *v1alpha1.SourceResolver) (result *v1alpha1.SourceResolver, err error) {
+func (c *FakeSourceResolvers) Create(sourceResolver *v1alpha2.SourceResolver) (result *v1alpha2.SourceResolver, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(sourceresolversResource, c.ns, sourceResolver), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewCreateAction(sourceresolversResource, c.ns, sourceResolver), &v1alpha2.SourceResolver{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.SourceResolver), err
+	return obj.(*v1alpha2.SourceResolver), err
 }
 
 // Update takes the representation of a sourceResolver and updates it. Returns the server's representation of the sourceResolver, and an error, if there is any.
-func (c *FakeSourceResolvers) Update(sourceResolver *v1alpha1.SourceResolver) (result *v1alpha1.SourceResolver, err error) {
+func (c *FakeSourceResolvers) Update(sourceResolver *v1alpha2.SourceResolver) (result *v1alpha2.SourceResolver, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(sourceresolversResource, c.ns, sourceResolver), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewUpdateAction(sourceresolversResource, c.ns, sourceResolver), &v1alpha2.SourceResolver{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.SourceResolver), err
+	return obj.(*v1alpha2.SourceResolver), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSourceResolvers) UpdateStatus(sourceResolver *v1alpha1.SourceResolver) (*v1alpha1.SourceResolver, error) {
+func (c *FakeSourceResolvers) UpdateStatus(sourceResolver *v1alpha2.SourceResolver) (*v1alpha2.SourceResolver, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(sourceresolversResource, "status", c.ns, sourceResolver), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewUpdateSubresourceAction(sourceresolversResource, "status", c.ns, sourceResolver), &v1alpha2.SourceResolver{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.SourceResolver), err
+	return obj.(*v1alpha2.SourceResolver), err
 }
 
 // Delete takes name of the sourceResolver and deletes it. Returns an error if one occurs.
 func (c *FakeSourceResolvers) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(sourceresolversResource, c.ns, name), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewDeleteAction(sourceresolversResource, c.ns, name), &v1alpha2.SourceResolver{})
 
 	return err
 }
@@ -124,17 +124,17 @@ func (c *FakeSourceResolvers) Delete(name string, options *v1.DeleteOptions) err
 func (c *FakeSourceResolvers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(sourceresolversResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &v1alpha1.SourceResolverList{})
+	_, err := c.Fake.Invokes(action, &v1alpha2.SourceResolverList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched sourceResolver.
-func (c *FakeSourceResolvers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.SourceResolver, err error) {
+func (c *FakeSourceResolvers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha2.SourceResolver, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(sourceresolversResource, c.ns, name, pt, data, subresources...), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewPatchSubresourceAction(sourceresolversResource, c.ns, name, pt, data, subresources...), &v1alpha2.SourceResolver{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.SourceResolver), err
+	return obj.(*v1alpha2.SourceResolver), err
 }

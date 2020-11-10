@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -31,8 +32,8 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				Name: "builder-name",
 			},
 			ServiceAccount: "some/service-account",
-			Source: SourceConfig{
-				Git: &Git{
+			Source: v1alpha2.SourceConfig{
+				Git: &v1alpha2.Git{
 					URL:      "http://github.com/repo",
 					Revision: "master",
 				},
@@ -156,29 +157,29 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("multiple sources", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &v1alpha2.Git{
 				URL:      "http://github.com/repo",
 				Revision: "master",
 			}
-			image.Spec.Source.Blob = &Blob{
+			image.Spec.Source.Blob = &v1alpha2.Blob{
 				URL: "http://blob.com/url",
 			}
 			assertValidationError(image, ctx, apis.ErrMultipleOneOf("git", "blob").ViaField("spec", "source"))
 
-			image.Spec.Source.Registry = &Registry{
+			image.Spec.Source.Registry = &v1alpha2.Registry{
 				Image: "registry.com/image",
 			}
 			assertValidationError(image, ctx, apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
-			image.Spec.Source = SourceConfig{}
+			image.Spec.Source = v1alpha2.SourceConfig{}
 
 			assertValidationError(image, ctx, apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &v1alpha2.Git{
 				URL:      "",
 				Revision: "master",
 			}
@@ -187,7 +188,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates git revision", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &v1alpha2.Git{
 				URL:      "http://github.com/url",
 				Revision: "",
 			}
@@ -197,21 +198,21 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("validates blob url", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Blob = &Blob{URL: ""}
+			image.Spec.Source.Blob = &v1alpha2.Blob{URL: ""}
 
 			assertValidationError(image, ctx, apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
 		})
 
 		it("validates registry image exists", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Registry = &Registry{Image: ""}
+			image.Spec.Source.Registry = &v1alpha2.Registry{Image: ""}
 
 			assertValidationError(image, ctx, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
 
 		it("validates registry image valide", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Registry = &Registry{Image: "NotValid@@!"}
+			image.Spec.Source.Registry = &v1alpha2.Registry{Image: "NotValid@@!"}
 
 			assertValidationError(image, ctx, apis.ErrInvalidValue(image.Spec.Source.Registry.Image, "image").ViaField("spec", "source", "registry"))
 		})

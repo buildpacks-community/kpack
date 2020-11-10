@@ -32,7 +32,6 @@ type KpackV1alpha1Interface interface {
 	ClusterStacksGetter
 	ClusterStoresGetter
 	ImagesGetter
-	SourceResolversGetter
 }
 
 // KpackV1alpha1Client is used to interact with features provided by the kpack.io group.
@@ -62,10 +61,6 @@ func (c *KpackV1alpha1Client) ClusterStores() ClusterStoreInterface {
 
 func (c *KpackV1alpha1Client) Images(namespace string) ImageInterface {
 	return newImages(c, namespace)
-}
-
-func (c *KpackV1alpha1Client) SourceResolvers(namespace string) SourceResolverInterface {
-	return newSourceResolvers(c, namespace)
 }
 
 // NewForConfig creates a new KpackV1alpha1Client for the given config.

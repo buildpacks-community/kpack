@@ -1,6 +1,7 @@
 package k8sdockercreds
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -13,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -35,7 +35,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-1",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.DOCKERSecretAnnotationPrefix: "annotated.io",
+						v1alpha2.DOCKERSecretAnnotationPrefix: "annotated.io",
 					},
 				},
 				Type: corev1.SecretTypeBasicAuth,
@@ -148,7 +148,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 						Name:      "secret-1",
 						Namespace: testNamespace,
 						Annotations: map[string]string{
-							v1alpha1.DOCKERSecretAnnotationPrefix: "annotated.io",
+							v1alpha2.DOCKERSecretAnnotationPrefix: "annotated.io",
 						},
 					},
 					Type: corev1.SecretTypeBasicAuth,

@@ -2,17 +2,17 @@
 package sourceresolverfakes
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"sync"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 )
 
 type FakeEnqueuer struct {
-	EnqueueStub        func(*v1alpha1.SourceResolver) error
+	EnqueueStub        func(*v1alpha2.SourceResolver) error
 	enqueueMutex       sync.RWMutex
 	enqueueArgsForCall []struct {
-		arg1 *v1alpha1.SourceResolver
+		arg1 *v1alpha2.SourceResolver
 	}
 	enqueueReturns struct {
 		result1 error
@@ -24,11 +24,11 @@ type FakeEnqueuer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEnqueuer) Enqueue(arg1 *v1alpha1.SourceResolver) error {
+func (fake *FakeEnqueuer) Enqueue(arg1 *v1alpha2.SourceResolver) error {
 	fake.enqueueMutex.Lock()
 	ret, specificReturn := fake.enqueueReturnsOnCall[len(fake.enqueueArgsForCall)]
 	fake.enqueueArgsForCall = append(fake.enqueueArgsForCall, struct {
-		arg1 *v1alpha1.SourceResolver
+		arg1 *v1alpha2.SourceResolver
 	}{arg1})
 	fake.recordInvocation("Enqueue", []interface{}{arg1})
 	fake.enqueueMutex.Unlock()
@@ -48,13 +48,13 @@ func (fake *FakeEnqueuer) EnqueueCallCount() int {
 	return len(fake.enqueueArgsForCall)
 }
 
-func (fake *FakeEnqueuer) EnqueueCalls(stub func(*v1alpha1.SourceResolver) error) {
+func (fake *FakeEnqueuer) EnqueueCalls(stub func(*v1alpha2.SourceResolver) error) {
 	fake.enqueueMutex.Lock()
 	defer fake.enqueueMutex.Unlock()
 	fake.EnqueueStub = stub
 }
 
-func (fake *FakeEnqueuer) EnqueueArgsForCall(i int) *v1alpha1.SourceResolver {
+func (fake *FakeEnqueuer) EnqueueArgsForCall(i int) *v1alpha2.SourceResolver {
 	fake.enqueueMutex.RLock()
 	defer fake.enqueueMutex.RUnlock()
 	argsForCall := fake.enqueueArgsForCall[i]

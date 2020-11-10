@@ -1,0 +1,49 @@
+apiVersion: kpack.io/v1alpha1
+kind: Image
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: '{"kind":"Image","apiVersion":"kpack.io/v1alpha1","metadata":{"name":"bound","namespace":"default","creationTimestamp":null},"spec":{"tag":"gcr.io/cf-build-service-dev-219913/test/tyler/bound-app","builder":{"kind":"ClusterBuilder","name":"default"},"serviceAccount":"default","source":{"git":{"url":"https://github.com/paketo-buildpacks/samples","revision":"main"},"subPath":"java/application-insights"},"build":{"resources":{}}},"status":{}}'
+  creationTimestamp: "2020-11-05T17:09:19Z"
+  generation: 1
+  name: bound
+  namespace: default
+  resourceVersion: "34585764"
+  selfLink: /apis/kpack.io/v1alpha1/namespaces/default/images/bound
+  uid: 38a2dbb3-aeab-4a26-ad93-16465411800e
+spec:
+  build:
+    bindings:
+      - name: insights
+        secretRef:
+          name: insights
+        metadataRef:
+          name: insights
+  builder:
+    kind: ClusterBuilder
+    name: default
+  cacheSize: 2G
+  failedBuildHistoryLimit: 10
+  imageTaggingStrategy: BuildNumber
+  serviceAccount: default
+  source:
+    git:
+      revision: main
+      url: https://github.com/paketo-buildpacks/samples
+    subPath: java/application-insights
+  successBuildHistoryLimit: 10
+  tag: gcr.io/cf-build-service-dev-219913/test/tyler/bound-app
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: insights
+type: Opaque
+stringData:
+  InstrumentationKey: abcxyc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: insights
+data:
+  type: ApplicationInsights

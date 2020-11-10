@@ -3,6 +3,7 @@ package cnb
 import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
@@ -66,7 +67,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
-		Stack: v1alpha1.BuildStack{
+		Stack: v1alpha2.BuildStack{
 			RunImage: clusterStack.Status.RunImage.LatestImage,
 			ID:       clusterStack.Status.Id,
 		},
@@ -74,10 +75,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 	}, nil
 }
 
-func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha1.BuildpackMetadataList {
-	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
+func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha2.BuildpackMetadataList {
+	m := make(v1alpha2.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
-		m = append(m, v1alpha1.BuildpackMetadata{
+		m = append(m, v1alpha2.BuildpackMetadata{
 			Id:       b.Id,
 			Version:  b.Version,
 			Homepage: b.Homepage,

@@ -1,6 +1,7 @@
 package image
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ func TestImageBuilds(t *testing.T) {
 }
 
 func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
-	image := &v1alpha1.Image{
+	image := &v1alpha2.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 			Annotations: map[string]string{
@@ -29,7 +30,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				"label-key": "label-value",
 			},
 		},
-		Spec: v1alpha1.ImageSpec{
+		Spec: v1alpha2.ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
 			Builder: corev1.ObjectReference{
@@ -39,8 +40,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	sourceResolver := &v1alpha1.SourceResolver{
-		Status: v1alpha1.SourceResolverStatus{
+	sourceResolver := &v1alpha2.SourceResolver{
+		Status: v1alpha2.SourceResolverStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -57,22 +58,22 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Name:         "builder-Name",
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
-		BuilderMetadata: []v1alpha1.BuildpackMetadata{
+		BuilderMetadata: []v1alpha2.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 	}
 
-	latestBuild := &v1alpha1.Build{
+	latestBuild := &v1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: v1alpha2.BuildSpec{
 			Tags:           []string{"some/image"},
 			Builder:        builder.BuildBuilderSpec(),
 			ServiceAccount: "some/serviceaccount",
 		},
-		Status: v1alpha1.BuildStatus{
+		Status: v1alpha2.BuildStatus{
 			Status: corev1alpha1.Status{
 				Conditions: corev1alpha1.Conditions{
 					{
@@ -81,10 +82,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []v1alpha1.BuildpackMetadata{
+			BuildMetadata: []v1alpha2.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
-			Stack: v1alpha1.BuildStack{
+			Stack: v1alpha2.BuildStack{
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stack.bionic",
 			},
@@ -93,16 +94,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#buildNeeded", func() {
-		sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-			Git: &v1alpha1.ResolvedGitSource{
+		sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+			Git: &v1alpha2.ResolvedGitSource{
 				URL:      "https://some.git/url",
 				Revision: "revision",
-				Type:     v1alpha1.Commit,
+				Type:     v1alpha2.Commit,
 			},
 		}
 
-		latestBuild.Spec.Source = v1alpha1.SourceConfig{
-			Git: &v1alpha1.Git{
+		latestBuild.Spec.Source = v1alpha2.SourceConfig{
+			Git: &v1alpha2.Git{
 				URL:      "https://some.git/url",
 				Revision: "revision",
 			},
@@ -142,13 +143,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
 		})
 
-		it("true if build bindings changes", func() {
-			latestBuild.Spec.Bindings = v1alpha1.Bindings{
+		it("true if build service bindings changes", func() {
+			latestBuild.Spec.Services = v1alpha2.Services{
 				{
 					Name: "some-old-value",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "some-old-config-map",
-					},
+					Kind: "Secret",
 				},
 			}
 
@@ -159,7 +158,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false if last build failed but no spec changes", func() {
-			latestBuild.Status = v1alpha1.BuildStatus{
+			latestBuild.Status = v1alpha2.BuildStatus{
 				Status: corev1alpha1.Status{
 					Conditions: corev1alpha1.Conditions{
 						{
@@ -168,7 +167,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				Stack: v1alpha1.BuildStack{},
+				Stack: v1alpha2.BuildStack{},
 			}
 
 			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
@@ -189,7 +188,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		when("Builder Metadata changes", func() {
 			it("false if builder has additional unused buildpacks", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []v1alpha2.BuildpackMetadata{
 					{Id: "buildpack.matches", Version: "1"},
 					{Id: "buildpack.unused", Version: "unused"},
 				}
@@ -200,7 +199,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder metadata has different buildpack version from used buildpack version", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []v1alpha2.BuildpackMetadata{
 					{Id: "buildpack.matches", Version: "NEW_VERSION"},
 					{Id: "buildpack.different", Version: "different"},
 				}
@@ -212,7 +211,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder does not have all most recent used buildpacks", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []v1alpha2.BuildpackMetadata{
 					{Id: "buildpack.only.new.buildpacks", Version: "1"},
 					{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 				}
@@ -316,7 +315,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build = &v1alpha1.ImageBuild{
+				image.Spec.Build = &v1alpha2.ImageBuild{
 					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},
@@ -340,14 +339,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("Blob", func() {
-			sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-				Blob: &v1alpha1.ResolvedBlobSource{
+			sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+				Blob: &v1alpha2.ResolvedBlobSource{
 					URL: "different",
 				},
 			}
 
-			latestBuild.Spec.Source = v1alpha1.SourceConfig{
-				Blob: &v1alpha1.Blob{
+			latestBuild.Spec.Source = v1alpha2.SourceConfig{
+				Blob: &v1alpha2.Blob{
 					URL: "some-url",
 				},
 			}
@@ -370,14 +369,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("Registry", func() {
-			sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-				Registry: &v1alpha1.ResolvedRegistrySource{
+			sourceResolver.Status.Source = v1alpha2.ResolvedSourceConfig{
+				Registry: &v1alpha2.ResolvedRegistrySource{
 					Image: "different",
 				},
 			}
 
-			latestBuild.Spec.Source = v1alpha1.SourceConfig{
-				Registry: &v1alpha1.Registry{
+			latestBuild.Spec.Source = v1alpha2.SourceConfig{
+				Registry: &v1alpha2.Registry{
 					Image: "some-image",
 				},
 			}
@@ -403,15 +402,15 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 type TestBuilderResource struct {
 	BuilderReady     bool
-	BuilderMetadata  []v1alpha1.BuildpackMetadata
+	BuilderMetadata  []v1alpha2.BuildpackMetadata
 	ImagePullSecrets []corev1.LocalObjectReference
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
 }
 
-func (t TestBuilderResource) BuildBuilderSpec() v1alpha1.BuildBuilderSpec {
-	return v1alpha1.BuildBuilderSpec{
+func (t TestBuilderResource) BuildBuilderSpec() v1alpha2.BuildBuilderSpec {
+	return v1alpha2.BuildBuilderSpec{
 		Image:            t.LatestImage,
 		ImagePullSecrets: t.ImagePullSecrets,
 	}
@@ -421,7 +420,7 @@ func (t TestBuilderResource) Ready() bool {
 	return t.BuilderReady
 }
 
-func (t TestBuilderResource) BuildpackMetadata() v1alpha1.BuildpackMetadataList {
+func (t TestBuilderResource) BuildpackMetadata() v1alpha2.BuildpackMetadataList {
 	return t.BuilderMetadata
 }
 

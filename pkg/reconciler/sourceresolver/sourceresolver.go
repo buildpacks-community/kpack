@@ -3,12 +3,12 @@ package sourceresolver
 import (
 	"context"
 	"errors"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
@@ -23,8 +23,8 @@ const (
 
 //go:generate counterfeiter . Resolver
 type Resolver interface {
-	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
-	CanResolve(*v1alpha1.SourceResolver) bool
+	Resolve(sourceResolver *v1alpha2.SourceResolver) (v1alpha2.ResolvedSourceConfig, error)
+	CanResolve(*v1alpha2.SourceResolver) bool
 }
 
 func NewController(
@@ -56,7 +56,7 @@ func NewController(
 
 //go:generate counterfeiter . Enqueuer
 type Enqueuer interface {
-	Enqueue(*v1alpha1.SourceResolver) error
+	Enqueue(*v1alpha2.SourceResolver) error
 }
 
 type Reconciler struct {
@@ -106,7 +106,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(sourceResolver)
 }
 
-func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (Resolver, error) {
+func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha2.SourceResolver) (Resolver, error) {
 	if c.GitResolver.CanResolve(sourceResolver) {
 		return c.GitResolver, nil
 	} else if c.BlobResolver.CanResolve(sourceResolver) {
@@ -117,7 +117,7 @@ func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (
 	return nil, errors.New("invalid source type")
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {
+func (c *Reconciler) updateStatus(desired *v1alpha2.SourceResolver) error {
 	original, err := c.SourceResolverLister.SourceResolvers(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err

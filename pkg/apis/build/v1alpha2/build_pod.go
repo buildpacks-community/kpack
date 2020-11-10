@@ -1,8 +1,9 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,8 @@ const (
 	workspaceDir              = "workspace-dir"
 	imagePullSecretsDirName   = "image-pull-secrets-dir"
 	builderPullSecretsDirName = "builder-pull-secrets-dir"
+
+	serviceBindingRootEnvVar = "SERVICE_BINDING_ROOT"
 )
 
 type BuildPodImages struct {
@@ -83,6 +86,10 @@ var (
 		Name:      builderPullSecretsDirName,
 		MountPath: "/builderPullSecrets",
 		ReadOnly:  true,
+	}
+	serviceBindingRootEnv = corev1.EnvVar{
+		Name:  serviceBindingRootEnvVar,
+		Value: filepath.Join(platformVolume.MountPath, "bindings"),
 	}
 )
 
@@ -196,6 +203,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							workspaceVolume,
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						Env:             []corev1.EnvVar{serviceBindingRootEnv},
 					},
 				)
 				step(
@@ -261,6 +269,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							workspaceVolume,
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						Env:             []corev1.EnvVar{serviceBindingRootEnv},
 					},
 				)
 				if bc.legacy() {
@@ -353,6 +362,14 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 			ImagePullSecrets: b.Spec.Builder.ImagePullSecrets,
 		},
 	}, nil
+}
+
+func (bc *BuildPodBuilderConfig) legacy() bool {
+	return bc.PlatformAPI == "0.2"
+}
+
+func (bc *BuildPodBuilderConfig) unsupported() bool {
+	return bc.PlatformAPI != "0.2" && bc.PlatformAPI != "0.3"
 }
 
 func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
@@ -477,35 +494,15 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
-	for _, binding := range b.Spec.Bindings {
-		metadataVolume := fmt.Sprintf("binding-metadata-%s", binding.Name)
-		volumes = append(volumes,
-			corev1.Volume{
-				Name: metadataVolume,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: binding.MetadataRef.Name,
-						},
-					},
-				},
-			},
-		)
-		volumeMounts = append(volumeMounts,
-			corev1.VolumeMount{
-				Name:      metadataVolume,
-				MountPath: fmt.Sprintf("%s/bindings/%s/metadata", platformVolume.MountPath, binding.Name),
-				ReadOnly:  true,
-			},
-		)
-		if binding.SecretRef != nil {
-			secretVolume := fmt.Sprintf("binding-secret-%s", binding.Name)
+	for _, service := range b.Spec.Services {
+		if service.Name != "" {
+			secretVolume := fmt.Sprintf("service-binding-secret-%s", service.Name)
 			volumes = append(volumes,
 				corev1.Volume{
 					Name: secretVolume,
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
-							SecretName: binding.SecretRef.Name,
+							SecretName: service.Name,
 						},
 					},
 				},
@@ -513,7 +510,7 @@ func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 			volumeMounts = append(volumeMounts,
 				corev1.VolumeMount{
 					Name:      secretVolume,
-					MountPath: fmt.Sprintf("%s/bindings/%s/secret", platformVolume.MountPath, binding.Name),
+					MountPath: filepath.Join(platformVolume.MountPath, "bindings", service.Name),
 					ReadOnly:  true,
 				},
 			)
@@ -521,14 +518,6 @@ func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 	}
 
 	return volumes, volumeMounts
-}
-
-func (bc *BuildPodBuilderConfig) legacy() bool {
-	return bc.PlatformAPI == "0.2"
-}
-
-func (bc *BuildPodBuilderConfig) unsupported() bool {
-	return bc.PlatformAPI != "0.2" && bc.PlatformAPI != "0.3"
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {

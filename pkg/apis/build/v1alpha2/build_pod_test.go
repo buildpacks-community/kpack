@@ -1,4 +1,4 @@
-package v1alpha1_test
+package v1alpha2_test
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 func TestBuildPod(t *testing.T) {
@@ -39,14 +39,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builderImageRef := v1alpha1.BuildBuilderSpec{
+	builderImageRef := v1alpha2.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},
 		},
 	}
 
-	build := &v1alpha1.Build{
+	build := &v1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
 			Namespace: namespace,
@@ -57,42 +57,35 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"some/annotation": "to-pass-through",
 			},
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: v1alpha2.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			Builder:        builderImageRef,
 			ServiceAccount: serviceAccount,
-			Source: v1alpha1.SourceConfig{
-				Git: &v1alpha1.Git{
+			Source: v1alpha2.SourceConfig{
+				Git: &v1alpha2.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
 			},
 			CacheName: "some-cache-name",
-			Bindings: []v1alpha1.Binding{
-				{
-					Name: "database",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "database-configmap",
-					},
-				},
-				{
-					Name: "apm",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "apm-configmap",
-					},
-					SecretRef: &corev1.LocalObjectReference{
-						Name: "apm-secret",
-					},
-				},
-			},
 			Env: []corev1.EnvVar{
 				{Name: "keyA", Value: "valueA"},
 				{Name: "keyB", Value: "valueB"},
 			},
 			Resources: resources,
-			LastBuild: &v1alpha1.LastBuild{
+			LastBuild: &v1alpha2.LastBuild{
 				Image:   previousAppImage,
 				StackId: "com.builder.stack.io",
+			},
+			Services: []v1alpha2.Service{
+				{
+					Name: "database",
+					Kind: "Secret",
+				},
+				{
+					Name: "apm",
+					Kind: "Secret",
+				},
 			},
 		},
 	}
@@ -103,7 +96,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "git-secret-1",
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+					v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
 				},
 			},
 			StringData: map[string]string{
@@ -117,7 +110,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "git-secret-2",
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+					v1alpha2.GITSecretAnnotationPrefix: "https://bitbucket.com",
 				},
 			},
 			StringData: map[string]string{
@@ -129,7 +122,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "docker-secret-1",
 				Annotations: map[string]string{
-					v1alpha1.DOCKERSecretAnnotationPrefix: "acr.io",
+					v1alpha2.DOCKERSecretAnnotationPrefix: "acr.io",
 				},
 			},
 			Type: corev1.SecretTypeBasicAuth,
@@ -156,19 +149,19 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "secret-to-ignore",
 				Annotations: map[string]string{
-					v1alpha1.DOCKERSecretAnnotationPrefix: "ignoreme.com",
+					v1alpha2.DOCKERSecretAnnotationPrefix: "ignoreme.com",
 				},
 			},
 			Type: corev1.SecretTypeBootstrapToken,
 		},
 	}
 
-	config := v1alpha1.BuildPodImages{
+	config := v1alpha2.BuildPodImages{
 		BuildInitImage:  "build/init:image",
 		CompletionImage: "completion/image:image",
 	}
 
-	buildPodBuilderConfig := v1alpha1.BuildPodBuilderConfig{
+	buildPodBuilderConfig := v1alpha2.BuildPodBuilderConfig{
 		StackID:     "com.builder.stack.io",
 		RunImage:    "builderregistry.io/run",
 		Uid:         2000,
@@ -248,37 +241,25 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}
 			})
 
-			it("configures the bindings", func() {
+			it("configures the service bindings", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Contains(t,
 					pod.Spec.Volumes,
 					corev1.Volume{
-						Name: "binding-metadata-database",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "database-configmap",
-								},
-							},
-						},
-					},
-					corev1.Volume{
-						Name: "binding-metadata-apm",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "apm-configmap",
-								},
-							},
-						},
-					},
-					corev1.Volume{
-						Name: "binding-secret-apm",
+						Name: "service-binding-secret-database",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName: "apm-secret",
+								SecretName: "database",
+							},
+						},
+					},
+					corev1.Volume{
+						Name: "service-binding-secret-apm",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "apm",
 							},
 						},
 					},
@@ -288,19 +269,21 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assert.Contains(t,
 						pod.Spec.InitContainers[containerIdx].VolumeMounts,
 						corev1.VolumeMount{
-							Name:      "binding-metadata-database",
-							MountPath: "/platform/bindings/database/metadata",
+							Name:      "service-binding-secret-database",
+							MountPath: "/platform/bindings/database",
 							ReadOnly:  true,
 						},
 						corev1.VolumeMount{
-							Name:      "binding-metadata-apm",
-							MountPath: "/platform/bindings/apm/metadata",
+							Name:      "service-binding-secret-apm",
+							MountPath: "/platform/bindings/apm",
 							ReadOnly:  true,
 						},
-						corev1.VolumeMount{
-							Name:      "binding-secret-apm",
-							MountPath: "/platform/bindings/apm/secret",
-							ReadOnly:  true,
+					)
+					assert.Contains(t,
+						pod.Spec.InitContainers[containerIdx].Env,
+						corev1.EnvVar{
+							Name:  "SERVICE_BINDING_ROOT",
+							Value: "/platform/bindings",
 						},
 					)
 				}
@@ -416,7 +399,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			it("configures prepare with the blob source", func() {
 				build.Spec.Source.Git = nil
-				build.Spec.Source.Blob = &v1alpha1.Blob{
+				build.Spec.Source.Blob = &v1alpha2.Blob{
 					URL: "https://some-blobstore.example.com/some-blob",
 				}
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
@@ -434,7 +417,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			it("configures prepare with the registry source and empty imagePullSecrets when not provided", func() {
 				build.Spec.Source.Git = nil
 				build.Spec.Source.Blob = nil
-				build.Spec.Source.Registry = &v1alpha1.Registry{
+				build.Spec.Source.Registry = &v1alpha2.Registry{
 					Image: "some-registry.io/some-image",
 				}
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
@@ -459,7 +442,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			it("configures prepare with the registry source and a secret volume when is imagePullSecrets provided", func() {
 				build.Spec.Source.Git = nil
 				build.Spec.Source.Blob = nil
-				build.Spec.Source.Registry = &v1alpha1.Registry{
+				build.Spec.Source.Registry = &v1alpha2.Registry{
 					Image: "some-registry.io/some-image",
 					ImagePullSecrets: []corev1.LocalObjectReference{
 						{Name: "registry-secret"},
@@ -504,9 +487,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"layers-dir",
 					"platform-dir",
 					"workspace-dir",
-					"binding-metadata-database",
-					"binding-metadata-apm",
-					"binding-secret-apm",
+					"service-binding-secret-database",
+					"service-binding-secret-apm",
 				}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			})
 
@@ -555,7 +537,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures analyze step with the current tag if previous build is corrupted", func() {
-				build.Spec.LastBuild = &v1alpha1.LastBuild{}
+				build.Spec.LastBuild = &v1alpha2.LastBuild{}
 
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -591,9 +573,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"layers-dir",
 					"platform-dir",
 					"workspace-dir",
-					"binding-metadata-database",
-					"binding-metadata-apm",
-					"binding-secret-apm",
+					"service-binding-secret-database",
+					"service-binding-secret-apm",
 				}))
 			})
 
@@ -644,7 +625,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 10)
+				require.Len(t, pod.Spec.Volumes, 9)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -658,7 +639,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 10)
+				require.Len(t, pod.Spec.Volumes, 9)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -736,7 +717,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("creating a rebase pod", func() {
 			it("creates a pod just to rebase", func() {
-				build.Annotations = map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack, "some/annotation": "to-pass-through"}
+				build.Annotations = map[string]string{v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonStack, "some/annotation": "to-pass-through"}
 
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -750,7 +731,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					Annotations: map[string]string{
 						"some/annotation":              "to-pass-through",
-						v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+						v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonStack,
 					},
 					OwnerReferences: []metav1.OwnerReference{
 						*kmeta.NewControllerRef(build),
@@ -851,7 +832,7 @@ func assertSecretNotPresent(t *testing.T, pod *corev1.Pod, secretName string) {
 
 func isSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) bool {
 	for _, volume := range pod.Spec.Volumes {
-		if volume.Name == fmt.Sprintf(v1alpha1.SecretTemplateName, secretName) {
+		if volume.Name == fmt.Sprintf(v1alpha2.SecretTemplateName, secretName) {
 			assert.Equal(t, corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: secretName,

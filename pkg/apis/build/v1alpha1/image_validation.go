@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"knative.dev/pkg/apis"
@@ -101,56 +100,6 @@ func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	default:
 		return apis.ErrInvalidValue(builder.Kind, "kind")
 	}
-}
-
-func (s *SourceConfig) Validate(ctx context.Context) *apis.FieldError {
-	sources := make([]string, 0, 3)
-	if s.Git != nil {
-		sources = append(sources, "git")
-	}
-	if s.Blob != nil {
-		sources = append(sources, "blob")
-	}
-	if s.Registry != nil {
-		sources = append(sources, "registry")
-	}
-
-	if len(sources) == 0 {
-		return apis.ErrMissingOneOf("git", "blob", "registry")
-	}
-
-	if len(sources) != 1 {
-		return apis.ErrMultipleOneOf(sources...)
-	}
-
-	return (s.Git.Validate(ctx).ViaField("git")).
-		Also(s.Blob.Validate(ctx).ViaField("blob")).
-		Also(s.Registry.Validate(ctx).ViaField("registry"))
-}
-
-func (g *Git) Validate(ctx context.Context) *apis.FieldError {
-	if g == nil {
-		return nil
-	}
-
-	return validate.FieldNotEmpty(g.URL, "url").
-		Also(validate.FieldNotEmpty(g.Revision, "revision"))
-}
-
-func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
-	if b == nil {
-		return nil
-	}
-
-	return validate.FieldNotEmpty(b.URL, "url")
-}
-
-func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
-	if r == nil {
-		return nil
-	}
-
-	return validate.Image(r.Image)
 }
 
 func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {

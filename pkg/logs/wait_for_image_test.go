@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"io"
 	"strconv"
 	"testing"
@@ -88,12 +89,12 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 	when("when a build is scheduled", func() {
 		it("returns built image from the build and tails build logs", func() {
 			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
-				&v1alpha1.Build{
+				&v1alpha2.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",
 						Namespace: imageToWatch.Namespace,
 					},
-					Status: v1alpha1.BuildStatus{
+					Status: v1alpha2.BuildStatus{
 						Status:      conditionSuccess(corev1.ConditionTrue),
 						LatestImage: "image/built-bybuild@sha256:123",
 					},
@@ -119,12 +120,12 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns an err if resulting build fails", func() {
-			build := &v1alpha1.Build{
+			build := &v1alpha2.Build{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "build-to-follow",
 					Namespace: imageToWatch.Namespace,
 				},
-				Status: v1alpha1.BuildStatus{
+				Status: v1alpha2.BuildStatus{
 					Status: conditionSuccess(corev1.ConditionFalse),
 				},
 			}
@@ -167,12 +168,12 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
-				&v1alpha1.Build{
+				&v1alpha2.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",
 						Namespace: imageToWatch.Namespace,
 					},
-					Status: v1alpha1.BuildStatus{
+					Status: v1alpha2.BuildStatus{
 						Status:      conditionSuccess(corev1.ConditionTrue),
 						LatestImage: "image/built-bybuild@sha256:123",
 					},
@@ -231,12 +232,12 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		})
 		when("there is a status message for a build error", func() {
 			it("adds the status message to the returned error", func() {
-				build := &v1alpha1.Build{
+				build := &v1alpha2.Build{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "build-to-follow",
 						Namespace: imageToWatch.Namespace,
 					},
-					Status: v1alpha1.BuildStatus{
+					Status: v1alpha2.BuildStatus{
 						Status: conditionSuccess(corev1.ConditionFalse),
 					},
 				}

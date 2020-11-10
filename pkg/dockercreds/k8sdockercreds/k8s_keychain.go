@@ -1,6 +1,7 @@
 package k8sdockercreds
 
 import (
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
 
 	"encoding/json"
@@ -12,7 +13,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
@@ -89,7 +89,7 @@ func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenti
 	sort.Slice(secrets, func(i, j int) bool { return secrets[i].Name < secrets[j].Name })
 
 	for _, s := range secrets {
-		matcher := dockercreds.RegistryMatcher{Registry: s.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix]}
+		matcher := dockercreds.RegistryMatcher{Registry: s.Annotations[v1alpha2.DOCKERSecretAnnotationPrefix]}
 		if matcher.Match(res.RegistryStr()) && s.Type == corev1.SecretTypeBasicAuth {
 
 			return authn.FromConfig(authn.AuthConfig{
