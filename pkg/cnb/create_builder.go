@@ -43,7 +43,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	builderBldr.AddStack(buildImage, clusterStack)
+	err = builderBldr.AddStack(buildImage, clusterStack)
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
 
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))

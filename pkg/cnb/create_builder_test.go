@@ -3,11 +3,15 @@ package cnb
 import (
 	"archive/tar"
 	"fmt"
+	"path"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
@@ -23,12 +27,19 @@ import (
 )
 
 func TestCreateBuilder(t *testing.T) {
-	spec.Run(t, "Create Builder", testCreateBuilder)
+	spec.Run(t, "Create Builder Linux", testCreateBuilder("linux"))
+	spec.Run(t, "Create Builder Windows", testCreateBuilder("windows"))
 }
 
-func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
+func testCreateBuilder(os string) func(*testing.T, spec.G, spec.S) {
+	return func(t *testing.T, when spec.G, it spec.S) {
+		testCreateBuilderOs(os, t, when, it)
+	}
+}
+
+func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	const (
-		stackID              = "io.buildpacks.stacks.cflinuxfs3"
+		stackID              = "io.buildpacks.stacks.some-stack"
 		mixin                = "some-mixin"
 		tag                  = "custom/example"
 		lifecycleImage       = "index.docker.io/kpack/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
@@ -51,6 +62,18 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		buildpackRepository = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
 		newBuildpackRepo    = func(store *v1alpha1.ClusterStore) BuildpackRepository {
 			return buildpackRepository
+		}
+
+		linuxLifecycle = &fakeLayer{
+			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
+			diffID: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
+			size:   200,
+		}
+
+		windowsLifecycle = &fakeLayer{
+			digest: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
+			diffID: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
+			size:   200,
 		}
 
 		buildpack1Layer = &fakeLayer{
@@ -238,8 +261,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		it.Before(func() {
 			var err error
+			lifecycleImg, err = mutate.AppendLayers(empty.Image, linuxLifecycle, windowsLifecycle)
+			require.NoError(t, err)
 
-			lifecycleImg, err = random.Image(10, int64(lifecycleImageLayers))
+			lifecycleImg, err = imagehelpers.SetStringLabel(lifecycleImg, "linux", linuxLifecycle.diffID)
+			require.NoError(t, err)
+
+			lifecycleImg, err = imagehelpers.SetStringLabel(lifecycleImg, "windows", windowsLifecycle.diffID)
 			require.NoError(t, err)
 
 			lifecycleImg, err = imagehelpers.SetLabels(lifecycleImg, map[string]interface{}{
@@ -269,6 +297,12 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 			buildImg, err = random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
+
+			config, err := buildImg.ConfigFile()
+			require.NoError(t, err)
+
+			config.OS = os
+			buildImg, err = mutate.ConfigFile(buildImg, config)
 
 			registryClient.AddImage(buildImage, buildImg, keychain)
 		})
@@ -340,7 +374,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			layerTester.testNextLayer("Default Directory Layer", func(index int) {
 				defaultDirectoryLayer := layers[index]
 
-				assertLayerContents(t, defaultDirectoryLayer, map[string]content{
+				assertLayerContents(t, os, defaultDirectoryLayer, map[string]content{
 					"/workspace": {
 						typeflag: tar.TypeDir,
 						mode:     0755,
@@ -373,10 +407,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			layerTester.testNextLayer("Lifecycle Layer", func(index int) {
-				lifecycleLayers, err := lifecycleImg.Layers()
-				require.NoError(t, err)
-
-				assert.Equal(t, layers[index], lifecycleLayers[0])
+				if os == "linux" {
+					assert.Equal(t, layers[index], linuxLifecycle)
+				} else {
+					assert.Equal(t, layers[index], windowsLifecycle)
+				}
 			})
 
 			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
@@ -392,7 +427,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			layerTester.testNextLayer("stack Layer", func(index int) {
-				assertLayerContents(t, layers[index], map[string]content{
+				assertLayerContents(t, os, layers[index], map[string]content{
 					"/cnb/stack.toml": //language=toml
 					{
 						typeflag: tar.TypeReg,
@@ -408,7 +443,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			layerTester.testNextLayer("order Layer", func(index int) {
 				assert.Equal(t, len(layers)-1, index)
 
-				assertLayerContents(t, layers[index], map[string]content{
+				assertLayerContents(t, os, layers[index], map[string]content{
 					"/cnb/order.toml": {
 						typeflag: tar.TypeReg,
 						mode:     0644,
@@ -493,7 +528,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
       "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
         {
-          "id": "io.buildpacks.stacks.cflinuxfs3",
+          "id": "io.buildpacks.stacks.some-stack",
           "mixins": ["some-mixin"]
         }
       ]
@@ -521,7 +556,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
       "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
         {
-          "id": "io.buildpacks.stacks.cflinuxfs3"
+          "id": "io.buildpacks.stacks.some-stack"
         },
         {
           "id": "io.some.other.stack"
@@ -584,7 +619,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
-				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.cflinuxfs3 is not supported")
+				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
 			it("errors with unsupported mixin", func() {
@@ -703,15 +738,18 @@ func (f *fakeBuildpackRepository) AddBP(id, version string, layers []buildpackLa
 }
 
 type content struct {
-	typeflag    byte
-	fileContent string
-	uid, gid    int
-	mode        int64
-	linkname    string
+	typeflag      byte
+	fileContent   string
+	uid, gid      int
+	mode          int64
+	linkname      string
+	ignoreModTime bool
 }
 
-func assertLayerContents(t *testing.T, layer v1.Layer, expectedContents map[string]content) {
+func assertLayerContents(t *testing.T, os string, layer v1.Layer, expectedContents map[string]content) {
 	t.Helper()
+	expectedContents = expectedPathsIfWindows(os, expectedContents)
+
 	uncompressed, err := layer.Uncompressed()
 	require.NoError(t, err)
 	reader := tar.NewReader(uncompressed)
@@ -740,14 +778,52 @@ func assertLayerContents(t *testing.T, layer v1.Layer, expectedContents map[stri
 
 		require.Equal(t, header.Uid, expectedContent.uid)
 		require.Equal(t, header.Gid, expectedContent.gid)
+
 		require.Equal(t, header.Mode, expectedContent.mode)
-		require.True(t, header.ModTime.Equal(time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)))
+		if !expectedContent.ignoreModTime {
+			require.True(t, header.ModTime.Equal(time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)))
+		}
 		delete(expectedContents, header.Name)
 	}
 
 	for fileName := range expectedContents {
 		t.Fatalf("file %s not in layer", fileName)
 	}
+}
+
+func expectedPathsIfWindows(os string, contents map[string]content) map[string]content {
+	if os == "linux" {
+		return contents
+	}
+
+	newExpectedContents := map[string]content{}
+	newExpectedContents["Files"] = content{
+		typeflag:      tar.TypeDir,
+		ignoreModTime: true,
+	}
+	newExpectedContents["Hives"] = content{
+		typeflag:      tar.TypeDir,
+		ignoreModTime: true,
+	}
+	for headerPath, v := range contents {
+		newPath := path.Join("Files", headerPath)
+
+		var parentDir string
+		//write windows parent paths
+		//extracted from windows writer
+		for _, pathPart := range strings.Split(path.Dir(newPath), "/") {
+			parentDir = path.Join(parentDir, pathPart)
+
+			if _, present := newExpectedContents[parentDir]; !present {
+				newExpectedContents[parentDir] = content{
+					typeflag:      tar.TypeDir,
+					ignoreModTime: true,
+				}
+			}
+		}
+		newExpectedContents[newPath] = v
+	}
+	return newExpectedContents
 }
 
 type layerIteratorTester int
