@@ -261,7 +261,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets the notary config when present", func() {
-			image.Spec.Notary = NotaryConfig{
+			image.Spec.Notary = &NotaryConfig{
 				V1: &NotaryV1Config{
 					URL: "some-notary-server",
 					SecretRef: NotarySecretRef{

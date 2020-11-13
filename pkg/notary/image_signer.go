@@ -1,15 +1,12 @@
 package notary
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/hex"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
@@ -44,7 +41,7 @@ type ImageSigner struct {
 	Factory RepositoryFactory
 }
 
-func (s *ImageSigner) Sign(url, notarySecretDir, reportFilePath, caCertFilePath string, keychain authn.Keychain) error {
+func (s *ImageSigner) Sign(url, notarySecretDir, reportFilePath string, keychain authn.Keychain) error {
 	var report lifecycle.ExportReport
 	_, err := toml.DecodeFile(reportFilePath, &report)
 	if err != nil {
@@ -56,7 +53,14 @@ func (s *ImageSigner) Sign(url, notarySecretDir, reportFilePath, caCertFilePath 
 		return err
 	}
 
-	remoteStore, err := s.makeRemoteStore(url, gun, caCertFilePath, keychain)
+	remoteStore, err := storage.NewNotaryServerStore(
+		url,
+		gun,
+		&AuthenticatingRoundTripper{
+			Keychain:            keychain,
+			WrappedRoundTripper: http.DefaultTransport,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -124,40 +128,6 @@ func (s *ImageSigner) makeGUNAndTargets(report lifecycle.ExportReport, keychain 
 	}
 
 	return gun, targets, nil
-}
-
-func (s *ImageSigner) makeRemoteStore(serverURL string, gun data.GUN, caCertFilePath string, keychain authn.Keychain) (storage.RemoteStore, error) {
-	transport := http.DefaultTransport
-
-	if caCertFilePath != "" {
-		s.Logger.Printf("Using CA certifiacte '%s'\n", caCertFilePath)
-
-		cert, err := ioutil.ReadFile(caCertFilePath)
-		if err != nil {
-			return nil, err
-		}
-
-		rootCAs := x509.NewCertPool()
-		if ok := rootCAs.AppendCertsFromPEM(cert); !ok {
-			return nil, errors.New("failed to load notary CA certificate")
-		}
-
-		transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: rootCAs,
-			},
-			TLSHandshakeTimeout: 30 * time.Second,
-		}
-	}
-
-	return storage.NewNotaryServerStore(
-		serverURL,
-		gun,
-		&AuthenticatingRoundTripper{
-			Keychain:            keychain,
-			WrappedRoundTripper: transport,
-		},
-	)
 }
 
 func (s *ImageSigner) makeCryptoService(notarySecretDir string) (*cryptoservice.CryptoService, error) {

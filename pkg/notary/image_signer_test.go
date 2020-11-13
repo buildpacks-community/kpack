@@ -61,7 +61,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			notaryDir := filepath.Join("testdata", "notary")
 			reportPath := filepath.Join("testdata", "report.toml")
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, "", keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
 			require.NoError(t, err)
 
 			require.Len(t, factory.Calls, 2)
@@ -82,7 +82,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			notaryDir := filepath.Join("testdata", "notary")
 			reportPath := filepath.Join("testdata", "report-multiple-gun.toml")
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, "", keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
 			require.EqualError(t, err, "signing to multiple registries is not supported")
 		})
 
@@ -90,7 +90,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			notaryDir := filepath.Join("testdata", "notary-no-key")
 			reportPath := filepath.Join("testdata", "report.toml")
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, "", keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
 			require.EqualError(t, err, "failed to find private key")
 		})
 	})
