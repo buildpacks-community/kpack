@@ -118,6 +118,25 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Contains(t, output.String(), "Successfully pulled")
 	})
 
+	it("handles directories with improper headers", func() {
+		buf, err := ioutil.ReadFile(filepath.Join("testdata", "layer.tar"))
+		require.NoError(t, err)
+
+		img := createSourceImage(t, buf, "")
+
+		repoName := "registry.example/test-exe"
+		client.AddImage(repoName, img, keychain)
+
+		err = fetcher.Fetch(dir, repoName)
+		require.NoError(t, err)
+
+		// the vendor/cache directory doesnt have proper headers
+		_, err = ioutil.ReadFile(filepath.Join(dir, "/vendor/cache/diff-lcs-1.4.2.gem"))
+		require.NoError(t, err)
+
+		require.Contains(t, output.String(), "Successfully pulled")
+	})
+
 	it("sets the correct file mode", func() {
 		buf, err := ioutil.ReadFile(filepath.Join("testdata", "tarexe.tar"))
 		require.NoError(t, err)
