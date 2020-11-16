@@ -36,7 +36,7 @@ Based on evidence provided by Jason and conducting user interviews with VMware f
 
 ### Outcome:
 
-Propose an additional feature or set of features that enable users to query kpack images based on their `status` and `latest-reason` such that it is easier for users to perform the workflows in the “Use Cases” section.  In order to make this filtration feature more effective, users should be able to list all images in the cluster (dependent on the user's RBAC permissions). As an implication of this change, the table should include a `NAMESPACE` column when the user filters for images in all namespaces.  Following a round of feedback during a working group meeting on 10/9, I am additionally proposing the inclusion of `builder` and `clusterbuilder` flags.  This modification addresses the concern that that we expect kpack images to be updating frequently, thereby making it difficult for the end-user to verify a stack or store update if the images have updated more recently based on different `REASON`.  These flags would effectively enable the user to display the last time and image was rebuilt for `Reason` `BUILDPACK` or `STACK` 
+Propose an additional feature or set of features that enable users to query kpack images based on their `status` and `latest-reason` such that it is easier for users to perform the workflows in the “Use Cases” section.  In order to make this filtration feature more effective, users should be able to list all images in the cluster (dependent on the user's RBAC permissions). As an implication of this change, the table should include a `NAMESPACE` column when the user filters for images in all namespaces.  Following a round of feedback during a working group meeting on 10/9, I am additionally proposing the inclusion of `builder` and `clusterbuilder` flags.  This modification addresses the concern that that we expect kpack images to be updating frequently, thereby making it difficult for the end-user to verify a stack or store update if the images have updated more recently based on different `REASON`.  These flags would effectively enable the user to display the last time images were rebuilt for `Reason` `buildpack` or `stack` 
 
 Although the feature request stated in the “Problem” section is to query builds, it is probably more productive to query images because end-users most likely care about the current state of their application build and not builds that happened in the past.  Additionally, querying based on builds would pose a technical problem as the CLI would need to present builds and their build numbers outside the context of their associated image.  
 
@@ -46,10 +46,8 @@ Although the feature request stated in the “Problem” section is to query bui
 Below I will cover specific scenarios made possible by a filtering feature. All the following scenarios are derived from this proposed modification to the `kp image list` command:
 
 ```
-kp image list --status <string1, string 2 ...> --latest-reason <string1, string2 ...>
+kp image list --filter key=value --filter key=value 
 ```
-
-Rather than adding an additional subcommand to the `kp image list` path like `filter` or `query`, I propose adding an additional `LATEST REASON` column to the existing output of the `kp image list` table. This would also allow for future design extension. If we wanted to add additional filtering capabilities, we would just create new attribute flags with values as arguments.
 
 Note: The mockups are not meant to provide sample output for all possible scenarios when using this command. Rather they focus on the workflows described in the "Use Cases" section and some non-obvious scenarios that are made possible by introduction of the new command.
 
@@ -70,13 +68,16 @@ Apply flags to filter images displayed in the table
 
 Flags:
 
--A,  --all-namespaces
-     --builder string
--cb, --clusterbuilder string
-     --latest-reason string1, string 2, ...   possible arguments: commit, trigger, config, stack, buildpack
+-A,  --all-namespaces                         Return objects found in all namespaces
+     --filter                                 Each new filter argument requires an additoinal filter flag. 
+                                              Multiple values can be provided using comma separation. 
+                                              Supported filters and values:
+                                              builder=string
+                                              clusterbuilder=string
+                                              latest-reason=commit, trigger, config, stack, buildpack
+                                              status=ready, not-ready, unknown                                              
 -h,  --help                                   help for list
 -n,  --namespace string                       kubernetes namespace
---status string1, string2                     possible arguments: ready, not-ready, unknown 
 ```
 
 ------------------------------
@@ -84,7 +85,7 @@ Flags:
 **Print Image Configs That Are Not Ready**
 
 ```
-$kp image list --status not-ready -A
+$kp image list --filter status=not-ready -A
 
 NAME               READY     LATEST REASON    LATEST IMAGE     NAMESPACE    
 
@@ -101,7 +102,7 @@ mg-test-image5     False     COMMIT                            app-team
 **Print Image Configs That Are Ready**
 
 ```
-$kp image list --status ready -A
+$kp image list --filter status=ready -A
 
 NAME             READY     LATEST REASON     LATEST IMAGE                                                                                            NAMESPACE                                                                                          
 mg-test-image    True      CONFIG            gcr.io/cf-build-service-dev-219913/test/mg-test-image@sha1:5163C01DEAF54C2A814C71A2A214A241F3BF680B     mg-test
@@ -117,7 +118,7 @@ mg-test-image5   True      COMMIT            gcr.io/cf-build-service-dev-219913/
 **Print Image Configs With A Certain Reason**
 
 ```
-$kp image list --latest-reason stack -A
+$kp image list --filter latest-reason=stack -A
 
 NAME             READY     LATEST REASON     LATEST IMAGE                                                                                            NAMESPACE   
  
@@ -134,7 +135,7 @@ mg-test-image5   False     STACK                                                
 **Print Image Configs That Are Ready And Have A Stack or Buildpack Latest Reason**
 
 ```
-$kp image list --status ready --latest-reason stack, buildpack -A
+$kp image list --filter status=ready --filter latest-reason=stack, buildpack -A
 
 NAME              READY     LATEST REASON     LATEST IMAGE                                                                                             NAMESPACE                                                                                             
 
@@ -151,7 +152,7 @@ mg-test-image5    True      STACK             gcr.io/cf-build-service-dev-219913
 **Image Configs Are Not Ready Because Adding A New Buildpack To The Default Store Caused a Breaking Change**
 
 ```   
-$kp image list --clusterbuilder default -A
+$kp image list --filter clusterbuilder=default -A
 
 NAME             READY      LATEST REASON     LATEST IMAGE     NAMESPACE                                                                                         
 
@@ -167,7 +168,7 @@ mg-test-image5   False      BUILDPACK                          app-team
 **No Namespace Column if the user specifies a namespace**
 
 ```
-$kp image list --status ready --latest-reason buildpack -n some-ns
+$kp image list --filter status=ready --filter latest-reason=buildpack -n some-ns
 
 NAME             READY    LATEST REASON      LATEST IMAGE                                                                                              
 
