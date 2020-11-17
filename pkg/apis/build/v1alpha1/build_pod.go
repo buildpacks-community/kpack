@@ -30,8 +30,12 @@ const (
 	workspaceDir              = "workspace-dir"
 	imagePullSecretsDirName   = "image-pull-secrets-dir"
 	builderPullSecretsDirName = "builder-pull-secrets-dir"
+
 	notaryDirName             = "notary-dir"
 	reportDirName             = "report-dir"
+
+	envVarBuildReasons = "BUILD_REASONS"
+	envVarBuildChanges = "BUILD_CHANGES"
 )
 
 type BuildPodImages struct {
@@ -173,6 +177,14 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							corev1.EnvVar{
 								Name:  "RUN_IMAGE",
 								Value: bc.RunImage,
+							},
+							corev1.EnvVar{
+								Name:  envVarBuildReasons,
+								Value: b.BuildReason(),
+							},
+							corev1.EnvVar{
+								Name:  envVarBuildChanges,
+								Value: b.BuildChanges(),
 							},
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
@@ -473,6 +485,16 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 						secretArgs,
 						b.Spec.Tags,
 					),
+					Env: []corev1.EnvVar{
+						{
+							Name:  envVarBuildReasons,
+							Value: b.BuildReason(),
+						},
+						{
+							Name:  envVarBuildChanges,
+							Value: b.BuildChanges(),
+						},
+					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
 					VolumeMounts:    secretVolumeMounts,

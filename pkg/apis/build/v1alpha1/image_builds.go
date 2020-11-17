@@ -16,18 +16,35 @@ const (
 	ImageLabel           = "image.kpack.io/image"
 	ImageGenerationLabel = "image.kpack.io/imageGeneration"
 
-	BuildReasonAnnotation = "image.kpack.io/reason"
-	BuildNeededAnnotation = "image.kpack.io/additionalBuildNeeded"
+	BuildReasonAnnotation  = "image.kpack.io/reason"
+	BuildChangesAnnotation = "image.kpack.io/buildChanges"
+	BuildNeededAnnotation  = "image.kpack.io/additionalBuildNeeded"
 
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
 	BuildReasonBuildpack = "BUILDPACK"
 	BuildReasonStack     = "STACK"
 	BuildReasonTrigger   = "TRIGGER"
+	BuildReasonSortIndex = "TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK"
 )
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons []string, cacheName string, nextBuildNumber int64) *Build {
+type BuildReason string
+
+func (b BuildReason) IsValid() bool {
+	switch b {
+	case BuildReasonTrigger,
+		BuildReasonCommit,
+		BuildReasonStack,
+		BuildReasonBuildpack,
+		BuildReasonConfig:
+		return true
+	}
+	return false
+}
+
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes, cacheName string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
+
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    im.Namespace,
@@ -41,7 +58,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 				ImageGenerationLabel: strconv.Itoa(int(im.Generation)),
 			}),
 			Annotations: combine(im.Annotations, map[string]string{
-				BuildReasonAnnotation: strings.Join(reasons, ","),
+				BuildReasonAnnotation:  reasons,
+				BuildChangesAnnotation: changes,
 			}),
 		},
 		Spec: BuildSpec{

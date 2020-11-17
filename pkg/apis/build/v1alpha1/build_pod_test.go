@@ -745,7 +745,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("creating a rebase pod", func() {
 			it("creates a pod just to rebase", func() {
-				build.Annotations = map[string]string{v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack, "some/annotation": "to-pass-through"}
+				build.Annotations = map[string]string{
+					v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
+					v1alpha1.BuildChangesAnnotation: "some-stack-change",
+					"some/annotation":               "to-pass-through",
+				}
 
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -758,8 +762,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						"kpack.io/build": buildName,
 					},
 					Annotations: map[string]string{
-						"some/annotation":              "to-pass-through",
-						v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+						"some/annotation":               "to-pass-through",
+						v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
+						v1alpha1.BuildChangesAnnotation: "some-stack-change",
 					},
 					OwnerReferences: []metav1.OwnerReference{
 						*kmeta.NewControllerRef(build),
@@ -820,7 +825,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"-basic-docker=docker-secret-1=acr.io",
 								"-dockerconfig=docker-secret-2",
 								"-dockercfg=docker-secret-3",
-								"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+								"someimage/name", "someimage/name:tag2", "someimage/name:tag3",
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "BUILD_REASONS",
+									Value: v1alpha1.BuildReasonStack,
+								},
+								{
+									Name:  "BUILD_CHANGES",
+									Value: "some-stack-change",
+								},
+							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							WorkingDir:      "/workspace",
 							VolumeMounts: []corev1.VolumeMount{

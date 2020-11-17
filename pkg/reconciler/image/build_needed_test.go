@@ -2,16 +2,15 @@ package image
 
 import (
 	"testing"
-	"time"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
 
 func TestImageBuilds(t *testing.T) {
@@ -92,6 +91,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	buildDeterminer := NewBuildDeterminer(image, latestBuild, sourceResolver, builder)
+
 	when("#buildNeeded", func() {
 		sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
 			Git: &v1alpha1.ResolvedGitSource{
@@ -109,26 +110,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("false for no changes", func() {
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionFalse, needed)
-			require.Len(t, reasons, 0)
-		})
-
-		it("true for different image", func() {
-			image.Spec.Tag = "different"
-
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
-			assert.Equal(t, corev1.ConditionTrue, needed)
-			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Equal(t, "", buildDeterminer.Reasons())
+			assert.Equal(t, "", buildDeterminer.Changes())
 		})
 
 		it("false for different ServiceAccount", func() {
 			image.Spec.ServiceAccount = "different"
 
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionFalse, needed)
-			require.Len(t, reasons, 0)
+			assert.Equal(t, "", buildDeterminer.Reasons())
+			assert.Equal(t, "", buildDeterminer.Changes())
 		})
 
 		it("true if build env changes", func() {
@@ -136,10 +132,41 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				{Name: "keyA", Value: "previous-value"},
 			}
 
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "env": [
+        {
+          "name": "keyA",
+          "value": "previous-value"
+        }
+      ],
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    }
+  }
+}`)
+
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, needed)
-			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+			assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 		})
 
 		it("true if build bindings changes", func() {
@@ -152,10 +179,43 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "bindings": [
+        {
+          "name": "some-old-value",
+          "metadataRef": {
+            "name": "some-old-config-map"
+          }
+        }
+      ],
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    }
+  }
+}`)
+
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, needed)
-			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+			assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 		})
 
 		it("false if last build failed but no spec changes", func() {
@@ -171,20 +231,30 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				Stack: v1alpha1.BuildStack{},
 			}
 
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionFalse, needed)
-			require.Len(t, reasons, 0)
+			assert.Equal(t, "", buildDeterminer.Reasons())
+			assert.Equal(t, "", buildDeterminer.Changes())
 		})
 
 		it("true if build is annotated additional build needed", func() {
 			latestBuild.Annotations = map[string]string{
-				v1alpha1.BuildNeededAnnotation: time.Now().String(),
+				v1alpha1.BuildNeededAnnotation: "2020-11-20 22:46:37.570641 -0500 EST m=+0.023483867",
 			}
 
-			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+			expectedChanges := testhelpers.CompactJSON(`
+{
+  "TRIGGER": {
+    "new": "2020-11-20 22:46:37.570641 -0500 EST m=+0.023483867"
+  }
+}`)
+
+			needed, err := buildDeterminer.IsBuildNeeded()
+			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, needed)
-			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonTrigger)
+			assert.Equal(t, v1alpha1.BuildReasonTrigger, buildDeterminer.Reasons())
+			assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 		})
 
 		when("Builder Metadata changes", func() {
@@ -194,9 +264,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Id: "buildpack.unused", Version: "unused"},
 				}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionFalse, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("true if builder metadata has different buildpack version from used buildpack version", func() {
@@ -205,10 +277,29 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Id: "buildpack.different", Version: "different"},
 				}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "BUILDPACK": {
+    "old": [
+      {
+        "id": "buildpack.matches",
+        "version": "1"
+      }
+    ],
+    "new": [
+      {
+        "id": "buildpack.matches",
+        "version": "NEW_VERSION"
+      }
+    ]
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonBuildpack)
+				assert.Equal(t, v1alpha1.BuildReasonBuildpack, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true if builder does not have all most recent used buildpacks", func() {
@@ -217,19 +308,42 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 				}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "BUILDPACK": {
+    "old": [
+      {
+        "id": "buildpack.matches",
+        "version": "1"
+      }
+    ],
+    "new": null
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonBuildpack)
+				assert.Equal(t, v1alpha1.BuildReasonBuildpack, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true if builder has a different run image", func() {
 				builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "STACK": {
+    "old": "sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+    "new": "sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonStack)
+				assert.Equal(t, v1alpha1.BuildReasonStack, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 		})
 
@@ -237,28 +351,88 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			it("true for different GitURL", func() {
 				sourceResolver.Status.Source.Git.URL = "different"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "different",
+          "revision": "revision"
+        }
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true for different Git SubPath", func() {
 				sourceResolver.Status.Source.Git.SubPath = "different"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        },
+        "subPath": "different"
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true for different GitRevision", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "COMMIT": {
+    "old": "revision",
+    "new": "different"
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonCommit)
+				assert.Equal(t, v1alpha1.BuildReasonCommit, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("false if source resolver is not ready", func() {
@@ -269,36 +443,44 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						Status: corev1.ConditionFalse,
 					}}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("false if builder is not ready", func() {
 				sourceResolver.Status.Source.Git.URL = "some-change"
 				builder.BuilderReady = false
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("false if source resolver has not resolved", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("false if source resolver has not resolved and there is no previous build", func() {
 				sourceResolver.Status.Source.Git.Revision = "different"
 				sourceResolver.Status.Conditions = []corev1alpha1.Condition{}
 
-				reasons, needed := buildNeeded(image, nil, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("false if source resolver has not processed current generation", func() {
@@ -306,9 +488,11 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				sourceResolver.ObjectMeta.Generation = 2
 				sourceResolver.Status.ObservedGeneration = 1
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, needed)
-				require.Len(t, reasons, 0)
+				assert.Equal(t, "", buildDeterminer.Reasons())
+				assert.Equal(t, "", buildDeterminer.Changes())
 			})
 
 			it("true if build env order changes and git url changes", func() {
@@ -322,20 +506,65 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "env": [
+        {
+          "name": "keyA",
+          "value": "old"
+        }
+      ],
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "old-git.com/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "env": [
+        {
+          "name": "keyA",
+          "value": "new"
+        }
+      ],
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true if both config and commit have changed", func() {
-				sourceResolver.Status.Source.Git.URL = "different"
 				sourceResolver.Status.Source.Git.Revision = "different"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "COMMIT": {
+    "old": "revision",
+    "new": "different"
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 2)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonCommit)
+				assert.Equal(t, v1alpha1.BuildReasonCommit, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 		})
 
@@ -353,19 +582,66 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			it("true for different BlobURL", func() {
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "blob": {
+          "url": "some-url"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "blob": {
+          "url": "different"
+        }
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true for different Blob SubPath", func() {
 				sourceResolver.Status.Source.Blob.SubPath = "different"
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "blob": {
+          "url": "some-url"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "blob": {
+          "url": "different"
+        },
+        "subPath": "different"
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 		})
 
@@ -383,19 +659,65 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			it("true for different RegistryImage", func() {
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "registry": {
+          "image": "some-image"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "registry": {
+          "image": "different"
+        }
+      }
+    }
+  }
+}`)
+
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 
 			it("true for different Registry SubPath", func() {
 				sourceResolver.Status.Source.Registry.SubPath = "different"
+				expectedChanges := testhelpers.CompactJSON(`
+{
+  "CONFIG": {
+    "old": {
+      "resources": {},
+      "source": {
+        "registry": {
+          "image": "some-image"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "registry": {
+          "image": "different"
+        },
+        "subPath": "different"
+      }
+    }
+  }
+}`)
 
-				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
+				needed, err := buildDeterminer.IsBuildNeeded()
+				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, needed)
-				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Equal(t, v1alpha1.BuildReasonConfig, buildDeterminer.Reasons())
+				assert.Equal(t, expectedChanges, buildDeterminer.Changes())
 			})
 		})
 	})

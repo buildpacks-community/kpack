@@ -10,24 +10,33 @@ import (
 )
 
 type Differ struct {
-	prefix string
-	color  bool
+	o Options
 }
 
 type Options struct {
 	Prefix string
 	Color  bool
+	Common bool
 }
 
-func NewDiffer(options Options) Differ{
-	return Differ {
-		prefix: options.Prefix,
-		color: options.Color,
+func DefaultOptions() Options {
+	return Options{
+		Prefix: "",
+		Color:  true,
+		Common: true,
 	}
 }
 
+func NewDiffer(options Options) Differ {
+	return Differ{o: options}
+}
+
 func Diff(dOld, dNew interface{}) (string, error) {
-	return Differ{}.Diff(dOld, dNew)
+	return NewDiffer(DefaultOptions()).Diff(dOld, dNew)
+}
+
+func (d Differ) Configure(options Options) {
+	d.o = options
 }
 
 func (d Differ) Diff(dOld, dNew interface{}) (string, error) {
@@ -72,23 +81,25 @@ func (d Differ) renderDiff(a, b string) string {
 			continue
 		}
 
-		sBuilder.WriteString(d.prefix)
+		sBuilder.WriteString(d.o.Prefix)
 
 		switch diff.Delta {
 		case difflib.RightOnly:
-			if d.color {
+			if d.o.Color {
 				sBuilder.WriteString(fmt.Sprintf("%s %s\n", ansi.Color("+", "green"), ansi.Color(text, "green")))
 			} else {
 				sBuilder.WriteString(fmt.Sprintf("%s %s\n", "+", text))
 			}
 		case difflib.LeftOnly:
-			if d.color {
+			if d.o.Color {
 				sBuilder.WriteString(fmt.Sprintf("%s %s\n", ansi.Color("-", "red"), ansi.Color(text, "red")))
 			} else {
 				sBuilder.WriteString(fmt.Sprintf("%s %s\n", "-", text))
 			}
 		case difflib.Common:
-			sBuilder.WriteString(fmt.Sprintf("%s\n", text))
+			if d.o.Common {
+				sBuilder.WriteString(fmt.Sprintf("%s\n", text))
+			}
 		}
 	}
 	return sBuilder.String()

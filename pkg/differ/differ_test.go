@@ -14,7 +14,6 @@ func TestDiffer(t *testing.T) {
 }
 
 func testDiffer(t *testing.T, when spec.G, it spec.S) {
-	d := differ.NewDiffer(differ.Options{Prefix: "", Color: true})
 	type obj struct {
 		Foo string
 		Bar int
@@ -32,7 +31,7 @@ func testDiffer(t *testing.T, when spec.G, it spec.S) {
 			Bar: 2,
 			Baz: "Foo",
 		}
-		diff, err := d.Diff(o, n)
+		diff, err := differ.Diff(o, n)
 		require.NoError(t, err)
 		expected := "\x1b[31m-\x1b[0m \x1b[31mBar: 1\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mBar: 2\x1b[0m\nBaz: Foo\n\x1b[31m-\x1b[0m \x1b[31mFoo: Old\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mFoo: New\x1b[0m\n"
 		require.Equal(t, expected, diff)
@@ -44,7 +43,7 @@ func testDiffer(t *testing.T, when spec.G, it spec.S) {
 			Bar: 2,
 			Baz: "Foo",
 		}
-		diff, err := d.Diff(nil, n)
+		diff, err := differ.Diff(nil, n)
 		require.NoError(t, err)
 		expected := "\x1b[32m+\x1b[0m \x1b[32mBar: 2\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mBaz: Foo\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mFoo: New\x1b[0m\n"
 		require.Equal(t, expected, diff)
@@ -56,7 +55,7 @@ func testDiffer(t *testing.T, when spec.G, it spec.S) {
 			Bar: 1,
 			Baz: "Foo",
 		}
-		diff, err := d.Diff(o, nil)
+		diff, err := differ.Diff(o, nil)
 		require.NoError(t, err)
 		expected := "\x1b[31m-\x1b[0m \x1b[31mBar: 1\x1b[0m\n\x1b[31m-\x1b[0m \x1b[31mBaz: Foo\x1b[0m\n\x1b[31m-\x1b[0m \x1b[31mFoo: Old\x1b[0m\n"
 		require.Equal(t, expected, diff)
@@ -72,7 +71,7 @@ OldBar
 Same
 NewBar
 `
-		diff, err := d.Diff(o, n)
+		diff, err := differ.Diff(o, n)
 		require.NoError(t, err)
 		expected := "\x1b[31m-\x1b[0m \x1b[31mOldFoo\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mNewFoo\x1b[0m\nSame\n\x1b[31m-\x1b[0m \x1b[31mOldBar\x1b[0m\n\x1b[32m+\x1b[0m \x1b[32mNewBar\x1b[0m\n"
 		require.Equal(t, expected, diff)
