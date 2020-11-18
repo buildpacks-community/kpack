@@ -12,7 +12,6 @@ import (
 )
 
 type RemoteRepositoryFactory struct {
-
 }
 
 func (r *RemoteRepositoryFactory) GetRepository(url string, gun data.GUN, remoteStore storage.RemoteStore, cryptoService signed.CryptoService) (Repository, error) {

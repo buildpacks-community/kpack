@@ -92,8 +92,14 @@ func (a *AuthenticatingRoundTripper) RoundTrip(req *http.Request) (*http.Respons
 		return nil, err
 	}
 
-	a.Token = body["token"].(string)
+	token, ok := body["token"].(string)
+	if !ok {
+		return nil, errors.New("failed to retrieve token from auth response")
+	}
+
+	a.Token = token
 	req.Header["Authorization"] = []string{"Bearer " + a.Token}
+
 	return a.WrappedRoundTripper.RoundTrip(req)
 }
 

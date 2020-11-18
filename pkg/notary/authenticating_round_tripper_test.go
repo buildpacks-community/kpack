@@ -59,8 +59,8 @@ func testAuthenticatingRoundTripper(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				keychain[parsedURL.Host] = authn.AuthConfig{
-					Username:      "some-username",
-					Password:      "some-password",
+					Username: "some-username",
+					Password: "some-password",
 				}
 
 				req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
