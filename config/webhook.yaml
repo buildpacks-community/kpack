@@ -53,6 +53,8 @@ spec:
         version: #@ data.values.version
     spec:
       serviceAccountName: webhook
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
       - name: webhook
         image: #@ data.values.webhook_image
