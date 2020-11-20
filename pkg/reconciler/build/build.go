@@ -84,16 +84,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	build = build.DeepCopy()
 	build.SetDefaults(ctx)
 
-	reconcileErr := c.reconcile(build)
-	if reconcileErr != nil {
-		build.Status.Error(reconcileErr)
+	err = c.reconcile(build)
+	if err != nil && !controller.IsPermanentError(err) {
+		return err
+	} else if controller.IsPermanentError(err) {
+		build.Status.Error(err)
 	}
 
-	err = c.updateStatus(build)
-	if err != nil {
-		return err
-	}
-	return reconcileErr
+	return c.updateStatus(build)
 }
 
 func (c *Reconciler) reconcile(build *v1alpha1.Build) error {
