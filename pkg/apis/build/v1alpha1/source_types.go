@@ -139,8 +139,8 @@ func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
 type ResolvedSource interface {
 	IsUnknown() bool
 	IsPollable() bool
-	ConfigChanged(lastBuild *Build) bool
-	RevisionChanged(lastBuild *Build) bool
+	ConfigChanged(lastSource SourceConfig) bool
+	RevisionChanged(lastSource SourceConfig) bool
 	SourceConfig() SourceConfig
 }
 
@@ -179,21 +179,21 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 	return gs.Type != Commit && gs.Type != Unknown
 }
 
-func (gs *ResolvedGitSource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Git == nil {
+func (gs *ResolvedGitSource) ConfigChanged(lastSource SourceConfig) bool {
+	if lastSource.Git == nil {
 		return true
 	}
 
-	return gs.URL != lastBuild.Spec.Source.Git.URL ||
-		gs.SubPath != lastBuild.Spec.Source.SubPath
+	return gs.URL != lastSource.Git.URL ||
+		gs.SubPath != lastSource.SubPath
 }
 
-func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Git == nil {
+func (gs *ResolvedGitSource) RevisionChanged(lastSource SourceConfig) bool {
+	if lastSource.Git == nil {
 		return true
 	}
 
-	return gs.Revision != lastBuild.Spec.Source.Git.Revision
+	return gs.Revision != lastSource.Git.Revision
 }
 
 // +k8s:openapi-gen=true
@@ -219,15 +219,15 @@ func (bs *ResolvedBlobSource) IsPollable() bool {
 	return false
 }
 
-func (bs *ResolvedBlobSource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Blob == nil {
+func (bs *ResolvedBlobSource) ConfigChanged(lastSource SourceConfig) bool {
+	if lastSource.Blob == nil {
 		return true
 	}
-	return bs.URL != lastBuild.Spec.Source.Blob.URL ||
-		bs.SubPath != lastBuild.Spec.Source.SubPath
+	return bs.URL != lastSource.Blob.URL ||
+		bs.SubPath != lastSource.SubPath
 }
 
-func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
+func (bs *ResolvedBlobSource) RevisionChanged(lastSource SourceConfig) bool {
 	return false
 }
 
@@ -259,16 +259,16 @@ func (rs *ResolvedRegistrySource) IsPollable() bool {
 	return false
 }
 
-func (rs *ResolvedRegistrySource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Registry == nil {
+func (rs *ResolvedRegistrySource) ConfigChanged(lastSource SourceConfig) bool {
+	if lastSource.Registry == nil {
 		return true
 	}
 
-	return rs.Image != lastBuild.Spec.Source.Registry.Image ||
-		!equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets) ||
-		rs.SubPath != lastBuild.Spec.Source.SubPath
+	return rs.Image != lastSource.Registry.Image ||
+		!equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastSource.Registry.ImagePullSecrets) ||
+		rs.SubPath != lastSource.SubPath
 }
 
-func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {
+func (rs *ResolvedRegistrySource) RevisionChanged(lastSource SourceConfig) bool {
 	return false
 }

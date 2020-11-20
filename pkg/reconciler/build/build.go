@@ -14,11 +14,12 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	v1alpha2informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	v1alpha2lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
@@ -30,14 +31,14 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuiltImage(repoName *v1alpha1.Build) (cnb.BuiltImage, error)
+	GetBuiltImage(repoName *v1alpha2.Build) (cnb.BuiltImage, error)
 }
 
 type PodGenerator interface {
 	Generate(build buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha2informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
@@ -52,7 +53,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	podInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.Filter(v1alpha2.SchemeGroupVersion.WithKind(Kind)),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -61,7 +62,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 
 type Reconciler struct {
 	Client            versioned.Interface
-	Lister            v1alpha1lister.BuildLister
+	Lister            v1alpha2lister.BuildLister
 	MetadataRetriever MetadataRetriever
 	K8sClient         k8sclient.Interface
 	PodLister         v1Listers.PodLister
@@ -94,7 +95,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(build)
 }
 
-func (c *Reconciler) reconcile(build *v1alpha1.Build) error {
+func (c *Reconciler) reconcile(build *v1alpha2.Build) error {
 	if build.Finished() {
 		return nil
 	}
@@ -123,7 +124,7 @@ func (c *Reconciler) reconcile(build *v1alpha1.Build) error {
 	return nil
 }
 
-func (c *Reconciler) reconcileBuildPod(build *v1alpha1.Build) (*corev1.Pod, error) {
+func (c *Reconciler) reconcileBuildPod(build *v1alpha2.Build) (*corev1.Pod, error) {
 	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
@@ -200,7 +201,7 @@ func stepCompleted(pod *corev1.Pod) []string {
 	return completed
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
+func (c *Reconciler) updateStatus(desired *v1alpha2.Build) error {
 	desired.Status.ObservedGeneration = desired.Generation
 	original, err := c.Lister.Builds(desired.Namespace).Get(desired.Name)
 	if err != nil {
@@ -211,7 +212,7 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Build) error {
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().Builds(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha2().Builds(desired.Namespace).UpdateStatus(desired)
 	return err
 }
 

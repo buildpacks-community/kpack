@@ -35,7 +35,7 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig v1alph
 	}
 
 	for _, ref := range references {
-		if string(ref.Name().Short()) == sourceConfig.Git.Revision {
+		if ref.Name().Short() == sourceConfig.Git.Revision {
 			return v1alpha1.ResolvedSourceConfig{
 				Git: &v1alpha1.ResolvedGitSource{
 					URL:      sourceConfig.Git.URL,

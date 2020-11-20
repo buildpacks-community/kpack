@@ -9,8 +9,10 @@ import (
 	"knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	v1alpha2Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 )
 
@@ -51,12 +53,12 @@ func (l *Listers) GetKubeObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakekubeclientset.AddToScheme)
 }
 
-func (l *Listers) GetImageLister() v1alpha1Listers.ImageLister {
-	return v1alpha1Listers.NewImageLister(l.indexerFor(&v1alpha1.Image{}))
+func (l *Listers) GetImageLister() v1alpha2Listers.ImageLister {
+	return v1alpha2Listers.NewImageLister(l.indexerFor(&v1alpha2.Image{}))
 }
 
-func (l *Listers) GetBuildLister() v1alpha1Listers.BuildLister {
-	return v1alpha1Listers.NewBuildLister(l.indexerFor(&v1alpha1.Build{}))
+func (l *Listers) GetBuildLister() v1alpha2Listers.BuildLister {
+	return v1alpha2Listers.NewBuildLister(l.indexerFor(&v1alpha2.Build{}))
 }
 
 func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {

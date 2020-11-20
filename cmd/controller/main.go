@@ -28,6 +28,7 @@ import (
 
 	"github.com/pivotal/kpack/cmd"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -94,8 +95,8 @@ func main() {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
-	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
-	imageInformer := informerFactory.Kpack().V1alpha1().Images()
+	buildInformer := informerFactory.Kpack().V1alpha2().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha2().Images()
 	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
 	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
 	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
@@ -122,7 +123,7 @@ func main() {
 	}
 
 	buildpodGenerator := &buildpod.Generator{
-		BuildPodConfig: v1alpha1.BuildPodImages{
+		BuildPodConfig: v1alpha2.BuildPodImages{
 			BuildInitImage:  *buildInitImage,
 			CompletionImage: *completionImage,
 			RebaseImage:     *rebaseImage,

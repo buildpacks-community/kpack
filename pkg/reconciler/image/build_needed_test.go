@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
@@ -19,7 +20,7 @@ func TestImageBuilds(t *testing.T) {
 }
 
 func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
-	image := &v1alpha1.Image{
+	image := &v1alpha2.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 			Annotations: map[string]string{
@@ -29,7 +30,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				"label-key": "label-value",
 			},
 		},
-		Spec: v1alpha1.ImageSpec{
+		Spec: v1alpha2.ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
 			Builder: corev1.ObjectReference{
@@ -63,16 +64,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 	}
 
-	latestBuild := &v1alpha1.Build{
+	latestBuild := &v1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: v1alpha2.BuildSpec{
 			Tags:           []string{"some/image"},
 			Builder:        builder.BuildBuilderSpec(),
 			ServiceAccount: "some/serviceaccount",
 		},
-		Status: v1alpha1.BuildStatus{
+		Status: v1alpha2.BuildStatus{
 			Status: corev1alpha1.Status{
 				Conditions: corev1alpha1.Conditions{
 					{
@@ -120,7 +121,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 			assert.Equal(t, corev1.ConditionTrue, needed)
 			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 		})
 
 		it("false for different ServiceAccount", func() {
@@ -139,27 +140,25 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 			assert.Equal(t, corev1.ConditionTrue, needed)
 			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 		})
 
 		it("true if build bindings changes", func() {
-			latestBuild.Spec.Bindings = v1alpha1.Bindings{
+			latestBuild.Spec.Services = v1alpha2.Services{
 				{
 					Name: "some-old-value",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "some-old-config-map",
-					},
+					Kind: "Secret",
 				},
 			}
 
 			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 			assert.Equal(t, corev1.ConditionTrue, needed)
 			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+			assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 		})
 
 		it("false if last build failed but no spec changes", func() {
-			latestBuild.Status = v1alpha1.BuildStatus{
+			latestBuild.Status = v1alpha2.BuildStatus{
 				Status: corev1alpha1.Status{
 					Conditions: corev1alpha1.Conditions{
 						{
@@ -184,7 +183,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 			assert.Equal(t, corev1.ConditionTrue, needed)
 			require.Len(t, reasons, 1)
-			assert.Contains(t, reasons, v1alpha1.BuildReasonTrigger)
+			assert.Contains(t, reasons, v1alpha2.BuildReasonTrigger)
 		})
 
 		when("Builder Metadata changes", func() {
@@ -208,7 +207,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonBuildpack)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonBuildpack)
 			})
 
 			it("true if builder does not have all most recent used buildpacks", func() {
@@ -220,7 +219,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonBuildpack)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonBuildpack)
 			})
 
 			it("true if builder has a different run image", func() {
@@ -229,7 +228,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonStack)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonStack)
 			})
 		})
 
@@ -240,7 +239,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 
 			it("true for different Git SubPath", func() {
@@ -249,7 +248,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 
 			it("true for different GitRevision", func() {
@@ -258,7 +257,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonCommit)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonCommit)
 			})
 
 			it("false if source resolver is not ready", func() {
@@ -316,7 +315,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build = &v1alpha1.ImageBuild{
+				image.Spec.Build = &v1alpha2.ImageBuild{
 					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},
@@ -334,8 +333,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 2)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonCommit)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonCommit)
 			})
 		})
 
@@ -356,7 +355,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 
 			it("true for different Blob SubPath", func() {
@@ -365,7 +364,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 		})
 
@@ -386,7 +385,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 
 			it("true for different Registry SubPath", func() {
@@ -395,7 +394,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
 				assert.Equal(t, corev1.ConditionTrue, needed)
 				require.Len(t, reasons, 1)
-				assert.Contains(t, reasons, v1alpha1.BuildReasonConfig)
+				assert.Contains(t, reasons, v1alpha2.BuildReasonConfig)
 			})
 		})
 	})

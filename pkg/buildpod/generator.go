@@ -14,6 +14,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -29,7 +30,7 @@ type ImageFetcher interface {
 }
 
 type Generator struct {
-	BuildPodConfig  v1alpha1.BuildPodImages
+	BuildPodConfig  v1alpha2.BuildPodImages
 	K8sClient       k8sclient.Interface
 	KeychainFactory registry.KeychainFactory
 	ImageFetcher    ImageFetcher
@@ -40,9 +41,9 @@ type BuildPodable interface {
 	GetNamespace() string
 	ServiceAccount() string
 	BuilderSpec() v1alpha1.BuildBuilderSpec
-	Bindings() []v1alpha1.Binding
+	Services() []v1alpha2.Service
 
-	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
+	BuildPod(v1alpha2.BuildPodImages, []corev1.Secret, v1alpha2.BuildPodBuilderConfig) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
@@ -76,9 +77,9 @@ func (g *Generator) buildAllowed(build BuildPodable) error {
 		}
 	}
 
-	for _, binding := range build.Bindings() {
-		if binding.SecretRef != nil && forbiddenSecrets[binding.SecretRef.Name] {
-			return fmt.Errorf("binding %q uses forbidden secret %q", binding.Name, binding.SecretRef.Name)
+	for _, service := range build.Services() {
+		if service.Name != "" && forbiddenSecrets[service.Name] {
+			return fmt.Errorf("service %q uses forbidden secret %q", service.Name, service.Name)
 		}
 	}
 
@@ -109,43 +110,43 @@ func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, erro
 	return secrets, nil
 }
 
-func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha1.BuildPodBuilderConfig, error) {
+func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha2.BuildPodBuilderConfig, error) {
 	keychain, err := g.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		Namespace:        build.GetNamespace(),
 		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		ServiceAccount:   build.ServiceAccount(),
 	})
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to create builder image keychain")
+		return v1alpha2.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to create builder image keychain")
 	}
 
 	image, _, err := g.ImageFetcher.Fetch(keychain, build.BuilderSpec().Image)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
+		return v1alpha2.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
 	stackId, err := imagehelpers.GetStringLabel(image, lifecycle.StackIDLabel)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
+		return v1alpha2.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
 	}
 
 	var metadata cnb.BuilderImageMetadata
 	err = imagehelpers.GetLabel(image, cnb.BuilderMetadataLabel, &metadata)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to get builder metadata")
+		return v1alpha2.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to get builder metadata")
 	}
 
 	uid, err := parseCNBID(image, cnbUserId)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, err
+		return v1alpha2.BuildPodBuilderConfig{}, err
 	}
 
 	gid, err := parseCNBID(image, cnbGroupId)
 	if err != nil {
-		return v1alpha1.BuildPodBuilderConfig{}, err
+		return v1alpha2.BuildPodBuilderConfig{}, err
 	}
 
-	return v1alpha1.BuildPodBuilderConfig{
+	return v1alpha2.BuildPodBuilderConfig{
 		StackID:     stackId,
 		RunImage:    metadata.Stack.RunImage.Image,
 		PlatformAPI: metadata.Lifecycle.API.PlatformVersion,

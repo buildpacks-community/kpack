@@ -4,7 +4,29 @@ metadata:
   name: images.kpack.io
 spec:
   group: kpack.io
-  version: v1alpha1
+  preserveUnknownFields: false
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: false
+  - name: v1alpha2
+    served: true
+    storage: true
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        namespace: kpack
+        name: kpack-webhook
+        path: /convert
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        spec:
+          x-kubernetes-preserve-unknown-fields: true
+        status:
+          x-kubernetes-preserve-unknown-fields: true
   names:
     kind: Image
     singular: image

@@ -11,7 +11,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
@@ -35,7 +35,7 @@ type RemoteMetadataRetriever struct {
 	ImageFetcher    ImageFetcher
 }
 
-func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltImage, error) {
+func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha2.Build) (BuiltImage, error) {
 	keychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
 		ServiceAccount: build.Spec.ServiceAccount,
 		Namespace:      build.Namespace,

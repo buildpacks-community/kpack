@@ -32,12 +32,12 @@ func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
 	})
 }
 
-func (sr *SourceResolver) ConfigChanged(lastBuild *Build) bool {
-	return sr.Status.Source.ResolvedSource().ConfigChanged(lastBuild)
+func (sr *SourceResolver) ConfigChanged(lastSource SourceConfig) bool {
+	return sr.Status.Source.ResolvedSource().ConfigChanged(lastSource)
 }
 
-func (sr *SourceResolver) RevisionChanged(lastBuild *Build) bool {
-	return sr.Status.Source.ResolvedSource().RevisionChanged(lastBuild)
+func (sr *SourceResolver) RevisionChanged(lastSource SourceConfig) bool {
+	return sr.Status.Source.ResolvedSource().RevisionChanged(lastSource)
 }
 
 func (sr *SourceResolver) PollingReady() bool {

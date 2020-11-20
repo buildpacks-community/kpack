@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -44,7 +45,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Name:      "git-secret-1",
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+					v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
 				},
 			},
 			StringData: map[string]string{
@@ -149,7 +150,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			imageFetcher.AddImage("some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4", image, keychain)
 
-			buildPodConfig := v1alpha1.BuildPodImages{}
+			buildPodConfig := v1alpha2.BuildPodImages{}
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
 				K8sClient:       fakeK8sClient,
@@ -176,7 +177,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					*gitSecret,
 					*dockerSecret,
 				},
-				BuildPodBuilderConfig: v1alpha1.BuildPodBuilderConfig{
+				BuildPodBuilderConfig: v1alpha2.BuildPodBuilderConfig{
 					StackID:     "some.stack.id",
 					RunImage:    "some-registry.io/run-image",
 					Uid:         1234,
@@ -187,7 +188,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("rejects a build with a binding secret that is attached to a service account", func() {
-			buildPodConfig := v1alpha1.BuildPodImages{}
+			buildPodConfig := v1alpha2.BuildPodImages{}
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
 				K8sClient:       fakeK8sClient,
@@ -197,17 +198,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			var build = &testBuildPodable{
 				namespace: namespace,
-				bindings: []v1alpha1.Binding{
+				services: []v1alpha2.Service{
 					{
-						Name:        "naughty",
-						MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
-						SecretRef:   &corev1.LocalObjectReference{Name: dockerSecret.Name},
+						Name: dockerSecret.Name,
+						Kind: "Secret",
 					},
 				},
 			}
 
 			pod, err := generator.Generate(build)
-			require.EqualError(t, err, fmt.Sprintf("build rejected: binding %q uses forbidden secret %q", "naughty", dockerSecret.Name))
+			require.EqualError(t, err, fmt.Sprintf("build rejected: service %q uses forbidden secret %q", dockerSecret.Name, dockerSecret.Name))
 			require.Nil(t, pod)
 		})
 	})
@@ -224,13 +224,13 @@ type testBuildPodable struct {
 	serviceAccount   string
 	namespace        string
 	buildPodCalls    []buildPodCall
-	bindings         []v1alpha1.Binding
+	services         []v1alpha2.Service
 }
 
 type buildPodCall struct {
-	BuildPodImages        v1alpha1.BuildPodImages
+	BuildPodImages        v1alpha2.BuildPodImages
 	Secrets               []corev1.Secret
-	BuildPodBuilderConfig v1alpha1.BuildPodBuilderConfig
+	BuildPodBuilderConfig v1alpha2.BuildPodBuilderConfig
 }
 
 func (tb *testBuildPodable) GetName() string {
@@ -249,7 +249,7 @@ func (tb *testBuildPodable) BuilderSpec() v1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []corev1.Secret, config v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images v1alpha2.BuildPodImages, secrets []corev1.Secret, config v1alpha2.BuildPodBuilderConfig) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
 		BuildPodImages:        images,
 		Secrets:               secrets,
@@ -258,6 +258,6 @@ func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []c
 	return &corev1.Pod{}, nil
 }
 
-func (tb *testBuildPodable) Bindings() []v1alpha1.Binding {
-	return tb.bindings
+func (tb *testBuildPodable) Services() []v1alpha2.Service {
+	return tb.services
 }

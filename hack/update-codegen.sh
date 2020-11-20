@@ -22,7 +22,7 @@ mkdir -p "$(dirname "${TMP_REPO_PATH}")" && ln -s "${SCRIPT_ROOT}" "${TMP_REPO_P
 
 bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/pivotal/kpack/pkg/client github.com/pivotal/kpack/pkg/apis \
-  "build:v1alpha1" \
+  "build:v1alpha1,v1alpha2" \
   --output-base "${TMP_DIR}/src" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.go.txt
 

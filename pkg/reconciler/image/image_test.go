@@ -22,6 +22,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -76,7 +77,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-	image := &v1alpha1.Image{
+	image := &v1alpha2.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
@@ -85,7 +86,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				someLabelKey: someValueToPassThrough,
 			},
 		},
-		Spec: v1alpha1.ImageSpec{
+		Spec: v1alpha2.ImageSpec{
 			Tag: "some/image",
 			Builder: corev1.ObjectReference{
 				Kind: "Builder",
@@ -100,10 +101,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 			FailedBuildHistoryLimit:  limit(10),
 			SuccessBuildHistoryLimit: limit(10),
-			ImageTaggingStrategy:     v1alpha1.None,
-			Build:                    &v1alpha1.ImageBuild{},
+			ImageTaggingStrategy:     v1alpha2.None,
+			Build:                    &v1alpha2.ImageBuild{},
 		},
-		Status: v1alpha1.ImageStatus{
+		Status: v1alpha2.ImageStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: originalGeneration,
 				Conditions:         conditionReadyUnknown(),
@@ -183,10 +184,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Image{
+						Object: &v1alpha2.Image{
 							ObjectMeta: image.ObjectMeta,
 							Spec:       image.Spec,
-							Status: v1alpha1.ImageStatus{
+							Status: v1alpha2.ImageStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: updatedGeneration,
 									Conditions:         conditionReadyUnknown(),
@@ -235,10 +236,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Image{
+						Object: &v1alpha2.Image{
 							ObjectMeta: image.ObjectMeta,
 							Spec:       image.Spec,
-							Status: v1alpha1.ImageStatus{
+							Status: v1alpha2.ImageStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -427,10 +428,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									BuildCacheName: image.CacheName(),
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -588,10 +589,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
@@ -628,10 +629,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -640,9 +641,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status: corev1.ConditionUnknown,
 											},
 											{
-												Type:    v1alpha1.ConditionBuilderReady,
+												Type:    v1alpha2.ConditionBuilderReady,
 												Status:  corev1.ConditionFalse,
-												Reason:  v1alpha1.BuilderNotReady,
+												Reason:  v1alpha2.BuilderNotReady,
 												Message: "Builder builder-name is not ready",
 											},
 										},
@@ -665,7 +666,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
 								Namespace:    namespace,
@@ -673,16 +674,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "1",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "1",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+									v1alpha2.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -699,10 +700,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
@@ -735,7 +736,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
 								Namespace:    namespace,
@@ -743,16 +744,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "1",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "1",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+									v1alpha2.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
@@ -769,10 +770,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
@@ -805,7 +806,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
 								Namespace:    namespace,
@@ -813,16 +814,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "1",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "1",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+									v1alpha2.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -839,10 +840,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
@@ -876,7 +877,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
 								Namespace:    namespace,
@@ -884,16 +885,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "1",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "1",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+									v1alpha2.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
@@ -910,10 +911,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
@@ -945,7 +946,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-1-",
 								Namespace:    namespace,
@@ -953,16 +954,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "1",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "1",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
+									v1alpha2.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -980,10 +981,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
@@ -1011,7 +1012,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image,
 						builder,
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-1-00001",
 								Namespace: namespace,
@@ -1019,11 +1020,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1036,7 +1037,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Stack: v1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -1055,7 +1056,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
 								Namespace:    namespace,
@@ -1063,16 +1064,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "2",
-									v1alpha1.ImageLabel:           imageName,
+									v1alpha2.BuildNumberLabel:     "2",
+									v1alpha2.ImageLabel:           imageName,
 									someLabelKey:                  someValueToPassThrough,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.ImageGenerationLabel: generation(image),
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
+									v1alpha2.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha2.BuildReasonCommit}, ","),
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1084,7 +1085,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
@@ -1093,10 +1094,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
@@ -1132,7 +1133,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image,
 						builder,
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-1-00001",
 								Namespace: namespace,
@@ -1140,14 +1141,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonCommit,
+									v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonCommit,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1160,7 +1161,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Stack: v1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -1179,7 +1180,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
 								Namespace:    namespace,
@@ -1187,16 +1188,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "2",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "2",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonCommit,
+									v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonCommit,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1208,7 +1209,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
@@ -1217,10 +1218,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
@@ -1275,7 +1276,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-1-00001",
 								Namespace: namespace,
@@ -1283,11 +1284,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
@@ -1300,7 +1301,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
@@ -1325,7 +1326,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
 								Namespace:    namespace,
@@ -1333,16 +1334,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "2",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "2",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonBuildpack,
+									v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonBuildpack,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
@@ -1354,7 +1355,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
@@ -1363,10 +1364,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
@@ -1421,7 +1422,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-1-00001",
 								Namespace: namespace,
@@ -1429,11 +1430,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
@@ -1446,7 +1447,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
@@ -1471,7 +1472,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-2-",
 								Namespace:    namespace,
@@ -1479,16 +1480,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "2",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "2",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
+									v1alpha2.BuildReasonAnnotation: v1alpha2.BuildReasonStack,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
@@ -1500,7 +1501,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
@@ -1509,17 +1510,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
 									},
 									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
 									LatestBuildImageGeneration: originalGeneration,
-									LatestBuildReason:          v1alpha1.BuildReasonStack,
+									LatestBuildReason:          v1alpha2.BuildReasonStack,
 									LatestImage:                image.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
@@ -1540,7 +1541,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image,
 						builder,
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-1-00001",
 								Namespace: namespace,
@@ -1548,11 +1549,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "2",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "2",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1564,12 +1565,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: "out-of-date-git-revision",
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   image.Spec.Tag + "@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1583,7 +1584,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								GenerateName: imageName + "-build-3-",
 								Namespace:    namespace,
@@ -1591,16 +1592,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel:     "3",
-									v1alpha1.ImageLabel:           imageName,
-									v1alpha1.ImageGenerationLabel: generation(image),
+									v1alpha2.BuildNumberLabel:     "3",
+									v1alpha2.ImageLabel:           imageName,
+									v1alpha2.ImageGenerationLabel: generation(image),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									v1alpha1.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha1.BuildReasonCommit}, ","),
+									v1alpha2.BuildReasonAnnotation: strings.Join([]string{v1alpha1.BuildReasonConfig, v1alpha2.BuildReasonCommit}, ","),
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1612,7 +1613,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								LastBuild: &v1alpha1.LastBuild{
+								LastBuild: &v1alpha2.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
@@ -1621,10 +1622,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionBuildExecuting("image-name-build-3-00001"),
@@ -1651,7 +1652,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image,
 						builder,
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "image-name-build-100001",
 								Namespace: namespace,
@@ -1659,11 +1660,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1676,7 +1677,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1706,7 +1707,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						image,
 						builder,
 						sourceResolver,
-						&v1alpha1.Build{
+						&v1alpha2.Build{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      image.Status.LatestBuildRef,
 								Namespace: namespace,
@@ -1714,11 +1715,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									*kmeta.NewControllerRef(image),
 								},
 								Labels: map[string]string{
-									v1alpha1.BuildNumberLabel: "1",
-									v1alpha1.ImageLabel:       imageName,
+									v1alpha2.BuildNumberLabel: "1",
+									v1alpha2.ImageLabel:       imageName,
 								},
 							},
-							Spec: v1alpha1.BuildSpec{
+							Spec: v1alpha2.BuildSpec{
 								Tags: []string{image.Spec.Tag},
 								Builder: v1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
@@ -1731,7 +1732,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 							},
-							Status: v1alpha1.BuildStatus{
+							Status: v1alpha2.BuildStatus{
 								LatestImage: image.Status.LatestImage,
 								Stack: v1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -1744,7 +1745,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											Status: corev1.ConditionTrue,
 										},
 										{
-											Type:   v1alpha1.ConditionBuilderReady,
+											Type:   v1alpha2.ConditionBuilderReady,
 											Status: corev1.ConditionTrue,
 										},
 									},
@@ -1774,10 +1775,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -1786,7 +1787,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status: corev1.ConditionTrue,
 											},
 											{
-												Type:   v1alpha1.ConditionBuilderReady,
+												Type:   v1alpha2.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
 											},
 										},
@@ -1820,10 +1821,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -1832,7 +1833,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status: corev1.ConditionUnknown,
 											},
 											{
-												Type:   v1alpha1.ConditionBuilderReady,
+												Type:   v1alpha2.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
 											},
 										},
@@ -1867,10 +1868,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Image{
+							Object: &v1alpha2.Image{
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
-								Status: v1alpha1.ImageStatus{
+								Status: v1alpha2.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -1879,9 +1880,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status: corev1.ConditionUnknown,
 											},
 											{
-												Type:    v1alpha1.ConditionBuilderReady,
+												Type:    v1alpha2.ConditionBuilderReady,
 												Status:  corev1.ConditionFalse,
-												Reason:  v1alpha1.BuilderNotReady,
+												Reason:  v1alpha2.BuilderNotReady,
 												Message: "Builder builder-name is not ready",
 											},
 										},
@@ -1984,11 +1985,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-func generation(i *v1alpha1.Image) string {
+func generation(i *v1alpha2.Image) string {
 	return strconv.Itoa(int(i.Generation))
 }
 
-func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
+func resolvedSourceResolver(image *v1alpha2.Image) *v1alpha1.SourceResolver {
 	sr := image.SourceResolver()
 	sr.ResolvedSource(v1alpha1.ResolvedSourceConfig{
 		Git: &v1alpha1.ResolvedGitSource{
@@ -2000,7 +2001,7 @@ func resolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
 	return sr
 }
 
-func unresolvedSourceResolver(image *v1alpha1.Image) *v1alpha1.SourceResolver {
+func unresolvedSourceResolver(image *v1alpha2.Image) *v1alpha1.SourceResolver {
 	return image.SourceResolver()
 }
 
@@ -2009,26 +2010,26 @@ func notReadyBuilder(builder *v1alpha1.Builder) runtime.Object {
 	return builder
 }
 
-func failedBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
+func failedBuilds(image *v1alpha2.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
 	return builds(image, sourceResolver, count, corev1alpha1.Condition{
 		Type:   corev1alpha1.ConditionSucceeded,
 		Status: corev1.ConditionFalse,
 	})
 }
 
-func successfulBuilds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
+func successfulBuilds(image *v1alpha2.Image, sourceResolver *v1alpha1.SourceResolver, count int) []runtime.Object {
 	return builds(image, sourceResolver, count, corev1alpha1.Condition{
 		Type:   corev1alpha1.ConditionSucceeded,
 		Status: corev1.ConditionTrue,
 	})
 }
 
-func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, count int, condition corev1alpha1.Condition) []runtime.Object {
+func builds(image *v1alpha2.Image, sourceResolver *v1alpha1.SourceResolver, count int, condition corev1alpha1.Condition) []runtime.Object {
 	var builds []runtime.Object
 	const runImageRef = "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb"
 
 	for i := 1; i <= count; i++ {
-		builds = append(builds, &v1alpha1.Build{
+		builds = append(builds, &v1alpha2.Build{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-build-%d", image.Name, i),
 				Namespace: image.Namespace,
@@ -2036,12 +2037,12 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 					*kmeta.NewControllerRef(image),
 				},
 				Labels: map[string]string{
-					v1alpha1.BuildNumberLabel: fmt.Sprintf("%d", i),
-					v1alpha1.ImageLabel:       image.Name,
+					v1alpha2.BuildNumberLabel: fmt.Sprintf("%d", i),
+					v1alpha2.ImageLabel:       image.Name,
 				},
 				CreationTimestamp: metav1.NewTime(time.Now().Add(time.Duration(i) * time.Minute)),
 			},
-			Spec: v1alpha1.BuildSpec{
+			Spec: v1alpha2.BuildSpec{
 				Tags: []string{image.Spec.Tag},
 				Builder: v1alpha1.BuildBuilderSpec{
 					Image: "builder-image/foo@sha256:112312",
@@ -2054,7 +2055,7 @@ func builds(image *v1alpha1.Image, sourceResolver *v1alpha1.SourceResolver, coun
 					},
 				},
 			},
-			Status: v1alpha1.BuildStatus{
+			Status: v1alpha2.BuildStatus{
 				LatestImage: fmt.Sprintf("%s@sha256:build-%d", image.Spec.Tag, i),
 				Stack: v1alpha1.BuildStack{
 					RunImage: runImageRef,
@@ -2087,7 +2088,7 @@ func conditionReadyUnknown() corev1alpha1.Conditions {
 			Status: corev1.ConditionUnknown,
 		},
 		{
-			Type:   v1alpha1.ConditionBuilderReady,
+			Type:   v1alpha2.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
@@ -2101,7 +2102,7 @@ func conditionBuildExecuting(buildName string) corev1alpha1.Conditions {
 			Message: fmt.Sprintf("%s is executing", buildName),
 		},
 		{
-			Type:   v1alpha1.ConditionBuilderReady,
+			Type:   v1alpha2.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
@@ -2114,7 +2115,7 @@ func conditionReady() corev1alpha1.Conditions {
 			Status: corev1.ConditionTrue,
 		},
 		{
-			Type:   v1alpha1.ConditionBuilderReady,
+			Type:   v1alpha2.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
@@ -2127,7 +2128,7 @@ func conditionNotReady() corev1alpha1.Conditions {
 			Status: corev1.ConditionFalse,
 		},
 		{
-			Type:   v1alpha1.ConditionBuilderReady,
+			Type:   v1alpha2.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
