@@ -50,6 +50,8 @@ spec:
         version: #@ data.values.version
     spec:
       serviceAccountName: controller
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
       - name: controller
         image: #@ data.values.controller_image

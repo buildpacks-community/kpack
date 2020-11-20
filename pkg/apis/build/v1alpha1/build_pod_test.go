@@ -205,6 +205,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 			})
 
+			it("creates a pod with the correct node selector", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
+			})
+
 			it("configures the FS Mount Group with the supplied group", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -761,6 +768,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				require.Equal(t, corev1.PodSpec{
 					ServiceAccountName: build.Spec.ServiceAccount,
+					NodeSelector: map[string]string{
+						"kubernetes.io/os": "linux",
+					},
 					Volumes: []corev1.Volume{
 						{
 							Name: "secret-volume-docker-secret-1",

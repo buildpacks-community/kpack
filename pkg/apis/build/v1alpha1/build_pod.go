@@ -326,6 +326,9 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 				}
 			}),
 			ServiceAccountName: b.Spec.ServiceAccount,
+			NodeSelector: map[string]string{
+				"kubernetes.io/os": "linux",
+			},
 			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
@@ -438,6 +441,9 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: b.Spec.ServiceAccount,
+			NodeSelector: map[string]string{
+				"kubernetes.io/os": "linux",
+			},
 			Volumes:            secretVolumes,
 			RestartPolicy:      corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
