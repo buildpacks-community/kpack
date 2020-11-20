@@ -120,10 +120,7 @@ func (b *Build) Finished() bool {
 }
 
 func (b *Build) NotaryV1Config() *NotaryV1Config {
-	if b == nil {
-		return nil
-	}
-	if b.Spec.Notary == nil {
+	if b == nil || b.Spec.Notary == nil {
 		return nil
 	}
 	return b.Spec.Notary.V1
