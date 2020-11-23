@@ -4557,6 +4557,12 @@
           "type": "integer",
           "format": "int64"
         },
+        "order": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+          }
+        },
         "stack": {
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"
         }
