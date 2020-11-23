@@ -4381,6 +4381,9 @@
         "lastBuild": {
           "$ref": "#/definitions/kpack.build.v1alpha1.LastBuild"
         },
+        "notary": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryConfig"
+        },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
@@ -5073,6 +5076,9 @@
         "imageTaggingStrategy": {
           "type": "string"
         },
+        "notary": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryConfig"
+        },
         "serviceAccount": {
           "type": "string"
         },
@@ -5161,6 +5167,40 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "tag": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha1.NotaryConfig": {
+      "type": "object",
+      "properties": {
+        "v1": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryV1Config"
+        }
+      }
+    },
+    "kpack.build.v1alpha1.NotarySecretRef": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha1.NotaryV1Config": {
+      "type": "object",
+      "required": [
+        "url",
+        "secretRef"
+      ],
+      "properties": {
+        "secretRef": {
+          "$ref": "#/definitions/kpack.build.v1alpha1.NotarySecretRef"
+        },
+        "url": {
           "type": "string"
         }
       }

@@ -68,6 +68,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus":             schema_pkg_apis_build_v1alpha1_ImageStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild":               schema_pkg_apis_build_v1alpha1_LastBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec":   schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig":            schema_pkg_apis_build_v1alpha1_NotaryConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef":         schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config":          schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry":              schema_pkg_apis_build_v1alpha1_OrderEntry(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry":                schema_pkg_apis_build_v1alpha1_Registry(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource":      schema_pkg_apis_build_v1alpha1_ResolvedBlobSource(ref),
@@ -357,12 +360,17 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild"),
 						},
 					},
+					"notary": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig"),
+						},
+					},
 				},
 				Required: []string{"source"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -1685,12 +1693,17 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild"),
 						},
 					},
+					"notary": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig"),
+						},
+					},
 				},
 				Required: []string{"tag", "source"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
@@ -1850,6 +1863,70 @@ func schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha1_NotaryConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"v1": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef"),
+						},
+					},
+				},
+				Required: []string{"url", "secretRef"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef"},
 	}
 }
 
