@@ -253,5 +253,45 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			err := image.Validate(apis.WithinUpdate(ctx, original))
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cacheSize\ncurrent: 5G, requested: 4G")
 		})
+
+		when("validating the notary config", func() {
+			it("handles a valid notary config", func() {
+				image.Spec.Notary = &NotaryConfig{
+					V1: &NotaryV1Config{
+						URL: "some-url",
+						SecretRef: NotarySecretRef{
+							Name: "some-secret-name",
+						},
+					},
+				}
+				assert.Nil(t, image.Validate(ctx))
+			})
+
+			it("handles an empty notary url", func() {
+				image.Spec.Notary = &NotaryConfig{
+					V1: &NotaryV1Config{
+						URL: "",
+						SecretRef: NotarySecretRef{
+							Name: "some-secret-name",
+						},
+					},
+				}
+				err := image.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.url")
+			})
+
+			it("handles an empty notary secret ref", func() {
+				image.Spec.Notary = &NotaryConfig{
+					V1: &NotaryV1Config{
+						URL: "some-url",
+						SecretRef: NotarySecretRef{
+							Name: "",
+						},
+					},
+				}
+				err := image.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.secretRef.name")
+			})
+		})
 	})
 }

@@ -55,6 +55,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Source:         sourceResolver.SourceConfig(),
 			CacheName:      im.Status.BuildCacheName,
 			LastBuild:      lastBuild(latestBuild),
+			Notary:         im.Spec.Notary,
 		},
 	}
 }

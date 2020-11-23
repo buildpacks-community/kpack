@@ -29,6 +29,8 @@ const (
 	workspaceDir              = "workspace-dir"
 	imagePullSecretsDirName   = "image-pull-secrets-dir"
 	builderPullSecretsDirName = "builder-pull-secrets-dir"
+	notaryDirName             = "notary-dir"
+	reportDirName             = "report-dir"
 )
 
 type BuildPodImages struct {
@@ -84,6 +86,16 @@ var (
 		MountPath: "/builderPullSecrets",
 		ReadOnly:  true,
 	}
+	notaryV1Volume = corev1.VolumeMount{
+		Name:      notaryDirName,
+		MountPath: "/var/notary/v1",
+		ReadOnly:  true,
+	}
+	reportVolume = corev1.VolumeMount{
+		Name:      reportDirName,
+		MountPath: "/var/report",
+		ReadOnly:  false,
+	}
 )
 
 func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig) (*corev1.Pod, error) {
@@ -128,12 +140,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
-				{
-					Name:            "completion",
-					Image:           config.CompletionImage,
-					ImagePullPolicy: corev1.PullIfNotPresent,
-					Resources:       b.Spec.Resources,
-				},
+				b.completionContainer(config, secretArgs, secretVolumeMounts),
 			},
 			SecurityContext: &corev1.PodSecurityContext{
 				FSGroup: &bc.Gid,
@@ -301,12 +308,14 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 								"-analyzed=/layers/analyzed.toml",
 								"-cache-dir=/cache",
 								"-project-metadata=/layers/project-metadata.toml",
+								"-report=/var/report/report.toml",
 							}, b.Spec.Tags...),
 							VolumeMounts: []corev1.VolumeMount{
 								layersVolume,
 								workspaceVolume,
 								homeVolume,
 								cacheVolume,
+								reportVolume,
 							},
 							Env: []corev1.EnvVar{
 								homeEnv,
@@ -350,12 +359,69 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
+				corev1.Volume{
+					Name: reportDirName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
 				b.Spec.Source.Source().ImagePullSecretsVolume(),
 				builderSecretVolume(b.Spec.Builder),
+				b.notarySecretVolume(),
 			), bindingVolumes...),
 			ImagePullSecrets: b.Spec.Builder.ImagePullSecrets,
 		},
 	}, nil
+}
+
+func (b *Build) completionContainer(images BuildPodImages, secretArgs []string, secretVolumeMounts []corev1.VolumeMount) corev1.Container {
+	config := b.NotaryV1Config()
+	if config == nil {
+		return corev1.Container{
+			Name:            "completion",
+			Image:           images.CompletionImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Resources:       b.Spec.Resources,
+		}
+	}
+
+	return corev1.Container{
+		Name:  "completion",
+		Image: images.CompletionImage,
+		Args: append(
+			[]string{"-notary-v1-url=" + config.URL},
+			secretArgs...,
+		),
+		Resources: b.Spec.Resources,
+		VolumeMounts: append(
+			secretVolumeMounts,
+			notaryV1Volume,
+			reportVolume,
+		),
+		ImagePullPolicy: corev1.PullIfNotPresent,
+	}
+}
+
+func (b *Build) notarySecretVolume() corev1.Volume {
+	config := b.NotaryV1Config()
+	if config == nil {
+		return corev1.Volume{
+			Name: notaryDirName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		}
+
+	}
+
+	return corev1.Volume{
+		Name: notaryDirName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: config.SecretRef.Name,
+			},
+		},
+	}
 }
 
 func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {

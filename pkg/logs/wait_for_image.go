@@ -142,7 +142,7 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 		return "", errors.New("unexpected object received")
 	}
 
-	if condition:= build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
+	if condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
 		if condition.Message != "" {
 			return "", errors.Errorf("update to image failed: %s", condition.Message)
 		}
