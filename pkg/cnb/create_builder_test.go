@@ -264,6 +264,21 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 
+			assert.Equal(t, builderRecord.Order, []v1alpha1.OrderEntry{
+				{
+					Group: []v1alpha1.BuildpackRef{
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
+							Optional: false,
+						},
+						{
+							BuildpackInfo: v1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
+							Optional: true,
+						},
+					},
+				},
+			})
+
 			assert.Len(t, registryClient.SavedImages(), 1)
 			savedImage := registryClient.SavedImages()[tag]
 

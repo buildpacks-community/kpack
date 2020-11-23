@@ -376,6 +376,13 @@ func (in *BuilderRecord) DeepCopyInto(out *BuilderRecord) {
 		*out = make(BuildpackMetadataList, len(*in))
 		copy(*out, *in)
 	}
+	if in.Order != nil {
+		in, out := &in.Order, &out.Order
+		*out = make([]OrderEntry, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -422,6 +429,13 @@ func (in *BuilderStatus) DeepCopyInto(out *BuilderStatus) {
 		in, out := &in.BuilderMetadata, &out.BuilderMetadata
 		*out = make(BuildpackMetadataList, len(*in))
 		copy(*out, *in)
+	}
+	if in.Order != nil {
+		in, out := &in.Order, &out.Order
+		*out = make([]OrderEntry, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	out.Stack = in.Stack
 	return

@@ -12,6 +12,7 @@ type BuilderRecord struct {
 	Image      string
 	Stack      BuildStack
 	Buildpacks BuildpackMetadataList
+	Order      []OrderEntry
 }
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
@@ -25,6 +26,7 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 			Status:             corev1.ConditionTrue,
 		},
 	}
+	bs.Order = record.Order
 }
 
 func (cb *BuilderStatus) ErrorCreate(err error) {
