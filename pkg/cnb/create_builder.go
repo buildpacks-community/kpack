@@ -71,6 +71,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 			ID:       clusterStack.Status.Id,
 		},
 		Buildpacks: buildpackMetadata(builderBldr.buildpacks()),
+		Order: builderBldr.order,
 	}, nil
 }
 

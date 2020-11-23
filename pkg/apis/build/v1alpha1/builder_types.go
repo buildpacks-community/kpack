@@ -41,6 +41,7 @@ type NamespacedBuilderSpec struct {
 type BuilderStatus struct {
 	corev1alpha1.Status `json:",inline"`
 	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata,omitempty"`
+	Order               []OrderEntry          `json:"order,omitempty"`
 	Stack               BuildStack            `json:"stack,omitempty"`
 	LatestImage         string                `json:"latestImage,omitempty"`
 }
