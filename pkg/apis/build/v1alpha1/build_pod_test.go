@@ -857,7 +857,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Contains(t, pod.Spec.Containers[0].Args, "-notary-v1-url=some-notary-url")
+				require.Equal(t, pod.Spec.Containers[0].Args, []string{
+					directExecute,
+					"completion",
+					"-notary-v1-url=some-notary-url",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+				})
 
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 					Name:      "notary-dir",

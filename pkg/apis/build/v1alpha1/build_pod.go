@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	directExecute   = "--"
-	buildInitBinary = "build-init"
-	rebaseBinary    = "rebase"
+	directExecute    = "--"
+	buildInitBinary  = "build-init"
+	completionBinary = "completion"
+	rebaseBinary     = "rebase"
 
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
@@ -389,7 +390,11 @@ func (b *Build) completionContainer(images BuildPodImages, secretArgs []string, 
 		Name:  "completion",
 		Image: images.CompletionImage,
 		Args: append(
-			[]string{"-notary-v1-url=" + config.URL},
+			[]string{
+				directExecute,
+				completionBinary,
+				"-notary-v1-url=" + config.URL,
+			},
 			secretArgs...,
 		),
 		Resources: b.Spec.Resources,
@@ -444,8 +449,8 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
-			Volumes:            secretVolumes,
-			RestartPolicy:      corev1.RestartPolicyNever,
+			Volumes:       secretVolumes,
+			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
 					Name:            "completion",
