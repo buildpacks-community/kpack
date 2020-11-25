@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
