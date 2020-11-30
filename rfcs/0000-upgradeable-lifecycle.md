@@ -12,27 +12,28 @@ There are 2 major paths that we can go down to provide this functionality, each 
 	2. Provide a script similiar to our `hack/lifecycle.go` that users can run 
 	3. Add the concept of lifecycle version to our descriptor files so that `kp import` can upgrade the lifecycle.  
 
-2. A more complex approach that would treat the lifecycle as a resource like a store or stack. Lifecycles would be tied to each builder so that different builders can have different lifecycle versions.This has the benefit of allowing users to test new lifecycle versions without having to spin up another cluster. Also, users who created their own buildpack would not have to worry about a newer lifecycle dropping support for the Buildpack Api they are using. 
+2. A more complex approach that would treat the lifecycle as a resource like a store or stack. Lifecycles would be tied to each builder so that different builders can have different lifecycle versions.This has the benefit of allowing users to test new lifecycle versions without having to spin up another cluster. Also, users who created their own buildpack would not have to worry about a newer lifecycle dropping support for the Buildpack Api they are using. Due to the operator focused nature of this resource, and its similarity to ClusterStores and ClusterStacks.
 
 	On the kp side, we could create commands that would assist users in uploading or relocating the lifecycle to their registry as well as managing existing lifecycles like they do with ClusterStores or ClusterStacks:
 	
-	`kp lifecycle create my-lifecycle --image "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --tag "gcr.io/my-registry/lifecycle:v0.9.2" --namespace default` 
+	`kp clusterlifecycle create my-lifecycle --image "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --tag "gcr.io/my-registry/lifecycle:v0.9.2"` 
 	or  
-	`kp lifecycle create my-lifecycle --image "gcr.io/my-registry/lifecycle:v0.9.2" --namespace default`
+	`kp clusterlifecycle create my-lifecycle --image "gcr.io/my-registry/lifecycle:v0.9.2"`
 
 	The spec for a lifecycle resource could look something like this:
 
 	```yaml
 	
 	apiVersion: kpack.io/v1alpha1
-	kind: Lifecycle
+	kind: ClusterLifecycle
 	metadata:
 	  name: default
 	spec:  
 	  image: "gcr.io/some-registry/lifecycle:v0.9.2" 
 	```
-	We could also make a ClusterLifecycle resource
-
+	
+	This approach would also allow us to add lifecycles to descriptor files for easier updating.
+	
 	On the (Cluster)Builder side of things, we could modify the spec to add a `lifecycle` field:
 	
 	```yaml
@@ -47,7 +48,7 @@ There are 2 major paths that we can go down to provide this functionality, each 
   	  tag: gcr.io/some-registry/builder
   	  lifecycle:
   	    name: default
-  	    kind: Lifecycle
+  	    kind: ClusterLifecycle
   	  stack:
    	    name: default
    	    kind: ClusterStack
