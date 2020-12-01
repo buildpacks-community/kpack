@@ -21,7 +21,6 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
 - Check out the documentation on kpack concepts:
     - [Stacks](docs/stack.md)
     - [Stores](docs/store.md)
-    - [Builders](docs/builders.md)
     - [Images](docs/image.md)
     - [Secrets](docs/secrets.md)
     - [Builders](docs/builders.md)
