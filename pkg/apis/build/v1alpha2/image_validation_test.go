@@ -219,7 +219,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates build services", func() {
-			image.Spec.Build.Services = []Service{
+			image.Spec.Build.Services = Services{
 				{Kind: "Secret"},
 			}
 

@@ -61,10 +61,7 @@ type BuildSpec struct {
 }
 
 // +k8s:openapi-gen=true
-type Services []Service
-
-// +k8s:openapi-gen=true
-type Service corev1.ObjectReference
+type Services []corev1.ObjectReference
 
 // +k8s:openapi-gen=true
 type LastBuild struct {

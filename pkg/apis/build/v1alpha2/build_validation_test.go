@@ -148,7 +148,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates services have a name", func() {
-			build.Spec.Services = []Service{
+			build.Spec.Services = Services{
 				{Kind: "Secret"},
 			}
 
@@ -156,23 +156,15 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates services have a valid name", func() {
-			build.Spec.Services = []Service{
+			build.Spec.Services = Services{
 				{Name: "&", Kind: "Secret"},
 			}
 
 			assertValidationError(build, apis.ErrInvalidValue("&", "spec.services[0].name"))
 		})
 
-		it("validates services have a valid kind", func() {
-			build.Spec.Services = []Service{
-				{Name: "other-apm", Kind: "invalid"},
-			}
-
-			assertValidationError(build, apis.ErrInvalidValue("invalid", "spec.services[0].kind"))
-		})
-
 		it("validates services name uniqueness", func() {
-			build.Spec.Services = []Service{
+			build.Spec.Services = Services{
 				{
 					Name: "apm",
 					Kind: "Secret",

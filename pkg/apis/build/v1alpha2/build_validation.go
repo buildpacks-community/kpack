@@ -53,6 +53,8 @@ func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldErr
 	return nil
 }
 
+var serviceNameRE = regexp.MustCompile(`^[a-z0-9\-\.]{1,253}$`)
+
 func (ss Services) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 	names := map[string]int{}
@@ -68,28 +70,12 @@ func (ss Services) Validate(ctx context.Context) *apis.FieldError {
 			)
 		}
 		names[s.Name] = i
-		errs = errs.Also(s.Validate(ctx).ViaIndex(i))
+		if s.Name == "" {
+			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
+		} else if !serviceNameRE.MatchString(s.Name) {
+			errs = errs.Also(apis.ErrInvalidValue(s.Name, "name").ViaIndex(i))
+		}
 	}
-	return errs
-}
-
-var serviceNameRE = regexp.MustCompile(`^[a-z0-9\-\.]{1,253}$`)
-
-func (s *Service) Validate(context context.Context) *apis.FieldError {
-	var errs *apis.FieldError
-
-	if s.Name == "" {
-		errs = errs.Also(apis.ErrMissingField("name"))
-	} else if !serviceNameRE.MatchString(s.Name) {
-		errs = errs.Also(apis.ErrInvalidValue(s.Name, "name"))
-	}
-
-	switch s.Kind {
-	case "Secret":
-	default:
-		errs = errs.Also(apis.ErrInvalidValue(s.Kind, "kind"))
-	}
-
 	return errs
 }
 

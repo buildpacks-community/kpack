@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -86,6 +87,11 @@ func main() {
 		log.Fatalf("could not get kubernetes client: %s", err)
 	}
 
+	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
+	if err != nil {
+		log.Fatalf("could not get dynamic client: %s", err)
+	}
+
 	options := reconciler.Options{
 		Logger:                  logger,
 		Client:                  client,
@@ -129,6 +135,7 @@ func main() {
 			RebaseImage:     *rebaseImage,
 		},
 		K8sClient:       k8sClient,
+		DynamicClient:   dynamicClient,
 		KeychainFactory: keychainFactory,
 		ImageFetcher:    &registry.Client{},
 	}

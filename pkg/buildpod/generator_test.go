@@ -13,11 +13,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/buildpod"
+	buildpodfakes "github.com/pivotal/kpack/pkg/buildpod/fake"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -26,6 +29,10 @@ import (
 
 func TestGenerator(t *testing.T) {
 	spec.Run(t, "Generator", testGenerator)
+}
+
+func init() {
+	buildpodfakes.AddToScheme(scheme.Scheme)
 }
 
 func testGenerator(t *testing.T, when spec.G, it spec.S) {
@@ -107,6 +114,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 
+		ps := buildpodfakes.ProvisionedService{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ProvisionedService",
+				APIVersion: "v1alpha1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-provisioned-service",
+				Namespace: namespace,
+			},
+			Status: buildpodfakes.ProvisionedServiceStatus{
+				Binding: v1.LocalObjectReference{Name: "some-binding-secret"},
+			},
+		}
+		fakeDynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, &ps)
+
 		it("returns pod config with secrets on build's service account", func() {
 			secretRef := registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
@@ -154,6 +176,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
 				K8sClient:       fakeK8sClient,
+				DynamicClient:   fakeDynamicClient,
 				KeychainFactory: keychainFactory,
 				ImageFetcher:    imageFetcher,
 			}
@@ -164,6 +187,10 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				buildBuilderSpec: v1alpha1.BuildBuilderSpec{
 					Image:            "some/builde@sha256:1b2911dd8eabb4bdb0bda6705158daa4149adb5ca59dc990146772c4c6deecb4",
 					ImagePullSecrets: builderPullSecrets,
+				},
+				services: v1alpha2.Services{
+					{Name: "some-service", Kind: "Secret"},
+					{Name: "some-provisioned-service", Kind: "ProvisionedService", APIVersion: "fake.kpack.io/v1alpha1"},
 				},
 			}
 
@@ -184,10 +211,14 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Gid:         5678,
 					PlatformAPI: "0.5",
 				},
+				ServiceBindings: []v1alpha2.ServiceBinding{
+					{Name: "some-service", SecretRef: &corev1.LocalObjectReference{Name: "some-service"}},
+					{Name: "some-provisioned-service", SecretRef: &corev1.LocalObjectReference{Name: "some-binding-secret"}},
+				},
 			}}, build.buildPodCalls)
 		})
 
-		it("rejects a build with a binding secret that is attached to a service account", func() {
+		it("rejects a build with a service binding secret that is attached to a service account", func() {
 			buildPodConfig := v1alpha2.BuildPodImages{}
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
@@ -198,7 +229,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			var build = &testBuildPodable{
 				namespace: namespace,
-				services: []v1alpha2.Service{
+				services: v1alpha2.Services{
 					{
 						Name: dockerSecret.Name,
 						Kind: "Secret",
@@ -208,6 +239,30 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			pod, err := generator.Generate(build)
 			require.EqualError(t, err, fmt.Sprintf("build rejected: service %q uses forbidden secret %q", dockerSecret.Name, dockerSecret.Name))
+			require.Nil(t, pod)
+		})
+
+		it("rejects a build with a v1alpha1 service binding secret that is attached to a service account", func() {
+			buildPodConfig := v1alpha2.BuildPodImages{}
+			generator := &buildpod.Generator{
+				BuildPodConfig:  buildPodConfig,
+				K8sClient:       fakeK8sClient,
+				KeychainFactory: keychainFactory,
+				ImageFetcher:    imageFetcher,
+			}
+
+			var build = &testBuildPodable{
+				namespace: namespace,
+				v1Bindings: v1alpha1.Bindings{
+					{
+						Name:      "some-binding",
+						SecretRef: &corev1.LocalObjectReference{Name: dockerSecret.Name},
+					},
+				},
+			}
+
+			pod, err := generator.Generate(build)
+			require.EqualError(t, err, fmt.Sprintf("build rejected: service \"some-binding\" uses forbidden secret %q", dockerSecret.Name))
 			require.Nil(t, pod)
 		})
 	})
@@ -224,13 +279,15 @@ type testBuildPodable struct {
 	serviceAccount   string
 	namespace        string
 	buildPodCalls    []buildPodCall
-	services         []v1alpha2.Service
+	services         v1alpha2.Services
+	v1Bindings       v1alpha1.Bindings
 }
 
 type buildPodCall struct {
 	BuildPodImages        v1alpha2.BuildPodImages
 	Secrets               []corev1.Secret
 	BuildPodBuilderConfig v1alpha2.BuildPodBuilderConfig
+	ServiceBindings       []v1alpha2.ServiceBinding
 }
 
 func (tb *testBuildPodable) GetName() string {
@@ -249,15 +306,20 @@ func (tb *testBuildPodable) BuilderSpec() v1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images v1alpha2.BuildPodImages, secrets []corev1.Secret, config v1alpha2.BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images v1alpha2.BuildPodImages, secrets []corev1.Secret, config v1alpha2.BuildPodBuilderConfig, bindings []v1alpha2.ServiceBinding) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
 		BuildPodImages:        images,
 		Secrets:               secrets,
 		BuildPodBuilderConfig: config,
+		ServiceBindings:       bindings,
 	})
 	return &corev1.Pod{}, nil
 }
 
-func (tb *testBuildPodable) Services() []v1alpha2.Service {
+func (tb *testBuildPodable) Services() v1alpha2.Services {
 	return tb.services
+}
+
+func (tb *testBuildPodable) V1Alpha1Bindings() (v1alpha1.Bindings, error) {
+	return tb.v1Bindings, nil
 }
