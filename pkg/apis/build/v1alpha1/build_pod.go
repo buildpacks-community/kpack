@@ -378,8 +378,8 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
-			Volumes:            secretVolumes,
-			RestartPolicy:      corev1.RestartPolicyNever,
+			Volumes:       secretVolumes,
+			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
 					Name:            "completion",
