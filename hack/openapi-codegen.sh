@@ -13,7 +13,7 @@ cd "$ROOT"
 
 ${OPENAPI_GEN_BIN} \
   -h ./hack/boilerplate/boilerplate.go.txt \
-  -i github.com/pivotal/kpack/pkg/apis/build/v1alpha1,github.com/pivotal/kpack/pkg/apis/core/v1alpha1 \
+  -i github.com/pivotal/kpack/pkg/apis/build/v1alpha1,github.com/pivotal/kpack/pkg/apis/build/v1alpha2,github.com/pivotal/kpack/pkg/apis/core/v1alpha1 \
   -p ./pkg/openapi \
   -o ./
 

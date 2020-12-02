@@ -71,11 +71,27 @@ func main() {
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
 			Group:   "kpack.io",
+			Version: "v1alpha2",
+			Kind:    "Build",
+			Plural:  "builds",
+			Ref:     "#/definitions/kpack.build.v1alpha2.Build",
+			ListRef: "#/definitions/kpack.build.v1alpha2.BuildList",
+		}),
+		getCRDPaths(namespaceTemplate, CRD{
+			Group:   "kpack.io",
 			Version: "v1alpha1",
 			Kind:    "Image",
 			Plural:  "images",
 			Ref:     "#/definitions/kpack.build.v1alpha1.Image",
 			ListRef: "#/definitions/kpack.build.v1alpha1.ImageList",
+		}),
+		getCRDPaths(namespaceTemplate, CRD{
+			Group:   "kpack.io",
+			Version: "v1alpha2",
+			Kind:    "Image",
+			Plural:  "images",
+			Ref:     "#/definitions/kpack.build.v1alpha2.Image",
+			ListRef: "#/definitions/kpack.build.v1alpha2.ImageList",
 		}),
 		getCRDPaths(namespaceTemplate, CRD{
 			Group:   "kpack.io",
@@ -117,7 +133,7 @@ func main() {
 			Info: &spec.Info{
 				InfoProps: spec.InfoProps{
 					Title:   "kpack",
-					Version: "v0.1.3",
+					Version: "v0.2.0",
 				},
 			},
 			Paths: &spec.Paths{
