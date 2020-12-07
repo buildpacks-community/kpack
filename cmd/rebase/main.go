@@ -23,9 +23,7 @@ const (
 var (
 	runImage       = flag.String("run-image", os.Getenv("RUN_IMAGE"), "The new run image to rebase")
 	lastBuiltImage = flag.String("last-built-image", os.Getenv("LAST_BUILT_IMAGE"), "The previous image to rebase")
-
-	buildReasons = flag.String("build-reasons", os.Getenv("BUILD_REASONS"), "Comma separated list of Build reasons. Possible reasons are TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK")
-	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string mapping Build reason(s) to their changes")
+	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -43,7 +41,7 @@ func main() {
 	tags := flag.Args()
 	logger := log.New(os.Stdout, "", 0)
 
-	if err := buildchange.Log(logger, *buildReasons, *buildChanges); err != nil {
+	if err := buildchange.Log(logger, *buildChanges); err != nil {
 		logger.Println(err)
 	}
 

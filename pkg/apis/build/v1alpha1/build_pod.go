@@ -34,7 +34,6 @@ const (
 	notaryDirName             = "notary-dir"
 	reportDirName             = "report-dir"
 
-	envVarBuildReasons = "BUILD_REASONS"
 	envVarBuildChanges = "BUILD_CHANGES"
 )
 
@@ -177,10 +176,6 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							corev1.EnvVar{
 								Name:  "RUN_IMAGE",
 								Value: bc.RunImage,
-							},
-							corev1.EnvVar{
-								Name:  envVarBuildReasons,
-								Value: b.BuildReason(),
 							},
 							corev1.EnvVar{
 								Name:  envVarBuildChanges,
@@ -486,10 +481,6 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 						b.Spec.Tags,
 					),
 					Env: []corev1.EnvVar{
-						{
-							Name:  envVarBuildReasons,
-							Value: b.BuildReason(),
-						},
 						{
 							Name:  envVarBuildChanges,
 							Value: b.BuildChanges(),

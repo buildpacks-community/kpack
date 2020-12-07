@@ -681,8 +681,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {}
@@ -697,7 +698,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -769,8 +770,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {}
@@ -785,7 +787,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -857,8 +859,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {}
@@ -873,7 +876,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -946,8 +949,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {}
@@ -962,7 +966,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1033,8 +1037,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonConfig,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {}
@@ -1049,7 +1054,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1164,12 +1169,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										v1alpha1.BuildReasonConfig,
 									}, ","),
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "COMMIT": {
+[
+  {
+    "reason": "COMMIT",
     "old": "out-of-date-git-revision",
     "new": "1234567-resolved"
   },
-  "CONFIG": {
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {
@@ -1189,7 +1196,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1314,7 +1321,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonCommit,
-									v1alpha1.BuildChangesAnnotation: `{"COMMIT":{"old":"1234567","new":"new-commit"}}`,
+									v1alpha1.BuildChangesAnnotation: `[{"reason":"COMMIT","old":"1234567","new":"new-commit"}]`,
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1462,8 +1469,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonBuildpack,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "BUILDPACK": {
+[
+  {
+    "reason": "BUILDPACK",
     "old": [
       {
         "id": "io.buildpack",
@@ -1477,7 +1485,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     ]
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1625,12 +1633,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Annotations: map[string]string{
 									v1alpha1.BuildReasonAnnotation: v1alpha1.BuildReasonStack,
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "STACK": {
+[
+  {
+    "reason": "STACK",
     "old": "sha256:42841631725942db48b7ba8b788b97374a2ada34c84ee02ca5e02ef3d4b0dfca",
     "new": "sha256:01ea3600f15a73f0ad445351c681eb0377738f5964cbcd2bab0cfec9ca891a08"
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{
@@ -1747,12 +1756,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										v1alpha1.BuildReasonConfig,
 									}, ","),
 									v1alpha1.BuildChangesAnnotation: testhelpers.CompactJSON(`
-{
-  "COMMIT": {
+[
+  {
+    "reason": "COMMIT",
     "old": "out-of-date-git-revision",
     "new": "1234567-resolved"
   },
-  "CONFIG": {
+  {
+    "reason": "CONFIG",
     "old": {
       "resources": {},
       "source": {
@@ -1772,7 +1783,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`),
+]`),
 								},
 							},
 							Spec: v1alpha1.BuildSpec{

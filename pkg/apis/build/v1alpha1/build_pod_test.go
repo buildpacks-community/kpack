@@ -829,10 +829,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							},
 							Env: []corev1.EnvVar{
 								{
-									Name:  "BUILD_REASONS",
-									Value: v1alpha1.BuildReasonStack,
-								},
-								{
 									Name:  "BUILD_CHANGES",
 									Value: "some-stack-change",
 								},

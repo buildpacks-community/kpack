@@ -30,8 +30,7 @@ var (
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 
-	buildReasons = flag.String("build-reasons", os.Getenv("BUILD_REASONS"), "Comma separated list of Build reasons. Possible reasons are TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK")
-	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string mapping Build reason(s) to their changes")
+	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
@@ -63,7 +62,7 @@ func main() {
 
 	logger := log.New(os.Stdout, "", 0)
 
-	if err := buildchange.Log(logger, *buildReasons, *buildChanges); err != nil {
+	if err := buildchange.Log(logger, *buildChanges); err != nil {
 		logger.Println(err)
 	}
 

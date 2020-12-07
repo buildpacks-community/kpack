@@ -2,10 +2,8 @@ package buildchange_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -24,156 +22,128 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 	cp := buildchange.NewChangeProcessor()
 
 	when("no changes processed", func() {
-		it("returns HasChanges as false", func() {
-			assert.Equal(t, false, cp.HasChanges())
-		})
-
-		it("returns ReasonsStr as empty string", func() {
-			assert.Equal(t, "", cp.ReasonsStr())
-		})
-
-		it("returns ChangesStr as empty string and does not error", func() {
-			changesStr, err := cp.ChangesStr()
+		it("returns the correct ChangeSummary and does not error", func() {
+			summary, err := cp.Summarize()
 			assert.NoError(t, err)
-			assert.Equal(t, "", changesStr)
+			assert.False(t, summary.HasChanges)
+			assert.Empty(t, summary.ReasonsStr)
+			assert.Empty(t, summary.ChangesStr)
+		})
+	})
+
+	when("nil change is processed", func() {
+		it("returns the correct ChangeSummary and does not error", func() {
+			summary, err := cp.Process(nil).Summarize()
+			assert.NoError(t, err)
+			assert.False(t, summary.HasChanges)
+			assert.Empty(t, summary.ReasonsStr)
+			assert.Empty(t, summary.ChangesStr)
 		})
 	})
 
 	when("single change processed", func() {
-		when("TriggerChange", func() {
-			when("invalid", func() {
-				change := buildchange.TriggerChange{New: "invalid-time-string"}
+		when("TRIGGER", func() {
+			when("date string is given in unsupported format", func() {
+				change := buildchange.NewTriggerChange("bad date string")
+				expectedErrorStr := `error determining if build is required for reason 'TRIGGER': parsing time "bad date string" as "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000": cannot parse "bad date string" as "2006"`
 
-				it("returns HasChanges as false", func() {
-					assert.False(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as empty string", func() {
-					assert.Equal(t, "", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as empty string", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					assert.NoError(t, err)
-					assert.Equal(t, "", changesStr)
+				it("errors for Summarize", func() {
+					_, err := cp.Process(change).Summarize()
+					assert.Error(t, err)
+					assert.Equal(t, expectedErrorStr, err.Error())
 				})
 			})
 
-			when("valid", func() {
-				change := buildchange.TriggerChange{New: "2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826"}
+			when("date string is given in supported format", func() {
+				change := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
+				expectedReasonsStr := "TRIGGER"
+				expectedChangesStr := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "TRIGGER",
+    "old": "",
+    "new": "A new build was manually triggered on Fri, 20 Nov 2020 15:38:15 -0500"
+  }
+]`)
 
-				it("returns HasChanges as true", func() {
-					assert.True(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as TRIGGER", func() {
-					assert.Equal(t, "TRIGGER", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as a JSON string mapping TRIGGER to TriggerChange", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					expectedChangesStr := fmt.Sprintf(`{"TRIGGER":{"new":"%s"}}`, change.New)
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, expectedChangesStr, changesStr)
+					assert.True(t, summary.HasChanges)
+					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					changesMap := map[string]buildchange.TriggerChange{}
-					err = json.Unmarshal([]byte(changesStr), &changesMap)
+					var changes []buildchange.GenericChange
+					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
 					assert.NoError(t, err)
-
-					unmarshalledChange, ok := changesMap["TRIGGER"]
-					assert.True(t, ok)
-					assert.True(t, cmp.Equal(change, unmarshalledChange))
 				})
 			})
 		})
 
-		when("CommitChange", func() {
-			when("invalid", func() {
-				change := buildchange.CommitChange{Old: "same-revision", New: "same-revision"}
+		when("COMMIT", func() {
+			when("has no difference", func() {
+				change := buildchange.NewCommitChange("same-revision", "same-revision")
 
-				it("returns HasChanges as false", func() {
-					assert.False(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as empty string", func() {
-					assert.Equal(t, "", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as empty string", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, "", changesStr)
+					assert.False(t, summary.HasChanges)
+					assert.Empty(t, summary.ReasonsStr)
+					assert.Empty(t, summary.ChangesStr)
 				})
 			})
 
-			when("valid", func() {
-				change := buildchange.CommitChange{Old: "old-revision", New: "new-revision"}
+			when("has difference", func() {
+				change := buildchange.NewCommitChange("old-revision", "new-revision")
+				expectedReasonsStr := "COMMIT"
+				expectedChangesStr := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "COMMIT",
+    "old": "old-revision",
+    "new": "new-revision"
+  }
+]`)
 
-				it("returns reasons as COMMIT", func() {
-					assert.Equal(t, "COMMIT", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns changes as a JSON string mapping COMMIT to CommitChange", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					expectedChangesStr := `{"COMMIT":{"old":"old-revision","new":"new-revision"}}`
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, expectedChangesStr, changesStr)
+					assert.True(t, summary.HasChanges)
+					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					changesMap := map[string]buildchange.CommitChange{}
-					err = json.Unmarshal([]byte(changesStr), &changesMap)
+					var changes []buildchange.GenericChange
+					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
 					assert.NoError(t, err)
-
-					unmarshalledChange, ok := changesMap["COMMIT"]
-					assert.True(t, ok)
-					assert.True(t, cmp.Equal(change, unmarshalledChange))
-				})
-
-				it("returns true for HasChanges", func() {
-					cp.Process(change)
-					assert.True(t, cp.HasChanges())
 				})
 			})
 		})
 
-		when("ConfigChange", func() {
-			when("invalid", func() {
-				change := buildchange.ConfigChange{
-					Old: buildchange.Config{
-						Source: v1alpha1.SourceConfig{
-							Git: &v1alpha1.Git{
-								URL:      "some-git-url",
-								Revision: "some-git-revision",
-							},
-						},
-					},
-					New: buildchange.Config{
-						Source: v1alpha1.SourceConfig{
-							Git: &v1alpha1.Git{
-								URL:      "some-git-url",
-								Revision: "some-git-revision",
-							},
+		when("CONFIG", func() {
+			when("has no difference", func() {
+				oldConfig := buildchange.Config{
+					Source: v1alpha1.SourceConfig{
+						Git: &v1alpha1.Git{
+							URL:      "some-git-url",
+							Revision: "some-git-revision",
 						},
 					},
 				}
+				newConfig := oldConfig
+				change := buildchange.NewConfigChange(oldConfig, newConfig)
 
-				it("returns HasChanges as false", func() {
-					assert.False(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as empty string", func() {
-					assert.Equal(t, "", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as empty string", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, "", changesStr)
+					assert.False(t, summary.HasChanges)
+					assert.Empty(t, summary.ReasonsStr)
+					assert.Empty(t, summary.ChangesStr)
 				})
 			})
 
-			when("valid", func() {
-				change := buildchange.ConfigChange{
-					Old: buildchange.Config{
+			when("has difference", func() {
+				change := buildchange.NewConfigChange(
+					buildchange.Config{
 						Env: []corev1.EnvVar{
 							{Name: "env-var-name", Value: "env-var-value"},
 							{Name: "another-env-var-name", Value: "another-env-var-value"},
@@ -196,7 +166,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 							SubPath: "some-sub-path",
 						},
 					},
-					New: buildchange.Config{
+					buildchange.Config{
 						Env: []corev1.EnvVar{
 							{Name: "new-env-var-name", Value: "new-env-var-value"},
 							{Name: "another-env-var-name", Value: "another-env-var-value"},
@@ -225,12 +195,12 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 						},
-					},
-				}
-
+					})
+				expectedReasonsStr := "CONFIG"
 				expectedChangesStr := testhelpers.CompactJSON(`
-{
-  "CONFIG": {
+[
+  {
+    "reason": "CONFIG",
     "old": {
       "env": [
         {
@@ -299,82 +269,54 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
       }
     }
   }
-}`)
+]`)
 
-				it("returns HasChanges as true", func() {
-					assert.True(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as CONFIG", func() {
-					assert.Equal(t, "CONFIG", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as a JSON string mapping CONFIG to ConfigChange", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, expectedChangesStr, changesStr)
+					assert.True(t, summary.HasChanges)
+					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					changesMap := map[string]buildchange.ConfigChange{}
-					err = json.Unmarshal([]byte(changesStr), &changesMap)
+					var changes []buildchange.GenericChange
+					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
 					assert.NoError(t, err)
-
-					unmarshalledChange, ok := changesMap["CONFIG"]
-					assert.True(t, ok)
-					assert.True(t, cmp.Equal(change, unmarshalledChange))
 				})
 			})
 		})
 
-		when("BuildpackChange", func() {
-			when("invalid", func() {
-				change := buildchange.BuildpackChange{
-					Old: []buildchange.BuildpackInfo{
-						{Id: "some-buildpack-id", Version: "some-buildpack-version"},
-					},
-					New: []buildchange.BuildpackInfo{
-						{Id: "some-buildpack-id", Version: "some-buildpack-version"},
-					},
+		when("BUILDPACK", func() {
+			when("has no difference", func() {
+				oldBuildpacks := []v1alpha1.BuildpackInfo{
+					{Id: "some-buildpack-id", Version: "some-buildpack-version"},
 				}
+				newBuildpacks := oldBuildpacks
+				change := buildchange.NewBuildpackChange(oldBuildpacks, newBuildpacks)
 
-				it("returns HasChanges as false", func() {
-					assert.False(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as empty string", func() {
-					assert.Equal(t, "", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as empty string", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, "", changesStr)
+					assert.False(t, summary.HasChanges)
+					assert.Empty(t, summary.ReasonsStr)
+					assert.Empty(t, summary.ChangesStr)
 				})
 			})
 
-			when("valid", func() {
-				change := buildchange.BuildpackChange{
-					Old: []buildchange.BuildpackInfo{
+			when("has difference", func() {
+				change := buildchange.NewBuildpackChange(
+					[]v1alpha1.BuildpackInfo{
 						{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 						{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 					},
-					New: []buildchange.BuildpackInfo{
+					[]v1alpha1.BuildpackInfo{
 						{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
-					},
-				}
+					})
 
-				it("returns HasChanges as true", func() {
-					assert.True(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as BUILDPACK", func() {
-					assert.Equal(t, "BUILDPACK", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as a JSON string mapping BUILDPACK to BuildpackChange", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					expectedChangesStr := testhelpers.CompactJSON(`
-{
-  "BUILDPACK": {
+				expectedReasonsStr := "BUILDPACK"
+				expectedChangesStr := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "BUILDPACK",
     "old": [
       {
         "id": "another-buildpack-id",
@@ -392,168 +334,165 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
       }
     ]
   }
-}`)
+]`)
 
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, expectedChangesStr, changesStr)
+					assert.True(t, summary.HasChanges)
+					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					changesMap := map[string]buildchange.BuildpackChange{}
-					err = json.Unmarshal([]byte(changesStr), &changesMap)
+					var changes []buildchange.GenericChange
+					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
 					assert.NoError(t, err)
-
-					unmarshalledChange, ok := changesMap["BUILDPACK"]
-					assert.True(t, ok)
-					assert.True(t, cmp.Equal(change, unmarshalledChange))
 				})
 			})
 		})
 
-		when("StackChange", func() {
-			when("invalid", func() {
-				change := buildchange.StackChange{}
+		when("STACK", func() {
+			when("invalid values are given", func() {
+				change := buildchange.NewStackChange("invalid-oldRunImageRef", "invalid-newRunImageRef")
+				expectedErrorStr := `error determining if build is required for reason 'STACK': could not parse reference: invalid-oldRunImageRef; could not parse reference: invalid-newRunImageRef`
 
-				it("returns HasChanges as false", func() {
-					assert.False(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as empty string", func() {
-					assert.Equal(t, "", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as empty string", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					assert.NoError(t, err)
-					assert.Equal(t, "", changesStr)
+				it("errors for Summarize", func() {
+					_, err := cp.Process(change).Summarize()
+					assert.Error(t, err)
+					assert.Equal(t, expectedErrorStr, err.Error())
 				})
 			})
 
-			when("valid", func() {
-				change := buildchange.StackChange{Old: "old-run-image", New: "new-run-image"}
+			when("has no difference", func() {
+				oldRunImage := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad"
+				newRunImage := oldRunImage
+				change := buildchange.NewStackChange(oldRunImage, newRunImage)
 
-				it("returns HasChanges as true", func() {
-					assert.True(t, cp.Process(change).HasChanges())
-				})
-
-				it("returns ReasonsStr as STACK", func() {
-					assert.Equal(t, "STACK", cp.Process(change).ReasonsStr())
-				})
-
-				it("returns ChangesStr as a JSON string mapping STACK to StackChange", func() {
-					changesStr, err := cp.Process(change).ChangesStr()
-					expectedChangesStr := `{"STACK":{"old":"old-run-image","new":"new-run-image"}}`
-
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
-					assert.Equal(t, expectedChangesStr, changesStr)
+					assert.False(t, summary.HasChanges)
+					assert.Empty(t, summary.ReasonsStr)
+					assert.Empty(t, summary.ChangesStr)
+				})
+			})
 
-					changesMap := map[string]buildchange.StackChange{}
-					err = json.Unmarshal([]byte(changesStr), &changesMap)
+			when("has difference", func() {
+				oldRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad"
+				newRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ae"
+				change := buildchange.NewStackChange(oldRunImageRef, newRunImageRef)
+				expectedReasonsStr := "STACK"
+				expectedChangesStr := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "STACK",
+    "old": "sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad",
+    "new": "sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ae"
+  }
+]`)
+
+				it("returns the correct ChangeSummary and does not error", func() {
+					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
+					assert.True(t, summary.HasChanges)
+					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					unmarshalledChange, ok := changesMap["STACK"]
-					assert.True(t, ok)
-					assert.True(t, cmp.Equal(change, unmarshalledChange))
+					var changes []buildchange.GenericChange
+					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
+					assert.NoError(t, err)
 				})
 			})
 		})
 	})
 
-	when("multiple valid changes processed", func() {
-		commitChange := buildchange.CommitChange{Old: "old-revision", New: "new-revision"}
+	when("multiple changes with difference are processed", func() {
+		when("they are all valid", func() {
+			commitChange := buildchange.NewCommitChange("old-revision", "new-revision")
 
-		triggerChange := buildchange.TriggerChange{New: "2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826"}
+			triggerChange := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
 
-		stackChange := buildchange.StackChange{Old: "old-run-image", New: "new-run-image"}
+			oldRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad"
+			newRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ae"
+			stackChange := buildchange.NewStackChange(oldRunImageRef, newRunImageRef)
 
-		buildpackChange := buildchange.BuildpackChange{
-			Old: []buildchange.BuildpackInfo{
-				{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
-				{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
-			},
-			New: []buildchange.BuildpackInfo{
-				{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
-			},
-		}
+			buildpackChange := buildchange.NewBuildpackChange(
+				[]v1alpha1.BuildpackInfo{
+					{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
+					{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
+				},
+				[]v1alpha1.BuildpackInfo{
+					{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
+				})
 
-		configChange := buildchange.ConfigChange{
-			Old: buildchange.Config{
-				Env: []corev1.EnvVar{
-					{Name: "env-var-name", Value: "env-var-value"},
-					{Name: "another-env-var-name", Value: "another-env-var-value"},
-				},
-				Resources: corev1.ResourceRequirements{
-					Limits: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resourceQuantity(t, "500m"),
-						corev1.ResourceMemory: resourceQuantity(t, "2G"),
+			configChange := buildchange.NewConfigChange(
+				buildchange.Config{
+					Env: []corev1.EnvVar{
+						{Name: "env-var-name", Value: "env-var-value"},
+						{Name: "another-env-var-name", Value: "another-env-var-value"},
 					},
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resourceQuantity(t, "100m"),
-						corev1.ResourceMemory: resourceQuantity(t, "512M"),
-					},
-				},
-				Source: v1alpha1.SourceConfig{
-					Git: &v1alpha1.Git{
-						URL:      "some-git-url",
-						Revision: "some-git-revision",
-					},
-					SubPath: "some-sub-path",
-				},
-			},
-			New: buildchange.Config{
-				Env: []corev1.EnvVar{
-					{Name: "new-env-var-name", Value: "new-env-var-value"},
-					{Name: "another-env-var-name", Value: "another-env-var-value"},
-				},
-				Resources: corev1.ResourceRequirements{
-					Limits: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resourceQuantity(t, "300m"),
-						corev1.ResourceMemory: resourceQuantity(t, "1G"),
-					},
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resourceQuantity(t, "200m"),
-						corev1.ResourceMemory: resourceQuantity(t, "512M"),
-					},
-				},
-				Source: v1alpha1.SourceConfig{
-					Blob: &v1alpha1.Blob{URL: "some-blob-url"},
-				},
-				Bindings: []v1alpha1.Binding{
-					{
-						Name: "binding-name",
-						MetadataRef: &corev1.LocalObjectReference{
-							Name: "some-metadata-ref",
+					Resources: corev1.ResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resourceQuantity(t, "500m"),
+							corev1.ResourceMemory: resourceQuantity(t, "2G"),
 						},
-						SecretRef: &corev1.LocalObjectReference{
-							Name: "some-secret-ref",
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resourceQuantity(t, "100m"),
+							corev1.ResourceMemory: resourceQuantity(t, "512M"),
 						},
 					},
+					Source: v1alpha1.SourceConfig{
+						Git: &v1alpha1.Git{
+							URL:      "some-git-url",
+							Revision: "some-git-revision",
+						},
+						SubPath: "some-sub-path",
+					},
 				},
-			},
-		}
+				buildchange.Config{
+					Env: []corev1.EnvVar{
+						{Name: "new-env-var-name", Value: "new-env-var-value"},
+						{Name: "another-env-var-name", Value: "another-env-var-value"},
+					},
+					Resources: corev1.ResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resourceQuantity(t, "300m"),
+							corev1.ResourceMemory: resourceQuantity(t, "1G"),
+						},
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceCPU:    resourceQuantity(t, "200m"),
+							corev1.ResourceMemory: resourceQuantity(t, "512M"),
+						},
+					},
+					Source: v1alpha1.SourceConfig{
+						Blob: &v1alpha1.Blob{URL: "some-blob-url"},
+					},
+					Bindings: []v1alpha1.Binding{
+						{
+							Name: "binding-name",
+							MetadataRef: &corev1.LocalObjectReference{
+								Name: "some-metadata-ref",
+							},
+							SecretRef: &corev1.LocalObjectReference{
+								Name: "some-secret-ref",
+							},
+						},
+					},
+				})
 
-		expectedChangesStr := testhelpers.CompactJSON(`{
-  "BUILDPACK": {
-    "old": [
-      {
-        "id": "another-buildpack-id",
-        "version": "another-buildpack-old-version"
-      },
-      {
-        "id": "some-buildpack-id",
-        "version": "some-buildpack-old-version"
-      }
-    ],
-    "new": [
-      {
-        "id": "some-buildpack-id",
-        "version": "some-buildpack-new-version"
-      }
-    ]
+			expectedChangesStr := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "TRIGGER",
+    "old": "",
+    "new": "A new build was manually triggered on Fri, 20 Nov 2020 15:38:15 -0500"
   },
-  "COMMIT": {
+  {
+    "reason": "COMMIT",
     "old": "old-revision",
     "new": "new-revision"
   },
-  "CONFIG": {
+  {
+    "reason": "CONFIG",
     "old": {
       "env": [
         {
@@ -622,71 +561,74 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
       }
     }
   },
-  "STACK": {
-    "old": "old-run-image",
-    "new": "new-run-image"
+  {
+    "reason": "BUILDPACK",
+    "old": [
+      {
+        "id": "another-buildpack-id",
+        "version": "another-buildpack-old-version"
+      },
+      {
+        "id": "some-buildpack-id",
+        "version": "some-buildpack-old-version"
+      }
+    ],
+    "new": [
+      {
+        "id": "some-buildpack-id",
+        "version": "some-buildpack-new-version"
+      }
+    ]
   },
-  "TRIGGER": {
-    "new": "2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826"
+  {
+    "reason": "STACK",
+    "old": "sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad",
+    "new": "sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ae"
   }
-}`)
+]`)
 
-		it.Before(func() {
-			cp.Process(commitChange)
-			cp.Process(triggerChange)
-			cp.Process(stackChange)
-			cp.Process(buildpackChange)
-			cp.Process(configChange)
+			it("returns the correct ChangeSummary and does not error", func() {
+				summary, err := cp.Process(triggerChange).Process(commitChange).Process(configChange).Process(buildpackChange).Process(stackChange).Summarize()
+				assert.NoError(t, err)
+				assert.True(t, summary.HasChanges)
+				assert.Equal(t, "TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK", summary.ReasonsStr)
+				assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+
+				var changes []buildchange.GenericChange
+				err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
+				assert.NoError(t, err)
+				assert.Len(t, changes, 5)
+				assert.Equal(t, "TRIGGER", changes[0].Reason)
+				assert.Equal(t, "COMMIT", changes[1].Reason)
+				assert.Equal(t, "CONFIG", changes[2].Reason)
+				assert.Equal(t, "BUILDPACK", changes[3].Reason)
+				assert.Equal(t, "STACK", changes[4].Reason)
+			})
 		})
 
-		it("returns HasChanges as true", func() {
-			assert.True(t, cp.HasChanges())
+		when("they are all invalid", func() {
+			triggerChange := buildchange.NewTriggerChange("bad date string")
+			stackChange := buildchange.NewStackChange("invalid-oldRunImageRef", "invalid-newRunImageRef")
+			expectedErrorStr := `error determining if build is required for reason 'TRIGGER': parsing time "bad date string" as "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000": cannot parse "bad date string" as "2006"
+error determining if build is required for reason 'STACK': could not parse reference: invalid-oldRunImageRef; could not parse reference: invalid-newRunImageRef`
+
+			it("errors for Summarize", func() {
+				_, err := cp.Process(triggerChange).Process(stackChange).Summarize()
+				assert.Error(t, err)
+				assert.Equal(t, expectedErrorStr, err.Error())
+			})
 		})
 
-		it("returns ReasonsStr as a comma separated sorted list of reasons", func() {
-			assert.Equal(t, v1alpha1.BuildReasonSortIndex, cp.ReasonsStr())
-		})
+		when("some are invalid", func() {
+			triggerChange := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
+			stackChange := buildchange.NewStackChange("invalid-oldRunImageRef", "invalid-newRunImageRef")
+			expectedErrorStr := `error determining if build is required for reason 'STACK': could not parse reference: invalid-oldRunImageRef; could not parse reference: invalid-newRunImageRef`
 
-		it("returns ChangesStr as a JSON string mapping reason to change", func() {
-			changesStr, err := cp.ChangesStr()
-			assert.NoError(t, err)
-			assert.Equal(t, expectedChangesStr, changesStr)
-
-			var changesMap map[string]interface{}
-			err = json.Unmarshal([]byte(changesStr), &changesMap)
-			assert.NoError(t, err)
-
-			changeDecoder := buildchange.ChangeDecoder{}
-
-			change, ok := changesMap["TRIGGER"]
-			assert.True(t, ok)
-			decodedChange, err := changeDecoder.Decode("TRIGGER", change)
-			assert.NoError(t, err)
-			assert.True(t, cmp.Equal(triggerChange, decodedChange))
-
-			change, ok = changesMap["COMMIT"]
-			assert.True(t, ok)
-			decodedChange, err = changeDecoder.Decode("COMMIT", change)
-			assert.NoError(t, err)
-			assert.True(t, cmp.Equal(commitChange, decodedChange))
-
-			change, ok = changesMap["CONFIG"]
-			assert.True(t, ok)
-			decodedChange, err = changeDecoder.Decode("CONFIG", change)
-			assert.NoError(t, err)
-			assert.True(t, cmp.Equal(configChange, decodedChange))
-
-			change, ok = changesMap["BUILDPACK"]
-			assert.True(t, ok)
-			decodedChange, err = changeDecoder.Decode("BUILDPACK", change)
-			assert.NoError(t, err)
-			assert.True(t, cmp.Equal(buildpackChange, decodedChange))
-
-			change, ok = changesMap["STACK"]
-			assert.True(t, ok)
-			decodedChange, err = changeDecoder.Decode("STACK", change)
-			assert.NoError(t, err)
-			assert.True(t, cmp.Equal(stackChange, decodedChange))
+			it("errors for Summarize", func() {
+				_, err := cp.Process(triggerChange).Process(stackChange).Summarize()
+				assert.Error(t, err)
+				assert.Equal(t, expectedErrorStr, err.Error())
+			})
 		})
 	})
 }

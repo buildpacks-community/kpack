@@ -18,7 +18,6 @@ require (
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
-	github.com/mitchellh/mapstructure v1.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/sclevine/spec v1.4.0
 	github.com/spf13/pflag v1.0.5

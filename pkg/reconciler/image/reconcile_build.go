@@ -18,17 +18,16 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 		return v1alpha1.ImageStatus{}, err
 	}
 
-	buildDeterminer := NewBuildDeterminer(image, latestBuild, sourceResolver, builder)
-	condition, err := buildDeterminer.IsBuildNeeded()
+	result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 	if err != nil {
 		return v1alpha1.ImageStatus{}, errors.Wrap(err, "error determining if an image build is needed")
 	}
 
-	switch condition {
+	switch result.ConditionStatus {
 	case corev1.ConditionTrue:
 		nextBuildNumber := currentBuildNumber + 1
 
-		build := image.Build(sourceResolver, builder, latestBuild, buildDeterminer.Reasons(), buildDeterminer.Changes(), buildCacheName, nextBuildNumber)
+		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, buildCacheName, nextBuildNumber)
 		build, err = c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
 		if err != nil {
 			return v1alpha1.ImageStatus{}, err
@@ -51,7 +50,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 	case corev1.ConditionFalse:
 		return v1alpha1.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: noScheduledBuild(condition, builder, latestBuild),
+				Conditions: noScheduledBuild(result.ConditionStatus, builder, latestBuild),
 			},
 			LatestBuildRef:             latestBuild.BuildRef(),
 			LatestBuildReason:          latestBuild.BuildReason(),
@@ -62,7 +61,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 			BuildCacheName:             buildCacheName,
 		}, nil
 	default:
-		return v1alpha1.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", condition)
+		return v1alpha1.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", result.ConditionStatus)
 	}
 }
 

@@ -25,22 +25,9 @@ const (
 	BuildReasonBuildpack = "BUILDPACK"
 	BuildReasonStack     = "STACK"
 	BuildReasonTrigger   = "TRIGGER"
-	BuildReasonSortIndex = "TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK"
 )
 
 type BuildReason string
-
-func (b BuildReason) IsValid() bool {
-	switch b {
-	case BuildReasonTrigger,
-		BuildReasonCommit,
-		BuildReasonStack,
-		BuildReasonBuildpack,
-		BuildReasonConfig:
-		return true
-	}
-	return false
-}
 
 func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes, cacheName string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))

@@ -1,123 +1,81 @@
 package buildchange
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/differ"
 )
 
-func Log(logger *log.Logger, reasonsStr, changesStr string) error {
-	return NewChangeLogger(logger, reasonsStr, changesStr).Log()
+const differPrefix = "\t"
+
+func Log(logger *log.Logger, changesStr string) error {
+	return NewChangeLogger(logger, changesStr).Log()
 }
 
-type ChangeLogger struct {
+func NewChangeLogger(logger *log.Logger, changesStr string) *changeLogger {
+	options := differ.DefaultOptions()
+	options.Prefix = differPrefix
+
+	return &changeLogger{
+		logger:     logger,
+		changesStr: changesStr,
+		differ:     differ.NewDiffer(options),
+	}
+}
+
+type changeLogger struct {
 	logger     *log.Logger
-	reasonsStr string
 	changesStr string
 
-	reasons    []v1alpha1.BuildReason
-	changesMap map[v1alpha1.BuildReason]Change
+	differ  differ.Differ
+	reasons []string
+	changes []GenericChange
 }
 
-func NewChangeLogger(logger *log.Logger, reasonsStr, changesStr string) *ChangeLogger {
-	return &ChangeLogger{
-		logger:     logger,
-		reasonsStr: reasonsStr,
-		changesStr: changesStr,
-	}
-}
-
-func (c *ChangeLogger) Log() error {
-	if err := c.validate(); err != nil {
-		return errors.Wrapf(err, "error validating")
-	}
-
-	if err := c.parseReasons(); err != nil {
-		return errors.Wrapf(err, "error parsing build reasons string '%s'", c.reasonsStr)
+func (c *changeLogger) Log() error {
+	if c.changesStr == "" {
+		return nil
 	}
 
 	if err := c.parseChanges(); err != nil {
 		return errors.Wrapf(err, "error parsing build changes JSON string '%s'", c.changesStr)
 	}
+	c.parseReasons()
 
 	c.logReasons()
 	return c.logChanges()
 }
 
-func (c *ChangeLogger) validate() error {
-	if c.reasonsStr == "" {
-		return errors.New("build reasons is empty")
-	}
-	if c.changesStr == "" {
-		return errors.New("build changes is empty")
-	}
-	return nil
+func (c *changeLogger) parseChanges() error {
+	c.changes = []GenericChange{}
+	return json.Unmarshal([]byte(c.changesStr), &c.changes)
 }
 
-func (c *ChangeLogger) parseReasons() error {
-	reasons := strings.Split(c.reasonsStr, reasonsSeparator)
-
-	c.reasons = make([]v1alpha1.BuildReason, len(reasons))
-	var invalids []string
-
-	for i, reason := range reasons {
-		buildReason := v1alpha1.BuildReason(reason)
-		if buildReason.IsValid() {
-			c.reasons[i] = buildReason
-		} else {
-			invalids = append(invalids, reason)
-		}
+func (c *changeLogger) parseReasons() {
+	c.reasons = make([]string, len(c.changes))
+	for i, change := range c.changes {
+		c.reasons[i] = change.Reason
 	}
-
-	if len(invalids) > 0 {
-		return errors.Errorf("invalid reason(s): %s", strings.Join(invalids, ","))
-	}
-	return nil
 }
 
-func (c *ChangeLogger) parseChanges() (err error) {
-	c.changesMap, err = NewChangeParser().Parse(c.changesStr)
-	return err
+func (c *changeLogger) logReasons() {
+	reasons := strings.Join(c.reasons, reasonsSeparator)
+	c.logger.Printf("Build reason(s): %s\n", reasons)
 }
 
-func (c *ChangeLogger) logReasons() {
-	c.logger.Printf("Build reason(s): %s\n", c.reasonsStr)
-}
-
-func (c *ChangeLogger) logChanges() error {
-	for _, reason := range c.reasons {
-		change, ok := c.changesMap[reason]
-		if !ok {
-			return errors.Errorf("changes not available for the reason '%s'", reason)
+func (c *changeLogger) logChanges() error {
+	for _, change := range c.changes {
+		diff, err := c.differ.Diff(change.Old, change.New)
+		if err != nil {
+			return errors.Wrapf(err, "error logging change for reason '%s'", change.Reason)
 		}
 
-		if err := c.logChange(change); err != nil {
-			return errors.Errorf("error logging change for the reason '%s'", reason)
-		}
-	}
-	return nil
-}
-
-func (c *ChangeLogger) logChange(change Change) error {
-	differ, err := NewChangeDiffer(change)
-	if err != nil {
-		return errors.Wrap(err, "error generating differ")
-	}
-
-	diff, err := differ.ChangeDiff()
-	if err != nil {
-		return errors.Wrap(err, "error generating diff")
-	}
-
-	switch change.(type) {
-	case TriggerChange:
-		c.logger.Print(fmt.Sprintf("%s: %s\n", change.Reason(), diff))
-	default:
-		changeHeader := fmt.Sprintf("%s change:\n", change.Reason())
+		changeHeader := fmt.Sprintf("%s:\n", change.Reason)
 		c.logger.Printf(changeHeader)
 		c.logger.Print(diff)
 	}

@@ -2,85 +2,91 @@ package buildchange
 
 import (
 	"encoding/json"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 const (
 	reasonsSeparator = ","
+	errorSeparator   = "\n"
 )
 
 func NewChangeProcessor() *ChangeProcessor {
 	return &ChangeProcessor{
-		changes: map[v1alpha1.BuildReason]Change{},
+		changes: []GenericChange{},
+		errStrs: []string{},
 	}
 }
 
 type ChangeProcessor struct {
-	changes map[v1alpha1.BuildReason]Change
+	changes []GenericChange
+	errStrs []string
 }
 
 func (c *ChangeProcessor) Process(change Change) *ChangeProcessor {
-	if change.IsValid() && change.Reason().IsValid() {
-		c.changes[change.Reason()] = change
+	if change == nil {
+		return c
 	}
+
+	buildRequired, err := change.IsBuildRequired()
+	if err != nil {
+		err := errors.Wrapf(err, "error determining if build is required for reason '%s'", change.Reason())
+		c.errStrs = append(c.errStrs, err.Error())
+
+	} else if buildRequired {
+		c.changes = append(c.changes, newGenericChange(change))
+	}
+
 	return c
 }
 
 func (c *ChangeProcessor) Summarize() (ChangeSummary, error) {
-	var summary ChangeSummary
-	changesStr, err := c.ChangesStr()
+	changesStr, err := c.changesStr()
 	if err != nil {
-		return summary, errors.Wrapf(err, "error summarizing changes")
+		err := errors.Wrapf(err, "error generating changes string")
+		c.errStrs = append(c.errStrs, err.Error())
 	}
 
-	summary, err = NewChangeSummary(c.HasChanges(), c.ReasonsStr(), changesStr)
+	summary, err := NewChangeSummary(c.hasChanges(), c.reasonsStr(), changesStr)
 	if err != nil {
-		return summary, errors.Wrapf(err, "error summarizing changes")
+		err := errors.Wrapf(err, "error summarizing changes")
+		c.errStrs = append(c.errStrs, err.Error())
 	}
+
+	if len(c.errStrs) > 0 {
+		return summary, errors.New(strings.Join(c.errStrs, errorSeparator))
+	}
+
 	return summary, nil
 }
 
-func (c *ChangeProcessor) HasChanges() bool {
+func (c *ChangeProcessor) hasChanges() bool {
 	return len(c.changes) > 0
 }
 
-func (c *ChangeProcessor) ReasonsStr() string {
-	if c.HasChanges() {
-		return strings.Join(c.reasons(), reasonsSeparator)
-	} else {
+func (c *ChangeProcessor) reasonsStr() string {
+	if !c.hasChanges() {
 		return ""
 	}
+
+	var reasons = make([]string, len(c.changes))
+	for i, change := range c.changes {
+		reasons[i] = change.Reason
+	}
+
+	return strings.Join(reasons, reasonsSeparator)
 }
 
-func (c *ChangeProcessor) ChangesStr() (string, error) {
-	if !c.HasChanges() {
+func (c *ChangeProcessor) changesStr() (string, error) {
+	if !c.hasChanges() {
 		return "", nil
 	}
 
-	b, err := json.Marshal(c.changes)
+	bytes, err := json.Marshal(c.changes)
 	if err != nil {
-		return "", errors.Wrap(err, "Error marshalling build changes to json")
-	}
-	return string(b), err
-}
-
-func (c *ChangeProcessor) reasons() []string {
-	var reasons = make([]string, len(c.changes))
-	var index int
-
-	for reason := range c.changes {
-		reasons[index] = string(reason)
-		index++
+		return "", err
 	}
 
-	sort.SliceStable(reasons, func(i, j int) bool {
-		return strings.Index(v1alpha1.BuildReasonSortIndex, reasons[i]) <
-			strings.Index(v1alpha1.BuildReasonSortIndex, reasons[j])
-	})
-	return reasons
+	return string(bytes), err
 }
