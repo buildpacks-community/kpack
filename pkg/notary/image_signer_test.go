@@ -58,6 +58,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("signs images", func() {
+			factory.Reset()
+
 			notaryDir := filepath.Join("testdata", "notary")
 			reportPath := filepath.Join("testdata", "report.toml")
 
@@ -72,7 +74,10 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, factory.FakeRepository.PublishedTargets, 2)
 			require.Equal(t, "latest", factory.FakeRepository.PublishedTargets[0].Name)
-			require.Equal(t, "00000000  a1 57 90 64 0a 66 90 aa  17 30 c3 8c f0 a4 40 e2  |.W.d.f...0....@.|\n00000010  aa 44 aa ca 9b 0e 89 31  a9 f2 b0 d7 cc 90 fd 65  |.D.....1.......e|\n", hex.Dump(factory.FakeRepository.PublishedTargets[0].Hashes[notary.SHA256]))
+			require.Equal(t,
+				"00000000  a1 57 90 64 0a 66 90 aa  17 30 c3 8c f0 a4 40 e2  |.W.d.f...0....@.|\n00000010  aa 44 aa ca 9b 0e 89 31  a9 f2 b0 d7 cc 90 fd 65  |.D.....1.......e|\n",
+				hex.Dump(factory.FakeRepository.PublishedTargets[0].Hashes[notary.SHA256]),
+			)
 			require.Equal(t, int64(264), factory.FakeRepository.PublishedTargets[0].Length)
 
 			require.Equal(t, "other-tag", factory.FakeRepository.PublishedTargets[1].Name)
@@ -104,6 +109,11 @@ type FakeRepositoryFactoryCall struct {
 type FakeRepositoryFactory struct {
 	Calls          []FakeRepositoryFactoryCall
 	FakeRepository *FakeRepository
+}
+
+func (f *FakeRepositoryFactory) Reset() {
+	f.Calls = []FakeRepositoryFactoryCall{}
+	f.FakeRepository = nil
 }
 
 func (f *FakeRepositoryFactory) GetRepository(url string, gun data.GUN, _ storage.RemoteStore, _ signed.CryptoService) (Repository, error) {

@@ -48,7 +48,7 @@ func testAuthenticatingRoundTripper(t *testing.T, when spec.G, it spec.S) {
 						finalReq = r
 						w.WriteHeader(http.StatusOK)
 					default:
-						w.Header().Set("www-authenticate", fmt.Sprintf(`Bearer realm="http://%s",service="some-service",scope="some-scope"`, r.Host))
+						w.Header().Set("www-authenticate", fmt.Sprintf(`Bearer realm="http://%s",service="some-service",scope="some-scope,some-other-scope"`, r.Host))
 						w.WriteHeader(http.StatusUnauthorized)
 					}
 					callCount++
@@ -72,7 +72,7 @@ func testAuthenticatingRoundTripper(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 				assert.Equal(t, "some-service", authReq.URL.Query().Get("service"))
-				assert.Equal(t, "some-scope", authReq.URL.Query().Get("scope"))
+				assert.Equal(t, "some-scope,some-other-scope", authReq.URL.Query().Get("scope"))
 				assert.Equal(t, "kpack", authReq.URL.Query().Get("client_id"))
 				assert.Equal(t, "Basic c29tZS11c2VybmFtZTpzb21lLXBhc3N3b3Jk", authReq.Header.Get("Authorization"))
 
