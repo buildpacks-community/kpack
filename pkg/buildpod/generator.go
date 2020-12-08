@@ -170,7 +170,7 @@ func (g *Generator) fetchServiceBindings(build BuildPodable) ([]v1alpha2.Service
 	bindings := []v1alpha2.ServiceBinding{}
 	if len(build.Services()) != 0 {
 		for _, s := range build.Services() {
-			if s.Kind == "Secret" {
+			if s.APIVersion == "v1" && s.Kind == "Secret" {
 				bindings = append(bindings, v1alpha2.ServiceBinding{
 					Name:      s.Name,
 					SecretRef: &corev1.LocalObjectReference{Name: s.Name},
