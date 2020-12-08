@@ -54,6 +54,9 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 						Value: "ValueB",
 					},
 				},
+				Services: Services{
+					{Name: "service", Kind: "Secret", APIVersion: "v2"},
+				},
 			},
 		},
 	}
@@ -90,6 +93,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, *image.Spec.SuccessBuildHistoryLimit, int64(10))
 			assert.Equal(t, *image.Spec.FailedBuildHistoryLimit, int64(10))
+		})
+
+		it("defaults services apiVersion to v1 for Secrets", func() {
+			image.Spec.Build.Services[0].APIVersion = ""
+
+			image.SetDefaults(ctx)
+
+			assert.Equal(t, image.Spec.Build.Services[0].APIVersion, "v1")
 		})
 
 		when("the cache is not provided", func() {

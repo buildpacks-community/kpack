@@ -15,6 +15,12 @@ func (b *Build) SetDefaults(ctx context.Context) {
 	if b.Spec.ServiceAccount == "" {
 		b.Spec.ServiceAccount = "default"
 	}
+
+	for i, s := range b.Spec.Services {
+		if s.Kind == "Secret" && s.APIVersion == "" {
+			b.Spec.Services[i].APIVersion = "v1"
+		}
+	}
 }
 
 func (b *Build) Validate(ctx context.Context) *apis.FieldError {
@@ -74,6 +80,10 @@ func (ss Services) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
 		} else if !serviceNameRE.MatchString(s.Name) {
 			errs = errs.Also(apis.ErrInvalidValue(s.Name, "name").ViaIndex(i))
+		}
+
+		if s.Kind == "" {
+			errs = errs.Also(apis.ErrMissingField("kind").ViaIndex(i))
 		}
 	}
 	return errs

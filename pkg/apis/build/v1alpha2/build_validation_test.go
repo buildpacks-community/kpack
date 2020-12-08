@@ -34,6 +34,9 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 					Revision: "master",
 				},
 			},
+			Services: Services{
+				{Name: "service", Kind: "Secret", APIVersion: "v2"},
+			},
 		},
 	}
 	when("Default", func() {
@@ -50,6 +53,14 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			build.SetDefaults(context.TODO())
 
 			assert.Equal(t, build.Spec.ServiceAccount, "default")
+		})
+
+		it("defaults services apiVersion to v1 for Secrets", func() {
+			build.Spec.Services[0].APIVersion = ""
+
+			build.SetDefaults(context.TODO())
+
+			assert.Equal(t, build.Spec.Services[0].APIVersion, "v1")
 		})
 	})
 
@@ -155,6 +166,14 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(build, apis.ErrMissingField("spec.services[0].name"))
 		})
 
+		it("validates services have a kind", func() {
+			build.Spec.Services = Services{
+				{Name: "apm"},
+			}
+
+			assertValidationError(build, apis.ErrMissingField("spec.services[0].kind"))
+		})
+
 		it("validates services have a valid name", func() {
 			build.Spec.Services = Services{
 				{Name: "&", Kind: "Secret"},
@@ -175,7 +194,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 				{
 					Name: "apm",
-					Kind: "Secret",
+					Kind: "SomeKind",
 				},
 			}
 

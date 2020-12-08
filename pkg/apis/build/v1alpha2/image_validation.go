@@ -42,6 +42,14 @@ func (i *Image) SetDefaults(ctx context.Context) {
 	if i.Spec.CacheSize == nil && ctx.Value(v1alpha1.HasDefaultStorageClass) != nil {
 		i.Spec.CacheSize = &defaultCacheSize
 	}
+
+	if i.Spec.Build != nil {
+		for n, s := range i.Spec.Build.Services {
+			if s.Kind == "Secret" && s.APIVersion == "" {
+				i.Spec.Build.Services[n].APIVersion = "v1"
+			}
+		}
+	}
 }
 
 func (i *Image) Validate(ctx context.Context) *apis.FieldError {

@@ -89,6 +89,35 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			Type: corev1.SecretTypeBasicAuth,
 		}
 
+		bindingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-service",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"type": "some-type",
+			},
+			Type: "service.binding/some-type",
+		}
+
+		invalidBindingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-invalid-binding-secret",
+				Namespace: namespace,
+			},
+		}
+
+		psBindingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-ps-binding-secret",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"type": "some-type",
+			},
+			Type: "service.binding/some-type",
+		}
+
 		serviceAccount := &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -112,7 +141,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
+		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret, invalidBindingSecret)
 
 		ps := buildpodfakes.ProvisionedService{
 			TypeMeta: metav1.TypeMeta{
@@ -124,12 +153,27 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Namespace: namespace,
 			},
 			Status: buildpodfakes.ProvisionedServiceStatus{
-				Binding: v1.LocalObjectReference{Name: "some-binding-secret"},
+				Binding: v1.LocalObjectReference{Name: "some-ps-binding-secret"},
 			},
 		}
-		fakeDynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, &ps)
 
-		it("returns pod config with secrets on build's service account", func() {
+		invalidPS := buildpodfakes.ProvisionedService{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ProvisionedService",
+				APIVersion: "v1alpha1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-invalid-provisioned-service",
+				Namespace: namespace,
+			},
+			Status: buildpodfakes.ProvisionedServiceStatus{
+				Binding: v1.LocalObjectReference{Name: "&"},
+			},
+		}
+
+		fakeDynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, &ps, &invalidPS)
+
+		it("returns pod config with service bindings and secrets on build's service account", func() {
 			secretRef := registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        namespace,
@@ -189,7 +233,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					ImagePullSecrets: builderPullSecrets,
 				},
 				services: v1alpha2.Services{
-					{Name: "some-service", Kind: "Secret"},
+					{Name: "some-service", Kind: "Secret", APIVersion: "v1"},
 					{Name: "some-provisioned-service", Kind: "ProvisionedService", APIVersion: "fake.kpack.io/v1alpha1"},
 				},
 			}
@@ -213,9 +257,36 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 				ServiceBindings: []v1alpha2.ServiceBinding{
 					{Name: "some-service", SecretRef: &corev1.LocalObjectReference{Name: "some-service"}},
-					{Name: "some-provisioned-service", SecretRef: &corev1.LocalObjectReference{Name: "some-binding-secret"}},
+					{Name: "some-provisioned-service", SecretRef: &corev1.LocalObjectReference{Name: "some-ps-binding-secret"}},
 				},
 			}}, build.buildPodCalls)
+		})
+
+		it("rejects a build with a service binding secret that does not have a type and matching type entry", func() {
+			buildPodConfig := v1alpha2.BuildPodImages{}
+			generator := &buildpod.Generator{
+				BuildPodConfig:  buildPodConfig,
+				K8sClient:       fakeK8sClient,
+				DynamicClient:   fakeDynamicClient,
+				KeychainFactory: keychainFactory,
+				ImageFetcher:    imageFetcher,
+			}
+
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace: namespace,
+				services: v1alpha2.Services{
+					{
+						Name: "some-invalid-binding-secret",
+						Kind: "Secret",
+						APIVersion: "v1",
+					},
+				},
+			}
+
+			pod, err := generator.Generate(build)
+			require.EqualError(t, err, fmt.Sprintf("build rejected: service secret \"some-invalid-binding-secret\" does not contain required type (\"\") and matching stringData.type (\"\")"))
+			require.Nil(t, pod)
 		})
 
 		it("rejects a build with a service binding secret that is attached to a service account", func() {
@@ -223,16 +294,19 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
 				K8sClient:       fakeK8sClient,
+				DynamicClient:   fakeDynamicClient,
 				KeychainFactory: keychainFactory,
 				ImageFetcher:    imageFetcher,
 			}
 
 			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
 				namespace: namespace,
 				services: v1alpha2.Services{
 					{
 						Name: dockerSecret.Name,
 						Kind: "Secret",
+						APIVersion: "v1",
 					},
 				},
 			}
@@ -247,11 +321,13 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			generator := &buildpod.Generator{
 				BuildPodConfig:  buildPodConfig,
 				K8sClient:       fakeK8sClient,
+				DynamicClient:   fakeDynamicClient,
 				KeychainFactory: keychainFactory,
 				ImageFetcher:    imageFetcher,
 			}
 
 			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
 				namespace: namespace,
 				v1Bindings: v1alpha1.Bindings{
 					{

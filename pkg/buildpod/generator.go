@@ -58,7 +58,7 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 		return nil, err
 	}
 
-	if err := g.buildAllowed(build, serviceBindings); err != nil {
+	if err := g.validateServiceBindings(build, serviceBindings); err != nil {
 		return nil, fmt.Errorf("build rejected: %w", err)
 	}
 
@@ -75,7 +75,7 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig, serviceBindings)
 }
 
-func (g *Generator) buildAllowed(build BuildPodable, serviceBindings []v1alpha2.ServiceBinding) error {
+func (g *Generator) validateServiceBindings(build BuildPodable, serviceBindings []v1alpha2.ServiceBinding) error {
 	serviceAccounts, err := g.fetchServiceAccounts(build)
 	if err != nil {
 		return err
@@ -91,6 +91,15 @@ func (g *Generator) buildAllowed(build BuildPodable, serviceBindings []v1alpha2.
 	for _, sb := range serviceBindings {
 		if forbiddenSecrets[sb.SecretRef.Name] {
 			return fmt.Errorf("service %q uses forbidden secret %q", sb.Name, sb.SecretRef.Name)
+		}
+
+		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(sb.SecretRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		if t, ok := secret.StringData["type"]; !ok || secret.Type == "" || fmt.Sprintf("service.binding/%s", t) != string(secret.Type) {
+			return fmt.Errorf("service secret %q does not contain required type (%q) and matching stringData.type (%q)", sb.Name, secret.Type, t)
 		}
 	}
 
