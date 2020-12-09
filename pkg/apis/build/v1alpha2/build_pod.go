@@ -542,67 +542,6 @@ func (b *Build) setupBindings(bindings []ServiceBinding) ([]corev1.Volume, []cor
 	return volumes, volumeMounts
 }
 
-func (b *Build) setupV1Bindings() ([]corev1.Volume, []corev1.VolumeMount, error) {
-	var bindings v1alpha1.Bindings
-	if err := json.Unmarshal([]byte(b.Annotations[V1Alpha1BindingsAnnotation]), &bindings); err != nil {
-		return nil, nil, err
-	}
-	volumes := []corev1.Volume{}
-	volumeMounts := []corev1.VolumeMount{}
-	for _, binding := range bindings {
-		metadataVolume := fmt.Sprintf("binding-metadata-%s", binding.Name)
-		volumes = append(volumes,
-			corev1.Volume{
-				Name: metadataVolume,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: binding.MetadataRef.Name,
-						},
-					},
-				},
-			},
-		)
-		volumeMounts = append(volumeMounts,
-			corev1.VolumeMount{
-				Name:      metadataVolume,
-				MountPath: fmt.Sprintf("%s/bindings/%s/metadata", platformVolume.MountPath, binding.Name),
-				ReadOnly:  true,
-			},
-		)
-		if binding.SecretRef != nil {
-			secretVolume := fmt.Sprintf("binding-secret-%s", binding.Name)
-			volumes = append(volumes,
-				corev1.Volume{
-					Name: secretVolume,
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: binding.SecretRef.Name,
-						},
-					},
-				},
-			)
-			volumeMounts = append(volumeMounts,
-				corev1.VolumeMount{
-					Name:      secretVolume,
-					MountPath: fmt.Sprintf("%s/bindings/%s/secret", platformVolume.MountPath, binding.Name),
-					ReadOnly:  true,
-				},
-			)
-		}
-	}
-
-	return volumes, volumeMounts, nil
-}
-
-func (b *Build) useBindings() bool {
-	return len(b.Spec.Services) != 0
-}
-
-func (b *Build) useV1Alpha1Bindings() bool {
-	return b.Annotations != nil && b.Annotations[V1Alpha1BindingsAnnotation] != ""
-}
-
 func (bc *BuildPodBuilderConfig) legacy() bool {
 	return bc.PlatformAPI == "0.2"
 }
