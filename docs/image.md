@@ -14,6 +14,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
+- `notary`: Configuration for Notary image singing. See [Notary Configuration](#notary-config) section below.
 
 ### <a id='builder-config'></a>Builder Configuration
 
@@ -105,6 +106,37 @@ build:
 ```
 
 See the kubernetes documentation on [setting environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) and [resource limits and requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for more information.
+
+### <a id='notary-config'></a>Notary Configuration
+
+The optional `notary` field on the `image` resource can be used to configure [Notary](https://github.com/theupdateframework/notary) image singing.
+```yaml
+notary:
+  v1:
+    url: "https://example.com/notary"
+    secretRef:
+      name: "notary-secret"
+```
+- `v1.url`: The URL of the notary server.
+- `v1.secretRef.name`: A [secret](#notary-secret) containing the encrypted private key and private key password.
+
+#### Generate Signing Key
+To generate a singing key, use the following commands from the [Docker Content Trust](https://docs.docker.com/engine/security/trust/#signing-images-with-docker-content-trust) documentation:
+```shell script
+% export DOCKER_CONTENT_TRUST_SERVER=<notary-server-url>
+% docker trust key generate my-key
+% docker trust signer add --key my-key.pub my-key registry.example.com/org/app
+```
+This will generate a private key in `~/.docker/trust/private` encrypted with the user provided password.
+
+#### <a id='notary-secret'></a>Create Notary Secret 
+To create the notary secret used by kpack for image signing, run the following command:
+```shell script
+% kubectl create secret generic <secret-name> --from-literal=password=<password> --from-file=$HOME/.docker/trust/private/<hash>.key
+```
+- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
+- `<password>`: The password provided to encrypt the private key.
+- `<hash>.key`: The private key file.
 
 ### Sample Image with a Git Source
 
