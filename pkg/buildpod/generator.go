@@ -49,17 +49,13 @@ type BuildPodable interface {
 	Services() v1alpha2.Services
 	V1Alpha1Bindings() (v1alpha1.Bindings, error)
 
-	BuildPod(v1alpha2.BuildPodImages, []corev1.Secret, v1alpha2.BuildPodBuilderConfig, []v1alpha2.ServiceBinding) (*corev1.Pod, error)
+	BuildPod(v1alpha2.BuildPodImages, []corev1.Secret, v1alpha2.BuildPodBuilderConfig, v1alpha2.AppProjectables) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	serviceBindings, err := g.fetchServiceBindings(build)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := g.validateServiceBindings(build, serviceBindings); err != nil {
-		return nil, fmt.Errorf("build rejected: %w", err)
 	}
 
 	secrets, err := g.fetchBuildSecrets(build)
@@ -73,37 +69,6 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	}
 
 	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig, serviceBindings)
-}
-
-func (g *Generator) validateServiceBindings(build BuildPodable, serviceBindings []v1alpha2.ServiceBinding) error {
-	serviceAccounts, err := g.fetchServiceAccounts(build)
-	if err != nil {
-		return err
-	}
-
-	var forbiddenSecrets = map[string]bool{}
-	for _, serviceAccount := range serviceAccounts {
-		for _, secret := range serviceAccount.Secrets {
-			forbiddenSecrets[secret.Name] = true
-		}
-	}
-
-	for _, sb := range serviceBindings {
-		if forbiddenSecrets[sb.SecretRef.Name] {
-			return fmt.Errorf("service %q uses forbidden secret %q", sb.Name, sb.SecretRef.Name)
-		}
-
-		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(sb.SecretRef.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		if t, ok := secret.StringData["type"]; !ok || secret.Type == "" || fmt.Sprintf("service.binding/%s", t) != string(secret.Type) {
-			return fmt.Errorf("service secret %q does not contain required type (%q) and matching stringData.type (%q)", sb.Name, secret.Type, t)
-		}
-	}
-
-	return nil
 }
 
 func (g *Generator) fetchServiceAccounts(build BuildPodable) ([]corev1.ServiceAccount, error) {
@@ -175,44 +140,72 @@ func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha2.BuildPodBui
 	}, nil
 }
 
-func (g *Generator) fetchServiceBindings(build BuildPodable) ([]v1alpha2.ServiceBinding, error) {
-	bindings := []v1alpha2.ServiceBinding{}
+func (g *Generator) fetchServiceBindings(build BuildPodable) (v1alpha2.AppProjectables, error) {
+	serviceAccounts, err := g.fetchServiceAccounts(build)
+	if err != nil {
+		return ServiceBindings{}, err
+	}
+
+	var forbiddenSecrets = map[string]bool{}
+	for _, serviceAccount := range serviceAccounts {
+		for _, secret := range serviceAccount.Secrets {
+			forbiddenSecrets[secret.Name] = true
+		}
+	}
+
 	if len(build.Services()) != 0 {
+		bindings := ServiceBindings{}
 		for _, s := range build.Services() {
+			var b ServiceBinding
 			if s.APIVersion == "v1" && s.Kind == "Secret" {
-				bindings = append(bindings, v1alpha2.ServiceBinding{
+				b = ServiceBinding{
 					Name:      s.Name,
 					SecretRef: &corev1.LocalObjectReference{Name: s.Name},
-				})
-				continue
+				}
+			} else {
+				gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
+				unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(s.Name, metav1.GetOptions{})
+				if err != nil {
+					return nil, err
+				}
+				ps := duckprovisionedserviceable.ProvisionedServicable{}
+				if err := duck.FromUnstructured(unstructured, &ps); err != nil {
+					return nil, err
+				}
+				b = ServiceBinding{
+					Name:      s.Name,
+					SecretRef: ps.Status.Binding,
+				}
 			}
-			gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
-			unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(s.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			ps := duckprovisionedserviceable.ProvisionedServicable{}
-			if err := duck.FromUnstructured(unstructured, &ps); err != nil {
-				return nil, err
+			if forbiddenSecrets[b.SecretRef.Name] {
+				return ServiceBindings{}, fmt.Errorf("build rejected: service %q uses forbidden secret %q", b.Name, b.SecretRef.Name)
 			}
 
-			bindings = append(bindings, v1alpha2.ServiceBinding{
-				Name:      s.Name,
-				SecretRef: ps.Status.Binding,
-			})
+			secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(b.SecretRef.Name, metav1.GetOptions{})
+			if err != nil {
+				return ServiceBindings{}, err
+			}
+
+			if t, ok := secret.StringData["type"]; !ok || secret.Type == "" || fmt.Sprintf("service.binding/%s", t) != string(secret.Type) {
+				return ServiceBindings{}, fmt.Errorf("build rejected: service secret %q does not contain required type (%q) and matching stringData.type (%q)", b.Name, secret.Type, t)
+			}
+
+			bindings = append(bindings, b)
 		}
+		return bindings, nil
 	} else if v1alpha1Bindings, err := build.V1Alpha1Bindings(); err != nil {
 		return nil, err
 	} else if len(v1alpha1Bindings) != 0 {
-		for _, b := range v1alpha1Bindings {
-			bindings = append(bindings, v1alpha2.ServiceBinding{
-				Name:                b.Name,
-				SecretRef:           b.SecretRef,
-				V1Alpha1MetadataRef: b.MetadataRef,
-			})
+		var bindings V1Alpha1ServiceBindings
+		for _, s := range v1alpha1Bindings {
+			if forbiddenSecrets[s.SecretRef.Name] {
+				return ServiceBindings{}, fmt.Errorf("build rejected: binding %q uses forbidden secret %q", s.Name, s.SecretRef.Name)
+			}
+			bindings = append(bindings, s)
 		}
+		return bindings, nil
 	}
-	return bindings, nil
+	return ServiceBindings{}, nil
 }
 
 func parseCNBID(image ggcrv1.Image, env string) (int64, error) {

@@ -255,7 +255,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Gid:         5678,
 					PlatformAPI: "0.5",
 				},
-				ServiceBindings: []v1alpha2.ServiceBinding{
+				ServiceBindings: buildpod.ServiceBindings{
 					{Name: "some-service", SecretRef: &corev1.LocalObjectReference{Name: "some-service"}},
 					{Name: "some-provisioned-service", SecretRef: &corev1.LocalObjectReference{Name: "some-ps-binding-secret"}},
 				},
@@ -338,7 +338,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			pod, err := generator.Generate(build)
-			require.EqualError(t, err, fmt.Sprintf("build rejected: service \"some-binding\" uses forbidden secret %q", dockerSecret.Name))
+			require.EqualError(t, err, fmt.Sprintf("build rejected: binding \"some-binding\" uses forbidden secret %q", dockerSecret.Name))
 			require.Nil(t, pod)
 		})
 	})
@@ -363,7 +363,7 @@ type buildPodCall struct {
 	BuildPodImages        v1alpha2.BuildPodImages
 	Secrets               []corev1.Secret
 	BuildPodBuilderConfig v1alpha2.BuildPodBuilderConfig
-	ServiceBindings       []v1alpha2.ServiceBinding
+	ServiceBindings       v1alpha2.AppProjectables
 }
 
 func (tb *testBuildPodable) GetName() string {
@@ -382,7 +382,7 @@ func (tb *testBuildPodable) BuilderSpec() v1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images v1alpha2.BuildPodImages, secrets []corev1.Secret, config v1alpha2.BuildPodBuilderConfig, bindings []v1alpha2.ServiceBinding) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images v1alpha2.BuildPodImages, secrets []corev1.Secret, config v1alpha2.BuildPodBuilderConfig, bindings v1alpha2.AppProjectables) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
 		BuildPodImages:        images,
 		Secrets:               secrets,

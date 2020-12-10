@@ -50,10 +50,9 @@ type BuildPodBuilderConfig struct {
 	PlatformAPI string
 }
 
-type ServiceBinding struct {
-	Name                string
-	SecretRef           *corev1.LocalObjectReference
-	V1Alpha1MetadataRef *corev1.LocalObjectReference
+//go:generate counterfeiter . AppProjectables
+type AppProjectables interface {
+	AppProjections(mountDir string) ([]corev1.Volume, []corev1.VolumeMount)
 }
 
 var (
@@ -101,7 +100,7 @@ var (
 	}
 )
 
-func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig, bindings []ServiceBinding) (*corev1.Pod, error) {
+func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig, bindings AppProjectables) (*corev1.Pod, error) {
 	if bc.unsupported() {
 		return nil, errors.Errorf("incompatible builder platform API version: %s", bc.PlatformAPI)
 	}
@@ -117,7 +116,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
 
-	bindingVolumes, bindingVolumeMounts := b.setupBindings(bindings)
+	bindingVolumes, bindingVolumeMounts := bindings.AppProjections(platformVolume.MountPath)
 
 	builderImage := b.Spec.Builder.Image
 
@@ -489,57 +488,6 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 	}
 
 	return volumes, volumeMounts, args
-}
-
-func (b *Build) setupBindings(bindings []ServiceBinding) ([]corev1.Volume, []corev1.VolumeMount) {
-	volumes := []corev1.Volume{}
-	volumeMounts := []corev1.VolumeMount{}
-
-	for _, s := range bindings {
-		if s.SecretRef != nil {
-			secretVolume := fmt.Sprintf("service-binding-secret-%s", s.Name)
-			volumes = append(volumes,
-				corev1.Volume{
-					Name: secretVolume,
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: s.SecretRef.Name,
-						},
-					},
-				},
-			)
-			volumeMounts = append(volumeMounts,
-				corev1.VolumeMount{
-					Name:      secretVolume,
-					MountPath: filepath.Join(platformVolume.MountPath, "bindings", s.Name),
-					ReadOnly:  true,
-				},
-			)
-		}
-		// If this is a v1alpha1 binding
-		if s.V1Alpha1MetadataRef != nil {
-			metadataVolume := fmt.Sprintf("service-binding-metadata-%s", s.Name)
-			volumes = append(volumes,
-				corev1.Volume{
-					Name: metadataVolume,
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: *s.V1Alpha1MetadataRef,
-						},
-					},
-				},
-			)
-			volumeMounts = append(volumeMounts,
-				corev1.VolumeMount{
-					Name:      metadataVolume,
-					MountPath: filepath.Join(platformVolume.MountPath, "bindings", s.Name, "metadata"),
-					ReadOnly:  true,
-				},
-			)
-		}
-	}
-
-	return volumes, volumeMounts
 }
 
 func (bc *BuildPodBuilderConfig) legacy() bool {
