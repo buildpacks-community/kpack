@@ -31,8 +31,8 @@ const (
 	imagePullSecretsDirName   = "image-pull-secrets-dir"
 	builderPullSecretsDirName = "builder-pull-secrets-dir"
 
-	notaryDirName             = "notary-dir"
-	reportDirName             = "report-dir"
+	notaryDirName = "notary-dir"
+	reportDirName = "report-dir"
 
 	envVarBuildChanges = "BUILD_CHANGES"
 )
@@ -456,15 +456,19 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": "linux",
 			},
-			Volumes:       secretVolumes,
+			Volumes: append(
+				secretVolumes,
+				corev1.Volume{
+					Name: reportDirName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				b.notarySecretVolume(),
+			),
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
-				{
-					Name:            "completion",
-					Image:           config.CompletionImage,
-					ImagePullPolicy: corev1.PullIfNotPresent,
-					Resources:       b.Spec.Resources,
-				},
+				b.completionContainer(config, secretArgs, secretVolumeMounts),
 			},
 			InitContainers: []corev1.Container{
 				{
@@ -476,7 +480,10 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 						"--run-image",
 						buildPodBuilderConfig.RunImage,
 						"--last-built-image",
-						b.Spec.LastBuild.Image),
+						b.Spec.LastBuild.Image,
+						"--report",
+						"/var/report/report.toml",
+					),
 						secretArgs,
 						b.Spec.Tags,
 					),
@@ -488,7 +495,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
-					VolumeMounts:    secretVolumeMounts,
+					VolumeMounts:    append(secretVolumeMounts, reportVolume),
 				},
 			},
 		},

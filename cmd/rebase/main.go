@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/pkg/errors"
+	"github.com/shurcooL/go/ioutil"
 
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/dockercreds"
@@ -24,6 +27,7 @@ var (
 	runImage       = flag.String("run-image", os.Getenv("RUN_IMAGE"), "The new run image to rebase")
 	lastBuiltImage = flag.String("last-built-image", os.Getenv("LAST_BUILT_IMAGE"), "The previous image to rebase")
 	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
+	reportFilePath = flag.String("report", os.Getenv("REPORT_FILE_PATH"), "The location at which to write the report.toml")
 
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -97,6 +101,20 @@ func rebase(tags []string, logger *log.Logger) error {
 	rebaser := lifecycle.Rebaser{
 		Logger: cmd.DefaultLogger,
 	}
-	_, err = rebaser.Rebase(appImage, newBaseImage, tags[1:])
-	return err
+	report, err := rebaser.Rebase(appImage, newBaseImage, tags[1:])
+	if err != nil {
+		return err
+	}
+
+	if *reportFilePath == "" {
+		return nil
+	}
+
+	buf := &bytes.Buffer{}
+	err = toml.NewEncoder(buf).Encode(report)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(*reportFilePath, buf)
 }
