@@ -2,8 +2,10 @@ package notary
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -39,28 +41,34 @@ func (a *AuthenticatingRoundTripper) RoundTrip(req *http.Request) (*http.Respons
 
 	header := resp.Header.Get("www-authenticate")
 	parts := strings.SplitN(header, " ", 2)
-	parts = strings.Split(parts[1], ",")
-	opts := make(map[string]string)
 
-	for _, part := range parts {
-		vals := strings.SplitN(part, "=", 2)
-		key := vals[0]
-		val := strings.Trim(vals[1], "\",")
-		opts[key] = val
+	realm, err := extractBearerOption("realm", parts[1])
+	if err != nil {
+		return nil, err
 	}
 
-	authReq, err := http.NewRequest(http.MethodGet, opts["realm"], nil)
+	service, err := extractBearerOption("service", parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	scope, err := extractBearerOption("scope", parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	authReq, err := http.NewRequest(http.MethodGet, realm, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	q := url.Values{}
-	q.Add("service", opts["service"])
-	q.Add("scope", opts["scope"])
+	q.Add("service", service)
+	q.Add("scope", scope)
 	q.Add("client_id", "kpack")
 	authReq.URL.RawQuery = q.Encode()
 
-	resource, err := parseRegistryAuthResource(opts["realm"])
+	resource, err := parseRegistryAuthResource(realm)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +109,15 @@ func (a *AuthenticatingRoundTripper) RoundTrip(req *http.Request) (*http.Respons
 	req.Header["Authorization"] = []string{"Bearer " + a.Token}
 
 	return a.WrappedRoundTripper.RoundTrip(req)
+}
+
+func extractBearerOption(kind string, from string) (string, error) {
+	r := regexp.MustCompile(fmt.Sprintf(`%s="(.*?)"`, kind))
+	m := r.FindStringSubmatch(from)
+	if len(m) != 2 {
+		return "", errors.Errorf("failed to parse '%s' from bearer response", kind)
+	}
+	return m[1], nil
 }
 
 type registryAuthResource struct {
