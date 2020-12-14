@@ -109,30 +109,24 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("generates a build name with build number", func() {
 			image.Name = "imageName"
-
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Contains(t, build.GenerateName, "imageName-build-27-")
 		})
 
 		it("sets builder to be the Builder's resolved latestImage", func() {
 			image.Name = "imageName"
-
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Equal(t, builder.LatestImage, build.Spec.Builder.Image)
 		})
 
 		it("propagates image's annotations onto the build", func() {
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 27)
-
-			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/reason": "CONFIG"}, build.Annotations)
+			build := image.Build(sourceResolver, builder, latestBuild, "some-reasons", "some-changes", "some-cache-name", 27)
+			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/buildChanges": "some-changes", "image.kpack.io/reason": "some-reasons"}, build.Annotations)
 		})
 
 		it("sets labels from image metadata and propagates image labels", func() {
 			image.Generation = 22
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Equal(t, map[string]string{
 				"label-key":                      "label-value",
 				"image.kpack.io/buildNumber":     "27",
@@ -141,8 +135,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets git url and git revision when image source is git", func() {
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Contains(t, build.Spec.Source.Git.URL, "https://some.git/url")
 			assert.Contains(t, build.Spec.Source.Git.Revision, "revision")
 			assert.Nil(t, build.Spec.Source.Blob)
@@ -155,8 +148,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					URL: "https://some.place/blob.jar",
 				},
 			}
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Nil(t, build.Spec.Source.Git)
 			assert.Nil(t, build.Spec.Source.Registry)
 			assert.Equal(t, build.Spec.Source.Blob.URL, "https://some.place/blob.jar")
@@ -168,8 +160,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					Image: "some-registry.io/some-image",
 				},
 			}
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 			assert.Nil(t, build.Spec.Source.Git)
 			assert.Nil(t, build.Spec.Source.Blob)
 			assert.Equal(t, build.Spec.Source.Registry.Image, "some-registry.io/some-image")
@@ -178,30 +169,28 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("with excludes additional tags names when explicitly disabled", func() {
 			image.Spec.Tag = "imagename/foo:test"
 			image.Spec.ImageTaggingStrategy = None
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 			require.Len(t, build.Spec.Tags, 1)
 		})
 
 		when("generates additional image names for a provided build number", func() {
 			it("with tag prefix if image name has a tag", func() {
 				image.Spec.Tag = "gcr.io/imagename/foo:test"
-				build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 45)
+				build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 45)
 				require.Len(t, build.Spec.Tags, 2)
 				require.Regexp(t, "gcr.io/imagename/foo:test-b45\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
 
 			it("without tag prefix if image name has no provided tag", func() {
 				image.Spec.Tag = "gcr.io/imagename/notags"
-				build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
-
+				build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 				require.Len(t, build.Spec.Tags, 2)
 				require.Regexp(t, "gcr.io/imagename/notags:b1\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
 
 			it("without tag prefix if image name has the tag 'latest' provided", func() {
 				image.Spec.Tag = "gcr.io/imagename/tagged:latest"
-				build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
-
+				build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 				require.Len(t, build.Spec.Tags, 2)
 				require.Regexp(t, "gcr.io/imagename/tagged:b1\\.\\d{8}\\.\\d{6}", build.Spec.Tags[1])
 			})
@@ -209,9 +198,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("generates a build name less than 64 characters", func() {
 			image.Name = "long-image-name-1234567890-1234567890-1234567890-1234567890-1234567890"
-
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
 			assert.True(t, len(build.Name) < 64, "expected %s to be less than 64", build.Name)
 		})
@@ -222,21 +209,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					{Name: "keyA", Value: "new"},
 				},
 			}
-
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 			assert.Equal(t, image.Spec.Build.Env, build.Spec.Env)
 		})
 
-		it("adds build reasons annotation", func() {
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig, BuildReasonCommit}, "some-cache-name", 1)
-
-			assert.Equal(t, "CONFIG,COMMIT", build.Annotations[BuildReasonAnnotation])
+		it("adds build reasons and changes annotation", func() {
+			reasons := "some reason"
+			changes := "some changes"
+			build := image.Build(sourceResolver, builder, latestBuild, reasons, changes, "some-cache-name", 1)
+			assert.Equal(t, reasons, build.Annotations[BuildReasonAnnotation])
+			assert.Equal(t, changes, build.Annotations[BuildChangesAnnotation])
 		})
 
 		it("adds stack information", func() {
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig, BuildReasonCommit}, "some-cache-name", 1)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 			assert.Equal(t, "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb", build.Spec.LastBuild.Image)
 			assert.Equal(t, "io.buildpacks.stack.bionic", build.Spec.LastBuild.StackId)
 		})
@@ -255,8 +241,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			build := image.Build(sourceResolver, builder, latestBuild, []string{BuildReasonConfig}, "some-cache-name", 1)
-
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 1)
 			assert.Equal(t, image.Spec.Build.Resources, build.Spec.Resources)
 		})
 
@@ -269,7 +254,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}
-			build := image.Build(sourceResolver, builder, latestBuild, []string{}, "some-cache-name", 27)
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", "some-cache-name", 27)
 
 			assert.Equal(t, image.Spec.Notary, build.Spec.Notary)
 		})

@@ -35,7 +35,6 @@ func (b *Build) IsRunning() bool {
 	if b == nil {
 		return false
 	}
-
 	return b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown()
 }
 
@@ -43,7 +42,6 @@ func (b *Build) BuildRef() string {
 	if b == nil {
 		return ""
 	}
-
 	return b.GetName()
 }
 
@@ -51,8 +49,14 @@ func (b *Build) BuildReason() string {
 	if b == nil {
 		return ""
 	}
-
 	return b.GetAnnotations()[BuildReasonAnnotation]
+}
+
+func (b *Build) BuildChanges() string {
+	if b == nil {
+		return ""
+	}
+	return b.GetAnnotations()[BuildChangesAnnotation]
 }
 
 func (b *Build) ImageGeneration() int64 {

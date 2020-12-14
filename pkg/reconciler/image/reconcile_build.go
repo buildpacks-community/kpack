@@ -18,16 +18,21 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 		return v1alpha1.ImageStatus{}, err
 	}
 
-	reasons, needed := buildNeeded(image, latestBuild, sourceResolver, builder)
-	switch needed {
+	result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+	if err != nil {
+		return v1alpha1.ImageStatus{}, errors.Wrap(err, "error determining if an image build is needed")
+	}
+
+	switch result.ConditionStatus {
 	case corev1.ConditionTrue:
 		nextBuildNumber := currentBuildNumber + 1
-		build := image.Build(sourceResolver, builder, latestBuild, reasons, buildCacheName, nextBuildNumber)
 
-		build, err := c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
+		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, buildCacheName, nextBuildNumber)
+		build, err = c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
 		if err != nil {
 			return v1alpha1.ImageStatus{}, err
 		}
+
 		return v1alpha1.ImageStatus{
 			Status: corev1alpha1.Status{
 				Conditions: scheduledBuildCondition(build),
@@ -45,7 +50,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 	case corev1.ConditionFalse:
 		return v1alpha1.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: noScheduledBuild(needed, builder, latestBuild),
+				Conditions: noScheduledBuild(result.ConditionStatus, builder, latestBuild),
 			},
 			LatestBuildRef:             latestBuild.BuildRef(),
 			LatestBuildReason:          latestBuild.BuildReason(),
@@ -56,9 +61,8 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 			BuildCacheName:             buildCacheName,
 		}, nil
 	default:
-		return v1alpha1.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", needed)
+		return v1alpha1.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", result.ConditionStatus)
 	}
-
 }
 
 func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder v1alpha1.BuilderResource, build *v1alpha1.Build) corev1alpha1.Conditions {

@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/blob"
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -28,6 +29,8 @@ var (
 	gitRevision   = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
+
+	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
@@ -58,6 +61,10 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", 0)
+
+	if err := buildchange.Log(logger, *buildChanges); err != nil {
+		logger.Println(err)
+	}
 
 	logLoadingSecrets(logger, dockerCredentials)
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)

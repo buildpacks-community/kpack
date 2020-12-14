@@ -11,6 +11,7 @@ import (
 	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/pkg/errors"
 
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 )
@@ -22,6 +23,7 @@ const (
 var (
 	runImage       = flag.String("run-image", os.Getenv("RUN_IMAGE"), "The new run image to rebase")
 	lastBuiltImage = flag.String("last-built-image", os.Getenv("LAST_BUILT_IMAGE"), "The previous image to rebase")
+	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -38,6 +40,10 @@ func main() {
 	flag.Parse()
 	tags := flag.Args()
 	logger := log.New(os.Stdout, "", 0)
+
+	if err := buildchange.Log(logger, *buildChanges); err != nil {
+		logger.Println(err)
+	}
 
 	cmd.Exit(rebase(tags, logger))
 }

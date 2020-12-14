@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 // +k8s:openapi-gen=true
@@ -139,8 +138,6 @@ func (sc ResolvedSourceConfig) ResolvedSource() ResolvedSource {
 type ResolvedSource interface {
 	IsUnknown() bool
 	IsPollable() bool
-	ConfigChanged(lastBuild *Build) bool
-	RevisionChanged(lastBuild *Build) bool
 	SourceConfig() SourceConfig
 }
 
@@ -179,23 +176,6 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 	return gs.Type != Commit && gs.Type != Unknown
 }
 
-func (gs *ResolvedGitSource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Git == nil {
-		return true
-	}
-
-	return gs.URL != lastBuild.Spec.Source.Git.URL ||
-		gs.SubPath != lastBuild.Spec.Source.SubPath
-}
-
-func (gs *ResolvedGitSource) RevisionChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Git == nil {
-		return true
-	}
-
-	return gs.Revision != lastBuild.Spec.Source.Git.Revision
-}
-
 // +k8s:openapi-gen=true
 type ResolvedBlobSource struct {
 	URL     string `json:"url"`
@@ -216,18 +196,6 @@ func (bs *ResolvedBlobSource) IsUnknown() bool {
 }
 
 func (bs *ResolvedBlobSource) IsPollable() bool {
-	return false
-}
-
-func (bs *ResolvedBlobSource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Blob == nil {
-		return true
-	}
-	return bs.URL != lastBuild.Spec.Source.Blob.URL ||
-		bs.SubPath != lastBuild.Spec.Source.SubPath
-}
-
-func (bs *ResolvedBlobSource) RevisionChanged(lastBuild *Build) bool {
 	return false
 }
 
@@ -256,19 +224,5 @@ func (rs *ResolvedRegistrySource) IsUnknown() bool {
 }
 
 func (rs *ResolvedRegistrySource) IsPollable() bool {
-	return false
-}
-
-func (rs *ResolvedRegistrySource) ConfigChanged(lastBuild *Build) bool {
-	if lastBuild.Spec.Source.Registry == nil {
-		return true
-	}
-
-	return rs.Image != lastBuild.Spec.Source.Registry.Image ||
-		!equality.Semantic.DeepEqual(rs.ImagePullSecrets, lastBuild.Spec.Source.Registry.ImagePullSecrets) ||
-		rs.SubPath != lastBuild.Spec.Source.SubPath
-}
-
-func (rs *ResolvedRegistrySource) RevisionChanged(lastBuild *Build) bool {
 	return false
 }

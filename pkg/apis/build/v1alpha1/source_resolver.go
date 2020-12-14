@@ -32,14 +32,6 @@ func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
 	})
 }
 
-func (sr *SourceResolver) ConfigChanged(lastBuild *Build) bool {
-	return sr.Status.Source.ResolvedSource().ConfigChanged(lastBuild)
-}
-
-func (sr *SourceResolver) RevisionChanged(lastBuild *Build) bool {
-	return sr.Status.Source.ResolvedSource().RevisionChanged(lastBuild)
-}
-
 func (sr *SourceResolver) PollingReady() bool {
 	return sr.Status.GetCondition(ActivePolling).IsTrue()
 }
