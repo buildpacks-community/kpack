@@ -404,7 +404,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		require.Len(t, list.Items, 1)
 
 		build := &list.Items[0]
-		build.Annotations[v1alpha1.BuildNeededAnnotation] = "true"
+		build.Annotations[v1alpha1.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
 		_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Update(build)
 		require.NoError(t, err)
 
