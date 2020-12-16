@@ -32,10 +32,7 @@ metadata:
 ```
 
 **Complexity:**
-The proposed approach is less complex than the alternative, but could limit our options to change things down the road. The alternative option is definitely more complex, but follows the same pattern that we have for stores and stacks. The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted.
-
-**Prior Art:**
-* Any issues? Previous Ideas? Other Projects?
+The proposed approach is less complex than the alternative, but could limit our options to change things down the road. The alternative option is definitely more complex, but follows the same pattern that we have for stores and stacks. The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted which we think can be solved using the monitored config map.
 
 **Alternatives:**
 We would create a ClusterLifecycle resource similiar a store or stack. The resources would be tied to each builder so that different builders can have different lifecycle versions. This has the benefit of allowing users to test new lifecycle versions without having to spin up another cluster. Also, users who created their own buildpack would not have to worry about a newer lifecycle dropping support for the Buildpack Api they are using. Due to the operator focused nature of this resource, and its similarity to ClusterStores and ClusterStacks, implementing this as a cluster scoped resource makes more sense at this time.
