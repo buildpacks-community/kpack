@@ -39,7 +39,7 @@ We would create a ClusterLifecycle resource similiar a store or stack. The resou
 
 On the kp side, we could create commands that would assist users in uploading or relocating the lifecycle to their canonical registry as well as managing existing lifecycles like they do with ClusterStores or ClusterStacks:
 	
-`kp clusterlifecycle create my-lifecycle --path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz"
+`kp clusterlifecycle create my-lifecycle --path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz"`
 or   
 `kp clusterlifecycle create my-lifecycle --image "gcr.io/my-registry/lifecycle:v0.9.2"`
 
