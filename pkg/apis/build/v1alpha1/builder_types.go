@@ -39,11 +39,13 @@ type NamespacedBuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type BuilderStatus struct {
-	corev1alpha1.Status `json:",inline"`
-	BuilderMetadata     BuildpackMetadataList `json:"builderMetadata,omitempty"`
-	Order               []OrderEntry          `json:"order,omitempty"`
-	Stack               BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                `json:"latestImage,omitempty"`
+	corev1alpha1.Status     `json:",inline"`
+	BuilderMetadata         BuildpackMetadataList `json:"builderMetadata,omitempty"`
+	Order                   []OrderEntry          `json:"order,omitempty"`
+	Stack                   BuildStack            `json:"stack,omitempty"`
+	LatestImage             string                `json:"latestImage,omitempty"`
+	ObservedStackGeneration int64                 `json:"observedStackGeneration,omitempty"`
+	ObservedStoreGeneration int64                 `json:"observedStoreGeneration,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -18,7 +18,6 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -43,9 +42,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		fakeTracker     = testhelpers.FakeTracker{}
-		fakeRepoFactory = func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
-			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
-		}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -55,7 +51,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			r := &builder.Reconciler{
 				Client:             fakeClient,
 				BuilderLister:      listers.GetBuilderLister(),
-				RepoFactory:        fakeRepoFactory,
 				BuilderCreator:     builderCreator,
 				KeychainFactory:    keychainFactory,
 				Tracker:            fakeTracker,
@@ -159,6 +154,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						Version: "2.0.0",
 					},
 				},
+				ObservedStoreGeneration: 10,
+				ObservedStackGeneration: 11,
 			}
 
 			expectedBuilder := &v1alpha1.Builder{
@@ -188,7 +185,9 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
-					LatestImage: builderIdentifier,
+					LatestImage:             builderIdentifier,
+					ObservedStoreGeneration: 10,
+					ObservedStackGeneration: 11,
 				},
 			}
 
@@ -208,9 +207,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
-				Keychain:            &registryfakes.FakeKeychain{},
-				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
-				BuilderSpec:         builder.Spec.BuilderSpec,
+				Keychain:     &registryfakes.FakeKeychain{},
+				ClusterStore: clusterStore,
+				ClusterStack: clusterStack,
+				BuilderSpec:  builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
 

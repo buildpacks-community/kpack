@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -18,7 +18,6 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -42,9 +41,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		fakeTracker     = testhelpers.FakeTracker{}
-		fakeRepoFactory = func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
-			return testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore}
-		}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -54,7 +50,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			r := &clusterBuilder.Reconciler{
 				Client:               fakeClient,
 				ClusterBuilderLister: listers.GetClusterBuilderLister(),
-				RepoFactory:          fakeRepoFactory,
 				BuilderCreator:       builderCreator,
 				KeychainFactory:      keychainFactory,
 				Tracker:              fakeTracker,
@@ -65,7 +60,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	clusterStore := &v1alpha1.ClusterStore{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
 		},
 		Spec:   v1alpha1.ClusterStoreSpec{},
@@ -73,7 +68,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	clusterStack := &v1alpha1.ClusterStack{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-stack",
 		},
 		Status: v1alpha1.ClusterStackStatus{
@@ -90,7 +85,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	builder := &v1alpha1.ClusterBuilder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Generation: initialGeneration,
 		},
@@ -160,6 +155,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						Version: "2.0.0",
 					},
 				},
+				ObservedStoreGeneration: 10,
+				ObservedStackGeneration: 11,
 			}
 
 			expectedBuilder := &v1alpha1.ClusterBuilder{
@@ -189,7 +186,9 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
-					LatestImage: builderIdentifier,
+					LatestImage:             builderIdentifier,
+					ObservedStoreGeneration: 10,
+					ObservedStackGeneration: 11,
 				},
 			}
 
@@ -209,9 +208,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
-				Keychain:            &registryfakes.FakeKeychain{},
-				BuildpackRepository: testhelpers.FakeBuildpackRepository{ClusterStore: clusterStore},
-				BuilderSpec:         builder.Spec.BuilderSpec,
+				Keychain:     &registryfakes.FakeKeychain{},
+				ClusterStore: clusterStore,
+				ClusterStack: clusterStack,
+				BuilderSpec:  builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
@@ -348,7 +348,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("updates status and doesn't build builder when stack not ready", func() {
 			notReadyClusterStack := &v1alpha1.ClusterStack{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-stack",
 				},
 				Status: v1alpha1.ClusterStackStatus{

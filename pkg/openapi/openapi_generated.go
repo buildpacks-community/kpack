@@ -737,6 +737,18 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Format: "",
 						},
 					},
+					"observedStackGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"observedStoreGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 				},
 			},
 		},
