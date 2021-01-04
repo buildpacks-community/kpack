@@ -744,13 +744,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("creating a rebase pod", func() {
-			it("creates a pod just to rebase", func() {
-				build.Annotations = map[string]string{
-					v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
-					v1alpha1.BuildChangesAnnotation: "some-stack-change",
-					"some/annotation":               "to-pass-through",
-				}
+			build.Annotations = map[string]string{
+				v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
+				v1alpha1.BuildChangesAnnotation: "some-stack-change",
+				"some/annotation":               "to-pass-through",
+			}
 
+			it("creates a pod just to rebase", func() {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
@@ -801,6 +801,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 						},
+						{
+							Name: "report-dir",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+						{
+							Name: "notary-dir",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
@@ -822,6 +834,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"builderregistry.io/run",
 								"--last-built-image",
 								build.Spec.LastBuild.Image,
+								"--report",
+								"/var/report/report.toml",
 								"-basic-docker=docker-secret-1=acr.io",
 								"-dockerconfig=docker-secret-2",
 								"-dockercfg=docker-secret-3",
@@ -848,10 +862,62 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 									Name:      "secret-volume-docker-secret-3",
 									MountPath: "/var/build-secrets/docker-secret-3",
 								},
+								{
+									Name:      "report-dir",
+									MountPath: "/var/report",
+								},
 							},
 						},
 					},
 				}, pod.Spec)
+			})
+
+			when("a notary config is present on the build", func() {
+				it("sets up the completion image to sign the image", func() {
+					build.Spec.Notary = &v1alpha1.NotaryConfig{
+						V1: &v1alpha1.NotaryV1Config{
+							URL: "some-notary-url",
+							SecretRef: v1alpha1.NotarySecretRef{
+								Name: "some-notary-secret",
+							},
+						},
+					}
+
+					pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					require.Equal(t,
+						[]string{
+							directExecute,
+							"completion",
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "notary-dir",
+						ReadOnly:  true,
+						MountPath: "/var/notary/v1",
+					})
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "report-dir",
+						ReadOnly:  false,
+						MountPath: "/var/report",
+					})
+
+					require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+						Name: "notary-dir",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "some-notary-secret",
+							},
+						},
+					})
+				})
 			})
 		})
 
@@ -869,16 +935,19 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Equal(t, pod.Spec.Containers[0].Args, []string{
-					directExecute,
-					"completion",
-					"-notary-v1-url=some-notary-url",
-					"-basic-git=git-secret-1=https://github.com",
-					"-ssh-git=git-secret-2=https://bitbucket.com",
-					"-basic-docker=docker-secret-1=acr.io",
-					"-dockerconfig=docker-secret-2",
-					"-dockercfg=docker-secret-3",
-				})
+				require.Equal(t,
+					[]string{
+						directExecute,
+						"completion",
+						"-notary-v1-url=some-notary-url",
+						"-basic-git=git-secret-1=https://github.com",
+						"-ssh-git=git-secret-2=https://bitbucket.com",
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+					},
+					pod.Spec.Containers[0].Args,
+				)
 
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 					Name:      "notary-dir",
