@@ -15,7 +15,6 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/tracker"
@@ -26,16 +25,13 @@ const (
 	Kind           = "ClusterBuilder"
 )
 
-type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
-
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, clusterStore *v1alpha1.ClusterStore, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(
 	opt reconciler.Options,
 	informer v1alpha1informers.ClusterBuilderInformer,
-	repoFactory NewBuildpackRepository,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
@@ -44,7 +40,6 @@ func NewController(
 	c := &Reconciler{
 		Client:               opt.Client,
 		ClusterBuilderLister: informer.Lister(),
-		RepoFactory:          repoFactory,
 		BuilderCreator:       builderCreator,
 		KeychainFactory:      keychainFactory,
 		ClusterStoreLister:   clusterStoreInformer.Lister(),
@@ -63,7 +58,6 @@ func NewController(
 type Reconciler struct {
 	Client               versioned.Interface
 	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
-	RepoFactory          NewBuildpackRepository
 	BuilderCreator       BuilderCreator
 	KeychainFactory      registry.KeychainFactory
 	Tracker              reconciler.Tracker
@@ -135,7 +129,7 @@ func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, builder.Spec.BuilderSpec)
+	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.ClusterBuilder) error {

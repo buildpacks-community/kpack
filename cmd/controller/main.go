@@ -132,12 +132,6 @@ func main() {
 		ImageFetcher:    &registry.Client{},
 	}
 
-	builderCreator := &cnb.RemoteBuilderCreator{
-		RegistryClient: &registry.Client{},
-		LifecycleImage: *lifecycleImage,
-		KpackVersion:   cmd.Identifer,
-	}
-
 	gitResolver := git.NewResolver(k8sClient)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
@@ -157,11 +151,18 @@ func main() {
 		Keychain:       kpackKeychain,
 	}
 
+	builderCreator := &cnb.RemoteBuilderCreator{
+		RegistryClient:         &registry.Client{},
+		LifecycleImage:         *lifecycleImage,
+		KpackVersion:           cmd.Identifer,
+		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
+	}
+
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController := builder.NewController(options, builderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterBuilderController := clusterBuilder.NewController(options, clusterBuilderInformer, newBuildpackRepository(kpackKeychain), builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
 

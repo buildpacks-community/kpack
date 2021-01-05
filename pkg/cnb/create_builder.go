@@ -16,13 +16,18 @@ type BuildpackRepository interface {
 	FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error)
 }
 
+type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) BuildpackRepository
+
 type RemoteBuilderCreator struct {
-	RegistryClient RegistryClient
-	LifecycleImage string
-	KpackVersion   string
+	RegistryClient         RegistryClient
+	LifecycleImage         string
+	NewBuildpackRepository NewBuildpackRepository
+	KpackVersion           string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackRepo BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterStore *v1alpha1.ClusterStore, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
+	buildpackRepo := r.NewBuildpackRepository(clusterStore)
+
 	buildImage, _, err := r.RegistryClient.Fetch(keychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
@@ -70,8 +75,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, buildpackR
 			RunImage: clusterStack.Status.RunImage.LatestImage,
 			ID:       clusterStack.Status.Id,
 		},
-		Buildpacks: buildpackMetadata(builderBldr.buildpacks()),
-		Order: builderBldr.order,
+		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
+		Order:                   builderBldr.order,
+		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
+		ObservedStoreGeneration: clusterStore.Status.ObservedGeneration,
 	}, nil
 }
 

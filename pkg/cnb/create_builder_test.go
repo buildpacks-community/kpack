@@ -17,6 +17,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -48,6 +49,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		keychain = authn.NewMultiKeychain(authn.DefaultKeychain)
 
 		buildpackRepository = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
+		newBuildpackRepo    = func(store *v1alpha1.ClusterStore) BuildpackRepository {
+			return buildpackRepository
+		}
 
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
@@ -65,6 +69,17 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			size:   100,
 		}
 
+		store = &v1alpha1.ClusterStore{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: "sample-store",
+			},
+			Status: v1alpha1.ClusterStoreStatus{
+				Status: corev1alpha1.Status{
+					ObservedGeneration: 10,
+				},
+			},
+		}
+
 		stack = &v1alpha1.ClusterStack{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "sample-stack",
@@ -79,6 +94,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			Status: v1alpha1.ClusterStackStatus{
+				Status: corev1alpha1.Status{
+					ObservedGeneration: 11,
+				},
 				ResolvedClusterStack: v1alpha1.ResolvedClusterStack{
 					Id: stackID,
 					BuildImage: v1alpha1.ClusterStackStatusImage{
@@ -128,9 +146,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		subject = RemoteBuilderCreator{
-			RegistryClient: registryClient,
-			LifecycleImage: lifecycleImage,
-			KpackVersion:   "v1.2.3 (git sha: abcdefg123456)",
+			RegistryClient:         registryClient,
+			LifecycleImage:         lifecycleImage,
+			KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
+			NewBuildpackRepository: newBuildpackRepo,
 		}
 	)
 
@@ -255,7 +274,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+			builderRecord, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -263,17 +282,19 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
 			assert.Contains(t, builderRecord.Buildpacks, v1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
+			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
+			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
 
 			assert.Equal(t, builderRecord.Order, []v1alpha1.OrderEntry{
 				{
 					Group: []v1alpha1.BuildpackRef{
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
-							Optional: false,
+							Optional:      false,
 						},
 						{
 							BuildpackInfo: v1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
-							Optional: true,
+							Optional:      true,
 						},
 					},
 				},
@@ -513,11 +534,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -562,7 +583,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.cflinuxfs3 is not supported")
 			})
 
@@ -603,7 +624,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
@@ -643,7 +664,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(keychain, buildpackRepository, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 

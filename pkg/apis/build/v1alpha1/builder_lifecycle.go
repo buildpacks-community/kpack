@@ -9,10 +9,12 @@ import (
 )
 
 type BuilderRecord struct {
-	Image      string
-	Stack      BuildStack
-	Buildpacks BuildpackMetadataList
-	Order      []OrderEntry
+	Image                   string
+	Stack                   BuildStack
+	Buildpacks              BuildpackMetadataList
+	Order                   []OrderEntry
+	ObservedStoreGeneration int64
+	ObservedStackGeneration int64
 }
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
@@ -27,6 +29,8 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 		},
 	}
 	bs.Order = record.Order
+	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
+	bs.ObservedStackGeneration = record.ObservedStackGeneration
 }
 
 func (cb *BuilderStatus) ErrorCreate(err error) {

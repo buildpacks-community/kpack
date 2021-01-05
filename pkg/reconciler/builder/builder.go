@@ -29,12 +29,11 @@ const (
 type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
 
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, buildpackRepo cnb.BuildpackRepository, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, clusterStore *v1alpha1.ClusterStore, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options,
 	builderInformer v1alpha1informers.BuilderInformer,
-	repoFactory NewBuildpackRepository,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
@@ -43,7 +42,6 @@ func NewController(opt reconciler.Options,
 	c := &Reconciler{
 		Client:             opt.Client,
 		BuilderLister:      builderInformer.Lister(),
-		RepoFactory:        repoFactory,
 		BuilderCreator:     builderCreator,
 		KeychainFactory:    keychainFactory,
 		ClusterStoreLister: clusterStoreInformer.Lister(),
@@ -62,7 +60,6 @@ func NewController(opt reconciler.Options,
 type Reconciler struct {
 	Client             versioned.Interface
 	BuilderLister      v1alpha1Listers.BuilderLister
-	RepoFactory        NewBuildpackRepository
 	BuilderCreator     BuilderCreator
 	KeychainFactory    registry.KeychainFactory
 	Tracker            reconciler.Tracker
@@ -134,7 +131,7 @@ func (c *Reconciler) reconcileBuilder(builder *v1alpha1.Builder) (v1alpha1.Build
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	return c.BuilderCreator.CreateBuilder(keychain, c.RepoFactory(clusterStore), clusterStack, builder.Spec.BuilderSpec)
+	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
