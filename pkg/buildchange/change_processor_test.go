@@ -43,21 +43,9 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 
 	when("single change processed", func() {
 		when("TRIGGER", func() {
-			when("date string is given in unsupported format", func() {
-				change := buildchange.NewTriggerChange("bad date string")
-				expectedErrorStr := `error determining if build is required for reason 'TRIGGER': parsing time "bad date string" as "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000": cannot parse "bad date string" as "2006"`
-
-				it("errors for Summarize", func() {
-					_, err := cp.Process(change).Summarize()
-					assert.Error(t, err)
-					assert.Equal(t, expectedErrorStr, err.Error())
-				})
-			})
-
-			when("date string is given in supported format", func() {
-				change := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
-				expectedReasonsStr := "TRIGGER"
-				expectedChangesStr := testhelpers.CompactJSON(`
+			change := buildchange.NewTriggerChange("Fri, 20 Nov 2020 15:38:15 -0500")
+			expectedReasonsStr := "TRIGGER"
+			expectedChangesStr := testhelpers.CompactJSON(`
 [
   {
     "reason": "TRIGGER",
@@ -66,17 +54,16 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
   }
 ]`)
 
-				it("returns the correct ChangeSummary and does not error", func() {
-					summary, err := cp.Process(change).Summarize()
-					assert.NoError(t, err)
-					assert.True(t, summary.HasChanges)
-					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
-					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+			it("returns the correct ChangeSummary and does not error", func() {
+				summary, err := cp.Process(change).Summarize()
+				assert.NoError(t, err)
+				assert.True(t, summary.HasChanges)
+				assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
+				assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
-					var changes []buildchange.GenericChange
-					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
-					assert.NoError(t, err)
-				})
+				var changes []buildchange.GenericChange
+				err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
+				assert.NoError(t, err)
 			})
 		})
 
@@ -409,7 +396,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 		when("they are all valid", func() {
 			commitChange := buildchange.NewCommitChange("old-revision", "new-revision")
 
-			triggerChange := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
+			triggerChange := buildchange.NewTriggerChange("Fri, 20 Nov 2020 15:38:15 -0500")
 
 			oldRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ad"
 			newRunImageRef := "gcr.io/some-project/repo/run@sha256:87302783be0a0cab9fde5b68c9954b7e9150ca0d514ba542e9810c3c6f2984ae"
@@ -606,21 +593,8 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("they are all invalid", func() {
-			triggerChange := buildchange.NewTriggerChange("bad date string")
-			stackChange := buildchange.NewStackChange("invalid-oldRunImageRef", "invalid-newRunImageRef")
-			expectedErrorStr := `error determining if build is required for reason 'TRIGGER': parsing time "bad date string" as "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000": cannot parse "bad date string" as "2006"
-error determining if build is required for reason 'STACK': could not parse reference: invalid-oldRunImageRef; could not parse reference: invalid-newRunImageRef`
-
-			it("errors for Summarize", func() {
-				_, err := cp.Process(triggerChange).Process(stackChange).Summarize()
-				assert.Error(t, err)
-				assert.Equal(t, expectedErrorStr, err.Error())
-			})
-		})
-
 		when("some are invalid", func() {
-			triggerChange := buildchange.NewTriggerChange("2020-11-20 15:38:15.794105 -0500 EST m=+0.022963826")
+			triggerChange := buildchange.NewTriggerChange("Fri, 20 Nov 2020 15:38:15 -0500")
 			stackChange := buildchange.NewStackChange("invalid-oldRunImageRef", "invalid-newRunImageRef")
 			expectedErrorStr := `error determining if build is required for reason 'STACK': could not parse reference: invalid-oldRunImageRef; could not parse reference: invalid-newRunImageRef`
 

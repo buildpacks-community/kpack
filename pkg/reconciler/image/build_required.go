@@ -1,6 +1,8 @@
 package image
 
 import (
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -54,10 +56,12 @@ func triggerChange(lastBuild *v1alpha1.Build) buildchange.Change {
 		return nil
 	}
 
-	time, ok := lastBuild.Annotations[v1alpha1.BuildNeededAnnotation]
+	_, ok := lastBuild.Annotations[v1alpha1.BuildNeededAnnotation]
 	if !ok {
 		return nil
 	}
+
+	time := time.Now().Format(time.RFC1123Z)
 	return buildchange.NewTriggerChange(time)
 }
 
