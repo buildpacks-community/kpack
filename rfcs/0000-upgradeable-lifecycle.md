@@ -15,8 +15,6 @@ A simple, monolithic approach that would keep a single lifecycle version for the
 
 2. Add the concept of lifecycle version to our descriptor files so that `kp import` can upgrade the lifecycle. 
 
-We would also need compatibility checking to make sure that kpack can support the version of the lifecycle that is being used. Additionally, we would not want all images to be rebuilt on a lifecycle upgrade. 
-
 One issue with this approach is that currently, the lifecycle image is passed to the kpack controller as an environment variable, so any change to the lifecycle image would require a kpack controller restart to propogate that change. We could get around this by introducing a `kpack-config` config map that would be monitored by the kpack controller for changes. To start, this config will probably just have the lifecycle version in it, but it does open the door for us to add other config options further down the road. An example `kpack-config` could look like:
 
 ```yaml
@@ -30,6 +28,8 @@ metadata:
   namespace: kpack
 
 ```
+
+We would also need compatibility checking to make sure that kpack can support the version of the lifecycle that is being used. Additionally, we would not want all images to be rebuilt on a lifecycle upgrade. To accomplish the compatibility checking, we can create a validating webhook that would make sure that the lifecycle in the config map was supported by kpack.
 
 **Complexity:**
 The proposed approach is less complex than the alternative, but could limit our options to change things down the road. The alternative option is definitely more complex, but follows the same pattern that we have for stores and stacks. The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted which we think can be solved using the monitored config map.
