@@ -9,11 +9,11 @@ A simple, monolithic approach that would keep a single lifecycle version for the
 
 1. Create a command in `kp` that would give users the ability to manually update their lifecycle:
 
-	`kp lifecycle upgrade --image "gcr.io/my-registry/lifecycle:v0.9.2"`
+	`kp lifecycle upgrade --linux "gcr.io/my-registry/lifecycle:v0.9.2" --windows "gcr.io/my-registry/windows-lifecycle:v0.9.2"`
 	
 	Additionally, We could add the ability to update by providing the path to the windows and linux lifecycle downloads:
 	
-	`kp lifecycle upgrade --linux-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
+	`kp lifecycle upgrade --linux "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
 	
 	In this case, kp would assemble the lifecycle image similar to how we do it in our kpack release.
 
