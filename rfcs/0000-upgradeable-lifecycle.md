@@ -9,9 +9,12 @@ A simple, monolithic approach that would keep a single lifecycle version for the
 
 1. Create a command in `kp` that would give users the ability to manually update their lifecycle:
 
-	`kp lifecycle upgrade --path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz"`  
-	or  
-	`kp lifecycle upgrade --image "gcr.io/my-registry/lifecycle:v0.9.2"`  
+	`kp lifecycle upgrade --image "gcr.io/my-registry/lifecycle:v0.9.2"`
+	
+	Additionally, We could add the ability to update by providing the path to the windows and linux lifecycle downloads:
+	
+	`kp lifecycle upgrade --linux-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
+
 
 2. Add the concept of lifecycle version to our descriptor files so that `kp import` can upgrade the lifecycle. 
 
@@ -28,8 +31,11 @@ metadata:
   namespace: kpack
 
 ```
+Alternatively, we could reuse the the `kp-config` to accomplish this.
 
-We would also need compatibility checking to make sure that kpack can support the version of the lifecycle that is being used. Additionally, we would not want all images to be rebuilt on a lifecycle upgrade. To accomplish the compatibility checking, we can create a validating webhook that would make sure that the lifecycle in the config map was supported by kpack.
+We can implement compatibility checking to make sure that kpack can support the version of the lifecycle that is being used by creating a validating webhook that would make sure that the lifecycle in the config map was supported by kpack. This would require some metadata about the lifecycle to be included in the config map though.
+
+Note: we would not want all images to be rebuilt on a lifecycle upgrade
 
 **Complexity:**
 The proposed approach is less complex than the alternative, but could limit our options to change things down the road. The alternative option is definitely more complex, but follows the same pattern that we have for stores and stacks. The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted which we think can be solved using the monitored config map.
@@ -39,7 +45,7 @@ We would create a ClusterLifecycle resource similiar a store or stack. The resou
 
 On the kp side, we could create commands that would assist users in uploading or relocating the lifecycle to their canonical registry as well as managing existing lifecycles like they do with ClusterStores or ClusterStacks:
 	
-`kp clusterlifecycle create my-lifecycle --path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz"`
+`kp lifecycle upgrade --linux-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
 or   
 `kp clusterlifecycle create my-lifecycle --image "gcr.io/my-registry/lifecycle:v0.9.2"`
 
@@ -88,4 +94,4 @@ spec:
     - id: paketo-buildpacks/java
 ```
 **Risks:**
-Right now, the lifecycle is pretty hidden from the end user. In both these approaches, we would be making the user responsible for it, which could create extra work from them on the ci/testing front.
+Right now, the lifecycle is pretty hidden from the end user. In both these approaches, we would be making the user aware of it, which could create extra work from them on the ci/testing front.
