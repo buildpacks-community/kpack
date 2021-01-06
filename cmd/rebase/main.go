@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/pkg/errors"
-	"github.com/shurcooL/go/ioutil"
 
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/dockercreds"
@@ -116,5 +116,5 @@ func rebase(tags []string, logger *log.Logger) error {
 		return err
 	}
 
-	return ioutil.WriteFile(*reportFilePath, buf)
+	return ioutil.WriteFile(*reportFilePath, buf.Bytes(), 0777)
 }
