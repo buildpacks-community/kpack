@@ -5,7 +5,7 @@ Currently, the lifecycle version used in kpack is not configurable, nor is it us
 We would like to decouple the lifecycle upgrade process from the kpack upgrade process, allowing users to upgrade the lifecycle on their own.
 
 **Actions to take:**
-A simple, monolithic approach that would keep a single lifecycle version for the whole cluster like it is today, but with the functionality fo configuring that version exposed. The main benefit of doing something like this it will likely be the least intrusive on user workflow. The lifecycle would continue to be something that is more back of mind for users. We would ship a version of the lifecycle with each kpack release like we do today. Additionally, since kpack has to be compatible with the platform api of the lifecycle, keeping the lifecycle version tied to kpack instead of a resource on a builder seems to make more sense right now. We would implement this by adding a few features to kp:
+A simple, monolithic approach that would keep a single lifecycle version for the whole cluster like it is today, but with the functionality for configuring that version exposed. The main benefit of doing something like this it will likely be the least intrusive on user workflow. The lifecycle would continue to be something that is more back of mind for users. We would ship a version of the lifecycle with each kpack release like we do today. Additionally, since kpack has to be compatible with the platform api of the lifecycle, keeping the lifecycle version tied to kpack instead of a resource on a builder seems to make more sense right now. We would implement this by adding a few features to kp:
 
 1. Create a command in `kp` that would give users the ability to manually update their lifecycle:
 
