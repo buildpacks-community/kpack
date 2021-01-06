@@ -14,84 +14,20 @@ A simple, monolithic approach that would keep a single lifecycle version for the
 	Additionally, We could add the ability to update by providing the path to the windows and linux lifecycle downloads:
 	
 	`kp lifecycle upgrade --linux-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
+	
+	In this case, kp would assemble the lifecycle image similar to how we do it in our kpack release.
 
 
 2. Add the concept of lifecycle version to our descriptor files so that `kp import` can upgrade the lifecycle. 
 
-One issue with this approach is that currently, the lifecycle image is passed to the kpack controller as an environment variable, so any change to the lifecycle image would require a kpack controller restart to propogate that change. We could get around this by introducing a `kpack-config` config map that would be monitored by the kpack controller for changes. To start, this config will probably just have the lifecycle version in it, but it does open the door for us to add other config options further down the road. An example `kpack-config` could look like:
+Currently, the lifecycle image is passed to the kpack controller as an environment variable, so any change to the lifecycle image would require a kpack controller restart to propagate that change. We could get around this by monitoring the `lifecycle-image` config map for any changes using a knative ConfigMapInformer instead of providing the lifecycle as an environment variable to the controller.
 
-```yaml
-
-apiVersion: v1
-data:
-  lifecycle.image: gcr.io/my-registry/lifecycle:v0.9.2
-kind: ConfigMap
-metadata:
-  name: kpack-config
-  namespace: kpack
-
-```
-Alternatively, we could reuse the the `kp-config` to accomplish this.
-
-We can implement compatibility checking to make sure that kpack can support the version of the lifecycle that is being used by creating a validating webhook that would make sure that the lifecycle in the config map was supported by kpack. This would require some metadata about the lifecycle to be included in the config map though.
+We can implement compatibility checking to make sure that kpack can support the version of the lifecycle that is being used by creating a validating webhook that would make sure that the lifecycle in the config map has a platform api that was supported by kpack. This would require some metadata about the lifecycle to be included in the config map though. kp could fetch the image and add metadata containing the platform api to the `lifecycle-image` config map. The validating webhook would only attempt to validate the `lifecycle-image` config if the metadata was present.
 
 Note: we would not want all images to be rebuilt on a lifecycle upgrade
 
 **Complexity:**
-The proposed approach is less complex than the alternative, but could limit our options to change things down the road. The alternative option is definitely more complex, but follows the same pattern that we have for stores and stacks. The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted which we think can be solved using the monitored config map.
+The main point of complexity for the proposed solution is figuring out how to update the lifecycle without requiring the kpack controller to be restarted which we think can be solved using the monitored config map.
 
-**Alternatives:**
-We would create a ClusterLifecycle resource similiar a store or stack. The resources would be tied to each builder so that different builders can have different lifecycle versions. This has the benefit of allowing users to test new lifecycle versions without having to spin up another cluster. Also, users who created their own buildpack would not have to worry about a newer lifecycle dropping support for the Buildpack Api they are using. Due to the operator focused nature of this resource, and its similarity to ClusterStores and ClusterStacks, implementing this as a cluster scoped resource makes more sense at this time.
-
-On the kp side, we could create commands that would assist users in uploading or relocating the lifecycle to their canonical registry as well as managing existing lifecycles like they do with ClusterStores or ClusterStacks:
-	
-`kp lifecycle upgrade --linux-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz" --windows-path "https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+windows.x86-64.tgz"`  
-or   
-`kp clusterlifecycle create my-lifecycle --image "gcr.io/my-registry/lifecycle:v0.9.2"`
-
-The spec for a lifecycle resource could look something like this:
-
-```yaml
-
-apiVersion: kpack.io/v1alpha1
-kind: ClusterLifecycle
-metadata:
-  name: default
-spec:  
-  image: "gcr.io/some-registry/lifecycle:v0.9.2"
-```
-	
-This approach would also allow us to add lifecycles to descriptor files for easier updating.
-	
-On the (Cluster)Builder side of things, we could modify the spec to add a `lifecycle` field:
-	
-
-```yaml
-
-apiVersion: kpack.io/v1alpha1
-kind: Builder
-metadata:
-  name: some-builder
-  namespace: default
-spec:
-  serviceAccount: default
-  tag: gcr.io/some-registry/builder
-  lifecycle:
-    name: default
-    kind: ClusterLifecycle
-  stack:
-    name: default
-    kind: ClusterStack
-  store:
-    name: default
-    kind: ClusterStore
-  order:
-  - group:
-    - id: paketo-buildpacks/ruby
-  - group:
-    - id: paketo-buildpacks/nodejs
-  - group:
-    - id: paketo-buildpacks/java
-```
 **Risks:**
-Right now, the lifecycle is pretty hidden from the end user. In both these approaches, we would be making the user aware of it, which could create extra work from them on the ci/testing front.
+Right now, the lifecycle is pretty hidden from the end user. By allowing it to be user upgradable, we would be making the user aware of it, which could create extra work from them on the ci/testing front.
