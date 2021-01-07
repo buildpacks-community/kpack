@@ -12,7 +12,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/go-openapi/spec v0.19.9
+	github.com/go-openapi/spec v0.20.0
 	github.com/google/go-cmp v0.5.1
 	github.com/google/go-containerregistry v0.1.1
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
@@ -25,7 +25,7 @@ require (
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	k8s.io/api v0.17.6
 	k8s.io/apimachinery v0.17.6
