@@ -1,6 +1,8 @@
 package image
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
 
@@ -240,23 +243,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("true if build is annotated additional build needed", func() {
 			latestBuild.Annotations = map[string]string{
-				v1alpha1.BuildNeededAnnotation: "2020-11-20 22:46:37.570641 -0500 EST m=+0.023483867",
+				v1alpha1.BuildNeededAnnotation: "true",
 			}
-
-			expectedChanges := testhelpers.CompactJSON(`
-[
-  {
-	"reason": "TRIGGER",
-    "old": "",
-    "new": "A new build was manually triggered on Fri, 20 Nov 2020 22:46:37 -0500"
-  }
-]`)
 
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 			assert.Equal(t, v1alpha1.BuildReasonTrigger, result.ReasonsStr)
-			assert.Equal(t, expectedChanges, result.ChangesStr)
+
+			var changes []buildchange.GenericChange
+			err = json.Unmarshal([]byte(result.ChangesStr), &changes)
+			assert.NoError(t, err)
+			assert.Len(t, changes, 1)
+			assert.Equal(t, v1alpha1.BuildReasonTrigger, changes[0].Reason)
+			assert.Equal(t, "", changes[0].Old)
+			assert.True(t, strings.HasPrefix((changes[0].New).(string), "A new build was manually triggered on "))
 		})
 
 		when("Builder Metadata changes", func() {
