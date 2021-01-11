@@ -27,6 +27,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		builderImage     = "builderregistry.io/builder:latest@sha256:42lkajdsf9q87234"
 		previousAppImage = "someimage/name@sha256:previous"
 		serviceAccount   = "someserviceaccount"
+		dnsProbeHost     = "index.docker.io"
 	)
 	resources := corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
@@ -164,8 +165,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	config := v1alpha1.BuildPodImages{
-		BuildInitImage:  "build/init:image",
-		CompletionImage: "completion/image:image",
+		BuildInitImage:         "build/init:image",
+		BuildInitWindowsImage:  "build/init/windows:image",
+		CompletionImage:        "completion/image:image",
+		CompletionWindowsImage: "completion/image/windows:image",
 	}
 
 	buildPodBuilderConfig := v1alpha1.BuildPodBuilderConfig{
@@ -174,6 +177,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		Uid:         2000,
 		Gid:         3000,
 		PlatformAPI: "0.2",
+		OS:          "linux",
 	}
 
 	when("BuildPod", func() {
@@ -651,7 +655,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 12)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -665,7 +668,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				require.Len(t, pod.Spec.Volumes, 12)
 				assert.Equal(t, corev1.Volume{
 					Name: "cache-dir",
 					VolumeSource: corev1.VolumeSource{
@@ -977,6 +979,302 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, pod.Spec.Containers, 1)
 			assert.Equal(t, "completion/image:image", pod.Spec.Containers[0].Image)
+		})
+
+		when("builder is windows", func() {
+			buildPodBuilderConfig.OS = "windows"
+			buildPodBuilderConfig.PlatformAPI = "0.3"
+
+			it("uses windows node selector", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, map[string]string{"kubernetes.io/os": "windows"}, pod.Spec.NodeSelector)
+			})
+
+			it("removes the spec securityContext", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Nil(t, pod.Spec.SecurityContext)
+			})
+
+			it("configures prepare for windows build init", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				prepareContainer := pod.Spec.InitContainers[0]
+				assert.Equal(t, "prepare", prepareContainer.Name)
+				assert.Equal(t, config.BuildInitWindowsImage, prepareContainer.Image)
+				assert.Equal(t, []string{
+					directExecute,
+					"build-init",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+				}, prepareContainer.Args)
+
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, prepareContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+
+				assert.Nil(t, prepareContainer.SecurityContext)
+			})
+
+			it("configures detect step for windows", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				detectContainer := pod.Spec.InitContainers[1]
+				assert.Equal(t, "detect", detectContainer.Name)
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, detectContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, detectContainer.Command)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/lifecycle/detector",
+					"-app=/workspace",
+					"-group=/layers/group.toml",
+					"-plan=/layers/plan.toml",
+				}, detectContainer.Args)
+			})
+
+			it("configures analyze step", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := pod.Spec.InitContainers[2]
+				assert.Equal(t, "analyze", analyzeContainer.Name)
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, analyzeContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+				assert.Subset(t, analyzeContainer.Env, []corev1.EnvVar{
+					{
+						Name:  "USERPROFILE",
+						Value: "/builder/home",
+					},
+				})
+				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, analyzeContainer.Command)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/lifecycle/analyzer",
+					"-layers=/layers",
+					"-group=/layers/group.toml",
+					"-analyzed=/layers/analyzed.toml",
+					"-cache-dir=/cache",
+					"someimage/name@sha256:previous",
+				}, analyzeContainer.Args)
+			})
+
+			it("configures restore step", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := pod.Spec.InitContainers[3]
+				assert.Equal(t, "restore", restoreContainer.Name)
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, restoreContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, restoreContainer.Command)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/lifecycle/restorer",
+					"-group=/layers/group.toml",
+					"-layers=/layers",
+					"-cache-dir=/cache"},
+					restoreContainer.Args)
+			})
+
+			it("configures build step", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				buildContainer := pod.Spec.InitContainers[4]
+				assert.Equal(t, "build", buildContainer.Name)
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, buildContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, buildContainer.Command)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/lifecycle/builder",
+					"-layers=/layers",
+					"-app=/workspace",
+					"-group=/layers/group.toml",
+					"-plan=/layers/plan.toml"},
+					buildContainer.Args)
+			})
+
+			it("configures export step", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := pod.Spec.InitContainers[5]
+				assert.Equal(t, "export", exportContainer.Name)
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, exportContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+				assert.Subset(t, exportContainer.Env, []corev1.EnvVar{
+					{
+						Name:  "USERPROFILE",
+						Value: "/builder/home",
+					},
+				})
+				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, exportContainer.Command)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/lifecycle/exporter",
+					"-layers=/layers",
+					"-app=/workspace",
+					"-group=/layers/group.toml",
+					"-analyzed=/layers/analyzed.toml",
+					"-cache-dir=/cache",
+					"-project-metadata=/layers/project-metadata.toml",
+					"-report=/var/report/report.toml",
+					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+					exportContainer.Args)
+			})
+
+			it("configures the completion container for notary on windows", func() {
+				build.Spec.Notary = &v1alpha1.NotaryConfig{V1: &v1alpha1.NotaryV1Config{
+					URL: "some-notary-server",
+				}}
+
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				completionContainer := pod.Spec.Containers[0]
+				assert.Equal(t, "completion", completionContainer.Name)
+				assert.Equal(t, config.CompletionWindowsImage, completionContainer.Image)
+
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"completion",
+					"-notary-v1-url=some-notary-server",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+				}, completionContainer.Args)
+
+				assert.Equal(t, "/networkWait/network-wait-launcher", completionContainer.Command[0])
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "network-wait-launcher-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+				assert.Subset(t, completionContainer.VolumeMounts, []corev1.VolumeMount{
+					{
+						Name:      "network-wait-launcher-dir",
+						MountPath: "/networkWait",
+					},
+				})
+			})
+
+			it("configures the completion container on windows", func() {
+				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				completionContainer := pod.Spec.Containers[0]
+				assert.Equal(t, config.CompletionWindowsImage, completionContainer.Image)
+
+				assert.Len(t, completionContainer.Command, 0)
+				assert.Len(t, completionContainer.Args, 0)
+			})
+
+			it("uses an emptyDir for cache on windows", func() {
+				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "cache-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+			})
+
 		})
 	})
 }

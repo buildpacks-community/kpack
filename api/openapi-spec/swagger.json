@@ -4604,6 +4604,9 @@
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           }
         },
+        "os": {
+          "type": "string"
+        },
         "stack": {
           "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"

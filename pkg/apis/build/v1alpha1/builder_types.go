@@ -46,6 +46,7 @@ type BuilderStatus struct {
 	LatestImage             string                `json:"latestImage,omitempty"`
 	ObservedStackGeneration int64                 `json:"observedStackGeneration,omitempty"`
 	ObservedStoreGeneration int64                 `json:"observedStoreGeneration,omitempty"`
+	OS                      string                `json:"os,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -318,6 +318,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, v1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
+			assert.Equal(t, os, builderRecord.OS)
 
 			assert.Equal(t, builderRecord.Order, []v1alpha1.OrderEntry{
 				{

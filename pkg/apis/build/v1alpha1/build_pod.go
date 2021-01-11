@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,13 +35,35 @@ const (
 	notaryDirName = "notary-dir"
 	reportDirName = "report-dir"
 
+	networkWaitLauncherDir = "network-wait-launcher-dir"
+
 	envVarBuildChanges = "BUILD_CHANGES"
 )
 
 type BuildPodImages struct {
-	BuildInitImage  string
-	CompletionImage string
-	RebaseImage     string
+	BuildInitImage         string
+	CompletionImage        string
+	RebaseImage            string
+	BuildInitWindowsImage  string
+	CompletionWindowsImage string
+}
+
+func (bpi *BuildPodImages) buildInit(os string) string {
+	switch os {
+	case "windows":
+		return bpi.BuildInitWindowsImage
+	default:
+		return bpi.BuildInitImage
+	}
+}
+
+func (bpi *BuildPodImages) completion(os string) string {
+	switch os {
+	case "windows":
+		return bpi.CompletionWindowsImage
+	default:
+		return bpi.CompletionImage
+	}
 }
 
 type BuildPodBuilderConfig struct {
@@ -49,6 +72,7 @@ type BuildPodBuilderConfig struct {
 	Uid         int64
 	Gid         int64
 	PlatformAPI string
+	OS          string
 }
 
 var (
@@ -100,16 +124,29 @@ var (
 		MountPath: "/var/report",
 		ReadOnly:  false,
 	}
+	networkWaitLauncherVolume = corev1.VolumeMount{
+		Name:      networkWaitLauncherDir,
+		MountPath: "/networkWait",
+		ReadOnly:  false,
+	}
 )
 
-func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc BuildPodBuilderConfig) (*corev1.Pod, error) {
-	if bc.unsupported() {
-		return nil, errors.Errorf("incompatible builder platform API version: %s", bc.PlatformAPI)
+type stepModifier func(corev1.Container) corev1.Container
+
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+	if config.unsupported() {
+		return nil, errors.Errorf("incompatible builder platform API version: %s", config.PlatformAPI)
 	}
 
-	if b.rebasable(bc.StackID) {
-		return b.rebasePod(secrets, config, bc)
+	if b.rebasable(config.StackID) {
+		return b.rebasePod(secrets, images, config)
 	}
+
+	ref, err := name.ParseReference(b.Tag())
+	if err != nil {
+		return nil, err
+	}
+	dnsProbeHost := ref.Context().RegistryStr()
 
 	envVars, err := json.Marshal(b.Spec.Env)
 	if err != nil {
@@ -143,20 +180,48 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 		Spec: corev1.PodSpec{
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
-				b.completionContainer(config, secretArgs, secretVolumeMounts),
-			},
-			SecurityContext: &corev1.PodSecurityContext{
-				FSGroup: &bc.Gid,
-			},
-			InitContainers: steps(func(step func(corev1.Container)) {
+			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
+				notaryConfig := b.NotaryV1Config()
+
+				if notaryConfig == nil {
+					step(corev1.Container{
+						Name:            "completion",
+						Image:           images.completion(config.OS),
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Resources:       b.Spec.Resources,
+					})
+				} else {
+					step(corev1.Container{
+						Name:  "completion",
+						Image: images.completion(config.OS),
+						Args: append(
+							[]string{
+								directExecute,
+								completionBinary,
+								"-notary-v1-url=" + notaryConfig.URL,
+							},
+							secretArgs...,
+						),
+						Resources: b.Spec.Resources,
+						VolumeMounts: append(
+							secretVolumeMounts,
+							notaryV1Volume,
+							reportVolume,
+						),
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					},
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+				}
+			}),
+			SecurityContext: podSecurityContext(config),
+			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(
 					corev1.Container{
 						Name:  "prepare",
-						Image: config.BuildInitImage,
+						Image: images.buildInit(config.OS),
 						SecurityContext: &corev1.SecurityContext{
-							RunAsUser:  &bc.Uid,
-							RunAsGroup: &bc.Gid,
+							RunAsUser:  &config.Uid,
+							RunAsGroup: &config.Gid,
 						},
 						Args: args(a(
 							directExecute,
@@ -175,7 +240,11 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							},
 							corev1.EnvVar{
 								Name:  "RUN_IMAGE",
-								Value: bc.RunImage,
+								Value: config.RunImage,
+							},
+							corev1.EnvVar{
+								Name:  "DNS_PROBE_HOSTNAME",
+								Value: dnsProbeHost,
 							},
 							corev1.EnvVar{
 								Name:  envVarBuildChanges,
@@ -194,6 +263,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							projectMetadataVolume,
 						),
 					},
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeSecurityContext())...,
 				)
 				step(
 					corev1.Container{
@@ -212,6 +282,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
 				)
 				step(
 					corev1.Container{
@@ -241,6 +312,11 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
+					ifWindows(config.OS,
+						addNetworkWaitLauncherVolume(),
+						useNetworkWaitLauncher(dnsProbeHost),
+						userprofileHomeEnv(),
+					)...,
 				)
 				step(
 					corev1.Container{
@@ -258,6 +334,7 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
 				)
 				step(
 					corev1.Container{
@@ -277,8 +354,9 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
 				)
-				if bc.legacy() {
+				if config.legacy() {
 					step(
 						corev1.Container{
 							Name:    "export",
@@ -330,18 +408,23 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 						},
+						ifWindows(config.OS,
+							addNetworkWaitLauncherVolume(),
+							useNetworkWaitLauncher(dnsProbeHost),
+							userprofileHomeEnv(),
+						)...,
 					)
 				}
 			}),
 			ServiceAccountName: b.Spec.ServiceAccount,
 			NodeSelector: map[string]string{
-				"kubernetes.io/os": "linux",
+				"kubernetes.io/os": config.OS,
 			},
 			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
 					Name:         cacheDirName,
-					VolumeSource: b.cacheVolume(),
+					VolumeSource: b.cacheVolume(config.OS),
 				},
 				corev1.Volume{
 					Name: layersDirName,
@@ -373,6 +456,12 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
+				corev1.Volume{
+					Name: networkWaitLauncherDir,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
 				b.Spec.Source.Source().ImagePullSecretsVolume(),
 				builderSecretVolume(b.Spec.Builder),
 				b.notarySecretVolume(),
@@ -382,36 +471,66 @@ func (b *Build) BuildPod(config BuildPodImages, secrets []corev1.Secret, bc Buil
 	}, nil
 }
 
-func (b *Build) completionContainer(images BuildPodImages, secretArgs []string, secretVolumeMounts []corev1.VolumeMount) corev1.Container {
-	config := b.NotaryV1Config()
-	if config == nil {
-		return corev1.Container{
-			Name:            "completion",
-			Image:           images.CompletionImage,
-			ImagePullPolicy: corev1.PullIfNotPresent,
-			Resources:       b.Spec.Resources,
-		}
+func podSecurityContext(config BuildPodBuilderConfig) *corev1.PodSecurityContext {
+	if config.OS == "windows" {
+		return nil
 	}
 
-	return corev1.Container{
-		Name:  "completion",
-		Image: images.CompletionImage,
-		Args: append(
-			[]string{
-				directExecute,
-				completionBinary,
-				"-notary-v1-url=" + config.URL,
-			},
-			secretArgs...,
-		),
-		Resources: b.Spec.Resources,
-		VolumeMounts: append(
-			secretVolumeMounts,
-			notaryV1Volume,
-			reportVolume,
-		),
-		ImagePullPolicy: corev1.PullIfNotPresent,
+	return &corev1.PodSecurityContext{
+		FSGroup: &config.Gid,
 	}
+}
+
+func ifWindows(os string, modifiers ...stepModifier) []stepModifier {
+	if os == "windows" {
+		return modifiers
+	}
+
+	return []stepModifier{noOpModifer}
+}
+
+func useNetworkWaitLauncher(dnsProbeHost string) stepModifier {
+	return func(container corev1.Container) corev1.Container {
+		startCommand := container.Command
+		if len(startCommand) == 0 {
+			container.Args = args([]string{dnsProbeHost}, container.Args)
+		}else {
+			container.Args = args([]string{dnsProbeHost, "--"}, startCommand, container.Args)
+		}
+
+		container.Command = []string{"/networkWait/network-wait-launcher"}
+		return container
+	}
+}
+
+func addNetworkWaitLauncherVolume() stepModifier {
+	return func(container corev1.Container) corev1.Container {
+		container.VolumeMounts = append(container.VolumeMounts, networkWaitLauncherVolume)
+		return container
+	}
+}
+
+func userprofileHomeEnv() stepModifier {
+	return func(container corev1.Container) corev1.Container {
+		for i, env := range container.Env {
+			if env.Name == "HOME" {
+				container.Env[i].Name = "USERPROFILE"
+			}
+		}
+
+		return container
+	}
+}
+
+func removeSecurityContext() stepModifier {
+	return func(container corev1.Container) corev1.Container {
+		container.SecurityContext = nil
+		return container
+	}
+}
+
+func noOpModifer(container corev1.Container) corev1.Container {
+	return container
 }
 
 func (b *Build) notarySecretVolume() corev1.Volume {
@@ -436,7 +555,7 @@ func (b *Build) notarySecretVolume() corev1.Volume {
 	}
 }
 
-func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 
 	return &corev1.Pod{
@@ -467,13 +586,42 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 				b.notarySecretVolume(),
 			),
 			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
-				b.completionContainer(config, secretArgs, secretVolumeMounts),
-			},
+			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
+				notaryConfig := b.NotaryV1Config()
+
+				if notaryConfig == nil {
+					step(corev1.Container{
+						Name:            "completion",
+						Image:           images.CompletionImage,
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Resources:       b.Spec.Resources,
+					})
+				} else {
+					step(corev1.Container{
+						Name:  "completion",
+						Image: images.CompletionImage,
+						Args: append(
+							[]string{
+								directExecute,
+								completionBinary,
+								"-notary-v1-url=" + notaryConfig.URL,
+							},
+							secretArgs...,
+						),
+						Resources: b.Spec.Resources,
+						VolumeMounts: append(
+							secretVolumeMounts,
+							notaryV1Volume,
+							reportVolume,
+						),
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					})
+				}
+			}),
 			InitContainers: []corev1.Container{
 				{
 					Name:  "rebase",
-					Image: config.RebaseImage,
+					Image: images.RebaseImage,
 					Args: args(a(
 						directExecute,
 						rebaseBinary,
@@ -503,8 +651,8 @@ func (b *Build) rebasePod(secrets []corev1.Secret, config BuildPodImages, buildP
 	}, nil
 }
 
-func (b *Build) cacheVolume() corev1.VolumeSource {
-	if b.Spec.CacheName != "" {
+func (b *Build) cacheVolume(os string) corev1.VolumeSource {
+	if b.Spec.CacheName != "" && os != "windows" {
 		return corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.CacheName},
 		}
@@ -660,9 +808,13 @@ func a(args ...string) []string {
 	return args
 }
 
-func steps(f func(step func(corev1.Container))) []corev1.Container {
+func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Container {
 	containers := make([]corev1.Container, 0, 7)
-	f(func(container corev1.Container) {
+
+	f(func(container corev1.Container, modifiers ...stepModifier) {
+		for _, m := range modifiers {
+			container = m(container)
+		}
 		containers = append(containers, container)
 	})
 	return containers

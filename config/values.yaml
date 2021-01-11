@@ -3,7 +3,9 @@
 controller_image: gcr.io/controller
 webhook_image: gcr.io/webhook
 build_init_image: gcr.io/build-init
+build_init_windows_image: gcr.io/cf-build-service-public/kpack/build-init-windows
 rebase_image: gcr.io/rebase
 completion_image: gcr.io/completion
+completion_windows_image: gcr.io/cf-build-service-public/kpack/completion-windows
 lifecycle_image: gcr.io/lifecycle
 version: dev

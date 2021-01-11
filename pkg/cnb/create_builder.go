@@ -72,6 +72,11 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		return v1alpha1.BuilderRecord{}, err
 	}
 
+	config, err := writeableImage.ConfigFile()
+	if err != nil {
+		return v1alpha1.BuilderRecord{}, err
+	}
+
 	return v1alpha1.BuilderRecord{
 		Image: identifier,
 		Stack: v1alpha1.BuildStack{
@@ -82,6 +87,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		Order:                   builderBldr.order,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: clusterStore.Status.ObservedGeneration,
+		OS:                      config.OS,
 	}, nil
 }
 

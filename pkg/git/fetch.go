@@ -1,12 +1,14 @@
 package git
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
 
 	"github.com/BurntSushi/toml"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -25,7 +27,12 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return err
 	}
 
-	repo, err := git.PlainInit(dir, false)
+	tmpDir, err := ioutil.TempDir("", "git-clone-")
+	if err != nil {
+		return err
+	}
+
+	repo, err := git.PlainInit(tmpDir, false)
 	if err != nil {
 		return errors.Wrap(err, "unable to init git repository")
 	}
@@ -66,10 +73,16 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "unable to checkout revision: %s", gitRevision)
 	}
 
+	err = copyDir(tmpDir, dir)
+	if err != nil {
+		return fmt.Errorf("failed to copy: %s: %s", dir, err.Error())
+	}
+
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
 	}
+	defer projectMetadataFile.Close()
 
 	projectMd := project{
 		Source: source{
@@ -88,6 +101,63 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	}
 
 	f.Logger.Printf("Successfully cloned %q @ %q in path %q", gitURL, gitRevision, dir)
+	return nil
+}
+
+func copyFile(src, dest string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	if _, err = io.Copy(destFile, srcFile); err != nil {
+		return err
+	}
+
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(dest, srcInfo.Mode())
+}
+
+func copyDir(src string, dest string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(dest, srcInfo.Mode()); err != nil {
+		return err
+	}
+
+	fileInfos, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileInfos {
+		srcPath := path.Join(src, fileInfo.Name())
+		destPath := path.Join(dest, fileInfo.Name())
+
+		if fileInfo.IsDir() {
+			if err = copyDir(srcPath, destPath); err != nil {
+				return err
+			}
+		} else {
+			if err = copyFile(srcPath, destPath); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
