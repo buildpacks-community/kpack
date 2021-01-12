@@ -1478,12 +1478,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
         "version": "old-version"
       }
     ],
-    "new": [
-      {
-        "id": "io.buildpack",
-        "version": "new-version"
-      }
-    ]
+    "new": null
   }
 ]`),
 								},

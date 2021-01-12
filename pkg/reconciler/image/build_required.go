@@ -104,26 +104,13 @@ func buildpackChange(lastBuild *v1alpha1.Build, builder v1alpha1.BuilderResource
 		return nil
 	}
 
-	builderBuildpacks := builder.BuildpackMetadata()
-	getBuilderBuildpackById := func(bpId string) *v1alpha1.BuildpackMetadata {
-		for _, bp := range builderBuildpacks {
-			if bp.Id == bpId {
-				return &bp
-			}
-		}
-		return nil
-	}
-
 	var old []v1alpha1.BuildpackInfo
 	var new []v1alpha1.BuildpackInfo
 
+	builderBuildpacks := builder.BuildpackMetadata()
 	for _, lastBuildBp := range lastBuild.Status.BuildMetadata {
-		builderBp := getBuilderBuildpackById(lastBuildBp.Id)
-		if builderBp == nil {
+		if !builderBuildpacks.Include(lastBuildBp) {
 			old = append(old, v1alpha1.BuildpackInfo{Id: lastBuildBp.Id, Version: lastBuildBp.Version})
-		} else if builderBp.Version != lastBuildBp.Version {
-			old = append(old, v1alpha1.BuildpackInfo{Id: lastBuildBp.Id, Version: lastBuildBp.Version})
-			new = append(new, v1alpha1.BuildpackInfo{Id: builderBp.Id, Version: builderBp.Version})
 		}
 	}
 
