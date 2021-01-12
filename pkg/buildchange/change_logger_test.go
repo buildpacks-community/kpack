@@ -196,18 +196,14 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 							{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 							{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 						},
-						New: []v1alpha1.BuildpackInfo{
-							{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
-						},
 					}),
 					expectedOut: diffOutBuilder.Reset().
 						Txt("Build reason(s): BUILDPACK").
 						Txt("BUILDPACK:").
 						Old("- id: another-buildpack-id").
 						Old("  version: another-buildpack-old-version").
-						NoD("- id: some-buildpack-id").
-						Old("  version: some-buildpack-old-version").
-						New("  version: some-buildpack-new-version").Out(),
+						Old("- id: some-buildpack-id").
+						Old("  version: some-buildpack-old-version").Out(),
 				}.execute(t)
 			})
 		})

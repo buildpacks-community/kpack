@@ -290,12 +290,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
         "version": "1"
       }
     ],
-    "new": [
-      {
-        "id": "buildpack.matches",
-        "version": "NEW_VERSION"
-      }
-    ]
+    "new": null
   }
 ]`)
 
