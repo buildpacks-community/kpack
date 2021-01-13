@@ -14,7 +14,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
-- `notary`: Configuration for Notary image singing. See [Notary Configuration](#notary-config) section below.
+- `notary`: Configuration for Notary image signing. See [Notary Configuration](#notary-config) section below.
 
 ### <a id='builder-config'></a>Builder Configuration
 
@@ -109,7 +109,7 @@ See the kubernetes documentation on [setting environment variables](https://kube
 
 ### <a id='notary-config'></a>Notary Configuration
 
-The optional `notary` field on the `image` resource can be used to configure [Notary](https://github.com/theupdateframework/notary) image singing.
+The optional `notary` field on the `image` resource can be used to configure [Notary](https://github.com/theupdateframework/notary) image signing.
 ```yaml
 notary:
   v1:
@@ -121,7 +121,7 @@ notary:
 - `v1.secretRef.name`: A [secret](#notary-secret) containing the encrypted private key and private key password.
 
 #### Generate Signing Key
-To generate a singing key, use the following commands from the [Docker Content Trust](https://docs.docker.com/engine/security/trust/#signing-images-with-docker-content-trust) documentation:
+To generate a signing key, use the following commands from the [Docker Content Trust](https://docs.docker.com/engine/security/trust/#signing-images-with-docker-content-trust) documentation:
 ```shell script
 % export DOCKER_CONTENT_TRUST_SERVER=<notary-server-url>
 % docker trust key generate my-key
