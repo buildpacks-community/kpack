@@ -63,7 +63,7 @@ stringData:
 
 ### Git Secrets
 
-kubernetes.io/basic-auth secrets are used with a `kpac/git` annotation that references a remote git location.      
+kubernetes.io/basic-auth secrets are used with a `kpack.io/git` annotation that references a remote git location.      
 
 For github, the basic auth secret would look like
 ```yaml
