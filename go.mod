@@ -13,8 +13,8 @@ require (
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-openapi/spec v0.19.9
-	github.com/google/go-cmp v0.5.1
-	github.com/google/go-containerregistry v0.1.1
+	github.com/google/go-cmp v0.5.2
+	github.com/google/go-containerregistry v0.4.0
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
@@ -25,12 +25,12 @@ require (
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	k8s.io/api v0.17.6
 	k8s.io/apimachinery v0.17.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	k8s.io/code-generator v0.18.6
+	k8s.io/code-generator v0.20.1
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	knative.dev/pkg v0.0.0-20200702222342-ea4d6e985ba0
 )
