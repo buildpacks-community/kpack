@@ -12,6 +12,14 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name:  build-init-windows-image
+  namespace: kpack
+data:
+  image: #@ data.values.build_init_windows_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name:  rebase-image
   namespace: kpack
 data:
@@ -32,6 +40,14 @@ metadata:
   namespace: kpack
 data:
   image: #@ data.values.completion_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  completion-windows-image
+  namespace: kpack
+data:
+  image: #@ data.values.completion_windows_image
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,6 +87,11 @@ spec:
             configMapKeyRef:
               name: build-init-image
               key: image
+        - name: BUILD_INIT_WINDOWS_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: build-init-windows-image
+              key: image
         - name: REBASE_IMAGE
           valueFrom:
             configMapKeyRef:
@@ -80,6 +101,11 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: completion-image
+              key: image
+        - name: COMPLETION_WINDOWS_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: completion-windows-image
               key: image
         - name: LIFECYCLE_IMAGE
           valueFrom:

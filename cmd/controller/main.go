@@ -56,10 +56,12 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	buildInitImage  = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	rebaseImage     = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
-	completionImage = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
-	lifecycleImage  = flag.String("lifecycle-image", os.Getenv("LIFECYCLE_IMAGE"), "The image used to provide lifecycle binaries")
+	buildInitImage         = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	buildInitWindowsImage  = flag.String("build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
+	rebaseImage            = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
+	completionImage        = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
+	completionWindowsImage = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
+	lifecycleImage         = flag.String("lifecycle-image", os.Getenv("LIFECYCLE_IMAGE"), "The image used to provide lifecycle binaries")
 )
 
 func main() {
@@ -123,9 +125,11 @@ func main() {
 
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: v1alpha1.BuildPodImages{
-			BuildInitImage:  *buildInitImage,
-			CompletionImage: *completionImage,
-			RebaseImage:     *rebaseImage,
+			BuildInitImage:        *buildInitImage,
+			CompletionImage:       *completionImage,
+			RebaseImage:           *rebaseImage,
+			BuildInitWindowsImage: *buildInitWindowsImage,
+			CompletionWindowsImage: *completionWindowsImage,
 		},
 		K8sClient:       k8sClient,
 		KeychainFactory: keychainFactory,

@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/buildpacks/imgutil/layer"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -41,10 +42,11 @@ func main() {
 	flag.Parse()
 
 	image, err := lifecycleImage(
-		"https://github.com/buildpacks/lifecycle/releases/download/v0.9.2/lifecycle-v0.9.2+linux.x86-64.tgz",
+		"https://github.com/buildpacks/lifecycle/releases/download/v0.9.3/lifecycle-v0.9.3+linux.x86-64.tgz",
+		"https://github.com/buildpacks/lifecycle/releases/download/v0.9.3/lifecycle-v0.9.3+windows.x86-64.tgz",
 		cnb.LifecycleMetadata{
 			LifecycleInfo: cnb.LifecycleInfo{
-				Version: "0.9.2",
+				Version: "0.9.3",
 			},
 			API: cnb.LifecycleAPI{
 				BuildpackVersion: "0.2",
@@ -75,18 +77,42 @@ func main() {
 
 }
 
-func lifecycleImage(url string, lifecycleMetadata cnb.LifecycleMetadata) (v1.Image, error) {
+func lifecycleImage(linuxUrl, windowsUrl string, lifecycleMetadata cnb.LifecycleMetadata) (v1.Image, error) {
 	image, err := random.Image(0, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	layer, err := lifecycleLayer(url)
+	linuxLayer, err := lifecycleLayer(linuxUrl, "linux")
+	if err != nil {
+		return nil, err
+	}
+	linuxDiffID, err := linuxLayer.DiffID()
 	if err != nil {
 		return nil, err
 	}
 
-	image, err = mutate.AppendLayers(image, layer)
+	image, err = imagehelpers.SetStringLabel(image, "linux", linuxDiffID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	windowsLayer, err := lifecycleLayer(windowsUrl, "windows")
+	if err != nil {
+		return nil, err
+	}
+
+	windowsDiffID, err := windowsLayer.DiffID()
+	if err != nil {
+		return nil, err
+	}
+
+	image, err = imagehelpers.SetStringLabel(image, "windows", windowsDiffID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	image, err = mutate.AppendLayers(image, linuxLayer, windowsLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +122,9 @@ func lifecycleImage(url string, lifecycleMetadata cnb.LifecycleMetadata) (v1.Ima
 	})
 }
 
-func lifecycleLayer(url string) (v1.Layer, error) {
+func lifecycleLayer(url, os string) (v1.Layer, error) {
 	b := &bytes.Buffer{}
-	tw := tar.NewWriter(b)
+	tw := newLayerWriter(b, os)
 
 	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
@@ -196,4 +222,17 @@ type ReadCloserWrapper struct {
 
 func (r *ReadCloserWrapper) Close() error {
 	return r.closer()
+}
+
+func newLayerWriter(fileWriter io.Writer, os string) layerWriter {
+	if os == "windows" {
+		return layer.NewWindowsWriter(fileWriter)
+	}
+	return tar.NewWriter(fileWriter)
+}
+
+type layerWriter interface {
+	WriteHeader(hdr *tar.Header) error
+	Write(b []byte) (int, error)
+	Close() error
 }

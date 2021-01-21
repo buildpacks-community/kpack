@@ -15,6 +15,7 @@ type BuilderRecord struct {
 	Order                   []OrderEntry
 	ObservedStoreGeneration int64
 	ObservedStackGeneration int64
+	OS                      string
 }
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
@@ -31,6 +32,7 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.Order = record.Order
 	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
 	bs.ObservedStackGeneration = record.ObservedStackGeneration
+	bs.OS = record.OS
 }
 
 func (cb *BuilderStatus) ErrorCreate(err error) {

@@ -3,10 +3,12 @@ package cnb
 import (
 	"archive/tar"
 	"bytes"
+	"io"
 	"sort"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/imgutil/layer"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -41,6 +43,7 @@ type builderBlder struct {
 	kpackVersion      string
 	runImage          string
 	mixins            []string
+	os                string
 }
 
 func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder, error) {
@@ -58,13 +61,20 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 	}, nil
 }
 
-func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *v1alpha1.ClusterStack) {
+func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *v1alpha1.ClusterStack) error {
+	file, err := baseImage.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	bb.os = file.OS
 	bb.baseImage = baseImage
 	bb.stackId = clusterStack.Status.Id
 	bb.runImage = clusterStack.Status.RunImage.Image
 	bb.mixins = clusterStack.Status.Mixins
 	bb.cnbUserId = clusterStack.Status.UserID
 	bb.cnbGroupId = clusterStack.Status.GroupID
+	return nil
 }
 
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
@@ -176,16 +186,17 @@ func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {
 }
 
 func (bb *builderBlder) lifecycleLayer() (v1.Layer, error) {
-	layers, err := bb.lifecycleImage.Layers()
+	diffId, err := imagehelpers.GetStringLabel(bb.lifecycleImage, bb.os)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not find lifecycle for os: %s", bb.os)
+	}
+
+	hash, err := v1.NewHash(diffId)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(layers) != 1 {
-		return nil, errors.New("invalid lifecycle image")
-	}
-
-	return layers[0], nil
+	return bb.lifecycleImage.LayerByDiffID(hash)
 }
 
 func (bb *builderBlder) stackLayer() (v1.Layer, error) {
@@ -207,7 +218,7 @@ func (bb *builderBlder) stackLayer() (v1.Layer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return singeFileLayer(stackTomlPath, stackBuf.Bytes())
+	return bb.singeFileLayer(stackTomlPath, stackBuf.Bytes())
 }
 
 func (bb *builderBlder) orderLayer() (v1.Layer, error) {
@@ -246,12 +257,12 @@ func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return singeFileLayer(orderTomlPath, orderBuf.Bytes())
+	return bb.singeFileLayer(orderTomlPath, orderBuf.Bytes())
 }
 
-func singeFileLayer(file string, contents []byte) (v1.Layer, error) {
+func (bb *builderBlder) singeFileLayer(file string, contents []byte) (v1.Layer, error) {
 	b := &bytes.Buffer{}
-	w := tar.NewWriter(b)
+	w := bb.layerWriter(b)
 	if err := w.WriteHeader(&tar.Header{
 		Name:    file,
 		Size:    int64(len(contents)),
@@ -283,7 +294,7 @@ func (bb *builderBlder) defaultDirsLayer() (v1.Layer, error) {
 	}
 
 	b := &bytes.Buffer{}
-	tw := tar.NewWriter(b)
+	tw := bb.layerWriter(b)
 
 	for _, header := range dirs {
 		if err := tw.WriteHeader(header); err != nil {
@@ -316,6 +327,20 @@ func (bb *builderBlder) rootOwnedDir(path string) *tar.Header {
 		Mode:     0755,
 		ModTime:  normalizedTime,
 	}
+}
+
+func (bb *builderBlder) layerWriter(fileWriter io.Writer) layerWriter {
+	if bb.os == "windows" {
+		return layer.NewWindowsWriter(fileWriter)
+	}
+	return tar.NewWriter(fileWriter)
+
+}
+
+type layerWriter interface {
+	WriteHeader(hdr *tar.Header) error
+	Write(b []byte) (int, error)
+	Close() error
 }
 
 func deterministicSortBySize(layers map[DescriptiveBuildpackInfo]buildpackLayer) []DescriptiveBuildpackInfo {
