@@ -79,7 +79,7 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		"validation.webhook.kpack.io",
 		// The path on which to serve the webhook.
 		"/validate",
-		// The resources to default.
+		// The resources to validate.
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 		func(ctx context.Context) context.Context {

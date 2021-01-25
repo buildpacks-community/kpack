@@ -42,7 +42,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		stackID              = "io.buildpacks.stacks.some-stack"
 		mixin                = "some-mixin"
 		tag                  = "custom/example"
-		lifecycleImage       = "index.docker.io/kpack/lifecycle@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
 		buildImage           = "index.docker.io/paketo-buildpacks/build@sha256:d19308ce0c1a9ec083432b2c850d615398f0c6a51095d589d58890a721925584"
 		runImage             = "index.docker.io/paketo-buildpacks/run@sha256:469f092c28ab64c6798d6f5e24feb4252ae5b36c2ed79cc667ded85ffb49d996"
 		buildImageTag        = "paketo-buildpacks/build:full-cnb"
@@ -168,12 +167,9 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		subject = RemoteBuilderCreator{
-			RegistryClient:         registryClient,
-			LifecycleImage:         lifecycleImage,
-			KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
-			NewBuildpackRepository: newBuildpackRepo,
-		}
+		lifecycleProvider *fakeLifecycleProvider
+
+		subject RemoteBuilderCreator
 	)
 
 	buildpackRepository.AddBP("io.buildpack.1", "v1", []buildpackLayer{
@@ -293,8 +289,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			registryClient.AddImage(lifecycleImage, lifecycleImg, keychain)
-
 			buildImg, err = random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
 
@@ -305,6 +299,15 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			buildImg, err = mutate.ConfigFile(buildImg, config)
 
 			registryClient.AddImage(buildImage, buildImg, keychain)
+
+			lifecycleProvider = &fakeLifecycleProvider{lifecycleImg}
+
+			subject = RemoteBuilderCreator{
+				RegistryClient:         registryClient,
+				KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
+				NewBuildpackRepository: newBuildpackRepo,
+				LifecycleProvider:      lifecycleProvider,
+			}
 		})
 
 		it("creates a custom builder", func() {
@@ -703,10 +706,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
-
 		})
-
 	})
+}
+
+type fakeLifecycleProvider struct {
+	image v1.Image
+}
+
+func (p *fakeLifecycleProvider) GetImage() (v1.Image, error) {
+	return p.image, nil
 }
 
 type fakeBuildpackRepository struct {
