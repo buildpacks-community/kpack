@@ -29,6 +29,7 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		err                error
 		p                  *LifecycleProvider
 	)
+
 	it.Before(func() {
 		lifecycleImg, err = random.Image(10, int64(1))
 		require.NoError(t, err)
@@ -36,10 +37,10 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 		client.AddImage(lifecycleImgRef, lifecycleImg, keychain)
 		client.AddImage(newLifecycleImgRef, newLifecycleImg, keychain)
+
 		p = NewLifecycleProvider(lifecycleImgRef, client, keychain)
 		callBack = &fakeCallback{}
-
-		p.RegisterCallback(callBack.callBack)
+		p.AddEventHandler(callBack.callBack)
 	})
 
 	it("is seeded with a lifecycle image", func() {
@@ -48,7 +49,7 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, lifecycleImg, img)
 	})
 
-	it("sets and gets the image from the ConfigMap and calls callbacks", func() {
+	it("sets and gets the image from the ConfigMap and calls handlers", func() {
 		cfg := &corev1.ConfigMap{
 			Data: map[string]string{"image": "some-other-image"},
 		}
@@ -60,7 +61,37 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		require.True(t, callBack.called)
 	})
 
-	it("errors when the image key is invalid and calls callbacks", func() {
+	it("does not call handlers when the lifecycle image has not changed", func() {
+		cfg := &corev1.ConfigMap{
+			Data: map[string]string{"image": "some-image"},
+		}
+
+		p.UpdateImage(cfg)
+		img, err := p.GetImage()
+		require.NoError(t, err)
+		require.Equal(t, lifecycleImg, img)
+		require.False(t, callBack.called)
+	})
+
+	it("updates after an error", func() {
+		cfg := &corev1.ConfigMap{
+			Data: map[string]string{"image": "invalid"},
+		}
+		p.UpdateImage(cfg)
+		_, err := p.GetImage()
+		require.Error(t, err)
+
+		cfg = &corev1.ConfigMap{
+			Data: map[string]string{"image": "some-other-image"},
+		}
+		p.UpdateImage(cfg)
+		img, err := p.GetImage()
+		require.NoError(t, err)
+		require.Equal(t, newLifecycleImg, img)
+
+	})
+
+	it("errors when the image key is invalid and calls handlers", func() {
 		cfg := &corev1.ConfigMap{
 			Data: map[string]string{"invalid": "some-other-image"},
 		}

@@ -174,8 +174,8 @@ func main() {
 	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
 
-	lifecycleProvider.RegisterCallback(builderResync)
-	lifecycleProvider.RegisterCallback(clusterBuilderResync)
+	lifecycleProvider.AddEventHandler(builderResync)
+	lifecycleProvider.AddEventHandler(clusterBuilderResync)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
