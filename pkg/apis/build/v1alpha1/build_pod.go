@@ -73,6 +73,7 @@ type BuildPodBuilderConfig struct {
 	Gid         int64
 	PlatformAPI string
 	OS          string
+	NodeTaints  []corev1.Taint
 }
 
 var (
@@ -420,6 +421,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": config.OS,
 			},
+			Tolerations: config.tolerations(),
 			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
@@ -774,6 +776,21 @@ func (bc *BuildPodBuilderConfig) legacy() bool {
 
 func (bc *BuildPodBuilderConfig) unsupported() bool {
 	return bc.PlatformAPI != "0.2" && bc.PlatformAPI != "0.3"
+}
+
+func (bc *BuildPodBuilderConfig) tolerations() []corev1.Toleration {
+	tolerations := make([]corev1.Toleration, 0)
+
+	for _, taint := range bc.NodeTaints {
+		tolerations = append(tolerations, corev1.Toleration{
+			Key:      taint.Key,
+			Operator: corev1.TolerationOpEqual,
+			Value:    taint.Value,
+			Effect:   taint.Effect,
+		})
+	}
+
+	return tolerations
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {
