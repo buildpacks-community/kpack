@@ -12,7 +12,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/go-openapi/spec v0.19.9
+	github.com/go-openapi/spec v0.20.2
 	github.com/google/go-cmp v0.5.1
 	github.com/google/go-containerregistry v0.1.1
 	github.com/gophercloud/gophercloud v0.4.0 // indirect
