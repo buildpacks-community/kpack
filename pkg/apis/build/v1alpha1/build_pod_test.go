@@ -178,6 +178,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		Gid:         3000,
 		PlatformAPI: "0.2",
 		OS:          "linux",
+		NodeTaints: []corev1.Taint{
+			{
+				Key:       "test-key",
+				Value:     "test-value",
+				Effect:    corev1.TaintEffectNoSchedule,
+			},
+		},
 	}
 
 	when("BuildPod", func() {
@@ -1273,6 +1280,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
+			})
+
+			it("adds pod tolerations based on node taints", func() {
+				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t,
+					[]corev1.Toleration{
+						{
+							Key:               buildPodBuilderConfig.NodeTaints[0].Key,
+							Operator:          corev1.TolerationOpEqual,
+							Value:             buildPodBuilderConfig.NodeTaints[0].Value,
+							Effect:            corev1.TaintEffectNoSchedule,
+						},
+					},
+					pod.Spec.Tolerations,
+				)
 			})
 
 		})
