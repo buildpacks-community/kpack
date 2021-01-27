@@ -96,6 +96,10 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Kind: "secret",
 					Name: "docker-secret-1",
 				},
+				{
+					Kind: "secret",
+					Name: "docker-secret-1",
+				},
 			},
 		}
 
@@ -107,7 +111,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 
-		it("returns pod config with secrets on build's service account", func() {
+		it("returns pod config with deduped secrets on build's service account", func() {
 			secretRef := registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        namespace,

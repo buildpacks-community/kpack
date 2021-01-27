@@ -95,6 +95,7 @@ func (g *Generator) fetchServiceAccounts(build BuildPodable) ([]corev1.ServiceAc
 
 func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, error) {
 	var secrets []corev1.Secret
+	var secretSet = map[string]struct{}{}
 	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).Get(build.ServiceAccount(), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -104,7 +105,10 @@ func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, erro
 		if err != nil {
 			return nil, err
 		}
-		secrets = append(secrets, *secret)
+		if _, ok := secretSet[secret.Name]; !ok {
+			secrets = append(secrets, *secret)
+			secretSet[secret.Name] = struct{}{}
+		}
 	}
 	return secrets, nil
 }
