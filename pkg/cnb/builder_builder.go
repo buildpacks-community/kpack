@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -29,7 +30,10 @@ const (
 	stackTomlPath  = "/cnb/stack.toml"
 )
 
-var normalizedTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
+var (
+	normalizedTime        = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
+	supportedPlatformApis = []string{"0.3", "0.4", "0.5"}
+)
 
 type builderBlder struct {
 	baseImage         v1.Image
@@ -169,6 +173,11 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 }
 
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
+	err := validatePlatformApis(append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...))
+	if err != nil {
+		return err
+	}
+
 	buildpackApis := append(bb.LifecycleMetadata.APIs.Buildpack.Deprecated, bb.LifecycleMetadata.APIs.Buildpack.Supported...)
 
 	for _, bpInfo := range sortedBuildpacks {
@@ -179,6 +188,16 @@ func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackI
 		}
 	}
 	return nil
+}
+
+func validatePlatformApis(builderSupportedApis []string) error {
+	for _, api := range supportedPlatformApis {
+		if present(builderSupportedApis, api) {
+			return nil
+		}
+	}
+
+	return errors.Errorf("unsupported platform apis in kpack lifecycle: %s, expecting one of: %s", strings.Join(builderSupportedApis, ", "), strings.Join(supportedPlatformApis, ", "))
 }
 
 func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {

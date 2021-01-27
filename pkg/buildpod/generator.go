@@ -43,7 +43,7 @@ type BuildPodable interface {
 	BuilderSpec() v1alpha1.BuildBuilderSpec
 	Bindings() []v1alpha1.Binding
 
-	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
+	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, []corev1.Taint, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
@@ -61,15 +61,12 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 		return nil, err
 	}
 
-	if buildPodBuilderConfig.OS == "windows" {
-		taints, err := g.calculateHomogenousWindowsNodeTaints()
-		if err != nil {
-			return nil, err
-		}
-		buildPodBuilderConfig.NodeTaints = taints
+	taints, err := g.calculateHomogenousWindowsNodeTaints(buildPodBuilderConfig.OS)
+	if err != nil {
+		return nil, err
 	}
 
-	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig)
+	return build.BuildPod(g.BuildPodConfig, secrets, taints, buildPodBuilderConfig)
 }
 
 func (g *Generator) buildAllowed(build BuildPodable) error {
@@ -181,7 +178,11 @@ func parseCNBID(image ggcrv1.Image, env string) (int64, error) {
 	return strconv.ParseInt(v, 10, 64)
 }
 
-func (g *Generator) calculateHomogenousWindowsNodeTaints() ([]v1.Taint, error) {
+func (g *Generator) calculateHomogenousWindowsNodeTaints(os string) ([]v1.Taint, error) {
+	if os != "windows" {
+		return nil, nil
+	}
+
 	windowsNodes, err := g.K8sClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: "kubernetes.io/os=windows"})
 	if err != nil {
 		return nil, err

@@ -75,7 +75,6 @@ type BuildPodBuilderConfig struct {
 	Gid          int64
 	PlatformAPIs []string
 	OS           string
-	NodeTaints  []corev1.Taint
 }
 
 var (
@@ -136,7 +135,7 @@ var (
 
 type stepModifier func(corev1.Container) corev1.Container
 
-func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig) (*corev1.Pod, error) {
 	platformAPI, err := config.highestSupportedPlatformAPI(b)
 	if err != nil {
 		return nil, err
@@ -429,7 +428,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": config.OS,
 			},
-			Tolerations: config.tolerations(),
+			Tolerations: tolerations(taints),
 			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
@@ -797,11 +796,11 @@ func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (string, 
 	return "", errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
 }
 
-func (bc *BuildPodBuilderConfig) tolerations() []corev1.Toleration {
-	tolerations := make([]corev1.Toleration, 0)
+func tolerations(taints []corev1.Taint) []corev1.Toleration {
+	t := make([]corev1.Toleration, 0, len(taints))
 
-	for _, taint := range bc.NodeTaints {
-		tolerations = append(tolerations, corev1.Toleration{
+	for _, taint := range taints {
+		t = append(t, corev1.Toleration{
 			Key:      taint.Key,
 			Operator: corev1.TolerationOpEqual,
 			Value:    taint.Value,
@@ -809,7 +808,7 @@ func (bc *BuildPodBuilderConfig) tolerations() []corev1.Toleration {
 		})
 	}
 
-	return tolerations
+	return t
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {

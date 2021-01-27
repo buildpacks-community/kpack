@@ -182,7 +182,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 	when("BuildPod", func() {
 		it("creates a pod with a builder owner reference and build labels and annotations", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.ObjectMeta, metav1.ObjectMeta{
@@ -202,28 +202,28 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a pod with a correct service account", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 		})
 
 		it("creates a pod with the correct node selector", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
 		})
 
 		it("configures the FS Mount Group with the supplied group", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, buildPodBuilderConfig.Gid, *pod.Spec.SecurityContext.FSGroup)
 		})
 
 		it("creates init containers with all the build steps", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			var names []string
@@ -244,7 +244,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures the workspace volume with a subPath", func() {
 			build.Spec.Source.SubPath = "some/path"
 
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			vol := volumeMountFromContainer(t, pod.Spec.InitContainers, "prepare", "workspace-dir")
@@ -259,7 +259,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the bindings", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Contains(t,
@@ -317,7 +317,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures prepare with docker and git credentials", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
@@ -358,7 +358,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures prepare with the build configuration", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
@@ -406,7 +406,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the prepare step for git source", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
@@ -429,7 +429,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Source.Blob = &v1alpha1.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
@@ -447,7 +447,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Source.Registry = &v1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 			}
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
@@ -475,7 +475,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					{Name: "registry-secret"},
 				},
 			}
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
@@ -505,7 +505,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures detect step", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[1].Name, "detect")
@@ -522,7 +522,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures analyze step", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
@@ -546,7 +546,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures analyze step with the current tag if no previous build", func() {
 			build.Spec.LastBuild = nil
 
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
@@ -569,14 +569,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures analyze step with the current tag if previous build is corrupted", func() {
 			build.Spec.LastBuild = &v1alpha1.LastBuild{}
 
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Contains(t, pod.Spec.InitContainers[2].Args, build.Tag())
 		})
 
 		it("configures restore step", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
@@ -595,7 +595,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures build step", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "build")
@@ -612,7 +612,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures export step", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
@@ -641,7 +641,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the builder image in all lifecycle steps", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			for _, container := range pod.Spec.InitContainers {
@@ -652,7 +652,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the completion container with resources", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			completionContainer := pod.Spec.Containers[0]
@@ -660,7 +660,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a pod with reusable cache when name is provided", func() {
-			pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, corev1.Volume{
@@ -673,7 +673,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("creates a pod with empty cache when no name is provided", func() {
 			build.Spec.CacheName = ""
-			pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assert.Equal(t, corev1.Volume{
@@ -685,7 +685,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("attach volumes for secrets", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			assertSecretPresent(t, pod, "git-secret-1")
@@ -697,7 +697,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("attach image pull secrets to pod", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.ImagePullSecrets, 1)
@@ -705,7 +705,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("mounts volumes for bindings", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.ImagePullSecrets, 1)
@@ -716,7 +716,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
 
 			it("exports without a report and without default process type", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.3"})
@@ -738,7 +738,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			buildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.6"}
 
 			it("returns an error", func() {
-				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.6")
 			})
 		})
@@ -751,7 +751,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			it("creates a pod just to rebase", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Equal(t, pod.ObjectMeta, metav1.ObjectMeta{
@@ -883,7 +883,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					}
 
-					pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+					pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 					require.NoError(t, err)
 
 					require.Equal(t,
@@ -934,12 +934,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			it("errs if platformApi does not support report.toml", func() {
 				buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
 
-				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
 			})
 
 			it("sets up the completion image to sign the image", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				require.Equal(t,
@@ -979,7 +979,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates the pod container correctly", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.Containers, 1)
@@ -992,26 +992,26 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			it("errs if platformApi does not support windows", func() {
 				buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
 
-				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
 			})
 
 			it("uses windows node selector", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Equal(t, map[string]string{"kubernetes.io/os": "windows"}, pod.Spec.NodeSelector)
 			})
 
 			it("removes the spec securityContext", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Nil(t, pod.Spec.SecurityContext)
 			})
 
 			it("configures prepare for windows build init", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				prepareContainer := pod.Spec.InitContainers[0]
@@ -1046,7 +1046,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures detect step for windows", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				detectContainer := pod.Spec.InitContainers[1]
@@ -1077,7 +1077,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures analyze step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				analyzeContainer := pod.Spec.InitContainers[2]
@@ -1116,7 +1116,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures restore step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				restoreContainer := pod.Spec.InitContainers[3]
@@ -1147,7 +1147,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures build step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				buildContainer := pod.Spec.InitContainers[4]
@@ -1179,7 +1179,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures export step", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				exportContainer := pod.Spec.InitContainers[5]
@@ -1226,7 +1226,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					URL: "some-notary-server",
 				}}
 
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				completionContainer := pod.Spec.Containers[0]
@@ -1263,7 +1263,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures the completion container on windows", func() {
-				pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				completionContainer := pod.Spec.Containers[0]
@@ -1274,7 +1274,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("uses an emptyDir for cache on windows", func() {
-				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
@@ -1288,23 +1288,21 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("adds pod tolerations based on node taints", func() {
-				buildPodBuilderConfig.NodeTaints = []corev1.Taint{
+				pod, err := build.BuildPod(config, nil, []corev1.Taint{
 					{
 						Key:    "test-key",
 						Value:  "test-value",
 						Effect: corev1.TaintEffectNoSchedule,
 					},
-				}
-
-				pod, err := build.BuildPod(config, nil, buildPodBuilderConfig)
+				}, buildPodBuilderConfig)
 				require.NoError(t, err)
 
 				assert.Equal(t,
 					[]corev1.Toleration{
 						{
-							Key:      buildPodBuilderConfig.NodeTaints[0].Key,
+							Key:      "test-key",
 							Operator: corev1.TolerationOpEqual,
-							Value:    buildPodBuilderConfig.NodeTaints[0].Value,
+							Value:    "test-value",
 							Effect:   corev1.TaintEffectNoSchedule,
 						},
 					},
