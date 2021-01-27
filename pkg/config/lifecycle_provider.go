@@ -38,40 +38,38 @@ func NewLifecycleProvider(lifecycleImageRef string, client RegistryClient, keych
 
 	data := &lifecycleData{}
 
-	data.image, data.err = p.fetchImage(lifecycleImageRef)
+	p.fetchImage(lifecycleImageRef, data)
 
 	p.lifecycleData.Store(data)
 	return p
 }
 
 func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) {
-	data := &lifecycleData{}
-	isNewImg := true
-	defer l.callCallBacks(&isNewImg)
-	defer l.lifecycleData.Store(data)
+	data, shouldCallHandlers := l.updateImage(cm)
+	if shouldCallHandlers {
+		l.callHandlers()
+	}
+	l.lifecycleData.Store(data)
+}
 
+func (l *LifecycleProvider) updateImage(cm *corev1.ConfigMap) (*lifecycleData, bool) {
+	data := &lifecycleData{}
 	imageRef, ok := cm.Data[LifecycleConfigKey]
 	if !ok {
 		data.err = errors.Errorf("%s config invalid", LifecycleConfigName)
-		return
+		return data, true
 	}
 
-	newImg, err := l.fetchImage(imageRef)
-	if err != nil {
-		data.err = err
-		return
+	l.fetchImage(imageRef, data)
+	if data.err != nil {
+		return data, true
 	}
 
 	// Don't care if old image errored
 	oldImg, _ := l.GetImage()
-
-	isNewImg, err = isNewImage(oldImg, newImg)
-	if err != nil {
-		data.err = err
-		return
-	}
-
-	data.image = newImg
+	var isNewImg bool
+	isNewImg, data.err = isNewImage(oldImg, data.image)
+	return data, isNewImg
 }
 
 func (l *LifecycleProvider) GetImage() (v1.Image, error) {
@@ -87,12 +85,13 @@ func (l *LifecycleProvider) AddEventHandler(handler func()) {
 	l.handlers = append(l.handlers, handler)
 }
 
-func (l *LifecycleProvider) fetchImage(imageRef string) (v1.Image, error) {
+func (l *LifecycleProvider) fetchImage(imageRef string, data *lifecycleData) {
 	img, _, err := l.RegistryClient.Fetch(l.Keychain, imageRef)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch lifecycle image")
+		data.err = errors.Wrap(err, "failed to fetch lifecycle image")
+		return
 	}
-	return img, nil
+	data.image = img
 }
 
 func isNewImage(oldImg v1.Image, newImg v1.Image) (bool, error) {
@@ -113,11 +112,7 @@ func isNewImage(oldImg v1.Image, newImg v1.Image) (bool, error) {
 	return d0 != d1, nil
 }
 
-func (l *LifecycleProvider) callCallBacks(newImage *bool) {
-	if !*newImage {
-		return
-	}
-
+func (l *LifecycleProvider) callHandlers() {
 	for _, cb := range l.handlers {
 		cb()
 	}

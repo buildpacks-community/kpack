@@ -167,9 +167,14 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		lifecycleProvider *fakeLifecycleProvider
+		lifecycleProvider = &fakeLifecycleProvider{}
 
-		subject RemoteBuilderCreator
+		subject = RemoteBuilderCreator{
+			RegistryClient:         registryClient,
+			KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
+			NewBuildpackRepository: newBuildpackRepo,
+			LifecycleProvider:      lifecycleProvider,
+		}
 	)
 
 	buildpackRepository.AddBP("io.buildpack.1", "v1", []buildpackLayer{
@@ -300,14 +305,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			registryClient.AddImage(buildImage, buildImg, keychain)
 
-			lifecycleProvider = &fakeLifecycleProvider{lifecycleImg}
-
-			subject = RemoteBuilderCreator{
-				RegistryClient:         registryClient,
-				KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
-				NewBuildpackRepository: newBuildpackRepo,
-				LifecycleProvider:      lifecycleProvider,
-			}
+			lifecycleProvider.image = lifecycleImg
 		})
 
 		it("creates a custom builder", func() {

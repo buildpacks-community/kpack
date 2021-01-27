@@ -88,7 +88,6 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		img, err := p.GetImage()
 		require.NoError(t, err)
 		require.Equal(t, newLifecycleImg, img)
-
 	})
 
 	it("errors when the image key is invalid and calls handlers", func() {
