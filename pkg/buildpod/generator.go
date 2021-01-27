@@ -164,12 +164,12 @@ func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha1.BuildPodBui
 	}
 
 	return v1alpha1.BuildPodBuilderConfig{
-		StackID:     stackId,
-		RunImage:    metadata.Stack.RunImage.Image,
-		PlatformAPI: metadata.Lifecycle.API.PlatformVersion,
-		Uid:         uid,
-		Gid:         gid,
-		OS:          config.OS,
+		StackID:      stackId,
+		RunImage:     metadata.Stack.RunImage.Image,
+		PlatformAPIs: append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
+		Uid:          uid,
+		Gid:          gid,
+		OS:           config.OS,
 	}, nil
 }
 

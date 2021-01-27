@@ -206,6 +206,23 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
     "api": {
       "buildpack": "0.7",
       "platform": "0.5"
+    },
+    "apis": {
+      "platform": {
+        "deprecated": [
+          "0.4"
+        ],
+        "supported": [
+          "0.5",
+          "0.6"
+        ]
+      },
+      "buildpack": {
+        "deprecated": [],
+        "supported": [
+          "0.9"
+        ]
+      }
     }
   }
 }`)
@@ -247,12 +264,12 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					*dockerSecret,
 				},
 				BuildPodBuilderConfig: v1alpha1.BuildPodBuilderConfig{
-					StackID:     "some.stack.id",
-					RunImage:    "some-registry.io/run-image",
-					Uid:         1234,
-					Gid:         5678,
-					PlatformAPI: "0.5",
-					OS:          "linux",
+					StackID:      "some.stack.id",
+					RunImage:     "some-registry.io/run-image",
+					Uid:          1234,
+					Gid:          5678,
+					PlatformAPIs: []string{"0.4", "0.5", "0.6"},
+					OS:           "linux",
 				},
 			}}, build.buildPodCalls)
 		})
