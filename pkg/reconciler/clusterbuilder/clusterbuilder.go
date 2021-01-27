@@ -31,28 +31,30 @@ type BuilderCreator interface {
 
 func NewController(
 	opt reconciler.Options,
-	informer v1alpha1informers.ClusterBuilderInformer,
+	clusterBuilderInformer v1alpha1informers.ClusterBuilderInformer,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
 	clusterStackInformer v1alpha1informers.ClusterStackInformer,
-) *controller.Impl {
+) (*controller.Impl, func()) {
 	c := &Reconciler{
 		Client:               opt.Client,
-		ClusterBuilderLister: informer.Lister(),
+		ClusterBuilderLister: clusterBuilderInformer.Lister(),
 		BuilderCreator:       builderCreator,
 		KeychainFactory:      keychainFactory,
 		ClusterStoreLister:   clusterStoreInformer.Lister(),
 		ClusterStackLister:   clusterStackInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
-	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 
-	return impl
+	return impl, func() {
+		impl.GlobalResync(clusterBuilderInformer.Informer())
+	}
 }
 
 type Reconciler struct {

@@ -33,6 +33,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/git"
@@ -125,10 +126,10 @@ func main() {
 
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: v1alpha1.BuildPodImages{
-			BuildInitImage:        *buildInitImage,
-			CompletionImage:       *completionImage,
-			RebaseImage:           *rebaseImage,
-			BuildInitWindowsImage: *buildInitWindowsImage,
+			BuildInitImage:         *buildInitImage,
+			CompletionImage:        *completionImage,
+			RebaseImage:            *rebaseImage,
+			BuildInitWindowsImage:  *buildInitWindowsImage,
 			CompletionWindowsImage: *completionWindowsImage,
 		},
 		K8sClient:       k8sClient,
@@ -155,20 +156,26 @@ func main() {
 		Keychain:       kpackKeychain,
 	}
 
+	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)
+	configMapWatcher.Watch(config.LifecycleConfigName, lifecycleProvider.UpdateImage)
+
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient:         &registry.Client{},
-		LifecycleImage:         *lifecycleImage,
 		KpackVersion:           cmd.Identifer,
+		LifecycleProvider:      lifecycleProvider,
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterBuilderController := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
+
+	lifecycleProvider.AddEventHandler(builderResync)
+	lifecycleProvider.AddEventHandler(clusterBuilderResync)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)

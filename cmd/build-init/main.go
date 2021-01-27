@@ -53,14 +53,14 @@ func init() {
 }
 
 const (
-	secretsHome            = "/builder/home"
-	appDir                 = "/workspace"
-	platformDir            = "/platform"
-	buildSecretsDir        = "/var/build-secrets"
-	imagePullSecretsDir    = "/imagePullSecrets"
-	builderPullSecretsDir  = "/builderPullSecrets"
-	projectMetadataDir     = "/projectMetadata"
-	networkWaitLauncherDir = "/networkWait"
+	secretsHome               = "/builder/home"
+	appDir                    = "/workspace"
+	platformDir               = "/platform"
+	buildSecretsDir           = "/var/build-secrets"
+	imagePullSecretsDir       = "/imagePullSecrets"
+	builderPullSecretsDir     = "/builderPullSecrets"
+	projectMetadataDir        = "/projectMetadata"
+	networkWaitLauncherDir    = "/networkWait"
 	networkWaitLauncherBinary = "network-wait-launcher.exe"
 )
 
@@ -249,4 +249,3 @@ func copyFile(src, dest string) error {
 
 	return os.Chmod(dest, srcInfo.Mode())
 }
-

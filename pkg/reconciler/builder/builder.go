@@ -38,7 +38,7 @@ func NewController(opt reconciler.Options,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
 	clusterStackInformer v1alpha1informers.ClusterStackInformer,
-) *controller.Impl {
+) (*controller.Impl, func()) {
 	c := &Reconciler{
 		Client:             opt.Client,
 		BuilderLister:      builderInformer.Lister(),
@@ -54,7 +54,9 @@ func NewController(opt reconciler.Options,
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
 
-	return impl
+	return impl, func() {
+		impl.GlobalResync(builderInformer.Informer())
+	}
 }
 
 type Reconciler struct {

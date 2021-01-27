@@ -16,12 +16,16 @@ type BuildpackRepository interface {
 	FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error)
 }
 
+type LifecycleProvider interface {
+	GetImage() (v1.Image, error)
+}
+
 type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) BuildpackRepository
 
 type RemoteBuilderCreator struct {
 	RegistryClient         RegistryClient
-	LifecycleImage         string
 	NewBuildpackRepository NewBuildpackRepository
+	LifecycleProvider      LifecycleProvider
 	KpackVersion           string
 }
 
@@ -33,7 +37,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		return v1alpha1.BuilderRecord{}, err
 	}
 
-	lifecycleImage, _, err := r.RegistryClient.Fetch(keychain, r.LifecycleImage)
+	lifecycleImage, err := r.LifecycleProvider.GetImage()
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
 	}

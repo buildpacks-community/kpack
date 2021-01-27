@@ -210,7 +210,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
-					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+						ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 				}
 			}),
 			SecurityContext: podSecurityContext(config),
@@ -494,7 +494,7 @@ func useNetworkWaitLauncher(dnsProbeHost string) stepModifier {
 		startCommand := container.Command
 		if len(startCommand) == 0 {
 			container.Args = args([]string{dnsProbeHost}, container.Args)
-		}else {
+		} else {
 			container.Args = args([]string{dnsProbeHost, "--"}, startCommand, container.Args)
 		}
 
