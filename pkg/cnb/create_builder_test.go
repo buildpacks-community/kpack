@@ -286,8 +286,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 							Supported:  []string{"0.3"},
 						},
 						Platform: APIVersions{
-							Deprecated: []string{"0.1"},
-							Supported:  []string{"0.2"},
+							Deprecated: []string{"0.3"},
+							Supported:  []string{"0.4"},
 						},
 					},
 				},
@@ -492,8 +492,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		"supported": ["0.3"]
       },
       "platform": {
-        "deprecated": ["0.1"],
-        "supported": ["0.2"]
+        "deprecated": ["0.3"],
+        "supported": ["0.4"]
       }
     }
   },
@@ -703,6 +703,38 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
+			})
+		})
+
+		when("validating platform api", func() {
+			it("errors if no lifecycle platform api is supported", func() {
+				lifecycleImg, err := imagehelpers.SetLabels(lifecycleImg, map[string]interface{}{
+					lifecycleMetadataLabel: LifecycleMetadata{
+						LifecycleInfo: LifecycleInfo{
+							Version: "0.5.0",
+						},
+						API: LifecycleAPI{
+							BuildpackVersion: "0.2",
+							PlatformVersion:  "0.1",
+						},
+						APIs: LifecycleAPIs{
+							Buildpack: APIVersions{
+								Deprecated: []string{"0.2"},
+								Supported:  []string{"0.3"},
+							},
+							Platform: APIVersions{
+								Deprecated: []string{"0.1"},
+								Supported:  []string{"0.2", "0.6", "0.7"},
+							},
+						},
+					},
+				})
+				require.NoError(t, err)
+
+				lifecycleProvider.image = lifecycleImg
+
+				_, err = subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.6, 0.7, expecting one of: 0.3, 0.4, 0.5")
 			})
 		})
 	})

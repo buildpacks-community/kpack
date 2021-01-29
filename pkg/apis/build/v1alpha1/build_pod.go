@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
@@ -37,7 +38,8 @@ const (
 
 	networkWaitLauncherDir = "network-wait-launcher-dir"
 
-	envVarBuildChanges = "BUILD_CHANGES"
+	buildChangesEnvVar = "BUILD_CHANGES"
+	platformAPIEnvVar  = "CNB_PLATFORM_API"
 )
 
 type BuildPodImages struct {
@@ -67,13 +69,12 @@ func (bpi *BuildPodImages) completion(os string) string {
 }
 
 type BuildPodBuilderConfig struct {
-	StackID     string
-	RunImage    string
-	Uid         int64
-	Gid         int64
-	PlatformAPI string
-	OS          string
-	NodeTaints  []corev1.Taint
+	StackID      string
+	RunImage     string
+	Uid          int64
+	Gid          int64
+	PlatformAPIs []string
+	OS           string
 }
 
 var (
@@ -134,9 +135,10 @@ var (
 
 type stepModifier func(corev1.Container) corev1.Container
 
-func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config BuildPodBuilderConfig) (*corev1.Pod, error) {
-	if config.unsupported() {
-		return nil, errors.Errorf("incompatible builder platform API version: %s", config.PlatformAPI)
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+	platformAPI, err := config.highestSupportedPlatformAPI(b)
+	if err != nil {
+		return nil, err
 	}
 
 	if b.rebasable(config.StackID) {
@@ -182,37 +184,35 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				notaryConfig := b.NotaryV1Config()
-
-				if notaryConfig == nil {
+				if b.NotaryV1Config() == nil {
 					step(corev1.Container{
 						Name:            "completion",
 						Image:           images.completion(config.OS),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Resources:       b.Spec.Resources,
 					})
-				} else {
-					step(corev1.Container{
-						Name:  "completion",
-						Image: images.completion(config.OS),
-						Args: append(
-							[]string{
-								directExecute,
-								completionBinary,
-								"-notary-v1-url=" + notaryConfig.URL,
-							},
-							secretArgs...,
-						),
-						Resources: b.Spec.Resources,
-						VolumeMounts: append(
-							secretVolumeMounts,
-							notaryV1Volume,
-							reportVolume,
-						),
-						ImagePullPolicy: corev1.PullIfNotPresent,
-					},
-						ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+					return
 				}
+
+				step(corev1.Container{
+					Name:  "completion",
+					Image: images.completion(config.OS),
+					Args: append(
+						[]string{
+							directExecute,
+							completionBinary,
+							"-notary-v1-url=" + b.NotaryV1Config().URL,
+						},
+						secretArgs...,
+					),
+					Resources: b.Spec.Resources,
+					VolumeMounts: append(
+						secretVolumeMounts,
+						notaryV1Volume,
+						reportVolume,
+					),
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				}, ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
 			SecurityContext: podSecurityContext(config),
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
@@ -248,7 +248,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 								Value: dnsProbeHost,
 							},
 							corev1.EnvVar{
-								Name:  envVarBuildChanges,
+								Name:  buildChangesEnvVar,
 								Value: b.BuildChanges(),
 							},
 						),
@@ -282,6 +282,12 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 							workspaceVolume,
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						Env: []corev1.EnvVar{
+							{
+								Name:  platformAPIEnvVar,
+								Value: platformAPI,
+							},
+						},
 					},
 					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
 				)
@@ -310,6 +316,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 						},
 						Env: []corev1.EnvVar{
 							homeEnv,
+							{
+								Name:  platformAPIEnvVar,
+								Value: platformAPI,
+							},
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
@@ -333,6 +343,12 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 							layersVolume,
 							cacheVolume,
 						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  platformAPIEnvVar,
+								Value: platformAPI,
+							},
+						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
@@ -354,74 +370,65 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 							workspaceVolume,
 						}, bindingVolumeMounts...),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						Env: []corev1.EnvVar{
+							{
+								Name:  platformAPIEnvVar,
+								Value: platformAPI,
+							},
+						},
 					},
 					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
 				)
-				if config.legacy() {
-					step(
-						corev1.Container{
-							Name:    "export",
-							Image:   builderImage,
-							Command: []string{"/cnb/lifecycle/exporter"},
-							Args: append([]string{
-								"-layers=/layers",
-								"-app=/workspace",
-								"-group=/layers/group.toml",
-								"-analyzed=/layers/analyzed.toml",
-								"-cache-dir=/cache",
-							}, b.Spec.Tags...),
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								workspaceVolume,
-								homeVolume,
-								cacheVolume,
-							},
-							Env: []corev1.EnvVar{
-								homeEnv,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
+				step(
+					corev1.Container{
+						Name:    "export",
+						Image:   builderImage,
+						Command: []string{"/cnb/lifecycle/exporter"},
+						Args: args([]string{
+							"-layers=/layers",
+							"-app=/workspace",
+							"-group=/layers/group.toml",
+							"-analyzed=/layers/analyzed.toml",
+							"-cache-dir=/cache",
+							"-project-metadata=/layers/project-metadata.toml"},
+							func() []string {
+								if platformAPI == "0.3" {
+									return nil
+								}
+								return []string{
+									"-report=/var/report/report.toml",
+									"-process-type=web",
+								}
+							}(),
+							b.Spec.Tags),
+						VolumeMounts: []corev1.VolumeMount{
+							layersVolume,
+							workspaceVolume,
+							homeVolume,
+							cacheVolume,
+							reportVolume,
 						},
-					)
-				} else {
-					step(
-						corev1.Container{
-							Name:    "export",
-							Image:   builderImage,
-							Command: []string{"/cnb/lifecycle/exporter"},
-							Args: append([]string{
-								"-layers=/layers",
-								"-app=/workspace",
-								"-group=/layers/group.toml",
-								"-analyzed=/layers/analyzed.toml",
-								"-cache-dir=/cache",
-								"-project-metadata=/layers/project-metadata.toml",
-								"-report=/var/report/report.toml",
-							}, b.Spec.Tags...),
-							VolumeMounts: []corev1.VolumeMount{
-								layersVolume,
-								workspaceVolume,
-								homeVolume,
-								cacheVolume,
-								reportVolume,
+						Env: []corev1.EnvVar{
+							homeEnv,
+							{
+								Name:  platformAPIEnvVar,
+								Value: platformAPI,
 							},
-							Env: []corev1.EnvVar{
-								homeEnv,
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
 						},
-						ifWindows(config.OS,
-							addNetworkWaitLauncherVolume(),
-							useNetworkWaitLauncher(dnsProbeHost),
-							userprofileHomeEnv(),
-						)...,
-					)
-				}
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					},
+					ifWindows(config.OS,
+						addNetworkWaitLauncherVolume(),
+						useNetworkWaitLauncher(dnsProbeHost),
+						userprofileHomeEnv(),
+					)...,
+				)
 			}),
 			ServiceAccountName: b.Spec.ServiceAccount,
 			NodeSelector: map[string]string{
 				"kubernetes.io/os": config.OS,
 			},
-			Tolerations: config.tolerations(),
+			Tolerations: tolerations(taints),
 			Volumes: append(append(
 				secretVolumes,
 				corev1.Volume{
@@ -639,7 +646,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildP
 					),
 					Env: []corev1.EnvVar{
 						{
-							Name:  envVarBuildChanges,
+							Name:  buildChangesEnvVar,
 							Value: b.BuildChanges(),
 						},
 					},
@@ -770,19 +777,30 @@ func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 	return volumes, volumeMounts
 }
 
-func (bc *BuildPodBuilderConfig) legacy() bool {
-	return bc.PlatformAPI == "0.2"
+func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (string, error) {
+
+	var supportedPlatformAPIVersions = []string{"0.5", "0.4", "0.3"}
+	if b.NotaryV1Config() != nil || bc.OS == "windows" {
+		//windows and report.toml are only available in platform api 0.3
+		supportedPlatformAPIVersions = []string{"0.5", "0.4"}
+	}
+
+	for _, supportedVersion := range supportedPlatformAPIVersions {
+		for _, version := range bc.PlatformAPIs {
+			if supportedVersion == version {
+				return version, nil
+			}
+		}
+	}
+
+	return "", errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
 }
 
-func (bc *BuildPodBuilderConfig) unsupported() bool {
-	return bc.PlatformAPI != "0.2" && bc.PlatformAPI != "0.3"
-}
+func tolerations(taints []corev1.Taint) []corev1.Toleration {
+	t := make([]corev1.Toleration, 0, len(taints))
 
-func (bc *BuildPodBuilderConfig) tolerations() []corev1.Toleration {
-	tolerations := make([]corev1.Toleration, 0)
-
-	for _, taint := range bc.NodeTaints {
-		tolerations = append(tolerations, corev1.Toleration{
+	for _, taint := range taints {
+		t = append(t, corev1.Toleration{
 			Key:      taint.Key,
 			Operator: corev1.TolerationOpEqual,
 			Value:    taint.Value,
@@ -790,7 +808,7 @@ func (bc *BuildPodBuilderConfig) tolerations() []corev1.Toleration {
 		})
 	}
 
-	return tolerations
+	return t
 }
 
 func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {
