@@ -23,15 +23,15 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
-	github.com/vdemeester/k8s-pkg-credentialprovider v1.17.4
+	github.com/vdemeester/k8s-pkg-credentialprovider v1.19.7
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.17.6
+	k8s.io/api v0.19.7
+	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.18.6
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
+	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
 	knative.dev/pkg v0.0.0-20200702222342-ea4d6e985ba0
 )
 
