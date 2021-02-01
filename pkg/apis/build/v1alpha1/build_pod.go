@@ -264,7 +264,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							projectMetadataVolume,
 						),
 					},
-					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeSecurityContext())...,
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeDirectExecute(), removeSecurityContext())...,
 				)
 				step(
 					corev1.Container{
@@ -515,6 +515,13 @@ func useNetworkWaitLauncher(dnsProbeHost string) stepModifier {
 func addNetworkWaitLauncherVolume() stepModifier {
 	return func(container corev1.Container) corev1.Container {
 		container.VolumeMounts = append(container.VolumeMounts, networkWaitLauncherVolume)
+		return container
+	}
+}
+
+func removeDirectExecute() stepModifier {
+	return func(container corev1.Container) corev1.Container {
+		container.Args = container.Args[2:]
 		return container
 	}
 }
