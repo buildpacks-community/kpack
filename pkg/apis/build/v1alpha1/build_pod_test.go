@@ -1018,8 +1018,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, "prepare", prepareContainer.Name)
 				assert.Equal(t, config.BuildInitWindowsImage, prepareContainer.Image)
 				assert.Equal(t, []string{
-					directExecute,
-					"build-init",
 					"-basic-git=git-secret-1=https://github.com",
 					"-ssh-git=git-secret-2=https://bitbucket.com",
 					"-basic-docker=docker-secret-1=acr.io",
