@@ -24,9 +24,9 @@ spec:
  
 > Note: ClusterBuilders will also work with a prebuilt builder image if a builpack is not available in a buildpackage.
 
-### Updating a stack
+### Updating a store
 
-The stack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.
+The store resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.
 
 ### Suggested buildpackages
 
