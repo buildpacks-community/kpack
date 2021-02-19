@@ -12,8 +12,8 @@ Users can use Azure Devops for git repositories
 Azure Devops represents a significant use case
 
 [go-git](https://github.com/go-git/go-git) is the git implementation library in pure go
+
 [git2go](https://github.com/libgit2/git2go) is a library for go bindings to the git method library in c, [libgit2](https://libgit2.org/).
-[Shallow cloning](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt---depthltdepthgt) basically means we don't pull in the full history which is a performance benefit.
 
 ## Proposal
 
@@ -23,47 +23,33 @@ The main reasoning for this is that git2go is the only fully-featured go library
 
 ## Actions
 
-### Add required dependencies for libgit2 to the build-init image
+### Add required dependencies for libgit2 to the build-init, windows-build-init, and kpack-controller image
 
-Build-init should be the only container that required this as it is the only container using git. This will require changing the build process for build-init.
+Build-init should be the only container that required this as it is the only container using git. This will require changing the build process for build-init, windows-build-init, and kpack-controller (for source resolving).
 
 This will include:
 - libgit2
 - a c compiler like gcc
 - maybe more
-- Should we spike to see how many dependencies we need, what it would look like to build this, and how would it affect performance?
 
 ### Implement git cloning with git2go
 
-This will be in addition to the existing go-git implementation.
+I don't currently see a reason to change our api which is good!
 
 ### Add a mechanism for selecting between go-git and git2go implementations
 
 Can this be achieved without users manually selecting this?
 
-### Build build-init with GCO enabled
+### Build build-init, windows-build-init, and kpack-controller with GCO enabled
 
-- Should we spike to see how the drawbacks of this?
+## Risks
 
-## Alternatives
-
-### Switch completely to git2go
-
-Lose out on shallow cloning
-
-### Use azure-devops-go-api library
-
-[azure-devops-go-api](https://github.com/microsoft/azure-devops-go-api) is a client wrapper for the azure devops api.
-
-This uses token auth which is a diversion from our current git auth.
-
-This would be a completely different implementation and likely more overhead as it does not support the git-style cloning but instead treats repos as blobs:
-https://github.com/microsoft/azure-devops-go-api/blob/dev/azuredevops/git/client.go#L98
+- Drawbacks of using cgo
+- Building kpack controller/build-init with required dependencies
 
 ## References
 
 - go-git issue for supporting azure devops https://github.com/go-git/go-git/issues/64
-- git2go issue for supporting shallow cloning https://github.com/libgit2/git2go/issues/330
-- libgit2 issue for supporting shallow cloning https://github.com/libgit2/libgit2/issues/3058
+- git2go ssh auth support: https://github.com/libgit2/git2go/blob/master/credentials.go#L164
 - flux ci/cd implementation of git2go https://github.com/fluxcd/source-controller/tree/d1ee61844d3a51987708bc365d44b3e88cbdcdb9/pkg/git/libgit2
 - flux docs for git repository configuration https://toolkit.fluxcd.io/components/source/gitrepositories/
