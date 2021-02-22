@@ -1,10 +1,26 @@
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: clusterbuilders.kpack.io
 spec:
   group: kpack.io
-  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: LatestImage
+      type: string
+      jsonPath: ".status.latestImage"
+    - name: Ready
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
   names:
     kind: ClusterBuilder
     singular: clusterbuilder
@@ -15,12 +31,3 @@ spec:
     categories:
     - kpack
   scope: Cluster
-  subresources:
-    status: {}
-  additionalPrinterColumns:
-  - name: LatestImage
-    type: string
-    JSONPath: ".status.latestImage"
-  - name: Ready
-    type: string
-    JSONPath: #@ ".status.conditions[?(@.type==\"Ready\")].status"
