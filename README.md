@@ -27,6 +27,8 @@ kpack also provides a build type to execute a single Cloud Native Buildpack imag
     - [Builds](docs/build.md)
     - [Service Bindings](docs/servicebindings.md)
 
+- Interact with kpack using [kpack CLI](https://github.com/vmware-tanzu/kpack-cli/blob/master/docs/kp.md)
+
 - Tailing logs with the kpack [log utility](docs/logs.md)
  
 - Documentation on [Local Development](docs/local.md)
