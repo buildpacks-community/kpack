@@ -21,7 +21,6 @@ func TestBuildPod(t *testing.T) {
 
 func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	const (
-		directExecute    = "--"
 		namespace        = "some-namespace"
 		buildName        = "build-name"
 		builderImage     = "builderregistry.io/builder:latest@sha256:42lkajdsf9q87234"
@@ -323,8 +322,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
 			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
 			assert.Equal(t, []string{
-				directExecute,
-				"build-init",
 				"-basic-git=git-secret-1=https://github.com",
 				"-ssh-git=git-secret-2=https://bitbucket.com",
 				"-basic-docker=docker-secret-1=acr.io",
@@ -828,8 +825,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							Name:  "rebase",
 							Image: config.RebaseImage,
 							Args: []string{
-								directExecute,
-								"rebase",
 								"--run-image",
 								"builderregistry.io/run",
 								"--last-built-image",
@@ -885,11 +880,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 					require.NoError(t, err)
-
 					require.Equal(t,
 						[]string{
-							directExecute,
-							"completion",
 							"-notary-v1-url=some-notary-url",
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
@@ -942,10 +934,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
+				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
 				require.Equal(t,
 					[]string{
-						directExecute,
-						"completion",
 						"-notary-v1-url=some-notary-url",
 						"-basic-git=git-secret-1=https://github.com",
 						"-ssh-git=git-secret-2=https://bitbucket.com",
@@ -1234,7 +1226,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, []string{
 					dnsProbeHost,
 					"--",
-					"completion",
+					"/cnb/process/web",
 					"-notary-v1-url=some-notary-server",
 					"-basic-git=git-secret-1=https://github.com",
 					"-ssh-git=git-secret-2=https://bitbucket.com",
@@ -1267,7 +1259,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				completionContainer := pod.Spec.Containers[0]
 				assert.Equal(t, config.CompletionWindowsImage, completionContainer.Image)
 
-				assert.Len(t, completionContainer.Command, 0)
 				assert.Len(t, completionContainer.Args, 0)
 			})
 
