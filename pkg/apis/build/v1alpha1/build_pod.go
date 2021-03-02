@@ -14,11 +14,6 @@ import (
 )
 
 const (
-	directExecute    = "--"
-	buildInitBinary  = "build-init"
-	completionBinary = "completion"
-	rebaseBinary     = "rebase"
-
 	SecretTemplateName           = "secret-volume-%s"
 	SecretPathName               = "/var/build-secrets/%s"
 	BuildLabel                   = "kpack.io/build"
@@ -195,12 +190,11 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 				}
 
 				step(corev1.Container{
-					Name:  "completion",
-					Image: images.completion(config.OS),
+					Name:    "completion",
+					Image:   images.completion(config.OS),
+					Command: []string{"/cnb/process/web"},
 					Args: append(
 						[]string{
-							directExecute,
-							completionBinary,
 							"-notary-v1-url=" + b.NotaryV1Config().URL,
 						},
 						secretArgs...,
@@ -224,11 +218,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							RunAsUser:  &config.Uid,
 							RunAsGroup: &config.Gid,
 						},
-						Args: args(a(
-							directExecute,
-							buildInitBinary),
-							secretArgs,
-						),
+						Args: secretArgs,
 						Env: append(
 							b.Spec.Source.Source().BuildEnvVars(),
 							corev1.EnvVar{
@@ -264,7 +254,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							projectMetadataVolume,
 						),
 					},
-					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeDirectExecute(), removeSecurityContext())...,
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeSecurityContext())...,
 				)
 				step(
 					corev1.Container{
@@ -501,11 +491,7 @@ func ifWindows(os string, modifiers ...stepModifier) []stepModifier {
 func useNetworkWaitLauncher(dnsProbeHost string) stepModifier {
 	return func(container corev1.Container) corev1.Container {
 		startCommand := container.Command
-		if len(startCommand) == 0 {
-			container.Args = args([]string{dnsProbeHost}, container.Args)
-		} else {
-			container.Args = args([]string{dnsProbeHost, "--"}, startCommand, container.Args)
-		}
+		container.Args = args([]string{dnsProbeHost, "--"}, startCommand, container.Args)
 
 		container.Command = []string{"/networkWait/network-wait-launcher"}
 		return container
@@ -515,13 +501,6 @@ func useNetworkWaitLauncher(dnsProbeHost string) stepModifier {
 func addNetworkWaitLauncherVolume() stepModifier {
 	return func(container corev1.Container) corev1.Container {
 		container.VolumeMounts = append(container.VolumeMounts, networkWaitLauncherVolume)
-		return container
-	}
-}
-
-func removeDirectExecute() stepModifier {
-	return func(container corev1.Container) corev1.Container {
-		container.Args = container.Args[2:]
 		return container
 	}
 }
@@ -618,8 +597,6 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildP
 						Image: images.CompletionImage,
 						Args: append(
 							[]string{
-								directExecute,
-								completionBinary,
 								"-notary-v1-url=" + notaryConfig.URL,
 							},
 							secretArgs...,
@@ -639,8 +616,6 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildP
 					Name:  "rebase",
 					Image: images.RebaseImage,
 					Args: args(a(
-						directExecute,
-						rebaseBinary,
 						"--run-image",
 						buildPodBuilderConfig.RunImage,
 						"--last-built-image",

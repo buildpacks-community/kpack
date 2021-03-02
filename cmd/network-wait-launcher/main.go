@@ -26,7 +26,6 @@ func main() {
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func waitForDns(hostname string) error {
