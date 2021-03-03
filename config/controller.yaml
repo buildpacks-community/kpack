@@ -114,8 +114,8 @@ spec:
               key: image
         resources:
           requests:
-            cpu: 10m
-            memory: 50Mi
+            cpu: 20m
+            memory: 100Mi
           limits:
             cpu: 100m
-            memory: 200Mi
+            memory: 400Mi
