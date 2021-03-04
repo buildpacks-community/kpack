@@ -15,37 +15,65 @@ Azure Devops represents a significant use case
 
 [git2go](https://github.com/libgit2/git2go) is a library for go bindings to the git method library in c, [libgit2](https://libgit2.org/).
 
-## Proposal
+## Options
 
-### Use git2go for Azure Devops Repositories and go-git otherwise
+### 1. Use git2go
 
-The main reasoning for this is that git2go is the only fully-featured go library that supports the v2 git protocol, but it doesn't support shallow cloning which makes a big difference for builds.
+The main reasoning for this is that git2go is the only fully-featured go library that supports the v2 git protocol which is required for Azure Devops git.
 
-## Actions
+#### Actions
 
-### Add required dependencies for libgit2 to the build-init, windows-build-init, and kpack-controller image
+##### Add required dependencies for libgit2 to the build-init, windows-build-init, and kpack-controller image
 
 Build-init should be the only container that required this as it is the only container using git. This will require changing the build process for build-init, windows-build-init, and kpack-controller (for source resolving).
 
 This will include:
-- libgit2
-- a c compiler like gcc
-- maybe more
+- Bionic:
+    - [libgit2-26](https://packages.ubuntu.com/bionic/libgit2-26)
+    - [cmake](https://packages.ubuntu.com/bionic/cmake)
+    - [pkg-config](https://packages.ubuntu.com/bionic/pkg-config)
+- Windows: not sure
 
-### Implement git cloning with git2go
+Note:
+- Only libgit2-26 is available on ubuntu bionic which is incompatible with the master branch of git2go
 
-I don't currently see a reason to change our api which is good!
+##### Implement git cloning with git2go
 
-### Add a mechanism for selecting between go-git and git2go implementations
+##### Implement git source monitoring (kpack controller) with git2go
 
-Can this be achieved without users manually selecting this?
+##### Build build-init, windows-build-init, and kpack-controller with GCO enabled
 
-### Build build-init, windows-build-init, and kpack-controller with GCO enabled
+- We may want to statically build git2go to guarantee api compatibility with libgit2
+  - Maybe we don't have to since we only support bionic?
 
 ## Risks
 
 - Drawbacks of using cgo
-- Building kpack controller/build-init with required dependencies
+- Developing with this new library is already giving us issues
+- Building kpack controller/(windows-)build-init with new required dependencies
+
+### 2. Use git binary to fetch and go-git to monitor git source
+
+The git binary would work with azure devops!
+
+#### Actions
+
+##### Add required dependencies for git to the build-init, windows-build-init, and kpack-controller image
+
+Build-init should be the only container that required this as it is the only container using git. This will require changing the build process for build-init, windows-build-init, and kpack-controller (for source resolving).
+
+This will include:
+- [bionic](https://packages.ubuntu.com/bionic/git)
+- windows (not sure)
+
+Note:
+
+##### Implement git cloning by shelling out to git binary
+
+## Risks
+
+- Building (windows-)build-init with new required dependencies
+- Can't monitor git source for azure devops (must update revisions manually)
 
 ## References
 
