@@ -214,10 +214,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
 		})
 
-		it("configures the FS Mount Group with the supplied group", func() {
+		it("configures the pod security context to match the builder config user and group", func() {
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
+			assert.Equal(t, buildPodBuilderConfig.Uid, *pod.Spec.SecurityContext.RunAsUser)
+			assert.Equal(t, buildPodBuilderConfig.Gid, *pod.Spec.SecurityContext.RunAsGroup)
 			assert.Equal(t, buildPodBuilderConfig.Gid, *pod.Spec.SecurityContext.FSGroup)
 		})
 
@@ -360,8 +362,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
 			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
-			assert.Equal(t, buildPodBuilderConfig.Uid, *pod.Spec.InitContainers[0].SecurityContext.RunAsUser)
-			assert.Equal(t, buildPodBuilderConfig.Gid, *pod.Spec.InitContainers[0].SecurityContext.RunAsGroup)
 			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
 					Name:  "PLATFORM_ENV_VARS",
