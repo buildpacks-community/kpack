@@ -250,7 +250,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							projectMetadataVolume,
 						),
 					},
-					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeSecurityContext())...,
+					ifWindows(config.OS, addNetworkWaitLauncherVolume())...,
 				)
 				step(
 					corev1.Container{
@@ -511,13 +511,6 @@ func userprofileHomeEnv() stepModifier {
 			}
 		}
 
-		return container
-	}
-}
-
-func removeSecurityContext() stepModifier {
-	return func(container corev1.Container) corev1.Container {
-		container.SecurityContext = nil
 		return container
 	}
 }
