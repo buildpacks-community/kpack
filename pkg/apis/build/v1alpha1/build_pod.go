@@ -214,11 +214,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					corev1.Container{
 						Name:  "prepare",
 						Image: images.buildInit(config.OS),
-						SecurityContext: &corev1.SecurityContext{
-							RunAsUser:  &config.Uid,
-							RunAsGroup: &config.Gid,
-						},
-						Args: secretArgs,
+						Args:  secretArgs,
 						Env: append(
 							b.Spec.Source.Source().BuildEnvVars(),
 							corev1.EnvVar{
@@ -254,7 +250,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							projectMetadataVolume,
 						),
 					},
-					ifWindows(config.OS, addNetworkWaitLauncherVolume(), removeSecurityContext())...,
+					ifWindows(config.OS, addNetworkWaitLauncherVolume())...,
 				)
 				step(
 					corev1.Container{
@@ -476,7 +472,9 @@ func podSecurityContext(config BuildPodBuilderConfig) *corev1.PodSecurityContext
 	}
 
 	return &corev1.PodSecurityContext{
-		FSGroup: &config.Gid,
+		FSGroup:    &config.Gid,
+		RunAsUser:  &config.Uid,
+		RunAsGroup: &config.Gid,
 	}
 }
 
@@ -517,13 +515,6 @@ func userprofileHomeEnv() stepModifier {
 	}
 }
 
-func removeSecurityContext() stepModifier {
-	return func(container corev1.Container) corev1.Container {
-		container.SecurityContext = nil
-		return container
-	}
-}
-
 func noOpModifer(container corev1.Container) corev1.Container {
 	return container
 }
@@ -550,7 +541,7 @@ func (b *Build) notarySecretVolume() corev1.Volume {
 	}
 }
 
-func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildPodBuilderConfig BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config BuildPodBuilderConfig) (*corev1.Pod, error) {
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 
 	return &corev1.Pod{
@@ -617,7 +608,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, buildP
 					Image: images.RebaseImage,
 					Args: args(a(
 						"--run-image",
-						buildPodBuilderConfig.RunImage,
+						config.RunImage,
 						"--last-built-image",
 						b.Spec.LastBuild.Image,
 						"--report",
