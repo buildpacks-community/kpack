@@ -50,10 +50,22 @@ func (i *Image) SetDefaults(ctx context.Context) {
 }
 
 func (i *Image) Validate(ctx context.Context) *apis.FieldError {
-	return i.Spec.Validate(ctx).ViaField("spec")
+	return i.Spec.ValidateSpec(ctx).ViaField("spec").
+		Also(i.ValidateMetadata(ctx).ViaField("metadata"))
 }
 
-func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
+func (i *Image) ValidateMetadata(ctx context.Context) *apis.FieldError {
+	return i.validateName(i.Name).ViaField("name")
+}
+
+func (i *Image) validateName(imageName string) *apis.FieldError {
+	if len(imageName) > 63 {
+		return apis.ErrInvalidValue(imageName, "kind")
+	}
+	return nil
+}
+
+func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
 		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source")).

@@ -224,6 +224,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrMissingField("spec.build.bindings[0].name"))
 		})
 
+		it("invalid image name", func() {
+			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
+			assertValidationError(image, ctx, apis.ErrInvalidValue("this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4", "kind").ViaField("metadata", "name"))
+		})
+
 		it("validates cache size is not set when there is no default StorageClass", func() {
 			ctx = context.TODO()
 
