@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -224,9 +225,23 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrMissingField("spec.build.bindings[0].name"))
 		})
 
-		it("invalid image name", func() {
+		it("image name is too long", func() {
 			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
-			assertValidationError(image, ctx, apis.ErrInvalidValue("this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4", "kind").ViaField("metadata", "name"))
+			expectedError := &apis.FieldError{
+				Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: [must be no more than 63 characters]", image.ObjectMeta.Name),
+				Paths:   []string{"metadata.name.name"},
+			}
+			assertValidationError(image, ctx, expectedError)
+		})
+
+		it("invalid image name format", func() {
+			image.ObjectMeta.Name = "@NOT!!!VALID!!!"
+			errMsg := "[a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')]"
+			expectedError := &apis.FieldError{
+				Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: %s", image.ObjectMeta.Name, errMsg),
+				Paths:   []string{"metadata.name.name"},
+			}
+			assertValidationError(image, ctx, expectedError)
 		})
 
 		it("validates cache size is not set when there is no default StorageClass", func() {
