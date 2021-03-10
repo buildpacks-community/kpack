@@ -3,12 +3,11 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-
+	"github.com/pivotal/kpack/pkg/apis/validate"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/validation"
 	"knative.dev/pkg/apis"
-
-	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 type ImageContextKey string
@@ -50,10 +49,26 @@ func (i *Image) SetDefaults(ctx context.Context) {
 }
 
 func (i *Image) Validate(ctx context.Context) *apis.FieldError {
-	return i.Spec.Validate(ctx).ViaField("spec")
+	return i.Spec.ValidateSpec(ctx).ViaField("spec").
+		Also(i.ValidateMetadata(ctx).ViaField("metadata"))
 }
 
-func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
+func (i *Image) ValidateMetadata(ctx context.Context) *apis.FieldError {
+	return i.validateName(i.Name).ViaField("name")
+}
+
+func (i *Image) validateName(imageName string) *apis.FieldError {
+	msgs := validation.NameIsDNS1035Label(imageName, false)
+	if len(msgs) > 0 {
+		return &apis.FieldError{
+			Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: %v", imageName, msgs),
+			Paths:   []string{"name"},
+		}
+	}
+	return nil
+}
+
+func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
 		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source")).
