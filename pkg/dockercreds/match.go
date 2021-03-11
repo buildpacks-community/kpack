@@ -10,9 +10,18 @@ import (
 var registryDomains = []string{
 	// Allow naked domains
 	"%s",
+
+	// Allow naked domains with trailing slash
+	"%s/",
+
 	// Allow scheme-prefixed.
 	"https://%s",
 	"http://%s",
+
+	// Allow scheme-prefixed with trailing slash
+	"https://%s/",
+	"http://%s/",
+
 	// Allow scheme-prefixes with version in url path.
 	"https://%s/v1/",
 	"http://%s/v1/",

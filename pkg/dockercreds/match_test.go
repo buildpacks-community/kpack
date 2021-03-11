@@ -13,18 +13,28 @@ func TestMatch(t *testing.T) {
 
 func testRegistryMatch(t *testing.T, when spec.G, it spec.S) {
 	when("#Match", func() {
-		for _, regFormat := range []string{
+		for _, f := range []string{
 			// Allow naked domains
 			"reg.io",
+
+			// Allow naked domains with trailing slash
+			"reg.io/",
+
 			// Allow scheme-prefixed.
 			"https://reg.io",
 			"http://reg.io",
+
+			// Allow scheme-prefixed with trailing slash as this is commonly provided by users.
+			"https://reg.io/",
+			"http://reg.io/",
+
 			// Allow scheme-prefixes with version in url path.
 			"https://reg.io/v1/",
 			"http://reg.io/v1/",
 			"https://reg.io/v2/",
 			"http://reg.io/v2/",
 		} {
+			regFormat := f
 			it("matches format "+regFormat, func() {
 				matcher := RegistryMatcher{Registry: regFormat}
 				assert.True(t, matcher.Match("reg.io"))
