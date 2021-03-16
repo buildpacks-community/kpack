@@ -237,6 +237,16 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 								Name:  buildChangesEnvVar,
 								Value: b.BuildChanges(),
 							},
+							corev1.EnvVar{
+								Name: "BUILDER_METADATA",
+								Value: builderImage,
+							},corev1.EnvVar{
+								Name: "BUIDLER_KIND",
+								Value: b.Kind,
+							},corev1.EnvVar{
+								Name: "BUILDER_NAME",
+								Value: b.Name,
+							},
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						WorkingDir:      "/workspace",

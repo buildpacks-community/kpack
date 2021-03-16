@@ -6,4 +6,5 @@ type BuilderResource interface {
 	Ready() bool
 	BuildpackMetadata() BuildpackMetadataList
 	RunImage() string
+	GetKind() string
 }

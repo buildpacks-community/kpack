@@ -37,6 +37,10 @@ var (
 
 	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
+	builderImage= flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "JSON string of builder image")
+	builderName = flag.String("builder-name", os.Getenv("BUILD_NAME"), "JSON string of builder name")
+	builderKind = flag.String("builder-kind", os.Getenv("BUILD_KIND"), "JSON string of builder kind")
+
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
 	dockerCredentials       flaghelpers.CredentialsFlags
@@ -116,6 +120,10 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	//TODO: print builder here
+	logger.Printf("building with:\n Image:%s, Name:%s, Kind:%s ", *builderImage, *builderName, *builderKind)
+
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
 	if err != nil {

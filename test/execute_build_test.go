@@ -455,6 +455,9 @@ func validateImageCreate(t *testing.T, clients *clients, image *v1alpha1.Image, 
 	_, _, err = registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
 	require.NoError(t, err)
 
+	//TODO: Delete me:
+	t.Logf("Build Log: %s", logTail.String())
+
 	eventually(t, func() bool {
 		return strings.Contains(logTail.String(), "Build successful")
 	}, 1*time.Second, 10*time.Second)
