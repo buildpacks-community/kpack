@@ -55,6 +55,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	builder := &TestBuilderResource{
 		Name:         "builder-Name",
 		LatestImage:  "some/builder@sha256:builder-digest",
+		Kind:         "builder",
 		BuilderReady: true,
 		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
@@ -349,6 +350,7 @@ type TestBuilderResource struct {
 	BuilderReady     bool
 	BuilderMetadata  []corev1alpha1.BuildpackMetadata
 	ImagePullSecrets []corev1.LocalObjectReference
+	Kind             string
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
@@ -358,6 +360,8 @@ func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return corev1alpha1.BuildBuilderSpec{
 		Image:            t.LatestImage,
 		ImagePullSecrets: t.ImagePullSecrets,
+		Kind:             t.Kind,
+		Name:             t.Name,
 	}
 }
 
@@ -375,4 +379,8 @@ func (t TestBuilderResource) RunImage() string {
 
 func (t TestBuilderResource) GetName() string {
 	return t.Name
+}
+
+func(t TestBuilderResource) GetKind() string{
+	return t.Kind
 }

@@ -63,6 +63,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+
 	}
 
 	latestBuild := &buildapi.Build{
@@ -803,6 +804,7 @@ type TestBuilderResource struct {
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
+	Kind             string
 }
 
 func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
@@ -826,4 +828,8 @@ func (t TestBuilderResource) RunImage() string {
 
 func (t TestBuilderResource) GetName() string {
 	return t.Name
+}
+
+func (t TestBuilderResource) GetKind() string {
+	return t.Kind
 }

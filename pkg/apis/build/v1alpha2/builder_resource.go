@@ -8,4 +8,5 @@ type BuilderResource interface {
 	Ready() bool
 	BuildpackMetadata() corev1alpha1.BuildpackMetadataList
 	RunImage() string
+	GetKind() string
 }

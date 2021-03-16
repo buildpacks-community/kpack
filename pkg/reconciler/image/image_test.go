@@ -715,6 +715,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
@@ -805,6 +806,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
+									Name: clusterBuilderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
@@ -895,6 +897,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
@@ -986,6 +989,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
+									Name: clusterBuilderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
@@ -1079,6 +1083,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1225,6 +1230,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1351,6 +1357,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1511,6 +1518,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1603,6 +1611,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1666,6 +1675,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
@@ -1811,6 +1821,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Tags: []string{image.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
+									Name: builderName,
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
