@@ -10,9 +10,8 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport"
+	git2go "github.com/libgit2/git2go/v31"
+	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 )
@@ -23,9 +22,9 @@ func TestGitCheckout(t *testing.T) {
 
 func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 	when("#Fetch", func() {
-		outpuBuffer := &bytes.Buffer{}
+		outputBuffer := &bytes.Buffer{}
 		fetcher := Fetcher{
-			Logger:   log.New(outpuBuffer, "", 0),
+			Logger:   log.New(outputBuffer, "", 0),
 			Keychain: fakeGitKeychain{},
 		}
 		var testDir string
@@ -50,18 +49,18 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				err := fetcher.Fetch(testDir, gitUrl, revision, metadataDir)
 				require.NoError(t, err)
 
-				repository, err := gogit.PlainOpenWithOptions(testDir, &gogit.PlainOpenOptions{})
+				repository, err := git2go.InitRepository(testDir, false)
 				require.NoError(t, err)
+				defer repository.Free()
 
-				worktree, err := repository.Worktree()
+				empty, err := repository.IsEmpty()
 				require.NoError(t, err)
+				require.False(t, empty)
 
-				status, err := worktree.Status()
-				require.NoError(t, err)
+				state := repository.State()
+				require.Equal(t, state, git2go.RepositoryStateNone)
 
-				require.True(t, status.IsClean())
-
-				require.Contains(t, outpuBuffer.String(), fmt.Sprintf("Successfully cloned \"%s\" @ \"%s\"", gitUrl, revision))
+				require.Contains(t, outputBuffer.String(), fmt.Sprintf("Successfully cloned \"%s\" @ \"%s\"", gitUrl, revision))
 
 				require.FileExists(t, path.Join(metadataDir, "project-metadata.toml"))
 
@@ -73,9 +72,10 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, gitUrl, projectMetadata.Source.Metadata.Repository)
 				require.Equal(t, revision, projectMetadata.Source.Metadata.Revision)
 
-				h, err := repository.Head()
+				head, err := repository.Head()
 				require.NoError(t, err)
-				require.Equal(t, h.Hash().String(), projectMetadata.Source.Version.Commit)
+				defer head.Free()
+				require.Equal(t, head.Target().String(), projectMetadata.Source.Version.Commit)
 			}
 		}
 
@@ -87,15 +87,20 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it("fetches a revision", testFetch("https://github.com/git-fixtures/basic", "b029517f6300c2da0f4b651b8642506cd6aaf45d"))
 
-		it("returns invalid credentials to fetch error on authentication required", func() {
-			err := fetcher.Fetch(testDir, "http://github.com/pivotal/kpack-nonexistent-test-repo", "master", "")
-			require.EqualError(t, err, "invalid credentials to fetch git repository: http://github.com/pivotal/kpack-nonexistent-test-repo")
+		it("returns error on non-existent ref", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", "")
+			require.EqualError(t, err, "could not find reference: doesnotexist")
+		})
+
+		it("returns error from remote fetch when authentication required", func() {
+			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", "")
+			require.EqualError(t, err, "fetching remote: no auth available")
 		})
 	})
 }
 
 type fakeGitKeychain struct{}
 
-func (f fakeGitKeychain) Resolve(gitUrl string) (transport.AuthMethod, error) {
-	return nil, nil
+func (f fakeGitKeychain) Resolve(url string, usernameFromUrl string, allowedTypes git2go.CredentialType) (Git2GoCredential, error) {
+	return nil, errors.New("no auth available")
 }

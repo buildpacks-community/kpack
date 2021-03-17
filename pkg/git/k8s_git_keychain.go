@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
@@ -13,22 +12,18 @@ import (
 	"github.com/pivotal/kpack/pkg/secret"
 )
 
-type k8sGitKeychain struct {
+type k8sGitKeychainFactory struct {
 	secretFetcher secret.Fetcher
 }
 
-var anonymousAuth transport.AuthMethod = nil
-
-func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
-	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
+func newK8sGitKeychainFactory(k8sClient k8sclient.Interface) *k8sGitKeychainFactory {
+	return &k8sGitKeychainFactory{secretFetcher: secret.Fetcher{Client: k8sClient}}
 }
 
-func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
+func (k *k8sGitKeychainFactory) KeychainForServiceAccount(ctx context.Context, namespace, serviceAccount string) (GitKeychain, error) {
 	secrets, err := k.secretFetcher.SecretsForServiceAccount(ctx, serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
-	} else if k8serrors.IsNotFound(err) {
-		return anonymousAuth, nil
 	}
 
 	var creds []gitCredential
@@ -53,7 +48,7 @@ func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount 
 		}
 	}
 
-	return (&secretGitKeychain{creds: creds}).Resolve(git.URL)
+	return &secretGitKeychain{creds: creds}, nil
 }
 
 func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {
@@ -67,7 +62,7 @@ func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {
 
 func fetchSshAuth(s *v1.Secret) func() (secret.SSH, error) {
 	return func() (auth secret.SSH, err error) {
-		return secret.SSH{PrivateKey: s.Data[v1.SSHAuthPrivateKey]}, nil
+		return secret.SSH{PrivateKey: string(s.Data[v1.SSHAuthPrivateKey])}, nil
 	}
 }
 

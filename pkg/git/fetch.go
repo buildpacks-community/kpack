@@ -1,18 +1,12 @@
 package git
 
 import (
-	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
+	git2go "github.com/libgit2/git2go/v31"
 	"github.com/pkg/errors"
 )
 
@@ -22,60 +16,53 @@ type Fetcher struct {
 }
 
 func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
-	resolvedAuth, err := f.Keychain.Resolve(gitURL)
-	if err != nil {
-		return err
-	}
+	f.Logger.Printf("Cloning %q @ %q...", gitURL, gitRevision)
 
-	tmpDir, err := ioutil.TempDir("", "git-clone-")
+	repository, err := git2go.InitRepository(dir, false)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "initializing repo")
 	}
+	defer repository.Free()
 
-	repo, err := git.PlainInit(tmpDir, false)
-	if err != nil {
-		return errors.Wrap(err, "unable to init git repository")
-	}
-
-	remote, err := repo.CreateRemote(&config.RemoteConfig{
-		Name: "origin",
-		URLs: []string{gitURL},
+	remote, err := repository.Remotes.CreateWithOptions(gitURL, &git2go.RemoteCreateOptions{
+		Name:  "origin",
+		Flags: git2go.RemoteCreateSkipInsteadof,
 	})
 	if err != nil {
-		return errors.Wrap(err, "unable to create remote")
+		return errors.Wrap(err, "creating remote")
 	}
+	defer remote.Free()
 
-	opts := &git.FetchOptions{
-		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
-		Auth:     resolvedAuth,
-		Depth:    0,
-	}
-
-	f.Logger.Printf("Cloning %q @ %q...", gitURL, gitRevision)
-	err = remote.Fetch(opts)
-	if err != nil && err != transport.ErrAuthenticationRequired {
-		return errors.Wrap(err, "unable to fetch git repository")
-	} else if err == transport.ErrAuthenticationRequired {
-		return errors.Errorf("invalid credentials to fetch git repository: %s", gitURL)
-	}
-
-	workTree, err := repo.Worktree()
+	err = remote.Fetch([]string{"refs/*:refs/*"}, &git2go.FetchOptions{
+		DownloadTags: git2go.DownloadTagsAll,
+		RemoteCallbacks: git2go.RemoteCallbacks{
+			CredentialsCallback:      keychainAsCredentialsCallback(f.Keychain),
+			CertificateCheckCallback: certificateCheckCallback(f.Logger),
+		},
+	}, "")
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve working tree")
+		return errors.Wrap(err, "fetching remote")
 	}
 
-	hashes, err := repo.ResolveRevision(plumbing.Revision(gitRevision))
+	oid, err := resolveRevision(repository, gitRevision)
 	if err != nil {
-		return errors.Wrapf(err, "resolving %s", gitRevision)
+		return err
 	}
 
-	if err := workTree.Checkout(&git.CheckoutOptions{Hash: *hashes}); err != nil {
-		return errors.Wrapf(err, "unable to checkout revision: %s", gitRevision)
-	}
-
-	err = copyDir(tmpDir, dir)
+	commit, err := repository.LookupCommit(oid)
 	if err != nil {
-		return fmt.Errorf("failed to copy: %s: %s", dir, err.Error())
+		return errors.Wrap(err, "looking up commit")
+	}
+
+	err = repository.SetHeadDetached(commit.Id())
+	if err != nil {
+		return errors.Wrap(err, "setting head detached")
+	}
+	err = repository.CheckoutHead(&git2go.CheckoutOpts{
+		Strategy: git2go.CheckoutForce,
+	})
+	if err != nil {
+		return errors.Wrap(err, "checkout head")
 	}
 
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
@@ -92,7 +79,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 				Revision:   gitRevision,
 			},
 			Version: version{
-				Commit: hashes.String(),
+				Commit: commit.Id().String(),
 			},
 		},
 	}
@@ -104,61 +91,21 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	return nil
 }
 
-func copyFile(src, dest string) error {
-	srcFile, err := os.Open(src)
+func resolveRevision(repository *git2go.Repository, gitRevision string) (*git2go.Oid, error) {
+	ref, err := repository.References.Dwim(gitRevision)
 	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	destFile, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	if _, err = io.Copy(destFile, srcFile); err != nil {
-		return err
+		return resolveCommit(gitRevision)
 	}
 
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod(dest, srcInfo.Mode())
+	return ref.Target(), nil
 }
 
-func copyDir(src string, dest string) error {
-	srcInfo, err := os.Stat(src)
+func resolveCommit(gitRevision string) (*git2go.Oid, error) {
+	oid, err := git2go.NewOid(gitRevision)
 	if err != nil {
-		return err
+		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid oid
 	}
-
-	if err = os.MkdirAll(dest, srcInfo.Mode()); err != nil {
-		return err
-	}
-
-	fileInfos, err := ioutil.ReadDir(src)
-	if err != nil {
-		return err
-	}
-
-	for _, fileInfo := range fileInfos {
-		srcPath := path.Join(src, fileInfo.Name())
-		destPath := path.Join(dest, fileInfo.Name())
-
-		if fileInfo.IsDir() {
-			if err = copyDir(srcPath, destPath); err != nil {
-				return err
-			}
-		} else {
-			if err = copyFile(srcPath, destPath); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return oid, nil
 }
 
 type project struct {

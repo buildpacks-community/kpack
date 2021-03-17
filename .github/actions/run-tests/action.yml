@@ -1,0 +1,12 @@
+name: 'Run tests'
+description: 'Run kpack tests'
+inputs:
+  command:
+    description: 'Command to run inside the container'
+    required: true
+    default: 'make unit-ci'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - ${{ inputs.command }}
