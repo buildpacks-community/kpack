@@ -62,7 +62,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStack, err = c.reconcileClusterStackStatus(clusterStack)
 
-	updateErr := c.updateClusterStackStatus(clusterStack)
+	updateErr := c.updateClusterStackStatus(ctx, clusterStack)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -108,7 +108,7 @@ func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterS
 	return clusterStack, nil
 }
 
-func (c *Reconciler) updateClusterStackStatus(desired *v1alpha1.ClusterStack) error {
+func (c *Reconciler) updateClusterStackStatus(ctx context.Context, desired *v1alpha1.ClusterStack) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.ClusterStackLister.Get(desired.Name)
@@ -120,6 +120,6 @@ func (c *Reconciler) updateClusterStackStatus(desired *v1alpha1.ClusterStack) er
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().ClusterStacks().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterStacks().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }

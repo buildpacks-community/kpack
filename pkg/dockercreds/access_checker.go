@@ -30,7 +30,6 @@ func VerifyWriteAccess(keychain authn.Keychain, tag string) error {
 	if err != nil {
 		return diagnoseIfTransportError(err)
 	}
-
 	client := &http.Client{Transport: tr}
 
 	u := url.URL{

@@ -19,6 +19,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -37,15 +38,15 @@ type BuildersGetter interface {
 
 // BuilderInterface has methods to work with Builder resources.
 type BuilderInterface interface {
-	Create(*v1alpha1.Builder) (*v1alpha1.Builder, error)
-	Update(*v1alpha1.Builder) (*v1alpha1.Builder, error)
-	UpdateStatus(*v1alpha1.Builder) (*v1alpha1.Builder, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Builder, error)
-	List(opts v1.ListOptions) (*v1alpha1.BuilderList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Builder, err error)
+	Create(ctx context.Context, builder *v1alpha1.Builder, opts v1.CreateOptions) (*v1alpha1.Builder, error)
+	Update(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (*v1alpha1.Builder, error)
+	UpdateStatus(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (*v1alpha1.Builder, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Builder, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.BuilderList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Builder, err error)
 	BuilderExpansion
 }
 
@@ -64,20 +65,20 @@ func newBuilders(c *KpackV1alpha1Client, namespace string) *builders {
 }
 
 // Get takes name of the builder, and returns the corresponding builder object, and an error if there is any.
-func (c *builders) Get(name string, options v1.GetOptions) (result *v1alpha1.Builder, err error) {
+func (c *builders) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Builder, err error) {
 	result = &v1alpha1.Builder{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("builders").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Builders that match those selectors.
-func (c *builders) List(opts v1.ListOptions) (result *v1alpha1.BuilderList, err error) {
+func (c *builders) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BuilderList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *builders) List(opts v1.ListOptions) (result *v1alpha1.BuilderList, err 
 		Resource("builders").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested builders.
-func (c *builders) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *builders) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *builders) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("builders").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a builder and creates it.  Returns the server's representation of the builder, and an error, if there is any.
-func (c *builders) Create(builder *v1alpha1.Builder) (result *v1alpha1.Builder, err error) {
+func (c *builders) Create(ctx context.Context, builder *v1alpha1.Builder, opts v1.CreateOptions) (result *v1alpha1.Builder, err error) {
 	result = &v1alpha1.Builder{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("builders").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(builder).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a builder and updates it. Returns the server's representation of the builder, and an error, if there is any.
-func (c *builders) Update(builder *v1alpha1.Builder) (result *v1alpha1.Builder, err error) {
+func (c *builders) Update(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (result *v1alpha1.Builder, err error) {
 	result = &v1alpha1.Builder{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("builders").
 		Name(builder.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(builder).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *builders) UpdateStatus(builder *v1alpha1.Builder) (result *v1alpha1.Builder, err error) {
+func (c *builders) UpdateStatus(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (result *v1alpha1.Builder, err error) {
 	result = &v1alpha1.Builder{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("builders").
 		Name(builder.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(builder).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the builder and deletes it. Returns an error if one occurs.
-func (c *builders) Delete(name string, options *v1.DeleteOptions) error {
+func (c *builders) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("builders").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *builders) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *builders) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("builders").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched builder.
-func (c *builders) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Builder, err error) {
+func (c *builders) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Builder, err error) {
 	result = &v1alpha1.Builder{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("builders").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

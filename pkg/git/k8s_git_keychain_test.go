@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -150,7 +151,8 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	when("Resolve", func() {
 		it("returns git Auth for matching secrets with basic auth", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
+
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
 			})
@@ -163,7 +165,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical first secretRef for basic auth", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "https://github.com/org/repo",
 				Revision: "master",
 			})
@@ -177,7 +179,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			actualAuth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "git@gitlab.com:org/repo",
 				Revision: "master",
 			})
@@ -196,7 +198,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns git Auth for matching secrets with ssh auth", func() {
-			actualAuth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			actualAuth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "git@bitbucket.com:org/repo",
 				Revision: "master",
 			})
@@ -215,7 +217,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "https://noschemegit.com/org/repo",
 				Revision: "master",
 			})
@@ -228,7 +230,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns anonymous Auth for no matching secret", func() {
-			auth, err := keychain.Resolve(testNamespace, serviceAccount, v1alpha1.Git{
+			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
 				URL:      "https://no-creds-github.com/org/repo",
 				Revision: "master",
 			})

@@ -19,6 +19,8 @@
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var clusterstacksResource = schema.GroupVersionResource{Group: "kpack.io", Versi
 var clusterstacksKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "ClusterStack"}
 
 // Get takes name of the clusterStack, and returns the corresponding clusterStack object, and an error if there is any.
-func (c *FakeClusterStacks) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterStack, err error) {
+func (c *FakeClusterStacks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterStack, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootGetAction(clusterstacksResource, name), &v1alpha1.ClusterStack{})
 	if obj == nil {
@@ -48,7 +50,7 @@ func (c *FakeClusterStacks) Get(name string, options v1.GetOptions) (result *v1a
 }
 
 // List takes label and field selectors, and returns the list of ClusterStacks that match those selectors.
-func (c *FakeClusterStacks) List(opts v1.ListOptions) (result *v1alpha1.ClusterStackList, err error) {
+func (c *FakeClusterStacks) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ClusterStackList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootListAction(clusterstacksResource, clusterstacksKind, opts), &v1alpha1.ClusterStackList{})
 	if obj == nil {
@@ -69,13 +71,13 @@ func (c *FakeClusterStacks) List(opts v1.ListOptions) (result *v1alpha1.ClusterS
 }
 
 // Watch returns a watch.Interface that watches the requested clusterStacks.
-func (c *FakeClusterStacks) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeClusterStacks) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewRootWatchAction(clusterstacksResource, opts))
 }
 
 // Create takes the representation of a clusterStack and creates it.  Returns the server's representation of the clusterStack, and an error, if there is any.
-func (c *FakeClusterStacks) Create(clusterStack *v1alpha1.ClusterStack) (result *v1alpha1.ClusterStack, err error) {
+func (c *FakeClusterStacks) Create(ctx context.Context, clusterStack *v1alpha1.ClusterStack, opts v1.CreateOptions) (result *v1alpha1.ClusterStack, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootCreateAction(clusterstacksResource, clusterStack), &v1alpha1.ClusterStack{})
 	if obj == nil {
@@ -85,7 +87,7 @@ func (c *FakeClusterStacks) Create(clusterStack *v1alpha1.ClusterStack) (result 
 }
 
 // Update takes the representation of a clusterStack and updates it. Returns the server's representation of the clusterStack, and an error, if there is any.
-func (c *FakeClusterStacks) Update(clusterStack *v1alpha1.ClusterStack) (result *v1alpha1.ClusterStack, err error) {
+func (c *FakeClusterStacks) Update(ctx context.Context, clusterStack *v1alpha1.ClusterStack, opts v1.UpdateOptions) (result *v1alpha1.ClusterStack, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(clusterstacksResource, clusterStack), &v1alpha1.ClusterStack{})
 	if obj == nil {
@@ -96,7 +98,7 @@ func (c *FakeClusterStacks) Update(clusterStack *v1alpha1.ClusterStack) (result 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterStacks) UpdateStatus(clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
+func (c *FakeClusterStacks) UpdateStatus(ctx context.Context, clusterStack *v1alpha1.ClusterStack, opts v1.UpdateOptions) (*v1alpha1.ClusterStack, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateSubresourceAction(clusterstacksResource, "status", clusterStack), &v1alpha1.ClusterStack{})
 	if obj == nil {
@@ -106,22 +108,22 @@ func (c *FakeClusterStacks) UpdateStatus(clusterStack *v1alpha1.ClusterStack) (*
 }
 
 // Delete takes name of the clusterStack and deletes it. Returns an error if one occurs.
-func (c *FakeClusterStacks) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeClusterStacks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewRootDeleteAction(clusterstacksResource, name), &v1alpha1.ClusterStack{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeClusterStacks) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterstacksResource, listOptions)
+func (c *FakeClusterStacks) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewRootDeleteCollectionAction(clusterstacksResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ClusterStackList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched clusterStack.
-func (c *FakeClusterStacks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ClusterStack, err error) {
+func (c *FakeClusterStacks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterStack, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterstacksResource, name, pt, data, subresources...), &v1alpha1.ClusterStack{})
 	if obj == nil {

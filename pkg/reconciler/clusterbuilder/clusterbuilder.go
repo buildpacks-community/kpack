@@ -2,6 +2,7 @@ package clusterBuilder
 
 import (
 	"context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -86,7 +87,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if creationError != nil {
 		builder.Status.ErrorCreate(creationError)
 
-		err := c.updateStatus(builder)
+		err := c.updateStatus(ctx, builder)
 		if err != nil {
 			return err
 		}
@@ -95,7 +96,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	builder.Status.BuilderRecord(builderRecord)
-	return c.updateStatus(builder)
+	return c.updateStatus(ctx, builder)
 }
 
 func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha1.BuilderRecord, error) {
@@ -134,7 +135,7 @@ func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha
 	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.ClusterBuilder) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.ClusterBuilder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.ClusterBuilderLister.Get(desired.Name)
@@ -146,6 +147,6 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.ClusterBuilder) error {
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }

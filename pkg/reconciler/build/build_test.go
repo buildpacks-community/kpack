@@ -495,9 +495,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			builtImage := cnb.BuiltImage{
 				Identifier:  identifier,
 				CompletedAt: time.Now(),
-				BuildpackMetadata: []lifecycle.Buildpack{{
-					ID:      "io.buildpack.executed",
-					Version: "1.1",
+				BuildpackMetadata: []lifecycle.GroupBuildpack{{
+					ID:       "io.buildpack.executed",
+					Version:  "1.1",
+					Homepage: "mysupercoolsite.com",
 				}},
 				Stack: cnb.BuiltImageStack{
 					RunImage: "somerun/123@sha256:12334563ad",
@@ -559,8 +560,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 									PodName: "build-name-build-pod",
 									BuildMetadata: v1alpha1.BuildpackMetadataList{{
-										Id:      "io.buildpack.executed",
-										Version: "1.1",
+										Id:       "io.buildpack.executed",
+										Version:  "1.1",
+										Homepage: "mysupercoolsite.com",
 									}},
 									LatestImage: identifier,
 									Stack: v1alpha1.BuildStack{

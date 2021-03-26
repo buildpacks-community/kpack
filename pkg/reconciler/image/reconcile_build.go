@@ -1,6 +1,7 @@
 package image
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -12,7 +13,7 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1.Build, sourceResolver *v1alpha1.SourceResolver, builder v1alpha1.BuilderResource, buildCacheName string) (v1alpha1.ImageStatus, error) {
+func (c *Reconciler) reconcileBuild(ctx context.Context, image *v1alpha1.Image, latestBuild *v1alpha1.Build, sourceResolver *v1alpha1.SourceResolver, builder v1alpha1.BuilderResource, buildCacheName string) (v1alpha1.ImageStatus, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
 		return v1alpha1.ImageStatus{}, err
@@ -28,7 +29,7 @@ func (c *Reconciler) reconcileBuild(image *v1alpha1.Image, latestBuild *v1alpha1
 		nextBuildNumber := currentBuildNumber + 1
 
 		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, buildCacheName, nextBuildNumber)
-		build, err = c.Client.KpackV1alpha1().Builds(build.Namespace).Create(build)
+		build, err = c.Client.KpackV1alpha1().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
 		if err != nil {
 			return v1alpha1.ImageStatus{}, err
 		}

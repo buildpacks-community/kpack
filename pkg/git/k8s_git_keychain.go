@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -22,8 +23,8 @@ func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
 	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
 }
 
-func (k *k8sGitKeychain) Resolve(namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
-	secrets, err := k.secretFetcher.SecretsForServiceAccount(serviceAccount, namespace)
+func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount string, git v1alpha1.Git) (transport.AuthMethod, error) {
+	secrets, err := k.secretFetcher.SecretsForServiceAccount(ctx, serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {

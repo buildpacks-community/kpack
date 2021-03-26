@@ -1,6 +1,7 @@
 package k8sdockercreds
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -56,7 +57,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -107,7 +108,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -175,7 +176,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 				keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 				require.NoError(t, err)
 
-				keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+				keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 					ServiceAccount: "",
 					Namespace:      testNamespace,
 				})
@@ -213,7 +214,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        testNamespace,
 				ImagePullSecrets: []corev1.LocalObjectReference{{"image-pull-secret"}},
@@ -244,7 +245,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			}))
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -262,12 +263,12 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fake.NewSimpleClientset())
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{
+			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				Namespace: "",
 			})
 			require.NoError(t, err)
 
-			k8schain, err := k8schain.New(nil, k8schain.Options{})
+			k8schain, err := k8schain.New(context.TODO(), nil, k8schain.Options{})
 			require.NoError(t, err)
 			volumeKeyChain := dockercreds.DockerCreds{}
 			expected := authn.NewMultiKeychain(volumeKeyChain, k8schain)

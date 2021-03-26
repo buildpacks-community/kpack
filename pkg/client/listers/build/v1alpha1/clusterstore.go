@@ -26,10 +26,13 @@ import (
 )
 
 // ClusterStoreLister helps list ClusterStores.
+// All objects returned here must be treated as read-only.
 type ClusterStoreLister interface {
 	// List lists all ClusterStores in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ClusterStore, err error)
 	// Get retrieves the ClusterStore from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.ClusterStore, error)
 	ClusterStoreListerExpansion
 }

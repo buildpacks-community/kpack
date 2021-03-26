@@ -26,10 +26,13 @@ import (
 )
 
 // ClusterStackLister helps list ClusterStacks.
+// All objects returned here must be treated as read-only.
 type ClusterStackLister interface {
 	// List lists all ClusterStacks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ClusterStack, err error)
 	// Get retrieves the ClusterStack from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.ClusterStack, error)
 	ClusterStackListerExpansion
 }

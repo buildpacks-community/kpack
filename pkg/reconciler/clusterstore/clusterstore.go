@@ -6,11 +6,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1expInformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
@@ -62,7 +62,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStore, err = c.reconcileClusterStoreStatus(clusterStore)
 
-	updateErr := c.updateClusterStoreStatus(clusterStore)
+	updateErr := c.updateClusterStoreStatus(ctx, clusterStore)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -73,7 +73,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) updateClusterStoreStatus(desired *v1alpha1.ClusterStore) error {
+func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *v1alpha1.ClusterStore) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.ClusterStoreLister.Get(desired.Name)
@@ -85,7 +85,7 @@ func (c *Reconciler) updateClusterStoreStatus(desired *v1alpha1.ClusterStore) er
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().ClusterStores().UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().ClusterStores().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }
 
@@ -99,7 +99,7 @@ func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterS
 					{
 						Type:               corev1alpha1.ConditionReady,
 						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 						Message:            err.Error(),
 					},
 				},
@@ -114,7 +114,7 @@ func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *v1alpha1.ClusterS
 			ObservedGeneration: clusterStore.Generation,
 			Conditions: corev1alpha1.Conditions{
 				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: v1.Now()},
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 					Type:               corev1alpha1.ConditionReady,
 					Status:             corev1.ConditionTrue,
 				},

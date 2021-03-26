@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -18,8 +19,8 @@ func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 	}
 }
 
-func (r *Resolver) Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error) {
-	auth, err := r.gitKeychain.Resolve(sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount, *sourceResolver.Spec.Source.Git)
+func (r *Resolver) Resolve(ctx context.Context, sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error) {
+	auth, err := r.gitKeychain.Resolve(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount, *sourceResolver.Spec.Source.Git)
 	if err != nil {
 		return v1alpha1.ResolvedSourceConfig{}, err
 	}

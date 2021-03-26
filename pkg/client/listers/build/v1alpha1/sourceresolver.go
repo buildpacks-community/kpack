@@ -26,8 +26,10 @@ import (
 )
 
 // SourceResolverLister helps list SourceResolvers.
+// All objects returned here must be treated as read-only.
 type SourceResolverLister interface {
 	// List lists all SourceResolvers in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.SourceResolver, err error)
 	// SourceResolvers returns an object that can list and get SourceResolvers.
 	SourceResolvers(namespace string) SourceResolverNamespaceLister
@@ -58,10 +60,13 @@ func (s *sourceResolverLister) SourceResolvers(namespace string) SourceResolverN
 }
 
 // SourceResolverNamespaceLister helps list and get SourceResolvers.
+// All objects returned here must be treated as read-only.
 type SourceResolverNamespaceLister interface {
 	// List lists all SourceResolvers in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.SourceResolver, err error)
 	// Get retrieves the SourceResolver from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.SourceResolver, error)
 	SourceResolverNamespaceListerExpansion
 }

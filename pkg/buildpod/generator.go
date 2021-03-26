@@ -1,6 +1,7 @@
 package buildpod
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -46,12 +47,12 @@ type BuildPodable interface {
 	BuildPod(v1alpha1.BuildPodImages, []corev1.Secret, []corev1.Taint, v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error)
 }
 
-func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
-	if err := g.buildAllowed(build); err != nil {
+func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, error) {
+	if err := g.buildAllowed(ctx, build); err != nil {
 		return nil, fmt.Errorf("build rejected: %w", err)
 	}
 
-	secrets, err := g.fetchBuildSecrets(build)
+	secrets, err := g.fetchBuildSecrets(ctx, build)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 		return nil, err
 	}
 
-	taints, err := g.calculateHomogenousWindowsNodeTaints(buildPodBuilderConfig.OS)
+	taints, err := g.calculateHomogenousWindowsNodeTaints(ctx, buildPodBuilderConfig.OS)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +70,8 @@ func (g *Generator) Generate(build BuildPodable) (*v1.Pod, error) {
 	return build.BuildPod(g.BuildPodConfig, secrets, taints, buildPodBuilderConfig)
 }
 
-func (g *Generator) buildAllowed(build BuildPodable) error {
-	serviceAccounts, err := g.fetchServiceAccounts(build)
+func (g *Generator) buildAllowed(ctx context.Context, build BuildPodable) error {
+	serviceAccounts, err := g.fetchServiceAccounts(ctx, build)
 	if err != nil {
 		return err
 	}
@@ -91,23 +92,23 @@ func (g *Generator) buildAllowed(build BuildPodable) error {
 	return nil
 }
 
-func (g *Generator) fetchServiceAccounts(build BuildPodable) ([]corev1.ServiceAccount, error) {
-	serviceAccounts, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).List(metav1.ListOptions{})
+func (g *Generator) fetchServiceAccounts(ctx context.Context, build BuildPodable) ([]corev1.ServiceAccount, error) {
+	serviceAccounts, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return []v1.ServiceAccount{}, err
 	}
 	return serviceAccounts.Items, nil
 }
 
-func (g *Generator) fetchBuildSecrets(build BuildPodable) ([]corev1.Secret, error) {
+func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) ([]corev1.Secret, error) {
 	var secrets []corev1.Secret
 	var secretSet = map[string]struct{}{}
-	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).Get(build.ServiceAccount(), metav1.GetOptions{})
+	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).Get(ctx, build.ServiceAccount(), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, secretRef := range serviceAccount.Secrets {
-		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(secretRef.Name, metav1.GetOptions{})
+		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(ctx, secretRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -178,12 +179,12 @@ func parseCNBID(image ggcrv1.Image, env string) (int64, error) {
 	return strconv.ParseInt(v, 10, 64)
 }
 
-func (g *Generator) calculateHomogenousWindowsNodeTaints(os string) ([]v1.Taint, error) {
+func (g *Generator) calculateHomogenousWindowsNodeTaints(ctx context.Context, os string) ([]v1.Taint, error) {
 	if os != "windows" {
 		return nil, nil
 	}
 
-	windowsNodes, err := g.K8sClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: "kubernetes.io/os=windows"})
+	windowsNodes, err := g.K8sClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: "kubernetes.io/os=windows"})
 	if err != nil {
 		return nil, err
 	}

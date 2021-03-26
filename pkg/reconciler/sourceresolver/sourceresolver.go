@@ -3,6 +3,7 @@ package sourceresolver
 import (
 	"context"
 	"errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -103,7 +104,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	sourceResolver.Status.ObservedGeneration = sourceResolver.Generation
-	return c.updateStatus(sourceResolver)
+	return c.updateStatus(ctx, sourceResolver)
 }
 
 func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (Resolver, error) {
@@ -117,7 +118,7 @@ func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (
 	return nil, errors.New("invalid source type")
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.SourceResolver) error {
 	original, err := c.SourceResolverLister.SourceResolvers(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
@@ -127,6 +128,6 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.SourceResolver) error {
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().SourceResolvers(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().SourceResolvers(desired.Namespace).UpdateStatus(ctx, desired, v1.UpdateOptions{})
 	return err
 }
