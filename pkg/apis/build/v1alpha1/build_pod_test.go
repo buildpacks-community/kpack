@@ -615,7 +615,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
 			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
-			assert.Equal(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
+			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 				"layers-dir",
 				"workspace-dir",
 				"home-dir",
@@ -627,8 +627,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-app=/workspace",
 				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
-				"-cache-dir=/cache",
 				"-project-metadata=/layers/project-metadata.toml",
+				"-cache-dir=/cache",
 				"-report=/var/report/report.toml",
 				"-process-type=web",
 				build.Tag(),
@@ -668,17 +668,43 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.Volumes[0])
 		})
 
-		it("creates a pod with empty cache when no name is provided", func() {
+		when("CacheName is empty", func() {
+			podWithCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 			build.Spec.CacheName = ""
-			pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
-			require.NoError(t, err)
 
-			assert.Equal(t, corev1.Volume{
-				Name: "cache-dir",
-				VolumeSource: corev1.VolumeSource{
-					EmptyDir: &corev1.EmptyDirVolumeSource{},
-				},
-			}, pod.Spec.Volumes[0])
+			it("creates a pod without cache volume", func() {
+				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
+			})
+
+			it("does not add the cache to analyze container", func() {
+				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := pod.Spec.InitContainers[2]
+				assert.NotContains(t, analyzeContainer.Args, "-cache-dir=/cache")
+				assert.Len(t, analyzeContainer.VolumeMounts, len(podWithCache.Spec.InitContainers[2].VolumeMounts)-1)
+			})
+
+			it("does not add the cache to restore container", func() {
+				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := pod.Spec.InitContainers[3]
+				assert.NotContains(t, restoreContainer.Args, "-cache-dir=/cache")
+				assert.Len(t, restoreContainer.VolumeMounts, len(podWithCache.Spec.InitContainers[3].VolumeMounts)-1)
+			})
+
+			it("does not add the cache to exporter container", func() {
+				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := pod.Spec.InitContainers[5]
+				assert.NotContains(t, exportContainer.Args, "-cache-dir=/cache")
+				assert.Len(t, exportContainer.VolumeMounts, len(podWithCache.Spec.InitContainers[5].VolumeMounts)-1)
+			})
 		})
 
 		it("attach volumes for secrets", func() {
@@ -722,8 +748,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
-					"-cache-dir=/cache",
 					"-project-metadata=/layers/project-metadata.toml",
+					"-cache-dir=/cache",
 					build.Tag(),
 					"someimage/name:tag2",
 					"someimage/name:tag3",
@@ -1203,8 +1229,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-app=/workspace",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
-					"-cache-dir=/cache",
 					"-project-metadata=/layers/project-metadata.toml",
+					"-cache-dir=/cache",
 					"-report=/var/report/report.toml",
 					"-process-type=web",
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},

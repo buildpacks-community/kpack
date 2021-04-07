@@ -163,6 +163,16 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
 	}
 
+	var cacheArgs []string
+	var cacheVolumes []corev1.VolumeMount
+	if b.Spec.CacheName == "" {
+		cacheArgs = nil
+		cacheVolumes = nil
+	} else {
+		cacheArgs = []string{"-cache-dir=/cache"}
+		cacheVolumes = []corev1.VolumeMount{cacheVolume}
+	}
+
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      b.PodName(),
@@ -282,24 +292,23 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Name:    "analyze",
 						Image:   builderImage,
 						Command: []string{"/cnb/lifecycle/analyzer"},
-						Args: []string{
+						Args: args([]string{
 							"-layers=/layers",
 							"-group=/layers/group.toml",
-							"-analyzed=/layers/analyzed.toml",
-							"-cache-dir=/cache",
-							func() string {
+							"-analyzed=/layers/analyzed.toml"},
+							cacheArgs,
+							func() []string {
 								if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
-									return b.Spec.LastBuild.Image
+									return []string{b.Spec.LastBuild.Image}
 								}
-								return b.Tag()
+								return []string{b.Tag()}
 							}(),
-						},
-						VolumeMounts: []corev1.VolumeMount{
+						),
+						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
 							workspaceVolume,
 							homeVolume,
-							cacheVolume,
-						},
+						}, cacheVolumes...),
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{
@@ -320,15 +329,13 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Name:    "restore",
 						Image:   builderImage,
 						Command: []string{"/cnb/lifecycle/restorer"},
-						Args: []string{
+						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
-							"-cache-dir=/cache",
-						},
-						VolumeMounts: []corev1.VolumeMount{
+						}, cacheArgs),
+						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
-							cacheVolume,
-						},
+						}, cacheVolumes...),
 						Env: []corev1.EnvVar{
 							{
 								Name:  platformAPIEnvVar,
@@ -375,8 +382,8 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-app=/workspace",
 							"-group=/layers/group.toml",
 							"-analyzed=/layers/analyzed.toml",
-							"-cache-dir=/cache",
 							"-project-metadata=/layers/project-metadata.toml"},
+							cacheArgs,
 							func() []string {
 								if platformAPI == "0.3" {
 									return nil
@@ -387,13 +394,12 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 								}
 							}(),
 							b.Spec.Tags),
-						VolumeMounts: []corev1.VolumeMount{
+						VolumeMounts: append([]corev1.VolumeMount{
 							layersVolume,
 							workspaceVolume,
 							homeVolume,
-							cacheVolume,
 							reportVolume,
-						},
+						}, cacheVolumes...),
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{
@@ -416,11 +422,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 			},
 			Tolerations: tolerations(taints),
 			Volumes: append(append(
-				secretVolumes,
-				corev1.Volume{
-					Name:         cacheDirName,
-					VolumeSource: b.cacheVolume(config.OS),
-				},
+				append(secretVolumes, b.cacheVolume(config.OS)...),
 				corev1.Volume{
 					Name: layersDirName,
 					VolumeSource: corev1.VolumeSource{
@@ -633,16 +635,25 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 	}, nil
 }
 
-func (b *Build) cacheVolume(os string) corev1.VolumeSource {
-	if b.Spec.CacheName != "" && os != "windows" {
-		return corev1.VolumeSource{
+func (b *Build) cacheVolume(os string) []corev1.Volume {
+	if b.Spec.CacheName == "" {
+		return []corev1.Volume{}
+	}
+
+	volume := corev1.Volume{
+		Name: cacheDirName,
+	}
+
+	if os != "windows" {
+		volume.VolumeSource = corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.CacheName},
 		}
 	} else {
-		return corev1.VolumeSource{
+		volume.VolumeSource = corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}
 	}
+	return []corev1.Volume{volume}
 }
 
 func gitAndDockerSecrets(secret corev1.Secret) bool {
