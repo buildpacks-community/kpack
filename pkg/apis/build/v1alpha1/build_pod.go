@@ -165,7 +165,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 
 	var cacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
-	if b.Spec.CacheName == "" {
+	if b.Spec.CacheName == "" || config.OS == "windows" {
 		cacheArgs = nil
 		cacheVolumes = nil
 	} else {
@@ -636,24 +636,16 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 }
 
 func (b *Build) cacheVolume(os string) []corev1.Volume {
-	if b.Spec.CacheName == "" {
+	if b.Spec.CacheName == "" || os == "windows" {
 		return []corev1.Volume{}
 	}
 
-	volume := corev1.Volume{
+	return []corev1.Volume{{
 		Name: cacheDirName,
-	}
-
-	if os != "windows" {
-		volume.VolumeSource = corev1.VolumeSource{
+		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: b.Spec.CacheName},
-		}
-	} else {
-		volume.VolumeSource = corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		}
-	}
-	return []corev1.Volume{volume}
+		},
+	}}
 }
 
 func gitAndDockerSecrets(secret corev1.Secret) bool {

@@ -1126,7 +1126,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-layers=/layers",
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
-					"-cache-dir=/cache",
 					"someimage/name@sha256:previous",
 				}, analyzeContainer.Args)
 			})
@@ -1157,8 +1156,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/lifecycle/restorer",
 					"-group=/layers/group.toml",
-					"-layers=/layers",
-					"-cache-dir=/cache"},
+					"-layers=/layers"},
 					restoreContainer.Args)
 			})
 
@@ -1230,7 +1228,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
 					"-project-metadata=/layers/project-metadata.toml",
-					"-cache-dir=/cache",
 					"-report=/var/report/report.toml",
 					"-process-type=web",
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
@@ -1288,18 +1285,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Len(t, completionContainer.Args, 0)
 			})
 
-			it("uses an emptyDir for cache on windows", func() {
+			it("does not use cache on windows", func() {
+				buildPodBuilderConfigLinux := buildPodBuilderConfig.DeepCopy()
+				buildPodBuilderConfigLinux.OS = "linux"
+				podWithCache, _ := build.BuildPod(config, nil, nil, *buildPodBuilderConfigLinux)
+				build.Spec.CacheName = "non-empty"
+
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
-					{
-						Name: "cache-dir",
-						VolumeSource: corev1.VolumeSource{
-							EmptyDir: &corev1.EmptyDirVolumeSource{},
-						},
-					},
-				})
+				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
 			})
 
 			it("adds pod tolerations based on node taints", func() {
