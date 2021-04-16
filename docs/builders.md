@@ -1,11 +1,11 @@
 # Builders
 
-kpack provides Builder and ClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api. 
-This allows granular control of how stacks, buildpacks, and buildpack versions are utilized and updated.  
+kpack provides Builder and ClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api.
+This allows granular control of how stacks, buildpacks, and buildpack versions are utilized and updated.
 
 Before creating Builders you will need to create a [ClusterStack](stack.md) and [ClusterStore](store.md) resources below.
 
-> Note: The Builder and ClusterBuilder were previously named CustomBuilder and CustomClusterBuilder. The previous Builder and ClusterBuilder resources that utilized pre-built builders were removed and should no longer be used with kpack. This was discussed in an approved [RFC](https://github.com/pivotal/kpack/pull/439).   
+> Note: The Builder and ClusterBuilder were previously named CustomBuilder and CustomClusterBuilder. The previous Builder and ClusterBuilder resources that utilized pre-built builders were removed and should no longer be used with kpack. This was discussed in an approved [RFC](https://github.com/pivotal/kpack/pull/439).
 
 ### <a id='builders'></a>Builders
 
@@ -19,10 +19,10 @@ metadata:
 spec:
   tag: gcr.io/sample/builder
   serviceAccount: default
-  stack: 
+  stack:
     name: bionic-stack
     kind: ClusterStack
-  store: 
+  store:
     name: sample-cluster-store
     kind: ClusterStore
   order:
@@ -37,11 +37,11 @@ spec:
       optional: true
 ```
 
-* `tag`: The tag to save the builder image. You must have access via the referenced service account.   
-* `serviceAccount`: A service account with credentials to write to the builder tag. 
+* `tag`: The tag to save the builder image. You must have access via the referenced service account.
+* `serviceAccount`: A service account with credentials to write to the builder tag.
 * `order`: The [builder order](https://buildpacks.io/docs/reference/builder-config/). See the [Order](#order) section below.
 * `stack.name`: The name of the stack resource to use as the builder stack. All buildpacks in the order must be compatible with the clusterStack.
-* `stack.kind`: The type as defined in kubernetes. This will always be ClusterStack. 
+* `stack.kind`: The type as defined in kubernetes. This will always be ClusterStack.
 * `store.name`: The name of the ClusterStore resource in kubernetes.
 * `store.kind`: The type as defined in kubernetes. This will always be ClusterStore.
 
@@ -56,7 +56,7 @@ metadata:
   name: my-cluster-builder
 spec:
   tag: gcr.io/sample/builder
-  stack: 
+  stack:
     name: bionic-stack
     kind: ClusterStack
   store:
@@ -81,7 +81,7 @@ spec:
 
 ### <a id='order'></a>Order
 
-The `spec.order` is cloud native buildpacks [builder order](https://buildpacks.io/docs/reference/builder-config/) that contains a list of buildpack groups. 
+The `spec.order` is cloud native buildpacks [builder order](https://buildpacks.io/docs/reference/builder-config/) that contains a list of buildpack groups.
 
 This list determines the order in which groups of buildpacks will be tested during detection. Detection is a phase of the buildpack execution where buildpacks are tested, one group at a time, for compatibility with the provided application source code. The first group whose non-optional buildpacks all pass detection will be the group selected for the remainder of the build.
 
@@ -89,12 +89,12 @@ This list determines the order in which groups of buildpacks will be tested duri
   A set of buildpack references. Each buildpack reference specified has the following fields:
 
     - **`id`** _(string, required)_\
-      The identifier of a buildpack from the configuration's top-level `buildpacks` list. This buildpack *must* be in available in the referenced store.  
+      The identifier of a buildpack from the configuration's top-level `buildpacks` list. This buildpack *must* be in available in the referenced store.
 
     - **`version`** _(string, optional, default: inferred)_\
       The buildpack version to chose from the store. If this field is omitted, the highest semver version number will be chosen in the store.
 
     - **`optional`** _(boolean, optional, default: `false`)_\
       Whether or not this buildpack is optional during detection.
- 
+
 > Note: Buildpacks with the same ID may appear in multiple groups at once but never in the same group.

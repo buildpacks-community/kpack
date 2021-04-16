@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,8 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack/clusterstackfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
+	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
 
 func TestClusterStackReconciler(t *testing.T) {
@@ -31,6 +34,10 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 		clusterStackName        = "some-clusterStack"
 		clusterStackKey         = clusterStackName
 		initialGeneration int64 = 1
+	)
+
+	var (
+		fakeKeyChainFactory = &registryfakes.FakeKeychainFactory{}
 	)
 
 	fakeClusterStackReader := &clusterstackfakes.FakeClusterStackReader{}
@@ -59,6 +66,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				Client:             fakeClient,
 				ClusterStackLister: listers.GetClusterStackLister(),
 				ClusterStackReader: fakeClusterStackReader,
+				KeychainFactory:    fakeKeyChainFactory,
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -77,6 +85,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				GroupID: 2000,
 			}
 			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -107,7 +118,8 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.Equal(t, 1, fakeClusterStackReader.ReadCallCount())
-			require.Equal(t, testClusterStack.Spec, fakeClusterStackReader.ReadArgsForCall(0))
+			_, clusterStackSpec := fakeClusterStackReader.ReadArgsForCall(0)
+			require.Equal(t, testClusterStack.Spec, clusterStackSpec)
 		})
 
 		it("does not update the status with no status change", func() {
@@ -123,6 +135,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				GroupID: 2000,
 			}
 			fakeClusterStackReader.ReadReturns(resolvedClusterStack, nil)
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			testClusterStack.Status = buildapi.ClusterStackStatus{
 				Status: corev1alpha1.Status{
@@ -147,6 +162,9 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("sets the status to Ready False if error reading from clusterStack", func() {
 			fakeClusterStackReader.ReadReturns(buildapi.ResolvedClusterStack{}, errors.New("invalid mixins on run image"))
+			emptySecretRef := registry.SecretRef{}
+			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -176,5 +194,49 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 		})
+
+		it("uses the keychain of the referenced service account", func() {
+			fakeClusterStackReader.ReadReturns(buildapi.ResolvedClusterStack{}, nil)
+
+			testClusterStack.Spec.ServiceAccountRef = &corev1.ObjectReference{Name: "private-account", Namespace: "my-namespace"}
+			secretRef := registry.SecretRef{
+				ServiceAccount: "private-account",
+				Namespace:      "my-namespace",
+			}
+			expectedKeyChain := &registryfakes.FakeKeychain{Name: "secret"}
+			fakeKeyChainFactory.AddKeychainForSecretRef(t, secretRef, expectedKeyChain)
+
+			rt.Test(rtesting.TableRow{
+				Key: clusterStackKey,
+				Objects: []runtime.Object{
+					testClusterStack,
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &buildapi.ClusterStack{
+							ObjectMeta: testClusterStack.ObjectMeta,
+							Spec:       testClusterStack.Spec,
+							Status: buildapi.ClusterStackStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:   corev1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			assert.Equal(t, 1, fakeClusterStackReader.ReadCallCount())
+			actualKeyChain, _ := fakeClusterStackReader.ReadArgsForCall(0)
+			assert.Equal(t, expectedKeyChain, actualKeyChain)
+		})
+
 	})
 }
