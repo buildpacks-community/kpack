@@ -52,8 +52,8 @@ require (
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	k8s.io/code-generator v0.19.7
-	k8s.io/kube-openapi v0.0.0-20210113233702-8566a335510f
+	k8s.io/code-generator v0.21.0
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
 )
 
