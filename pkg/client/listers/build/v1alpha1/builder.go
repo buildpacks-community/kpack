@@ -26,8 +26,10 @@ import (
 )
 
 // BuilderLister helps list Builders.
+// All objects returned here must be treated as read-only.
 type BuilderLister interface {
 	// List lists all Builders in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.Builder, err error)
 	// Builders returns an object that can list and get Builders.
 	Builders(namespace string) BuilderNamespaceLister
@@ -58,10 +60,13 @@ func (s *builderLister) Builders(namespace string) BuilderNamespaceLister {
 }
 
 // BuilderNamespaceLister helps list and get Builders.
+// All objects returned here must be treated as read-only.
 type BuilderNamespaceLister interface {
 	// List lists all Builders in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.Builder, err error)
 	// Get retrieves the Builder from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.Builder, error)
 	BuilderNamespaceListerExpansion
 }

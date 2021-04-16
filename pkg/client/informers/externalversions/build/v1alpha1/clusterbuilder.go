@@ -19,6 +19,7 @@
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -60,13 +61,13 @@ func NewFilteredClusterBuilderInformer(client versioned.Interface, resyncPeriod 
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().ClusterBuilders().List(options)
+				return client.KpackV1alpha1().ClusterBuilders().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha1().ClusterBuilders().Watch(options)
+				return client.KpackV1alpha1().ClusterBuilders().Watch(context.TODO(), options)
 			},
 		},
 		&buildv1alpha1.ClusterBuilder{},

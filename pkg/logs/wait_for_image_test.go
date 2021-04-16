@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -38,7 +38,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		nextBuild          = 11
 		generation   int64 = 2
 		imageToWatch       = &v1alpha1.Image{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:            "some-name",
 				Namespace:       "some-namespace",
 				ResourceVersion: "1",
@@ -88,16 +88,19 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 	when("when a build is scheduled", func() {
 		it("returns built image from the build and tails build logs", func() {
 			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
+				context.TODO(),
 				&v1alpha1.Build{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "build-to-follow",
-						Namespace: imageToWatch.Namespace,
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "build-to-follow",
+						Namespace:       imageToWatch.Namespace,
+						ResourceVersion: "1",
 					},
 					Status: v1alpha1.BuildStatus{
 						Status:      conditionSuccess(corev1.ConditionTrue),
 						LatestImage: "image/built-bybuild@sha256:123",
 					},
 				},
+				metav1.CreateOptions{},
 			)
 			require.NoError(t, err)
 
@@ -120,16 +123,18 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns an err if resulting build fails", func() {
 			build := &v1alpha1.Build{
-				ObjectMeta: v1.ObjectMeta{
-					Name:      "build-to-follow",
-					Namespace: imageToWatch.Namespace,
+				ObjectMeta: metav1.ObjectMeta{
+
+					Name:            "build-to-follow",
+					Namespace:       imageToWatch.Namespace,
+					ResourceVersion: "1",
 				},
 				Status: v1alpha1.BuildStatus{
 					Status: conditionSuccess(corev1.ConditionFalse),
 				},
 			}
 
-			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(build)
+			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(context.TODO(), build, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			scheduledBuildImage := &v1alpha1.Image{
@@ -167,16 +172,19 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 			_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(
+				context.TODO(),
 				&v1alpha1.Build{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "build-to-follow",
-						Namespace: imageToWatch.Namespace,
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "build-to-follow",
+						Namespace:       imageToWatch.Namespace,
+						ResourceVersion: "1",
 					},
 					Status: v1alpha1.BuildStatus{
 						Status:      conditionSuccess(corev1.ConditionTrue),
 						LatestImage: "image/built-bybuild@sha256:123",
 					},
 				},
+				metav1.CreateOptions{},
 			)
 			require.NoError(t, err)
 
@@ -232,9 +240,10 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 		when("there is a status message for a build error", func() {
 			it("adds the status message to the returned error", func() {
 				build := &v1alpha1.Build{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "build-to-follow",
-						Namespace: imageToWatch.Namespace,
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "build-to-follow",
+						Namespace:       imageToWatch.Namespace,
+						ResourceVersion: "1",
 					},
 					Status: v1alpha1.BuildStatus{
 						Status: conditionSuccess(corev1.ConditionFalse),
@@ -242,7 +251,7 @@ func waitForImage(t *testing.T, when spec.G, it spec.S) {
 				}
 				build.Status.Conditions[0].Message = "some error"
 
-				_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(build)
+				_, err := clientset.KpackV1alpha1().Builds(imageToWatch.Namespace).Create(context.TODO(), build, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				scheduledBuildImage := &v1alpha1.Image{

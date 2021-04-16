@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -88,7 +89,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if creationError != nil {
 		builder.Status.ErrorCreate(creationError)
 
-		err := c.updateStatus(builder)
+		err := c.updateStatus(ctx, builder)
 		if err != nil {
 			return err
 		}
@@ -97,7 +98,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	builder.Status.BuilderRecord(builderRecord)
-	return c.updateStatus(builder)
+	return c.updateStatus(ctx, builder)
 }
 
 func (c *Reconciler) reconcileBuilder(builder *v1alpha1.Builder) (v1alpha1.BuilderRecord, error) {
@@ -136,7 +137,7 @@ func (c *Reconciler) reconcileBuilder(builder *v1alpha1.Builder) (v1alpha1.Build
 	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Builder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)
@@ -148,6 +149,6 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.Builder) error {
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().Builders(desired.Namespace).UpdateStatus(desired)
+	_, err = c.Client.KpackV1alpha1().Builders(desired.Namespace).UpdateStatus(ctx, desired, v1.UpdateOptions{})
 	return err
 }

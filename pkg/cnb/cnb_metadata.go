@@ -55,7 +55,7 @@ func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltIma
 type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
-	BuildpackMetadata []lifecycle.Buildpack
+	BuildpackMetadata []lifecycle.GroupBuildpack
 	Stack             BuiltImageStack
 }
 

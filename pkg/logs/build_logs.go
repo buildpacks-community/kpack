@@ -79,7 +79,7 @@ func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namesp
 }
 
 func (c *BuildLogsClient) getPodLogs(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, follow bool) error {
-	readyContainers, err := c.getContainers(namespace, listOptions)
+	readyContainers, err := c.getContainers(ctx, namespace, listOptions)
 
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ type readyContainer struct {
 
 func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContainers chan<- readyContainer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool) error {
 
-	watcher, err := c.k8sClient.CoreV1().Pods(namespace).Watch(listOptions)
+	watcher, err := c.k8sClient.CoreV1().Pods(namespace).Watch(ctx, listOptions)
 	if err != nil {
 		return err
 	}
@@ -151,10 +151,10 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 	}
 }
 
-func (c *BuildLogsClient) getContainers(namespace string, listOptions metav1.ListOptions) ([]readyContainer, error) {
+func (c *BuildLogsClient) getContainers(ctx context.Context, namespace string, listOptions metav1.ListOptions) ([]readyContainer, error) {
 
 	readyContainers := make([]readyContainer, 0)
-	pods, err := c.k8sClient.CoreV1().Pods(namespace).List(listOptions)
+	pods, err := c.k8sClient.CoreV1().Pods(namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.
 
 	logReadCloser, err := c.k8sClient.CoreV1().Pods(readyContainer.namespace).GetLogs(readyContainer.podName, &corev1.PodLogOptions{
 		Container: readyContainer.containerName,
-		Follow:    follow}).Stream()
+		Follow:    follow}).Stream(ctx)
 	if err != nil {
 		return err
 	}

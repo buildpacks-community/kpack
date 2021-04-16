@@ -583,6 +583,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantDeletes: []clientgotesting.DeleteActionImpl{
 						{
+							ActionImpl: clientgotesting.ActionImpl{
+								Namespace: "some-namespace",
+								Resource: schema.GroupVersionResource{
+									Resource: "persistentvolumeclaims",
+								},
+							},
 							Name: image.CacheName(),
 						},
 					},
@@ -2100,9 +2106,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						WantDeletes: []clientgotesting.DeleteActionImpl{
 							{
 								ActionImpl: clientgotesting.ActionImpl{
-									Namespace:   "blah",
-									Verb:        "",
-									Resource:    schema.GroupVersionResource{},
+									Namespace: "some-namespace",
+									Verb:      "",
+									Resource: schema.GroupVersionResource{
+										Resource: "builds",
+									},
 									Subresource: "",
 								},
 								Name: image.Name + "-build-1", // first-build
@@ -2132,9 +2140,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						WantDeletes: []clientgotesting.DeleteActionImpl{
 							{
 								ActionImpl: clientgotesting.ActionImpl{
-									Namespace:   "blah",
-									Verb:        "",
-									Resource:    schema.GroupVersionResource{},
+									Namespace: "some-namespace",
+									Verb:      "",
+									Resource: schema.GroupVersionResource{
+										Resource: "builds",
+									},
 									Subresource: "",
 								},
 								Name: image.Name + "-build-1", // first-build

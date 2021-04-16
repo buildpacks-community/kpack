@@ -46,21 +46,21 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=%s/unauthorized-token/", server.URL))
+				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
 				writer.WriteHeader(401)
 			})
 
 			_ = VerifyWriteAccess(testKeychain{}, tagName)
 		})
 
-		it("errors when fetching token is unauthorized", func() {
+		it.Focus("errors when fetching token is unauthorized", func() {
 			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(401)
 				writer.Write([]byte(`{"errors": [{"code":  "UNAUTHORIZED"}]}`))
 			})
 
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=%s/unauthorized-token/", server.URL))
+				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
 				writer.WriteHeader(401)
 			})
 
@@ -75,7 +75,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=%s/unauthorized-token/", server.URL))
+				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
 				writer.WriteHeader(401)
 			})
 
@@ -148,7 +148,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyReadAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404", server.URL))
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404 Not Found", server.URL))
 		})
 	})
 }

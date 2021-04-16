@@ -1,6 +1,7 @@
 package buildpod_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -197,7 +198,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			pod, err := generator.Generate(build)
+			pod, err := generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
 			assert.NotNil(t, pod)
 
@@ -231,9 +232,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
-			fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(serviceAccount)
+			fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
 
-			pod, err := generator.Generate(build)
+			pod, err := generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
 			assert.NotNil(t, pod)
 
@@ -253,7 +254,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			pod, err := generator.Generate(build)
+			pod, err := generator.Generate(context.TODO(), build)
 			require.EqualError(t, err, fmt.Sprintf("build rejected: binding %q uses forbidden secret %q", "naughty", dockerSecret.Name))
 			require.Nil(t, pod)
 		})
@@ -269,7 +270,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				pod, err := generator.Generate(build)
+				pod, err := generator.Generate(context.TODO(), build)
 				require.NoError(t, err)
 				assert.NotNil(t, pod)
 
@@ -303,7 +304,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := fakeK8sClient.CoreV1().Nodes().Create(windowsNode3)
+				_, err := fakeK8sClient.CoreV1().Nodes().Create(context.TODO(), windowsNode3, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				var build = &testBuildPodable{
@@ -315,7 +316,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				pod, err := generator.Generate(build)
+				pod, err := generator.Generate(context.TODO(), build)
 				require.NoError(t, err)
 				assert.NotNil(t, pod)
 

@@ -19,6 +19,8 @@
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var clusterbuildersResource = schema.GroupVersionResource{Group: "kpack.io", Ver
 var clusterbuildersKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "ClusterBuilder"}
 
 // Get takes name of the clusterBuilder, and returns the corresponding clusterBuilder object, and an error if there is any.
-func (c *FakeClusterBuilders) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterBuilder, err error) {
+func (c *FakeClusterBuilders) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterBuilder, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootGetAction(clusterbuildersResource, name), &v1alpha1.ClusterBuilder{})
 	if obj == nil {
@@ -48,7 +50,7 @@ func (c *FakeClusterBuilders) Get(name string, options v1.GetOptions) (result *v
 }
 
 // List takes label and field selectors, and returns the list of ClusterBuilders that match those selectors.
-func (c *FakeClusterBuilders) List(opts v1.ListOptions) (result *v1alpha1.ClusterBuilderList, err error) {
+func (c *FakeClusterBuilders) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ClusterBuilderList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootListAction(clusterbuildersResource, clusterbuildersKind, opts), &v1alpha1.ClusterBuilderList{})
 	if obj == nil {
@@ -69,13 +71,13 @@ func (c *FakeClusterBuilders) List(opts v1.ListOptions) (result *v1alpha1.Cluste
 }
 
 // Watch returns a watch.Interface that watches the requested clusterBuilders.
-func (c *FakeClusterBuilders) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeClusterBuilders) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewRootWatchAction(clusterbuildersResource, opts))
 }
 
 // Create takes the representation of a clusterBuilder and creates it.  Returns the server's representation of the clusterBuilder, and an error, if there is any.
-func (c *FakeClusterBuilders) Create(clusterBuilder *v1alpha1.ClusterBuilder) (result *v1alpha1.ClusterBuilder, err error) {
+func (c *FakeClusterBuilders) Create(ctx context.Context, clusterBuilder *v1alpha1.ClusterBuilder, opts v1.CreateOptions) (result *v1alpha1.ClusterBuilder, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootCreateAction(clusterbuildersResource, clusterBuilder), &v1alpha1.ClusterBuilder{})
 	if obj == nil {
@@ -85,7 +87,7 @@ func (c *FakeClusterBuilders) Create(clusterBuilder *v1alpha1.ClusterBuilder) (r
 }
 
 // Update takes the representation of a clusterBuilder and updates it. Returns the server's representation of the clusterBuilder, and an error, if there is any.
-func (c *FakeClusterBuilders) Update(clusterBuilder *v1alpha1.ClusterBuilder) (result *v1alpha1.ClusterBuilder, err error) {
+func (c *FakeClusterBuilders) Update(ctx context.Context, clusterBuilder *v1alpha1.ClusterBuilder, opts v1.UpdateOptions) (result *v1alpha1.ClusterBuilder, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(clusterbuildersResource, clusterBuilder), &v1alpha1.ClusterBuilder{})
 	if obj == nil {
@@ -96,7 +98,7 @@ func (c *FakeClusterBuilders) Update(clusterBuilder *v1alpha1.ClusterBuilder) (r
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterBuilders) UpdateStatus(clusterBuilder *v1alpha1.ClusterBuilder) (*v1alpha1.ClusterBuilder, error) {
+func (c *FakeClusterBuilders) UpdateStatus(ctx context.Context, clusterBuilder *v1alpha1.ClusterBuilder, opts v1.UpdateOptions) (*v1alpha1.ClusterBuilder, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateSubresourceAction(clusterbuildersResource, "status", clusterBuilder), &v1alpha1.ClusterBuilder{})
 	if obj == nil {
@@ -106,22 +108,22 @@ func (c *FakeClusterBuilders) UpdateStatus(clusterBuilder *v1alpha1.ClusterBuild
 }
 
 // Delete takes name of the clusterBuilder and deletes it. Returns an error if one occurs.
-func (c *FakeClusterBuilders) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeClusterBuilders) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewRootDeleteAction(clusterbuildersResource, name), &v1alpha1.ClusterBuilder{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeClusterBuilders) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterbuildersResource, listOptions)
+func (c *FakeClusterBuilders) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewRootDeleteCollectionAction(clusterbuildersResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ClusterBuilderList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched clusterBuilder.
-func (c *FakeClusterBuilders) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ClusterBuilder, err error) {
+func (c *FakeClusterBuilders) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterBuilder, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterbuildersResource, name, pt, data, subresources...), &v1alpha1.ClusterBuilder{})
 	if obj == nil {

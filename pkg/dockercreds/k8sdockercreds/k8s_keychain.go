@@ -3,6 +3,7 @@ package k8sdockercreds
 import (
 	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
 
+	"context"
 	"encoding/json"
 	"sort"
 
@@ -32,9 +33,9 @@ func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFac
 	return &k8sSecretKeychainFactory{client: client, volumeKeychain: volumeKeychain}, nil
 }
 
-func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) (authn.Keychain, error) {
+func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
 	if !ref.IsNamespaced() {
-		keychain, err := k8schain.New(nil, k8schain.Options{})
+		keychain, err := k8schain.New(ctx, nil, k8schain.Options{})
 		if err != nil {
 			return nil, err
 		}
@@ -51,9 +52,10 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ref registry.SecretRef) 
 	dockerCfgKeychain := &dockerConfigKeychain{
 		secretRef:     ref,
 		secretFetcher: secretFetcher,
+		ctx:           ctx,
 	}
 
-	k8sKeychain, err := k8schain.New(f.client, k8schain.Options{
+	k8sKeychain, err := k8schain.New(ctx, f.client, k8schain.Options{
 		Namespace:          ref.Namespace,
 		ServiceAccountName: ref.ServiceAccount,
 		ImagePullSecrets:   toStringPullSecrets(ref.ImagePullSecrets),
@@ -76,10 +78,11 @@ func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
 type annotatedBasicAuthKeychain struct {
 	secretRef     registry.SecretRef
 	secretFetcher *secret.Fetcher
+	ctx           context.Context
 }
 
 func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenticator, error) {
-	secrets, err := k.secretFetcher.SecretsForServiceAccount(k.secretRef.ServiceAccountOrDefault(), k.secretRef.Namespace)
+	secrets, err := k.secretFetcher.SecretsForServiceAccount(k.ctx, k.secretRef.ServiceAccountOrDefault(), k.secretRef.Namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {
@@ -104,6 +107,7 @@ func (k *annotatedBasicAuthKeychain) Resolve(res authn.Resource) (authn.Authenti
 type dockerConfigKeychain struct {
 	secretRef     registry.SecretRef
 	secretFetcher *secret.Fetcher
+	ctx           context.Context
 }
 
 type dockerConfigJson struct {
@@ -111,7 +115,7 @@ type dockerConfigJson struct {
 }
 
 func (d *dockerConfigKeychain) Resolve(res authn.Resource) (authn.Authenticator, error) {
-	secrets, err := d.secretFetcher.SecretsForServiceAccount(d.secretRef.ServiceAccountOrDefault(), d.secretRef.Namespace)
+	secrets, err := d.secretFetcher.SecretsForServiceAccount(d.ctx, d.secretRef.ServiceAccountOrDefault(), d.secretRef.Namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {

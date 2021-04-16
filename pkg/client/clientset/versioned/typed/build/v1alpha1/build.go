@@ -19,6 +19,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -37,15 +38,15 @@ type BuildsGetter interface {
 
 // BuildInterface has methods to work with Build resources.
 type BuildInterface interface {
-	Create(*v1alpha1.Build) (*v1alpha1.Build, error)
-	Update(*v1alpha1.Build) (*v1alpha1.Build, error)
-	UpdateStatus(*v1alpha1.Build) (*v1alpha1.Build, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Build, error)
-	List(opts v1.ListOptions) (*v1alpha1.BuildList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Build, err error)
+	Create(ctx context.Context, build *v1alpha1.Build, opts v1.CreateOptions) (*v1alpha1.Build, error)
+	Update(ctx context.Context, build *v1alpha1.Build, opts v1.UpdateOptions) (*v1alpha1.Build, error)
+	UpdateStatus(ctx context.Context, build *v1alpha1.Build, opts v1.UpdateOptions) (*v1alpha1.Build, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Build, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.BuildList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Build, err error)
 	BuildExpansion
 }
 
@@ -64,20 +65,20 @@ func newBuilds(c *KpackV1alpha1Client, namespace string) *builds {
 }
 
 // Get takes name of the build, and returns the corresponding build object, and an error if there is any.
-func (c *builds) Get(name string, options v1.GetOptions) (result *v1alpha1.Build, err error) {
+func (c *builds) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Build, err error) {
 	result = &v1alpha1.Build{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("builds").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Builds that match those selectors.
-func (c *builds) List(opts v1.ListOptions) (result *v1alpha1.BuildList, err error) {
+func (c *builds) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BuildList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *builds) List(opts v1.ListOptions) (result *v1alpha1.BuildList, err erro
 		Resource("builds").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested builds.
-func (c *builds) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *builds) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *builds) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("builds").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a build and creates it.  Returns the server's representation of the build, and an error, if there is any.
-func (c *builds) Create(build *v1alpha1.Build) (result *v1alpha1.Build, err error) {
+func (c *builds) Create(ctx context.Context, build *v1alpha1.Build, opts v1.CreateOptions) (result *v1alpha1.Build, err error) {
 	result = &v1alpha1.Build{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("builds").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(build).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a build and updates it. Returns the server's representation of the build, and an error, if there is any.
-func (c *builds) Update(build *v1alpha1.Build) (result *v1alpha1.Build, err error) {
+func (c *builds) Update(ctx context.Context, build *v1alpha1.Build, opts v1.UpdateOptions) (result *v1alpha1.Build, err error) {
 	result = &v1alpha1.Build{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("builds").
 		Name(build.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(build).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *builds) UpdateStatus(build *v1alpha1.Build) (result *v1alpha1.Build, err error) {
+func (c *builds) UpdateStatus(ctx context.Context, build *v1alpha1.Build, opts v1.UpdateOptions) (result *v1alpha1.Build, err error) {
 	result = &v1alpha1.Build{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("builds").
 		Name(build.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(build).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the build and deletes it. Returns an error if one occurs.
-func (c *builds) Delete(name string, options *v1.DeleteOptions) error {
+func (c *builds) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("builds").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *builds) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *builds) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("builds").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched build.
-func (c *builds) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Build, err error) {
+func (c *builds) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Build, err error) {
 	result = &v1alpha1.Build{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("builds").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
