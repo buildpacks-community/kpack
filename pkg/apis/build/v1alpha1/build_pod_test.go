@@ -965,8 +965,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t,
 					[]string{
 						"-notary-v1-url=some-notary-url",
-						"-basic-git=git-secret-1=https://github.com",
-						"-ssh-git=git-secret-2=https://bitbucket.com",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
@@ -1251,8 +1249,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/process/web",
 					"-notary-v1-url=some-notary-server",
-					"-basic-git=git-secret-1=https://github.com",
-					"-ssh-git=git-secret-2=https://bitbucket.com",
 					"-basic-docker=docker-secret-1=acr.io",
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",

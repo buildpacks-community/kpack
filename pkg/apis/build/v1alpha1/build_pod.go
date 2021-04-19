@@ -199,6 +199,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					return
 				}
 
+				_, notarySecretVolumeMounts, notarySecretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 				step(corev1.Container{
 					Name:    "completion",
 					Image:   images.completion(config.OS),
@@ -207,11 +208,11 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						[]string{
 							"-notary-v1-url=" + b.NotaryV1Config().URL,
 						},
-						secretArgs...,
+						notarySecretArgs...,
 					),
 					Resources: b.Spec.Resources,
 					VolumeMounts: append(
-						secretVolumeMounts,
+						notarySecretVolumeMounts,
 						notaryV1Volume,
 						reportVolume,
 					),
