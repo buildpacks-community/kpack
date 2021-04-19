@@ -2,7 +2,9 @@ package secret
 
 import (
 	"context"
+
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 )
@@ -23,8 +25,10 @@ func (f *Fetcher) secretsFromServiceAccount(ctx context.Context, account *corev1
 	var secrets []*corev1.Secret
 	for _, secretRef := range account.Secrets {
 		secret, err := f.Client.CoreV1().Secrets(namespace).Get(ctx, secretRef.Name, metav1.GetOptions{})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err){
 			return nil, err
+		} else if k8serrors.IsNotFound(err) {
+			continue
 		}
 		secrets = append(secrets, secret)
 	}

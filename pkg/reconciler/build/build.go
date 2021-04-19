@@ -30,11 +30,11 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuiltImage(repoName *v1alpha1.Build) (cnb.BuiltImage, error)
+	GetBuiltImage(context.Context, *v1alpha1.Build) (cnb.BuiltImage, error)
 }
 
 type PodGenerator interface {
-	Generate(build buildpod.BuildPodable) (*corev1.Pod, error)
+	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
 func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
@@ -105,7 +105,7 @@ func (c *Reconciler) reconcile(ctx context.Context, build *v1alpha1.Build) error
 	}
 
 	if build.MetadataReady(pod) {
-		image, err := c.MetadataRetriever.GetBuiltImage(build)
+		image, err := c.MetadataRetriever.GetBuiltImage(ctx, build)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *v1alpha1.Buil
 		return pod, nil
 	}
 
-	podConfig, err := c.PodGenerator.Generate(build)
+	podConfig, err := c.PodGenerator.Generate(ctx, build)
 	if err != nil {
 		return nil, controller.NewPermanentError(err)
 	}

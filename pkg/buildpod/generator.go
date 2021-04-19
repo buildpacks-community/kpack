@@ -57,7 +57,7 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		return nil, err
 	}
 
-	buildPodBuilderConfig, err := g.fetchBuilderConfig(build)
+	buildPodBuilderConfig, err := g.fetchBuilderConfig(ctx, build)
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +120,8 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 	return secrets, nil
 }
 
-func (g *Generator) fetchBuilderConfig(build BuildPodable) (v1alpha1.BuildPodBuilderConfig, error) {
-	keychain, err := g.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) (v1alpha1.BuildPodBuilderConfig, error) {
+	keychain, err := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		Namespace:        build.GetNamespace(),
 		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		ServiceAccount:   build.ServiceAccount(),

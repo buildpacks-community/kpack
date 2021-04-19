@@ -1,6 +1,7 @@
 package registryfakes
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -19,7 +20,7 @@ type FakeKeychainFactory struct {
 	keychains []keychainContainer
 }
 
-func (f *FakeKeychainFactory) KeychainForSecretRef(secretRef registry.SecretRef) (authn.Keychain, error) {
+func (f *FakeKeychainFactory) KeychainForSecretRef(ctx context.Context, secretRef registry.SecretRef) (authn.Keychain, error) {
 	if keychain, ok := f.getKeychainForSecretRef(secretRef); ok {
 		return keychain, nil
 	}

@@ -1,6 +1,7 @@
 package build_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -47,6 +48,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	var (
 		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
 		podGenerator          = &testPodGenerator{}
+		ctx                   = context.Background()
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -118,7 +120,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		it("schedules a pod to execute the build", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
@@ -155,7 +157,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not schedule a build if already created", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
@@ -189,7 +191,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("updates observed generation when processing an update", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 			build.Generation = 3
 
@@ -224,7 +226,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update status if there is no update", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 
 			build.Status = v1alpha1.BuildStatus{
@@ -283,7 +285,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("gracefully handles a pod that has already been created", func() {
-			buildPod, err := podGenerator.Generate(build)
+			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
@@ -319,7 +321,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("pod executing", func() {
 			it("updates the status step states with the statuses of the containers", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(ctx, build)
 				require.NoError(t, err)
 
 				startTime := time.Now()
@@ -410,7 +412,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates the status with the container status when a container is waiting", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(ctx, build)
 				require.NoError(t, err)
 
 				pod.Status.Phase = corev1.PodPending
@@ -508,7 +510,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
 
 			it("sets the build status to Succeeded", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(ctx, build)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -601,7 +603,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not fetch metadata if already retrieved", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(ctx, build)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -740,7 +742,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("pod failed", func() {
 			it("sets the build status to Failed", func() {
-				pod, err := podGenerator.Generate(build)
+				pod, err := podGenerator.Generate(ctx, build)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodFailed
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -867,7 +869,7 @@ type testPodGenerator struct {
 	returnErr error
 }
 
-func (tpg testPodGenerator) Generate(build buildpod.BuildPodable) (*corev1.Pod, error) {
+func (tpg testPodGenerator) Generate(ctx context.Context, build buildpod.BuildPodable) (*corev1.Pod, error) {
 	if tpg.returnErr != nil {
 		return nil, tpg.returnErr
 	}
