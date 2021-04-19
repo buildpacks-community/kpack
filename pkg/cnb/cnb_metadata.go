@@ -1,6 +1,7 @@
 package cnb
 
 import (
+	"context"
 	"time"
 
 	"github.com/buildpacks/lifecycle"
@@ -35,8 +36,8 @@ type RemoteMetadataRetriever struct {
 	ImageFetcher    ImageFetcher
 }
 
-func (r *RemoteMetadataRetriever) GetBuiltImage(build *v1alpha1.Build) (BuiltImage, error) {
-	keychain, err := r.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+func (r *RemoteMetadataRetriever) GetBuiltImage(ctx context.Context, build *v1alpha1.Build) (BuiltImage, error) {
+	keychain, err := r.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: build.Spec.ServiceAccount,
 		Namespace:      build.Namespace,
 	})

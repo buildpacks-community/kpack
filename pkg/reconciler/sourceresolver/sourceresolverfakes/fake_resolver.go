@@ -2,6 +2,7 @@
 package sourceresolverfakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -20,10 +21,11 @@ type FakeResolver struct {
 	canResolveReturnsOnCall map[int]struct {
 		result1 bool
 	}
-	ResolveStub        func(*v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
+	ResolveStub        func(context.Context, *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
 	resolveMutex       sync.RWMutex
 	resolveArgsForCall []struct {
-		arg1 *v1alpha1.SourceResolver
+		arg1 context.Context
+		arg2 *v1alpha1.SourceResolver
 	}
 	resolveReturns struct {
 		result1 v1alpha1.ResolvedSourceConfig
@@ -43,15 +45,16 @@ func (fake *FakeResolver) CanResolve(arg1 *v1alpha1.SourceResolver) bool {
 	fake.canResolveArgsForCall = append(fake.canResolveArgsForCall, struct {
 		arg1 *v1alpha1.SourceResolver
 	}{arg1})
+	stub := fake.CanResolveStub
+	fakeReturns := fake.canResolveReturns
 	fake.recordInvocation("CanResolve", []interface{}{arg1})
 	fake.canResolveMutex.Unlock()
-	if fake.CanResolveStub != nil {
-		return fake.CanResolveStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.canResolveReturns
 	return fakeReturns.result1
 }
 
@@ -97,21 +100,23 @@ func (fake *FakeResolver) CanResolveReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
-func (fake *FakeResolver) Resolve(arg1 *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error) {
+func (fake *FakeResolver) Resolve(arg1 context.Context, arg2 *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error) {
 	fake.resolveMutex.Lock()
 	ret, specificReturn := fake.resolveReturnsOnCall[len(fake.resolveArgsForCall)]
 	fake.resolveArgsForCall = append(fake.resolveArgsForCall, struct {
-		arg1 *v1alpha1.SourceResolver
-	}{arg1})
-	fake.recordInvocation("Resolve", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1alpha1.SourceResolver
+	}{arg1, arg2})
+	stub := fake.ResolveStub
+	fakeReturns := fake.resolveReturns
+	fake.recordInvocation("Resolve", []interface{}{arg1, arg2})
 	fake.resolveMutex.Unlock()
-	if fake.ResolveStub != nil {
-		return fake.ResolveStub(arg1)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.resolveReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -121,17 +126,17 @@ func (fake *FakeResolver) ResolveCallCount() int {
 	return len(fake.resolveArgsForCall)
 }
 
-func (fake *FakeResolver) ResolveCalls(stub func(*v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)) {
+func (fake *FakeResolver) ResolveCalls(stub func(context.Context, *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)) {
 	fake.resolveMutex.Lock()
 	defer fake.resolveMutex.Unlock()
 	fake.ResolveStub = stub
 }
 
-func (fake *FakeResolver) ResolveArgsForCall(i int) *v1alpha1.SourceResolver {
+func (fake *FakeResolver) ResolveArgsForCall(i int) (context.Context, *v1alpha1.SourceResolver) {
 	fake.resolveMutex.RLock()
 	defer fake.resolveMutex.RUnlock()
 	argsForCall := fake.resolveArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeResolver) ResolveReturns(result1 v1alpha1.ResolvedSourceConfig, result2 error) {

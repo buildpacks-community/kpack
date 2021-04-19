@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"context"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "k8s.io/api/core/v1"
 )
@@ -23,5 +25,5 @@ func (s SecretRef) ServiceAccountOrDefault() string {
 }
 
 type KeychainFactory interface {
-	KeychainForSecretRef(SecretRef) (authn.Keychain, error)
+	KeychainForSecretRef(context.Context, SecretRef) (authn.Keychain, error)
 }

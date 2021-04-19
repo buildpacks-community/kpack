@@ -2,6 +2,7 @@ package clusterBuilder
 
 import (
 	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -83,7 +84,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	builder = builder.DeepCopy()
 
-	builderRecord, creationError := c.reconcileBuilder(builder)
+	builderRecord, creationError := c.reconcileBuilder(ctx, builder)
 	if creationError != nil {
 		builder.Status.ErrorCreate(creationError)
 
@@ -99,7 +100,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(ctx, builder)
 }
 
-func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha1.BuilderRecord, error) {
+func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *v1alpha1.ClusterBuilder) (v1alpha1.BuilderRecord, error) {
 	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
 	if err != nil {
 		return v1alpha1.BuilderRecord{}, err
@@ -124,7 +125,7 @@ func (c *Reconciler) reconcileBuilder(builder *v1alpha1.ClusterBuilder) (v1alpha
 		return v1alpha1.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(registry.SecretRef{
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
 		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
 	})

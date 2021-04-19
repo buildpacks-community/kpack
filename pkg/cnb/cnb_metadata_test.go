@@ -1,6 +1,7 @@
 package cnb_test
 
 import (
+	"context"
 	"testing"
 
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -25,6 +26,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	var (
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		imageFetcher    = registryfakes.NewFakeClient()
+		ctx = context.Background()
 	)
 
 	when("RemoteMetadataRetriever", func() {
@@ -74,7 +76,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 						ImageFetcher:    imageFetcher,
 					}
 
-					result, err := subject.GetBuiltImage(build)
+					result, err := subject.GetBuiltImage(ctx, build)
 					assert.NoError(t, err)
 
 					metadata := result.BuildpackMetadata
@@ -134,7 +136,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 						ImageFetcher:    imageFetcher,
 					}
 
-					result, err := subject.GetBuiltImage(build)
+					result, err := subject.GetBuiltImage(context.Background(), build)
 					assert.NoError(t, err)
 
 					metadata := result.BuildpackMetadata

@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
@@ -141,7 +141,7 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(registry.SecretRef{})
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
 	if err != nil {
 		log.Fatalf("could not create empty keychain %s", err)
 	}
@@ -248,8 +248,8 @@ func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *v1alpha1
 const controllerCount = 7
 
 //lifted from knative.dev/pkg/injection/sharedmain
-func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *configmap.InformedWatcher, *http.Server) {
-	sharedmain.MemStatsOrDie(ctx)
+func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server) {
+	metrics.MemStatsOrDie(ctx)
 
 	// Adjust our client's rate limits based on the number of controllers we are running.
 	cfg.QPS = float32(controllerCount) * rest.DefaultQPS

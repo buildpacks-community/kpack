@@ -3,18 +3,18 @@ package sourceresolver
 import (
 	"context"
 	"errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/controller"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
 	v1alpha1listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
-	"knative.dev/pkg/controller"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 
 //go:generate counterfeiter . Resolver
 type Resolver interface {
-	Resolve(sourceResolver *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
+	Resolve(context.Context, *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
 	CanResolve(*v1alpha1.SourceResolver) bool
 }
 
@@ -89,7 +89,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return err
 	}
 
-	resolvedSource, err := sourceReconciler.Resolve(sourceResolver)
+	resolvedSource, err := sourceReconciler.Resolve(ctx, sourceResolver)
 	if err != nil {
 		return err
 	}
