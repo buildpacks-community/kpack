@@ -55,11 +55,11 @@ type BuildBuilderSpec struct {
 // +k8s:openapi-gen=true
 type BuildSpec struct {
 	// +listType
-	Tags           []string         `json:"tags,omitempty"`
-	Builder        BuildBuilderSpec `json:"builder,omitempty"`
-	ServiceAccount string           `json:"serviceAccount,omitempty"`
-	Source         SourceConfig     `json:"source"`
-	CacheName      string           `json:"cacheName,omitempty"`
+	Tags           []string          `json:"tags,omitempty"`
+	Builder        BuildBuilderSpec  `json:"builder,omitempty"`
+	ServiceAccount string            `json:"serviceAccount,omitempty"`
+	Source         SourceConfig      `json:"source"`
+	Cache          *BuildCacheConfig `json:"cache,omitempty"`
 	// +listType
 	Bindings Bindings `json:"bindings,omitempty"`
 	// +listType
@@ -70,20 +70,42 @@ type BuildSpec struct {
 	Notary                *NotaryConfig               `json:"notary,omitempty"`
 }
 
+func (bs *BuildSpec) NeedVolumeCache() bool {
+	return bs.Cache != nil && bs.Cache.Volume != nil && bs.Cache.Volume.ClaimName != ""
+}
+
+func (bs *BuildSpec) NeedRegistryCache() bool {
+	return bs.Cache != nil && bs.Cache.Registry != nil && bs.Cache.Registry.Tag != ""
+}
+
+type BuildCacheConfig struct {
+	Volume   *BuildPersistentVolumeCache `json:"volume,omitempty"`
+	Registry *RegistryCache              `json:"registry,omitempty"`
+}
+
+type BuildPersistentVolumeCache struct {
+	ClaimName string `json:"persistentVolumeClaimName,omitempty"`
+}
+
 // +k8s:openapi-gen=true
 type Bindings []Binding
 
 // +k8s:openapi-gen=true
 type Binding struct {
-	Name        string                       `json:"name",omitempty"`
+	Name        string                       `json:"name,omitempty"`
 	MetadataRef *corev1.LocalObjectReference `json:"metadataRef,omitempty"`
 	SecretRef   *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type LastBuild struct {
-	Image   string `json:"image,omitempty"`
-	StackId string `json:"stackId,omitempty"`
+	Image   string     `json:"image,omitempty"`
+	Cache   BuildCache `json:"cache,omitempty"`
+	StackId string     `json:"stackId,omitempty"`
+}
+
+type BuildCache struct {
+	Image string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -98,6 +120,7 @@ type BuildStatus struct {
 	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
 	Stack               BuildStack            `json:"stack,omitempty"`
 	LatestImage         string                `json:"latestImage,omitempty"`
+	LatestCacheImage    string                `json:"latestCacheImage,omitempty"`
 	PodName             string                `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
