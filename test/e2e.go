@@ -2,6 +2,7 @@ package test
 
 import (
 	"flag"
+	"os"
 	"os/user"
 	"path"
 	"sync"
@@ -17,22 +18,17 @@ import (
 )
 
 var (
-	setup             sync.Once
-	defaultKubeconfig string
-	client            *versioned.Clientset
-	k8sClient         *kubernetes.Clientset
-	dynamicClient     dynamic.Interface
-	clusterConfig     *rest.Config
-	err               error
+	setup         sync.Once
+	client        *versioned.Clientset
+	k8sClient     *kubernetes.Clientset
+	dynamicClient dynamic.Interface
+	clusterConfig *rest.Config
+	err           error
 )
 
 func newClients(t *testing.T) (*clients, error) {
-	if usr, err := user.Current(); err == nil {
-		defaultKubeconfig = path.Join(usr.HomeDir, ".kube/config")
-	}
-
 	setup.Do(func() {
-		kubeconfig := flag.String("kubeconfig", defaultKubeconfig, "Path to a kubeconfig. Only required if out-of-cluster.")
+		kubeconfig := flag.String("kubeconfig", getKubeConfig(), "Path to a kubeconfig. Only required if out-of-cluster.")
 		masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
 		flag.Parse()
@@ -55,6 +51,16 @@ func newClients(t *testing.T) (*clients, error) {
 		k8sClient:     k8sClient,
 		dynamicClient: dynamicClient,
 	}, nil
+}
+
+func getKubeConfig() string {
+	if config, found := os.LookupEnv("KUBECONFIG"); found {
+		return config
+	}
+	if usr, err := user.Current(); err == nil {
+		return path.Join(usr.HomeDir, ".kube/config")
+	}
+	return ""
 }
 
 type clients struct {
