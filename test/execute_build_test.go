@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -83,7 +84,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		_, err = clients.k8sClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: testNamespace,
+				Name:   testNamespace,
+				Labels: readNamespaceLabelsFromEnv(),
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
@@ -417,6 +419,23 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			return len(list.Items) == 2
 		}, 5*time.Second, 1*time.Minute)
 	})
+}
+
+func readNamespaceLabelsFromEnv() map[string]string {
+	labelsToSet := map[string]string{}
+	if labelsStrToSet, found := os.LookupEnv("KPACK_TEST_NAMESPACE_LABELS"); found {
+		labels := strings.Split(labelsStrToSet, ",")
+		for _, str := range labels {
+			parts := strings.Split(str, "=")
+			if len(parts) == 2 {
+				key := parts[0]
+				value := parts[1]
+				labelsToSet[key] = value
+			}
+
+		}
+	}
+	return labelsToSet
 }
 
 func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects ...kmeta.OwnerRefable) {
