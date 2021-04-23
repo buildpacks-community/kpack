@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func NewStackChange(oldRunImageRefStr, newRunImageRefStr string) Change {
@@ -39,7 +39,7 @@ type stackChange struct {
 	err               error
 }
 
-func (s stackChange) Reason() v1alpha1.BuildReason { return v1alpha1.BuildReasonStack }
+func (s stackChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonStack }
 
 func (s stackChange) IsBuildRequired() (bool, error) {
 	return s.oldRunImageDigest != s.newRunImageDigest, s.err

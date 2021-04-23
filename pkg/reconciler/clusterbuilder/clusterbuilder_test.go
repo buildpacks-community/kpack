@@ -15,10 +15,10 @@ import (
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
@@ -59,19 +59,19 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
-	clusterStore := &v1alpha1.ClusterStore{
+	clusterStore := &buildapi.ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
 		},
-		Spec:   v1alpha1.ClusterStoreSpec{},
-		Status: v1alpha1.ClusterStoreStatus{},
+		Spec:   buildapi.ClusterStoreSpec{},
+		Status: buildapi.ClusterStoreStatus{},
 	}
 
-	clusterStack := &v1alpha1.ClusterStack{
+	clusterStack := &buildapi.ClusterStack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-stack",
 		},
-		Status: v1alpha1.ClusterStackStatus{
+		Status: buildapi.ClusterStackStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -84,13 +84,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builder := &v1alpha1.ClusterBuilder{
+	builder := &buildapi.ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Generation: initialGeneration,
 		},
-		Spec: v1alpha1.ClusterBuilderSpec{
-			BuilderSpec: v1alpha1.BuilderSpec{
+		Spec: buildapi.ClusterBuilderSpec{
+			BuilderSpec: buildapi.BuilderSpec{
 				Tag: builderTag,
 				Stack: corev1.ObjectReference{
 					Kind: "Stack",
@@ -100,18 +100,18 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					Kind: "ClusterStore",
 					Name: "some-store",
 				},
-				Order: []v1alpha1.OrderEntry{
+				Order: []buildapi.OrderEntry{
 					{
-						Group: []v1alpha1.BuildpackRef{
+						Group: []buildapi.BuildpackRef{
 							{
-								BuildpackInfo: v1alpha1.BuildpackInfo{
+								BuildpackInfo: buildapi.BuildpackInfo{
 									Id:      "buildpack.id.1",
 									Version: "1.0.0",
 								},
 								Optional: false,
 							},
 							{
-								BuildpackInfo: v1alpha1.BuildpackInfo{
+								BuildpackInfo: buildapi.BuildpackInfo{
 									Id:      "buildpack.id.2",
 									Version: "2.0.0",
 								},
@@ -139,13 +139,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("saves metadata to the status", func() {
-			builderCreator.Record = v1alpha1.BuilderRecord{
+			builderCreator.Record = buildapi.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: buildapi.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{
+				Buildpacks: buildapi.BuildpackMetadataList{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
@@ -159,10 +159,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ObservedStackGeneration: 11,
 			}
 
-			expectedBuilder := &v1alpha1.ClusterBuilder{
+			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
 				Spec:       builder.Spec,
-				Status: v1alpha1.BuilderStatus{
+				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -172,7 +172,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []v1alpha1.BuildpackMetadata{
+					BuilderMetadata: []buildapi.BuildpackMetadata{
 						{
 							Id:      "buildpack.id.1",
 							Version: "1.0.0",
@@ -182,7 +182,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Version: "2.0.0",
 						},
 					},
-					Stack: v1alpha1.BuildStack{
+					Stack: buildapi.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
@@ -216,19 +216,19 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("tracks the stack and store for a custom builder", func() {
-			builderCreator.Record = v1alpha1.BuilderRecord{
+			builderCreator.Record = buildapi.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: buildapi.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{},
+				Buildpacks: buildapi.BuildpackMetadataList{},
 			}
 
-			expectedBuilder := &v1alpha1.ClusterBuilder{
+			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
 				Spec:       builder.Spec,
-				Status: v1alpha1.BuilderStatus{
+				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -238,8 +238,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []v1alpha1.BuildpackMetadata{},
-					Stack: v1alpha1.BuildStack{
+					BuilderMetadata: []buildapi.BuildpackMetadata{},
+					Stack: buildapi.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},
@@ -262,13 +262,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update the status with no status change", func() {
-			builderCreator.Record = v1alpha1.BuilderRecord{
+			builderCreator.Record = buildapi.BuilderRecord{
 				Image: builderIdentifier,
-				Stack: v1alpha1.BuildStack{
+				Stack: buildapi.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
-				Buildpacks: v1alpha1.BuildpackMetadataList{
+				Buildpacks: buildapi.BuildpackMetadataList{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
@@ -276,7 +276,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			builder.Status = v1alpha1.BuilderStatus{
+			builder.Status = buildapi.BuilderStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: builder.Generation,
 					Conditions: corev1alpha1.Conditions{
@@ -286,13 +286,13 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				BuilderMetadata: []v1alpha1.BuildpackMetadata{
+				BuilderMetadata: []buildapi.BuildpackMetadata{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",
 					},
 				},
-				Stack: v1alpha1.BuildStack{
+				Stack: buildapi.BuildStack{
 					RunImage: "example.com/run-image@sha256:123456",
 					ID:       "fake.stack.id",
 				},
@@ -313,10 +313,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		it("updates status on creation error", func() {
 			builderCreator.CreateErr = errors.New("create error")
 
-			expectedBuilder := &v1alpha1.ClusterBuilder{
+			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
 				Spec:       builder.Spec,
-				Status: v1alpha1.BuilderStatus{
+				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 1,
 						Conditions: corev1alpha1.Conditions{
@@ -347,11 +347,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("updates status and doesn't build builder when stack not ready", func() {
-			notReadyClusterStack := &v1alpha1.ClusterStack{
+			notReadyClusterStack := &buildapi.ClusterStack{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-stack",
 				},
-				Status: v1alpha1.ClusterStackStatus{
+				Status: buildapi.ClusterStackStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 0,
 						Conditions: []corev1alpha1.Condition{
@@ -373,10 +373,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.ClusterBuilder{
+						Object: &buildapi.ClusterBuilder{
 							ObjectMeta: builder.ObjectMeta,
 							Spec:       builder.Spec,
-							Status: v1alpha1.BuilderStatus{
+							Status: buildapi.BuilderStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

@@ -25,7 +25,7 @@ func (f *Fetcher) secretsFromServiceAccount(ctx context.Context, account *corev1
 	var secrets []*corev1.Secret
 	for _, secretRef := range account.Secrets {
 		secret, err := f.Client.CoreV1().Secrets(namespace).Get(ctx, secretRef.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err){
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return nil, err
 		} else if k8serrors.IsNotFound(err) {
 			continue

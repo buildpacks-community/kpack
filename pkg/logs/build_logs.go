@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type BuildLogsClient struct {
@@ -31,28 +31,28 @@ func NewBuildLogsClient(k8sClient k8sclient.Interface) *BuildLogsClient {
 func (c *BuildLogsClient) Tail(ctx context.Context, writer io.Writer, image, build, namespace string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", v1alpha1.ImageLabel, image, v1alpha1.BuildNumberLabel, build),
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", buildapi.ImageLabel, image, buildapi.BuildNumberLabel, build),
 	}, true, true)
 }
 
 func (c *BuildLogsClient) TailImage(ctx context.Context, writer io.Writer, image, namespace string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
-		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image),
+		LabelSelector: fmt.Sprintf("%s=%s", buildapi.ImageLabel, image),
 	}, false, true)
 }
 
 func (c *BuildLogsClient) GetImageLogs(ctx context.Context, writer io.Writer, image, namespace string) error {
 	return c.getPodLogs(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         false,
-		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.ImageLabel, image),
+		LabelSelector: fmt.Sprintf("%s=%s", buildapi.ImageLabel, image),
 	}, false)
 }
 
 func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, namespace string, buildName string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
-		LabelSelector: fmt.Sprintf("%s=%s", v1alpha1.BuildLabel, buildName),
+		LabelSelector: fmt.Sprintf("%s=%s", buildapi.BuildLabel, buildName),
 	}, true, true)
 }
 

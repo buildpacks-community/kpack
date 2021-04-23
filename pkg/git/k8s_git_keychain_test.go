@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func Test(t *testing.T) {
@@ -39,7 +39,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-1",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+						buildapi.GITSecretAnnotationPrefix: "https://github.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -53,7 +53,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-2",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "noschemegit.com",
+						buildapi.GITSecretAnnotationPrefix: "noschemegit.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -67,7 +67,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-3",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+						buildapi.GITSecretAnnotationPrefix: "https://bitbucket.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -80,7 +80,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-4",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -93,7 +93,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-5",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,
@@ -107,7 +107,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-6",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://gitlab.com",
+						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
 					},
 				},
 				Type: v1.SecretTypeSSHAuth,
@@ -120,7 +120,7 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					Name:      "secret-7",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
-						v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+						buildapi.GITSecretAnnotationPrefix: "https://github.com",
 					},
 				},
 				Type: v1.SecretTypeBasicAuth,

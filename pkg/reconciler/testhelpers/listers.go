@@ -8,9 +8,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/reconciler/testing"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 )
 
@@ -51,32 +51,32 @@ func (l *Listers) GetKubeObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakekubeclientset.AddToScheme)
 }
 
-func (l *Listers) GetImageLister() v1alpha1Listers.ImageLister {
-	return v1alpha1Listers.NewImageLister(l.indexerFor(&v1alpha1.Image{}))
+func (l *Listers) GetImageLister() buildlisters.ImageLister {
+	return buildlisters.NewImageLister(l.indexerFor(&buildapi.Image{}))
 }
 
-func (l *Listers) GetBuildLister() v1alpha1Listers.BuildLister {
-	return v1alpha1Listers.NewBuildLister(l.indexerFor(&v1alpha1.Build{}))
+func (l *Listers) GetBuildLister() buildlisters.BuildLister {
+	return buildlisters.NewBuildLister(l.indexerFor(&buildapi.Build{}))
 }
 
-func (l *Listers) GetBuilderLister() v1alpha1Listers.BuilderLister {
-	return v1alpha1Listers.NewBuilderLister(l.indexerFor(&v1alpha1.Builder{}))
+func (l *Listers) GetBuilderLister() buildlisters.BuilderLister {
+	return buildlisters.NewBuilderLister(l.indexerFor(&buildapi.Builder{}))
 }
 
-func (l *Listers) GetClusterBuilderLister() v1alpha1Listers.ClusterBuilderLister {
-	return v1alpha1Listers.NewClusterBuilderLister(l.indexerFor(&v1alpha1.ClusterBuilder{}))
+func (l *Listers) GetClusterBuilderLister() buildlisters.ClusterBuilderLister {
+	return buildlisters.NewClusterBuilderLister(l.indexerFor(&buildapi.ClusterBuilder{}))
 }
 
-func (l *Listers) GetClusterStoreLister() v1alpha1Listers.ClusterStoreLister {
-	return v1alpha1Listers.NewClusterStoreLister(l.indexerFor(&v1alpha1.ClusterStore{}))
+func (l *Listers) GetClusterStoreLister() buildlisters.ClusterStoreLister {
+	return buildlisters.NewClusterStoreLister(l.indexerFor(&buildapi.ClusterStore{}))
 }
 
-func (l *Listers) GetClusterStackLister() v1alpha1Listers.ClusterStackLister {
-	return v1alpha1Listers.NewClusterStackLister(l.indexerFor(&v1alpha1.ClusterStack{}))
+func (l *Listers) GetClusterStackLister() buildlisters.ClusterStackLister {
+	return buildlisters.NewClusterStackLister(l.indexerFor(&buildapi.ClusterStack{}))
 }
 
-func (l *Listers) GetSourceResolverLister() v1alpha1Listers.SourceResolverLister {
-	return v1alpha1Listers.NewSourceResolverLister(l.indexerFor(&v1alpha1.SourceResolver{}))
+func (l *Listers) GetSourceResolverLister() buildlisters.SourceResolverLister {
+	return buildlisters.NewSourceResolverLister(l.indexerFor(&buildapi.SourceResolver{}))
 }
 
 func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolumeClaimLister {

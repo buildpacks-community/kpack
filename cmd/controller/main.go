@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/signals"
 
 	"github.com/pivotal/kpack/cmd"
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -40,7 +40,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -125,7 +125,7 @@ func main() {
 	}
 
 	buildpodGenerator := &buildpod.Generator{
-		BuildPodConfig: v1alpha1.BuildPodImages{
+		BuildPodConfig: buildapi.BuildPodImages{
 			BuildInitImage:         *buildInitImage,
 			CompletionImage:        *completionImage,
 			RebaseImage:            *rebaseImage,
@@ -236,8 +236,8 @@ func runGroup(ctx context.Context, fns ...doneFunc) error {
 	return eg.Wait()
 }
 
-func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
-	return func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository {
+func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository {
+	return func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository {
 		return &cnb.StoreBuildpackRepository{
 			Keychain:     keychain,
 			ClusterStore: clusterStore,

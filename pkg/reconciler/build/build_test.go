@@ -20,7 +20,7 @@ import (
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
@@ -76,7 +76,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-	build := &v1alpha1.Build{
+	build := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
 			Namespace: namespace,
@@ -85,10 +85,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			},
 			Generation: originalGeneration,
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: buildapi.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
-			Builder: v1alpha1.BuildBuilderSpec{
+			Builder: buildapi.BuildBuilderSpec{
 				Image: "somebuilder/123@sha256:12334563ad",
 				ImagePullSecrets: []corev1.LocalObjectReference{
 					{Name: "some-image-secret"},
@@ -108,8 +108,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					corev1.ResourceMemory: resource.MustParse("128M"),
 				},
 			},
-			Source: v1alpha1.SourceConfig{
-				Git: &v1alpha1.Git{
+			Source: buildapi.SourceConfig{
+				Git: &buildapi.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
@@ -134,10 +134,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Build{
+						Object: &buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -169,10 +169,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Build{
+						Object: &buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -204,10 +204,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Build{
+						Object: &buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 3,
 									Conditions: corev1alpha1.Conditions{
@@ -229,7 +229,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			buildPod, err := podGenerator.Generate(ctx, build)
 			require.NoError(t, err)
 
-			build.Status = v1alpha1.BuildStatus{
+			build.Status = buildapi.BuildStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -263,10 +263,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Build{
+						Object: &buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -297,10 +297,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
-						Object: &v1alpha1.Build{
+						Object: &buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -365,10 +365,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Build{
+							Object: &buildapi.Build{
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
-								Status: v1alpha1.BuildStatus{
+								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -448,10 +448,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Build{
+							Object: &buildapi.Build{
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
-								Status: v1alpha1.BuildStatus{
+								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -547,10 +547,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Build{
+							Object: &buildapi.Build{
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
-								Status: v1alpha1.BuildStatus{
+								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -561,13 +561,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									PodName: "build-name-build-pod",
-									BuildMetadata: v1alpha1.BuildpackMetadataList{{
+									BuildMetadata: buildapi.BuildpackMetadataList{{
 										Id:       "io.buildpack.executed",
 										Version:  "1.1",
 										Homepage: "mysupercoolsite.com",
 									}},
 									LatestImage: identifier,
-									Stack: v1alpha1.BuildStack{
+									Stack: buildapi.BuildStack{
 										RunImage: "somerun/123@sha256:12334563ad",
 										ID:       "io.buildpacks.stacks.bionic",
 									},
@@ -634,10 +634,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						&v1alpha1.Build{
+						&buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -647,7 +647,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildMetadata: v1alpha1.BuildpackMetadataList{{
+								BuildMetadata: buildapi.BuildpackMetadataList{{
 									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
@@ -690,10 +690,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						&v1alpha1.Build{
+						&buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{
@@ -703,7 +703,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildMetadata: v1alpha1.BuildpackMetadataList{{
+								BuildMetadata: buildapi.BuildpackMetadataList{{
 									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
@@ -777,10 +777,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
-							Object: &v1alpha1.Build{
+							Object: &buildapi.Build{
 								ObjectMeta: build.ObjectMeta,
 								Spec:       build.Spec,
-								Status: v1alpha1.BuildStatus{
+								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -821,10 +821,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						&v1alpha1.Build{
+						&buildapi.Build{
 							ObjectMeta: build.ObjectMeta,
 							Spec:       build.Spec,
-							Status: v1alpha1.BuildStatus{
+							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
 									Conditions: corev1alpha1.Conditions{

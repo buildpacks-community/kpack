@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
@@ -28,7 +28,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		},
-		Status: v1alpha1.BuilderStatus{
+		Status: buildapi.BuilderStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 1,
 				Conditions: corev1alpha1.Conditions{
@@ -38,13 +38,13 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuilderMetadata: v1alpha1.BuildpackMetadataList{
+			BuilderMetadata: buildapi.BuildpackMetadataList{
 				{
 					Id:      "test.builder",
 					Version: "test.version",
 				},
 			},
-			Stack: v1alpha1.BuildStack{
+			Stack: buildapi.BuildStack{
 				RunImage: "some/run@sha256:12345678",
 			},
 			LatestImage: "some/builder@sha256:12345678",
@@ -82,7 +82,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildBuilderSpec provides latest image and pull secrets", func() {
-		require.Equal(t, v1alpha1.BuildBuilderSpec{
+		require.Equal(t, buildapi.BuildBuilderSpec{
 			Image: "some/builder@sha256:12345678",
 			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
@@ -93,7 +93,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildpackMetadata provides buildpack metadata", func() {
-		require.Equal(t, v1alpha1.BuildpackMetadataList{
+		require.Equal(t, buildapi.BuildpackMetadataList{
 			{
 				Id:      "test.builder",
 				Version: "test.version",

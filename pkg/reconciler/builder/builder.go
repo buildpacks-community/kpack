@@ -12,11 +12,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -28,18 +28,18 @@ const (
 	Kind           = "Builder"
 )
 
-type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) cnb.BuildpackRepository
+type NewBuildpackRepository func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository
 
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, clusterStore *v1alpha1.ClusterStore, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error)
+	CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
 }
 
 func NewController(opt reconciler.Options,
-	builderInformer v1alpha1informers.BuilderInformer,
+	builderInformer buildinformers.BuilderInformer,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
-	clusterStoreInformer v1alpha1informers.ClusterStoreInformer,
-	clusterStackInformer v1alpha1informers.ClusterStackInformer,
+	clusterStoreInformer buildinformers.ClusterStoreInformer,
+	clusterStackInformer buildinformers.ClusterStackInformer,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
 		Client:             opt.Client,
@@ -63,12 +63,12 @@ func NewController(opt reconciler.Options,
 
 type Reconciler struct {
 	Client             versioned.Interface
-	BuilderLister      v1alpha1Listers.BuilderLister
+	BuilderLister      buildlisters.BuilderLister
 	BuilderCreator     BuilderCreator
 	KeychainFactory    registry.KeychainFactory
 	Tracker            reconciler.Tracker
-	ClusterStoreLister v1alpha1Listers.ClusterStoreLister
-	ClusterStackLister v1alpha1Listers.ClusterStackLister
+	ClusterStoreLister buildlisters.ClusterStoreLister
+	ClusterStackLister buildlisters.ClusterStackLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -102,29 +102,29 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(ctx, builder)
 }
 
-func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *v1alpha1.Builder) (v1alpha1.BuilderRecord, error) {
+func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Builder) (buildapi.BuilderRecord, error) {
 	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	err = c.Tracker.Track(clusterStore, builder.NamespacedName())
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	clusterStack, err := c.ClusterStackLister.Get(builder.Spec.Stack.Name)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	err = c.Tracker.Track(clusterStack, builder.NamespacedName())
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	if !clusterStack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
-		return v1alpha1.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
+		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
@@ -132,13 +132,13 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *v1alpha1.Bui
 		Namespace:      builder.Namespace,
 	})
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Builder) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.BuilderLister.Builders(desired.Namespace).Get(desired.Name)

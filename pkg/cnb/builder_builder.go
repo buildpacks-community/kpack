@@ -15,7 +15,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
@@ -40,7 +40,7 @@ type builderBlder struct {
 	lifecycleImage    v1.Image
 	LifecycleMetadata LifecycleMetadata
 	stackId           string
-	order             []v1alpha1.OrderEntry
+	order             []buildapi.OrderEntry
 	buildpackLayers   map[DescriptiveBuildpackInfo]buildpackLayer
 	cnbUserId         int
 	cnbGroupId        int
@@ -65,7 +65,7 @@ func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder
 	}, nil
 }
 
-func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *v1alpha1.ClusterStack) error {
+func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.ClusterStack) error {
 	file, err := baseImage.ConfigFile()
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *v1alpha1.Clus
 }
 
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
-	group := make([]v1alpha1.BuildpackRef, 0, len(buildpacks))
+	group := make([]buildapi.BuildpackRef, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		group = append(group, b.buildpackRef())
 
@@ -90,7 +90,7 @@ func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 			bb.buildpackLayers[layer.BuildpackInfo] = layer
 		}
 	}
-	bb.order = append(bb.order, v1alpha1.OrderEntry{Group: group})
+	bb.order = append(bb.order, buildapi.OrderEntry{Group: group})
 }
 
 func (bb *builderBlder) WriteableImage() (v1.Image, error) {

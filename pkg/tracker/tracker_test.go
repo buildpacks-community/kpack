@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/tracker"
 )
 
@@ -26,7 +26,7 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
-				builder := &v1alpha1.Builder{
+				builder := &buildapi.Builder{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "some-name",
 						Namespace: "some-namespace",
@@ -54,7 +54,7 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 					wasCalledWith = key
 				}, 5*time.Minute)
 
-				clusterBuilder := &v1alpha1.ClusterBuilder{
+				clusterBuilder := &buildapi.ClusterBuilder{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "some-name",
 					},
