@@ -215,9 +215,9 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     
     The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
 
-1. Run the build app locally 
+1. Run the built app locally 
 
-   Download the latest image available in step #4 and run it with docker.
+   Download the latest image available in step #6 and run it with docker.
     
    ```bash
    docker run -p 8080:8080 <latest-image-with-digest>
@@ -245,7 +245,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    We recommend updating the kpack image configuration with a CI/CD tool when new commits are ready to be built.
    > Note: You can also provide a branch or tag as the `spec.git.revision` and kpack will poll and rebuild on updates!  
 
-   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image configured in step #3.
+   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image configured in step #6.
    
    If you are using your own application please push an updated commit and use the new commit sha. If you are using Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.         
   
@@ -266,7 +266,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    tutorial-image-build-2-xsf2l                                                       Unknown
    ```
 
-   You can tail the logs for the image with log utility used in step #4.
+   You can tail the logs for the image with log utility used in step #6.
    
    ```
    logs -image tutorial-image -namespace default -build 2
