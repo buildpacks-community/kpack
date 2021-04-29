@@ -1,0 +1,57 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "20:00"
+    timezone: America/Los_Angeles
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: github.com/vdemeester/k8s-pkg-credentialprovider
+    versions:
+    - ">= 1.18.a, < 1.19"
+  - dependency-name: k8s.io/apimachinery
+    versions:
+    - ">= 0.21.a, < 0.22"
+  - dependency-name: k8s.io/client-go
+    versions:
+    - ">= 0.18.a, < 0.19"
+  - dependency-name: k8s.io/code-generator
+    versions:
+    - ">= 0.21.a, < 0.22"
+  - dependency-name: github.com/go-git/go-git/v5
+    versions:
+    - 5.3.0
+  - dependency-name: k8s.io/api
+    versions:
+    - 0.20.3
+    - 0.20.4
+    - 0.20.5
+    - 0.21.0
+  - dependency-name: github.com/buildpacks/lifecycle
+    versions:
+    - 0.11.0
+  - dependency-name: k8s.io/apimachinery
+    versions:
+    - 0.20.3
+    - 0.20.4
+    - 0.20.5
+  - dependency-name: k8s.io/code-generator
+    versions:
+    - 0.20.3
+    - 0.20.4
+    - 0.20.5
+  - dependency-name: github.com/google/go-cmp
+    versions:
+    - 0.5.4
+    - 0.5.5
+  - dependency-name: github.com/google/go-containerregistry
+    versions:
+    - 0.4.1
+  - dependency-name: github.com/vdemeester/k8s-pkg-credentialprovider
+    versions:
+    - 1.19.7
+  - dependency-name: github.com/stretchr/testify
+    versions:
+    - 1.7.0
