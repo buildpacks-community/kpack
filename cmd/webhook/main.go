@@ -45,7 +45,7 @@ func main() {
 	})
 
 	sharedmain.WebhookMainWithConfig(ctx, "webhook",
-		sharedmain.ParseAndGetConfigOrDie(),
+		injection.ParseAndGetRESTConfigOrDie(),
 		certificates.NewController,
 		defaultingAdmissionController,
 		validatingAdmissionController,
