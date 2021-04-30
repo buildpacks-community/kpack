@@ -17,7 +17,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git-fixtures v3.5.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/go-openapi/spec v0.19.9
+	github.com/go-openapi/spec v0.20.3
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/go-cmp v0.5.5
