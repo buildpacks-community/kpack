@@ -21,7 +21,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/go-cmp v0.5.5
-	github.com/google/go-containerregistry v0.4.1
+	github.com/google/go-containerregistry v0.5.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210322164748-a11b12f378b5
 	github.com/jinzhu/gorm v1.9.12 // indirect
 	github.com/lib/pq v1.2.0 // indirect

@@ -468,6 +468,7 @@ github.com/google/go-containerregistry v0.3.0/go.mod h1:BJ7VxR1hAhdiZBGGnvGETHEm
 github.com/google/go-containerregistry v0.4.1-0.20210128200529-19c2b639fab1/go.mod h1:GU9FUA/X9rd2cV3ZoUNaWihp27tki6/38EsVzL2Dyzc=
 github.com/google/go-containerregistry v0.4.1 h1:Lrcj2AOoZ7WKawsoKAh2O0dH0tBqMW2lTEmozmK4Z3k=
 github.com/google/go-containerregistry v0.4.1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
+github.com/google/go-containerregistry v0.5.0/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
 github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210322164748-a11b12f378b5 h1:IeKJRqpue2UQ/hbTj9JslitsFUZDHISDFFvLcqM931c=
 github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210322164748-a11b12f378b5/go.mod h1:n9wRxRfKkHy6ZFyj0jJQHw11P+mGLnED4sqegwrXxDk=
 github.com/google/go-github/v27 v27.0.6/go.mod h1:/0Gr8pJ55COkmv+S/yPKCczSkUPIM/LnFyubufRNIS0=
