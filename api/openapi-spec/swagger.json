@@ -4266,8 +4266,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         },
         "name": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "secretRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
@@ -4281,8 +4280,7 @@
       ],
       "properties": {
         "url": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -4301,15 +4299,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStatus"
         }
       }
@@ -4323,7 +4318,6 @@
         "imagePullSecrets": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           },
           "x-kubernetes-list-type": "",
@@ -4346,7 +4340,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.Build"
           }
         },
@@ -4355,7 +4348,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -4369,13 +4361,11 @@
         "bindings": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
           },
           "x-kubernetes-list-type": ""
         },
         "builder": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildBuilderSpec"
         },
         "cacheName": {
@@ -4384,7 +4374,6 @@
         "env": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
           },
           "x-kubernetes-list-type": ""
@@ -4396,21 +4385,18 @@
           "$ref": "#/definitions/kpack.build.v1alpha1.NotaryConfig"
         },
         "resources": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "serviceAccount": {
           "type": "string"
         },
         "source": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
         },
         "tags": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "x-kubernetes-list-type": ""
         }
@@ -4433,7 +4419,6 @@
         "buildMetadata": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackMetadata"
           }
         },
@@ -4441,7 +4426,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -4459,13 +4443,11 @@
           "type": "string"
         },
         "stack": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"
         },
         "stepStates": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerState"
           },
           "x-kubernetes-list-type": ""
@@ -4473,8 +4455,7 @@
         "stepsCompleted": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "x-kubernetes-list-type": ""
         }
@@ -4496,15 +4477,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.NamespacedBuilderSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuilderStatus"
         }
       }
@@ -4523,7 +4501,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.Builder"
           }
         },
@@ -4532,7 +4509,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -4543,17 +4519,14 @@
         "order": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
         "stack": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "store": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "tag": {
@@ -4567,7 +4540,6 @@
         "builderMetadata": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackMetadata"
           }
         },
@@ -4575,7 +4547,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -4600,7 +4571,6 @@
         "order": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           }
         },
@@ -4608,7 +4578,6 @@
           "type": "string"
         },
         "stack": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"
         }
       }
@@ -4620,8 +4589,7 @@
       ],
       "properties": {
         "id": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "version": {
           "type": "string"
@@ -4639,12 +4607,10 @@
           "type": "string"
         },
         "id": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "version": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -4655,8 +4621,7 @@
       ],
       "properties": {
         "id": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "optional": {
           "type": "boolean"
@@ -4673,14 +4638,12 @@
       ],
       "properties": {
         "id": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "mixins": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "x-kubernetes-list-type": ""
         }
@@ -4716,15 +4679,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterBuilderSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuilderStatus"
         }
       }
@@ -4743,7 +4703,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.ClusterBuilder"
           }
         },
@@ -4752,7 +4711,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -4763,21 +4721,17 @@
         "order": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
         "serviceAccountRef": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "stack": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "store": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "tag": {
@@ -4801,15 +4755,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackStatus"
         }
       }
@@ -4828,7 +4779,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStack"
           }
         },
@@ -4837,7 +4787,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -4846,14 +4795,12 @@
       "type": "object",
       "properties": {
         "buildImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackSpecImage"
         },
         "id": {
           "type": "string"
         },
         "runImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackSpecImage"
         }
       }
@@ -4870,14 +4817,12 @@
       "type": "object",
       "properties": {
         "buildImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackStatusImage"
         },
         "conditions": {
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -4893,8 +4838,7 @@
         "mixins": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "x-kubernetes-list-type": ""
         },
@@ -4904,7 +4848,6 @@
           "format": "int64"
         },
         "runImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackStatusImage"
         },
         "userId": {
@@ -4940,15 +4883,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStoreSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStoreStatus"
         }
       }
@@ -4967,7 +4907,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStore"
           }
         },
@@ -4976,7 +4915,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -4987,7 +4925,6 @@
         "sources": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.StoreImage"
           },
           "x-kubernetes-list-type": ""
@@ -5000,7 +4937,6 @@
         "buildpacks": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.StoreBuildpack"
           },
           "x-kubernetes-list-type": ""
@@ -5009,7 +4945,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -5030,12 +4965,10 @@
       ],
       "properties": {
         "revision": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "url": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5054,15 +4987,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ImageSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ImageStatus"
         }
       }
@@ -5073,7 +5003,6 @@
         "bindings": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
           },
           "x-kubernetes-list-type": ""
@@ -5081,13 +5010,11 @@
         "env": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
           },
           "x-kubernetes-list-type": ""
         },
         "resources": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         }
       }
@@ -5107,8 +5034,7 @@
           "type": "string"
         },
         "name": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5126,7 +5052,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.Image"
           }
         },
@@ -5135,7 +5060,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -5151,7 +5075,6 @@
           "$ref": "#/definitions/kpack.build.v1alpha1.ImageBuild"
         },
         "builder": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "cacheSize": {
@@ -5171,7 +5094,6 @@
           "type": "string"
         },
         "source": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
         },
         "successBuildHistoryLimit": {
@@ -5179,8 +5101,7 @@
           "format": "int64"
         },
         "tag": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5198,7 +5119,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -5244,7 +5164,6 @@
         "order": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
@@ -5253,11 +5172,9 @@
           "type": "string"
         },
         "stack": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "store": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "tag": {
@@ -5280,8 +5197,7 @@
       ],
       "properties": {
         "name": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5293,12 +5209,10 @@
       ],
       "properties": {
         "secretRef": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.NotarySecretRef"
         },
         "url": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5308,7 +5222,6 @@
         "group": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackRef"
           },
           "x-kubernetes-list-type": ""
@@ -5322,13 +5235,11 @@
       ],
       "properties": {
         "image": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "imagePullSecrets": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           },
           "x-kubernetes-list-type": "",
@@ -5347,8 +5258,7 @@
           "type": "string"
         },
         "url": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5356,7 +5266,6 @@
       "type": "object",
       "properties": {
         "buildImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackStatusImage"
         },
         "groupId": {
@@ -5369,13 +5278,11 @@
         "mixins": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": ""
+            "type": "string"
           },
           "x-kubernetes-list-type": ""
         },
         "runImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ClusterStackStatusImage"
         },
         "userId": {
@@ -5393,19 +5300,16 @@
       ],
       "properties": {
         "revision": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "subPath": {
           "type": "string"
         },
         "type": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "url": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5416,13 +5320,11 @@
       ],
       "properties": {
         "image": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "imagePullSecrets": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           },
           "x-kubernetes-list-type": "",
@@ -5480,15 +5382,12 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.SourceResolverSpec"
         },
         "status": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.SourceResolverStatus"
         }
       }
@@ -5507,7 +5406,6 @@
         "items": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.SourceResolver"
           }
         },
@@ -5516,7 +5414,6 @@
           "type": "string"
         },
         "metadata": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
@@ -5531,7 +5428,6 @@
           "type": "string"
         },
         "source": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
         }
       }
@@ -5543,7 +5439,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -5555,7 +5450,6 @@
           "format": "int64"
         },
         "source": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.ResolvedSourceConfig"
         }
       }
@@ -5570,7 +5464,6 @@
           "type": "string"
         },
         "buildpackage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackageInfo"
         },
         "diffId": {
@@ -5583,13 +5476,11 @@
           "type": "string"
         },
         "id": {
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "order": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
@@ -5601,13 +5492,11 @@
         "stacks": {
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackStack"
           },
           "x-kubernetes-list-type": ""
         },
         "storeImage": {
-          "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha1.StoreImage"
         },
         "version": {
@@ -5633,8 +5522,7 @@
       "properties": {
         "lastTransitionTime": {
           "description": "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-          "type": "string",
-          "default": {}
+          "type": "string"
         },
         "message": {
           "description": "A human readable message indicating details about the transition.",
@@ -5650,13 +5538,11 @@
         },
         "status": {
           "description": "Status of the condition, one of True, False, Unknown.",
-          "type": "string",
-          "default": ""
+          "type": "string"
         },
         "type": {
           "description": "Type of condition.",
-          "type": "string",
-          "default": ""
+          "type": "string"
         }
       }
     },
@@ -5668,7 +5554,6 @@
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
           "items": {
-            "default": {},
             "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
           },
           "x-kubernetes-patch-merge-key": "type",
@@ -5689,7 +5574,6 @@
       ],
       "properties": {
         "inner": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }

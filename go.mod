@@ -51,12 +51,8 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
-	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
+	k8s.io/client-go v0.19.7
 	k8s.io/code-generator v0.19.7
 	k8s.io/kube-openapi v0.0.0-20210113233702-8566a335510f
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
 )
-
-replace k8s.io/client-go => k8s.io/client-go v0.19.7
-
-exclude github.com/Azure/go-autorest v12.0.0+incompatible
