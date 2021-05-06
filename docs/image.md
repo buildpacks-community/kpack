@@ -158,7 +158,7 @@ spec:
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
-      revision: master
+      revision: main
   build: # Optional
     env:
       - name: BP_JAVA_VERSION
@@ -178,7 +178,7 @@ Source for github can also be specified in the ssh format if there is a correspo
   source:
     git:
       url: git@github.com/buildpack/sample-java-app.git
-      revision: master
+      revision: main
 ```
 
 ### Sample Image with hosted zip or jar as a source
@@ -239,4 +239,4 @@ status:
     status: "False"
     type: Succeeded
   ...
-``` 
+```

@@ -23,7 +23,7 @@ spec:
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
-      revision: master
+      revision: main
   env:
   - name: "JAVA_BP_ENV"
     value: "value"

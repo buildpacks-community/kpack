@@ -11,4 +11,4 @@ spec:
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
-      revision: master
+      revision: main
