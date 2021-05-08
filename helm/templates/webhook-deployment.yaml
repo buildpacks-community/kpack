@@ -4,6 +4,7 @@ metadata:
   name: {{ include "kpack.fullname" . }}-webhook
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "kpack.labels" . |  nindent 4 }}
+    app.kubernetes.io/component: webhook
 spec:
   replicas: {{ .Values.webhookReplicas }}
   selector:

@@ -38,13 +38,13 @@ buildImages:
     envVar: REBASE_IMAGE
   - name: lifecycle-image
     image: gcr.io/cf-build-service-public/kpack/lifecycle@sha256:fb7e0916ea429697630743b34e858c3555ddfbb5940683754dfccd3bfa446e0a
-    envVar: COMPLETION_IMAGE
+    envVar: LIFECYCLE_IMAGE
   - name: completion-image
     image: gcr.io/cf-build-service-public/kpack/completion@sha256:7b8b829ee21f6009ea9b580cad86fb2f74f28d2aa34676d4a130fb62b9fc9893
-    envVar: COMPLETION_WINDOWS_IMAGE
+    envVar: COMPLETION_IMAGE
   - name: completion-windows-image
     image: gcr.io/cf-build-service-public/kpack/completion-windows@sha256:4752610e600b8f2930a31a277944a8cfb7a361b352ce3b171198519537c79db9
-    envVar: LIFECYCLE_IMAGE
+    envVar: COMPLETION_WINDOWS_IMAGE
 
 controllerImage:
   pullPolicy: IfNotPresent

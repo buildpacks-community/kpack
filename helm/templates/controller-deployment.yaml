@@ -4,6 +4,7 @@ metadata:
   name: {{ include "kpack.fullname" . }}-controller
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "kpack.labels" . |  nindent 4 }}
+    app.kubernetes.io/component: controller
 spec:
   replicas: {{ .Values.controllerReplicas }}
   selector:
@@ -28,7 +29,7 @@ spec:
         - name: {{ .envVar }}
           valueFrom:
             configMapKeyRef:
-              name: {{ include "kpack.fullname" $ }}-{{ .name }}
+              name: {{ .name }}
               key: image
         {{- end }}
         resources: {{- toYaml .Values.controllerResources | nindent 10 }}
