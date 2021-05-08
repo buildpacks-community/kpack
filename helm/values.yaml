@@ -1,0 +1,106 @@
+# Default values for kpack.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+nameOverride: ""
+fullnameOverride: ""
+
+# Common config
+commonEnv:
+  - name: CONFIG_LOGGING_NAME
+    value: config-logging
+  - name: CONFIG_OBSERVABILITY_NAME
+    value: config-observability
+  - name: METRICS_DOMAIN
+    value: kpack.io
+  - name: SYSTEM_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+
+imagePullSecrets: []
+
+# Controller Config
+
+# Images
+buildImages:
+  - name: build-init-image
+    image: gcr.io/cf-build-service-public/kpack/build-init@sha256:94cdd9223310c2bbc6b9f10d17f754337d782f32ac1cd7de58d3e78746d5ab7c
+    envVar: BUILD_INIT_IMAGE
+  - name: build-init-windows-image
+    image: gcr.io/cf-build-service-public/kpack/build-init-windows@sha256:69e9e14949a130049ae1684bccbf734cb132bc98796801775161843e316bb127
+    envVar: BUILD_INIT_WINDOWS_IMAGE
+  - name: rebase-image
+    image: gcr.io/cf-build-service-public/kpack/rebase@sha256:97f9f9c1f25b720401f18ad21a7f92ddb4ff80882333702586ac8f7d619c3e02
+    envVar: REBASE_IMAGE
+  - name: lifecycle-image
+    image: gcr.io/cf-build-service-public/kpack/lifecycle@sha256:fb7e0916ea429697630743b34e858c3555ddfbb5940683754dfccd3bfa446e0a
+    envVar: COMPLETION_IMAGE
+  - name: completion-image
+    image: gcr.io/cf-build-service-public/kpack/completion@sha256:7b8b829ee21f6009ea9b580cad86fb2f74f28d2aa34676d4a130fb62b9fc9893
+    envVar: COMPLETION_WINDOWS_IMAGE
+  - name: completion-windows-image
+    image: gcr.io/cf-build-service-public/kpack/completion-windows@sha256:4752610e600b8f2930a31a277944a8cfb7a361b352ce3b171198519537c79db9
+    envVar: LIFECYCLE_IMAGE
+
+controllerImage:
+  pullPolicy: IfNotPresent
+  tag: "gcr.io/cf-build-service-public/kpack/controller@sha256:ec256da7e29eeecdd0821f499e754080672db8f0bc521b2fa1f13f6a75a04835"
+
+# Controller resources
+controllerReplicas: 1
+controllerResources:
+  requests:
+    cpu: 20m
+    memory: 100Mi
+  limits:
+    cpu: 100m
+    memory: 400Mi
+
+# Controller RBAC and Service Accounts
+controllerServiceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "controller"
+
+createControllerRBAC: true
+
+# Webhook Config
+
+webhookContainerPort: 8443
+
+# Images
+webhookImage:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "gcr.io/cf-build-service-public/kpack/webhook@sha256:ab9708d6be3f348fb89dda510525ee15f87716424a8c933f8620f074fd49b73a"
+
+
+# Webhook resources
+webhookReplicas: 1
+webhookResources:
+  requests:
+    cpu: 10m
+    memory: 50Mi
+  limits:
+    cpu: 100m
+    memory: 200Mi
+
+# Webhook RBAC and Service accounts
+createWebhookRBAC: true
+
+webhookServiceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "webhook"

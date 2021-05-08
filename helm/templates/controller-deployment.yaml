@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kpack.fullname" . }}-controller
+  namespace: {{ $.Release.Namespace }}
+  labels: {{- include "kpack.labels" . |  nindent 4 }}
+spec:
+  replicas: {{ .Values.controllerReplicas }}
+  selector:
+    matchLabels: {{- include "kpack.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: controller
+  template:
+    metadata:
+      labels: {{- include "kpack.labels" . |  nindent 8 }}
+        app.kubernetes.io/component: controller
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kpack.controllerServiceAccountName" . }}
+      containers:
+      - name: controller
+        image: {{ .Values.controllerImage.tag }}
+        imagePullPolicy: {{ .Values.controllerImage.pullPolicy }}
+        env: {{- toYaml .Values.commonEnv | nindent 8}}
+        {{- range .Values.buildImages }}
+        - name: {{ .envVar }}
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "kpack.fullname" $ }}-{{ .name }}
+              key: image
+        {{- end }}
+        resources: {{- toYaml .Values.controllerResources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

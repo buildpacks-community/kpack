@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kpack.fullname" . }}-webhook
+  namespace: {{ $.Release.Namespace }}
+  labels: {{- include "kpack.labels" . |  nindent 4 }}
+spec:
+  replicas: {{ .Values.webhookReplicas }}
+  selector:
+    matchLabels: {{- include "kpack.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: webhook
+  template:
+    metadata:
+      labels: {{- include "kpack.labels" . |  nindent 8 }}
+        app.kubernetes.io/component: webhook
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kpack.webhookServiceAccountName" . }}
+      containers:
+      - name: webhook
+        image: {{ .Values.webhookImage.tag }}
+        imagePullPolicy: {{ .Values.webhookImage.pullPolicy }}
+        env: {{- toYaml .Values.commonEnv | nindent 8}}
+        ports:
+        - name: https-webhook
+          containerPort: {{ .Values.webhookContainerPort }}
+        resources: {{- toYaml .Values.webhookResources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

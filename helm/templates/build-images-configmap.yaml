@@ -1,0 +1,12 @@
+{{- range .Values.buildImages }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kpack.fullname" $ }}-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kpack.labels" $ |  nindent 4 }}
+data:
+  image: {{ .image }}
+---
+{{- end }}
