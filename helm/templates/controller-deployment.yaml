@@ -4,16 +4,16 @@ metadata:
   name: {{ include "kpack.fullname" . }}-controller
   namespace: {{ $.Release.Namespace }}
   labels: {{- include "kpack.labels" . |  nindent 4 }}
-    app.kubernetes.io/component: controller
+    component: controller
 spec:
   replicas: {{ .Values.controllerReplicas }}
   selector:
     matchLabels: {{- include "kpack.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: controller
+      component: controller
   template:
     metadata:
       labels: {{- include "kpack.labels" . |  nindent 8 }}
-        app.kubernetes.io/component: controller
+        component: controller
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

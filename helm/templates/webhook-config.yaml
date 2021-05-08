@@ -1,31 +1,39 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ include "kpack.fullname" . }}.defaults.webhook.kpack.io
+  # These names are hardcoded and not prefixed with the release name
+  # since we currently have certain webhook configs hardcoded.
+  # TODO: Add a release name prefix once this https://github.com/pivotal/kpack/issues/688
+  # is resolved.
+  name: defaults.webhook.kpack.io
   labels: {{- include "kpack.labels" . |  nindent 4 }}
 webhooks:
 - admissionReviewVersions:
   - v1beta1
   clientConfig:
     service:
-      name: {{ include "kpack.fullname" . }}-webhook
+      name: kpack-webhook
       namespace: {{ .Release.Namespace }}
   failurePolicy: Fail
   sideEffects: None
-  name: {{ include "kpack.fullname" . }}.defaults.webhook.kpack.io
+  name: defaults.webhook.kpack.io
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: {{ include "kpack.fullname" . }}.validation.webhook.kpack.io
+  # These names are hardcoded and not prefixed with the release name
+  # since we currently have certain webhook configs hardcoded.
+  # TODO: Add a release name prefix once this https://github.com/pivotal/kpack/issues/688
+  # is resolved.
+  name: validation.webhook.kpack.io
   labels: {{- include "kpack.labels" . |  nindent 4 }}
 webhooks:
 - admissionReviewVersions:
   - v1beta1
   clientConfig:
     service:
-      name: {{ include "kpack.fullname" . }}-webhook
+      name: kpack-webhook
       namespace: {{ .Release.Namespace }}
   failurePolicy: Fail
   sideEffects: None
-  name: {{ include "kpack.fullname" . }}.validation.webhook.kpack.io
+  name: validation.webhook.kpack.io

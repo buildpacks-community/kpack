@@ -19,7 +19,7 @@ rules:
   resources:
   - secrets
   resourceNames:
-  - {{ include "kpack.fullname" . }}-webhook-certs
+  - webhook-certs
   verbs:
   - update
 - apiGroups:
@@ -57,7 +57,7 @@ rules:
   resources:
   - mutatingwebhookconfigurations
   resourceNames:
-  -  {{ include "kpack.fullname" . }}.defaults.webhook.kpack.io
+  -  defaults.webhook.kpack.io
   verbs:
   - update
 - apiGroups:
@@ -73,7 +73,7 @@ rules:
   resources:
   - validatingwebhookconfigurations
   resourceNames:
-  -  {{ include "kpack.fullname" . }}.validation.webhook.kpack.io
+  -  validation.webhook.kpack.io
   verbs:
   - update
 - apiGroups:

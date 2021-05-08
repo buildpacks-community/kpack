@@ -74,8 +74,6 @@ createControllerRBAC: true
 
 # Webhook Config
 
-webhookContainerPort: 8443
-
 # Images
 webhookImage:
   pullPolicy: IfNotPresent
