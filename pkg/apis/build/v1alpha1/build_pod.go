@@ -229,6 +229,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Env: append(
 							b.Spec.Source.Source().BuildEnvVars(),
 							corev1.EnvVar{
+								Name:  "SOURCE_SUB_PATH",
+								Value: b.Spec.Source.SubPath,
+							},
+							corev1.EnvVar{
 								Name:  "PLATFORM_ENV_VARS",
 								Value: string(envVars),
 							},
