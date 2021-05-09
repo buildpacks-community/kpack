@@ -40,7 +40,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
-	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -63,6 +63,7 @@ var (
 	completionImage        = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
 	completionWindowsImage = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
 	lifecycleImage         = flag.String("lifecycle-image", os.Getenv("LIFECYCLE_IMAGE"), "The image used to provide lifecycle binaries")
+	lifecycleConfigName    = flag.String("lifecycle-config-name", os.Getenv("LIFECYCLE_CONFIG_NAME"), "The config name used to provide lifecycle binary images")
 )
 
 func main() {
@@ -157,7 +158,10 @@ func main() {
 	}
 
 	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)
-	configMapWatcher.Watch(config.LifecycleConfigName, lifecycleProvider.UpdateImage)
+	if *lifecycleConfigName == "" {
+		*lifecycleConfigName = config.LifecycleConfigName
+	}
+	configMapWatcher.Watch(*lifecycleConfigName, lifecycleProvider.UpdateImage)
 
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient:         &registry.Client{},

@@ -112,6 +112,8 @@ spec:
             configMapKeyRef:
               name: lifecycle-image
               key: image
+        - name: LIFECYCLE_CONFIG_NAME
+          value: lifecycle-image
         resources:
           requests:
             cpu: 20m
