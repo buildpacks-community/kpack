@@ -8,8 +8,8 @@ require (
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d // indirect
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
-	github.com/buildpacks/imgutil v0.0.0-20210315155240-52098da06639
-	github.com/buildpacks/lifecycle v0.10.2
+	github.com/buildpacks/imgutil v0.0.0-20210510154637-009f91f52918
+	github.com/buildpacks/lifecycle v0.11.3
 	github.com/containerd/containerd v1.4.4 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.5.0 // indirect
 	github.com/docker/cli v20.10.5+incompatible // indirect
