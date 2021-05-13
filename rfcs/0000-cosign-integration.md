@@ -49,10 +49,14 @@ in the process.
   specify signature annotations as part of configuration:
 ```yaml
 cosign:
-    secretRef: <secret-name> # private key and passphrase to sign images
-    annotations: # optional map of key-value pairs the user wants to add to images
-      key1: value1
-      key2: value2
+  # a list of secret references holding the private keys and passphrases for signing images
+  secretRefs:
+  - name: <secret-name 1>
+  ...
+  - name: <secret-name n>
+  annotations: # optional map of key-value pairs the user wants to add to images
+    key1: value1
+    key2: value2
 ```
 `cosign` will apply this optional map of annotations to the signature payload,
 which can then be verified with `cosign verify`. Verification is out of scope
