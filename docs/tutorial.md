@@ -113,7 +113,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     
     A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/) that includes the stack and buildpacks needed to build an image from your app source code. 
     
-    The Builder configuration will write to the registry with the secret configured in step one and will reference the stack and store created in step three and four. The builder order will the order in which buildpacks are used in the builder.   
+    The Builder configuration will write to the registry with the secret configured in step one and will reference the stack and store created in step three and four. The builder order will determine the order in which buildpacks are used in the builder.
         
     ```yaml
     apiVersion: kpack.io/v1alpha1
