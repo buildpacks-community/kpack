@@ -73,9 +73,6 @@ for this RFC.
 - Whenever `kpack` signs an image using `cosign`, it should add these
   annotations:
   - Build number.
-  - Cluster builder used.
-  - Buildpacks involved in the build process.
-  - Stack container image names and digests.
   - Build time.
 
 ### Key generation and storage
