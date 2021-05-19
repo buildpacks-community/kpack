@@ -49,10 +49,10 @@ require (
 	google.golang.org/genproto v0.0.0-20210322173543-5f0e89347f5a // indirect
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
-	k8s.io/api v0.19.7
-	k8s.io/apimachinery v0.19.7
+	k8s.io/api v0.21.1
+	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v0.19.7
 	k8s.io/code-generator v0.19.7
-	k8s.io/kube-openapi v0.0.0-20210113233702-8566a335510f
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
 )
