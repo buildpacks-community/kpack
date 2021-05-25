@@ -34,8 +34,8 @@ var (
 	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
 	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
 	hostName      = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
-
-	buildChanges = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
+	sourceSubPath = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
+	buildChanges  = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
@@ -115,6 +115,11 @@ func main() {
 	err = fetchSource(logger, creds)
 	if err != nil {
 		logger.Fatal(err)
+	}
+
+	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), platformDir)
+	if err != nil {
+		logger.Fatalf("error while processing the project descriptor %s", err)
 	}
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
