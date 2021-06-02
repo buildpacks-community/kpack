@@ -1,7 +1,9 @@
 package cnb_test
 
 import (
+	"bytes"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,16 +20,20 @@ func TestProcessProjectDescriptor(t *testing.T) {
 }
 
 func testProcessProjectDescriptor(t *testing.T, when spec.G, it spec.S) {
+	var buf *bytes.Buffer
+	var logger *log.Logger
 	var (
 		appDir, platformDir, projectToml string
 	)
 
 	it.Before(func() {
 		var err error
+		buf = new(bytes.Buffer)
+		logger = log.New(buf, "", 0)
 		appDir, err = ioutil.TempDir("", "appDir")
-		require.NoError(t, err)
+		require.Nil(t, err)
 		platformDir, err = ioutil.TempDir("", "platform")
-		require.NoError(t, err)
+		require.Nil(t, err)
 		projectToml = filepath.Join(appDir, "project.toml")
 	})
 
@@ -60,7 +66,7 @@ value = "valueAnotherC"
 				`), 0644)
 			})
 			it("writes all env var files to the platform dir", func() {
-				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir))
+				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
 				checkEnvVar(t, platformDir, "keyA", "valueA")
 				checkEnvVar(t, platformDir, "keyB", "valueB")
 				checkEnvVar(t, platformDir, "keyC", "valueAnotherC")
@@ -124,7 +130,7 @@ exclude = ["*.sh", "secrets/", "media/metadata", "/other-cookie.jar" ,"/nested-c
 					`), 0644)
 				})
 				it("removes the excluded files", func() {
-					assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir))
+					assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
 					assert.NoFileExists(t, filepath.Join(appDir, "api_keys.json"))
 					assert.NoFileExists(t, filepath.Join(appDir, "user_token"))
 					assert.NoFileExists(t, filepath.Join(appDir, "test.sh"))
@@ -146,7 +152,7 @@ include = [ "*.jar", "media/mountain.jpg", "/media/person.png", ]
 				})
 
 				it("keeps only the included files", func() {
-					assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir))
+					assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
 					assert.NoFileExists(t, filepath.Join(appDir, "api_keys.json"))
 					assert.NoFileExists(t, filepath.Join(appDir, "user_token"))
 					assert.NoFileExists(t, filepath.Join(appDir, "test.sh"))
@@ -168,10 +174,38 @@ exclude = ["test", ]
 					`), 0644)
 				})
 				it("throws an error", func() {
-					assert.NotNil(t, cnb.ProcessProjectDescriptor(appDir, platformDir))
+					assert.NotNil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
 				})
 
 			})
 		})
+		when("the descriptor has builder", func() {
+			it.Before(func() {
+				ioutil.WriteFile(projectToml, []byte(`
+[build]
+builder = "my-super-cool-builder"
+
+				`), 0644)
+			})
+			it("logs a warning that the builder will be ignored", func() {
+				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
+				assert.Equal(t, "warning: builder provided in project descriptor file will be ignored\n", buf.String())
+			})
+		})
+		when("the descriptor has buildpacks", func() {
+			it.Before(func() {
+				ioutil.WriteFile(projectToml, []byte(`
+[[build.buildpacks]]
+id = "cool-buildpack"
+version = "v4.2"
+uri = "check-this-out.com"
+				`), 0644)
+			})
+			it("logs a warning that the buildpacks will be ignored", func() {
+				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
+				assert.Equal(t, "warning: buildpacks provided in project descriptor file will be ignored\n", buf.String())
+			})
+		})
+
 	})
 }

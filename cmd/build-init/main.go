@@ -117,7 +117,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), platformDir)
+	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), platformDir, logger)
 	if err != nil {
 		logger.Fatalf("error while processing the project descriptor %s", err)
 	}
