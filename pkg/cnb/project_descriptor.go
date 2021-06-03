@@ -2,6 +2,7 @@ package cnb
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -11,7 +12,7 @@ import (
 
 const fileDescriptorName = "project.toml"
 
-func ProcessProjectDescriptor(appDir, platformDir string) error {
+func ProcessProjectDescriptor(appDir, platformDir string, logger *log.Logger) error {
 	var d descriptor
 	file := filepath.Join(appDir, fileDescriptorName)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
@@ -22,6 +23,13 @@ func ProcessProjectDescriptor(appDir, platformDir string) error {
 	_, err := toml.DecodeFile(file, &d)
 	if err != nil {
 		return err
+	}
+	if d.Build.Buildpacks != nil {
+		logger.Println("info: buildpacks provided in project descriptor file will be ignored")
+	}
+
+	if d.Build.Builder != "" {
+		logger.Println("info: builder provided in project descriptor file will be ignored")
 	}
 	if err := processFiles(appDir, d); err != nil {
 		return err
@@ -77,10 +85,18 @@ func getFileFilter(d descriptor) (func(string) bool, error) {
 	return nil, nil
 }
 
+type buildpack struct {
+	Id      string `json:"id" toml:"id"`
+	Version string `json:"version" toml:"version"`
+	Uri     string `json:"uri" toml:"uri"`
+}
+
 type build struct {
-	Include []string      `toml:"include"`
-	Exclude []string      `toml:"exclude"`
-	Env     []envVariable `toml:"env"`
+	Include    []string      `toml:"include"`
+	Exclude    []string      `toml:"exclude"`
+	Buildpacks []buildpack   `toml:"buildpacks"`
+	Builder    string        `toml:"builder"`
+	Env        []envVariable `toml:"env"`
 }
 
 type descriptor struct {
