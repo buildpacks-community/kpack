@@ -121,7 +121,7 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 }
 
 func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) (v1alpha1.BuildPodBuilderConfig, error) {
-	keychain, err := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychain, err := g.KeychainFactory.MultiKeychainFromServiceAccountRef(ctx, registry.ServiceAccountRef{
 		Namespace:        build.GetNamespace(),
 		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		ServiceAccount:   build.ServiceAccount(),

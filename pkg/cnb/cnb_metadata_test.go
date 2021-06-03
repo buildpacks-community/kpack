@@ -45,7 +45,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 			when("images are built with lifecycle 0.5", func() {
 
 				it("retrieves the metadata from the registry", func() {
-					appImageSecretRef := registry.SecretRef{
+					appImageSecretRef := registry.ServiceAccountRef{
 						ServiceAccount: build.Spec.ServiceAccount,
 						Namespace:      build.Namespace,
 					}
@@ -100,7 +100,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 			when("images are built with lifecycle 0.6+", func() {
 
 				it("retrieves the metadata from the registry", func() {
-					appImageSecretRef := registry.SecretRef{
+					appImageSecretRef := registry.ServiceAccountRef{
 						ServiceAccount: build.Spec.ServiceAccount,
 						Namespace:      build.Namespace,
 					}

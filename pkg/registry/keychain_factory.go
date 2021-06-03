@@ -7,17 +7,17 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type SecretRef struct {
+type ServiceAccountRef struct {
 	ServiceAccount   string
 	Namespace        string
 	ImagePullSecrets []v1.LocalObjectReference
 }
 
-func (s SecretRef) IsNamespaced() bool {
+func (s ServiceAccountRef) IsNamespaced() bool {
 	return s.Namespace != ""
 }
 
-func (s SecretRef) ServiceAccountOrDefault() string {
+func (s ServiceAccountRef) ServiceAccountOrDefault() string {
 	if s.ServiceAccount == "" {
 		return "default"
 	}
@@ -25,5 +25,5 @@ func (s SecretRef) ServiceAccountOrDefault() string {
 }
 
 type KeychainFactory interface {
-	KeychainForSecretRef(context.Context, SecretRef) (authn.Keychain, error)
+	MultiKeychainFromServiceAccountRef(context.Context, ServiceAccountRef) (authn.Keychain, error)
 }

@@ -127,7 +127,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *v1alpha1.Bui
 		return v1alpha1.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychain, err := c.KeychainFactory.MultiKeychainFromServiceAccountRef(ctx, registry.ServiceAccountRef{
 		ServiceAccount: builder.Spec.ServiceAccount,
 		Namespace:      builder.Namespace,
 	})

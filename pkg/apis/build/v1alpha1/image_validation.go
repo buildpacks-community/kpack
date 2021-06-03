@@ -3,11 +3,13 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"github.com/pivotal/kpack/pkg/apis/validate"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/api/validation"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 type ImageContextKey string

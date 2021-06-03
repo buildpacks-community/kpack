@@ -141,7 +141,7 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
+	kpackKeychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(ctx, registry.ServiceAccountRef{})
 	if err != nil {
 		log.Fatalf("could not create empty keychain %s", err)
 	}

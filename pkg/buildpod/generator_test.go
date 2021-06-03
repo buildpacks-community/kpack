@@ -166,7 +166,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		keychain := &registryfakes.FakeKeychain{}
-		secretRef := registry.SecretRef{
+		secretRef := registry.ServiceAccountRef{
 			ServiceAccount:   serviceAccountName,
 			Namespace:        namespace,
 			ImagePullSecrets: builderPullSecrets,

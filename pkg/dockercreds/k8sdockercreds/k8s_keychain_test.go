@@ -29,7 +29,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 		testNamespace      = "test-namespace"
 	)
 
-	when("#KeychainForSecretRef", func() {
+	when("#MultiKeychainFromServiceAccountRef", func() {
 		it("keychain provides auth from annotated basic auth secrets", func() {
 			fakeClient := fake.NewSimpleClientset(&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -57,7 +57,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+			keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -108,7 +108,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+			keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -176,7 +176,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 				keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 				require.NoError(t, err)
 
-				keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+				keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 					ServiceAccount: "",
 					Namespace:      testNamespace,
 				})
@@ -214,7 +214,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fakeClient)
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+			keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        testNamespace,
 				ImagePullSecrets: []corev1.LocalObjectReference{{"image-pull-secret"}},
@@ -245,7 +245,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			}))
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+			keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 				ServiceAccount: serviceAccountName,
 				Namespace:      testNamespace,
 			})
@@ -263,7 +263,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory, err := NewSecretKeychainFactory(fake.NewSimpleClientset())
 			require.NoError(t, err)
 
-			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
+			keychain, err := keychainFactory.MultiKeychainFromServiceAccountRef(context.TODO(), registry.ServiceAccountRef{
 				Namespace: "",
 			})
 			require.NoError(t, err)

@@ -128,7 +128,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	secretRef := registry.SecretRef{
+	secretRef := registry.ServiceAccountRef{
 		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
 		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
 	}

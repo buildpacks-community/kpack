@@ -32,7 +32,7 @@ func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFac
 	return &k8sSecretKeychainFactory{client: client, volumeKeychain: volumeKeychain}, nil
 }
 
-func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
+func (f *k8sSecretKeychainFactory) MultiKeychainFromServiceAccountRef(ctx context.Context, ref registry.ServiceAccountRef) (authn.Keychain, error) {
 	if !ref.IsNamespaced() {
 		keychain, err := k8schain.New(ctx, nil, k8schain.Options{})
 		if err != nil {
@@ -41,16 +41,12 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		return authn.NewMultiKeychain(f.volumeKeychain, keychain), nil // k8s keychain with no secrets
 	}
 
-	serviceAccountKeychain, err := keychainFromServiceAccount(ctx, ref, &secret.Fetcher{Client: f.client})
+	serviceAccountKeychain, err := f.KeychainFromServiceAccountSecrets(ctx, ref)
 	if err != nil {
 		return nil, err
 	}
 
-	k8sKeychain, err := k8schain.New(ctx, f.client, k8schain.Options{
-		Namespace:          ref.Namespace,
-		ServiceAccountName: ref.ServiceAccount,
-		ImagePullSecrets:   toStringPullSecrets(ref.ImagePullSecrets),
-	})
+	k8sKeychain, err := f.keychainFromServiceAccountPullSecrets(ctx, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -58,18 +54,11 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 	return authn.NewMultiKeychain(serviceAccountKeychain, f.volumeKeychain, k8sKeychain), nil
 }
 
-func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
-	var stringSecrets []string
-	for _, s := range secrets {
-		stringSecrets = append(stringSecrets, s.Name)
-	}
-	return stringSecrets
-}
-
-func keychainFromServiceAccount(ctx context.Context, secretRef registry.SecretRef, fetcher *secret.Fetcher) (authn.Keychain, error) {
+func (f *k8sSecretKeychainFactory) KeychainFromServiceAccountSecrets(ctx context.Context, ref registry.ServiceAccountRef) (authn.Keychain, error) {
 	var dockerCreds dockercreds.DockerCreds
 
-	secrets, err := fetcher.SecretsForServiceAccount(ctx, secretRef.ServiceAccountOrDefault(), secretRef.Namespace)
+	fetcher := &secret.Fetcher{Client: f.client}
+	secrets, err := fetcher.SecretsForServiceAccount(ctx, ref.ServiceAccountOrDefault(), ref.Namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {
@@ -119,4 +108,20 @@ func keychainFromServiceAccount(ctx context.Context, secretRef registry.SecretRe
 		}
 	}
 	return dockerCreds, nil
+}
+
+func (f *k8sSecretKeychainFactory) keychainFromServiceAccountPullSecrets(ctx context.Context, ref registry.ServiceAccountRef) (authn.Keychain, error) {
+	return k8schain.New(ctx, f.client, k8schain.Options{
+		Namespace:          ref.Namespace,
+		ServiceAccountName: ref.ServiceAccount,
+		ImagePullSecrets:   toStringPullSecrets(ref.ImagePullSecrets),
+	})
+}
+
+func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
+	var stringSecrets []string
+	for _, s := range secrets {
+		stringSecrets = append(stringSecrets, s.Name)
+	}
+	return stringSecrets
 }

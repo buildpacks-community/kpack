@@ -37,7 +37,7 @@ type RemoteMetadataRetriever struct {
 }
 
 func (r *RemoteMetadataRetriever) GetBuiltImage(ctx context.Context, build *v1alpha1.Build) (BuiltImage, error) {
-	keychain, err := r.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychain, err := r.KeychainFactory.MultiKeychainFromServiceAccountRef(ctx, registry.ServiceAccountRef{
 		ServiceAccount: build.Spec.ServiceAccount,
 		Namespace:      build.Namespace,
 	})

@@ -43,7 +43,7 @@ func NewController(
 		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+	impl := controller.NewImplFull(c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: opt.Logger})
 
 	c.Enqueuer = &workQueueEnqueuer{
 		enqueueAfter: impl.EnqueueAfter,

@@ -12,7 +12,7 @@ import (
 )
 
 type keychainContainer struct {
-	SecretRef registry.SecretRef
+	SecretRef registry.ServiceAccountRef
 	Keychain  authn.Keychain
 }
 
@@ -20,14 +20,14 @@ type FakeKeychainFactory struct {
 	keychains []keychainContainer
 }
 
-func (f *FakeKeychainFactory) KeychainForSecretRef(ctx context.Context, secretRef registry.SecretRef) (authn.Keychain, error) {
+func (f *FakeKeychainFactory) MultiKeychainFromServiceAccountRef(ctx context.Context, secretRef registry.ServiceAccountRef) (authn.Keychain, error) {
 	if keychain, ok := f.getKeychainForSecretRef(secretRef); ok {
 		return keychain, nil
 	}
 	return nil, errors.Errorf("unable to find keychain for secret ref: %+v", secretRef)
 }
 
-func (f *FakeKeychainFactory) AddKeychainForSecretRef(t *testing.T, secretRef registry.SecretRef, keychain authn.Keychain) {
+func (f *FakeKeychainFactory) AddKeychainForSecretRef(t *testing.T, secretRef registry.ServiceAccountRef, keychain authn.Keychain) {
 	t.Helper()
 
 	if _, ok := f.getKeychainForSecretRef(secretRef); ok {
@@ -41,7 +41,7 @@ func (f *FakeKeychainFactory) AddKeychainForSecretRef(t *testing.T, secretRef re
 	})
 }
 
-func (f *FakeKeychainFactory) getKeychainForSecretRef(secretRef registry.SecretRef) (authn.Keychain, bool) {
+func (f *FakeKeychainFactory) getKeychainForSecretRef(secretRef registry.ServiceAccountRef) (authn.Keychain, bool) {
 	for _, item := range f.keychains {
 		if equality.Semantic.DeepEqual(item.SecretRef, secretRef) {
 			return item.Keychain, true
