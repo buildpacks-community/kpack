@@ -31,9 +31,9 @@ func testProcessProjectDescriptor(t *testing.T, when spec.G, it spec.S) {
 		buf = new(bytes.Buffer)
 		logger = log.New(buf, "", 0)
 		appDir, err = ioutil.TempDir("", "appDir")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		platformDir, err = ioutil.TempDir("", "platform")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectToml = filepath.Join(appDir, "project.toml")
 	})
 
@@ -189,7 +189,7 @@ builder = "my-super-cool-builder"
 			})
 			it("logs a warning that the builder will be ignored", func() {
 				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
-				assert.Equal(t, "warning: builder provided in project descriptor file will be ignored\n", buf.String())
+				assert.Equal(t, "info: builder provided in project descriptor file will be ignored\n", buf.String())
 			})
 		})
 		when("the descriptor has buildpacks", func() {
@@ -203,7 +203,7 @@ uri = "check-this-out.com"
 			})
 			it("logs a warning that the buildpacks will be ignored", func() {
 				assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, platformDir, logger))
-				assert.Equal(t, "warning: buildpacks provided in project descriptor file will be ignored\n", buf.String())
+				assert.Equal(t, "info: buildpacks provided in project descriptor file will be ignored\n", buf.String())
 			})
 		})
 

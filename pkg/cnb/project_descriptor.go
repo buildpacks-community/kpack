@@ -25,11 +25,11 @@ func ProcessProjectDescriptor(appDir, platformDir string, logger *log.Logger) er
 		return err
 	}
 	if d.Build.Buildpacks != nil {
-		logger.Println("warning: buildpacks provided in project descriptor file will be ignored")
+		logger.Println("info: buildpacks provided in project descriptor file will be ignored")
 	}
 
 	if d.Build.Builder != "" {
-		logger.Println("warning: builder provided in project descriptor file will be ignored")
+		logger.Println("info: builder provided in project descriptor file will be ignored")
 	}
 	if err := processFiles(appDir, d); err != nil {
 		return err
@@ -88,7 +88,7 @@ func getFileFilter(d descriptor) (func(string) bool, error) {
 type buildpack struct {
 	Id      string `json:"id" toml:"id"`
 	Version string `json:"version" toml:"version"`
-	Uri     string `json:"uri" uri:"uri"`
+	Uri     string `json:"uri" toml:"uri"`
 }
 
 type build struct {
