@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 	watchTools "k8s.io/client-go/tools/watch"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -28,43 +29,27 @@ func NewImageWaiter(kpackClient versioned.Interface, logTailer ImageLogTailer) *
 	return &imageWaiter{KpackClient: kpackClient, logTailer: logTailer}
 }
 
-func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, originalImage *v1alpha1.Image) (string, error) {
-	if done, err := imageUpdateHasResolved(originalImage.Generation)(watch.Event{Object: originalImage}); err != nil {
-		return "", err
-	} else if done {
-		return w.resultOfImageWait(ctx, writer, originalImage.Generation, originalImage)
-	}
-
-	event, err := watchTools.Until(ctx,
-		originalImage.ResourceVersion,
-		watchOnlyOneImage{kpackClient: w.KpackClient, image: originalImage, ctx: ctx},
-		filterErrors(imageUpdateHasResolved(originalImage.Generation)))
+func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *v1alpha1.Image) (string, error) {
+	event, err := watchTools.UntilWithSync(ctx,
+		watchOneImage{kpackClient: w.KpackClient, image: image, ctx: ctx},
+		&v1alpha1.Image{},
+		func(store cache.Store) (bool, error) {
+			return imageUpdateHasResolved(image.Generation)(watch.Event{Object: image})
+		},
+		filterErrors(imageUpdateHasResolved(image.Generation)),
+	)
 	if err != nil {
 		return "", err
 	}
-
-	image, ok := event.Object.(*v1alpha1.Image)
-	if !ok {
-		return "", errors.New("unexpected object received")
-	}
-
-	return w.resultOfImageWait(ctx, writer, originalImage.Generation, image)
-}
-
-func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, generation int64, image *v1alpha1.Image) (string, error) {
-	if image.Status.LatestBuildImageGeneration == generation {
-		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
-	}
-
-	if condition := image.Status.GetCondition(corev1alpha1.ConditionReady); condition.IsFalse() {
-		if condition.Message != "" {
-			return "", errors.Errorf("update to image %s failed: %s", image.Name, condition.Message)
+	if event != nil { // event is nil if precondition is true
+		var ok bool
+		image, ok = event.Object.(*v1alpha1.Image)
+		if !ok {
+			return "", errors.New("unexpected object received, expected Image")
 		}
-
-		return "", errors.Errorf("update to image %s failed", image.Name)
 	}
 
-	return image.Status.LatestImage, nil
+	return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
 }
 
 func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, error) {
@@ -74,10 +59,9 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 			return false, errors.New("unexpected object received")
 		}
 
-		//space shuttle style
-		if image.Status.ObservedGeneration == generation {
-			if !image.Status.GetCondition(corev1alpha1.ConditionReady).IsUnknown() {
-				return true, nil // Ready=False or Ready=True
+		if image.Status.ObservedGeneration == generation { // image updated
+			if condition := image.Status.GetCondition(corev1alpha1.ConditionReady); condition.IsFalse() {
+				return true, imageFailure(image.Name, condition.Message) // image already failed
 			} else if image.Status.LatestBuildImageGeneration == generation {
 				return true, nil // Build scheduled
 			} else {
@@ -91,6 +75,83 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 	}
 }
 
+func imageFailure(name, statusMessage string) error {
+	errMsg := fmt.Sprintf("update to image %s failed", name)
+
+	if statusMessage != "" {
+		errMsg = fmt.Sprintf("%s: %s", errMsg, statusMessage)
+	}
+	return errors.New(errMsg)
+}
+
+func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {
+	doneChan := make(chan struct{})
+	defer func() { <-doneChan }()
+
+	go func() { // tail logs
+		defer close(doneChan)
+		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
+		if err != nil {
+			fmt.Fprintf(writer, "error tailing logs %s", err)
+		}
+	}()
+
+	build, err := w.buildWatchUntil(ctx, namespace, buildName, filterErrors(buildHasResolved))
+	if err != nil {
+		return "", err
+	}
+
+	if condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
+		return "", buildFailure(condition.Message)
+	}
+
+	return build.Status.LatestImage, nil
+}
+
+func buildHasResolved(event watch.Event) (bool, error) {
+	build, ok := event.Object.(*v1alpha1.Build)
+	if !ok {
+		return false, errors.New("unexpected object received, expected Build")
+	}
+
+	return !build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown(), nil
+}
+
+func buildFailure(statusMessage string) error {
+	errMsg := "build failed"
+
+	if statusMessage != "" {
+		errMsg = fmt.Sprintf("%s: %s", errMsg, statusMessage)
+	}
+	return errors.New(errMsg)
+}
+
+func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName string, condition watchTools.ConditionFunc) (*v1alpha1.Build, error) {
+	build, err := w.KpackClient.KpackV1alpha1().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	event, err := watchTools.UntilWithSync(ctx,
+		&watchOneBuild{context: ctx, kpackClient: w.KpackClient, namespace: namespace, buildName: buildName},
+		&v1alpha1.Build{},
+		func(store cache.Store) (bool, error) {
+			return condition(watch.Event{Object: build})
+		},
+		condition,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if event != nil { // event is nil if precondition is true
+		var ok bool
+		build, ok = event.Object.(*v1alpha1.Build)
+		if !ok {
+			return nil, errors.New("unexpected object received, expected Build")
+		}
+	}
+	return build, nil
+}
+
 func filterErrors(condition watchTools.ConditionFunc) watchTools.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		if event.Type == watch.Error {
@@ -99,75 +160,4 @@ func filterErrors(condition watchTools.ConditionFunc) watchTools.ConditionFunc {
 
 		return condition(event)
 	}
-}
-
-type watchOnlyOneImage struct {
-	kpackClient versioned.Interface
-	image       *v1alpha1.Image
-	ctx         context.Context
-}
-
-func (w watchOnlyOneImage) Watch(options v1.ListOptions) (watch.Interface, error) {
-	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
-	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).Watch(w.ctx, options)
-}
-
-func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {
-	doneChan := make(chan struct{})
-	defer func() { <-doneChan }()
-
-	go func() {
-		defer close(doneChan)
-		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
-		if err != nil {
-			fmt.Fprintf(writer, "error tailing logs %s", err)
-		}
-	}()
-
-	event, err := w.buildWatchUntil(ctx, namespace, buildName,
-		filterErrors(func(event watch.Event) (bool, error) {
-			build, ok := event.Object.(*v1alpha1.Build)
-			if !ok {
-				return false, errors.New("unexpected object received")
-			}
-
-			return !build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown(), nil
-		}))
-	if err != nil {
-		return "", err
-	}
-
-	build, ok := event.Object.(*v1alpha1.Build)
-	if !ok {
-		return "", errors.New("unexpected object received")
-	}
-
-	if condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded); condition.IsFalse() {
-		if condition.Message != "" {
-			return "", errors.Errorf("update to image failed: %s", condition.Message)
-		}
-
-		return "", errors.New("update to image failed")
-	}
-
-	return build.Status.LatestImage, nil
-}
-
-func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName string, condition watchTools.ConditionFunc) (*watch.Event, error) {
-	targetBuild, err := w.KpackClient.KpackV1alpha1().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	event := &watch.Event{Object: targetBuild}
-	finished, err := condition(*event)
-	if err != nil {
-		return nil, err
-	}
-	if finished {
-		return event, nil
-	}
-
-	return watchTools.Until(ctx, targetBuild.ResourceVersion,
-		&watchBuild{context: ctx, kpackClient: w.KpackClient, namespace: namespace, buildName: buildName}, condition)
-
 }
