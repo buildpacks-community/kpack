@@ -6,5 +6,5 @@ type BasicAuth struct {
 }
 
 type SSH struct {
-	PrivateKey []byte
+	PrivateKey string
 }

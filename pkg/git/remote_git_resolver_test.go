@@ -3,8 +3,6 @@ package git
 import (
 	"testing"
 
-	fixtures "github.com/go-git/go-git-fixtures"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,6 +16,7 @@ func TestRemoteGitResolver(t *testing.T) {
 
 func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 	const (
+		url                     = "https://github.com/git-fixtures/basic.git"
 		nonHEADCommit           = "a755256fc0a57241b92167eb748b333449a3d7e9"
 		fixtureHEADMasterCommit = "6ecf0ef2c2dffb796033e5a02219af86ec6584e5"
 		tag                     = "commit-tag"
@@ -27,13 +26,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 	when("#Resolve", func() {
 		when("source is a commit", func() {
 			it("returns type commit", func() {
-				repo := fixtures.Basic().One()
-
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
-						URL:      repo.URL,
+						URL:      url,
 						Revision: nonHEADCommit,
 					},
 					SubPath: "/foo/bar",
@@ -42,7 +39,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:      repo.URL,
+						URL:      url,
 						Revision: nonHEADCommit,
 						SubPath:  "/foo/bar",
 						Type:     v1alpha1.Commit,
@@ -53,13 +50,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("source is a branch", func() {
 			it("returns branch with resolved commit", func() {
-				repo := fixtures.Basic().One()
-
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
-						URL:      repo.URL,
+						URL:      url,
 						Revision: "master",
 					},
 					SubPath: "/foo/bar",
@@ -68,7 +63,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:      repo.URL,
+						URL:      url,
 						Revision: fixtureHEADMasterCommit,
 						Type:     v1alpha1.Branch,
 						SubPath:  "/foo/bar",
@@ -79,13 +74,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("source is a tag", func() {
 			it("returns tag with resolved commit", func() {
-				repo := fixtures.ByTag("tags").One()
+				tagsUrl := "https://github.com/git-fixtures/tags.git"
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
-						URL:      repo.URL,
+						URL:      tagsUrl,
 						Revision: tag,
 					},
 					SubPath: "/foo/bar",
@@ -94,7 +89,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:      repo.URL,
+						URL:      tagsUrl,
 						Revision: tagCommit,
 						Type:     v1alpha1.Tag,
 						SubPath:  "/foo/bar",
@@ -105,16 +100,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("authentication fails", func() {
 			it("returns an unknown type", func() {
-				repo := fixtures.ByTag("tags").One()
-
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&http.BasicAuth{
-					Username: "notgonna",
-					Password: "work",
-				}, v1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, v1alpha1.SourceConfig{
 					Git: &v1alpha1.Git{
-						URL:      repo.URL,
+						URL:      "git@localhost:org/repo",
 						Revision: tag,
 					},
 					SubPath: "/foo/bar",
@@ -123,7 +113,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, resolvedGitSource, v1alpha1.ResolvedSourceConfig{
 					Git: &v1alpha1.ResolvedGitSource{
-						URL:      repo.URL,
+						URL:      "git@localhost:org/repo",
 						Revision: tag,
 						Type:     v1alpha1.Unknown,
 						SubPath:  "/foo/bar",

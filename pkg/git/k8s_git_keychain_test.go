@@ -8,11 +8,9 @@ import (
 	"encoding/pem"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	git2go "github.com/libgit2/git2go/v31"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
-	ssh2 "golang.org/x/crypto/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -146,97 +144,61 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 					{Name: "secret-7"},
 				},
 			})
-		keychain = newK8sGitKeychain(fakeClient)
+		keychainFactory = newK8sGitKeychainFactory(fakeClient)
 	)
 
-	when("Resolve", func() {
-		it("returns git Auth for matching secrets with basic auth", func() {
-			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
+	when("Keychain resolves", func() {
+		var keychain GitKeychain
 
-				URL:      "https://github.com/org/repo",
-				Revision: "master",
-			})
+		it.Before(func() {
+			var err error
+			keychain, err = keychainFactory.KeychainForServiceAccount(context.Background(), testNamespace, serviceAccount)
 			require.NoError(t, err)
-
-			require.Equal(t, &http.BasicAuth{
-				Username: "saved-username",
-				Password: "saved-password",
-			}, auth)
 		})
 
-		it("returns the alphabetical first secretRef for basic auth", func() {
-			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
-				URL:      "https://github.com/org/repo",
-				Revision: "master",
-			})
+		it("returns  alphabetical first git Auth for matching secrets with basic auth", func() {
+			cred, err := keychain.Resolve("https://github.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
 			require.NoError(t, err)
 
-			require.Equal(t, &http.BasicAuth{
+			require.Equal(t, BasicGit2GoAuth{
 				Username: "saved-username",
 				Password: "saved-password",
-			}, auth)
+			}, cred)
 
+			git2goCred, err := cred.Cred()
+			require.NoError(t, err)
+
+			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeUserpassPlaintext)
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			actualAuth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
-				URL:      "git@gitlab.com:org/repo",
-				Revision: "master",
-			})
+			cred, err := keychain.Resolve("https://gitlab.com/my-repo.git", "gituser", git2go.CredentialTypeSSHKey)
 			require.NoError(t, err)
 
-			publicKeys, ok := actualAuth.(*ssh.PublicKeys)
-			require.True(t, ok)
+			require.Equal(t, SSHGit2GoAuth{
+				Username:   "gituser",
+				PrivateKey: string(keys.key1),
+			}, cred)
 
-			require.Equal(t, "git", publicKeys.User)
-
-			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
-			require.NoError(t, err)
-			require.Equal(t, expectedSigner, publicKeys.Signer)
-
-			require.Nil(t, publicKeys.HostKeyCallback("gitlab.com", nil, expectedSigner.PublicKey()))
-		})
-
-		it("returns git Auth for matching secrets with ssh auth", func() {
-			actualAuth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
-				URL:      "git@bitbucket.com:org/repo",
-				Revision: "master",
-			})
+			git2goCred, err := cred.Cred()
 			require.NoError(t, err)
 
-			publicKeys, ok := actualAuth.(*ssh.PublicKeys)
-			require.True(t, ok)
-
-			require.Equal(t, "git", publicKeys.User)
-
-			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
-			require.NoError(t, err)
-			require.Equal(t, expectedSigner, publicKeys.Signer)
-
-			require.Nil(t, publicKeys.HostKeyCallback("bitbucket.com", nil, expectedSigner.PublicKey()))
+			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeSSHCustom)
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
-				URL:      "https://noschemegit.com/org/repo",
-				Revision: "master",
-			})
+			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
 			require.NoError(t, err)
 
-			require.Equal(t, &http.BasicAuth{
+			require.Equal(t, BasicGit2GoAuth{
 				Username: "noschemegit-username",
 				Password: "noschemegit-password",
-			}, auth)
+			}, cred)
 		})
 
-		it("returns anonymous Auth for no matching secret", func() {
-			auth, err := keychain.Resolve(context.TODO(), testNamespace, serviceAccount, v1alpha1.Git{
-				URL:      "https://no-creds-github.com/org/repo",
-				Revision: "master",
-			})
-			require.NoError(t, err)
-
-			require.Nil(t, auth)
+		it("returns an error if no credentials found", func() {
+			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", git2go.CredentialTypeUserpassPlaintext)
+			require.EqualError(t, err, "no credentials found for https://no-creds-github.com/org/repo")
 		})
 	})
 }

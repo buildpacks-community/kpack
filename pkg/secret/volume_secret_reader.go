@@ -36,7 +36,7 @@ func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 	}
 
 	return SSH{
-		PrivateKey: privateKey,
+		PrivateKey: string(privateKey),
 	}, nil
 }
 

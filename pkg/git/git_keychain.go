@@ -1,26 +1,60 @@
 package git
 
 import (
-	"net"
+	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	gitSsh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	git2go "github.com/libgit2/git2go/v31"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 
 	"github.com/pivotal/kpack/pkg/secret"
+	"golang.org/x/crypto/ssh"
 )
 
+type Git2GoCredential interface {
+	Cred() (*git2go.Credential, error)
+}
+
+func keychainAsCredentialsCallback(gitKeychain GitKeychain) git2go.CredentialsCallback {
+	return func(url string, usernameFromUrl string, allowedTypes git2go.CredentialType) (*git2go.Credential, error) {
+		cred, err := gitKeychain.Resolve(url, usernameFromUrl, allowedTypes)
+		if err != nil {
+			return nil, err
+		}
+		return cred.Cred()
+	}
+}
+
 type GitKeychain interface {
-	Resolve(gitUrl string) (transport.AuthMethod, error)
+	Resolve(url string, usernameFromUrl string, allowedTypes git2go.CredentialType) (Git2GoCredential, error)
+}
+
+type BasicGit2GoAuth struct {
+	Username, Password string
+}
+
+func (b BasicGit2GoAuth) Cred() (*git2go.Credential, error) {
+	return git2go.NewCredentialUserpassPlaintext(b.Username, b.Password)
+}
+
+type SSHGit2GoAuth struct {
+	Username, PrivateKey string
+}
+
+func (s SSHGit2GoAuth) Cred() (*git2go.Credential, error) {
+	signer, err := ssh.ParsePrivateKey([]byte(s.PrivateKey))
+	if err != nil {
+		return nil, err
+	}
+
+	return git2go.NewCredentialSSHKeyFromSigner(s.Username, signer)
 }
 
 type gitCredential interface {
-	match(endpoint *transport.Endpoint) bool
-	auth() (transport.AuthMethod, error)
+	match(host string, allowedTypes git2go.CredentialType) bool
+	git2goCredential(username string) (Git2GoCredential, error)
 	name() string
 }
 
@@ -34,21 +68,24 @@ type gitSshAuthCred struct {
 	SecretName  string
 }
 
-func (g gitSshAuthCred) match(endpoint *transport.Endpoint) bool {
-	return endpoint.Protocol == "ssh" && gitUrlMatch(endpoint.Host, g.Domain)
+func (g gitSshAuthCred) match(host string, allowedTypes git2go.CredentialType) bool {
+	if allowedTypes&(git2go.CredentialTypeSSHKey) == 0 {
+		return false
+	}
+
+	return gitUrlMatch(host, g.Domain)
 }
 
-func (g gitSshAuthCred) auth() (transport.AuthMethod, error) {
+func (g gitSshAuthCred) git2goCredential(username string) (Git2GoCredential, error) {
 	sshSecret, err := g.fetchSecret()
 	if err != nil {
 		return nil, err
 	}
-	keys, err := gitSsh.NewPublicKeys("git", sshSecret.PrivateKey, "")
-	if err != nil {
-		return nil, err
-	}
-	keys.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }
-	return keys, err
+
+	return SSHGit2GoAuth{
+		Username:   username,
+		PrivateKey: sshSecret.PrivateKey,
+	}, nil
 }
 
 func (g gitSshAuthCred) name() string {
@@ -61,23 +98,21 @@ type gitBasicAuthCred struct {
 	SecretName  string
 }
 
-func (c gitBasicAuthCred) match(endpoint *transport.Endpoint) bool {
-	if endpoint.Protocol != "http" && endpoint.Protocol != "https" {
+func (c gitBasicAuthCred) match(host string, allowedTypes git2go.CredentialType) bool {
+	if allowedTypes&(git2go.CredentialTypeUserpassPlaintext) == 0 {
 		return false
 	}
-	return gitUrlMatch(endpoint.Host, c.Domain)
+
+	return gitUrlMatch(host, c.Domain)
 }
 
-func (c gitBasicAuthCred) auth() (transport.AuthMethod, error) {
+func (c gitBasicAuthCred) git2goCredential(_ string) (Git2GoCredential, error) {
 	basicAuthSecret, err := c.fetchSecret()
 	if err != nil {
 		return nil, err
 	}
 
-	return &http.BasicAuth{
-		Username: basicAuthSecret.Username,
-		Password: basicAuthSecret.Password,
-	}, nil
+	return BasicGit2GoAuth{Username: basicAuthSecret.Username, Password: basicAuthSecret.Password}, nil
 }
 
 func (c gitBasicAuthCred) name() string {
@@ -121,17 +156,36 @@ func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSec
 	}, nil
 }
 
-func (k *secretGitKeychain) Resolve(url string) (transport.AuthMethod, error) {
-	endpoint, err := transport.NewEndpoint(url)
+func (k *secretGitKeychain) Resolve(url string, username string, allowedTypes git2go.CredentialType) (Git2GoCredential, error) {
+	host, err := hostForUrl(url)
 	if err != nil {
 		return nil, err
 	}
+
 	sort.Slice(k.creds, func(i, j int) bool { return k.creds[i].name() < k.creds[j].name() })
 
 	for _, cred := range k.creds {
-		if cred.match(endpoint) {
-			return cred.auth()
+		if cred.match(host, allowedTypes) {
+			return cred.git2goCredential(username)
 		}
 	}
-	return anonymousAuth, nil
+	return nil, errors.Errorf("no credentials found for %s", url)
+}
+
+var (
+	isSchemeRegExp   = regexp.MustCompile(`^[^:]+://`)
+	scpLikeUrlRegExp = regexp.MustCompile(`^(?:(?P<user>[^@]+)@)?(?P<host>[^:\s]+):(?:(?P<port>[0-9]{1,5})(?:\/|:))?(?P<path>[^\\].*\/[^\\].*)$`)
+)
+
+func hostForUrl(u string) (string, error) {
+	if !isSchemeRegExp.MatchString(u) && scpLikeUrlRegExp.MatchString(u) {
+		m := scpLikeUrlRegExp.FindStringSubmatch(u)
+		return m[2], nil
+	}
+
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+	return parsed.Host, nil
 }
