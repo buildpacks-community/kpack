@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
@@ -21,9 +20,4 @@ type watchOneImage struct {
 func (w watchOneImage) Watch(options v1.ListOptions) (watch.Interface, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
 	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).Watch(w.ctx, options)
-}
-
-func (w watchOneImage) List(options v1.ListOptions) (runtime.Object, error) {
-	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
-	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).List(w.ctx, options)
 }
