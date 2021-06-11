@@ -75,6 +75,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				Name:       "some-name",
 				Namespace:  namespace,
 				Generation: generation,
+				ResourceVersion: "100",
 			},
 		}
 

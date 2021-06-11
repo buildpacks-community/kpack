@@ -30,23 +30,23 @@ func NewImageWaiter(kpackClient versioned.Interface, logTailer ImageLogTailer) *
 }
 
 func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *v1alpha1.Image) (string, error) {
-	event, err := watchTools.UntilWithSync(ctx,
+	if done, err := imageUpdateHasResolved(image.Generation)(watch.Event{Object: image}); err != nil {
+		return "", err
+	} else if done {
+		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
+	}
+
+	event, err := watchTools.Until(ctx,
+		image.ResourceVersion,
 		watchOneImage{kpackClient: w.KpackClient, image: image, ctx: ctx},
-		&v1alpha1.Image{},
-		func(store cache.Store) (bool, error) {
-			return imageUpdateHasResolved(image.Generation)(watch.Event{Object: image})
-		},
-		filterErrors(imageUpdateHasResolved(image.Generation)),
-	)
+		filterErrors(imageUpdateHasResolved(image.Generation)))
 	if err != nil {
 		return "", err
 	}
-	if event != nil { // event is nil if precondition is true
-		var ok bool
-		image, ok = event.Object.(*v1alpha1.Image)
-		if !ok {
-			return "", errors.New("unexpected object received, expected Image")
-		}
+
+	image, ok := event.Object.(*v1alpha1.Image)
+	if !ok {
+		return "", errors.New("unexpected object received")
 	}
 
 	return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
