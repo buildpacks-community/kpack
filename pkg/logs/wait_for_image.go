@@ -33,7 +33,7 @@ func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *v1alpha
 	if done, err := imageUpdateHasResolved(image.Generation)(watch.Event{Object: image}); err != nil {
 		return "", err
 	} else if done {
-		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
+		return w.resultOfImageWait(ctx, writer, image.Generation, image)
 	}
 
 	event, err := watchTools.Until(ctx,
@@ -49,7 +49,7 @@ func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *v1alpha
 		return "", errors.New("unexpected object received")
 	}
 
-	return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
+	return w.resultOfImageWait(ctx, writer, image.Generation, image)
 }
 
 func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, error) {
@@ -59,9 +59,9 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 			return false, errors.New("unexpected object received")
 		}
 
-		if image.Status.ObservedGeneration == generation { // image updated
-			if condition := image.Status.GetCondition(corev1alpha1.ConditionReady); condition.IsFalse() {
-				return true, imageFailure(image.Name, condition.Message) // image already failed
+		if image.Status.ObservedGeneration == generation { // image is reconciled
+			if !image.Status.GetCondition(corev1alpha1.ConditionReady).IsUnknown() {
+				return true, nil // image is resolved
 			} else if image.Status.LatestBuildImageGeneration == generation {
 				return true, nil // Build scheduled
 			} else {
@@ -73,6 +73,18 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 			return false, nil // still waiting on update
 		}
 	}
+}
+
+func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, generation int64, image *v1alpha1.Image) (string, error) {
+	if image.Status.LatestBuildImageGeneration == generation {
+		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
+	}
+
+	if condition := image.Status.GetCondition(corev1alpha1.ConditionReady); condition.IsFalse() {
+		return "", imageFailure(image.Name, condition.Message)
+	}
+
+	return image.Status.LatestImage, nil
 }
 
 func imageFailure(name, statusMessage string) error {
