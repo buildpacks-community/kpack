@@ -48,8 +48,8 @@ in the process.
 
 - If `cosign` fails to sign an image, the build should fail and output an error
   message in the build log, so the operator can troubleshoot the issue. The
-  errors should also appear in any other places where error messages are
-  presented.
+  error messages should also be added in any other places where error messages
+  are presented.
 
 - Whenever `kpack` signs an image using `cosign`, it should add these
   annotations:
