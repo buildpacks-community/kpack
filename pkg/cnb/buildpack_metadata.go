@@ -9,6 +9,8 @@ const (
 	buildpackLayersLabel   = "io.buildpacks.buildpack.layers"
 	buildpackMetadataLabel = "io.buildpacks.builder.metadata"
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
+	lifecycleVersionLabel  = "io.buildpacks.lifecycle.version"
+	lifecycleApisLabel     = "io.buildpacks.lifecycle.apis"
 )
 
 type BuildpackLayerInfo struct {
@@ -61,7 +63,10 @@ type LifecycleMetadata struct {
 
 type LifecycleDescriptor struct {
 	Info LifecycleInfo `toml:"lifecycle"`
-	API  LifecycleAPI  `toml:"api"`
+
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `toml:"api" json:"api,omitempty"`
+	APIs LifecycleAPIs `toml:"apis" json:"apis,omitempty"`
 }
 
 type LifecycleInfo struct {
