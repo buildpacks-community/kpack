@@ -2,9 +2,9 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -123,7 +123,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		assertValidationError := func(image *Image, ctx context.Context, expectedError *apis.FieldError) {
+		assertValidationError := func(image *Image, ctx context.Context, expectedError error) {
 			t.Helper()
 			err := image.Validate(ctx)
 			assert.EqualError(t, err, expectedError.Error())
@@ -227,21 +227,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("image name is too long", func() {
 			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
-			expectedError := &apis.FieldError{
-				Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: [must be no more than 63 characters]", image.ObjectMeta.Name),
-				Paths:   []string{"metadata.name.name"},
-			}
-			assertValidationError(image, ctx, expectedError)
+			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a a valid label: metadata.name\nmust be no more than 63 characters"))
 		})
 
 		it("invalid image name format", func() {
 			image.ObjectMeta.Name = "@NOT!!!VALID!!!"
-			errMsg := "[a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')]"
-			expectedError := &apis.FieldError{
-				Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: %s", image.ObjectMeta.Name, errMsg),
-				Paths:   []string{"metadata.name.name"},
-			}
-			assertValidationError(image, ctx, expectedError)
+			errMsg := "invalid image name: @NOT!!!VALID!!!, name must be a a valid label: metadata.name\na valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"
+
+			assertValidationError(image, ctx, errors.New(errMsg))
 		})
 
 		it("validates cache size is not set when there is no default StorageClass", func() {
