@@ -151,11 +151,15 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
+	image, err = imagehelpers.SetStringLabel(image, lifecycleVersionLabel, bb.LifecycleMetadata.Version)
+	if err != nil {
+		return nil, err
+	}
+
 	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:   bb.order,
 		buildpackLayersLabel:  buildpackLayerMetadata,
 		lifecycleApisLabel:    bb.LifecycleMetadata.APIs,
-		lifecycleVersionLabel: bb.LifecycleMetadata.Version,
 		buildpackMetadataLabel: BuilderImageMetadata{
 			Description: "Custom Builder built with kpack",
 			Stack: StackMetadata{
