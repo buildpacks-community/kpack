@@ -1,7 +1,7 @@
 # Images
 
 Images provide a configuration for kpack to build and maintain a docker image utilizing [Cloud Native Buildpacks](http://buildpacks.io). 
-kpack will monitor the inputs to the image configuration to rebuild the image when the underlying source or builder buildpacks have changed.       
+kpack will monitor the inputs to the image configuration to rebuild the image when the underlying source or the builder's buildpacks or stacks have changed.       
 
 The following defines the relevant fields of the `image` resource spec in more detail:
 
