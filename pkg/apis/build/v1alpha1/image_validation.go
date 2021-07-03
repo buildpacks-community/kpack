@@ -75,6 +75,7 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
 		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source")).
+		Also(is.validateImageTaggingStrategy(ctx)).
 		Also(is.Build.Validate(ctx).ViaField("build")).
 		Also(is.validateCacheSize(ctx)).
 		Also(is.Notary.Validate(ctx).ViaField("notary"))
@@ -87,6 +88,17 @@ func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	}
 
 	return validate.Tag(is.Tag)
+}
+
+func (is *ImageSpec) validateImageTaggingStrategy(_ context.Context) *apis.FieldError {
+	switch is.ImageTaggingStrategy {
+	case GitRevision:
+		if is.Source.Git == nil {
+			diagnostic := fmt.Sprintf("spec.imageTaggingStrategy cannot be %s when not git source", GitRevision)
+			return apis.ErrGeneric(diagnostic)
+		}
+	}
+	return nil
 }
 
 func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {

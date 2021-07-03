@@ -158,25 +158,43 @@ func (im *Image) SourceResolver() *SourceResolver {
 }
 
 func (im *Image) generateTags(buildNumber string) []string {
-	if im.disableAdditionalImageNames() {
+	tag, err := name.NewTag(im.Spec.Tag, name.WeakValidation)
+
+	switch im.Spec.ImageTaggingStrategy {
+	case BuildNumber:
+		if err != nil {
+			// We assume that if the Image Name cannot be parsed the image will not be successfully built
+			// in this case we can just ignore any additional image names
+			return nil
+		}
+
+		now := time.Now()
+		tagName := tag.TagStr() + "-"
+		if tagName == "latest-" {
+			tagName = ""
+		}
+		return []string{
+			im.Spec.Tag,
+			tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
+
+	case GitRevision:
+		if err != nil || im.Spec.Source.Git == nil {
+			return nil
+		}
+		tagName := tag.TagStr() + "-"
+		if tagName == "latest-" {
+			tagName = ""
+		}
+		return []string{
+			im.Spec.Tag,
+			tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + im.Spec.Source.Git.Revision}
+
+	case None:
+		fallthrough
+
+	default:
 		return []string{im.Spec.Tag}
 	}
-	now := time.Now()
-
-	tag, err := name.NewTag(im.Spec.Tag, name.WeakValidation)
-	if err != nil {
-		// We assume that if the Image Name cannot be parsed the image will not be successfully built
-		// in this case we can just ignore any additional image names
-		return nil
-	}
-
-	tagName := tag.TagStr() + "-"
-	if tagName == "latest-" {
-		tagName = ""
-	}
-	return []string{
-		im.Spec.Tag,
-		tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
 }
 
 func (im *Image) generateBuildName(buildNumber string) string {

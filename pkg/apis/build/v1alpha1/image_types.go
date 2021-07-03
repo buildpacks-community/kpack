@@ -63,6 +63,7 @@ type ImageTaggingStrategy string
 const (
 	None        ImageTaggingStrategy = "None"
 	BuildNumber ImageTaggingStrategy = "BuildNumber"
+	GitRevision ImageTaggingStrategy = "GitRevision"
 )
 
 // +k8s:openapi-gen=true

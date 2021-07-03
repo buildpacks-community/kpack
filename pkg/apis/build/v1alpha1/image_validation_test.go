@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -265,6 +266,16 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			image.Spec.CacheSize = &cacheSize
 			err := image.Validate(apis.WithinUpdate(ctx, original))
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cacheSize\ncurrent: 5G, requested: 4G")
+		})
+
+		it("GitRevision image tagging strategy / source config not match", func() {
+			image.Spec.ImageTaggingStrategy = GitRevision
+			image.Spec.Source = SourceConfig{
+				Blob: &Blob{
+					URL: "http://blob.com/url",
+				},
+			}
+			assertValidationError(image, ctx, apis.ErrGeneric(fmt.Sprintf("spec.imageTaggingStrategy cannot be %s when not git source", GitRevision)))
 		})
 
 		when("validating the notary config", func() {
