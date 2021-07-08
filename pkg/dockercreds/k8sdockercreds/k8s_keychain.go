@@ -12,7 +12,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
@@ -80,7 +80,7 @@ func keychainFromServiceAccount(ctx context.Context, secretRef registry.SecretRe
 		switch s.Type {
 		case corev1.SecretTypeBasicAuth:
 			var err error
-			if registry, ok := s.Annotations[v1alpha1.DOCKERSecretAnnotationPrefix]; ok {
+			if registry, ok := s.Annotations[buildapi.DOCKERSecretAnnotationPrefix]; ok {
 				dockerCreds, err = dockerCreds.Append(dockercreds.DockerCreds{
 					registry: authn.AuthConfig{
 						Username: string(s.Data[corev1.BasicAuthUsernameKey]),

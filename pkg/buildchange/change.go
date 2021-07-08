@@ -1,11 +1,11 @@
 package buildchange
 
 import (
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type Change interface {
-	Reason() v1alpha1.BuildReason
+	Reason() buildapi.BuildReason
 	IsBuildRequired() (bool, error)
 	Old() interface{}
 	New() interface{}

@@ -7,13 +7,13 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type StoreBuildpackRepository struct {
 	Keychain authn.Keychain
 
-	ClusterStore *v1alpha1.ClusterStore
+	ClusterStore *buildapi.ClusterStore
 }
 
 func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error) {
@@ -33,7 +33,7 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 	}
 
 	info := DescriptiveBuildpackInfo{
-		BuildpackInfo: v1alpha1.BuildpackInfo{
+		BuildpackInfo: buildapi.BuildpackInfo{
 			Id:      storeBuildpack.Id,
 			Version: storeBuildpack.Version,
 		},
@@ -56,8 +56,8 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 	}, nil
 }
 
-func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.StoreBuildpack, error) {
-	var matchingBuildpacks []v1alpha1.StoreBuildpack
+func (s *StoreBuildpackRepository) findBuildpack(id, version string) (buildapi.StoreBuildpack, error) {
+	var matchingBuildpacks []buildapi.StoreBuildpack
 	for _, buildpack := range s.ClusterStore.Status.Buildpacks {
 		if buildpack.Id == id {
 			matchingBuildpacks = append(matchingBuildpacks, buildpack)
@@ -65,7 +65,7 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.S
 	}
 
 	if len(matchingBuildpacks) == 0 {
-		return v1alpha1.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s'", id)
+		return buildapi.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s'", id)
 	}
 
 	if version == "" {
@@ -78,11 +78,11 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (v1alpha1.S
 		}
 	}
 
-	return v1alpha1.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", id, version)
+	return buildapi.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", id, version)
 }
 
 // TODO: ensure there are no cycles in the buildpack graph
-func (s *StoreBuildpackRepository) layersForOrder(order v1alpha1.Order) ([]buildpackLayer, error) {
+func (s *StoreBuildpackRepository) layersForOrder(order buildapi.Order) ([]buildpackLayer, error) {
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
@@ -98,17 +98,17 @@ func (s *StoreBuildpackRepository) layersForOrder(order v1alpha1.Order) ([]build
 	return buildpackLayers, nil
 }
 
-func highestVersion(matchingBuildpacks []v1alpha1.StoreBuildpack) (v1alpha1.StoreBuildpack, error) {
+func highestVersion(matchingBuildpacks []buildapi.StoreBuildpack) (buildapi.StoreBuildpack, error) {
 	for _, bp := range matchingBuildpacks {
 		if _, err := semver.NewVersion(bp.Version); err != nil {
-			return v1alpha1.StoreBuildpack{}, errors.Errorf("cannot find buildpack '%s' with latest version due to invalid semver '%s'", bp.Id, bp.Version)
+			return buildapi.StoreBuildpack{}, errors.Errorf("cannot find buildpack '%s' with latest version due to invalid semver '%s'", bp.Id, bp.Version)
 		}
 	}
 	sort.Sort(byBuildpackVersion(matchingBuildpacks))
 	return matchingBuildpacks[len(matchingBuildpacks)-1], nil
 }
 
-type byBuildpackVersion []v1alpha1.StoreBuildpack
+type byBuildpackVersion []buildapi.StoreBuildpack
 
 func (b byBuildpackVersion) Len() int {
 	return len(b)

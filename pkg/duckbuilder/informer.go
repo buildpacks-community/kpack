@@ -5,14 +5,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	informerv1alpha1 "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 )
 
 type DuckBuilderInformer struct {
-	BuilderInformer        informerv1alpha1.BuilderInformer
-	ClusterBuilderInformer informerv1alpha1.ClusterBuilderInformer
+	BuilderInformer        buildinformers.BuilderInformer
+	ClusterBuilderInformer buildinformers.ClusterBuilderInformer
 }
 
 func (di *DuckBuilderInformer) AddEventHandler(handler cache.ResourceEventHandler) {
@@ -28,8 +28,8 @@ func (di *DuckBuilderInformer) Lister() *DuckBuilderLister {
 }
 
 type DuckBuilderLister struct {
-	BuilderLister        v1alpha1Listers.BuilderLister
-	ClusterBuilderLister v1alpha1Listers.ClusterBuilderLister
+	BuilderLister        buildlisters.BuilderLister
+	ClusterBuilderLister buildlisters.ClusterBuilderLister
 }
 
 func (bl *DuckBuilderLister) Namespace(namespace string) *DuckBuilderNamespaceLister {
@@ -46,10 +46,10 @@ type DuckBuilderNamespaceLister struct {
 
 func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*DuckBuilder, error) {
 	switch reference.Kind {
-	case v1alpha1.BuilderKind:
+	case buildapi.BuilderKind:
 		builder, err := bl.DuckBuilderLister.BuilderLister.Builders(bl.namespace).Get(reference.Name)
 		return convertBuilder(builder), err
-	case v1alpha1.ClusterBuilderKind:
+	case buildapi.ClusterBuilderKind:
 		builder, err := bl.DuckBuilderLister.ClusterBuilderLister.Get(reference.Name)
 		return convertClusterBuilder(builder), err
 	default:
@@ -57,7 +57,7 @@ func (bl *DuckBuilderNamespaceLister) Get(reference corev1.ObjectReference) (*Du
 	}
 }
 
-func convertBuilder(builder *v1alpha1.Builder) *DuckBuilder {
+func convertBuilder(builder *buildapi.Builder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func convertBuilder(builder *v1alpha1.Builder) *DuckBuilder {
 	}
 }
 
-func convertClusterBuilder(builder *v1alpha1.ClusterBuilder) *DuckBuilder {
+func convertClusterBuilder(builder *buildapi.ClusterBuilder) *DuckBuilder {
 	if builder == nil {
 		return nil
 	}

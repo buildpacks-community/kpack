@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -21,7 +21,7 @@ func TestImageBuilds(t *testing.T) {
 }
 
 func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
-	image := &v1alpha1.Image{
+	image := &buildapi.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 			Annotations: map[string]string{
@@ -31,7 +31,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				"label-key": "label-value",
 			},
 		},
-		Spec: v1alpha1.ImageSpec{
+		Spec: buildapi.ImageSpec{
 			Tag:            "some/image",
 			ServiceAccount: "some/service-account",
 			Builder: corev1.ObjectReference{
@@ -41,8 +41,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	sourceResolver := &v1alpha1.SourceResolver{
-		Status: v1alpha1.SourceResolverStatus{
+	sourceResolver := &buildapi.SourceResolver{
+		Status: buildapi.SourceResolverStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
 				Conditions: []corev1alpha1.Condition{
@@ -59,22 +59,22 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Name:         "builder-Name",
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
-		BuilderMetadata: []v1alpha1.BuildpackMetadata{
+		BuilderMetadata: []buildapi.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 	}
 
-	latestBuild := &v1alpha1.Build{
+	latestBuild := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: buildapi.BuildSpec{
 			Tags:           []string{"some/image"},
 			Builder:        builder.BuildBuilderSpec(),
 			ServiceAccount: "some/serviceaccount",
 		},
-		Status: v1alpha1.BuildStatus{
+		Status: buildapi.BuildStatus{
 			Status: corev1alpha1.Status{
 				Conditions: corev1alpha1.Conditions{
 					{
@@ -83,10 +83,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []v1alpha1.BuildpackMetadata{
+			BuildMetadata: []buildapi.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
-			Stack: v1alpha1.BuildStack{
+			Stack: buildapi.BuildStack{
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stack.bionic",
 			},
@@ -95,16 +95,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#buildNeeded", func() {
-		sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-			Git: &v1alpha1.ResolvedGitSource{
+		sourceResolver.Status.Source = buildapi.ResolvedSourceConfig{
+			Git: &buildapi.ResolvedGitSource{
 				URL:      "https://some.git/url",
 				Revision: "revision",
-				Type:     v1alpha1.Commit,
+				Type:     buildapi.Commit,
 			},
 		}
 
-		latestBuild.Spec.Source = v1alpha1.SourceConfig{
-			Git: &v1alpha1.Git{
+		latestBuild.Spec.Source = buildapi.SourceConfig{
+			Git: &buildapi.Git{
 				URL:      "https://some.git/url",
 				Revision: "revision",
 			},
@@ -167,12 +167,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-			assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 			assert.Equal(t, expectedChanges, result.ChangesStr)
 		})
 
 		it("true if build bindings changes", func() {
-			latestBuild.Spec.Bindings = v1alpha1.Bindings{
+			latestBuild.Spec.Bindings = buildapi.Bindings{
 				{
 					Name: "some-old-value",
 					MetadataRef: &corev1.LocalObjectReference{
@@ -217,12 +217,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-			assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 			assert.Equal(t, expectedChanges, result.ChangesStr)
 		})
 
 		it("false if last build failed but no spec changes", func() {
-			latestBuild.Status = v1alpha1.BuildStatus{
+			latestBuild.Status = buildapi.BuildStatus{
 				Status: corev1alpha1.Status{
 					Conditions: corev1alpha1.Conditions{
 						{
@@ -231,7 +231,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				Stack: v1alpha1.BuildStack{},
+				Stack: buildapi.BuildStack{},
 			}
 
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
@@ -243,26 +243,26 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("true if build is annotated additional build needed", func() {
 			latestBuild.Annotations = map[string]string{
-				v1alpha1.BuildNeededAnnotation: "true",
+				buildapi.BuildNeededAnnotation: "true",
 			}
 
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-			assert.Equal(t, v1alpha1.BuildReasonTrigger, result.ReasonsStr)
+			assert.Equal(t, buildapi.BuildReasonTrigger, result.ReasonsStr)
 
 			var changes []buildchange.GenericChange
 			err = json.Unmarshal([]byte(result.ChangesStr), &changes)
 			assert.NoError(t, err)
 			assert.Len(t, changes, 1)
-			assert.Equal(t, v1alpha1.BuildReasonTrigger, changes[0].Reason)
+			assert.Equal(t, buildapi.BuildReasonTrigger, changes[0].Reason)
 			assert.Equal(t, "", changes[0].Old)
 			assert.True(t, strings.HasPrefix((changes[0].New).(string), "A new build was manually triggered on "))
 		})
 
 		when("Builder Metadata changes", func() {
 			it("false if builder has additional unused buildpacks", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []buildapi.BuildpackMetadata{
 					{Id: "buildpack.matches", Version: "1"},
 					{Id: "buildpack.unused", Version: "unused"},
 				}
@@ -275,7 +275,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder metadata has different buildpack version from used buildpack version", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []buildapi.BuildpackMetadata{
 					{Id: "buildpack.matches", Version: "NEW_VERSION"},
 					{Id: "buildpack.different", Version: "different"},
 				}
@@ -297,12 +297,12 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonBuildpack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
 			it("true if builder does not have all most recent used buildpacks", func() {
-				builder.BuilderMetadata = []v1alpha1.BuildpackMetadata{
+				builder.BuilderMetadata = []buildapi.BuildpackMetadata{
 					{Id: "buildpack.only.new.buildpacks", Version: "1"},
 					{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
 				}
@@ -324,7 +324,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonBuildpack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -343,7 +343,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonStack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonStack, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
@@ -380,7 +380,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -416,7 +416,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -435,7 +435,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonCommit, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -504,7 +504,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build = &v1alpha1.ImageBuild{
+				image.Spec.Build = &buildapi.ImageBuild{
 					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},
@@ -550,7 +550,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -569,20 +569,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonCommit, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
 
 		when("Blob", func() {
-			sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-				Blob: &v1alpha1.ResolvedBlobSource{
+			sourceResolver.Status.Source = buildapi.ResolvedSourceConfig{
+				Blob: &buildapi.ResolvedBlobSource{
 					URL: "different",
 				},
 			}
 
-			latestBuild.Spec.Source = v1alpha1.SourceConfig{
-				Blob: &v1alpha1.Blob{
+			latestBuild.Spec.Source = buildapi.SourceConfig{
+				Blob: &buildapi.Blob{
 					URL: "some-url",
 				},
 			}
@@ -614,7 +614,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -648,20 +648,20 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
 
 		when("Registry", func() {
-			sourceResolver.Status.Source = v1alpha1.ResolvedSourceConfig{
-				Registry: &v1alpha1.ResolvedRegistrySource{
+			sourceResolver.Status.Source = buildapi.ResolvedSourceConfig{
+				Registry: &buildapi.ResolvedRegistrySource{
 					Image: "different",
 				},
 			}
 
-			latestBuild.Spec.Source = v1alpha1.SourceConfig{
-				Registry: &v1alpha1.Registry{
+			latestBuild.Spec.Source = buildapi.SourceConfig{
+				Registry: &buildapi.Registry{
 					Image: "some-image",
 				},
 			}
@@ -693,7 +693,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -726,7 +726,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, v1alpha1.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
@@ -735,15 +735,15 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 type TestBuilderResource struct {
 	BuilderReady     bool
-	BuilderMetadata  []v1alpha1.BuildpackMetadata
+	BuilderMetadata  []buildapi.BuildpackMetadata
 	ImagePullSecrets []corev1.LocalObjectReference
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
 }
 
-func (t TestBuilderResource) BuildBuilderSpec() v1alpha1.BuildBuilderSpec {
-	return v1alpha1.BuildBuilderSpec{
+func (t TestBuilderResource) BuildBuilderSpec() buildapi.BuildBuilderSpec {
+	return buildapi.BuildBuilderSpec{
 		Image:            t.LatestImage,
 		ImagePullSecrets: t.ImagePullSecrets,
 	}
@@ -753,7 +753,7 @@ func (t TestBuilderResource) Ready() bool {
 	return t.BuilderReady
 }
 
-func (t TestBuilderResource) BuildpackMetadata() v1alpha1.BuildpackMetadataList {
+func (t TestBuilderResource) BuildpackMetadata() buildapi.BuildpackMetadataList {
 	return t.BuilderMetadata
 }
 

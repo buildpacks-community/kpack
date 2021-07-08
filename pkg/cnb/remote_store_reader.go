@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
@@ -17,10 +17,10 @@ type RemoteStoreReader struct {
 	Keychain       authn.Keychain
 }
 
-func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error) {
 	var g errgroup.Group
 
-	c := make(chan v1alpha1.StoreBuildpack)
+	c := make(chan buildapi.StoreBuildpack)
 	for _, storeImage := range storeImages {
 		storeImageCopy := storeImage
 		g.Go(func() error {
@@ -47,13 +47,13 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 
 			for id := range layerMetadata {
 				for version, metadata := range layerMetadata[id] {
-					packageInfo := v1alpha1.BuildpackageInfo{
+					packageInfo := buildapi.BuildpackageInfo{
 						Id:       bpMetadata.Id,
 						Version:  bpMetadata.Version,
 						Homepage: bpMetadata.Homepage,
 					}
 
-					info := v1alpha1.BuildpackInfo{
+					info := buildapi.BuildpackInfo{
 						Id:      id,
 						Version: version,
 					}
@@ -78,7 +78,7 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 						return errors.Wrapf(err, "unable to get layer %s digest", info)
 					}
 
-					c <- v1alpha1.StoreBuildpack{
+					c <- buildapi.StoreBuildpack{
 						BuildpackInfo: info,
 						Buildpackage:  packageInfo,
 						StoreImage:    storeImageCopy,
@@ -101,7 +101,7 @@ func (r *RemoteStoreReader) Read(storeImages []v1alpha1.StoreImage) ([]v1alpha1.
 		close(c)
 	}()
 
-	var buildpacks []v1alpha1.StoreBuildpack
+	var buildpacks []buildapi.StoreBuildpack
 	for b := range c {
 		buildpacks = append(buildpacks, b)
 	}

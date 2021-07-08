@@ -1,6 +1,6 @@
 package buildchange
 
-import "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+import buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 
 func NewCommitChange(oldRevision, newRevision string) Change {
 	return commitChange{
@@ -14,7 +14,7 @@ type commitChange struct {
 	oldRevision string
 }
 
-func (c commitChange) Reason() v1alpha1.BuildReason { return v1alpha1.BuildReasonCommit }
+func (c commitChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonCommit }
 
 func (c commitChange) IsBuildRequired() (bool, error) { return c.oldRevision != c.newRevision, nil }
 

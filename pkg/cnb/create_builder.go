@@ -4,7 +4,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type RegistryClient interface {
@@ -20,7 +20,7 @@ type LifecycleProvider interface {
 	GetImage() (v1.Image, error)
 }
 
-type NewBuildpackRepository func(clusterStore *v1alpha1.ClusterStore) BuildpackRepository
+type NewBuildpackRepository func(clusterStore *buildapi.ClusterStore) BuildpackRepository
 
 type RemoteBuilderCreator struct {
 	RegistryClient         RegistryClient
@@ -29,27 +29,27 @@ type RemoteBuilderCreator struct {
 	KpackVersion           string
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterStore *v1alpha1.ClusterStore, clusterStack *v1alpha1.ClusterStack, spec v1alpha1.BuilderSpec) (v1alpha1.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
 	buildpackRepo := r.NewBuildpackRepository(clusterStore)
 
 	buildImage, _, err := r.RegistryClient.Fetch(keychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	lifecycleImage, err := r.LifecycleProvider.GetImage()
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	builderBldr, err := newBuilderBldr(lifecycleImage, r.KpackVersion)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	err = builderBldr.AddStack(buildImage, clusterStack)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	for _, group := range spec.Order {
@@ -58,7 +58,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		for _, buildpack := range group.Group {
 			remoteBuildpack, err := buildpackRepo.FindByIdAndVersion(buildpack.Id, buildpack.Version)
 			if err != nil {
-				return v1alpha1.BuilderRecord{}, err
+				return buildapi.BuilderRecord{}, err
 			}
 
 			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
@@ -68,22 +68,22 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 
 	writeableImage, err := builderBldr.WriteableImage()
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	identifier, err := r.RegistryClient.Save(keychain, spec.Tag, writeableImage)
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	config, err := writeableImage.ConfigFile()
 	if err != nil {
-		return v1alpha1.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
-	return v1alpha1.BuilderRecord{
+	return buildapi.BuilderRecord{
 		Image: identifier,
-		Stack: v1alpha1.BuildStack{
+		Stack: buildapi.BuildStack{
 			RunImage: clusterStack.Status.RunImage.LatestImage,
 			ID:       clusterStack.Status.Id,
 		},
@@ -95,10 +95,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 	}, nil
 }
 
-func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) v1alpha1.BuildpackMetadataList {
-	m := make(v1alpha1.BuildpackMetadataList, 0, len(buildpacks))
+func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) buildapi.BuildpackMetadataList {
+	m := make(buildapi.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
-		m = append(m, v1alpha1.BuildpackMetadata{
+		m = append(m, buildapi.BuildpackMetadata{
 			Id:       b.Id,
 			Version:  b.Version,
 			Homepage: b.Homepage,

@@ -4,7 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func NewConfigChange(oldConfig, newConfig Config) Change {
@@ -22,11 +22,11 @@ type configChange struct {
 type Config struct {
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Bindings  v1alpha1.Bindings           `json:"bindings,omitempty"`
-	Source    v1alpha1.SourceConfig       `json:"source,omitempty"`
+	Bindings  buildapi.Bindings           `json:"bindings,omitempty"`
+	Source    buildapi.SourceConfig       `json:"source,omitempty"`
 }
 
-func (c configChange) Reason() v1alpha1.BuildReason { return v1alpha1.BuildReasonConfig }
+func (c configChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonConfig }
 
 func (c configChange) IsBuildRequired() (bool, error) {
 	// Git revision changes are considered as COMMIT change

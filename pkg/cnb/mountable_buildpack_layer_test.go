@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestMountableBuildpackLayer(t *testing.T) {
@@ -64,13 +64,13 @@ func testMountableBuildpackLayer(t *testing.T, when spec.G, it spec.S) {
 			io.Copy(writer, compressed)
 		})
 
-		layer, err = layerFromStoreBuildpack(authn.DefaultKeychain, v1alpha1.StoreBuildpack{
-			BuildpackInfo: v1alpha1.BuildpackInfo{
+		layer, err = layerFromStoreBuildpack(authn.DefaultKeychain, buildapi.StoreBuildpack{
+			BuildpackInfo: buildapi.BuildpackInfo{
 				Id:      "id.buildpack",
 				Version: "1.0",
 			},
 			DiffId: diffID.String(),
-			StoreImage: v1alpha1.StoreImage{
+			StoreImage: buildapi.StoreImage{
 				Image: tagName,
 			},
 			Digest: digest.String(),

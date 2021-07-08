@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -48,7 +48,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Name:      "git-secret-1",
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+					buildapi.GITSecretAnnotationPrefix: "https://github.com",
 				},
 			},
 			StringData: map[string]string{
@@ -63,7 +63,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Name:      "docker-secret-1",
 				Namespace: namespace,
 				Annotations: map[string]string{
-					v1alpha1.DOCKERSecretAnnotationPrefix: "https://gcr.io",
+					buildapi.DOCKERSecretAnnotationPrefix: "https://gcr.io",
 				},
 			},
 			StringData: map[string]string{
@@ -172,7 +172,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			ImagePullSecrets: builderPullSecrets,
 		}
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, linuxNode, windowsNode1, windowsNode2)
-		buildPodConfig := v1alpha1.BuildPodImages{}
+		buildPodConfig := buildapi.BuildPodImages{}
 
 		generator := &buildpod.Generator{
 			BuildPodConfig:  buildPodConfig,
@@ -192,7 +192,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			var build = &testBuildPodable{
 				serviceAccount: serviceAccountName,
 				namespace:      namespace,
-				buildBuilderSpec: v1alpha1.BuildBuilderSpec{
+				buildBuilderSpec: buildapi.BuildBuilderSpec{
 					Image:            linuxBuilderImage,
 					ImagePullSecrets: builderPullSecrets,
 				},
@@ -208,7 +208,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					*gitSecret,
 					*dockerSecret,
 				},
-				BuildPodBuilderConfig: v1alpha1.BuildPodBuilderConfig{
+				BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
 					StackID:      "some.stack.id",
 					RunImage:     "some-registry.io/run-image",
 					Uid:          1234,
@@ -224,7 +224,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			var build = &testBuildPodable{
 				serviceAccount: serviceAccountName,
 				namespace:      namespace,
-				buildBuilderSpec: v1alpha1.BuildBuilderSpec{
+				buildBuilderSpec: buildapi.BuildBuilderSpec{
 					Image:            linuxBuilderImage,
 					ImagePullSecrets: builderPullSecrets,
 				},
@@ -245,7 +245,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it("rejects a build with a binding secret that is attached to a service account", func() {
 			var build = &testBuildPodable{
 				namespace: namespace,
-				bindings: []v1alpha1.Binding{
+				bindings: []buildapi.Binding{
 					{
 						Name:        "naughty",
 						MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
@@ -264,7 +264,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				var build = &testBuildPodable{
 					serviceAccount: serviceAccountName,
 					namespace:      namespace,
-					buildBuilderSpec: v1alpha1.BuildBuilderSpec{
+					buildBuilderSpec: buildapi.BuildBuilderSpec{
 						Image:            windowsBuilderImage,
 						ImagePullSecrets: builderPullSecrets,
 					},
@@ -310,7 +310,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				var build = &testBuildPodable{
 					serviceAccount: serviceAccountName,
 					namespace:      namespace,
-					buildBuilderSpec: v1alpha1.BuildBuilderSpec{
+					buildBuilderSpec: buildapi.BuildBuilderSpec{
 						Image:            windowsBuilderImage,
 						ImagePullSecrets: builderPullSecrets,
 					},
@@ -335,18 +335,18 @@ func randomImage(t *testing.T) ggcrv1.Image {
 }
 
 type testBuildPodable struct {
-	buildBuilderSpec v1alpha1.BuildBuilderSpec
+	buildBuilderSpec buildapi.BuildBuilderSpec
 	serviceAccount   string
 	namespace        string
 	buildPodCalls    []buildPodCall
-	bindings         []v1alpha1.Binding
+	bindings         []buildapi.Binding
 }
 
 type buildPodCall struct {
-	BuildPodImages        v1alpha1.BuildPodImages
+	BuildPodImages        buildapi.BuildPodImages
 	Secrets               []corev1.Secret
 	Taints                []corev1.Taint
-	BuildPodBuilderConfig v1alpha1.BuildPodBuilderConfig
+	BuildPodBuilderConfig buildapi.BuildPodBuilderConfig
 }
 
 func (tb *testBuildPodable) GetName() string {
@@ -361,11 +361,11 @@ func (tb *testBuildPodable) ServiceAccount() string {
 	return tb.serviceAccount
 }
 
-func (tb *testBuildPodable) BuilderSpec() v1alpha1.BuildBuilderSpec {
+func (tb *testBuildPodable) BuilderSpec() buildapi.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config v1alpha1.BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config buildapi.BuildPodBuilderConfig) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
 		BuildPodImages:        images,
 		Secrets:               secrets,
@@ -375,7 +375,7 @@ func (tb *testBuildPodable) BuildPod(images v1alpha1.BuildPodImages, secrets []c
 	return &corev1.Pod{}, nil
 }
 
-func (tb *testBuildPodable) Bindings() []v1alpha1.Binding {
+func (tb *testBuildPodable) Bindings() []buildapi.Binding {
 	return tb.bindings
 }
 

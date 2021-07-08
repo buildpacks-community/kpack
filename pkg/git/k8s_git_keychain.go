@@ -8,7 +8,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/secret"
 )
 
@@ -32,7 +32,7 @@ func (k *k8sGitKeychainFactory) KeychainForServiceAccount(ctx context.Context, n
 		case v1.SecretTypeBasicAuth:
 			{
 				creds = append(creds, gitBasicAuthCred{
-					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					Domain:      s.Annotations[buildapi.GITSecretAnnotationPrefix],
 					SecretName:  s.Name,
 					fetchSecret: fetchBasicAuth(s),
 				})
@@ -40,7 +40,7 @@ func (k *k8sGitKeychainFactory) KeychainForServiceAccount(ctx context.Context, n
 		case v1.SecretTypeSSHAuth:
 			{
 				creds = append(creds, gitSshAuthCred{
-					Domain:      s.Annotations[v1alpha1.GITSecretAnnotationPrefix],
+					Domain:      s.Annotations[buildapi.GITSecretAnnotationPrefix],
 					SecretName:  s.Name,
 					fetchSecret: fetchSshAuth(s),
 				})
