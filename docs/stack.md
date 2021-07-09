@@ -31,5 +31,5 @@ The stack resource will not poll for updates. A CI/CD tool is needed to update t
 
 ### Suggested stacks
 
-The [pack CLI](https://github.com/buildpacks/pack) command: `pack suggest-stacks` will display a list of recommended stacks that can be used. We recommend starting with the `io.buildpacks.stacks.bionic` base stack. 
+The [pack CLI](https://github.com/buildpacks/pack) command: `pack stack suggest` will display a list of recommended stacks that can be used. We recommend starting with the `io.buildpacks.stacks.bionic` base stack. 
   
