@@ -12,7 +12,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 )
@@ -32,37 +32,37 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	var (
 		stopCh = make(chan struct{})
 
-		builder = &v1alpha1.Builder{
+		builder = &buildapi.Builder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      builderName,
 				Namespace: builderNamespace,
 			},
-			Spec: v1alpha1.NamespacedBuilderSpec{},
-			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+			Spec: buildapi.NamespacedBuilderSpec{},
+			Status: buildapi.BuilderStatus{
+				BuilderMetadata: buildapi.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",
 					},
 				},
-				Stack:       v1alpha1.BuildStack{},
+				Stack:       buildapi.BuildStack{},
 				LatestImage: "",
 			},
 		}
 
-		clusterBuilder = &v1alpha1.ClusterBuilder{
+		clusterBuilder = &buildapi.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuilderName,
 			},
-			Spec: v1alpha1.ClusterBuilderSpec{},
-			Status: v1alpha1.BuilderStatus{
-				BuilderMetadata: v1alpha1.BuildpackMetadataList{
+			Spec: buildapi.ClusterBuilderSpec{},
+			Status: buildapi.BuilderStatus{
+				BuilderMetadata: buildapi.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",
 					},
 				},
-				Stack:       v1alpha1.BuildStack{},
+				Stack:       buildapi.BuildStack{},
 				LatestImage: "",
 			},
 		}
@@ -91,7 +91,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	when("#Lister", func() {
 		it("can return a builder of type Builder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace(builderNamespace).Get(v1.ObjectReference{
-				Kind:      v1alpha1.BuilderKind,
+				Kind:      buildapi.BuilderKind,
 				Namespace: builderNamespace,
 				Name:      builderName,
 			})
@@ -104,7 +104,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("can return a builder of type ClusterBuilder", func() {
 			duckBuilder, err := duckBuilderLister.Namespace("").Get(v1.ObjectReference{
-				Kind: v1alpha1.ClusterBuilderKind,
+				Kind: buildapi.ClusterBuilderKind,
 				Name: clusterBuilderName,
 			})
 			require.NoError(t, err)
@@ -116,8 +116,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns a k8s not found error on missing builder", func() {
 			for _, typ := range []string{
-				v1alpha1.ClusterBuilderKind,
-				v1alpha1.BuilderKind,
+				buildapi.ClusterBuilderKind,
+				buildapi.BuilderKind,
 			} {
 				_, err := duckBuilderLister.Namespace("some-namespace").Get(v1.ObjectReference{
 					Kind: typ,

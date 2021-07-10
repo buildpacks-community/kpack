@@ -3,10 +3,10 @@ package build
 import (
 	_ "strconv"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
-type ByCreationTimestamp []*v1alpha1.Build
+type ByCreationTimestamp []*buildapi.Build
 
 func (o ByCreationTimestamp) Len() int      { return len(o) }
 func (o ByCreationTimestamp) Swap(i, j int) { o[i], o[j] = o[j], o[i] }

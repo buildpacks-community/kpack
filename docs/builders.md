@@ -1,7 +1,7 @@
 # Builders
 
-kpack provides a Builder and ClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api. 
-This allows granular control of how stacks, buildpacks, and buildpack versions utilized and updated.  
+kpack provides Builder and ClusterBuilder resources to define and create [Cloud Native Buildpacks builders](https://buildpacks.io/docs/using-pack/working-with-builders/) all within the kpack api. 
+This allows granular control of how stacks, buildpacks, and buildpack versions are utilized and updated.  
 
 Before creating Builders you will need to create a [ClusterStack](stack.md) and [ClusterStore](store.md) resources below.
 

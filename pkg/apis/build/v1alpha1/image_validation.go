@@ -3,10 +3,12 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/pivotal/kpack/pkg/apis/validate"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/api/validation"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
 )
 
@@ -58,11 +60,12 @@ func (i *Image) ValidateMetadata(ctx context.Context) *apis.FieldError {
 }
 
 func (i *Image) validateName(imageName string) *apis.FieldError {
-	msgs := validation.NameIsDNS1035Label(imageName, false)
+	msgs := validation.IsValidLabelValue(imageName)
 	if len(msgs) > 0 {
 		return &apis.FieldError{
-			Message: fmt.Sprintf("invalid DNS 1035 label: %s, reason: %v", imageName, msgs),
-			Paths:   []string{"name"},
+			Message: fmt.Sprintf("invalid image name: %s, name must be a a valid label", imageName),
+			Paths:   []string{""},
+			Details: strings.Join(msgs, ","),
 		}
 	}
 	return nil

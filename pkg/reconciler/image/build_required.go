@@ -5,7 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildchange"
 )
 
@@ -27,10 +27,10 @@ func newBuildRequiredResult(summary buildchange.ChangeSummary) buildRequiredResu
 	return result
 }
 
-func isBuildRequired(img *v1alpha1.Image,
-	lastBuild *v1alpha1.Build,
-	srcResolver *v1alpha1.SourceResolver,
-	builder v1alpha1.BuilderResource) (buildRequiredResult, error) {
+func isBuildRequired(img *buildapi.Image,
+	lastBuild *buildapi.Build,
+	srcResolver *buildapi.SourceResolver,
+	builder buildapi.BuilderResource) (buildRequiredResult, error) {
 
 	result := buildRequiredResult{ConditionStatus: corev1.ConditionUnknown}
 	if !srcResolver.Ready() || !builder.Ready() {
@@ -51,12 +51,12 @@ func isBuildRequired(img *v1alpha1.Image,
 	return newBuildRequiredResult(changeSummary), nil
 }
 
-func triggerChange(lastBuild *v1alpha1.Build) buildchange.Change {
+func triggerChange(lastBuild *buildapi.Build) buildchange.Change {
 	if lastBuild == nil || lastBuild.Annotations == nil {
 		return nil
 	}
 
-	_, ok := lastBuild.Annotations[v1alpha1.BuildNeededAnnotation]
+	_, ok := lastBuild.Annotations[buildapi.BuildNeededAnnotation]
 	if !ok {
 		return nil
 	}
@@ -65,7 +65,7 @@ func triggerChange(lastBuild *v1alpha1.Build) buildchange.Change {
 	return buildchange.NewTriggerChange(time)
 }
 
-func commitChange(lastBuild *v1alpha1.Build, srcResolver *v1alpha1.SourceResolver) buildchange.Change {
+func commitChange(lastBuild *buildapi.Build, srcResolver *buildapi.SourceResolver) buildchange.Change {
 	// If the lastBuild was not a Git source, then it is not a COMMIT change
 	if lastBuild == nil || lastBuild.Spec.Source.Git == nil || srcResolver.Status.Source.Git == nil {
 		return nil
@@ -76,7 +76,7 @@ func commitChange(lastBuild *v1alpha1.Build, srcResolver *v1alpha1.SourceResolve
 	return buildchange.NewCommitChange(oldRevision, newRevision)
 }
 
-func configChange(img *v1alpha1.Image, lastBuild *v1alpha1.Build, srcResolver *v1alpha1.SourceResolver) buildchange.Change {
+func configChange(img *buildapi.Image, lastBuild *buildapi.Build, srcResolver *buildapi.SourceResolver) buildchange.Change {
 	var old buildchange.Config
 	var new buildchange.Config
 
@@ -99,25 +99,25 @@ func configChange(img *v1alpha1.Image, lastBuild *v1alpha1.Build, srcResolver *v
 	return buildchange.NewConfigChange(old, new)
 }
 
-func buildpackChange(lastBuild *v1alpha1.Build, builder v1alpha1.BuilderResource) buildchange.Change {
+func buildpackChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) buildchange.Change {
 	if lastBuild == nil || !lastBuild.IsSuccess() {
 		return nil
 	}
 
-	var old []v1alpha1.BuildpackInfo
-	var new []v1alpha1.BuildpackInfo
+	var old []buildapi.BuildpackInfo
+	var new []buildapi.BuildpackInfo
 
 	builderBuildpacks := builder.BuildpackMetadata()
 	for _, lastBuildBp := range lastBuild.Status.BuildMetadata {
 		if !builderBuildpacks.Include(lastBuildBp) {
-			old = append(old, v1alpha1.BuildpackInfo{Id: lastBuildBp.Id, Version: lastBuildBp.Version})
+			old = append(old, buildapi.BuildpackInfo{Id: lastBuildBp.Id, Version: lastBuildBp.Version})
 		}
 	}
 
 	return buildchange.NewBuildpackChange(old, new)
 }
 
-func stackChange(lastBuild *v1alpha1.Build, builder v1alpha1.BuilderResource) buildchange.Change {
+func stackChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) buildchange.Change {
 	if lastBuild == nil || !lastBuild.IsSuccess() {
 		return nil
 	}

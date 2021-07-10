@@ -3,9 +3,10 @@
 function pack_build() {
     image=$1
     target=$2
-    builder="gcr.io/cf-build-service-public/ci/tiny-builder" # builder used ci
+    pack_args=${@:3}
+    builder="gcr.io/cf-build-service-public/ci/kpack-builder" # builder used ci
 
-    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} --publish --trust-builder
+    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} ${pack_args} --publish --trust-builder
 
     docker pull ${image}
     resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
@@ -33,13 +34,14 @@ function compile() {
   completion_image=${IMAGE_PREFIX}completion
   lifecycle_image=${IMAGE_PREFIX}lifecycle
 
-  pack_build ${controller_image} "./cmd/controller"
+  pack_build ${controller_image} "./cmd/controller" -e BP_BUILD_LIBGIT2=true -e BP_GO_BUILD_FLAGS='-tags="static"'
+
   controller_image=${resolved_image_name}
 
   pack_build ${webhook_image} "./cmd/webhook"
   webhook_image=${resolved_image_name}
 
-  pack_build ${build_init_image} "./cmd/build-init"
+  pack_build ${build_init_image} "./cmd/build-init" -e BP_BUILD_LIBGIT2=true -e BP_GO_BUILD_FLAGS='-tags="static"'
   build_init_image=${resolved_image_name}
 
   pack_build ${rebase_image} "./cmd/rebase"

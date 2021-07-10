@@ -8,7 +8,7 @@ import (
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
@@ -25,51 +25,51 @@ type RemoteStackReader struct {
 	Keychain       authn.Keychain
 }
 
-func (r *RemoteStackReader) Read(clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
+func (r *RemoteStackReader) Read(clusterStackSpec buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error) {
 	buildImage, buildIdentifier, err := r.RegistryClient.Fetch(r.Keychain, clusterStackSpec.BuildImage.Image)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, err
+		return buildapi.ResolvedClusterStack{}, err
 	}
 
 	runImage, runIdentifier, err := r.RegistryClient.Fetch(r.Keychain, clusterStackSpec.RunImage.Image)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, err
+		return buildapi.ResolvedClusterStack{}, err
 	}
 
 	err = validateStackId(clusterStackSpec.Id, buildImage, runImage)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, err
+		return buildapi.ResolvedClusterStack{}, err
 	}
 
 	userId, err := parseCNBID(buildImage, cnbUserId)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
+		return buildapi.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
 	}
 
 	groupId, err := parseCNBID(buildImage, cnbGroupId)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
+		return buildapi.ResolvedClusterStack{}, errors.Wrap(err, "validating build image")
 	}
 
 	buildMixins, err := readMixins(buildImage)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, err
+		return buildapi.ResolvedClusterStack{}, err
 	}
 
 	runMixins, err := readMixins(runImage)
 	if err != nil {
-		return v1alpha1.ResolvedClusterStack{}, err
+		return buildapi.ResolvedClusterStack{}, err
 	}
 
 	mixins, err := mixins(buildMixins, runMixins)
 
-	return v1alpha1.ResolvedClusterStack{
+	return buildapi.ResolvedClusterStack{
 		Id: clusterStackSpec.Id,
-		BuildImage: v1alpha1.ClusterStackStatusImage{
+		BuildImage: buildapi.ClusterStackStatusImage{
 			LatestImage: buildIdentifier,
 			Image:       clusterStackSpec.BuildImage.Image,
 		},
-		RunImage: v1alpha1.ClusterStackStatusImage{
+		RunImage: buildapi.ClusterStackStatusImage{
 			LatestImage: runIdentifier,
 			Image:       clusterStackSpec.RunImage.Image,
 		},

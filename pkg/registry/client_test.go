@@ -27,27 +27,71 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		handler = http.NewServeMux()
-		server  = httptest.NewServer(handler)
-		tagName = fmt.Sprintf("%s/some/image:tag", server.URL[7:])
-		subject = &registry.Client{}
+		keychain = authn.NewMultiKeychain()
+		handler  = http.NewServeMux()
+		server   = httptest.NewServer(handler)
+		tagName  = fmt.Sprintf("%s/some/image:tag", server.URL[7:])
+		subject  = &registry.Client{}
 	)
 
 	when("Fetch", func() {
+		const digest = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+		const sampleManifest = `{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+  "config": {
+    "mediaType": "application/vnd.docker.container.image.v1+json",
+    "size": 48618,
+    "digest": "sha256:634bb7adff6f8e5347ccaf8b456682aec43d4d622669406b1b3cefc270d8c317"
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+      "size": 29597783,
+      "digest": "sha256:b734f5039f3da6bc4fe77c1295add3b1bbd7ddc9fa328f5fa467ce61acc49535"
+    }
+  ]
+}
+`
+
+		it.Before(func() {
+			handler.HandleFunc("/v2/some/image/manifests", func(writer http.ResponseWriter, request *http.Request) {
+				if request.Method != "GET" {
+					t.Errorf("unexpected %s to %s", request.Method, request.URL)
+					writer.WriteHeader(500)
+					return
+				}
+				writer.WriteHeader(200)
+
+				writer.Write([]byte(sampleManifest))
+			})
+
+			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+				if request.Method != "GET" {
+					t.Errorf("unexpected %s to %s", request.Method, request.URL)
+					writer.WriteHeader(404)
+					return
+				}
+
+				writer.WriteHeader(200)
+			})
+
+		})
+
 		when("#Identifer", func() {
+			var fullyQualifedImageRef = fmt.Sprintf("%s/some/image@%s", server.URL[7:], digest)
 			it("includes digest if repoName does not have a digest", func() {
-				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder:base")
+				_, imageId, err := subject.Fetch(keychain, tagName)
 				require.NoError(t, err)
 
-				require.Len(t, imageId, 104)
-				require.Equal(t, imageId[0:40], "gcr.io/paketo-buildpacks/builder@sha256:")
+				require.Equal(t, imageId, fullyQualifedImageRef)
 			})
 
 			it("includes digest if repoName already has a digest", func() {
-				_, imageId, err := subject.Fetch(authn.DefaultKeychain, "gcr.io/paketo-buildpacks/builder@sha256:31e8de150acb4f204cc26cf8cbca93bd6fd78d5cdad8fc41f0f6b51a9606f08e")
+				_, imageId, err := subject.Fetch(keychain, fullyQualifedImageRef)
 				require.NoError(t, err)
 
-				require.Equal(t, imageId, "gcr.io/paketo-buildpacks/builder@sha256:31e8de150acb4f204cc26cf8cbca93bd6fd78d5cdad8fc41f0f6b51a9606f08e")
+				require.Equal(t, imageId, fullyQualifedImageRef)
 			})
 		})
 	})
@@ -99,7 +143,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			_, err := subject.Save(authn.DefaultKeychain, tagName, image)
+			_, err := subject.Save(keychain, tagName, image)
 			require.NoError(t, err)
 
 			const configLayer = 1
@@ -127,7 +171,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				writer.WriteHeader(200)
 			})
 
-			_, err := subject.Save(authn.DefaultKeychain, tagName, image)
+			_, err := subject.Save(keychain, tagName, image)
 			require.NoError(t, err)
 		})
 	})

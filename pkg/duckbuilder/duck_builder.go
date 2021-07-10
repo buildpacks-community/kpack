@@ -4,7 +4,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
@@ -13,7 +13,7 @@ type DuckBuilder struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   DuckBuilderSpec        `json:"spec"`
-	Status v1alpha1.BuilderStatus `json:"status"`
+	Status buildapi.BuilderStatus `json:"status"`
 }
 type DuckBuilderSpec struct {
 	ImagePullSecrets []v1.LocalObjectReference
@@ -24,14 +24,14 @@ func (b *DuckBuilder) Ready() bool {
 		(b.Generation == b.Status.ObservedGeneration)
 }
 
-func (b *DuckBuilder) BuildBuilderSpec() v1alpha1.BuildBuilderSpec {
-	return v1alpha1.BuildBuilderSpec{
+func (b *DuckBuilder) BuildBuilderSpec() buildapi.BuildBuilderSpec {
+	return buildapi.BuildBuilderSpec{
 		Image:            b.Status.LatestImage,
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}
 }
 
-func (b *DuckBuilder) BuildpackMetadata() v1alpha1.BuildpackMetadataList {
+func (b *DuckBuilder) BuildpackMetadata() buildapi.BuildpackMetadataList {
 	return b.Status.BuilderMetadata
 }
 

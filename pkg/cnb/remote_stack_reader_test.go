@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
@@ -46,12 +46,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 			fakeClient.AddImage(runTag, runImage, expectedKeychain)
 			fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-			resolvedStack, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+			resolvedStack, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 				Id: "org.some.stack",
-				BuildImage: v1alpha1.ClusterStackSpecImage{
+				BuildImage: buildapi.ClusterStackSpecImage{
 					Image: buildTag,
 				},
-				RunImage: v1alpha1.ClusterStackSpecImage{
+				RunImage: buildapi.ClusterStackSpecImage{
 					Image: runTag,
 				},
 			})
@@ -63,13 +63,13 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 			buildDigest, err := buildImage.Digest()
 			require.NoError(t, err)
 
-			assert.Equal(t, v1alpha1.ResolvedClusterStack{
+			assert.Equal(t, buildapi.ResolvedClusterStack{
 				Id: stackId,
-				BuildImage: v1alpha1.ClusterStackStatusImage{
+				BuildImage: buildapi.ClusterStackStatusImage{
 					LatestImage: fmt.Sprintf("%s@%s", buildTag, buildDigest),
 					Image:       buildTag,
 				},
-				RunImage: v1alpha1.ClusterStackStatusImage{
+				RunImage: buildapi.ClusterStackStatusImage{
 					LatestImage: fmt.Sprintf("%s@%s", runTag, runDigest),
 					Image:       runTag,
 				},
@@ -88,12 +88,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 				fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: buildTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})
@@ -107,12 +107,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 				fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: buildTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})
@@ -126,12 +126,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 				fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: buildTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})
@@ -145,12 +145,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 				fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: buildTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})
@@ -164,12 +164,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 				fakeClient.AddImage(buildTag, buildImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: buildTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})
@@ -181,12 +181,12 @@ func testRemoteStackReader(t *testing.T, when spec.G, it spec.S) {
 
 				fakeClient.AddImage(runTag, runImage, expectedKeychain)
 
-				_, err := remoteStackReader.Read(v1alpha1.ClusterStackSpec{
+				_, err := remoteStackReader.Read(buildapi.ClusterStackSpec{
 					Id: "org.some.stack",
-					BuildImage: v1alpha1.ClusterStackSpecImage{
+					BuildImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
-					RunImage: v1alpha1.ClusterStackSpecImage{
+					RunImage: buildapi.ClusterStackSpecImage{
 						Image: runTag,
 					},
 				})

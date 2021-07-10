@@ -10,11 +10,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1Informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1Listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -25,10 +25,10 @@ const (
 
 //go:generate counterfeiter . ClusterStackReader
 type ClusterStackReader interface {
-	Read(clusterStackSpec v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
+	Read(clusterStackSpec buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)
 }
 
-func NewController(opt reconciler.Options, clusterStackInformer v1alpha1Informers.ClusterStackInformer, clusterStackReader ClusterStackReader) *controller.Impl {
+func NewController(opt reconciler.Options, clusterStackInformer buildinformers.ClusterStackInformer, clusterStackReader ClusterStackReader) *controller.Impl {
 	c := &Reconciler{
 		Client:             opt.Client,
 		ClusterStackLister: clusterStackInformer.Lister(),
@@ -41,7 +41,7 @@ func NewController(opt reconciler.Options, clusterStackInformer v1alpha1Informer
 
 type Reconciler struct {
 	Client             versioned.Interface
-	ClusterStackLister v1alpha1Listers.ClusterStackLister
+	ClusterStackLister buildlisters.ClusterStackLister
 	ClusterStackReader ClusterStackReader
 }
 
@@ -73,10 +73,10 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterStack) (*v1alpha1.ClusterStack, error) {
+func (c *Reconciler) reconcileClusterStackStatus(clusterStack *buildapi.ClusterStack) (*buildapi.ClusterStack, error) {
 	resolvedClusterStack, err := c.ClusterStackReader.Read(clusterStack.Spec)
 	if err != nil {
-		clusterStack.Status = v1alpha1.ClusterStackStatus{
+		clusterStack.Status = buildapi.ClusterStackStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: clusterStack.Generation,
 				Conditions: corev1alpha1.Conditions{
@@ -92,7 +92,7 @@ func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterS
 		return clusterStack, err
 	}
 
-	clusterStack.Status = v1alpha1.ClusterStackStatus{
+	clusterStack.Status = buildapi.ClusterStackStatus{
 		Status: corev1alpha1.Status{
 			ObservedGeneration: clusterStack.Generation,
 			Conditions: corev1alpha1.Conditions{
@@ -108,7 +108,7 @@ func (c *Reconciler) reconcileClusterStackStatus(clusterStack *v1alpha1.ClusterS
 	return clusterStack, nil
 }
 
-func (c *Reconciler) updateClusterStackStatus(ctx context.Context, desired *v1alpha1.ClusterStack) error {
+func (c *Reconciler) updateClusterStackStatus(ctx context.Context, desired *buildapi.ClusterStack) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
 	original, err := c.ClusterStackLister.Get(desired.Name)

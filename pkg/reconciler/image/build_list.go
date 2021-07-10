@@ -5,16 +5,16 @@ import (
 
 	v1alpha1build "github.com/pivotal/kpack/pkg/reconciler/build"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 type buildList struct {
-	successfulBuilds []*v1alpha1.Build
-	failedBuilds     []*v1alpha1.Build
-	lastBuild        *v1alpha1.Build
+	successfulBuilds []*buildapi.Build
+	failedBuilds     []*buildapi.Build
+	lastBuild        *buildapi.Build
 }
 
-func newBuildList(builds []*v1alpha1.Build) (buildList, error) {
+func newBuildList(builds []*buildapi.Build) (buildList, error) {
 	sort.Sort(v1alpha1build.ByCreationTimestamp(builds)) //nobody enforcing this
 
 	buildList := buildList{}
@@ -38,7 +38,7 @@ func (l buildList) NumberFailedBuilds() int64 {
 	return int64(len(l.failedBuilds))
 }
 
-func (l buildList) OldestFailure() *v1alpha1.Build {
+func (l buildList) OldestFailure() *buildapi.Build {
 	return l.failedBuilds[0]
 }
 
@@ -46,6 +46,6 @@ func (l buildList) NumberSuccessfulBuilds() int64 {
 	return int64(len(l.successfulBuilds))
 }
 
-func (l buildList) OldestSuccess() *v1alpha1.Build {
+func (l buildList) OldestSuccess() *buildapi.Build {
 	return l.successfulBuilds[0]
 }
