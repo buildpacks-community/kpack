@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestEnqueueAfter(t *testing.T) {
-	sourceResolver := &v1alpha1.SourceResolver{
+	sourceResolver := &buildapi.SourceResolver{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "name",
 		},

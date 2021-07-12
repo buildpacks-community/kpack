@@ -4,33 +4,33 @@ package clusterstackfakes
 import (
 	"sync"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 )
 
 type FakeClusterStackReader struct {
-	ReadStub        func(v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)
+	ReadStub        func(buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)
 	readMutex       sync.RWMutex
 	readArgsForCall []struct {
-		arg1 v1alpha1.ClusterStackSpec
+		arg1 buildapi.ClusterStackSpec
 	}
 	readReturns struct {
-		result1 v1alpha1.ResolvedClusterStack
+		result1 buildapi.ResolvedClusterStack
 		result2 error
 	}
 	readReturnsOnCall map[int]struct {
-		result1 v1alpha1.ResolvedClusterStack
+		result1 buildapi.ResolvedClusterStack
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClusterStackReader) Read(arg1 v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error) {
+func (fake *FakeClusterStackReader) Read(arg1 buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error) {
 	fake.readMutex.Lock()
 	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
-		arg1 v1alpha1.ClusterStackSpec
+		arg1 buildapi.ClusterStackSpec
 	}{arg1})
 	fake.recordInvocation("Read", []interface{}{arg1})
 	fake.readMutex.Unlock()
@@ -50,41 +50,41 @@ func (fake *FakeClusterStackReader) ReadCallCount() int {
 	return len(fake.readArgsForCall)
 }
 
-func (fake *FakeClusterStackReader) ReadCalls(stub func(v1alpha1.ClusterStackSpec) (v1alpha1.ResolvedClusterStack, error)) {
+func (fake *FakeClusterStackReader) ReadCalls(stub func(buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = stub
 }
 
-func (fake *FakeClusterStackReader) ReadArgsForCall(i int) v1alpha1.ClusterStackSpec {
+func (fake *FakeClusterStackReader) ReadArgsForCall(i int) buildapi.ClusterStackSpec {
 	fake.readMutex.RLock()
 	defer fake.readMutex.RUnlock()
 	argsForCall := fake.readArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeClusterStackReader) ReadReturns(result1 v1alpha1.ResolvedClusterStack, result2 error) {
+func (fake *FakeClusterStackReader) ReadReturns(result1 buildapi.ResolvedClusterStack, result2 error) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = nil
 	fake.readReturns = struct {
-		result1 v1alpha1.ResolvedClusterStack
+		result1 buildapi.ResolvedClusterStack
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClusterStackReader) ReadReturnsOnCall(i int, result1 v1alpha1.ResolvedClusterStack, result2 error) {
+func (fake *FakeClusterStackReader) ReadReturnsOnCall(i int, result1 buildapi.ResolvedClusterStack, result2 error) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = nil
 	if fake.readReturnsOnCall == nil {
 		fake.readReturnsOnCall = make(map[int]struct {
-			result1 v1alpha1.ResolvedClusterStack
+			result1 buildapi.ResolvedClusterStack
 			result2 error
 		})
 	}
 	fake.readReturnsOnCall[i] = struct {
-		result1 v1alpha1.ResolvedClusterStack
+		result1 buildapi.ResolvedClusterStack
 		result2 error
 	}{result1, result2}
 }

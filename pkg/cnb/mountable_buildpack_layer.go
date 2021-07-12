@@ -12,10 +12,10 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/pkg/errors"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
-func layerFromStoreBuildpack(keychain authn.Keychain, buildpack v1alpha1.StoreBuildpack) (v1.Layer, error) {
+func layerFromStoreBuildpack(keychain authn.Keychain, buildpack buildapi.StoreBuildpack) (v1.Layer, error) {
 	reference, err := name.ParseReference(buildpack.StoreImage.Image)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse %s", buildpack.StoreImage.Image)

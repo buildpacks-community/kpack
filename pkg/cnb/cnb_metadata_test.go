@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -26,20 +26,20 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 	var (
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		imageFetcher    = registryfakes.NewFakeClient()
-		ctx = context.Background()
+		ctx             = context.Background()
 	)
 
 	when("RemoteMetadataRetriever", func() {
 		when("GetBuiltImage", func() {
-			var build = &v1alpha1.Build{
+			var build = &buildapi.Build{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-name",
 				},
-				Spec: v1alpha1.BuildSpec{
+				Spec: buildapi.BuildSpec{
 					Tags:           []string{"reg.io/appimage/name"},
 					ServiceAccount: "service-account",
 				},
-				Status: v1alpha1.BuildStatus{},
+				Status: buildapi.BuildStatus{},
 			}
 
 			when("images are built with lifecycle 0.5", func() {

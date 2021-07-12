@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
 func TestBuildPod(t *testing.T) {
@@ -39,14 +39,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builderImageRef := v1alpha1.BuildBuilderSpec{
+	builderImageRef := buildapi.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},
 		},
 	}
 
-	build := &v1alpha1.Build{
+	build := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
 			Namespace: namespace,
@@ -57,18 +57,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"some/annotation": "to-pass-through",
 			},
 		},
-		Spec: v1alpha1.BuildSpec{
+		Spec: buildapi.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			Builder:        builderImageRef,
 			ServiceAccount: serviceAccount,
-			Source: v1alpha1.SourceConfig{
-				Git: &v1alpha1.Git{
+			Source: buildapi.SourceConfig{
+				Git: &buildapi.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
 			},
 			CacheName: "some-cache-name",
-			Bindings: []v1alpha1.Binding{
+			Bindings: []buildapi.Binding{
 				{
 					Name: "database",
 					MetadataRef: &corev1.LocalObjectReference{
@@ -90,7 +90,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				{Name: "keyB", Value: "valueB"},
 			},
 			Resources: resources,
-			LastBuild: &v1alpha1.LastBuild{
+			LastBuild: &buildapi.LastBuild{
 				Image:   previousAppImage,
 				StackId: "com.builder.stack.io",
 			},
@@ -103,7 +103,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "git-secret-1",
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://github.com",
+					buildapi.GITSecretAnnotationPrefix: "https://github.com",
 				},
 			},
 			StringData: map[string]string{
@@ -117,7 +117,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "git-secret-2",
 				Annotations: map[string]string{
-					v1alpha1.GITSecretAnnotationPrefix: "https://bitbucket.com",
+					buildapi.GITSecretAnnotationPrefix: "https://bitbucket.com",
 				},
 			},
 			StringData: map[string]string{
@@ -129,7 +129,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "docker-secret-1",
 				Annotations: map[string]string{
-					v1alpha1.DOCKERSecretAnnotationPrefix: "acr.io",
+					buildapi.DOCKERSecretAnnotationPrefix: "acr.io",
 				},
 			},
 			Type: corev1.SecretTypeBasicAuth,
@@ -156,21 +156,21 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "secret-to-ignore",
 				Annotations: map[string]string{
-					v1alpha1.DOCKERSecretAnnotationPrefix: "ignoreme.com",
+					buildapi.DOCKERSecretAnnotationPrefix: "ignoreme.com",
 				},
 			},
 			Type: corev1.SecretTypeBootstrapToken,
 		},
 	}
 
-	config := v1alpha1.BuildPodImages{
+	config := buildapi.BuildPodImages{
 		BuildInitImage:         "build/init:image",
 		BuildInitWindowsImage:  "build/init/windows:image",
 		CompletionImage:        "completion/image:image",
 		CompletionWindowsImage: "completion/image/windows:image",
 	}
 
-	buildPodBuilderConfig := v1alpha1.BuildPodBuilderConfig{
+	buildPodBuilderConfig := buildapi.BuildPodBuilderConfig{
 		StackID:      "com.builder.stack.io",
 		RunImage:     "builderregistry.io/run",
 		Uid:          2000,
@@ -423,7 +423,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("configures prepare with the blob source", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &v1alpha1.Blob{
+			build.Spec.Source.Blob = &buildapi.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -441,7 +441,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and empty imagePullSecrets when not provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &v1alpha1.Registry{
+			build.Spec.Source.Registry = &buildapi.Registry{
 				Image: "some-registry.io/some-image",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -466,7 +466,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and a secret volume when is imagePullSecrets provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &v1alpha1.Registry{
+			build.Spec.Source.Registry = &buildapi.Registry{
 				Image: "some-registry.io/some-image",
 				ImagePullSecrets: []corev1.LocalObjectReference{
 					{Name: "registry-secret"},
@@ -564,7 +564,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures analyze step with the current tag if previous build is corrupted", func() {
-			build.Spec.LastBuild = &v1alpha1.LastBuild{}
+			build.Spec.LastBuild = &buildapi.LastBuild{}
 
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
@@ -768,8 +768,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("creating a rebase pod", func() {
 			build.Annotations = map[string]string{
-				v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
-				v1alpha1.BuildChangesAnnotation: "some-stack-change",
+				buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
+				buildapi.BuildChangesAnnotation: "some-stack-change",
 				"some/annotation":               "to-pass-through",
 			}
 
@@ -786,8 +786,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					Annotations: map[string]string{
 						"some/annotation":               "to-pass-through",
-						v1alpha1.BuildReasonAnnotation:  v1alpha1.BuildReasonStack,
-						v1alpha1.BuildChangesAnnotation: "some-stack-change",
+						buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
+						buildapi.BuildChangesAnnotation: "some-stack-change",
 					},
 					OwnerReferences: []metav1.OwnerReference{
 						*kmeta.NewControllerRef(build),
@@ -895,10 +895,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			when("a notary config is present on the build", func() {
 				it("sets up the completion image to sign the image", func() {
-					build.Spec.Notary = &v1alpha1.NotaryConfig{
-						V1: &v1alpha1.NotaryV1Config{
+					build.Spec.Notary = &buildapi.NotaryConfig{
+						V1: &buildapi.NotaryV1Config{
 							URL: "some-notary-url",
-							SecretRef: v1alpha1.NotarySecretRef{
+							SecretRef: buildapi.NotarySecretRef{
 								Name: "some-notary-secret",
 							},
 						},
@@ -940,10 +940,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("a notary config is present on the build", func() {
-			build.Spec.Notary = &v1alpha1.NotaryConfig{
-				V1: &v1alpha1.NotaryV1Config{
+			build.Spec.Notary = &buildapi.NotaryConfig{
+				V1: &buildapi.NotaryV1Config{
 					URL: "some-notary-url",
-					SecretRef: v1alpha1.NotarySecretRef{
+					SecretRef: buildapi.NotarySecretRef{
 						Name: "some-notary-secret",
 					},
 				},
@@ -1233,7 +1233,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures the completion container for notary on windows", func() {
-				build.Spec.Notary = &v1alpha1.NotaryConfig{V1: &v1alpha1.NotaryV1Config{
+				build.Spec.Notary = &buildapi.NotaryConfig{V1: &buildapi.NotaryV1Config{
 					URL: "some-notary-server",
 				}}
 
@@ -1330,7 +1330,7 @@ func assertSecretNotPresent(t *testing.T, pod *corev1.Pod, secretName string) {
 
 func isSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) bool {
 	for _, volume := range pod.Spec.Volumes {
-		if volume.Name == fmt.Sprintf(v1alpha1.SecretTemplateName, secretName) {
+		if volume.Name == fmt.Sprintf(buildapi.SecretTemplateName, secretName) {
 			assert.Equal(t, corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: secretName,

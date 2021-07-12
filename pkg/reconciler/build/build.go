@@ -13,12 +13,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1informer "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1lister "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
@@ -30,14 +30,14 @@ const (
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuiltImage(context.Context, *v1alpha1.Build) (cnb.BuiltImage, error)
+	GetBuiltImage(context.Context, *buildapi.Build) (cnb.BuiltImage, error)
 }
 
 type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer v1alpha1informer.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
@@ -52,7 +52,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	podInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGVK(v1alpha1.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.FilterControllerGVK(buildapi.SchemeGroupVersion.WithKind(Kind)),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -61,7 +61,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 
 type Reconciler struct {
 	Client            versioned.Interface
-	Lister            v1alpha1lister.BuildLister
+	Lister            buildlisters.BuildLister
 	MetadataRetriever MetadataRetriever
 	K8sClient         k8sclient.Interface
 	PodLister         v1Listers.PodLister
@@ -94,7 +94,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(ctx, build)
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, build *v1alpha1.Build) error {
+func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error {
 	if build.Finished() {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (c *Reconciler) reconcile(ctx context.Context, build *v1alpha1.Build) error
 	return nil
 }
 
-func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *v1alpha1.Build) (*corev1.Pod, error) {
+func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Build) (*corev1.Pod, error) {
 	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
@@ -200,7 +200,7 @@ func stepCompleted(pod *corev1.Pod) []string {
 	return completed
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Build) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) error {
 	desired.Status.ObservedGeneration = desired.Generation
 	original, err := c.Lister.Builds(desired.Namespace).Get(desired.Name)
 	if err != nil {
@@ -215,10 +215,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Build) 
 	return err
 }
 
-func buildMetadataFromBuiltImage(image cnb.BuiltImage) []v1alpha1.BuildpackMetadata {
-	buildpackMetadata := make([]v1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
+func buildMetadataFromBuiltImage(image cnb.BuiltImage) []buildapi.BuildpackMetadata {
+	buildpackMetadata := make([]buildapi.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
-		buildpackMetadata = append(buildpackMetadata, v1alpha1.BuildpackMetadata{
+		buildpackMetadata = append(buildpackMetadata, buildapi.BuildpackMetadata{
 			Id:       metadata.ID,
 			Version:  metadata.Version,
 			Homepage: metadata.Homepage,

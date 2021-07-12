@@ -10,10 +10,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	v1alpha1informers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	v1alpha1listers "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -24,13 +24,13 @@ const (
 
 //go:generate counterfeiter . Resolver
 type Resolver interface {
-	Resolve(context.Context, *v1alpha1.SourceResolver) (v1alpha1.ResolvedSourceConfig, error)
-	CanResolve(*v1alpha1.SourceResolver) bool
+	Resolve(context.Context, *buildapi.SourceResolver) (buildapi.ResolvedSourceConfig, error)
+	CanResolve(*buildapi.SourceResolver) bool
 }
 
 func NewController(
 	opt reconciler.Options,
-	sourceResolverInformer v1alpha1informers.SourceResolverInformer,
+	sourceResolverInformer buildinformers.SourceResolverInformer,
 	gitResolver Resolver,
 	blobResolver Resolver,
 	registryResolver Resolver,
@@ -57,7 +57,7 @@ func NewController(
 
 //go:generate counterfeiter . Enqueuer
 type Enqueuer interface {
-	Enqueue(*v1alpha1.SourceResolver) error
+	Enqueue(*buildapi.SourceResolver) error
 }
 
 type Reconciler struct {
@@ -66,7 +66,7 @@ type Reconciler struct {
 	RegistryResolver     Resolver
 	Enqueuer             Enqueuer
 	Client               versioned.Interface
-	SourceResolverLister v1alpha1listers.SourceResolverLister
+	SourceResolverLister buildlisters.SourceResolverLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -107,7 +107,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return c.updateStatus(ctx, sourceResolver)
 }
 
-func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (Resolver, error) {
+func (c *Reconciler) sourceReconciler(sourceResolver *buildapi.SourceResolver) (Resolver, error) {
 	if c.GitResolver.CanResolve(sourceResolver) {
 		return c.GitResolver, nil
 	} else if c.BlobResolver.CanResolve(sourceResolver) {
@@ -118,7 +118,7 @@ func (c *Reconciler) sourceReconciler(sourceResolver *v1alpha1.SourceResolver) (
 	return nil, errors.New("invalid source type")
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.SourceResolver) error {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.SourceResolver) error {
 	original, err := c.SourceResolverLister.SourceResolvers(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
