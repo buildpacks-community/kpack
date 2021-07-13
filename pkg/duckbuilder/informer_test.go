@@ -12,7 +12,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 )
@@ -76,8 +76,8 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 	factory := externalversions.NewSharedInformerFactory(client, 10*time.Hour)
 
 	subject := DuckBuilderInformer{
-		BuilderInformer:        factory.Kpack().V1alpha1().Builders(),
-		ClusterBuilderInformer: factory.Kpack().V1alpha1().ClusterBuilders(),
+		BuilderInformer:        factory.Kpack().V1alpha2().Builders(),
+		ClusterBuilderInformer: factory.Kpack().V1alpha2().ClusterBuilders(),
 	}
 	duckBuilderLister := subject.Lister()
 	factory.Start(stopCh)

@@ -2,7 +2,7 @@ package cnb
 
 import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 type RemoteBuildpackInfo struct {

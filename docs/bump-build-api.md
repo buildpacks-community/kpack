@@ -10,6 +10,7 @@ As an example, we show how to update from `v1alpha1` to `v1alpha2`
 var SchemeGroupVersion = schema.GroupVersion{Group: build.GroupName, Version: "v1alpha2"}
 ```
 
+1. Remove now outdated methods and tests from `v1alpha1`
 1. Search and replace:
 ```
 buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1" -> buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
@@ -36,7 +37,7 @@ sed -i.old 's/Ref\:         ref(\"github.com\/pivotal\/kpack\/pkg\/apis\/core\/v
 ```
 1. Run `./hack/openapi-codegen.sh` and `./hack/update-codegen.sh`
 1. Replace all occurrences of `Kpack().V1alpha1()` with `Kpack().V1alpha2()` (!*NOT* in `generic.go`)
-1. Replace all occurrences of `KpackV1alpha1()` with `KpackV1alpha2()` (!*NOT* in `pkg/client`)
+1. Replace all occurrences of `KpackV1alpha2()` with `KpackV1alpha2()` (!*NOT* in `pkg/client`)
 1. Adapt `config/*.yaml`
   * `v1alpha2`
   * `served`

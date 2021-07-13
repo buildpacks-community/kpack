@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/signals"
 
 	"github.com/pivotal/kpack/cmd"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -97,13 +97,13 @@ func main() {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
-	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
-	imageInformer := informerFactory.Kpack().V1alpha1().Images()
-	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
-	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
-	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
-	clusterStoreInformer := informerFactory.Kpack().V1alpha1().ClusterStores()
-	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
+	buildInformer := informerFactory.Kpack().V1alpha2().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha2().Images()
+	sourceResolverInformer := informerFactory.Kpack().V1alpha2().SourceResolvers()
+	builderInformer := informerFactory.Kpack().V1alpha2().Builders()
+	clusterBuilderInformer := informerFactory.Kpack().V1alpha2().ClusterBuilders()
+	clusterStoreInformer := informerFactory.Kpack().V1alpha2().ClusterStores()
+	clusterStackInformer := informerFactory.Kpack().V1alpha2().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
 		BuilderInformer:        builderInformer,

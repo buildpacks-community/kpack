@@ -28,7 +28,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -65,17 +65,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients, err = newClients(t)
 		require.NoError(t, err)
 
-		err = clients.client.KpackV1alpha1().ClusterStores().Delete(ctx, clusterStoreName, metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha2().ClusterStores().Delete(ctx, clusterStoreName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.KpackV1alpha1().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha2().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
 
-		err = clients.client.KpackV1alpha1().ClusterBuilders().Delete(ctx, clusterBuilderName, metav1.DeleteOptions{})
+		err = clients.client.KpackV1alpha2().ClusterBuilders().Delete(ctx, clusterBuilderName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -134,7 +134,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		_, err = clients.client.KpackV1alpha1().ClusterStores().Create(ctx, &buildapi.ClusterStore{
+		_, err = clients.client.KpackV1alpha2().ClusterStores().Create(ctx, &buildapi.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStoreName,
 			},
@@ -151,7 +151,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		_, err = clients.client.KpackV1alpha1().ClusterStacks().Create(ctx, &buildapi.ClusterStack{
+		_, err = clients.client.KpackV1alpha2().ClusterStacks().Create(ctx, &buildapi.ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterStackName,
 			},
@@ -167,7 +167,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		builder, err := clients.client.KpackV1alpha1().Builders(testNamespace).Create(ctx, &buildapi.Builder{
+		builder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Create(ctx, &buildapi.Builder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      builderName,
 				Namespace: testNamespace,
@@ -220,7 +220,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		clusterBuilder, err := clients.client.KpackV1alpha1().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
+		clusterBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuilderName,
 			},
@@ -332,7 +332,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					t.Parallel()
 
 					imageTag := cfg.newImageTag()
-					image, err := clients.client.KpackV1alpha1().Images(testNamespace).Create(ctx, &buildapi.Image{
+					image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: imageName,
 						},
@@ -372,7 +372,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
 
 		imageTag := cfg.newImageTag()
-		image, err := clients.client.KpackV1alpha1().Images(testNamespace).Create(ctx, &buildapi.Image{
+		image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: imageName,
 			},
@@ -400,7 +400,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		validateImageCreate(t, clients, image, expectedResources)
 
-		list, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(ctx, metav1.ListOptions{
+		list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 		})
 		require.NoError(t, err)
@@ -408,11 +408,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		build := &list.Items[0]
 		build.Annotations[buildapi.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
-		_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Update(ctx, build, metav1.UpdateOptions{})
+		_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Update(ctx, build, metav1.UpdateOptions{})
 		require.NoError(t, err)
 
 		eventually(t, func() bool {
-			list, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(ctx, metav1.ListOptions{
+			list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 			})
 			require.NoError(t, err)
@@ -494,7 +494,7 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageName, testNamespace string) {
 	var rebaseBuildName = imageName + "-rebase"
 
-	buildList, err := clients.client.KpackV1alpha1().Builds(testNamespace).List(ctx, metav1.ListOptions{
+	buildList, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 	})
 	require.NoError(t, err)
@@ -508,7 +508,7 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 		StackId: build.Status.Stack.ID,
 	}
 
-	_, err = clients.client.KpackV1alpha1().Builds(testNamespace).Create(ctx, &buildapi.Build{
+	_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Create(ctx, &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        rebaseBuildName,
 			Annotations: map[string]string{buildapi.BuildReasonAnnotation: buildapi.BuildReasonStack},
@@ -518,7 +518,7 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
-		build, err := clients.client.KpackV1alpha1().Builds(testNamespace).Get(ctx, rebaseBuildName, metav1.GetOptions{})
+		build, err := clients.client.KpackV1alpha2().Builds(testNamespace).Get(ctx, rebaseBuildName, metav1.GetOptions{})
 		require.NoError(t, err)
 
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)

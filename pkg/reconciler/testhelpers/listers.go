@@ -8,9 +8,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/reconciler/testing"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 )
 

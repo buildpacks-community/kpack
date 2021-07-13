@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 )
 
