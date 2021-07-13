@@ -53,7 +53,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			_ = VerifyWriteAccess(testKeychain{}, tagName)
 		})
 
-		it.Focus("errors when fetching token is unauthorized", func() {
+		it("errors when fetching token is unauthorized", func() {
 			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(401)
 				writer.Write([]byte(`{"errors": [{"code":  "UNAUTHORIZED"}]}`))
@@ -93,7 +93,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("POST %s/v2/some/image/blobs/uploads/: unsupported status code 403", server.URL))
+			assert.EqualError(t, err, fmt.Sprintf("POST %s/v2/some/image/blobs/uploads/: unexpected status code 403 Forbidden", server.URL))
 		})
 
 		it("errors when cannot reach server", func() {
@@ -102,7 +102,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404", server.URL))
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 404 Not Found", server.URL))
 		})
 
 		it("errors when server errors", func() {
@@ -111,7 +111,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 500", server.URL))
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 500 Internal Server Error", server.URL))
 		})
 	})
 
@@ -148,7 +148,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyReadAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unsupported status code 404 Not Found", server.URL))
+			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 404 Not Found", server.URL))
 		})
 	})
 }
