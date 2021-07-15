@@ -5520,6 +5520,9 @@
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildCacheConfig"
         },
+        "cosign": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
+        },
         "defaultProcess": {
           "type": "string"
         },
@@ -6059,6 +6062,29 @@
         }
       }
     },
+    "kpack.build.v1alpha2.CosignAnnotation": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.CosignConfig": {
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.CosignAnnotation"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
     "kpack.build.v1alpha2.Image": {
       "type": "object",
       "required": [
@@ -6214,6 +6240,9 @@
         },
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.ImageCacheConfig"
+        },
+        "cosign": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
         },
         "defaultProcess": {
           "type": "string"

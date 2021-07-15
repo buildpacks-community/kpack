@@ -19,6 +19,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
 - `notary`: Configuration for Notary image signing. See [Notary Configuration](#notary-config) section below.
+- `cosign`: Configuration for additional cosign image signing. See [Cosign Configuration](#cosign-config) section below.
 
 ### <a id='builder-config'></a>Builder Configuration
 
@@ -157,6 +158,86 @@ To create the notary secret used by kpack for image signing, run the following c
 - `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
 - `<password>`: The password provided to encrypt the private key.
 - `<hash>.key`: The private key file.
+
+### <a id='cosign-config'></a>Cosign Configuration
+
+#### Cosign Signing Secret
+Images can be signed with cosign when a cosign formatted secret is added to the service account used to build the image. 
+The secret can be added using the cosign CLI or manually. 
+
+To create a cosign signing secret through the cosign CLI, when targetted to the Kubernetes cluster, use:
+`cosign generate-key-pair k8s://[NAMESPACE]/[NAME]`
+
+Alternatively, create the cosign secret and provide your own cosign key files manually to Kubernetes by running the following command:
+```shell script
+% kubectl create secret generic <secret-name> --from-literal=cosign.password=<password> --from-file=</path/to/cosign.key>
+```
+- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
+- `<password>`: The password provided to encrypt the private key. If not present, an empty password will be used.
+- `</path/to/cosign.key>`: The cosign private key file generated with `cosign generate-key-pair`.
+
+After adding the cosign secret, the secret must be added to the list of `secrets` attached to the service account resource that is building the image.
+
+#### Adding Cosign Annotations
+By default, the build number and build timestamp information will be added to the cosign signing annotations. Users can specify additional cosign annotations under the spec key.
+```yaml
+cosign:
+  annotations:
+  - name: "annotationName"
+    value: "annotationValue"
+```
+
+One way these annotations can be viewed is through verifying cosign signatures. The annotations will be under the `optional` key in the verified JSON response. For example, this can be done with:
+```bash
+% cosign verify -key /path/to/cosign.pub registry.example.com/project/image@sha256:<DIGEST>
+```
+
+Which provides a JSON response similar to:
+```json
+{
+  "critical": {
+    "identity": {
+      "docker-reference": "registry.example.com/project/image"
+    }, "image": {
+      "docker-manifest-digest": "sha256:<DIGEST>"
+    }, "type": "cosign container image signature"
+  }, "optional": {
+    "buildNumber": "1",
+    "buildTimestamp": "20210827.175240",
+    "annotationName": "annotationValue"
+  }
+}
+```
+
+#### Push Cosign Signature to a Different Location
+Cosign signatures can be pushed to a different registry from where the image is located. To enable this, add the corresponding annotation to the cosign secret resource.
+```
+metadata:
+  name: ...
+  namespace: ...
+  annotations:
+    kpack.io/cosign.repository: other.registry.com/project/image
+data:
+  cosign.key: ...
+  cosign.password: ...
+```
+This will be equivalent to setting `COSIGN_REPOSITORY` as specified in cosign [Specifying Registry](https://github.com/sigstore/cosign#specifying-registry)
+
+The same service account that has that cosign secret attached, and would be used for signing and building the image, would require that the registry credentials for this other repository be placed under the listed `secrets` and is not required to be listed in `imagePullSecrets`. It should be noted that if you wish to push the signatures to the same registry but a different path from the image, the credential used must have access to both paths. You cannot use two separate credentials for the same registry with different paths.
+
+#### Cosign Legacy Docker Media Types
+To sign images in a registry that does not fully support OCI media types, legacy equivalents can be used by adding the corresponding annotation to the cosign secret resource:
+```
+metadata:
+  name: ...
+  namespace: ...
+  annotations:
+    kpack.io/cosign.docker-media-types: "1"
+data:
+  cosign.key: ...
+  cosign.password: ...
+```
+This will be equivalent to setting `COSIGN_DOCKER_MEDIA_TYPES=1` as specified in the cosign [registry-support](https://github.com/sigstore/cosign#registry-support)
 
 ### Sample Image with a Git Source
 
