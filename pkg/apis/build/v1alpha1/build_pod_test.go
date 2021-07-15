@@ -1278,7 +1278,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				completionContainer := pod.Spec.Containers[0]
 				assert.Equal(t, config.CompletionWindowsImage, completionContainer.Image)
 
-				assert.Len(t, completionContainer.Args, 0)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/process/web",
+				}, completionContainer.Args)
 			})
 
 			it("does not use cache on windows", func() {

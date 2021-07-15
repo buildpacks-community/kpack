@@ -189,33 +189,27 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				if b.NotaryV1Config() == nil {
-					step(corev1.Container{
-						Name:            "completion",
-						Image:           images.completion(config.OS),
-						ImagePullPolicy: corev1.PullIfNotPresent,
-						Resources:       b.Spec.Resources,
-					})
-					return
+
+				volumeMounts := []corev1.VolumeMount{
+					reportVolume,
+				}
+				args := []string{}
+
+				if b.NotaryV1Config() != nil {
+					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+					volumeMounts = append(volumeMounts, notaryV1Volume)
+					volumeMounts = append(volumeMounts, secretVolumeMounts...)
+					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
+					args = append(args, secretArgs...)
 				}
 
-				_, notarySecretVolumeMounts, notarySecretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 				step(corev1.Container{
-					Name:    "completion",
-					Image:   images.completion(config.OS),
-					Command: []string{"/cnb/process/web"},
-					Args: append(
-						[]string{
-							"-notary-v1-url=" + b.NotaryV1Config().URL,
-						},
-						notarySecretArgs...,
-					),
-					Resources: b.Spec.Resources,
-					VolumeMounts: append(
-						notarySecretVolumeMounts,
-						notaryV1Volume,
-						reportVolume,
-					),
+					Name:            "completion",
+					Image:           images.completion(config.OS),
+					Command:         []string{"/cnb/process/web"},
+					Args:            args,
+					Resources:       b.Spec.Resources,
+					VolumeMounts:    volumeMounts,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				}, ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
