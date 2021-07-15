@@ -82,7 +82,7 @@ stored.
 
 `kpack` will be able to determine that the user wants to sign images using
 `cosign` by scanning the existing keys in each of the secrets. Secrets to be
-used by `cosign` signing should contain at least the `cosign.key` and
+used by `cosign` signing must contain at least the `cosign.key` and
 `cosign.password` keys on the `data` section. Optionally, the user can also
 annotate the secrets with the following information:
 - `kpack.io/cosign.repository`: a separate registry URL to upload the generated
