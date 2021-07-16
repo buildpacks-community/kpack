@@ -704,6 +704,70 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
+
+			it("supports anystack buildpacks", func() {
+				var err error
+				lifecycleImg, err = imagehelpers.SetLabels(lifecycleImg, map[string]interface{}{
+					lifecycleMetadataLabel: LifecycleMetadata{
+						LifecycleInfo: LifecycleInfo{
+							Version: "0.5.0",
+						},
+						API: LifecycleAPI{
+							BuildpackVersion: "0.2",
+							PlatformVersion:  "0.1",
+						},
+						APIs: LifecycleAPIs{
+							Buildpack: APIVersions{
+								Deprecated: []string{"0.2"},
+								Supported:  []string{"0.3", "0.4", "0.5"},
+							},
+							Platform: APIVersions{
+								Deprecated: []string{"0.3"},
+								Supported:  []string{"0.4"},
+							},
+						},
+					},
+				})
+				require.NoError(t, err)
+
+				buildpackRepository.AddBP("anystack.buildpack", "v1", []buildpackLayer{
+					{
+						v1Layer: buildpack3Layer,
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: buildapi.BuildpackInfo{
+								Id:      "anystack.buildpack",
+								Version: "v1",
+							},
+							Homepage: "buildpacks.com",
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         "0.5",
+							LayerDiffID: buildpack3Layer.diffID,
+							Stacks: []buildapi.BuildpackStack{
+								{
+									ID: "*",
+								},
+							},
+						},
+					},
+				})
+
+				clusterBuilderSpec.Order = []buildapi.OrderEntry{
+					{
+						Group: []buildapi.BuildpackRef{
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id:      "anystack.buildpack",
+									Version: "v1",
+								},
+							},
+						},
+					},
+				}
+
+				_, err = subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				require.NoError(t, err)
+			})
 		})
 
 		when("validating platform api", func() {

@@ -3,8 +3,11 @@ package cnb
 import (
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 )
+
+var anyStackMinimumVersion = semver.MustParse("0.5")
 
 func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins []string) error {
 	if len(bl.Order) != 0 {
@@ -16,7 +19,12 @@ func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins 
 	}
 
 	for _, s := range bl.Stacks {
-		if s.ID == id {
+		buildpackVersion, err := semver.NewVersion(bl.API)
+		if err != nil {
+			return err
+		}
+
+		if s.ID == id || isAnystack(s.ID, buildpackVersion) {
 			return validateRequiredMixins(mixins, s.Mixins)
 		}
 	}
@@ -45,4 +53,8 @@ func present(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func isAnystack(stackId string, buildpackVersion *semver.Version) bool {
+	return stackId == "*" && buildpackVersion.Compare(anyStackMinimumVersion) >= 0
 }
