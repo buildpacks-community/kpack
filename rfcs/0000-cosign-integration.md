@@ -33,8 +33,8 @@ signatures to a registry so that users can ensure the chain of custody of a
 generated artifact.
 
 This proposal aims to cover specifically the flow of signing an image produced
-by `kpack Image` resource without verification of base or builder images pulled
-in the process.
+by the `kpack Image` resource, along with its builder image, without
+verification of any container images pulled in the process.
 
 ## Actions to take
 
@@ -44,7 +44,10 @@ in the process.
   calculates its signature and pushes it either to the registry where the image
   is located, using the same credentials that were used to push the image, or
   [to the registry specified in the `COSIGN_REPOSITORY` environment variable](#key-generation-and-storage).
-  This flow must happen after the image has been pushed to the registry.
+  `kpack` should sign both the user-requested image being generated and the
+  builder image used for the build, using their respective service accounts to
+  find credentials. This flow must happen after each of the images have been
+  pushed to the registry.
 
 - If `cosign` fails to sign an image, the build should fail and output an error
   message in the build log, so the operator can troubleshoot the issue. The
