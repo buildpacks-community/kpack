@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchTools "k8s.io/client-go/tools/watch"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
@@ -139,7 +139,7 @@ func buildFailure(statusMessage string) error {
 }
 
 func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName string, condition watchTools.ConditionFunc) (*buildapi.Build, error) {
-	build, err := w.KpackClient.KpackV1alpha1().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
+	build, err := w.KpackClient.KpackV1alpha2().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

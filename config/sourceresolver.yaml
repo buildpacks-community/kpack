@@ -7,6 +7,19 @@ spec:
   versions:
   - name: v1alpha1
     served: true
+    storage: false
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Ready
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
+  - name: v1alpha2
+    served: true
     storage: true
     schema:
       openAPIV3Schema:

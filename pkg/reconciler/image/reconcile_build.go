@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
@@ -29,7 +29,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 		nextBuildNumber := currentBuildNumber + 1
 
 		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, buildCacheName, nextBuildNumber)
-		build, err = c.Client.KpackV1alpha1().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
+		build, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
 		if err != nil {
 			return buildapi.ImageStatus{}, err
 		}

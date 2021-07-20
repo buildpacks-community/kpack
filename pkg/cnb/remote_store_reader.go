@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 

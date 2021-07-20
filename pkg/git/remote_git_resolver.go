@@ -10,7 +10,7 @@ import (
 	git2go "github.com/libgit2/git2go/v31"
 	"github.com/pkg/errors"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 const defaultRemote = "origin"

@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 func TestMountableBuildpackLayer(t *testing.T) {

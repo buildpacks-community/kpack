@@ -22,6 +22,8 @@ import (
 	clientset "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	kpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	fakekpackv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
+	kpackv1alpha2 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha2"
+	fakekpackv1alpha2 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -79,4 +81,9 @@ var _ clientset.Interface = &Clientset{}
 // KpackV1alpha1 retrieves the KpackV1alpha1Client
 func (c *Clientset) KpackV1alpha1() kpackv1alpha1.KpackV1alpha1Interface {
 	return &fakekpackv1alpha1.FakeKpackV1alpha1{Fake: &c.Fake}
+}
+
+// KpackV1alpha2 retrieves the KpackV1alpha2Client
+func (c *Clientset) KpackV1alpha2() kpackv1alpha2.KpackV1alpha2Interface {
+	return &fakekpackv1alpha2.FakeKpackV1alpha2{Fake: &c.Fake}
 }

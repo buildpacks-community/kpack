@@ -12,11 +12,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/tracker"
@@ -148,6 +148,6 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Cluster
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().ClusterBuilders().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().ClusterBuilders().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }

@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientgotesting "k8s.io/client-go/testing"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 )
@@ -93,10 +93,10 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				LatestBuildImageGeneration: generation,
 				Status:                     conditionReady(corev1.ConditionTrue, generation, ""),
 			}
-			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
+			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			result, err := imageWaiter.Wait(context.TODO(), out, image)
@@ -113,7 +113,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				Status: conditionReady(corev1.ConditionFalse, generation, "some-image-error"),
 			}
 
-			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 			_, err = imageWaiter.Wait(context.TODO(), out, image)
 			assert.EqualError(t, err, "update to image some-name failed: some-image-error")
@@ -128,10 +128,10 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				Status:                     conditionReady(corev1.ConditionUnknown, generation, ""),
 			}
 
-			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(
+			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(
 				context.TODO(),
 				&buildapi.Build{
 					ObjectMeta: metav1.ObjectMeta{
@@ -177,7 +177,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				Status:                     conditionReady(corev1.ConditionUnknown, generation+1, ""),
 			}
 
-			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			imageWatcher.addEvent(watch.Event{
@@ -192,7 +192,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
+			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			result, err := imageWaiter.Wait(context.TODO(), out, image)
@@ -213,7 +213,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				Status:                     conditionReady(corev1.ConditionUnknown, generation, ""),
 			}
 
-			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			imageWatcher.addEvent(watch.Event{

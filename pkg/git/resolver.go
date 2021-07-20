@@ -5,7 +5,7 @@ import (
 
 	k8sclient "k8s.io/client-go/kubernetes"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 type Resolver struct {

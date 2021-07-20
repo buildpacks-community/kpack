@@ -1,6 +1,6 @@
 package buildchange
 
-import buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+import buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 
 func NewCommitChange(oldRevision, newRevision string) Change {
 	return commitChange{
