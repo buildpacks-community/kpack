@@ -1,32 +1,38 @@
 #@ load("@ytt:data", "data")
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: defaults.webhook.kpack.io
 webhooks:
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
       name: kpack-webhook
       namespace: kpack
   failurePolicy: Fail
+  matchPolicy: Exact
   sideEffects: None
+  timeoutSeconds: 30
   name: defaults.webhook.kpack.io
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.webhook.kpack.io
 webhooks:
 - admissionReviewVersions:
+  - v1
   - v1beta1
   clientConfig:
     service:
       name: kpack-webhook
       namespace: kpack
   failurePolicy: Fail
+  matchPolicy: Exact
   sideEffects: None
+  timeoutSeconds: 30
   name: validation.webhook.kpack.io
 ---
 apiVersion: v1
