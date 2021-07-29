@@ -1,20 +1,23 @@
 package cosigner
 
 import (
+	"context"
+	"errors"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
+	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/sigstore/cosign/pkg/cosign"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestImageSigner(t *testing.T) {
@@ -56,50 +59,96 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		// Error when signing with invalid image
 		// Success when signing with valid image/key
 		when("invalid imageRef", func() {
-			it("empty imageRef", func() {
-				err := signer.Sign("", "")
-				assert.NotNil(t, err)
+			it.Before(func() {
+				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+					return errors.New("fake cli.SignCmd error")
+				}
 			})
 
-			it("wrong imageRef", func() {
-				err := signer.Sign("invalidImage", "")
-				assert.NotNil(t, err)
+			it("should error", func() {
+				err := signer.Sign("", "fakeKey")
+				assert.EqualError(t, err, "signing reference image is empty")
+
+				err = signer.Sign("invalidImage", "fakeKey")
+				assert.EqualError(t, err, "signing: fake cli.SignCmd error")
 			})
 		})
 
-		when("invalid key", func() {
+		when("invalid keyPath", func() {
+			it.Before(func() {
+				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+					return errors.New("fake cli.SignCmd error")
+				}
+			})
 
+			it("should error", func() {
+				err := signer.Sign("fakeImage", "")
+				assert.EqualError(t, err, "signing key path is empty")
+
+				err = signer.Sign("fakeImage", "invalidKey")
+				assert.EqualError(t, err, "signing: fake cli.SignCmd error")
+			})
 		})
 
-		it("signs image", func() {
-			// Todo: how do we mock kube secrets
+		// Todo: Iteration 1: Make a signing test using keyless or local keys
+		// Todo: Iteration 2: Update to use secrets
+		// Todo: Iteration 3: Update to use service account secrets
+		// Todo: Iteration 4: Update to sign builder and other resources
 
-			secretObject := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ignored-secret",
-					Namespace: "namespace",
-				},
-				StringData: map[string]string{
-					"username": "username",
-					"password": "password",
-				},
-				Type: corev1.SecretTypeBasicAuth,
+		// Issues
+		// How to mock secrets for cosign to consume?
+		//   (Make mock kube server and set the kubeconfig?)
+		// How to mock registry for cosign to sign to
+		//   Verify that an image was then signed
+
+		it("signs images", func() {
+			imageRef = "registry.example.com/fakeProject/fakeImage:test"
+
+			testDir := t.TempDir()
+			_, privKeyPath, _ := keypair(t, testDir)
+
+			// Mock cliSignCmd to verify passed in variables
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRefActual, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				t.Helper()
+				assert.Equal(t, imageRefActual, imageRef)
+				assert.Equal(t, ko.KeyRef, privKeyPath)
+				return nil
 			}
-			fakeK8sClient := fake.NewSimpleClientset(secretObject)
 
-			assert.NotNil(t, fakeK8sClient)
-
-			signer.Sign(imageRef, "")
-
-			// Populate registry with an image
-			// - Same as notary
-			// Call cosign function to sign that image
-			// - SignCmd
-			// - Verify that there is no error when cosign.Sign
+			err := signer.Sign(imageRef, privKeyPath)
+			assert.Nil(t, err)
 		})
 	})
 
-	// Test using service account
+}
 
-	// Test signing builder and other resources
+// Helper Functions
+func keypair(t *testing.T, td string) (*cosign.Keys, string, string) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		os.Chdir(wd)
+	}()
+	keys, err := cosign.GenerateKeyPair(func(bool) ([]byte, error) {
+		return []byte(""), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	privKeyPath := filepath.Join(td, "cosign.key")
+	if err := ioutil.WriteFile(privKeyPath, keys.PrivateBytes, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	pubKeyPath := filepath.Join(td, "cosign.pub")
+	if err := ioutil.WriteFile(pubKeyPath, keys.PublicBytes, 0600); err != nil {
+		t.Fatal(err)
+	}
+	return keys, privKeyPath, pubKeyPath
 }

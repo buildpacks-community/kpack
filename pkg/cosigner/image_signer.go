@@ -1,10 +1,13 @@
 package cosigner
 
 import (
+	"context"
+	"fmt"
 	"log"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
 
 type ImageFetcher interface {
@@ -15,6 +18,8 @@ type ImageSigner struct {
 	Logger *log.Logger
 	Client ImageFetcher
 }
+
+var cliSignCmd = cli.SignCmd
 
 // Todo: user service account secrets
 // Iteration 1: use secret
@@ -28,12 +33,20 @@ type ImageSigner struct {
 // Todo: Annotation obtained from kpack config
 
 func (s *ImageSigner) Sign(refImage, keyPath string) error {
-	// ctx := context.Background()
-	// ko := cli.KeyOpts{KeyRef: keyPath}
+	if refImage == "" {
+		return fmt.Errorf("signing reference image is empty")
+	}
 
-	// if err := cli.SignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
+	if keyPath == "" {
+		return fmt.Errorf("signing key path is empty")
+	}
 
-	// }
+	ctx := context.Background()
+	ko := cli.KeyOpts{KeyRef: keyPath}
+
+	if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
+		return fmt.Errorf("signing: %v", err)
+	}
 
 	return nil
 }
