@@ -5,8 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -15,7 +13,6 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
-	"github.com/sigstore/cosign/pkg/cosign"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 )
@@ -92,6 +89,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 		// Todo: Iteration 1: Make a signing test using keyless or local keys
 		// Todo: Iteration 2: Update to use secrets
+		// - Accept that cosign will work if our string is correct
+		// - Make a PR to cosign to abstract the kubernetes client
 		// Todo: Iteration 3: Update to use service account secrets
 		// Todo: Iteration 4: Update to sign builder and other resources
 
@@ -104,8 +103,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		it("signs images", func() {
 			imageRef = "registry.example.com/fakeProject/fakeImage:test"
 
-			testDir := t.TempDir()
-			_, privKeyPath, _ := keypair(t, testDir)
+			privKeyPath := "privateKeyPath/path"
 
 			// Mock cliSignCmd to verify passed in variables
 			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRefActual, certPath string, upload bool, payloadPath string, force, recursive bool) error {
@@ -118,37 +116,12 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			err := signer.Sign(imageRef, privKeyPath)
 			assert.Nil(t, err)
 		})
+
+		// Obtaining secrets from service account
+		// - Update signer.Sign to only take signer.Sign(imageRef, serviceAccountName)
+		// - Look at all service accounts
+		//   - Get all cosign secrets
+		//
 	})
 
-}
-
-// Helper Functions
-func keypair(t *testing.T, td string) (*cosign.Keys, string, string) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(td); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		os.Chdir(wd)
-	}()
-	keys, err := cosign.GenerateKeyPair(func(bool) ([]byte, error) {
-		return []byte(""), nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	privKeyPath := filepath.Join(td, "cosign.key")
-	if err := ioutil.WriteFile(privKeyPath, keys.PrivateBytes, 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	pubKeyPath := filepath.Join(td, "cosign.pub")
-	if err := ioutil.WriteFile(pubKeyPath, keys.PublicBytes, 0600); err != nil {
-		t.Fatal(err)
-	}
-	return keys, privKeyPath, pubKeyPath
 }
