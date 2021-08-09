@@ -3,18 +3,17 @@ package cosigner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"testing"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestImageSigner(t *testing.T) {
@@ -25,36 +24,45 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
 		logger = log.New(ioutil.Discard, "", 0)
 
-		client = registryfakes.NewFakeClient()
+		// Todo: evaluate if not being able to test secrets is an issue
+		// Cosign does not allow us to set the k8sclient, therefore, how do we confirm that it will be pointing to the correct thing
+		// It will likely use the default kubeconfig? is the kubeconfig set as default for kpack then?
 
-		signer = ImageSigner{
-			Logger: logger,
-			Client: client,
+		k8sSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testSecretName",
+				Namespace: "testNamespace",
+			},
+			Data: map[string][]byte{},
 		}
+
+		serviceAccount = &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "testNamespace",
+				Name:      "serviceAccountName",
+			},
+			Secrets: []corev1.ObjectReference{
+				{
+					Kind: "secret",
+					Name: "testSecretName",
+				},
+			},
+		}
+
+		fakeK8sClient = fake.NewSimpleClientset(serviceAccount, k8sSecret)
+
+		signer = NewImageSigner(logger, fakeK8sClient)
 	)
 
-	// Test cosign signing
 	when("#Sign", func() {
 		var (
-			keychain authn.Keychain
-			image    v1.Image
 			imageRef string
 		)
 
 		it.Before(func() {
-			keychain = &registryfakes.FakeKeychain{}
 			imageRef = "example-registry.io/test@1.0"
-
-			var err error
-			image, err = random.Image(0, 0)
-			require.NoError(t, err)
-
-			client.AddImage(imageRef, image, keychain)
 		})
 
-		// Error when signing with invalid key
-		// Error when signing with invalid image
-		// Success when signing with valid image/key
 		when("invalid imageRef", func() {
 			it.Before(func() {
 				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
@@ -63,65 +71,47 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("should error", func() {
-				err := signer.Sign("", "fakeKey")
+				err := signer.Sign("", "testNamespace", "serviceAccountName")
 				assert.EqualError(t, err, "signing reference image is empty")
 
-				err = signer.Sign("invalidImage", "fakeKey")
+				err = signer.Sign("invalidImage", "testNamespace", "serviceAccountName")
 				assert.EqualError(t, err, "signing: fake cli.SignCmd error")
 			})
 		})
 
-		when("invalid keyPath", func() {
-			it.Before(func() {
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
-					return errors.New("fake cli.SignCmd error")
-				}
-			})
-
+		when("invalid serviceaccount", func() {
 			it("should error", func() {
-				err := signer.Sign("fakeImage", "")
-				assert.EqualError(t, err, "signing key path is empty")
+				err := signer.Sign("fakeImage", "", "serviceAccountName")
+				assert.EqualError(t, err, "namespace is empty")
 
-				err = signer.Sign("fakeImage", "invalidKey")
-				assert.EqualError(t, err, "signing: fake cli.SignCmd error")
+				err = signer.Sign(imageRef, "fakeNamespace", "serviceAccountName")
+				assert.EqualError(t, err, "get service account: serviceaccounts \"serviceAccountName\" not found")
 			})
 		})
 
-		// Todo: Iteration 1: Make a signing test using keyless or local keys
-		// Todo: Iteration 2: Update to use secrets
-		// - Accept that cosign will work if our string is correct
-		// - Make a PR to cosign to abstract the kubernetes client
-		// Todo: Iteration 3: Update to use service account secrets
-		// Todo: Iteration 4: Update to sign builder and other resources
+		when("invalid serviceaccount", func() {
+			it("should error", func() {
+				err := signer.Sign("fakeImage", "testNamespace", "")
+				assert.EqualError(t, err, "service account name is empty")
 
-		// Issues
-		// How to mock secrets for cosign to consume?
-		//   (Make mock kube server and set the kubeconfig?)
-		// How to mock registry for cosign to sign to
-		//   Verify that an image was then signed
+				err = signer.Sign(imageRef, "testNamespace", "fakeServiceAccountName")
+				assert.EqualError(t, err, "get service account: serviceaccounts \"fakeServiceAccountName\" not found")
+			})
+		})
+
+		// Todo: Iteration 4: Update to sign builder and other resources
 
 		it("signs images", func() {
 			imageRef = "registry.example.com/fakeProject/fakeImage:test"
-
-			privKeyPath := "privateKeyPath/path"
-
-			// Mock cliSignCmd to verify passed in variables
 			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRefActual, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 				t.Helper()
-				assert.Equal(t, imageRefActual, imageRef)
-				assert.Equal(t, ko.KeyRef, privKeyPath)
+				assert.Equal(t, imageRef, imageRefActual)
+				assert.Equal(t, fmt.Sprintf("%s/%s", k8sSecret.ObjectMeta.Namespace, k8sSecret.ObjectMeta.Name), ko.KeyRef)
 				return nil
 			}
 
-			err := signer.Sign(imageRef, privKeyPath)
+			err := signer.Sign(imageRef, "testNamespace", "serviceAccountName")
 			assert.Nil(t, err)
 		})
-
-		// Obtaining secrets from service account
-		// - Update signer.Sign to only take signer.Sign(imageRef, serviceAccountName)
-		// - Look at all service accounts
-		//   - Get all cosign secrets
-		//
 	})
-
 }

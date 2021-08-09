@@ -203,7 +203,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					args = append(args, secretArgs...)
 				}
 
-				args = append(args, "-service-account="+b.ServiceAccount())
+				args = append(args, "-service-account="+b.ServiceAccount(), "-service-account-namespace="+b.Namespace)
 
 				step(corev1.Container{
 					Name:            "completion",
@@ -580,9 +580,12 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 
 				if notaryConfig == nil {
 					step(corev1.Container{
-						Name:            "completion",
-						Image:           images.CompletionImage,
-						Args:            []string{"-service-account=" + b.ServiceAccount()},
+						Name:  "completion",
+						Image: images.CompletionImage,
+						Args: []string{
+							"-service-account=" + b.ServiceAccount(),
+							"-service-account-namespace=" + b.Namespace,
+						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Resources:       b.Spec.Resources,
 					})
@@ -594,6 +597,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 							[]string{
 								"-notary-v1-url=" + notaryConfig.URL,
 								"-service-account=" + b.ServiceAccount(),
+								"-service-account-namespace=" + b.Namespace,
 							},
 							secretArgs...,
 						),

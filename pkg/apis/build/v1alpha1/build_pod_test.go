@@ -846,6 +846,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							Resources:       build.Spec.Resources,
 							Args: []string{
 								"-service-account=someserviceaccount",
+								"-service-account-namespace=some-namespace",
 							},
 						},
 					},
@@ -913,6 +914,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						[]string{
 							"-notary-v1-url=some-notary-url",
 							"-service-account=someserviceaccount",
+							"-service-account-namespace=some-namespace",
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
@@ -973,6 +975,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
 						"-service-account=someserviceaccount",
+						"-service-account-namespace=some-namespace",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1258,6 +1261,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
 					"-service-account=someserviceaccount",
+					"-service-account-namespace=some-namespace",
 				}, completionContainer.Args)
 
 				assert.Equal(t, "/networkWait/network-wait-launcher", completionContainer.Command[0])
@@ -1289,6 +1293,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/process/web",
 					"-service-account=someserviceaccount",
+					"-service-account-namespace=some-namespace",
 				}, completionContainer.Args)
 			})
 

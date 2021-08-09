@@ -8,6 +8,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "k8s.io/client-go/kubernetes"
 )
 
 type ImageFetcher interface {
@@ -15,40 +17,49 @@ type ImageFetcher interface {
 }
 
 type ImageSigner struct {
-	Logger *log.Logger
-	Client ImageFetcher
+	Logger    *log.Logger
+	K8sClient k8sclient.Interface
 }
 
 var cliSignCmd = cli.SignCmd
 
-// Todo: user service account secrets
-// Iteration 1: use secret
-// Iteration 2?: use service account
-// The funcion calling this will do:
-// For every key in the SA:
-//   sign(imageRef, key.Path)
-//      GetPass function would use: client.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{});
-
 // Other keyops support: https://github.com/sigstore/cosign/blob/143e47a120702f175e68e0a04594cb87a4ce8e02/cmd/cosign/cli/sign.go#L167
 // Todo: Annotation obtained from kpack config
 
-func (s *ImageSigner) Sign(refImage, keyPath string) error {
+func NewImageSigner(logger *log.Logger, k8sClient k8sclient.Interface) *ImageSigner {
+	return &ImageSigner{
+		Logger:    logger,
+		K8sClient: k8sClient,
+	}
+}
+
+func (s *ImageSigner) Sign(refImage, namespace, serviceAccountName string) error {
 	if refImage == "" {
 		return fmt.Errorf("signing reference image is empty")
 	}
 
-	if keyPath == "" {
-		return fmt.Errorf("signing key path is empty")
+	if namespace == "" {
+		return fmt.Errorf("namespace is empty")
 	}
+
+	if serviceAccountName == "" {
+		return fmt.Errorf("service account name is empty")
+	}
+
+	serviceAccount, err := s.K8sClient.CoreV1().ServiceAccounts(namespace).Get(context.Background(), serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("get service account: %v", err)
+	}
+
+	// Todo: Iterate over secrets
+	keyPath := fmt.Sprintf("%s/%s", namespace, serviceAccount.Secrets[0].Name)
 
 	ctx := context.Background()
 	ko := cli.KeyOpts{KeyRef: keyPath}
 
-	if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
+	if err = cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
 		return fmt.Errorf("signing: %v", err)
 	}
 
 	return nil
 }
-
-// cosign sign -key <> <image>
