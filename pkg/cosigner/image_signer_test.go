@@ -13,8 +13,8 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tj/assert"
 )
 
 func TestImageSigner(t *testing.T) {
