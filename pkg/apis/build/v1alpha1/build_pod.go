@@ -14,11 +14,13 @@ import (
 )
 
 const (
-	SecretTemplateName           = "secret-volume-%s"
-	SecretPathName               = "/var/build-secrets/%s"
-	BuildLabel                   = "kpack.io/build"
-	DOCKERSecretAnnotationPrefix = "kpack.io/docker"
-	GITSecretAnnotationPrefix    = "kpack.io/git"
+	SecretTemplateName             = "secret-volume-%s"
+	SecretPathName                 = "/var/build-secrets/%s"
+	BuildLabel                     = "kpack.io/build"
+	DOCKERSecretAnnotationPrefix   = "kpack.io/docker"
+	GITSecretAnnotationPrefix      = "kpack.io/git"
+	COSIGNSecretDataCosignKey      = "cosign.key"
+	COSIGNSecretDataCosignPassword = "cosign.password"
 
 	cacheDirName              = "cache-dir"
 	layersDirName             = "layers-dir"
@@ -151,7 +153,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 		return nil, err
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerAndCosignSecrets)
 
 	bindingVolumes, bindingVolumeMounts := b.setupBindings()
 
@@ -202,6 +204,9 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
 					args = append(args, secretArgs...)
 				}
+
+				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+				volumeMounts = append(volumeMounts, cosignVolumeMounts...)
 
 				step(corev1.Container{
 					Name:            "completion",
@@ -648,12 +653,16 @@ func (b *Build) cacheVolume(os string) []corev1.Volume {
 	}}
 }
 
-func gitAndDockerSecrets(secret corev1.Secret) bool {
-	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret)
+func gitAndDockerAndCosignSecrets(secret corev1.Secret) bool {
+	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret) || cosignSecrets(secret)
 }
 
 func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
+}
+
+func cosignSecrets(secret corev1.Secret) bool {
+	return secret.StringData[COSIGNSecretDataCosignKey] != ""
 }
 
 func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
@@ -679,6 +688,8 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Type == corev1.SecretTypeSSHAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
+		case secret.StringData["cosign.key"] != "":
+			// Allow cosign secrets with cosign.key set
 		default:
 			//ignoring secret
 			continue

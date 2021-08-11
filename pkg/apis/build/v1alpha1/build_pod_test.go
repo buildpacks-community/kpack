@@ -163,6 +163,50 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	cosignValidSecrets := []corev1.Secret{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-1",
+			},
+			StringData: map[string]string{
+				"cosign.key":      "fake-key",
+				"cosign.password": "fake-password",
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-no-password-1",
+			},
+			StringData: map[string]string{
+				"cosign.key":      "fake-key",
+				"cosign.password": "",
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-no-password-2",
+			},
+			StringData: map[string]string{
+				"cosign.key": "fake-key",
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+	}
+
+	cosignInvalidSecrets := []corev1.Secret{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "invalid-cosign-secret",
+			},
+			StringData: map[string]string{
+				"cosign.password": "fake-password",
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+	}
+
 	config := buildapi.BuildPodImages{
 		BuildInitImage:         "build/init:image",
 		BuildInitWindowsImage:  "build/init/windows:image",
@@ -942,6 +986,76 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					})
 				})
+			})
+
+			when("cosign secrets are present on the build", func() {
+				it("skips invalid secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					invalidSecretName := "invalid-cosign-secret"
+					assertSecretNotPresent(t, pod, invalidSecretName)
+
+					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+					})
+				})
+
+				it("sets up the completion image to use cosign secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					validSecrets := []string{
+						"cosign-secret-1",
+						"cosign-secret-no-password-1",
+						"cosign-secret-no-password-2",
+					}
+
+					for _, secretName := range validSecrets {
+						assertSecretPresent(t, pod, secretName)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      fmt.Sprintf("secret-volume-%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+						})
+					}
+				})
+			})
+		})
+
+		when("cosign secrets are present on the build", func() {
+			it("skips invalid secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				invalidSecretName := "invalid-cosign-secret"
+				assertSecretNotPresent(t, pod, invalidSecretName)
+
+				require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+					MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+				})
+			})
+
+			it("sets up the completion image to use cosign secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				validSecrets := []string{
+					"cosign-secret-1",
+					"cosign-secret-no-password-1",
+					"cosign-secret-no-password-2",
+				}
+
+				for _, secretName := range validSecrets {
+					assertSecretPresent(t, pod, secretName)
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", secretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+					})
+				}
 			})
 		})
 

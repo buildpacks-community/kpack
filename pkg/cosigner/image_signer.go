@@ -2,7 +2,6 @@ package cosigner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,21 +10,17 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
-	"github.com/google/go-containerregistry/pkg/authn"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
-
-type ImageFetcher interface {
-	Fetch(keychain authn.Keychain, repoName string) (v1.Image, string, error)
-}
 
 type ImageSigner struct {
 	Logger *log.Logger
 }
 
-var cliSignCmd = cli.SignCmd
-var secretLocation = "/var/build-secrets"
+var (
+	cliSignCmd     = cli.SignCmd
+	secretLocation = "/var/build-secrets"
+)
 
 // Other keyops support: https://github.com/sigstore/cosign/blob/143e47a120702f175e68e0a04594cb87a4ce8e02/cmd/cosign/cli/sign.go#L167
 // Todo: Annotation obtained from kpack config
@@ -45,12 +40,12 @@ func (s *ImageSigner) Sign(reportFilePath string) error {
 	}
 
 	if len(report.Image.Tags) < 1 {
-		return errors.New("no image tag to sign")
+		s.Logger.Println("no image tag to sign")
+		return nil
 	}
 
 	cosignFiles := findCosignFiles(secretLocation)
-
-	if cosignFiles == nil {
+	if len(cosignFiles) == 0 {
 		s.Logger.Println("no keys found for cosign signing")
 		return nil
 	}
