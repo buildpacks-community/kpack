@@ -14,6 +14,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
+- `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath`. If unset, kpack will look for `project.toml` at the root dir.
 - `notary`: Configuration for Notary image signing. See [Notary Configuration](#notary-config) section below.
 
 ### <a id='builder-config'></a>Builder Configuration
