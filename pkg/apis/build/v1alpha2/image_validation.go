@@ -16,6 +16,7 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
+	IsImmutable            ImageContextKey = "isImmutable"
 )
 
 var (
@@ -102,7 +103,13 @@ func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
 		if original.Spec.NeedVolumeCache() && is.NeedVolumeCache() {
-			if is.Cache.Volume.Size.Cmp(*original.Spec.Cache.Volume.Size) < 0 {
+			if ctx.Value(IsImmutable) == true && is.Cache.Volume.Size.Cmp(*original.Spec.Cache.Volume.Size) != 0 {
+				return &apis.FieldError{
+					Message: "Field cannot be changed",
+					Paths:   []string{"cacheSize"},
+					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.Cache.Volume.Size, is.Cache.Volume.Size),
+				}
+			} else if is.Cache.Volume.Size.Cmp(*original.Spec.Cache.Volume.Size) < 0 {
 				return &apis.FieldError{
 					Message: "Field cannot be decreased",
 					Paths:   []string{"cache.volume.size"},
