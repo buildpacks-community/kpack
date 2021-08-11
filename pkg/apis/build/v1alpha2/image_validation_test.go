@@ -267,6 +267,22 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cacheSize\ncurrent: 5G, requested: 4G")
 		})
 
+		it("image.cacheSize has not changed when storageclass is immutable", func() {
+			original := image.DeepCopy()
+			cacheSize := resource.MustParse("6G")
+			image.Spec.CacheSize = &cacheSize
+			err := image.Validate(apis.WithinUpdate(context.WithValue(ctx, IsImmutable, true), original))
+			assert.EqualError(t, err, "Field cannot be changed: spec.cacheSize\ncurrent: 5G, requested: 6G")
+		})
+
+		it("image.cacheSize has changed when storageclass is not immutable", func() {
+			original := image.DeepCopy()
+			cacheSize := resource.MustParse("6G")
+			image.Spec.CacheSize = &cacheSize
+			err := image.Validate(apis.WithinUpdate(ctx, original))
+			assert.Nil(t, err)
+		})
+
 		when("validating the notary config", func() {
 			it("handles a valid notary config", func() {
 				image.Spec.Notary = &NotaryConfig{
