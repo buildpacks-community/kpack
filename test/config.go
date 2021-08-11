@@ -8,10 +8,8 @@ import (
 )
 
 type config struct {
-	builder      string
-	testRegistry string
-	imageTag     string
-
+	testRegistry        string
+	imageTag            string
 	generatedImageNames []string
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -34,391 +35,403 @@ import (
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
+const (
+	testNamespace      = "test"
+	dockerSecret       = "docker-secret"
+	serviceAccountName = "image-service-account"
+	builderImage       = "gcr.io/paketo-buildpacks/builder:base"
+	clusterStoreName   = "store"
+	clusterStackName   = "stack"
+	builderName        = "custom-builder"
+	clusterBuilderName = "custom-cluster-builder"
+)
+
 func TestCreateImage(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 
-	spec.Run(t, "CreateImage", testCreateImage)
+	ctx := context.Background()
+
+	cfg := loadConfig(t)
+	t.Logf("Using image registry: %s", cfg.testRegistry)
+
+	clients, err := newClients(t)
+	require.NoError(t, err)
+
+	beforeAll(t, ctx, clients, cfg)
+	defer afterAll(t, cfg)
+
+	spec.Run(t, "CreateImage", testCreateImage(ctx, cfg, clients))
 }
 
-func testCreateImage(t *testing.T, when spec.G, it spec.S) {
-	const (
-		testNamespace      = "test"
-		dockerSecret       = "docker-secret"
-		serviceAccountName = "image-service-account"
-		builderImage       = "gcr.io/paketo-buildpacks/builder:base"
-		clusterStoreName   = "store"
-		clusterStackName   = "stack"
-		builderName        = "custom-builder"
-		clusterBuilderName = "custom-cluster-builder"
-	)
-
-	var (
-		cfg     config
-		clients *clients
-		ctx     = context.Background()
-	)
-
-	it.Before(func() {
-		cfg = loadConfig(t)
-
-		var err error
-		clients, err = newClients(t)
+func beforeAll(t *testing.T, ctx context.Context, clients *clients, cfg config) {
+	t.Log("Cleaning up old resources...")
+	err = clients.client.KpackV1alpha2().ClusterStores().Delete(ctx, clusterStoreName, metav1.DeleteOptions{})
+	if !errors.IsNotFound(err) {
 		require.NoError(t, err)
+	}
 
-		err = clients.client.KpackV1alpha2().ClusterStores().Delete(ctx, clusterStoreName, metav1.DeleteOptions{})
-		if !errors.IsNotFound(err) {
-			require.NoError(t, err)
-		}
-
-		err = clients.client.KpackV1alpha2().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
-		if !errors.IsNotFound(err) {
-			require.NoError(t, err)
-		}
-
-		err = clients.client.KpackV1alpha2().ClusterBuilders().Delete(ctx, clusterBuilderName, metav1.DeleteOptions{})
-		if !errors.IsNotFound(err) {
-			require.NoError(t, err)
-		}
-
-		deleteNamespace(t, ctx, clients, testNamespace)
-
-		_, err = clients.k8sClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   testNamespace,
-				Labels: readNamespaceLabelsFromEnv(),
-			},
-		}, metav1.CreateOptions{})
+	err = clients.client.KpackV1alpha2().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
+	if !errors.IsNotFound(err) {
 		require.NoError(t, err)
-	})
+	}
 
-	it.After(func() {
-		for _, tag := range cfg.generatedImageNames {
-			deleteImageTag(t, tag)
-		}
-	})
-
-	it.Before(func() {
-		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
+	err = clients.client.KpackV1alpha2().ClusterBuilders().Delete(ctx, clusterBuilderName, metav1.DeleteOptions{})
+	if !errors.IsNotFound(err) {
 		require.NoError(t, err)
+	}
 
-		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
+	deleteNamespace(t, ctx, clients, testNamespace)
+
+	_, err = clients.k8sClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   testNamespace,
+			Labels: readNamespaceLabelsFromEnv(),
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
+	require.NoError(t, err)
+
+	registry := reference.Context().Registry
+	authenticator, err := authn.DefaultKeychain.Resolve(registry)
+	require.NoError(t, err)
+
+	auth, err := authenticator.Authorization()
+	require.NoError(t, err)
+
+	secrets := []corev1.ObjectReference{}
+	secret := createSecret(dockerSecret, registry.RegistryStr(), auth)
+	if secret != nil {
+		t.Log("Creating registry secret...")
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, secret, metav1.CreateOptions{})
 		require.NoError(t, err)
+		secrets = append(secrets, corev1.ObjectReference{
+			Name: dockerSecret,
+		})
+	}
 
-		basicAuth, err := auth.Authorization()
-		require.NoError(t, err)
+	t.Log("Creating service account...")
+	_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(ctx, &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: serviceAccountName,
+		},
+		Secrets: secrets,
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
-				Annotations: map[string]string{
-					"kpack.io/docker": reference.Context().RegistryStr(),
-				},
-			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
-			},
-			Type: corev1.SecretTypeBasicAuth,
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(ctx, &corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: serviceAccountName,
-			},
-			Secrets: []corev1.ObjectReference{
+	t.Log("Creating cluster store...")
+	clusterStore, err := clients.client.KpackV1alpha2().ClusterStores().Create(ctx, &buildapi.ClusterStore{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterStoreName,
+		},
+		Spec: buildapi.ClusterStoreSpec{
+			Sources: []buildapi.StoreImage{
 				{
-					Name: dockerSecret,
+					Image: builderImage,
+				},
+				{
+					Image: "gcr.io/paketo-buildpacks/gradle",
 				},
 			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		_, err = clients.client.KpackV1alpha2().ClusterStores().Create(ctx, &buildapi.ClusterStore{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterStoreName,
+	waitUntilReady(t, ctx, clients, clusterStore)
+
+	t.Log("Creating cluster stack...")
+	_, err = clients.client.KpackV1alpha2().ClusterStacks().Create(ctx, &buildapi.ClusterStack{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterStackName,
+		},
+		Spec: buildapi.ClusterStackSpec{
+			Id: "io.buildpacks.stacks.bionic",
+			BuildImage: buildapi.ClusterStackSpecImage{
+				Image: "gcr.io/paketo-buildpacks/build:base-cnb",
 			},
-			Spec: buildapi.ClusterStoreSpec{
-				Sources: []buildapi.StoreImage{
+			RunImage: buildapi.ClusterStackSpecImage{
+				Image: "gcr.io/paketo-buildpacks/run:base-cnb",
+			},
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	t.Log("Creating builder...")
+	builder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Create(ctx, &buildapi.Builder{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      builderName,
+			Namespace: testNamespace,
+		},
+		Spec: buildapi.NamespacedBuilderSpec{
+			BuilderSpec: buildapi.BuilderSpec{
+				Tag: cfg.newImageTag(),
+				Stack: corev1.ObjectReference{
+					Name: clusterStackName,
+					Kind: "ClusterStack",
+				},
+				Store: corev1.ObjectReference{
+					Name: clusterStoreName,
+					Kind: "ClusterStore",
+				},
+				Order: []buildapi.OrderEntry{
 					{
-						Image: builderImage,
+						Group: []buildapi.BuildpackRef{
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/nodejs",
+								},
+							},
+						},
 					},
 					{
-						Image: "gcr.io/paketo-buildpacks/gradle",
+						Group: []buildapi.BuildpackRef{
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/bellsoft-liberica",
+								},
+							},
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/gradle",
+								},
+								Optional: true,
+							},
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/executable-jar",
+								},
+							},
+						},
 					},
 				},
 			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+			ServiceAccount: serviceAccountName,
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		_, err = clients.client.KpackV1alpha2().ClusterStacks().Create(ctx, &buildapi.ClusterStack{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterStackName,
-			},
-			Spec: buildapi.ClusterStackSpec{
-				Id: "io.buildpacks.stacks.bionic",
-				BuildImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
+	t.Log("Creating cluster builder...")
+	clusterBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterBuilderName,
+		},
+		Spec: buildapi.ClusterBuilderSpec{
+			BuilderSpec: buildapi.BuilderSpec{
+				Tag: cfg.newImageTag(),
+				Stack: corev1.ObjectReference{
+					Name: clusterStackName,
+					Kind: "ClusterStack",
 				},
-				RunImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
+				Store: corev1.ObjectReference{
+					Name: clusterStoreName,
+					Kind: "ClusterStore",
+				},
+				Order: []buildapi.OrderEntry{
+					{
+						Group: []buildapi.BuildpackRef{
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/nodejs",
+								},
+							},
+						},
+					},
+					{
+						Group: []buildapi.BuildpackRef{
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/bellsoft-liberica",
+								},
+							},
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/gradle",
+								},
+								Optional: true,
+							},
+							{
+								BuildpackInfo: buildapi.BuildpackInfo{
+									Id: "paketo-buildpacks/executable-jar",
+								},
+							},
+						},
+					},
 				},
 			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
-
-		builder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Create(ctx, &buildapi.Builder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      builderName,
+			ServiceAccountRef: corev1.ObjectReference{
 				Namespace: testNamespace,
+				Name:      serviceAccountName,
 			},
-			Spec: buildapi.NamespacedBuilderSpec{
-				BuilderSpec: buildapi.BuilderSpec{
-					Tag: cfg.newImageTag(),
-					Stack: corev1.ObjectReference{
-						Name: clusterStackName,
-						Kind: "ClusterStack",
-					},
-					Store: corev1.ObjectReference{
-						Name: clusterStoreName,
-						Kind: "ClusterStore",
-					},
-					Order: []buildapi.OrderEntry{
-						{
-							Group: []buildapi.BuildpackRef{
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/nodejs",
-									},
-								},
-							},
-						},
-						{
-							Group: []buildapi.BuildpackRef{
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/bellsoft-liberica",
-									},
-								},
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/gradle",
-									},
-									Optional: true,
-								},
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/executable-jar",
-									},
-								},
-							},
-						},
-					},
-				},
-				ServiceAccount: serviceAccountName,
-			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		clusterBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: clusterBuilderName,
-			},
-			Spec: buildapi.ClusterBuilderSpec{
-				BuilderSpec: buildapi.BuilderSpec{
-					Tag: cfg.newImageTag(),
-					Stack: corev1.ObjectReference{
-						Name: clusterStackName,
-						Kind: "ClusterStack",
-					},
-					Store: corev1.ObjectReference{
-						Name: clusterStoreName,
-						Kind: "ClusterStore",
-					},
-					Order: []buildapi.OrderEntry{
-						{
-							Group: []buildapi.BuildpackRef{
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/nodejs",
-									},
-								},
-							},
-						},
-						{
-							Group: []buildapi.BuildpackRef{
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/bellsoft-liberica",
-									},
-								},
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/gradle",
-									},
-									Optional: true,
-								},
-								{
-									BuildpackInfo: buildapi.BuildpackInfo{
-										Id: "paketo-buildpacks/executable-jar",
-									},
-								},
-							},
-						},
-					},
-				},
-				ServiceAccountRef: corev1.ObjectReference{
-					Namespace: testNamespace,
-					Name:      serviceAccountName,
-				},
-			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+	waitUntilReady(t, ctx, clients, builder, clusterBuilder)
+}
 
-		waitUntilReady(t, ctx, clients, builder, clusterBuilder)
-	})
-
-	it("builds and rebases git, blob, and registry based images", func() {
-
-		cacheSize := resource.MustParse("1Gi")
-
-		expectedResources := corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1G"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512M"),
-			},
+func afterAll(t *testing.T, cfg config) {
+	for _, tag := range cfg.generatedImageNames {
+		t.Logf("Deleting image: %s", tag)
+		err := deleteImageTag(tag)
+		if err != nil {
+			t.Error(err)
 		}
+	}
+}
 
-		imageSources := map[string]buildapi.SourceConfig{
-			"test-git-image": {
-				Git: &buildapi.Git{
-					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-					Revision: "master",
+func testCreateImage(ctx context.Context, cfg config, clients *clients) func(t *testing.T, when spec.G, it spec.S) {
+	return func(t *testing.T, when spec.G, it spec.S) {
+		when("builds and rebases git, blob, and registry based images", func() {
+			cacheSize := resource.MustParse("1Gi")
+
+			expectedResources := corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("1G"),
 				},
-			},
-			"test-blob-image": {
-				Blob: &buildapi.Blob{
-					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("512M"),
 				},
-			},
-			"test-registry-image": {
-				Registry: &buildapi.Registry{
-					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
-				},
-			},
-		}
-
-		builderConfigs := map[string]corev1.ObjectReference{
-			"custom-builder": {
-				Kind: buildapi.BuilderKind,
-				Name: builderName,
-			},
-			"custom-cluster-builder": {
-				Kind: buildapi.ClusterBuilderKind,
-				Name: clusterBuilderName,
-			},
-		}
-
-		for imageType := range imageSources {
-			for builderType := range builderConfigs {
-
-				imageName := fmt.Sprintf("%s-%s", imageType, builderType)
-				source := imageSources[imageType]
-				builder := builderConfigs[builderType]
-
-				t.Run(imageName, func(t *testing.T) {
-					t.Parallel()
-
-					imageTag := cfg.newImageTag()
-					image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: imageName,
-						},
-						Spec: buildapi.ImageSpec{
-							Tag:                  imageTag,
-							Builder:              builder,
-							ServiceAccount:       serviceAccountName,
-							Source:               source,
-							CacheSize:            &cacheSize,
-							ImageTaggingStrategy: buildapi.None,
-							Build: &buildapi.ImageBuild{
-								Resources: expectedResources,
-							},
-						},
-					}, metav1.CreateOptions{})
-					require.NoError(t, err)
-
-					validateImageCreate(t, clients, image, expectedResources)
-					validateRebase(t, ctx, clients, image.Name, testNamespace)
-				})
 			}
-		}
-	})
 
-	it("can trigger rebuilds", func() {
-		cacheSize := resource.MustParse("1Gi")
-
-		expectedResources := corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1G"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512M"),
-			},
-		}
-
-		imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
-
-		imageTag := cfg.newImageTag()
-		image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: imageName,
-			},
-			Spec: buildapi.ImageSpec{
-				Tag: imageTag,
-				Builder: corev1.ObjectReference{
-					Kind: buildapi.ClusterBuilderKind,
-					Name: clusterBuilderName,
-				},
-				ServiceAccount: serviceAccountName,
-				Source: buildapi.SourceConfig{
+			imageSources := map[string]buildapi.SourceConfig{
+				"test-git-image": {
 					Git: &buildapi.Git{
 						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 						Revision: "master",
 					},
 				},
-				CacheSize:            &cacheSize,
-				ImageTaggingStrategy: buildapi.None,
-				Build: &buildapi.ImageBuild{
-					Resources: expectedResources,
+				"test-blob-image": {
+					Blob: &buildapi.Blob{
+						URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+					},
 				},
-			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+				"test-registry-image": {
+					Registry: &buildapi.Registry{
+						Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
+					},
+				},
+			}
 
-		validateImageCreate(t, clients, image, expectedResources)
+			builderConfigs := map[string]corev1.ObjectReference{
+				"custom-builder": {
+					Kind: buildapi.BuilderKind,
+					Name: builderName,
+				},
+				"custom-cluster-builder": {
+					Kind: buildapi.ClusterBuilderKind,
+					Name: clusterBuilderName,
+				},
+			}
 
-		list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
+			imageTypes := make([]string, 0, len(imageSources))
+			for k := range imageSources {
+				imageTypes = append(imageTypes, k)
+			}
+			sort.Strings(imageTypes)
+
+			builderTypes := make([]string, 0, len(builderConfigs))
+			for k := range builderConfigs {
+				builderTypes = append(builderTypes, k)
+			}
+			sort.Strings(builderTypes)
+
+			for _, imageType := range imageTypes {
+				for _, builderType := range builderTypes {
+					imageName := imageType + "-" + builderType
+					source := imageSources[imageType]
+					builder := builderConfigs[builderType]
+
+					it(imageName, func() {
+						imageTag := cfg.newImageTag()
+						image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: imageName,
+							},
+							Spec: buildapi.ImageSpec{
+								Tag:                  imageTag,
+								Builder:              builder,
+								ServiceAccount:       serviceAccountName,
+								Source:               source,
+								CacheSize:            &cacheSize,
+								ImageTaggingStrategy: buildapi.None,
+								Build: &buildapi.ImageBuild{
+									Resources: expectedResources,
+								},
+							},
+						}, metav1.CreateOptions{})
+						require.NoError(t, err)
+
+						validateImageCreate(t, clients, image, expectedResources)
+						validateRebase(t, ctx, clients, image.Name, testNamespace)
+					}, spec.Parallel())
+				}
+			}
 		})
-		require.NoError(t, err)
-		require.Len(t, list.Items, 1)
 
-		build := &list.Items[0]
-		build.Annotations[buildapi.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
-		_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Update(ctx, build, metav1.UpdateOptions{})
-		require.NoError(t, err)
+		it("can trigger rebuilds", func() {
+			cacheSize := resource.MustParse("1Gi")
 
-		eventually(t, func() bool {
+			expectedResources := corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("1G"),
+				},
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("512M"),
+				},
+			}
+
+			imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
+
+			imageTag := cfg.newImageTag()
+			image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: imageName,
+				},
+				Spec: buildapi.ImageSpec{
+					Tag: imageTag,
+					Builder: corev1.ObjectReference{
+						Kind: buildapi.ClusterBuilderKind,
+						Name: clusterBuilderName,
+					},
+					ServiceAccount: serviceAccountName,
+					Source: buildapi.SourceConfig{
+						Git: &buildapi.Git{
+							URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+							Revision: "master",
+						},
+					},
+					CacheSize:            &cacheSize,
+					ImageTaggingStrategy: buildapi.None,
+					Build: &buildapi.ImageBuild{
+						Resources: expectedResources,
+					},
+				},
+			}, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			validateImageCreate(t, clients, image, expectedResources)
+
 			list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 			})
 			require.NoError(t, err)
-			return len(list.Items) == 2
-		}, 5*time.Second, 1*time.Minute)
-	})
+			require.Len(t, list.Items, 1)
+
+			build := &list.Items[0]
+			build.Annotations[buildapi.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
+			_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Update(ctx, build, metav1.UpdateOptions{})
+			require.NoError(t, err)
+
+			eventually(t, func() bool {
+				list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
+				})
+				require.NoError(t, err)
+				return len(list.Items) == 2
+			}, 5*time.Second, 1*time.Minute)
+		})
+	}
 }
 
 func readNamespaceLabelsFromEnv() map[string]string {
@@ -444,8 +457,8 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 		name := ob.GetObjectMeta().GetName()
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
+		t.Logf("Waiting for [ns=%s,name=%s,kind=%s,version=%s] to be ready...", namespace, name, gvr.Resource, gvr.Version)
 		eventually(t, func() bool {
-
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 			require.NoError(t, err)
 
@@ -454,7 +467,7 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 			require.NoError(t, err)
 
 			return kResource.Status.GetCondition(apis.ConditionReady).IsTrue()
-		}, 1*time.Second, 8*time.Minute)
+		}, 1*time.Second, 15*time.Minute)
 	}
 }
 
@@ -468,7 +481,6 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 		require.NoError(t, err)
 	}()
 
-	t.Logf("Waiting for image '%s' to be created", image.Name)
 	waitUntilReady(t, ctx, clients, image)
 
 	registryClient := &registry.Client{}
@@ -524,18 +536,40 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
 
 		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
-	}, 5*time.Second, 1*time.Minute)
+	}, 5*time.Second, 2*time.Minute)
 }
 
-func deleteImageTag(t *testing.T, deleteImageTag string) {
-	reference, err := name.ParseReference(deleteImageTag, name.WeakValidation)
-	require.NoError(t, err)
+func deleteImageTag(image string) error {
+	reference, err := name.ParseReference(image, name.WeakValidation)
+	if err != nil {
+		return err
+	}
 
 	authenticator, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
+
+	switch reference.(type) {
+	case name.Tag:
+		// need to get digest for deletion (see https://github.com/google/go-containerregistry/issues/999#issuecomment-828701797)
+		head, err := remote.Head(reference, remote.WithAuth(authenticator))
+		if err != nil {
+			return err
+		}
+
+		reference, err = name.ParseReference(fmt.Sprintf("%s@%s", reference.Name(), head.Digest.String()), name.WeakValidation)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = remote.Delete(reference, remote.WithAuth(authenticator))
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func deleteNamespace(t *testing.T, ctx context.Context, clients *clients, namespace string) {
@@ -567,4 +601,28 @@ func deleteNamespace(t *testing.T, ctx context.Context, clients *clients, namesp
 		}
 	}
 	require.True(t, closed)
+}
+
+func createSecret(name, registry string, auth *authn.AuthConfig) *corev1.Secret {
+	if auth == nil {
+		return nil
+	}
+
+	if auth.Username != "" && auth.Password != "" {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+				Annotations: map[string]string{
+					"kpack.io/docker": registry,
+				},
+			},
+			StringData: map[string]string{
+				"username": auth.Username,
+				"password": auth.Password,
+			},
+			Type: corev1.SecretTypeBasicAuth,
+		}
+	}
+
+	return nil
 }
