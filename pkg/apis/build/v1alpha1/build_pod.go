@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -390,12 +391,17 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-project-metadata=/layers/project-metadata.toml"},
 							cacheArgs,
 							func() []string {
-								if platformAPI == "0.3" {
+								platformAPIVersion := semver.MustParse(platformAPI)
+								if platformAPIVersion.LessThan(semver.MustParse("0.4")) {
 									return nil
+								} else if platformAPIVersion.LessThan(semver.MustParse("0.6")) {
+									return []string{
+										"-report=/var/report/report.toml",
+										"-process-type=web",
+									}
 								}
 								return []string{
 									"-report=/var/report/report.toml",
-									"-process-type=web",
 								}
 							}(),
 							b.Spec.Tags),
@@ -760,10 +766,10 @@ func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 
 func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (string, error) {
 
-	var supportedPlatformAPIVersions = []string{"0.5", "0.4", "0.3"}
+	var supportedPlatformAPIVersions = []string{"0.6", "0.5", "0.4", "0.3"}
 	if b.NotaryV1Config() != nil || bc.OS == "windows" {
 		//windows and report.toml are only available in platform api 0.3
-		supportedPlatformAPIVersions = []string{"0.5", "0.4"}
+		supportedPlatformAPIVersions = []string{"0.6", "0.5", "0.4"}
 	}
 
 	for _, supportedVersion := range supportedPlatformAPIVersions {

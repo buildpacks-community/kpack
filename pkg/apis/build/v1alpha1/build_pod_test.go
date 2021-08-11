@@ -175,7 +175,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		RunImage:     "builderregistry.io/run",
 		Uid:          2000,
 		Gid:          3000,
-		PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5"},
+		PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6"},
 		OS:           "linux",
 	}
 
@@ -506,7 +506,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[1].Name, "detect")
-			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[1].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -523,7 +523,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
-			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -577,7 +577,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
-			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -596,7 +596,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "build")
-			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[4].Image, builderImage)
 			assert.Len(t, pod.Spec.InitContainers[4].VolumeMounts, len([]string{
 				"layers-dir",
@@ -614,7 +614,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
-			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 				"layers-dir",
 				"workspace-dir",
@@ -630,7 +630,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-project-metadata=/layers/project-metadata.toml",
 				"-cache-dir=/cache",
 				"-report=/var/report/report.toml",
-				"-process-type=web",
 				build.Tag(),
 				"someimage/name:tag2",
 				"someimage/name:tag3",
@@ -758,11 +757,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("no supported platform apis are available", func() {
-			buildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.6"}
+			buildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.7"}
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
-				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.6")
+				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.7")
 			})
 		})
 
@@ -1227,7 +1226,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-analyzed=/layers/analyzed.toml",
 					"-project-metadata=/layers/project-metadata.toml",
 					"-report=/var/report/report.toml",
-					"-process-type=web",
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 					exportContainer.Args)
 			})
