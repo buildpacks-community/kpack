@@ -844,9 +844,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							Image:           config.CompletionImage,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources:       build.Spec.Resources,
-							Args: []string{
-								"-service-account=someserviceaccount",
-								"-service-account-namespace=some-namespace",
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "report-dir",
+									MountPath: "/var/report",
+								},
 							},
 						},
 					},
@@ -913,8 +915,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					require.Equal(t,
 						[]string{
 							"-notary-v1-url=some-notary-url",
-							"-service-account=someserviceaccount",
-							"-service-account-namespace=some-namespace",
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
@@ -974,8 +974,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-service-account=someserviceaccount",
-						"-service-account-namespace=some-namespace",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1260,8 +1258,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-basic-docker=docker-secret-1=acr.io",
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
-					"-service-account=someserviceaccount",
-					"-service-account-namespace=some-namespace",
 				}, completionContainer.Args)
 
 				assert.Equal(t, "/networkWait/network-wait-launcher", completionContainer.Command[0])
@@ -1292,8 +1288,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					dnsProbeHost,
 					"--",
 					"/cnb/process/web",
-					"-service-account=someserviceaccount",
-					"-service-account-namespace=some-namespace",
 				}, completionContainer.Args)
 			})
 

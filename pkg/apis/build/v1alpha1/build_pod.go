@@ -203,15 +203,13 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					args = append(args, secretArgs...)
 				}
 
-				args = append(args, "-service-account="+b.ServiceAccount(), "-service-account-namespace="+b.Namespace)
-
 				step(corev1.Container{
 					Name:            "completion",
 					Image:           images.completion(config.OS),
 					Command:         []string{"/cnb/process/web"},
 					Args:            args,
 					Resources:       b.Spec.Resources,
-					VolumeMounts:    volumeMounts,
+					VolumeMounts:    append(volumeMounts, reportVolume),
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				}, ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
@@ -580,14 +578,11 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 
 				if notaryConfig == nil {
 					step(corev1.Container{
-						Name:  "completion",
-						Image: images.CompletionImage,
-						Args: []string{
-							"-service-account=" + b.ServiceAccount(),
-							"-service-account-namespace=" + b.Namespace,
-						},
+						Name:            "completion",
+						Image:           images.CompletionImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Resources:       b.Spec.Resources,
+						VolumeMounts:    []corev1.VolumeMount{reportVolume},
 					})
 				} else {
 					step(corev1.Container{
@@ -596,8 +591,6 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 						Args: append(
 							[]string{
 								"-notary-v1-url=" + notaryConfig.URL,
-								"-service-account=" + b.ServiceAccount(),
-								"-service-account-namespace=" + b.Namespace,
 							},
 							secretArgs...,
 						),

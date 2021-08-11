@@ -2,9 +2,15 @@ package cosigner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"regexp"
 
+	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
@@ -32,19 +38,45 @@ func NewImageSigner(logger *log.Logger) *ImageSigner {
 
 // signCmd will just use the mounted file instead of trying to access kuberenets for the secret
 func (s *ImageSigner) Sign(reportFilePath string) error {
-	// Read Report File
-	// Obtain first item from Tags (cosign will sign based on digest)
-	// Go to the "secretLocation" and look for all cosign.key files
-	// Loop through cosign.key files
-	// signCmd with image and cosign.key path
-	keyPath := ""
-	refImage := ""
-
-	ctx := context.Background()
-	ko := cli.KeyOpts{KeyRef: keyPath}
-
-	if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
-		return fmt.Errorf("signing: %v", err)
+	var report lifecycle.ExportReport
+	_, err := toml.DecodeFile(reportFilePath, &report)
+	if err != nil {
+		return fmt.Errorf("toml decode: %v", err)
 	}
+
+	if len(report.Image.Tags) < 1 {
+		return errors.New("no image tag to sign")
+	}
+
+	cosignFiles := findCosignFiles(secretLocation)
+
+	if cosignFiles == nil {
+		s.Logger.Println("no keys found for cosign signing")
+		return nil
+	}
+
+	refImage := report.Image.Tags[0]
+	ctx := context.Background()
+	for _, cosignFile := range cosignFiles {
+		ko := cli.KeyOpts{KeyRef: cosignFile}
+		if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
+			return fmt.Errorf("unable to sign image with %s", cosignFile)
+		}
+	}
+
 	return nil
+}
+
+func findCosignFiles(dir string) []string {
+	var files []string
+	filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+		if !f.IsDir() {
+			r, err := regexp.MatchString("cosign.key", f.Name())
+			if err == nil && r {
+				files = append(files, path)
+			}
+		}
+		return nil
+	})
+	return files
 }
