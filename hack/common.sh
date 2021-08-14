@@ -4,10 +4,9 @@ function pack_build() {
     image=$1
     target=$2
     pack_args=${@:3}
-    builder="gcr.io/cf-build-service-public/ci/kpack-builder" # builder used ci
-
-    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} ${pack_args} --publish --trust-builder
-
+    (cd hack && docker build -t kpack-builder .)
+    builder="kpack-builder" # builder used ci
+    pack build ${image} --builder ${builder} -e BP_GO_TARGETS=${target} ${pack_args} --publish --trust-builder -t ${image}:${kpack_version} --cache-image ${image}-cache
     docker pull ${image}
     resolved_image_name=$(docker inspect ${image} --format '{{index .RepoDigests 0}}' )
 }
@@ -27,6 +26,7 @@ function compile() {
   # e.g. IMAGE_PREFIX=username/kpack-
   IMAGE_PREFIX=${IMAGE_PREFIX:-"${registry}/"}
 
+  kpack_version=${kpack_version:="dev"}
   controller_image=${IMAGE_PREFIX}controller
   webhook_image=${IMAGE_PREFIX}webhook
   build_init_image=${IMAGE_PREFIX}build-init
@@ -52,12 +52,12 @@ function compile() {
 
   lifecycle_image_build ${lifecycle_image}
   lifecycle_image=${resolved_image_name}
-
   ytt -f config/. \
     -v controller_image=${controller_image} \
     -v webhook_image=${webhook_image} \
     -v build_init_image=${build_init_image} \
     -v rebase_image=${rebase_image} \
     -v completion_image=${completion_image} \
+    -v version=${kpack_version} \
     -v lifecycle_image=${lifecycle_image} > $output
 }

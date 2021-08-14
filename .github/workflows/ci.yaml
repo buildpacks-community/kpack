@@ -1,13 +1,14 @@
-name: CI
+name: CI/CD
 
 on:
   push:
     branches:
-    - main
+      - main
+    tags:
+      - "v*"
   pull_request: {}
 
 jobs:
-
   test:
     runs-on: ubuntu-latest
     steps:
@@ -18,3 +19,56 @@ jobs:
       run: bash <(curl -s https://codecov.io/bash)
       env:
         CODECOV_TOKEN: 4e256ab5-d474-459d-8d4d-cffea6455db7
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || ! github.event.pull_request.head.repo.fork }}
+    steps:
+      - id: checkout
+        name: Checkout code
+        uses: actions/checkout@v2
+      - name: Login to GitHub Package Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: setup-pack
+        uses: buildpacks/github-actions/setup-pack@v4.3.0
+      - name: Download ytt
+        run: curl -L -o $HOME/bin/ytt https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.36.0/ytt-linux-amd64 && chmod +x $HOME/bin/ytt
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        id: docker-cache
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=version::$([[ $GITHUB_REF == refs/tags/v* ]] && echo "${GITHUB_REF/refs\/tags\//}" || echo dev-${GITHUB_SHA})
+      - if: ${{ github.event_name != 'pull_request' || ! github.event.pull_request.head.repo.fork }}
+        name: Create release artifacts
+        env:
+          kpack_version: ${{ steps.get_version.outputs.version }}
+          kpack_repo: ghcr.io/${{ github.repository_owner }}/kpack
+        run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          ./hack/release.sh ${kpack_repo} release-${kpack_version}.yaml
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        if: startsWith(steps.get_version.outputs.version, 'dev')
+        name: "Nightly release"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Nightly kpack Build"
+          files: |
+            release-*.yaml       
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        if: startsWith(github.ref, 'refs/tags/v')
+        name: "kpack release"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          title: "kpack Release ${{ steps.get_version.outputs.version }}"
+          prerelease: false
+          files: |
+            release-*.yaml 
