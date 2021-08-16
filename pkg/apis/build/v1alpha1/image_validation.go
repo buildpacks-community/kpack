@@ -16,7 +16,7 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
-	IsImmutable            ImageContextKey = "isImmutable"
+	IsExpandable           ImageContextKey = "IsExpandable"
 )
 
 var (
@@ -98,7 +98,7 @@ func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
 		if original.Spec.CacheSize != nil {
-			if ctx.Value(IsImmutable) == true && is.CacheSize.Cmp(*original.Spec.CacheSize) != 0 {
+			if ctx.Value(IsExpandable) == false && is.CacheSize.Cmp(*original.Spec.CacheSize) != 0 {
 				return &apis.FieldError{
 					Message: "Field cannot be changed",
 					Paths:   []string{"cacheSize"},
