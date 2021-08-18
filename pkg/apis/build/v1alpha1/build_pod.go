@@ -214,7 +214,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 					Command:         []string{"/cnb/process/web"},
 					Args:            args,
 					Resources:       b.Spec.Resources,
-					VolumeMounts:    append(volumeMounts, reportVolume),
+					VolumeMounts:    volumeMounts,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				}, ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
@@ -662,7 +662,7 @@ func dockerSecrets(secret corev1.Secret) bool {
 }
 
 func cosignSecrets(secret corev1.Secret) bool {
-	return secret.StringData[COSIGNSecretDataCosignKey] != ""
+	return string(secret.Data[COSIGNSecretDataCosignKey]) != ""
 }
 
 func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
@@ -688,7 +688,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Type == corev1.SecretTypeSSHAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
-		case secret.StringData["cosign.key"] != "":
+		case string(secret.Data[COSIGNSecretDataCosignKey]) != "":
 			// Allow cosign secrets with cosign.key set
 		default:
 			//ignoring secret

@@ -168,9 +168,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-1",
 			},
-			StringData: map[string]string{
-				"cosign.key":      "fake-key",
-				"cosign.password": "fake-password",
+			Data: map[string][]byte{
+				"cosign.key":      []byte("fake-key"),
+				"cosign.password": []byte("fake-password"),
 			},
 			Type: corev1.SecretTypeOpaque,
 		},
@@ -178,9 +178,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-no-password-1",
 			},
-			StringData: map[string]string{
-				"cosign.key":      "fake-key",
-				"cosign.password": "",
+			Data: map[string][]byte{
+				"cosign.key":      []byte("fake-key"),
+				"cosign.password": []byte(""),
 			},
 			Type: corev1.SecretTypeOpaque,
 		},
@@ -188,8 +188,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-no-password-2",
 			},
-			StringData: map[string]string{
-				"cosign.key": "fake-key",
+			Data: map[string][]byte{
+				"cosign.key": []byte("fake-key"),
 			},
 			Type: corev1.SecretTypeOpaque,
 		},
@@ -200,8 +200,17 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "invalid-cosign-secret",
 			},
-			StringData: map[string]string{
-				"cosign.password": "fake-password",
+			Data: map[string][]byte{
+				"cosign.password": []byte("fake-password"),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "invalid-empty-cosign-secret",
+			},
+			Data: map[string][]byte{
+				"cosign.key": []byte(""),
 			},
 			Type: corev1.SecretTypeOpaque,
 		},

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pivotal/kpack/pkg/cosigner"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/notary"
@@ -35,8 +36,21 @@ func init() {
 	logger = log.New(os.Stdout, "", 0)
 }
 
+// Denny Todo: registrySecretsDir/dockerConfigCredentials folder path should be set for DOCKER_CONFIG
+// We can do this here with os.SetEnv or we can put it at the buildPod level as an Env variable
+
 func main() {
 	flag.Parse()
+
+	logger.Println("Attempt to sign with cosign")
+	cosignSigner := cosigner.ImageSigner{
+		Logger: logger,
+	}
+	if err := cosignSigner.Sign(reportFilePath); err != nil {
+		logger.Printf("cosignSigner sign: %v", err)
+	}
+
+	logger.Println("Finished attempt to sign with cosign")
 
 	if notaryV1URL != "" {
 		creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
