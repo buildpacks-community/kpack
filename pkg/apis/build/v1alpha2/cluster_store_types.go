@@ -26,13 +26,8 @@ type ClusterStore struct {
 // +k8s:openapi-gen=true
 type ClusterStoreSpec struct {
 	// +listType
-	Sources           []StoreImage            `json:"sources,omitempty"`
-	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
-}
-
-// +k8s:openapi-gen=true
-type StoreImage struct {
-	Image string `json:"image,omitempty"`
+	Sources           []corev1alpha1.StoreImage `json:"sources,omitempty"`
+	ServiceAccountRef *corev1.ObjectReference   `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -40,24 +35,7 @@ type ClusterStoreStatus struct {
 	corev1alpha1.Status `json:",inline"`
 
 	// +listType
-	Buildpacks []StoreBuildpack `json:"buildpacks,omitempty"`
-}
-
-// +k8s:openapi-gen=true
-type StoreBuildpack struct {
-	BuildpackInfo `json:",inline"`
-	Buildpackage  BuildpackageInfo `json:"buildpackage,omitempty"`
-	StoreImage    StoreImage       `json:"storeImage,omitempty"`
-	DiffId        string           `json:"diffId,omitempty"`
-	Digest        string           `json:"digest,omitempty"`
-	Size          int64            `json:"size,omitempty"`
-
-	API      string `json:"api,omitempty"`
-	Homepage string `json:"homepage,omitempty"`
-	// +listType
-	Order []OrderEntry `json:"order,omitempty"`
-	// +listType
-	Stacks []BuildpackStack `json:"stacks,omitempty"`
+	Buildpacks []corev1alpha1.StoreBuildpack `json:"buildpacks,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

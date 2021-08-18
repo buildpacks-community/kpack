@@ -222,10 +222,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) 
 	return err
 }
 
-func buildMetadataFromBuiltImage(image cnb.BuiltImage) []buildapi.BuildpackMetadata {
-	buildpackMetadata := make([]buildapi.BuildpackMetadata, 0, len(image.BuildpackMetadata))
+func buildMetadataFromBuiltImage(image cnb.BuiltImage) []corev1alpha1.BuildpackMetadata {
+	buildpackMetadata := make([]corev1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
 	for _, metadata := range image.BuildpackMetadata {
-		buildpackMetadata = append(buildpackMetadata, buildapi.BuildpackMetadata{
+		buildpackMetadata = append(buildpackMetadata, corev1alpha1.BuildpackMetadata{
 			Id:       metadata.ID,
 			Version:  metadata.Version,
 			Homepage: metadata.Homepage,

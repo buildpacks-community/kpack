@@ -1,8 +1,9 @@
-package v1alpha2
+package v1alpha1
 
 type BuildpackMetadataList []BuildpackMetadata
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type BuildpackMetadata struct {
 	Id       string `json:"id"`
 	Version  string `json:"version"`

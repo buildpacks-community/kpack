@@ -1,11 +1,12 @@
 package v1alpha2
 
 import (
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const BuilderKind = "Builder"
@@ -28,7 +29,7 @@ type BuilderSpec struct {
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
 	Store corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
-	Order []OrderEntry `json:"order,omitempty"`
+	Order []corev1alpha1.OrderEntry `json:"order,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -40,13 +41,13 @@ type NamespacedBuilderSpec struct {
 // +k8s:openapi-gen=true
 type BuilderStatus struct {
 	corev1alpha1.Status     `json:",inline"`
-	BuilderMetadata         BuildpackMetadataList `json:"builderMetadata,omitempty"`
-	Order                   []OrderEntry          `json:"order,omitempty"`
-	Stack                   BuildStack            `json:"stack,omitempty"`
-	LatestImage             string                `json:"latestImage,omitempty"`
-	ObservedStackGeneration int64                 `json:"observedStackGeneration,omitempty"`
-	ObservedStoreGeneration int64                 `json:"observedStoreGeneration,omitempty"`
-	OS                      string                `json:"os,omitempty"`
+	BuilderMetadata         corev1alpha1.BuildpackMetadataList `json:"builderMetadata,omitempty"`
+	Order                   []corev1alpha1.OrderEntry          `json:"order,omitempty"`
+	Stack                   corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage             string                             `json:"latestImage,omitempty"`
+	ObservedStackGeneration int64                              `json:"observedStackGeneration,omitempty"`
+	ObservedStoreGeneration int64                              `json:"observedStoreGeneration,omitempty"`
+	OS                      string                             `json:"os,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

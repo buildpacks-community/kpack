@@ -17,11 +17,15 @@
 package v1alpha1
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/apis"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
@@ -40,35 +44,22 @@ type Image struct {
 
 // +k8s:openapi-gen=true
 type ImageSpec struct {
-	Tag                      string                 `json:"tag"`
-	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
-	ServiceAccount           string                 `json:"serviceAccount,omitempty"`
-	Source                   SourceConfig           `json:"source"`
-	CacheSize                *resource.Quantity     `json:"cacheSize,omitempty"`
-	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
-	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
-	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
-	Build                    *ImageBuild            `json:"build,omitempty"`
-	Notary                   *NotaryConfig          `json:"notary,omitempty"`
+	Tag                      string                            `json:"tag"`
+	Builder                  corev1.ObjectReference            `json:"builder,omitempty"`
+	ServiceAccount           string                            `json:"serviceAccount,omitempty"`
+	Source                   corev1alpha1.SourceConfig         `json:"source"`
+	CacheSize                *resource.Quantity                `json:"cacheSize,omitempty"`
+	FailedBuildHistoryLimit  *int64                            `json:"failedBuildHistoryLimit,omitempty"`
+	SuccessBuildHistoryLimit *int64                            `json:"successBuildHistoryLimit,omitempty"`
+	ImageTaggingStrategy     corev1alpha1.ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
+	Build                    *corev1alpha1.ImageBuild          `json:"build,omitempty"`
+	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 }
-
-// +k8s:openapi-gen=true
-type ImageBuilder struct {
-	metav1.TypeMeta `json:",inline"`
-	Name            string `json:"name"`
-}
-
-type ImageTaggingStrategy string
-
-const (
-	None        ImageTaggingStrategy = "None"
-	BuildNumber ImageTaggingStrategy = "BuildNumber"
-)
 
 // +k8s:openapi-gen=true
 type ImageBuild struct {
 	// +listType
-	Bindings Bindings `json:"bindings,omitempty"`
+	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
 	// +listType
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -103,6 +94,14 @@ func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
 
 func (i *Image) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: i.Namespace, Name: i.Name}
+}
+
+func (i *Image) ConvertTo(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertTo in v1alpha1")
+}
+
+func (i *Image) ConvertFrom(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertFrom in v1alpha1")
 }
 
 const ConditionBuilderReady corev1alpha1.ConditionType = "BuilderReady"
