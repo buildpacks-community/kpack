@@ -10,16 +10,27 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
-const fileDescriptorName = "project.toml"
+const defaultProjectDescriptorPath = "project.toml"
 
-func ProcessProjectDescriptor(appDir, platformDir string, logger *log.Logger) error {
-	var d descriptor
-	file := filepath.Join(appDir, fileDescriptorName)
+func ProcessProjectDescriptor(appDir, descriptorPath, platformDir string, logger *log.Logger) error {
+	var (
+		d descriptor
+	)
+
+	file := filepath.Join(appDir, defaultProjectDescriptorPath)
+	if descriptorPath != "" {
+		file = filepath.Join(appDir, descriptorPath)
+	}
+
 	if _, err := os.Stat(file); os.IsNotExist(err) {
+		if descriptorPath != "" {
+			return fmt.Errorf("project descriptor path set but no file found: %s", descriptorPath)
+		}
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("unable to determine if project descriptor file exists: %w", err)
 	}
+
 	_, err := toml.DecodeFile(file, &d)
 	if err != nil {
 		return err
@@ -68,7 +79,7 @@ func processFiles(appDir string, d descriptor) error {
 
 func getFileFilter(d descriptor) (func(string) bool, error) {
 	if d.Build.Exclude != nil && d.Build.Include != nil {
-		return nil, fmt.Errorf("%s: cannot have both include and exclude defined", fileDescriptorName)
+		return nil, fmt.Errorf("%s: cannot have both include and exclude defined", defaultProjectDescriptorPath)
 	}
 
 	if len(d.Build.Exclude) > 0 {

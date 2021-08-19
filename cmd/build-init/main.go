@@ -29,13 +29,14 @@ var (
 	imageTag        = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
 	runImage        = flag.String("runImage", os.Getenv("RUN_IMAGE"), "The base image from which application images are built.")
 
-	gitURL        = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
-	gitRevision   = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
-	blobURL       = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
-	registryImage = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
-	hostName      = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
-	sourceSubPath = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
-	buildChanges  = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
+	gitURL         = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
+	gitRevision    = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
+	blobURL        = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	registryImage  = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
+	hostName       = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
+	sourceSubPath  = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
+	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
+	descriptorPath = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
@@ -117,9 +118,9 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), platformDir, logger)
+	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), *descriptorPath, platformDir, logger)
 	if err != nil {
-		logger.Fatalf("error while processing the project descriptor %s", err)
+		logger.Fatalf("error while processing the project descriptor: %s", err)
 	}
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
