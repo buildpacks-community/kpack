@@ -2,6 +2,7 @@ package v1alpha2
 
 import (
 	"context"
+	"fmt"
 
 	"knative.dev/pkg/apis"
 
@@ -9,20 +10,27 @@ import (
 )
 
 func (b *Build) ConvertTo(_ context.Context, to apis.Convertible) error {
-	toBuild := to.(*v1alpha1.Build)
-	toBuild.ObjectMeta = b.ObjectMeta
-	b.Spec.convertTo(&toBuild.Spec)
-	b.Status.convertTo(&toBuild.Status)
+	switch toBuild := to.(type) {
+	case *v1alpha1.Build:
+		toBuild.ObjectMeta = b.ObjectMeta
+		b.Spec.convertTo(&toBuild.Spec)
+		b.Status.convertTo(&toBuild.Status)
+	default:
+		return fmt.Errorf("unknown version, got: %T", toBuild)
+	}
 
 	return nil
 }
 
 func (b *Build) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	fromBuild := from.(*v1alpha1.Build)
-	b.ObjectMeta = fromBuild.ObjectMeta
-	b.Spec.convertFrom(&fromBuild.Spec)
-	b.Status.convertFrom(&fromBuild.Status)
-
+	switch fromBuild := from.(type) {
+	case *v1alpha1.Build:
+		b.ObjectMeta = fromBuild.ObjectMeta
+		b.Spec.convertFrom(&fromBuild.Spec)
+		b.Status.convertFrom(&fromBuild.Status)
+	default:
+		return fmt.Errorf("unknown version, got: %T", fromBuild)
+	}
 	return nil
 }
 

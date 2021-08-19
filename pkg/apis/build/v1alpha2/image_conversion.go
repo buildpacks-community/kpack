@@ -2,6 +2,7 @@ package v1alpha2
 
 import (
 	"context"
+	"fmt"
 
 	"knative.dev/pkg/apis"
 
@@ -9,19 +10,27 @@ import (
 )
 
 func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
-	toImage := to.(*v1alpha1.Image)
-	toImage.ObjectMeta = i.ObjectMeta
-	i.Spec.convertTo(&toImage.Spec)
-	i.Status.convertTo(&toImage.Status)
+	switch toImage := to.(type) {
+	case *v1alpha1.Image:
+		toImage.ObjectMeta = i.ObjectMeta
+		i.Spec.convertTo(&toImage.Spec)
+		i.Status.convertTo(&toImage.Status)
+	default:
+		return fmt.Errorf("unknown version, got: %T", toImage)
+	}
 
 	return nil
 }
 
 func (i *Image) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	fromImage := from.(*v1alpha1.Image)
-	i.ObjectMeta = fromImage.ObjectMeta
-	i.Spec.convertFrom(&fromImage.Spec)
-	i.Status.convertFrom(&fromImage.Status)
+	switch fromImage := from.(type) {
+	case *v1alpha1.Image:
+		i.ObjectMeta = fromImage.ObjectMeta
+		i.Spec.convertFrom(&fromImage.Spec)
+		i.Status.convertFrom(&fromImage.Status)
+	default:
+		return fmt.Errorf("unknown version, got: %T", fromImage)
+	}
 
 	return nil
 }
