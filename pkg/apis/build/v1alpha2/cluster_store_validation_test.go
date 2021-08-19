@@ -6,6 +6,7 @@ import (
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -54,5 +55,18 @@ func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
 			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, StoreImage{Image: "invalid image"})
 			assertValidationError(clusterStore, apis.ErrInvalidArrayValue(clusterStore.Spec.Sources[3], "sources", 3).ViaField("spec"))
 		})
+
+		it("missing namespace in serviceAccountRef", func() {
+			clusterStore.Spec.ServiceAccountRef = &corev1.ObjectReference{Name: "test"}
+
+			assertValidationError(clusterStore, apis.ErrMissingField("namespace").ViaField("serviceAccountRef").ViaField("spec"))
+		})
+
+		it("missing name in serviceAccountRef", func() {
+			clusterStore.Spec.ServiceAccountRef = &corev1.ObjectReference{Namespace: "test"}
+
+			assertValidationError(clusterStore, apis.ErrMissingField("name").ViaField("serviceAccountRef").ViaField("spec"))
+		})
+
 	})
 }
