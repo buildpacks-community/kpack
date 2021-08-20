@@ -659,7 +659,7 @@ func (in *ClusterStack) DeepCopyInto(out *ClusterStack) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
 	return
 }
@@ -728,6 +728,11 @@ func (in *ClusterStackSpec) DeepCopyInto(out *ClusterStackSpec) {
 	*out = *in
 	out.BuildImage = in.BuildImage
 	out.RunImage = in.RunImage
+	if in.ServiceAccountRef != nil {
+		in, out := &in.ServiceAccountRef, &out.ServiceAccountRef
+		*out = new(v1.ObjectReference)
+		**out = **in
+	}
 	return
 }
 
@@ -867,6 +872,11 @@ func (in *ClusterStoreSpec) DeepCopyInto(out *ClusterStoreSpec) {
 		in, out := &in.Sources, &out.Sources
 		*out = make([]StoreImage, len(*in))
 		copy(*out, *in)
+	}
+	if in.ServiceAccountRef != nil {
+		in, out := &in.ServiceAccountRef, &out.ServiceAccountRef
+		*out = new(v1.ObjectReference)
+		**out = **in
 	}
 	return
 }

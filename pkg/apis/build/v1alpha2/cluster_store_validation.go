@@ -15,6 +15,15 @@ func (s *ClusterStore) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (s *ClusterStoreSpec) Validate(ctx context.Context) *apis.FieldError {
+	if s.ServiceAccountRef != nil {
+		if s.ServiceAccountRef.Name == "" {
+			return apis.ErrMissingField("name").ViaField("serviceAccountRef")
+		}
+		if s.ServiceAccountRef.Namespace == "" {
+			return apis.ErrMissingField("namespace").ViaField("serviceAccountRef")
+		}
+	}
+
 	if len(s.Sources) == 0 {
 		return apis.ErrMissingField("sources")
 	}

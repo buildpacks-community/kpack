@@ -20,6 +20,7 @@ spec:
     imagePullSecrets: 
     - name: builder-secret  
   cacheName: persisent-volume-claim-name
+  projectDescriptorPath: path/to/project.toml
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
@@ -43,6 +44,7 @@ spec:
 - `source`: The source location that will be the input to the build. See the [Source Configuration](#source-config) section below.
 - `cacheName`: Optional name of a persistent volume claim to used for a build cache across builds.
 - `env`: Optional list of build time environment variables.
+- `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
 - `resources`: Optional configurable resource limits on `CPU` and `memory`.
 
 > Note: All fields on a build are immutable. Instead of updating a build, create a new one.

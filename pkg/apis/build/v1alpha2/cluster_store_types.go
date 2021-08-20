@@ -1,6 +1,7 @@
 package v1alpha2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -25,7 +26,8 @@ type ClusterStore struct {
 // +k8s:openapi-gen=true
 type ClusterStoreSpec struct {
 	// +listType
-	Sources []StoreImage `json:"sources,omitempty"`
+	Sources           []StoreImage            `json:"sources,omitempty"`
+	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true

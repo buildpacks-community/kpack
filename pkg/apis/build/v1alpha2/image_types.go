@@ -48,6 +48,7 @@ type ImageSpec struct {
 	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
 	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
 	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
+	ProjectDescriptorPath    string                 `json:"projectDescriptorPath,omitempty"`
 	Build                    *ImageBuild            `json:"build,omitempty"`
 	Notary                   *NotaryConfig          `json:"notary,omitempty"`
 }
