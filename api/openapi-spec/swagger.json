@@ -5640,6 +5640,9 @@
         "notary": {
           "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
         },
+        "projectDescriptorPath": {
+          "type": "string"
+        },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
@@ -6058,6 +6061,9 @@
         },
         "runImage": {
           "$ref": "#/definitions/kpack.build.v1alpha2.ClusterStackSpecImage"
+        },
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         }
       }
     },
@@ -6178,6 +6184,9 @@
     "kpack.build.v1alpha2.ClusterStoreSpec": {
       "type": "object",
       "properties": {
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "sources": {
           "type": "array",
           "items": {
@@ -6345,6 +6354,9 @@
         },
         "notary": {
           "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
+        },
+        "projectDescriptorPath": {
+          "type": "string"
         },
         "serviceAccount": {
           "type": "string"

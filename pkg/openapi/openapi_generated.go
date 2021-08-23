@@ -2846,6 +2846,12 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							},
 						},
 					},
+					"projectDescriptorPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
@@ -3636,11 +3642,16 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackSpec(ref common.ReferenceCallbac
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"),
 						},
 					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -3885,11 +3896,16 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref common.ReferenceCallbac
 							},
 						},
 					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -4197,6 +4213,12 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 						},
 					},
 					"imageTaggingStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"projectDescriptorPath": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
