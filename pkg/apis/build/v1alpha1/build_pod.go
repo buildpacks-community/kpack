@@ -198,12 +198,13 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 				args := []string{}
 
 				if b.NotaryV1Config() != nil {
-					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
 					volumeMounts = append(volumeMounts, notaryV1Volume)
-					volumeMounts = append(volumeMounts, secretVolumeMounts...)
 					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
-					args = append(args, secretArgs...)
 				}
+
+				_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+				volumeMounts = append(volumeMounts, secretVolumeMounts...)
+				args = append(args, secretArgs...)
 
 				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
 				volumeMounts = append(volumeMounts, cosignVolumeMounts...)

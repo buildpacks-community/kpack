@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/pivotal/kpack/pkg/cosigner"
@@ -42,40 +43,45 @@ func init() {
 func main() {
 	flag.Parse()
 
+	creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
+		credPath := filepath.Join(registrySecretsDir, c)
+
+		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		for domain := range dockerCfgCreds {
+			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
+		}
+
+		creds, err = creds.Append(dockerCfgCreds)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		err = creds.Save(path.Join("/home/cnb", ".docker", "config.json"))
+		if err != nil {
+			logger.Fatalf("error writing docker creds %s", err)
+		}
+	}
+
 	logger.Println("Attempt to sign with cosign")
 	cosignSigner := cosigner.ImageSigner{
 		Logger: logger,
 	}
 	if err := cosignSigner.Sign(reportFilePath); err != nil {
-		logger.Printf("cosignSigner sign: %v", err)
+		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 
 	logger.Println("Finished attempt to sign with cosign")
 
 	if notaryV1URL != "" {
-		creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
-		if err != nil {
-			logger.Fatal(err)
-		}
-
-		for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-			credPath := filepath.Join(registrySecretsDir, c)
-
-			dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			for domain := range dockerCfgCreds {
-				logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
-			}
-
-			creds, err = creds.Append(dockerCfgCreds)
-			if err != nil {
-				logger.Fatal(err)
-			}
-		}
-
 		signer := notary.ImageSigner{
 			Logger:  logger,
 			Client:  &registry.Client{},

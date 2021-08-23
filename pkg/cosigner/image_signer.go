@@ -44,29 +44,39 @@ func (s *ImageSigner) Sign(reportFilePath string) error {
 		return nil
 	}
 
-	cosignFiles := findCosignFiles(secretLocation)
+	cosignFiles := findCosignFiles(secretLocation, s.Logger)
 	if len(cosignFiles) == 0 {
 		s.Logger.Println("no keys found for cosign signing")
 		return nil
 	}
 
 	refImage := report.Image.Tags[0]
+
 	ctx := context.Background()
 	for _, cosignFile := range cosignFiles {
-		ko := cli.KeyOpts{KeyRef: cosignFile}
+		ko := cli.KeyOpts{KeyRef: cosignFile, PassFunc: func(bool) ([]byte, error) {
+			// Todo: Use cosign.password
+			return []byte(""), nil
+		}}
+
 		if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
-			return fmt.Errorf("unable to sign image with %s", cosignFile)
+			return fmt.Errorf("unable to sign image with %s: %v", cosignFile, err)
 		}
 	}
 
 	return nil
 }
 
-func findCosignFiles(dir string) []string {
+func findCosignFiles(dir string, logger *log.Logger) []string {
 	var files []string
-	filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+	filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if err != nil || f == nil {
+			return nil
+		}
+
 		if !f.IsDir() {
-			r, err := regexp.MatchString("cosign.key", f.Name())
+			// Only look at /secretLocation/folder/cosign.key folder/file structure
+			r, err := regexp.MatchString(`^`+regexp.QuoteMeta(secretLocation)+`\/[^\/]+\/cosign.key`, path)
 			if err == nil && r {
 				files = append(files, path)
 			}
