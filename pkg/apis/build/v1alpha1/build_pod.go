@@ -208,6 +208,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 
 				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
 				volumeMounts = append(volumeMounts, cosignVolumeMounts...)
+				args = append(args, "-build-timestamp="+b.ObjectMeta.CreationTimestamp.String(), "-build-number="+b.Labels[BuildNumberLabel])
 
 				step(corev1.Container{
 					Name:            "completion",

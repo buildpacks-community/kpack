@@ -32,7 +32,7 @@ func NewImageSigner(logger *log.Logger) *ImageSigner {
 }
 
 // signCmd will just use the mounted file instead of trying to access kuberenets for the secret
-func (s *ImageSigner) Sign(reportFilePath string) error {
+func (s *ImageSigner) Sign(reportFilePath string, annotations map[string]interface{}) error {
 	var report lifecycle.ExportReport
 	_, err := toml.DecodeFile(reportFilePath, &report)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *ImageSigner) Sign(reportFilePath string) error {
 			return []byte(""), nil
 		}}
 
-		if err := cliSignCmd(ctx, ko, nil, refImage, "", true, "", false, false); err != nil {
+		if err := cliSignCmd(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
 			return fmt.Errorf("unable to sign image with %s: %v", cosignFile, err)
 		}
 	}

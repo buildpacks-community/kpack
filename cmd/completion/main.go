@@ -21,6 +21,8 @@ const (
 )
 
 var (
+	buildNumber             string
+	buildTimestamp          string
 	notaryV1URL             string
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -29,16 +31,14 @@ var (
 )
 
 func init() {
+	flag.StringVar(&buildNumber, "build-number", "1", "Build number")
+	flag.StringVar(&buildTimestamp, "build-timestamp", "", "Build timestamp")
 	flag.StringVar(&notaryV1URL, "notary-v1-url", "", "Notary V1 server url")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
-
 	logger = log.New(os.Stdout, "", 0)
 }
-
-// Denny Todo: registrySecretsDir/dockerConfigCredentials folder path should be set for DOCKER_CONFIG
-// We can do this here with os.SetEnv or we can put it at the buildPod level as an Env variable
 
 func main() {
 	flag.Parse()
@@ -75,7 +75,16 @@ func main() {
 	cosignSigner := cosigner.ImageSigner{
 		Logger: logger,
 	}
-	if err := cosignSigner.Sign(reportFilePath); err != nil {
+
+	logger.Printf("Creating annotation")
+	annotations := map[string]interface{}{
+		"buildNumber":    buildNumber,
+		"buildTimestamp": buildTimestamp,
+	}
+
+	// Todo: for loop annotation args for key=value
+
+	if err := cosignSigner.Sign(reportFilePath, annotations); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 

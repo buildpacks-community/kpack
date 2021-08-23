@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -51,11 +52,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Name:      buildName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"some/label": "to-pass-through",
+				"some/label":                 "to-pass-through",
+				"image.kpack.io/buildNumber": "12",
 			},
 			Annotations: map[string]string{
 				"some/annotation": "to-pass-through",
 			},
+			CreationTimestamp: metav1.Date(2021, 12, 12, 12, 12, 12, 12, time.UTC),
 		},
 		Spec: buildapi.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
