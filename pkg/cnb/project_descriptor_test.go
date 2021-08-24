@@ -47,12 +47,12 @@ func testProcessProjectDescriptor(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			ioutil.WriteFile(projectToml, []byte(`
 [_]
-schema-version = "0.3"
+schema-version = "0.99"
 			`), 0644)
 		})
 		it("logs a warning the project descriptor will be ignored", func() {
 			assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
-			assert.Equal(t, fmt.Sprintf("warning: project descriptor version 0.3 is unsupported and %s will be ignored\n", projectToml), buf.String())
+			assert.Equal(t, fmt.Sprintf("warning: project descriptor version 0.99 is unsupported and %s will be ignored\n", projectToml), buf.String())
 		})
 	})
 

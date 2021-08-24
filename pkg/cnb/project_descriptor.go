@@ -12,12 +12,13 @@ import (
 
 const defaultProjectDescriptorPath = "project.toml"
 
-func ProcessProjectDescriptor(appDir,descriptorPath, platformDir string, logger *log.Logger) error {
-	filePath := filepath.Join(appDir, defaultProjectDescriptorPath)
+func ProcessProjectDescriptor(appDir, descriptorPath, platformDir string, logger *log.Logger) error {
+	file := filepath.Join(appDir, defaultProjectDescriptorPath)
 	if descriptorPath != "" {
-		filePath = filepath.Join(appDir, descriptorPath)
+		file = filepath.Join(appDir, descriptorPath)
 	}
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+
+	if _, err := os.Stat(file); os.IsNotExist(err) {
 		if descriptorPath != "" {
 			return fmt.Errorf("project descriptor path set but no file found: %s", descriptorPath)
 		}
@@ -26,47 +27,53 @@ func ProcessProjectDescriptor(appDir,descriptorPath, platformDir string, logger 
 		return fmt.Errorf("unable to determine if project descriptor file exists: %w", err)
 	}
 
-	d, err := parseProjectDescriptor(filePath, logger)
+	d, err := parseProjectDescriptor(file, logger)
 	if err != nil {
 		return err
 	}
-	if d.Buildpacks != nil {
+	if d.IO.Buildpacks.Group != nil {
 		logger.Println("info: buildpacks provided in project descriptor file will be ignored")
 	}
 
-	if d.Builder != "" {
+	if d.IO.Buildpacks.Builder != "" {
 		logger.Println("info: builder provided in project descriptor file will be ignored")
 	}
-	if err := processFiles(appDir, d); err != nil {
+	if err := processFiles(appDir, d.IO.Buildpacks.build); err != nil {
 		return err
 	}
-	return serializeEnvVars(d.Env, platformDir)
+	return serializeEnvVars(d.IO.Buildpacks.Env, platformDir)
 }
 
-func parseProjectDescriptor(filePath string, logger *log.Logger) (build, error) {
-	var dv2 descriptorV2
-	if _, err := toml.DecodeFile(filePath, &dv2); err != nil {
-		return build{}, err
+func parseProjectDescriptor(file string, logger *log.Logger) (descriptorV2, error) {
+	var d descriptorV2
+	if _, err := toml.DecodeFile(file, &d); err != nil {
+		return descriptorV2{}, err
 	}
 
-	if dv2.Project.SchemaVersion != "" {
-		if dv2.Project.SchemaVersion == "0.2" {
-			// Normalizing the buildpacks table to a common schema
-			dv2.IO.Buildpacks.Buildpacks = dv2.IO.Buildpacks.Group
-			dv2.IO.Buildpacks.Group = nil
-			return dv2.IO.Buildpacks, nil
-		} else {
-			logger.Println(fmt.Sprintf("warning: project descriptor version %s is unsupported and %s will be ignored", dv2.Project.SchemaVersion, filePath))
-			return build{}, nil
+	switch sv := d.Project.SchemaVersion; sv {
+	case "0.2":
+		return d, nil
+	case "": // v1 descriptor
+		var dV1 descriptorV1
+		if _, err := toml.DecodeFile(file, &dV1); err != nil {
+			return descriptorV2{}, err
 		}
+		return v1ToV2(dV1), nil
+	default:
+		logger.Println(fmt.Sprintf("warning: project descriptor version %s is unsupported and %s will be ignored", sv, file))
+		return descriptorV2{}, nil
 	}
-	var d descriptor
-	if _, err := toml.DecodeFile(filePath, &d); err != nil {
-		return build{}, err
+}
+
+func v1ToV2(v1 descriptorV1) descriptorV2 {
+	return descriptorV2{
+		IO: ioTable{
+			Buildpacks: cnbTableV2{
+				build: v1.Build.build,
+				Group: v1.Build.Buildpacks,
+			},
+		},
 	}
-	// Removing groups from v1 descriptor if it exists
-	d.Build.Group = nil
-	return d.Build, nil
 }
 
 func processFiles(appDir string, d build) error {
@@ -117,25 +124,6 @@ func getFileFilter(d build) (func(string) bool, error) {
 	return nil, nil
 }
 
-type buildpack struct {
-	Id      string `json:"id" toml:"id"`
-	Version string `json:"version" toml:"version"`
-	Uri     string `json:"uri" toml:"uri"`
-}
-
-type build struct {
-	Include    []string      `toml:"include"`
-	Exclude    []string      `toml:"exclude"`
-	Buildpacks []buildpack   `toml:"buildpacks"`
-	Group      []buildpack   `toml:"group"`
-	Builder    string        `toml:"builder"`
-	Env        []envVariable `toml:"env"`
-}
-
-type descriptor struct {
-	Build build `toml:"build"`
-}
-
 type descriptorV2 struct {
 	Project project `toml:"_"`
 	IO      ioTable `toml:"io"`
@@ -146,5 +134,32 @@ type project struct {
 }
 
 type ioTable struct {
-	Buildpacks build `toml:"buildpacks"`
+	Buildpacks cnbTableV2 `toml:"buildpacks"`
+}
+
+type cnbTableV2 struct {
+	build `toml:",inline"`
+	Group []buildpack `toml:"group"`
+}
+
+type build struct {
+	Include []string      `toml:"include"`
+	Exclude []string      `toml:"exclude"`
+	Builder string        `toml:"builder"`
+	Env     []envVariable `toml:"env"`
+}
+
+type buildpack struct {
+	Id      string `json:"id" toml:"id"`
+	Version string `json:"version" toml:"version"`
+	Uri     string `json:"uri" toml:"uri"`
+}
+
+type descriptorV1 struct {
+	Build cnbTableV1 `toml:"build"`
+}
+
+type cnbTableV1 struct {
+	build      `toml:",inline"`
+	Buildpacks []buildpack `toml:"buildpacks"`
 }
