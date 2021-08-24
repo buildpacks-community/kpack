@@ -197,18 +197,28 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 				}
 				args := []string{}
 
+				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+				hasCosign := len(cosignVolumeMounts) > 0
+
 				if b.NotaryV1Config() != nil {
 					volumeMounts = append(volumeMounts, notaryV1Volume)
 					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
 				}
 
-				_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
-				volumeMounts = append(volumeMounts, secretVolumeMounts...)
-				args = append(args, secretArgs...)
+				if b.NotaryV1Config() != nil || hasCosign {
+					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+					volumeMounts = append(volumeMounts, secretVolumeMounts...)
+					args = append(args, secretArgs...)
+				}
 
-				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
-				volumeMounts = append(volumeMounts, cosignVolumeMounts...)
-				args = append(args, "-build-timestamp="+b.ObjectMeta.CreationTimestamp.String(), "-build-number="+b.Labels[BuildNumberLabel])
+				if hasCosign {
+					volumeMounts = append(volumeMounts, cosignVolumeMounts...)
+					args = append(
+						args,
+						"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
+						"-build-number="+b.Labels[BuildNumberLabel],
+					)
+				}
 
 				step(corev1.Container{
 					Name:            "completion",

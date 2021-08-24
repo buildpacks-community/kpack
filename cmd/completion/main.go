@@ -18,6 +18,8 @@ const (
 	registrySecretsDir = "/var/build-secrets"
 	reportFilePath     = "/var/report/report.toml"
 	notarySecretDir    = "/var/notary/v1"
+	buildNumberKey     = "buildNumber"
+	buildTimestampKey  = "buildTimestamp"
 )
 
 var (
@@ -78,9 +80,11 @@ func main() {
 
 	logger.Printf("Creating annotation")
 	annotations := map[string]interface{}{
-		"buildNumber":    buildNumber,
-		"buildTimestamp": buildTimestamp,
+		buildNumberKey:    buildNumber,
+		buildTimestampKey: buildTimestamp,
 	}
+
+	logger.Printf("annotations are: %v", annotations)
 
 	// Todo: for loop annotation args for key=value
 
