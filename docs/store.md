@@ -2,9 +2,9 @@
 
 A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build images.
 
-The store will be referenced by a [builder](builders.md) resource. 
- 
-At this time only a Cluster scoped `ClusterStore` is available. 
+The store will be referenced by a [builder](builders.md) resource.
+
+At this time only a Cluster scoped `ClusterStore` is available.
 
 ### <a id='cluster-store'></a>Cluster Store Configuration
 
@@ -20,9 +20,22 @@ spec:
   - image: gcr.io/paketo-buildpacks/builder:base
 ```
 
-* `sources`:  List of buildpackage images to make available in the ClusterStore. Each image is an object with the key image.   
- 
+* `sources`:  List of buildpackage images to make available in the ClusterStore. Each image is an object with the key image.
+
 > Note: ClusterBuilders will also work with a prebuilt builder image if a builpack is not available in a buildpackage.
+
+### Using a private registry
+
+To use the buildpackage images from a private registry, you have to add a `serviceAccountRef` referencing a serviceaccount with the secrets needed to pull from this registry.
+
+```yaml
+spec:
+ serviceAccountRef:
+    name: private
+    namespace: private
+```
+
+* `serviceAccountRef`: An object reference to a service account in any namespace. The object reference must contain `name` and `namespace`.
 
 ### Updating a store
 
@@ -35,4 +48,4 @@ The most commonly used buildpackages are [paketo buildpacks](https://paketo.io/)
 ### Creating your own buildpackage
 
 To create your own buildpackage with custom buildpacks follow the instructions on creating them and packaging them using the [pack cli](https://buildpacks.io/docs/buildpack-author-guide/).
-  
+

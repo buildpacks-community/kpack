@@ -4,6 +4,9 @@ metadata:
   name: default
 spec:
   id: "io.buildpacks.stacks.bionic"
+  serviceAccountRef:
+    name: default
+    namespace: default
   buildImage:
     image: "paketobuildpacks/build:base-cnb"
   runImage:

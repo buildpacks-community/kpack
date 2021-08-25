@@ -63,10 +63,11 @@ type BuildSpec struct {
 	// +listType
 	Bindings Bindings `json:"bindings,omitempty"`
 	// +listType
-	Env       []corev1.EnvVar             `json:"env,omitempty"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	LastBuild *LastBuild                  `json:"lastBuild,omitempty"`
-	Notary    *NotaryConfig               `json:"notary,omitempty"`
+	Env                   []corev1.EnvVar             `json:"env,omitempty"`
+	ProjectDescriptorPath string                      `json:"projectDescriptorPath,omitempty"`
+	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
+	LastBuild             *LastBuild                  `json:"lastBuild,omitempty"`
+	Notary                *NotaryConfig               `json:"notary,omitempty"`
 }
 
 // +k8s:openapi-gen=true

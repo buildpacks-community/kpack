@@ -3,7 +3,7 @@ package clusterstack
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +16,7 @@ import (
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -25,14 +26,19 @@ const (
 
 //go:generate counterfeiter . ClusterStackReader
 type ClusterStackReader interface {
-	Read(clusterStackSpec buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)
+	Read(keychain authn.Keychain, clusterStackSpec buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)
 }
 
-func NewController(opt reconciler.Options, clusterStackInformer buildinformers.ClusterStackInformer, clusterStackReader ClusterStackReader) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	keychainFactory registry.KeychainFactory,
+	clusterStackInformer buildinformers.ClusterStackInformer,
+	clusterStackReader ClusterStackReader) *controller.Impl {
 	c := &Reconciler{
 		Client:             opt.Client,
 		ClusterStackLister: clusterStackInformer.Lister(),
 		ClusterStackReader: clusterStackReader,
+		KeychainFactory:    keychainFactory,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -43,6 +49,7 @@ type Reconciler struct {
 	Client             versioned.Interface
 	ClusterStackLister buildlisters.ClusterStackLister
 	ClusterStackReader ClusterStackReader
+	KeychainFactory    registry.KeychainFactory
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -60,7 +67,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStack = clusterStack.DeepCopy()
 
-	clusterStack, err = c.reconcileClusterStackStatus(clusterStack)
+	clusterStack, err = c.reconcileClusterStackStatus(ctx, clusterStack)
 
 	updateErr := c.updateClusterStackStatus(ctx, clusterStack)
 	if updateErr != nil {
@@ -73,36 +80,34 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcileClusterStackStatus(clusterStack *buildapi.ClusterStack) (*buildapi.ClusterStack, error) {
-	resolvedClusterStack, err := c.ClusterStackReader.Read(clusterStack.Spec)
+func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterStack *buildapi.ClusterStack) (*buildapi.ClusterStack, error) {
+	secretRef := registry.SecretRef{}
+
+	if clusterStack.Spec.ServiceAccountRef != nil {
+		secretRef = registry.SecretRef{
+			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
+		}
+	}
+
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterStack.Status = buildapi.ClusterStackStatus{
-			Status: corev1alpha1.Status{
-				ObservedGeneration: clusterStack.Generation,
-				Conditions: corev1alpha1.Conditions{
-					{
-						Type:               corev1alpha1.ConditionReady,
-						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-						Message:            err.Error(),
-					},
-				},
-			},
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, err),
+		}
+		return clusterStack, err
+	}
+
+	resolvedClusterStack, err := c.ClusterStackReader.Read(keychain, clusterStack.Spec)
+	if err != nil {
+		clusterStack.Status = buildapi.ClusterStackStatus{
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, err),
 		}
 		return clusterStack, err
 	}
 
 	clusterStack.Status = buildapi.ClusterStackStatus{
-		Status: corev1alpha1.Status{
-			ObservedGeneration: clusterStack.Generation,
-			Conditions: corev1alpha1.Conditions{
-				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionTrue,
-				},
-			},
-		},
+		Status:               corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, nil),
 		ResolvedClusterStack: resolvedClusterStack,
 	}
 	return clusterStack, nil

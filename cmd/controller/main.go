@@ -141,19 +141,17 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
-	if err != nil {
-		log.Fatalf("could not create empty keychain %s", err)
-	}
-
 	remoteStoreReader := &cnb.RemoteStoreReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
 	}
 
 	remoteStackReader := &cnb.RemoteStackReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
+	}
+
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
 	}
 
 	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)
@@ -171,8 +169,8 @@ func main() {
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
-	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
+	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
+	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
 
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)

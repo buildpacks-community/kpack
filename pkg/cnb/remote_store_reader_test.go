@@ -30,7 +30,6 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			fakeClient        = registryfakes.NewFakeClient()
 			remoteStoreReader = &RemoteStoreReader{
 				RegistryClient: fakeClient,
-				Keychain:       expectedKeychain,
 			}
 		)
 
@@ -206,7 +205,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpacks from multiple images", func() {
-			storeBuildpacks, err := remoteStoreReader.Read([]buildapi.StoreImage{
+			storeBuildpacks, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
 				{
 					Image: buildpackageA,
 				},
@@ -357,7 +356,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpacks in a deterministic order", func() {
-			expectedBuildpackOrder, err := remoteStoreReader.Read([]buildapi.StoreImage{
+			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
 				{
 					Image: buildpackageA,
 				},
@@ -368,7 +367,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				subsequentOrder, err := remoteStoreReader.Read([]buildapi.StoreImage{
+				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
 					{
 						Image: buildpackageA,
 					},
@@ -446,11 +445,11 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Image: "image/with_duplicates",
 				},
 			}
-			expectedBuildpackOrder, err := remoteStoreReader.Read(images)
+			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, images)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				subsequentOrder, err := remoteStoreReader.Read(images)
+				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, images)
 				require.NoError(t, err)
 
 				require.Equal(t, expectedBuildpackOrder, subsequentOrder)
