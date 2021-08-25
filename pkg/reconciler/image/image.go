@@ -17,10 +17,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/tracker"
@@ -160,7 +160,7 @@ func (c *Reconciler) reconcileSourceResolver(ctx context.Context, image *buildap
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "cannot retrieve source resolver")
 	} else if k8serrors.IsNotFound(err) {
-		sourceResolver, err = c.Client.KpackV1alpha1().SourceResolvers(image.Namespace).Create(ctx, desiredSourceResolver, metav1.CreateOptions{})
+		sourceResolver, err = c.Client.KpackV1alpha2().SourceResolvers(image.Namespace).Create(ctx, desiredSourceResolver, metav1.CreateOptions{})
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot create source resolver")
 		}
@@ -173,7 +173,7 @@ func (c *Reconciler) reconcileSourceResolver(ctx context.Context, image *buildap
 	sourceResolver = sourceResolver.DeepCopy()
 	sourceResolver.Spec = desiredSourceResolver.Spec
 	sourceResolver.Labels = desiredSourceResolver.Labels
-	return c.Client.KpackV1alpha1().SourceResolvers(image.Namespace).Update(ctx, sourceResolver, metav1.UpdateOptions{})
+	return c.Client.KpackV1alpha2().SourceResolvers(image.Namespace).Update(ctx, sourceResolver, metav1.UpdateOptions{})
 }
 
 func (c *Reconciler) reconcileBuildCache(ctx context.Context, image *buildapi.Image) (string, error) {
@@ -222,7 +222,7 @@ func (c *Reconciler) deleteOldBuilds(ctx context.Context, image *buildapi.Image)
 	if builds.NumberFailedBuilds() > *image.Spec.FailedBuildHistoryLimit {
 		oldestFailedBuild := builds.OldestFailure()
 
-		err := c.Client.KpackV1alpha1().Builds(image.Namespace).Delete(ctx, oldestFailedBuild.Name, metav1.DeleteOptions{})
+		err := c.Client.KpackV1alpha2().Builds(image.Namespace).Delete(ctx, oldestFailedBuild.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting failed build: %s", err)
 		}
@@ -231,7 +231,7 @@ func (c *Reconciler) deleteOldBuilds(ctx context.Context, image *buildapi.Image)
 	if builds.NumberSuccessfulBuilds() > *image.Spec.SuccessBuildHistoryLimit {
 		oldestSuccess := builds.OldestSuccess()
 
-		err := c.Client.KpackV1alpha1().Builds(image.Namespace).Delete(ctx, oldestSuccess.Name, metav1.DeleteOptions{})
+		err := c.Client.KpackV1alpha2().Builds(image.Namespace).Delete(ctx, oldestSuccess.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed deleting successful build: %s", err)
 		}
@@ -274,7 +274,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Image) 
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().Images(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().Images(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }
 

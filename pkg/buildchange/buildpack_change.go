@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 func NewBuildpackChange(oldBuildpacks, newBuildpacks []buildapi.BuildpackInfo) Change {

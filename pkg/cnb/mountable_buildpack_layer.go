@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/pkg/errors"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 func layerFromStoreBuildpack(keychain authn.Keychain, buildpack buildapi.StoreBuildpack) (v1.Layer, error) {

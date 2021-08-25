@@ -3,19 +3,20 @@ package clusterstore
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -25,14 +26,19 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error)
+	Read(keychain authn.Keychain, storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error)
 }
 
-func NewController(opt reconciler.Options, clusterStoreInformer buildinformers.ClusterStoreInformer, storeReader StoreReader) *controller.Impl {
+func NewController(
+	opt reconciler.Options,
+	keychainFactory registry.KeychainFactory,
+	clusterStoreInformer buildinformers.ClusterStoreInformer,
+	storeReader StoreReader) *controller.Impl {
 	c := &Reconciler{
 		Client:             opt.Client,
 		ClusterStoreLister: clusterStoreInformer.Lister(),
 		StoreReader:        storeReader,
+		KeychainFactory:    keychainFactory,
 	}
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
@@ -43,6 +49,7 @@ type Reconciler struct {
 	Client             versioned.Interface
 	StoreReader        StoreReader
 	ClusterStoreLister buildlisters.ClusterStoreLister
+	KeychainFactory    registry.KeychainFactory
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -60,7 +67,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterStore = clusterStore.DeepCopy()
 
-	clusterStore, err = c.reconcileClusterStoreStatus(clusterStore)
+	clusterStore, err = c.reconcileClusterStoreStatus(ctx, clusterStore)
 
 	updateErr := c.updateClusterStoreStatus(ctx, clusterStore)
 	if updateErr != nil {
@@ -85,41 +92,39 @@ func (c *Reconciler) updateClusterStoreStatus(ctx context.Context, desired *buil
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha1().ClusterStores().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().ClusterStores().UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }
 
-func (c *Reconciler) reconcileClusterStoreStatus(clusterStore *buildapi.ClusterStore) (*buildapi.ClusterStore, error) {
-	buildpacks, err := c.StoreReader.Read(clusterStore.Spec.Sources)
+func (c *Reconciler) reconcileClusterStoreStatus(ctx context.Context, clusterStore *buildapi.ClusterStore) (*buildapi.ClusterStore, error) {
+	secretRef := registry.SecretRef{}
+
+	if clusterStore.Spec.ServiceAccountRef != nil {
+		secretRef = registry.SecretRef{
+			ServiceAccount: clusterStore.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterStore.Spec.ServiceAccountRef.Namespace,
+		}
+	}
+
+	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterStore.Status = buildapi.ClusterStoreStatus{
-			Status: corev1alpha1.Status{
-				ObservedGeneration: clusterStore.Generation,
-				Conditions: corev1alpha1.Conditions{
-					{
-						Type:               corev1alpha1.ConditionReady,
-						Status:             corev1.ConditionFalse,
-						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-						Message:            err.Error(),
-					},
-				},
-			},
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, err),
+		}
+		return clusterStore, err
+	}
+
+	buildpacks, err := c.StoreReader.Read(keychain, clusterStore.Spec.Sources)
+	if err != nil {
+		clusterStore.Status = buildapi.ClusterStoreStatus{
+			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, err),
 		}
 		return clusterStore, err
 	}
 
 	clusterStore.Status = buildapi.ClusterStoreStatus{
 		Buildpacks: buildpacks,
-		Status: corev1alpha1.Status{
-			ObservedGeneration: clusterStore.Generation,
-			Conditions: corev1alpha1.Conditions{
-				{
-					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-					Type:               corev1alpha1.ConditionReady,
-					Status:             corev1.ConditionTrue,
-				},
-			},
-		},
+		Status:     corev1alpha1.CreateStatusWithReadyCondition(clusterStore.Generation, nil),
 	}
 	return clusterStore, nil
 }

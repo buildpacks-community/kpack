@@ -8,23 +8,22 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 type RemoteStoreReader struct {
 	RegistryClient RegistryClient
-	Keychain       authn.Keychain
 }
 
-func (r *RemoteStoreReader) Read(storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error) {
 	var g errgroup.Group
 
 	c := make(chan buildapi.StoreBuildpack)
 	for _, storeImage := range storeImages {
 		storeImageCopy := storeImage
 		g.Go(func() error {
-			image, _, err := r.RegistryClient.Fetch(r.Keychain, storeImageCopy.Image)
+			image, _, err := r.RegistryClient.Fetch(keychain, storeImageCopy.Image)
 			if err != nil {
 				return err
 			}

@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/signals"
 
 	"github.com/pivotal/kpack/cmd"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -97,13 +97,13 @@ func main() {
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
-	buildInformer := informerFactory.Kpack().V1alpha1().Builds()
-	imageInformer := informerFactory.Kpack().V1alpha1().Images()
-	sourceResolverInformer := informerFactory.Kpack().V1alpha1().SourceResolvers()
-	builderInformer := informerFactory.Kpack().V1alpha1().Builders()
-	clusterBuilderInformer := informerFactory.Kpack().V1alpha1().ClusterBuilders()
-	clusterStoreInformer := informerFactory.Kpack().V1alpha1().ClusterStores()
-	clusterStackInformer := informerFactory.Kpack().V1alpha1().ClusterStacks()
+	buildInformer := informerFactory.Kpack().V1alpha2().Builds()
+	imageInformer := informerFactory.Kpack().V1alpha2().Images()
+	sourceResolverInformer := informerFactory.Kpack().V1alpha2().SourceResolvers()
+	builderInformer := informerFactory.Kpack().V1alpha2().Builders()
+	clusterBuilderInformer := informerFactory.Kpack().V1alpha2().ClusterBuilders()
+	clusterStoreInformer := informerFactory.Kpack().V1alpha2().ClusterStores()
+	clusterStackInformer := informerFactory.Kpack().V1alpha2().ClusterStacks()
 
 	duckBuilderInformer := &duckbuilder.DuckBuilderInformer{
 		BuilderInformer:        builderInformer,
@@ -141,19 +141,17 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
-	if err != nil {
-		log.Fatalf("could not create empty keychain %s", err)
-	}
-
 	remoteStoreReader := &cnb.RemoteStoreReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
 	}
 
 	remoteStackReader := &cnb.RemoteStackReader{
 		RegistryClient: &registry.Client{},
-		Keychain:       kpackKeychain,
+	}
+
+	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
+	if err != nil {
+		log.Fatalf("could not create empty keychain %s", err)
 	}
 
 	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)
@@ -171,8 +169,8 @@ func main() {
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterStoreController := clusterstore.NewController(options, clusterStoreInformer, remoteStoreReader)
-	clusterStackController := clusterstack.NewController(options, clusterStackInformer, remoteStackReader)
+	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
+	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
 
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)

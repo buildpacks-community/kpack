@@ -5,9 +5,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha1"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha1"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 )
 
 type DuckBuilderInformer struct {
