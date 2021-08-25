@@ -12,17 +12,6 @@ type SourceConfig struct {
 	SubPath  string    `json:"subPath,omitempty"`
 }
 
-func (sc *SourceConfig) Source() Source {
-	if sc.Git != nil {
-		return sc.Git
-	} else if sc.Blob != nil {
-		return sc.Blob
-	} else if sc.Registry != nil {
-		return sc.Registry
-	}
-	return nil
-}
-
 type Source interface {
 	BuildEnvVars() []corev1.EnvVar
 	ImagePullSecretsVolume() corev1.Volume
@@ -34,49 +23,9 @@ type Git struct {
 	Revision string `json:"revision"`
 }
 
-func (g *Git) BuildEnvVars() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "GIT_URL",
-			Value: g.URL,
-		},
-		{
-			Name:  "GIT_REVISION",
-			Value: g.Revision,
-		},
-	}
-}
-
-func (in *Git) ImagePullSecretsVolume() corev1.Volume {
-	return corev1.Volume{
-		Name: imagePullSecretsDirName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	}
-}
-
 // +k8s:openapi-gen=true
 type Blob struct {
 	URL string `json:"url"`
-}
-
-func (b *Blob) ImagePullSecretsVolume() corev1.Volume {
-	return corev1.Volume{
-		Name: imagePullSecretsDirName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	}
-}
-
-func (b *Blob) BuildEnvVars() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "BLOB_URL",
-			Value: b.URL,
-		},
-	}
 }
 
 // +k8s:openapi-gen=true
@@ -86,35 +35,6 @@ type Registry struct {
 	// +patchStrategy=merge
 	// +listType
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-}
-
-func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
-	if len(r.ImagePullSecrets) > 0 {
-		return corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: r.ImagePullSecrets[0].Name,
-				},
-			},
-		}
-	} else {
-		return corev1.Volume{
-			Name: imagePullSecretsDirName,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		}
-	}
-}
-
-func (r *Registry) BuildEnvVars() []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "REGISTRY_IMAGE",
-			Value: r.Image,
-		},
-	}
 }
 
 // +k8s:openapi-gen=true
