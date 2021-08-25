@@ -291,7 +291,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Env: []corev1.EnvVar{
 							{
 								Name:  platformAPIEnvVar,
-								Value: platformAPI,
+								Value: platformAPI.Original(),
 							},
 						},
 					},
@@ -323,7 +323,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							homeEnv,
 							{
 								Name:  platformAPIEnvVar,
-								Value: platformAPI,
+								Value: platformAPI.Original(),
 							},
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
@@ -349,7 +349,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Env: []corev1.EnvVar{
 							{
 								Name:  platformAPIEnvVar,
-								Value: platformAPI,
+								Value: platformAPI.Original(),
 							},
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
@@ -376,7 +376,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						Env: []corev1.EnvVar{
 							{
 								Name:  platformAPIEnvVar,
-								Value: platformAPI,
+								Value: platformAPI.Original(),
 							},
 						},
 					},
@@ -395,17 +395,18 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-project-metadata=/layers/project-metadata.toml"},
 							cacheArgs,
 							func() []string {
-								platformAPIVersion := semver.MustParse(platformAPI)
-								if platformAPIVersion.LessThan(semver.MustParse("0.4")) {
+								switch {
+								case platformAPI.Equal(lowestSupportedPlatformVersion):
 									return nil
-								} else if platformAPIVersion.LessThan(semver.MustParse("0.6")) {
+								case platformAPI.Equal(highestSupportedPlatformVersion):
 									return []string{
 										"-report=/var/report/report.toml",
-										"-process-type=web",
 									}
-								}
-								return []string{
-									"-report=/var/report/report.toml",
+								default:
+									return []string{
+										"-process-type=web",
+										"-report=/var/report/report.toml",
+									}
 								}
 							}(),
 							b.Spec.Tags),
@@ -419,7 +420,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							homeEnv,
 							{
 								Name:  platformAPIEnvVar,
-								Value: platformAPI,
+								Value: platformAPI.Original(),
 							},
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
@@ -768,23 +769,34 @@ func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
 	return volumes, volumeMounts
 }
 
-func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (string, error) {
+var (
+	highestSupportedPlatformVersion = semver.MustParse("0.6")
+	lowestSupportedPlatformVersion  = semver.MustParse("0.3")
 
-	var supportedPlatformAPIVersions = []string{"0.6", "5", "0.4", "0.3"}
-	if b.NotaryV1Config() != nil || bc.OS == "windows" {
-		//windows and report.toml are only available in platform api 0.3
-		supportedPlatformAPIVersions = []string{"0.6", "0.5", "0.4"}
-	}
+	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.6"), semver.MustParse("0.5"), semver.MustParse("0.4")}
+	supportedPlatformAPIVersions                         = append(supportedPlatformAPIVersionsWithWindowsAndReportToml, semver.MustParse("0.3"))
+)
 
-	for _, supportedVersion := range supportedPlatformAPIVersions {
-		for _, version := range bc.PlatformAPIs {
-			if supportedVersion == version {
+func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
+	for _, supportedVersion := range func() []*semver.Version {
+		if b.NotaryV1Config() != nil || bc.OS == "windows" {
+			return supportedPlatformAPIVersionsWithWindowsAndReportToml
+		}
+		return supportedPlatformAPIVersions
+	}() {
+		for _, v := range bc.PlatformAPIs {
+			version, err := semver.NewVersion(v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unexpected platform version %s", v)
+			}
+
+			if supportedVersion.Equal(version) {
 				return version, nil
 			}
 		}
 	}
 
-	return "", errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
+	return nil, errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
 }
 
 func tolerations(taints []corev1.Taint) []corev1.Toleration {
