@@ -29,121 +29,127 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding":                 schema_pkg_apis_build_v1alpha1_Binding(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob":                    schema_pkg_apis_build_v1alpha1_Blob(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build":                   schema_pkg_apis_build_v1alpha1_Build(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec":        schema_pkg_apis_build_v1alpha1_BuildBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildList":               schema_pkg_apis_build_v1alpha1_BuildList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec":               schema_pkg_apis_build_v1alpha1_BuildSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack":              schema_pkg_apis_build_v1alpha1_BuildStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus":             schema_pkg_apis_build_v1alpha1_BuildStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Builder":                 schema_pkg_apis_build_v1alpha1_Builder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderList":             schema_pkg_apis_build_v1alpha1_BuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderSpec":             schema_pkg_apis_build_v1alpha1_BuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus":           schema_pkg_apis_build_v1alpha1_BuilderStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackInfo":           schema_pkg_apis_build_v1alpha1_BuildpackInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata":       schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackRef":            schema_pkg_apis_build_v1alpha1_BuildpackRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackStack":          schema_pkg_apis_build_v1alpha1_BuildpackStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackageInfo":        schema_pkg_apis_build_v1alpha1_BuildpackageInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilder":          schema_pkg_apis_build_v1alpha1_ClusterBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderList":      schema_pkg_apis_build_v1alpha1_ClusterBuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderSpec":      schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStack":            schema_pkg_apis_build_v1alpha1_ClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackList":        schema_pkg_apis_build_v1alpha1_ClusterStackList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpec":        schema_pkg_apis_build_v1alpha1_ClusterStackSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage":   schema_pkg_apis_build_v1alpha1_ClusterStackSpecImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatus":      schema_pkg_apis_build_v1alpha1_ClusterStackStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage": schema_pkg_apis_build_v1alpha1_ClusterStackStatusImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStore":            schema_pkg_apis_build_v1alpha1_ClusterStore(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreList":        schema_pkg_apis_build_v1alpha1_ClusterStoreList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreSpec":        schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreStatus":      schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Git":                     schema_pkg_apis_build_v1alpha1_Git(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Image":                   schema_pkg_apis_build_v1alpha1_Image(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild":              schema_pkg_apis_build_v1alpha1_ImageBuild(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuilder":            schema_pkg_apis_build_v1alpha1_ImageBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageList":               schema_pkg_apis_build_v1alpha1_ImageList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec":               schema_pkg_apis_build_v1alpha1_ImageSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus":             schema_pkg_apis_build_v1alpha1_ImageStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild":               schema_pkg_apis_build_v1alpha1_LastBuild(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec":   schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig":            schema_pkg_apis_build_v1alpha1_NotaryConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef":         schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config":          schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry":              schema_pkg_apis_build_v1alpha1_OrderEntry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry":                schema_pkg_apis_build_v1alpha1_Registry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource":      schema_pkg_apis_build_v1alpha1_ResolvedBlobSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedClusterStack":    schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedGitSource":       schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedRegistrySource":  schema_pkg_apis_build_v1alpha1_ResolvedRegistrySource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedSourceConfig":    schema_pkg_apis_build_v1alpha1_ResolvedSourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig":            schema_pkg_apis_build_v1alpha1_SourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolver":          schema_pkg_apis_build_v1alpha1_SourceResolver(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverList":      schema_pkg_apis_build_v1alpha1_SourceResolverList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverSpec":      schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverStatus":    schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreBuildpack":          schema_pkg_apis_build_v1alpha1_StoreBuildpack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage":              schema_pkg_apis_build_v1alpha1_StoreImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding":                 schema_pkg_apis_build_v1alpha2_Binding(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Blob":                    schema_pkg_apis_build_v1alpha2_Blob(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Build":                   schema_pkg_apis_build_v1alpha2_Build(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec":        schema_pkg_apis_build_v1alpha2_BuildBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildList":               schema_pkg_apis_build_v1alpha2_BuildList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec":               schema_pkg_apis_build_v1alpha2_BuildSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack":              schema_pkg_apis_build_v1alpha2_BuildStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus":             schema_pkg_apis_build_v1alpha2_BuildStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder":                 schema_pkg_apis_build_v1alpha2_Builder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderList":             schema_pkg_apis_build_v1alpha2_BuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderSpec":             schema_pkg_apis_build_v1alpha2_BuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus":           schema_pkg_apis_build_v1alpha2_BuilderStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackInfo":           schema_pkg_apis_build_v1alpha2_BuildpackInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata":       schema_pkg_apis_build_v1alpha2_BuildpackMetadata(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackRef":            schema_pkg_apis_build_v1alpha2_BuildpackRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackStack":          schema_pkg_apis_build_v1alpha2_BuildpackStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackageInfo":        schema_pkg_apis_build_v1alpha2_BuildpackageInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilder":          schema_pkg_apis_build_v1alpha2_ClusterBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderList":      schema_pkg_apis_build_v1alpha2_ClusterBuilderList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderSpec":      schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStack":            schema_pkg_apis_build_v1alpha2_ClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackList":        schema_pkg_apis_build_v1alpha2_ClusterStackList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpec":        schema_pkg_apis_build_v1alpha2_ClusterStackSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage":   schema_pkg_apis_build_v1alpha2_ClusterStackSpecImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatus":      schema_pkg_apis_build_v1alpha2_ClusterStackStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage": schema_pkg_apis_build_v1alpha2_ClusterStackStatusImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStore":            schema_pkg_apis_build_v1alpha2_ClusterStore(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreList":        schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec":        schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":      schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Git":                     schema_pkg_apis_build_v1alpha2_Git(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                   schema_pkg_apis_build_v1alpha2_Image(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":              schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":            schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageList":               schema_pkg_apis_build_v1alpha2_ImageList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageSpec":               schema_pkg_apis_build_v1alpha2_ImageSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus":             schema_pkg_apis_build_v1alpha2_ImageStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild":               schema_pkg_apis_build_v1alpha2_LastBuild(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NamespacedBuilderSpec":   schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig":            schema_pkg_apis_build_v1alpha2_NotaryConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotarySecretRef":         schema_pkg_apis_build_v1alpha2_NotarySecretRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryV1Config":          schema_pkg_apis_build_v1alpha2_NotaryV1Config(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry":              schema_pkg_apis_build_v1alpha2_OrderEntry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Registry":                schema_pkg_apis_build_v1alpha2_Registry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedBlobSource":      schema_pkg_apis_build_v1alpha2_ResolvedBlobSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedClusterStack":    schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedGitSource":       schema_pkg_apis_build_v1alpha2_ResolvedGitSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedRegistrySource":  schema_pkg_apis_build_v1alpha2_ResolvedRegistrySource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedSourceConfig":    schema_pkg_apis_build_v1alpha2_ResolvedSourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig":            schema_pkg_apis_build_v1alpha2_SourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolver":          schema_pkg_apis_build_v1alpha2_SourceResolver(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverList":      schema_pkg_apis_build_v1alpha2_SourceResolverList(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverSpec":      schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverStatus":    schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreBuildpack":          schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage":              schema_pkg_apis_build_v1alpha2_StoreImage(ref),
-		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition":                schema_pkg_apis_core_v1alpha1_Condition(ref),
-		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Status":                   schema_pkg_apis_core_v1alpha1_Status(ref),
-		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.VolatileTime":             schema_pkg_apis_core_v1alpha1_VolatileTime(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding":                    schema_pkg_apis_build_v1alpha1_Binding(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob":                       schema_pkg_apis_build_v1alpha1_Blob(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build":                      schema_pkg_apis_build_v1alpha1_Build(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec":           schema_pkg_apis_build_v1alpha1_BuildBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildList":                  schema_pkg_apis_build_v1alpha1_BuildList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec":                  schema_pkg_apis_build_v1alpha1_BuildSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack":                 schema_pkg_apis_build_v1alpha1_BuildStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus":                schema_pkg_apis_build_v1alpha1_BuildStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Builder":                    schema_pkg_apis_build_v1alpha1_Builder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderList":                schema_pkg_apis_build_v1alpha1_BuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderSpec":                schema_pkg_apis_build_v1alpha1_BuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus":              schema_pkg_apis_build_v1alpha1_BuilderStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackInfo":              schema_pkg_apis_build_v1alpha1_BuildpackInfo(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata":          schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackRef":               schema_pkg_apis_build_v1alpha1_BuildpackRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackStack":             schema_pkg_apis_build_v1alpha1_BuildpackStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackageInfo":           schema_pkg_apis_build_v1alpha1_BuildpackageInfo(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilder":             schema_pkg_apis_build_v1alpha1_ClusterBuilder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderList":         schema_pkg_apis_build_v1alpha1_ClusterBuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderSpec":         schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStack":               schema_pkg_apis_build_v1alpha1_ClusterStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackList":           schema_pkg_apis_build_v1alpha1_ClusterStackList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpec":           schema_pkg_apis_build_v1alpha1_ClusterStackSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage":      schema_pkg_apis_build_v1alpha1_ClusterStackSpecImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatus":         schema_pkg_apis_build_v1alpha1_ClusterStackStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage":    schema_pkg_apis_build_v1alpha1_ClusterStackStatusImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStore":               schema_pkg_apis_build_v1alpha1_ClusterStore(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreList":           schema_pkg_apis_build_v1alpha1_ClusterStoreList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreSpec":           schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Git":                        schema_pkg_apis_build_v1alpha1_Git(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Image":                      schema_pkg_apis_build_v1alpha1_Image(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild":                 schema_pkg_apis_build_v1alpha1_ImageBuild(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuilder":               schema_pkg_apis_build_v1alpha1_ImageBuilder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageList":                  schema_pkg_apis_build_v1alpha1_ImageList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec":                  schema_pkg_apis_build_v1alpha1_ImageSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus":                schema_pkg_apis_build_v1alpha1_ImageStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild":                  schema_pkg_apis_build_v1alpha1_LastBuild(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec":      schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig":               schema_pkg_apis_build_v1alpha1_NotaryConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef":            schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config":             schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry":                 schema_pkg_apis_build_v1alpha1_OrderEntry(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry":                   schema_pkg_apis_build_v1alpha1_Registry(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource":         schema_pkg_apis_build_v1alpha1_ResolvedBlobSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedClusterStack":       schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedGitSource":          schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedRegistrySource":     schema_pkg_apis_build_v1alpha1_ResolvedRegistrySource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedSourceConfig":       schema_pkg_apis_build_v1alpha1_ResolvedSourceConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig":               schema_pkg_apis_build_v1alpha1_SourceConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolver":             schema_pkg_apis_build_v1alpha1_SourceResolver(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverList":         schema_pkg_apis_build_v1alpha1_SourceResolverList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverSpec":         schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverStatus":       schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreBuildpack":             schema_pkg_apis_build_v1alpha1_StoreBuildpack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage":                 schema_pkg_apis_build_v1alpha1_StoreImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding":                    schema_pkg_apis_build_v1alpha2_Binding(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Blob":                       schema_pkg_apis_build_v1alpha2_Blob(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Build":                      schema_pkg_apis_build_v1alpha2_Build(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec":           schema_pkg_apis_build_v1alpha2_BuildBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache":                 schema_pkg_apis_build_v1alpha2_BuildCache(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig":           schema_pkg_apis_build_v1alpha2_BuildCacheConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildList":                  schema_pkg_apis_build_v1alpha2_BuildList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildPersistentVolumeCache": schema_pkg_apis_build_v1alpha2_BuildPersistentVolumeCache(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec":                  schema_pkg_apis_build_v1alpha2_BuildSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack":                 schema_pkg_apis_build_v1alpha2_BuildStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus":                schema_pkg_apis_build_v1alpha2_BuildStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder":                    schema_pkg_apis_build_v1alpha2_Builder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderList":                schema_pkg_apis_build_v1alpha2_BuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderSpec":                schema_pkg_apis_build_v1alpha2_BuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus":              schema_pkg_apis_build_v1alpha2_BuilderStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackInfo":              schema_pkg_apis_build_v1alpha2_BuildpackInfo(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata":          schema_pkg_apis_build_v1alpha2_BuildpackMetadata(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackRef":               schema_pkg_apis_build_v1alpha2_BuildpackRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackStack":             schema_pkg_apis_build_v1alpha2_BuildpackStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackageInfo":           schema_pkg_apis_build_v1alpha2_BuildpackageInfo(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilder":             schema_pkg_apis_build_v1alpha2_ClusterBuilder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderList":         schema_pkg_apis_build_v1alpha2_ClusterBuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderSpec":         schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStack":               schema_pkg_apis_build_v1alpha2_ClusterStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackList":           schema_pkg_apis_build_v1alpha2_ClusterStackList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpec":           schema_pkg_apis_build_v1alpha2_ClusterStackSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage":      schema_pkg_apis_build_v1alpha2_ClusterStackSpecImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatus":         schema_pkg_apis_build_v1alpha2_ClusterStackStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage":    schema_pkg_apis_build_v1alpha2_ClusterStackStatusImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStore":               schema_pkg_apis_build_v1alpha2_ClusterStore(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreList":           schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec":           schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Git":                        schema_pkg_apis_build_v1alpha2_Git(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                      schema_pkg_apis_build_v1alpha2_Image(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":                 schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":               schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig":           schema_pkg_apis_build_v1alpha2_ImageCacheConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageList":                  schema_pkg_apis_build_v1alpha2_ImageList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImagePersistentVolumeCache": schema_pkg_apis_build_v1alpha2_ImagePersistentVolumeCache(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageSpec":                  schema_pkg_apis_build_v1alpha2_ImageSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus":                schema_pkg_apis_build_v1alpha2_ImageStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild":                  schema_pkg_apis_build_v1alpha2_LastBuild(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NamespacedBuilderSpec":      schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig":               schema_pkg_apis_build_v1alpha2_NotaryConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotarySecretRef":            schema_pkg_apis_build_v1alpha2_NotarySecretRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryV1Config":             schema_pkg_apis_build_v1alpha2_NotaryV1Config(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry":                 schema_pkg_apis_build_v1alpha2_OrderEntry(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Registry":                   schema_pkg_apis_build_v1alpha2_Registry(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache":              schema_pkg_apis_build_v1alpha2_RegistryCache(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedBlobSource":         schema_pkg_apis_build_v1alpha2_ResolvedBlobSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedClusterStack":       schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedGitSource":          schema_pkg_apis_build_v1alpha2_ResolvedGitSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedRegistrySource":     schema_pkg_apis_build_v1alpha2_ResolvedRegistrySource(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedSourceConfig":       schema_pkg_apis_build_v1alpha2_ResolvedSourceConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig":               schema_pkg_apis_build_v1alpha2_SourceConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolver":             schema_pkg_apis_build_v1alpha2_SourceResolver(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverList":         schema_pkg_apis_build_v1alpha2_SourceResolverList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverSpec":         schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverStatus":       schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreBuildpack":             schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage":                 schema_pkg_apis_build_v1alpha2_StoreImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition":                   schema_pkg_apis_core_v1alpha1_Condition(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Status":                      schema_pkg_apis_core_v1alpha1_Status(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.VolatileTime":                schema_pkg_apis_core_v1alpha1_VolatileTime(ref),
 	}
 }
 
@@ -2610,7 +2616,6 @@ func schema_pkg_apis_build_v1alpha2_Binding(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
@@ -2720,6 +2725,48 @@ func schema_pkg_apis_build_v1alpha2_BuildBuilderSpec(ref common.ReferenceCallbac
 	}
 }
 
+func schema_pkg_apis_build_v1alpha2_BuildCache(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_BuildCacheConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"volume": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildPersistentVolumeCache"),
+						},
+					},
+					"registry": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildPersistentVolumeCache", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache"},
+	}
+}
+
 func schema_pkg_apis_build_v1alpha2_BuildList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2766,6 +2813,24 @@ func schema_pkg_apis_build_v1alpha2_BuildList(ref common.ReferenceCallback) comm
 	}
 }
 
+func schema_pkg_apis_build_v1alpha2_BuildPersistentVolumeCache(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"persistentVolumeClaimName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2806,10 +2871,9 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"),
 						},
 					},
-					"cacheName": {
+					"cache": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig"),
 						},
 					},
 					"bindings": {
@@ -2872,7 +2936,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -2950,6 +3014,12 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 						},
 					},
 					"latestImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"latestCacheImage": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -4121,6 +4191,30 @@ func schema_pkg_apis_build_v1alpha2_ImageBuilder(ref common.ReferenceCallback) c
 	}
 }
 
+func schema_pkg_apis_build_v1alpha2_ImageCacheConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"volume": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImagePersistentVolumeCache"),
+						},
+					},
+					"registry": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImagePersistentVolumeCache", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache"},
+	}
+}
+
 func schema_pkg_apis_build_v1alpha2_ImageList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4167,6 +4261,25 @@ func schema_pkg_apis_build_v1alpha2_ImageList(ref common.ReferenceCallback) comm
 	}
 }
 
+func schema_pkg_apis_build_v1alpha2_ImagePersistentVolumeCache(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"size": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
+	}
+}
+
 func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4195,9 +4308,9 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"),
 						},
 					},
-					"cacheSize": {
+					"cache": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig"),
 						},
 					},
 					"failedBuildHistoryLimit": {
@@ -4239,7 +4352,7 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -4337,6 +4450,11 @@ func schema_pkg_apis_build_v1alpha2_LastBuild(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
+					"cache": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache"),
+						},
+					},
 					"stackId": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -4346,6 +4464,8 @@ func schema_pkg_apis_build_v1alpha2_LastBuild(ref common.ReferenceCallback) comm
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache"},
 	}
 }
 
@@ -4534,6 +4654,25 @@ func schema_pkg_apis_build_v1alpha2_Registry(ref common.ReferenceCallback) commo
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_RegistryCache(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"tag": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"tag"},
+			},
+		},
 	}
 }
 

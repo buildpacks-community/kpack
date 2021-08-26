@@ -53,15 +53,18 @@ type ImageSpec struct {
 	Notary                   *NotaryConfig          `json:"notary,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImageCacheConfig struct {
 	Volume   *ImagePersistentVolumeCache `json:"volume,omitempty"`
 	Registry *RegistryCache              `json:"registry,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImagePersistentVolumeCache struct {
 	Size *resource.Quantity `json:"size,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type RegistryCache struct {
 	Tag string `json:"tag"`
 }
