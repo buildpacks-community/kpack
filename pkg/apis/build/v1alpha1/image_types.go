@@ -57,15 +57,6 @@ type ImageSpec struct {
 }
 
 // +k8s:openapi-gen=true
-type ImageBuild struct {
-	// +listType
-	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
-	// +listType
-	Env       []corev1.EnvVar             `json:"env,omitempty"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-}
-
-// +k8s:openapi-gen=true
 type ImageStatus struct {
 	corev1alpha1.Status        `json:",inline"`
 	LatestBuildRef             string `json:"latestBuildRef,omitempty"`
@@ -97,11 +88,11 @@ func (i *Image) NamespacedName() types.NamespacedName {
 }
 
 func (i *Image) ConvertTo(_ context.Context, _ apis.Convertible) error {
-	return errors.New("called convertTo in v1alpha1")
+	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
 }
 
 func (i *Image) ConvertFrom(_ context.Context, _ apis.Convertible) error {
-	return errors.New("called convertFrom in v1alpha1")
+	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }
 
 const ConditionBuilderReady corev1alpha1.ConditionType = "BuilderReady"

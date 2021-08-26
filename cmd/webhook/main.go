@@ -23,16 +23,16 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics/validation"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	buildapi.SchemeGroupVersion.WithKind("Image"):          &buildapi.Image{},
-	buildapi.SchemeGroupVersion.WithKind("Build"):          &buildapi.Build{},
-	buildapi.SchemeGroupVersion.WithKind("Builder"):        &buildapi.Builder{},
-	buildapi.SchemeGroupVersion.WithKind("ClusterBuilder"): &buildapi.ClusterBuilder{},
-	buildapi.SchemeGroupVersion.WithKind("ClusterStore"):   &buildapi.ClusterStore{},
-	buildapi.SchemeGroupVersion.WithKind("ClusterStack"):   &buildapi.ClusterStack{},
+	v1alpha2.SchemeGroupVersion.WithKind("Image"):          &v1alpha2.Image{},
+	v1alpha2.SchemeGroupVersion.WithKind("Build"):          &v1alpha2.Build{},
+	v1alpha2.SchemeGroupVersion.WithKind("Builder"):        &v1alpha2.Builder{},
+	v1alpha2.SchemeGroupVersion.WithKind("ClusterBuilder"): &v1alpha2.ClusterBuilder{},
+	v1alpha2.SchemeGroupVersion.WithKind("ClusterStore"):   &v1alpha2.ClusterStore{},
+	v1alpha2.SchemeGroupVersion.WithKind("ClusterStack"):   &v1alpha2.ClusterStack{},
 }
 
 func init() {
@@ -96,19 +96,19 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 func conversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 
 	conversions := map[schema.GroupKind]conversion.GroupKindConversion{
-		buildapi.Kind("Image"): {
+		v1alpha2.Kind("Image"): {
 			DefinitionName: "images.kpack.io",
-			HubVersion:     buildapi.SchemeGroupVersion.Version,
+			HubVersion:     v1alpha2.SchemeGroupVersion.Version,
 			Zygotes: map[string]conversion.ConvertibleObject{
-				buildapi.SchemeGroupVersion.Version: &buildapi.Image{},
+				v1alpha2.SchemeGroupVersion.Version: &v1alpha2.Image{},
 				v1alpha1.SchemeGroupVersion.Version: &v1alpha1.Image{},
 			},
 		},
-		buildapi.Kind("Build"): {
+		v1alpha2.Kind("Build"): {
 			DefinitionName: "builds.kpack.io",
-			HubVersion:     buildapi.SchemeGroupVersion.Version,
+			HubVersion:     v1alpha2.SchemeGroupVersion.Version,
 			Zygotes: map[string]conversion.ConvertibleObject{
-				buildapi.SchemeGroupVersion.Version: &buildapi.Build{},
+				v1alpha2.SchemeGroupVersion.Version: &v1alpha2.Build{},
 				v1alpha1.SchemeGroupVersion.Version: &v1alpha1.Build{},
 			},
 		},
@@ -137,9 +137,9 @@ func withCheckDefaultStorageClass(ctx context.Context, storageClassLister lister
 		}
 
 		if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
-			ctx = context.WithValue(ctx, buildapi.HasDefaultStorageClass, true)
+			ctx = context.WithValue(ctx, v1alpha2.HasDefaultStorageClass, true)
 			if *sc.AllowVolumeExpansion {
-				ctx = context.WithValue(ctx, buildapi.IsExpandable, true)
+				ctx = context.WithValue(ctx, v1alpha2.IsExpandable, true)
 			}
 			break
 		}

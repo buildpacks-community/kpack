@@ -93,9 +93,9 @@ type BuildList struct {
 }
 
 func (*Build) ConvertTo(_ context.Context, _ apis.Convertible) error {
-	return errors.New("called convertTo in v1alpha1")
+	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
 }
 
 func (*Build) ConvertFrom(_ context.Context, _ apis.Convertible) error {
-	return errors.New("called convertFrom in v1alpha1")
+	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }

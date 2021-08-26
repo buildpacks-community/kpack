@@ -4845,28 +4845,6 @@
         }
       }
     },
-    "kpack.build.v1alpha1.ImageBuild": {
-      "type": "object",
-      "properties": {
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "env": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "resources": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
-        }
-      }
-    },
     "kpack.build.v1alpha1.ImageList": {
       "type": "object",
       "required": [

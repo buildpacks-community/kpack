@@ -132,11 +132,3 @@ func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 		return apis.ErrInvalidValue(builder.Kind, "kind")
 	}
 }
-
-func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
-	if ib == nil {
-		return nil
-	}
-
-	return ib.Bindings.Validate(ctx).ViaField("bindings")
-}
