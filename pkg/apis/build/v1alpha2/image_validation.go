@@ -16,7 +16,7 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
-	IsExpandable           ImageContextKey = "IsExpandable"
+	IsExpandable           ImageContextKey = "isExpandable"
 )
 
 var (
@@ -105,8 +105,8 @@ func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
 		if original.Spec.NeedVolumeCache() && is.NeedVolumeCache() {
 			if ctx.Value(IsExpandable) == false && is.Cache.Volume.Size.Cmp(*original.Spec.Cache.Volume.Size) != 0 {
 				return &apis.FieldError{
-					Message: "Field cannot be changed",
-					Paths:   []string{"cacheSize"},
+					Message: "Field cannot be changed, default storage class is not expandable",
+					Paths:   []string{"cache.volume.size"},
 					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.Cache.Volume.Size, is.Cache.Volume.Size),
 				}
 			} else if is.Cache.Volume.Size.Cmp(*original.Spec.Cache.Volume.Size) < 0 {

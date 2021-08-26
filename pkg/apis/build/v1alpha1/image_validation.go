@@ -16,7 +16,7 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
-	IsExpandable           ImageContextKey = "IsExpandable"
+	IsExpandable           ImageContextKey = "isExpandable"
 )
 
 var (

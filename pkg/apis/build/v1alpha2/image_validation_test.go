@@ -289,7 +289,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			cacheSize := resource.MustParse("6G")
 			image.Spec.Cache.Volume.Size = &cacheSize
 			err := image.Validate(apis.WithinUpdate(context.WithValue(ctx, IsExpandable, false), original))
-			assert.EqualError(t, err, "Field cannot be changed: spec.cacheSize\ncurrent: 5G, requested: 6G")
+			assert.EqualError(t, err, "Field cannot be changed, default storage class is not expandable: spec.cache.volume.size\ncurrent: 5G, requested: 6G")
 		})
 
 		it("image.cacheSize has changed when storageclass is expandable", func() {
