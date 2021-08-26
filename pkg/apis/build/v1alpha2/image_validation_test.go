@@ -20,7 +20,7 @@ func TestImageValidation(t *testing.T) {
 func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 	var limit int64 = 90
 	cacheSize := resource.MustParse("5G")
-	ctx := context.WithValue(context.TODO(), HasDefaultStorageClass, true)
+	ctx := context.WithValue(context.WithValue(context.TODO(), HasDefaultStorageClass, true), IsExpandable, true)
 	image := &Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
@@ -282,6 +282,22 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			image.Spec.Cache.Volume.Size = &cacheSize
 			err := image.Validate(apis.WithinUpdate(ctx, original))
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cache.volume.size\ncurrent: 5G, requested: 4G")
+		})
+
+		it("image.cacheSize has not changed when storageclass is not expandable", func() {
+			original := image.DeepCopy()
+			cacheSize := resource.MustParse("6G")
+			image.Spec.Cache.Volume.Size = &cacheSize
+			err := image.Validate(apis.WithinUpdate(context.WithValue(ctx, IsExpandable, false), original))
+			assert.EqualError(t, err, "Field cannot be changed, default storage class is not expandable: spec.cache.volume.size\ncurrent: 5G, requested: 6G")
+		})
+
+		it("image.cacheSize has changed when storageclass is expandable", func() {
+			original := image.DeepCopy()
+			cacheSize := resource.MustParse("6G")
+			image.Spec.Cache.Volume.Size = &cacheSize
+			err := image.Validate(apis.WithinUpdate(ctx, original))
+			assert.Nil(t, err)
 		})
 
 		when("validating the notary config", func() {

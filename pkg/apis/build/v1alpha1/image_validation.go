@@ -16,6 +16,7 @@ type ImageContextKey string
 
 const (
 	HasDefaultStorageClass ImageContextKey = "hasDefaultStorageClass"
+	IsExpandable           ImageContextKey = "isExpandable"
 )
 
 var (
@@ -96,11 +97,19 @@ func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {
 
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Image)
-		if original.Spec.CacheSize != nil && is.CacheSize.Cmp(*original.Spec.CacheSize) < 0 {
-			return &apis.FieldError{
-				Message: "Field cannot be decreased",
-				Paths:   []string{"cacheSize"},
-				Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.CacheSize, is.CacheSize),
+		if original.Spec.CacheSize != nil {
+			if ctx.Value(IsExpandable) == false && is.CacheSize.Cmp(*original.Spec.CacheSize) != 0 {
+				return &apis.FieldError{
+					Message: "Field cannot be changed",
+					Paths:   []string{"cacheSize"},
+					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.CacheSize, is.CacheSize),
+				}
+			} else if is.CacheSize.Cmp(*original.Spec.CacheSize) < 0 {
+				return &apis.FieldError{
+					Message: "Field cannot be decreased",
+					Paths:   []string{"cacheSize"},
+					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.CacheSize, is.CacheSize),
+				}
 			}
 		}
 	}

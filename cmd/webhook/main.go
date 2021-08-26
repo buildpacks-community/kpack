@@ -104,6 +104,9 @@ func withCheckDefaultStorageClass(ctx context.Context, storageClassLister lister
 
 		if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
 			ctx = context.WithValue(ctx, buildapi.HasDefaultStorageClass, true)
+			if *sc.AllowVolumeExpansion {
+				ctx = context.WithValue(ctx, buildapi.IsExpandable, true)
+			}
 			break
 		}
 	}
