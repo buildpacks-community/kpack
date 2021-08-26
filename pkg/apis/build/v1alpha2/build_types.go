@@ -78,11 +78,13 @@ func (bs *BuildSpec) NeedRegistryCache() bool {
 	return bs.Cache != nil && bs.Cache.Registry != nil && bs.Cache.Registry.Tag != ""
 }
 
+// +k8s:openapi-gen=true
 type BuildCacheConfig struct {
 	Volume   *BuildPersistentVolumeCache `json:"volume,omitempty"`
 	Registry *RegistryCache              `json:"registry,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type BuildPersistentVolumeCache struct {
 	ClaimName string `json:"persistentVolumeClaimName,omitempty"`
 }
@@ -104,6 +106,7 @@ type LastBuild struct {
 	StackId string     `json:"stackId,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type BuildCache struct {
 	Image string `json:"image,omitempty"`
 }
