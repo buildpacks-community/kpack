@@ -43,8 +43,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},
-		},
-	}
+		}}
 
 	build := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -67,7 +66,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName: "some-cache-name",
+			Cache: &buildapi.BuildCacheConfig{
+				Volume: &buildapi.BuildPersistentVolumeCache{
+					ClaimName: "some-cache-name",
+				},
+			},
 			Bindings: []buildapi.Binding{
 				{
 					Name: "database",
@@ -581,6 +584,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
+				"home-dir",
 				"cache-dir",
 			}, names(pod.Spec.InitContainers[3].VolumeMounts))
 
@@ -667,9 +671,125 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.Volumes[0])
 		})
 
+		when("registry cache is requested (first build)", func() {
+			podWithVolumeCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			build.Spec.Cache.Volume = nil
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+
+			it("creates a pod without cache volume", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+			})
+
+			it("does not add the cache to analyze container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := podWithImageCache.Spec.InitContainers[2]
+				assert.NotContains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
+			})
+			it("does not add the cache to restore container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := podWithImageCache.Spec.InitContainers[3]
+				assert.NotContains(t, restoreContainer.Args, "-cache-image=test-cache-image")
+			})
+			it("adds the cache to export container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := podWithImageCache.Spec.InitContainers[5]
+				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+			})
+		})
+
+		when("registry cache is requested (second build)", func() {
+			podWithVolumeCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			build.Spec.Cache.Volume = nil
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+			build.Spec.LastBuild = &buildapi.LastBuild{
+				Cache: buildapi.BuildCache{
+					Image: "test-cache-image@sha",
+				},
+			}
+
+			it("creates a pod without cache volume", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+			})
+
+			it("adds the cache to analyze container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := podWithImageCache.Spec.InitContainers[2]
+				assert.Contains(t, analyzeContainer.Args, "-cache-image=test-cache-image@sha")
+			})
+			it("adds the cache to restore container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := podWithImageCache.Spec.InitContainers[3]
+				assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image@sha")
+			})
+			it("adds the cache to export container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := podWithImageCache.Spec.InitContainers[5]
+				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+			})
+		})
+
+		when("ImageTag is empty", func() {
+			var pod *corev1.Pod
+			var err error
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: ""}
+
+			it("does not add the cache to analyze container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := pod.Spec.InitContainers[2]
+				assert.NotContains(t, analyzeContainer.Args, "-cache-image")
+			})
+			it("does not add the cache to restore container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := pod.Spec.InitContainers[3]
+				assert.NotContains(t, restoreContainer.Args, "-cache-image")
+			})
+			it("does not add the cache to export container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := pod.Spec.InitContainers[5]
+				assert.NotContains(t, exportContainer.Args, "-cache-image")
+			})
+		})
+
+		when("Cache is nil", func() {
+			buildCopy := build.DeepCopy()
+			podWithCache, _ := buildCopy.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			buildCopy.Spec.Cache = nil
+
+			it("creates a pod without cache volume", func() {
+				pod, err := buildCopy.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
+			})
+		})
+
 		when("CacheName is empty", func() {
 			podWithCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
-			build.Spec.CacheName = ""
+			build.Spec.Cache.Volume = &buildapi.BuildPersistentVolumeCache{ClaimName: ""}
 
 			it("creates a pod without cache volume", func() {
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
@@ -1283,7 +1403,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				buildPodBuilderConfigLinux := buildPodBuilderConfig.DeepCopy()
 				buildPodBuilderConfigLinux.OS = "linux"
 				podWithCache, _ := build.BuildPod(config, nil, nil, *buildPodBuilderConfigLinux)
-				build.Spec.CacheName = "non-empty"
+				build.Spec.Cache.Volume.ClaimName = "non-empty"
 
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 				require.NoError(t, err)

@@ -337,11 +337,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Name: imageName,
 						},
 						Spec: buildapi.ImageSpec{
-							Tag:                  imageTag,
-							Builder:              builder,
-							ServiceAccount:       serviceAccountName,
-							Source:               source,
-							CacheSize:            &cacheSize,
+							Tag:            imageTag,
+							Builder:        builder,
+							ServiceAccount: serviceAccountName,
+							Source:         source,
+							Cache: &buildapi.ImageCacheConfig{
+								Volume: &buildapi.ImagePersistentVolumeCache{
+									Size: &cacheSize,
+								},
+							},
 							ImageTaggingStrategy: buildapi.None,
 							Build: &buildapi.ImageBuild{
 								Resources: expectedResources,
@@ -357,68 +361,89 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 	})
 
-	it("can trigger rebuilds", func() {
+	it("can trigger rebuilds with volume cache", func() {
 		cacheSize := resource.MustParse("1Gi")
 
-		expectedResources := corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1G"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512M"),
+		volumeCacheConfig := &buildapi.ImageCacheConfig{
+			Volume: &buildapi.ImagePersistentVolumeCache{
+				Size: &cacheSize,
 			},
 		}
 
-		imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
+		generateRebuild(&ctx, t, cfg, clients, volumeCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)
+	})
 
-		imageTag := cfg.newImageTag()
-		image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: imageName,
+	it("can trigger rebuilds with registry cache", func() {
+		cacheImageTag := cfg.newImageTag() + "-cache"
+
+		registryCacheConfig := &buildapi.ImageCacheConfig{
+			Registry: &buildapi.RegistryCache{
+				Tag: cacheImageTag,
 			},
-			Spec: buildapi.ImageSpec{
-				Tag: imageTag,
-				Builder: corev1.ObjectReference{
-					Kind: buildapi.ClusterBuilderKind,
-					Name: clusterBuilderName,
-				},
-				ServiceAccount: serviceAccountName,
-				Source: buildapi.SourceConfig{
-					Git: &buildapi.Git{
-						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-						Revision: "master",
-					},
-				},
-				CacheSize:            &cacheSize,
-				ImageTaggingStrategy: buildapi.None,
-				Build: &buildapi.ImageBuild{
-					Resources: expectedResources,
+		}
+		generateRebuild(&ctx, t, cfg, clients, registryCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)
+	})
+}
+
+func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *clients, cacheConfig *buildapi.ImageCacheConfig, testNamespace, clusterBuilderName, serviceAccountName string) {
+	expectedResources := corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1G"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("512M"),
+		},
+	}
+
+	imageName := fmt.Sprintf("%s-%s", "test-git-image", "cluster-builder")
+
+	imageTag := cfg.newImageTag()
+	image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(*ctx, &buildapi.Image{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: imageName,
+		},
+		Spec: buildapi.ImageSpec{
+			Tag: imageTag,
+			Builder: corev1.ObjectReference{
+				Kind: buildapi.ClusterBuilderKind,
+				Name: clusterBuilderName,
+			},
+			ServiceAccount: serviceAccountName,
+			Source: buildapi.SourceConfig{
+				Git: &buildapi.Git{
+					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
+					Revision: "master",
 				},
 			},
-		}, metav1.CreateOptions{})
-		require.NoError(t, err)
+			Cache:                cacheConfig,
+			ImageTaggingStrategy: buildapi.None,
+			Build: &buildapi.ImageBuild{
+				Resources: expectedResources,
+			},
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
 
-		validateImageCreate(t, clients, image, expectedResources)
+	validateImageCreate(t, clients, image, expectedResources)
 
-		list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
+	list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(*ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
+	})
+	require.NoError(t, err)
+	require.Len(t, list.Items, 1)
+
+	build := &list.Items[0]
+	build.Annotations[buildapi.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
+	_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Update(*ctx, build, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	eventually(t, func() bool {
+		list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(*ctx, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
 		})
 		require.NoError(t, err)
-		require.Len(t, list.Items, 1)
-
-		build := &list.Items[0]
-		build.Annotations[buildapi.BuildNeededAnnotation] = "2006-01-02 15:04:05.000000 -0700 MST m=+0.000000000"
-		_, err = clients.client.KpackV1alpha2().Builds(testNamespace).Update(ctx, build, metav1.UpdateOptions{})
-		require.NoError(t, err)
-
-		eventually(t, func() bool {
-			list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
-			})
-			require.NoError(t, err)
-			return len(list.Items) == 2
-		}, 5*time.Second, 1*time.Minute)
-	})
+		return len(list.Items) == 2
+	}, 5*time.Second, 1*time.Minute)
 }
 
 func readNamespaceLabelsFromEnv() map[string]string {

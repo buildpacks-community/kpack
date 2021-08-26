@@ -210,6 +210,15 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(build, apis.ErrGeneric("duplicate binding name \"apm\"", "spec.bindings[0].name", "spec.bindings[2].name"))
 		})
 
+		it("validates not registry AND volume cache are both specified", func() {
+			build.Spec.Cache = &BuildCacheConfig{
+				Volume:   &BuildPersistentVolumeCache{ClaimName: "pvc"},
+				Registry: &RegistryCache{Tag: "test"},
+			}
+
+			assertValidationError(build, apis.ErrGeneric("only one type of cache can be specified", "spec.cache.volume", "spec.cache.registry"))
+		})
+
 		it("combining errors", func() {
 			build.Spec.Tags = []string{}
 			build.Spec.Builder.Image = ""
