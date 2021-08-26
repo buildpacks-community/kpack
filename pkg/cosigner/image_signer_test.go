@@ -40,6 +40,11 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, "example-registry.io/test:latest", imageRef)
 				assert.Contains(t, ko.KeyRef, "cosign.key")
 				assert.Contains(t, ko.KeyRef, secretLocation)
+
+				password, err := ko.PassFunc(true)
+				assert.Nil(t, err)
+
+				assert.Equal(t, []byte(""), password)
 				assert.Nil(t, annotations)
 				cliSignCmdCallCount++
 				return nil
@@ -49,6 +54,48 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
+		})
+
+		it("signs images with key password", func() {
+			firstPassword := []byte("secretPass1")
+			secondPassword := []byte("secretPass2")
+			ioutil.WriteFile(fmt.Sprintf("%s/secret-name-1/cosign.password", secretLocation), firstPassword, 0644)
+			ioutil.WriteFile(fmt.Sprintf("%s/secret-name-2/cosign.password", secretLocation), secondPassword, 0644)
+
+			cliSignCmdCallCount := 0
+			firstPasswordSeenCount := 0
+			secondPasswordSeenCount := 0
+
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				t.Helper()
+				assert.Equal(t, "example-registry.io/test:latest", imageRef)
+				assert.Contains(t, ko.KeyRef, "cosign.key")
+				assert.Contains(t, ko.KeyRef, secretLocation)
+
+				password, err := ko.PassFunc(true)
+				assert.Nil(t, err)
+
+				assert.Contains(t, [][]byte{firstPassword, secondPassword}, password)
+
+				if string(firstPassword) == string(password) {
+					firstPasswordSeenCount++
+				}
+
+				if string(secondPassword) == string(password) {
+					secondPasswordSeenCount++
+				}
+
+				assert.Nil(t, annotations)
+				cliSignCmdCallCount++
+				return nil
+			}
+
+			err := signer.Sign(reportPath, nil)
+			assert.Nil(t, err)
+
+			assert.Equal(t, 2, cliSignCmdCallCount)
+			assert.Equal(t, 1, firstPasswordSeenCount)
+			assert.Equal(t, 1, secondPasswordSeenCount)
 		})
 
 		it("signs with annotations", func() {

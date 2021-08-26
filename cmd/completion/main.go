@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/pivotal/kpack/pkg/cosigner"
 	"github.com/pivotal/kpack/pkg/dockercreds"
@@ -29,6 +30,7 @@ var (
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
+	cosignAnnotations       flaghelpers.CredentialsFlags
 	logger                  *log.Logger
 )
 
@@ -39,6 +41,7 @@ func init() {
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
+	flag.Var(&cosignAnnotations, "cosign-annotations", "Cosign custom signing annotations")
 	logger = log.New(os.Stdout, "", 0)
 }
 
@@ -73,26 +76,28 @@ func main() {
 		}
 	}
 
-	logger.Println("Attempt to sign with cosign")
 	cosignSigner := cosigner.ImageSigner{
 		Logger: logger,
 	}
 
-	logger.Printf("Creating annotation")
 	annotations := map[string]interface{}{
 		buildNumberKey:    buildNumber,
 		buildTimestampKey: buildTimestamp,
 	}
 
-	logger.Printf("annotations are: %v", annotations)
+	for _, annotation := range cosignAnnotations {
+		splitAnnotation := strings.Split(annotation, "=")
 
-	// Todo: for loop annotation args for key=value
+		if len(splitAnnotation) != 2 {
+			logger.Fatalf("cosign annotation not formatted correctly: %s", annotation)
+		}
+
+		annotations[splitAnnotation[0]] = splitAnnotation[1]
+	}
 
 	if err := cosignSigner.Sign(reportFilePath, annotations); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
-
-	logger.Println("Finished attempt to sign with cosign")
 
 	if notaryV1URL != "" {
 		signer := notary.ImageSigner{

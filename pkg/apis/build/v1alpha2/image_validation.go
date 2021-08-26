@@ -77,7 +77,8 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 		Also(is.Source.Validate(ctx).ViaField("source")).
 		Also(is.Build.Validate(ctx).ViaField("build")).
 		Also(is.validateCacheSize(ctx)).
-		Also(is.Notary.Validate(ctx).ViaField("notary"))
+		Also(is.Notary.Validate(ctx).ViaField("notary")).
+		Also(is.Cosign.Validate(ctx).ViaField("cosign"))
 }
 
 func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {

@@ -51,6 +51,7 @@ type ImageSpec struct {
 	ProjectDescriptorPath    string                 `json:"projectDescriptorPath,omitempty"`
 	Build                    *ImageBuild            `json:"build,omitempty"`
 	Notary                   *NotaryConfig          `json:"notary,omitempty"`
+	Cosign                   *CosignConfig          `json:"cosign,omitempty"`
 }
 
 // +k8s:openapi-gen=true

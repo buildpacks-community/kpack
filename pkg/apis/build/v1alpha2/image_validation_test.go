@@ -267,6 +267,56 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cacheSize\ncurrent: 5G, requested: 4G")
 		})
 
+		when("validating the cosign config", func() {
+			// cosign: nil
+			it("handles nil cosign", func() {
+				image.Spec.Cosign = nil
+				assert.Nil(t, image.Validate(ctx))
+			})
+
+			// cosign: { annotations: nil }
+			it("handles nil annotations", func() {
+				image.Spec.Cosign = &CosignConfig{
+					Annotations: nil,
+				}
+				assert.Nil(t, image.Validate(ctx))
+			})
+
+			// cosign: { Annotations: [] }
+			it("handles empty annotations", func() {
+				image.Spec.Cosign = &CosignConfig{
+					Annotations: []CosignAnnotation{},
+				}
+				assert.Nil(t, image.Validate(ctx))
+			})
+
+			// cosign: { Annotations: [{name: "1", value: "1"}] }
+			it("handles annotations", func() {
+				image.Spec.Cosign = &CosignConfig{
+					Annotations: []CosignAnnotation{
+						{
+							Name:  "1",
+							Value: "1",
+						},
+					},
+				}
+				assert.Nil(t, image.Validate(ctx))
+			})
+
+			// cosign: { Annotations: [{ Value: "1"}, { Name: "1"}] }
+			it("errors on missing annotation fields", func() {
+				image.Spec.Cosign = &CosignConfig{
+					Annotations: []CosignAnnotation{
+						{Value: "1"},
+						{Name: "1"},
+					},
+				}
+
+				err := image.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.cosign.annotations[0].name, spec.cosign.annotations[1].value")
+			})
+		})
+
 		when("validating the notary config", func() {
 			it("handles a valid notary config", func() {
 				image.Spec.Notary = &NotaryConfig{

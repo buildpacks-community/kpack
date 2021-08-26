@@ -5627,6 +5627,9 @@
         "cacheName": {
           "type": "string"
         },
+        "cosign": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
+        },
         "env": {
           "type": "array",
           "items": {
@@ -6222,6 +6225,36 @@
         }
       }
     },
+    "kpack.build.v1alpha2.CosignAnnotation": {
+      "type": "object",
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.CosignConfig": {
+      "type": "object",
+      "required": [
+        "annotations"
+      ],
+      "properties": {
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.build.v1alpha2.CosignAnnotation"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
     "kpack.build.v1alpha2.Git": {
       "type": "object",
       "required": [
@@ -6344,6 +6377,9 @@
         },
         "cacheSize": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "cosign": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
         },
         "failedBuildHistoryLimit": {
           "type": "integer",

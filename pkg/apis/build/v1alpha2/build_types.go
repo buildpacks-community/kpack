@@ -68,6 +68,7 @@ type BuildSpec struct {
 	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
 	LastBuild             *LastBuild                  `json:"lastBuild,omitempty"`
 	Notary                *NotaryConfig               `json:"notary,omitempty"`
+	Cosign                *CosignConfig               `json:"cosign,omitempty"`
 }
 
 // +k8s:openapi-gen=true
