@@ -201,49 +201,8 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				volumeMounts := []corev1.VolumeMount{
-					reportVolume,
-				}
-				args := []string{}
-
-				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
-				hasCosign := len(cosignVolumeMounts) > 0
-
-				if b.NotaryV1Config() != nil {
-					volumeMounts = append(volumeMounts, notaryV1Volume)
-					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
-				}
-
-				if b.NotaryV1Config() != nil || hasCosign {
-					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
-					volumeMounts = append(volumeMounts, secretVolumeMounts...)
-					args = append(args, secretArgs...)
-				}
-
-				if hasCosign {
-					volumeMounts = append(volumeMounts, cosignVolumeMounts...)
-					args = append(
-						args,
-						"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
-						"-build-number="+b.Labels[BuildNumberLabel],
-					)
-
-					if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
-						for _, annotation := range b.Spec.Cosign.Annotations {
-							args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
-						}
-					}
-				}
-
-				step(corev1.Container{
-					Name:            "completion",
-					Image:           images.completion(config.OS),
-					Command:         []string{"/cnb/process/web"},
-					Args:            args,
-					Resources:       b.Spec.Resources,
-					VolumeMounts:    volumeMounts,
-					ImagePullPolicy: corev1.PullIfNotPresent,
-				}, ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+				step(b.completionContainer(secrets, images.completion(config.OS)),
+					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
 			SecurityContext: podSecurityContext(config),
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
@@ -617,49 +576,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 			),
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				volumeMounts := []corev1.VolumeMount{
-					reportVolume,
-				}
-				args := []string{}
-
-				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
-				hasCosign := len(cosignVolumeMounts) > 0
-
-				if b.NotaryV1Config() != nil {
-					volumeMounts = append(volumeMounts, notaryV1Volume)
-					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
-				}
-
-				if b.NotaryV1Config() != nil || hasCosign {
-					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
-					volumeMounts = append(volumeMounts, secretVolumeMounts...)
-					args = append(args, secretArgs...)
-				}
-
-				if hasCosign {
-					volumeMounts = append(volumeMounts, cosignVolumeMounts...)
-					args = append(
-						args,
-						"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
-						"-build-number="+b.Labels[BuildNumberLabel],
-					)
-
-					if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
-						for _, annotation := range b.Spec.Cosign.Annotations {
-							args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
-						}
-					}
-				}
-
-				step(corev1.Container{
-					Name:            "completion",
-					Image:           images.CompletionImage,
-					Command:         []string{"/cnb/process/web"},
-					Args:            args,
-					Resources:       b.Spec.Resources,
-					VolumeMounts:    volumeMounts,
-					ImagePullPolicy: corev1.PullIfNotPresent,
-				})
+				step(b.completionContainer(secrets, images.CompletionImage))
 			}),
 			InitContainers: []corev1.Container{
 				{
@@ -907,4 +824,50 @@ func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Contai
 		containers = append(containers, container)
 	})
 	return containers
+}
+
+func (b *Build) completionContainer(secrets []corev1.Secret, completionImage string) corev1.Container {
+	volumeMounts := []corev1.VolumeMount{
+		reportVolume,
+	}
+	args := []string{}
+
+	_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+	hasCosign := len(cosignVolumeMounts) > 0
+
+	if b.NotaryV1Config() != nil {
+		volumeMounts = append(volumeMounts, notaryV1Volume)
+		args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
+	}
+
+	if b.NotaryV1Config() != nil || hasCosign {
+		_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+		volumeMounts = append(volumeMounts, secretVolumeMounts...)
+		args = append(args, secretArgs...)
+	}
+
+	if hasCosign {
+		volumeMounts = append(volumeMounts, cosignVolumeMounts...)
+		args = append(
+			args,
+			"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
+			"-build-number="+b.Labels[BuildNumberLabel],
+		)
+
+		if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
+			for _, annotation := range b.Spec.Cosign.Annotations {
+				args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
+			}
+		}
+	}
+
+	return corev1.Container{
+		Name:            "completion",
+		Image:           completionImage,
+		Command:         []string{"/cnb/process/web"},
+		Args:            args,
+		Resources:       b.Spec.Resources,
+		VolumeMounts:    volumeMounts,
+		ImagePullPolicy: corev1.PullIfNotPresent,
+	}
 }

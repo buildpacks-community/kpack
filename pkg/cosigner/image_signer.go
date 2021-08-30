@@ -23,16 +23,12 @@ var (
 	secretLocation = "/var/build-secrets"
 )
 
-// Other keyops support: https://github.com/sigstore/cosign/blob/143e47a120702f175e68e0a04594cb87a4ce8e02/cmd/cosign/cli/sign.go#L167
-// Todo: Annotation obtained from kpack config
-
 func NewImageSigner(logger *log.Logger) *ImageSigner {
 	return &ImageSigner{
 		Logger: logger,
 	}
 }
 
-// signCmd will just use the mounted file instead of trying to access kuberenets for the secret
 func (s *ImageSigner) Sign(reportFilePath string, annotations map[string]interface{}) error {
 	var report lifecycle.ExportReport
 	_, err := toml.DecodeFile(reportFilePath, &report)

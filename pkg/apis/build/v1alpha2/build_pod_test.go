@@ -1127,51 +1127,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						pod.Spec.Containers[0].Args,
 					)
 				})
-
-				when("a notary config is present on the build", func() {
-					it("sets up the completion image to sign the image", func() {
-						build.Spec.Notary = &corev1alpha1.NotaryConfig{
-							V1: &corev1alpha1.NotaryV1Config{
-								URL: "some-notary-url",
-								SecretRef: corev1alpha1.NotarySecretRef{
-									Name: "some-notary-secret",
-								},
-							},
-						}
-
-						pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
-						require.NoError(t, err)
-						require.Equal(t,
-							[]string{
-								"-notary-v1-url=some-notary-url",
-								"-basic-docker=docker-secret-1=acr.io",
-								"-dockerconfig=docker-secret-2",
-								"-dockercfg=docker-secret-3",
-							},
-							pod.Spec.Containers[0].Args,
-						)
-
-						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-							Name:      "notary-dir",
-							ReadOnly:  true,
-							MountPath: "/var/notary/v1",
-						})
-						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-							Name:      "report-dir",
-							ReadOnly:  false,
-							MountPath: "/var/report",
-						})
-
-						require.Contains(t, pod.Spec.Volumes, corev1.Volume{
-							Name: "notary-dir",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "some-notary-secret",
-								},
-							},
-						})
-					})
-				})
 			})
 
 			when("a notary config is present on the build", func() {
@@ -1337,7 +1292,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			// TODO: Add windows scenarios
 			it("sets up the completion image to use cosign secrets", func() {
 				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
 				require.NoError(t, err)
@@ -1367,51 +1321,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					pod.Spec.Containers[0].Args,
 				)
-			})
-
-			when("a notary config is present on the build", func() {
-				it("sets up the completion image to sign the image", func() {
-					build.Spec.Notary = &corev1alpha1.NotaryConfig{
-						V1: &corev1alpha1.NotaryV1Config{
-							URL: "some-notary-url",
-							SecretRef: corev1alpha1.NotarySecretRef{
-								Name: "some-notary-secret",
-							},
-						},
-					}
-
-					pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
-					require.NoError(t, err)
-					require.Equal(t,
-						[]string{
-							"-notary-v1-url=some-notary-url",
-							"-basic-docker=docker-secret-1=acr.io",
-							"-dockerconfig=docker-secret-2",
-							"-dockercfg=docker-secret-3",
-						},
-						pod.Spec.Containers[0].Args,
-					)
-
-					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "notary-dir",
-						ReadOnly:  true,
-						MountPath: "/var/notary/v1",
-					})
-					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "report-dir",
-						ReadOnly:  false,
-						MountPath: "/var/report",
-					})
-
-					require.Contains(t, pod.Spec.Volumes, corev1.Volume{
-						Name: "notary-dir",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "some-notary-secret",
-							},
-						},
-					})
-				})
 			})
 		})
 

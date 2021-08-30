@@ -70,9 +70,14 @@ func main() {
 			logger.Fatal(err)
 		}
 
-		err = creds.Save(path.Join("/home/cnb", ".docker", "config.json"))
+		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			logger.Fatalf("error writing docker creds %s", err)
+			logger.Fatalf("error obtaining home directory: %v", err)
+		}
+
+		err = creds.Save(path.Join(homeDir, ".docker", "config.json"))
+		if err != nil {
+			logger.Fatalf("error writing docker creds: %v", err)
 		}
 	}
 
@@ -92,7 +97,9 @@ func main() {
 			logger.Fatalf("cosign annotation not formatted correctly: %s", annotation)
 		}
 
-		annotations[splitAnnotation[0]] = splitAnnotation[1]
+		annotationKey := splitAnnotation[0]
+		annotationValue := splitAnnotation[1]
+		annotations[annotationKey] = annotationValue
 	}
 
 	if err := cosignSigner.Sign(reportFilePath, annotations); err != nil {
