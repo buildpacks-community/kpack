@@ -14,6 +14,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestBuildPod(t *testing.T) {
@@ -40,12 +41,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builderImageRef := buildapi.BuildBuilderSpec{
+	builderImageRef := corev1alpha1.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},
-		},
-	}
+		}}
 
 	build := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
@@ -64,14 +64,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			Builder:        builderImageRef,
 			ServiceAccount: serviceAccount,
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
 			},
-			CacheName: "some-cache-name",
-			Bindings: []buildapi.Binding{
+			Cache: &buildapi.BuildCacheConfig{
+				Volume: &buildapi.BuildPersistentVolumeCache{
+					ClaimName: "some-cache-name",
+				},
+			},
+			Bindings: []corev1alpha1.Binding{
 				{
 					Name: "database",
 					MetadataRef: &corev1.LocalObjectReference{
@@ -231,7 +235,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		RunImage:     "builderregistry.io/run",
 		Uid:          2000,
 		Gid:          3000,
-		PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5"},
+		PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6"},
 		OS:           "linux",
 	}
 
@@ -480,7 +484,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("configures prepare with the blob source", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &buildapi.Blob{
+			build.Spec.Source.Blob = &corev1alpha1.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -498,7 +502,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and empty imagePullSecrets when not provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &buildapi.Registry{
+			build.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -523,7 +527,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and a secret volume when is imagePullSecrets provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &buildapi.Registry{
+			build.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 				ImagePullSecrets: []corev1.LocalObjectReference{
 					{Name: "registry-secret"},
@@ -563,7 +567,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[1].Name, "detect")
-			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[1].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -580,7 +584,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
-			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -634,10 +638,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
-			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
+				"home-dir",
 				"cache-dir",
 			}, names(pod.Spec.InitContainers[3].VolumeMounts))
 
@@ -653,7 +658,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "build")
-			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.Equal(t, pod.Spec.InitContainers[4].Image, builderImage)
 			assert.Len(t, pod.Spec.InitContainers[4].VolumeMounts, len([]string{
 				"layers-dir",
@@ -671,7 +676,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
-			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.5"})
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
 			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 				"layers-dir",
 				"workspace-dir",
@@ -687,7 +692,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-project-metadata=/layers/project-metadata.toml",
 				"-cache-dir=/cache",
 				"-report=/var/report/report.toml",
-				"-process-type=web",
 				build.Tag(),
 				"someimage/name:tag2",
 				"someimage/name:tag3",
@@ -725,9 +729,125 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, pod.Spec.Volumes[0])
 		})
 
+		when("registry cache is requested (first build)", func() {
+			podWithVolumeCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			build.Spec.Cache.Volume = nil
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+
+			it("creates a pod without cache volume", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+			})
+
+			it("does not add the cache to analyze container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := podWithImageCache.Spec.InitContainers[2]
+				assert.NotContains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
+			})
+			it("does not add the cache to restore container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := podWithImageCache.Spec.InitContainers[3]
+				assert.NotContains(t, restoreContainer.Args, "-cache-image=test-cache-image")
+			})
+			it("adds the cache to export container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := podWithImageCache.Spec.InitContainers[5]
+				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+			})
+		})
+
+		when("registry cache is requested (second build)", func() {
+			podWithVolumeCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			build.Spec.Cache.Volume = nil
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+			build.Spec.LastBuild = &buildapi.LastBuild{
+				Cache: buildapi.BuildCache{
+					Image: "test-cache-image@sha",
+				},
+			}
+
+			it("creates a pod without cache volume", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+			})
+
+			it("adds the cache to analyze container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := podWithImageCache.Spec.InitContainers[2]
+				assert.Contains(t, analyzeContainer.Args, "-cache-image=test-cache-image@sha")
+			})
+			it("adds the cache to restore container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := podWithImageCache.Spec.InitContainers[3]
+				assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image@sha")
+			})
+			it("adds the cache to export container", func() {
+				podWithImageCache, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := podWithImageCache.Spec.InitContainers[5]
+				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+			})
+		})
+
+		when("ImageTag is empty", func() {
+			var pod *corev1.Pod
+			var err error
+			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: ""}
+
+			it("does not add the cache to analyze container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				analyzeContainer := pod.Spec.InitContainers[2]
+				assert.NotContains(t, analyzeContainer.Args, "-cache-image")
+			})
+			it("does not add the cache to restore container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				restoreContainer := pod.Spec.InitContainers[3]
+				assert.NotContains(t, restoreContainer.Args, "-cache-image")
+			})
+			it("does not add the cache to export container", func() {
+				pod, err = build.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				exportContainer := pod.Spec.InitContainers[5]
+				assert.NotContains(t, exportContainer.Args, "-cache-image")
+			})
+		})
+
+		when("Cache is nil", func() {
+			buildCopy := build.DeepCopy()
+			podWithCache, _ := buildCopy.BuildPod(config, nil, nil, buildPodBuilderConfig)
+			buildCopy.Spec.Cache = nil
+
+			it("creates a pod without cache volume", func() {
+				pod, err := buildCopy.BuildPod(config, nil, nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
+			})
+		})
+
 		when("CacheName is empty", func() {
 			podWithCache, _ := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
-			build.Spec.CacheName = ""
+			build.Spec.Cache.Volume = &buildapi.BuildPersistentVolumeCache{ClaimName: ""}
 
 			it("creates a pod without cache volume", func() {
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
@@ -815,11 +935,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("no supported platform apis are available", func() {
-			buildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.6"}
+			buildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.7"}
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
-				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.6")
+				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.7")
 			})
 		})
 
@@ -1010,10 +1130,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				when("a notary config is present on the build", func() {
 					it("sets up the completion image to sign the image", func() {
-						build.Spec.Notary = &buildapi.NotaryConfig{
-							V1: &buildapi.NotaryV1Config{
+						build.Spec.Notary = &corev1alpha1.NotaryConfig{
+							V1: &corev1alpha1.NotaryV1Config{
 								URL: "some-notary-url",
-								SecretRef: buildapi.NotarySecretRef{
+								SecretRef: corev1alpha1.NotarySecretRef{
 									Name: "some-notary-secret",
 								},
 							},
@@ -1055,10 +1175,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a notary config is present on the build", func() {
-				build.Spec.Notary = &buildapi.NotaryConfig{
-					V1: &buildapi.NotaryV1Config{
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
 						URL: "some-notary-url",
-						SecretRef: buildapi.NotarySecretRef{
+						SecretRef: corev1alpha1.NotarySecretRef{
 							Name: "some-notary-secret",
 						},
 					},
@@ -1111,10 +1231,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			when("cosign secrets and a notary config are present on the build", func() {
 				it.Before(func() {
-					build.Spec.Notary = &buildapi.NotaryConfig{
-						V1: &buildapi.NotaryV1Config{
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
 							URL: "some-notary-url",
-							SecretRef: buildapi.NotarySecretRef{
+							SecretRef: corev1alpha1.NotarySecretRef{
 								Name: "some-notary-secret",
 							},
 						},
@@ -1251,10 +1371,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			when("a notary config is present on the build", func() {
 				it("sets up the completion image to sign the image", func() {
-					build.Spec.Notary = &buildapi.NotaryConfig{
-						V1: &buildapi.NotaryV1Config{
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
 							URL: "some-notary-url",
-							SecretRef: buildapi.NotarySecretRef{
+							SecretRef: corev1alpha1.NotarySecretRef{
 								Name: "some-notary-secret",
 							},
 						},
@@ -1296,10 +1416,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("a notary config is present on the build", func() {
-			build.Spec.Notary = &buildapi.NotaryConfig{
-				V1: &buildapi.NotaryV1Config{
+			build.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-url",
-					SecretRef: buildapi.NotarySecretRef{
+					SecretRef: corev1alpha1.NotarySecretRef{
 						Name: "some-notary-secret",
 					},
 				},
@@ -1352,10 +1472,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("cosign secrets and a notary config are present on the build", func() {
 			it.Before(func() {
-				build.Spec.Notary = &buildapi.NotaryConfig{
-					V1: &buildapi.NotaryV1Config{
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
 						URL: "some-notary-url",
-						SecretRef: buildapi.NotarySecretRef{
+						SecretRef: corev1alpha1.NotarySecretRef{
 							Name: "some-notary-secret",
 						},
 					},
@@ -1672,13 +1792,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-analyzed=/layers/analyzed.toml",
 					"-project-metadata=/layers/project-metadata.toml",
 					"-report=/var/report/report.toml",
-					"-process-type=web",
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 					exportContainer.Args)
 			})
 
 			it("configures the completion container for notary on windows", func() {
-				build.Spec.Notary = &buildapi.NotaryConfig{V1: &buildapi.NotaryV1Config{
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-server",
 				}}
 
@@ -1734,7 +1853,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				buildPodBuilderConfigLinux := buildPodBuilderConfig.DeepCopy()
 				buildPodBuilderConfigLinux.OS = "linux"
 				podWithCache, _ := build.BuildPod(config, nil, nil, *buildPodBuilderConfigLinux)
-				build.Spec.CacheName = "non-empty"
+				build.Spec.Cache.Volume.ClaimName = "non-empty"
 
 				pod, err := build.BuildPod(config, nil, nil, buildPodBuilderConfig)
 				require.NoError(t, err)

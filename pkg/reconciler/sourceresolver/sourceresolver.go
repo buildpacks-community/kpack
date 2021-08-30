@@ -11,6 +11,7 @@ import (
 	"knative.dev/pkg/controller"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
@@ -24,7 +25,7 @@ const (
 
 //go:generate counterfeiter . Resolver
 type Resolver interface {
-	Resolve(context.Context, *buildapi.SourceResolver) (buildapi.ResolvedSourceConfig, error)
+	Resolve(context.Context, *buildapi.SourceResolver) (corev1alpha1.ResolvedSourceConfig, error)
 	CanResolve(*buildapi.SourceResolver) bool
 }
 

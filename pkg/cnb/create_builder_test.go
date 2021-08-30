@@ -146,17 +146,17 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				Name: "some-buildpackRepository",
 				Kind: "ClusterStore",
 			},
-			Order: []buildapi.OrderEntry{
+			Order: []corev1alpha1.OrderEntry{
 				{
-					Group: []buildapi.BuildpackRef{
+					Group: []corev1alpha1.BuildpackRef{
 						{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.1",
 								Version: "v1",
 							},
 						},
 						{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.2",
 								Version: "v2",
 							},
@@ -181,7 +181,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: buildapi.BuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.1",
 					Version: "v1",
 				},
@@ -190,7 +190,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.2",
 				LayerDiffID: buildpack1Layer.diffID,
-				Stacks: []buildapi.BuildpackStack{
+				Stacks: []corev1alpha1.BuildpackStack{
 					{
 						ID:     stackID,
 						Mixins: []string{mixin},
@@ -204,7 +204,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack3Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: buildapi.BuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.3",
 					Version: "v3",
 				},
@@ -213,7 +213,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.3",
 				LayerDiffID: buildpack3Layer.diffID,
-				Stacks: []buildapi.BuildpackStack{
+				Stacks: []corev1alpha1.BuildpackStack{
 					{
 						ID: stackID,
 					},
@@ -226,7 +226,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		{
 			v1Layer: buildpack2Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: buildapi.BuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.2",
 					Version: "v2",
 				},
@@ -235,11 +235,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			BuildpackLayerInfo: BuildpackLayerInfo{
 				API:         "0.3",
 				LayerDiffID: buildpack2Layer.diffID,
-				Order: buildapi.Order{
+				Order: corev1alpha1.Order{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.3",
 									Version: "v2",
 								},
@@ -313,23 +313,23 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
-			assert.Contains(t, builderRecord.Buildpacks, buildapi.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
-			assert.Contains(t, builderRecord.Buildpacks, buildapi.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
-			assert.Contains(t, builderRecord.Buildpacks, buildapi.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
-			assert.Equal(t, buildapi.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
+			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
+			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
+			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
+			assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
 			assert.Equal(t, os, builderRecord.OS)
 
-			assert.Equal(t, builderRecord.Order, []buildapi.OrderEntry{
+			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
-					Group: []buildapi.BuildpackRef{
+					Group: []corev1alpha1.BuildpackRef{
 						{
-							BuildpackInfo: buildapi.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
+							BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
 							Optional:      false,
 						},
 						{
-							BuildpackInfo: buildapi.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
+							BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
 							Optional:      true,
 						},
 					},
@@ -589,7 +589,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.stack",
 								Version: "v4",
 							},
@@ -598,7 +598,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []buildapi.BuildpackStack{
+							Stacks: []corev1alpha1.BuildpackStack{
 								{
 									ID: "io.buildpacks.stacks.unsupported",
 								},
@@ -607,11 +607,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []buildapi.OrderEntry{
+				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.stack",
 									Version: "v4",
 								},
@@ -629,7 +629,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.mixin",
 								Version: "v4",
 							},
@@ -638,7 +638,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.2",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []buildapi.BuildpackStack{
+							Stacks: []corev1alpha1.BuildpackStack{
 								{
 									ID:     stackID,
 									Mixins: []string{mixin, "something-missing-mixin", "something-missing-mixin2"},
@@ -648,11 +648,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []buildapi.OrderEntry{
+				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.mixin",
 									Version: "v4",
 								},
@@ -670,7 +670,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack1Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.buildpack.api",
 								Version: "v4",
 							},
@@ -679,7 +679,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.1",
 							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []buildapi.BuildpackStack{
+							Stacks: []corev1alpha1.BuildpackStack{
 								{
 									ID: stackID,
 								},
@@ -688,11 +688,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []buildapi.OrderEntry{
+				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.buildpack.api",
 									Version: "v4",
 								},
@@ -734,7 +734,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					{
 						v1Layer: buildpack3Layer,
 						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: buildapi.BuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "anystack.buildpack",
 								Version: "v1",
 							},
@@ -743,7 +743,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						BuildpackLayerInfo: BuildpackLayerInfo{
 							API:         "0.5",
 							LayerDiffID: buildpack3Layer.diffID,
-							Stacks: []buildapi.BuildpackStack{
+							Stacks: []corev1alpha1.BuildpackStack{
 								{
 									ID: "*",
 								},
@@ -752,11 +752,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []buildapi.OrderEntry{
+				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "anystack.buildpack",
 									Version: "v1",
 								},
@@ -788,7 +788,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 							},
 							Platform: APIVersions{
 								Deprecated: []string{"0.1"},
-								Supported:  []string{"0.2", "0.6", "0.7"},
+								Supported:  []string{"0.2", "0.7"},
 							},
 						},
 					},
@@ -798,7 +798,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				lifecycleProvider.image = lifecycleImg
 
 				_, err = subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
-				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.6, 0.7, expecting one of: 0.3, 0.4, 0.5")
+				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.7, expecting one of: 0.3, 0.4, 0.5, 0.6")
 			})
 		})
 	})

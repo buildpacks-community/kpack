@@ -44,31 +44,41 @@ var (
 )
 
 // +k8s:openapi-gen=true
-type BuildBuilderSpec struct {
-	Image string `json:"image,omitempty"`
-	// +patchMergeKey=name
-	// +patchStrategy=merge
-	// +listType
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-}
-
-// +k8s:openapi-gen=true
 type BuildSpec struct {
 	// +listType
-	Tags           []string         `json:"tags,omitempty"`
-	Builder        BuildBuilderSpec `json:"builder,omitempty"`
-	ServiceAccount string           `json:"serviceAccount,omitempty"`
-	Source         SourceConfig     `json:"source"`
-	CacheName      string           `json:"cacheName,omitempty"`
+	Tags           []string                      `json:"tags,omitempty"`
+	Builder        corev1alpha1.BuildBuilderSpec `json:"builder,omitempty"`
+	ServiceAccount string                        `json:"serviceAccount,omitempty"`
+	Source         corev1alpha1.SourceConfig     `json:"source"`
+	Cache          *BuildCacheConfig             `json:"cache,omitempty"`
 	// +listType
-	Bindings Bindings `json:"bindings,omitempty"`
+	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
 	// +listType
 	Env                   []corev1.EnvVar             `json:"env,omitempty"`
 	ProjectDescriptorPath string                      `json:"projectDescriptorPath,omitempty"`
 	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
 	LastBuild             *LastBuild                  `json:"lastBuild,omitempty"`
-	Notary                *NotaryConfig               `json:"notary,omitempty"`
+	Notary                *corev1alpha1.NotaryConfig  `json:"notary,omitempty"`
 	Cosign                *CosignConfig               `json:"cosign,omitempty"`
+}
+
+func (bs *BuildSpec) NeedVolumeCache() bool {
+	return bs.Cache != nil && bs.Cache.Volume != nil && bs.Cache.Volume.ClaimName != ""
+}
+
+func (bs *BuildSpec) NeedRegistryCache() bool {
+	return bs.Cache != nil && bs.Cache.Registry != nil && bs.Cache.Registry.Tag != ""
+}
+
+// +k8s:openapi-gen=true
+type BuildCacheConfig struct {
+	Volume   *BuildPersistentVolumeCache `json:"volume,omitempty"`
+	Registry *RegistryCache              `json:"registry,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type BuildPersistentVolumeCache struct {
+	ClaimName string `json:"persistentVolumeClaimName,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -76,15 +86,21 @@ type Bindings []Binding
 
 // +k8s:openapi-gen=true
 type Binding struct {
-	Name        string                       `json:"name",omitempty"`
+	Name        string                       `json:"name,omitempty"`
 	MetadataRef *corev1.LocalObjectReference `json:"metadataRef,omitempty"`
 	SecretRef   *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type LastBuild struct {
-	Image   string `json:"image,omitempty"`
-	StackId string `json:"stackId,omitempty"`
+	Image   string     `json:"image,omitempty"`
+	Cache   BuildCache `json:"cache,omitempty"`
+	StackId string     `json:"stackId,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type BuildCache struct {
+	Image string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -96,10 +112,11 @@ type BuildStack struct {
 // +k8s:openapi-gen=true
 type BuildStatus struct {
 	corev1alpha1.Status `json:",inline"`
-	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack               BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                `json:"latestImage,omitempty"`
-	PodName             string                `json:"podName,omitempty"`
+	BuildMetadata       corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	Stack               corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage         string                             `json:"latestImage,omitempty"`
+	LatestCacheImage    string                             `json:"latestCacheImage,omitempty"`
+	PodName             string                             `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType

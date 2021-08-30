@@ -28,7 +28,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	case corev1.ConditionTrue:
 		nextBuildNumber := currentBuildNumber + 1
 
-		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, buildCacheName, nextBuildNumber)
+		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, nextBuildNumber)
 		build, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
 		if err != nil {
 			return buildapi.ImageStatus{}, err

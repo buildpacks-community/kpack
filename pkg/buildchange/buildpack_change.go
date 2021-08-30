@@ -6,9 +6,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func NewBuildpackChange(oldBuildpacks, newBuildpacks []buildapi.BuildpackInfo) Change {
+func NewBuildpackChange(oldBuildpacks, newBuildpacks []corev1alpha1.BuildpackInfo) Change {
 	return buildpackChange{
 		old: oldBuildpacks,
 		new: newBuildpacks,
@@ -16,8 +17,8 @@ func NewBuildpackChange(oldBuildpacks, newBuildpacks []buildapi.BuildpackInfo) C
 }
 
 type buildpackChange struct {
-	old []buildapi.BuildpackInfo
-	new []buildapi.BuildpackInfo
+	old []corev1alpha1.BuildpackInfo
+	new []corev1alpha1.BuildpackInfo
 }
 
 func (b buildpackChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonBuildpack }

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
@@ -16,10 +16,10 @@ type RemoteStoreReader struct {
 	RegistryClient RegistryClient
 }
 
-func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.StoreImage) ([]corev1alpha1.StoreBuildpack, error) {
 	var g errgroup.Group
 
-	c := make(chan buildapi.StoreBuildpack)
+	c := make(chan corev1alpha1.StoreBuildpack)
 	for _, storeImage := range storeImages {
 		storeImageCopy := storeImage
 		g.Go(func() error {
@@ -46,13 +46,13 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []buildapi
 
 			for id := range layerMetadata {
 				for version, metadata := range layerMetadata[id] {
-					packageInfo := buildapi.BuildpackageInfo{
+					packageInfo := corev1alpha1.BuildpackageInfo{
 						Id:       bpMetadata.Id,
 						Version:  bpMetadata.Version,
 						Homepage: bpMetadata.Homepage,
 					}
 
-					info := buildapi.BuildpackInfo{
+					info := corev1alpha1.BuildpackInfo{
 						Id:      id,
 						Version: version,
 					}
@@ -77,7 +77,7 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []buildapi
 						return errors.Wrapf(err, "unable to get layer %s digest", info)
 					}
 
-					c <- buildapi.StoreBuildpack{
+					c <- corev1alpha1.StoreBuildpack{
 						BuildpackInfo: info,
 						Buildpackage:  packageInfo,
 						StoreImage:    storeImageCopy,
@@ -100,7 +100,7 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []buildapi
 		close(c)
 	}()
 
-	var buildpacks []buildapi.StoreBuildpack
+	var buildpacks []corev1alpha1.StoreBuildpack
 	for b := range c {
 		buildpacks = append(buildpacks, b)
 	}

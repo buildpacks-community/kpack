@@ -92,16 +92,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				Name: builderName,
 			},
 			ServiceAccount: serviceAccount,
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "https://some.git/url",
 					Revision: "1234567",
 				},
 			},
 			FailedBuildHistoryLimit:  limit(10),
 			SuccessBuildHistoryLimit: limit(10),
-			ImageTaggingStrategy:     buildapi.None,
-			Build:                    &buildapi.ImageBuild{},
+			ImageTaggingStrategy:     corev1alpha1.None,
+			Build:                    &corev1alpha1.ImageBuild{},
 		},
 		Status: buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
@@ -118,13 +118,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/builder@sha256:acf123",
-			BuilderMetadata: buildapi.BuildpackMetadataList{
+			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "buildpack.version",
 					Version: "version",
 				},
 			},
-			Stack: buildapi.BuildStack{
+			Stack: corev1alpha1.BuildStack{
 				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stacks.bionic",
 			},
@@ -145,13 +145,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/clusterbuilder@sha256:acf123",
-			BuilderMetadata: buildapi.BuildpackMetadataList{
+			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "buildpack.version",
 					Version: "version",
 				},
 			},
-			Stack: buildapi.BuildStack{
+			Stack: corev1alpha1.BuildStack{
 				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stacks.bionic",
 			},
@@ -318,8 +318,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.SourceResolverSpec{
 								ServiceAccount: "old-account",
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      "old-url",
 										Revision: "old-revision",
 									},
@@ -391,9 +391,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("reconciling build caches", func() {
 			cacheSize := resource.MustParse("1.5")
+			image.Spec.Cache = &buildapi.ImageCacheConfig{
+				Volume: &buildapi.ImagePersistentVolumeCache{
+					Size: &cacheSize,
+				},
+			}
 
 			it("creates a cache if requested", func() {
-				image.Spec.CacheSize = &cacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -444,7 +448,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not create a cache if a cache already exists", func() {
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = image.CacheName()
 
 				rt.Test(rtesting.TableRow{
@@ -464,7 +468,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				image.Status.BuildCacheName = imageCacheName
 				newCacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &newCacheSize
+				image.Spec.Cache.Volume.Size = &newCacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -520,7 +524,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates build cache if desired labels change", func() {
 				var imageCacheName = image.CacheName()
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = imageCacheName
 				cache := image.BuildCache()
 
@@ -565,7 +569,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("deletes a cache if already exists and not requested", func() {
 				image.Status.BuildCacheName = image.CacheName()
-				image.Spec.CacheSize = nil
+				image.Spec.Cache.Volume.Size = nil
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -709,12 +713,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Cache:          &buildapi.BuildCacheConfig{},
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -798,12 +803,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Cache:          &buildapi.BuildCacheConfig{},
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -887,12 +893,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Cache:          &buildapi.BuildCacheConfig{},
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -977,12 +984,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Cache:          &buildapi.BuildCacheConfig{},
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -1013,7 +1021,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a desired build cache", func() {
 				cacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache = &buildapi.ImageCacheConfig{
+					Volume: &buildapi.ImagePersistentVolumeCache{
+						Size: &cacheSize,
+					},
+				}
 				image.Status.BuildCacheName = image.CacheName()
 
 				sourceResolver := resolvedSourceResolver(image)
@@ -1065,17 +1077,21 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								CacheName: image.CacheName(),
+								Cache: &buildapi.BuildCacheConfig{
+									Volume: &buildapi.BuildPersistentVolumeCache{
+										ClaimName: image.CacheName(),
+									},
+								},
 							},
 						},
 					},
@@ -1126,12 +1142,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: "old-service-account",
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
 										Revision: "out-of-date-git-revision",
 									},
@@ -1139,7 +1155,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: buildapi.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -1207,16 +1223,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1251,11 +1268,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				image.Status.LatestBuildRef = "image-name-build-1-00001"
 
 				sourceResolver := image.SourceResolver()
-				sourceResolver.ResolvedSource(buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				sourceResolver.ResolvedSource(corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      image.Spec.Source.Git.URL,
 						Revision: "new-commit",
-						Type:     buildapi.Branch,
+						Type:     corev1alpha1.Branch,
 					},
 				})
 
@@ -1282,12 +1299,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      image.Spec.Source.Git.URL,
 										Revision: image.Spec.Source.Git.Revision,
 									},
@@ -1295,7 +1312,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: buildapi.BuildStatus{
 								LatestImage: image.Spec.Tag + "@sha256:just-built",
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -1332,16 +1349,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1396,11 +1414,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								LatestImage: updatedBuilderImage,
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuilderMetadata: buildapi.BuildpackMetadataList{
+								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "new-version",
@@ -1423,12 +1441,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -1444,11 +1462,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuildMetadata: buildapi.BuildpackMetadataList{
+								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "old-version",
@@ -1491,16 +1509,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1555,11 +1574,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								LatestImage: updatedBuilderImage,
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "gcr.io/test-project/install/run@sha256:01ea3600f15a73f0ad445351c681eb0377738f5964cbcd2bab0cfec9ca891a08",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuilderMetadata: buildapi.BuildpackMetadataList{
+								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "version",
@@ -1582,12 +1601,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -1603,11 +1622,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "gcr.io/test-project/install/run@sha256:42841631725942db48b7ba8b788b97374a2ada34c84ee02ca5e02ef3d4b0dfca",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuildMetadata: buildapi.BuildpackMetadataList{
+								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "version",
@@ -1645,16 +1664,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1709,12 +1729,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: "old-service-account",
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
 										Revision: "out-of-date-git-revision",
 									},
@@ -1789,16 +1809,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1852,12 +1873,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: "old-service-account",
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
 										Revision: "out-of-date-git-revision",
 									},
@@ -1907,12 +1928,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Spec: buildapi.BuildSpec{
 								Tags: []string{image.Spec.Tag},
-								Builder: buildapi.BuildBuilderSpec{
+								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
-								Source: buildapi.SourceConfig{
-									Git: &buildapi.Git{
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
@@ -1920,7 +1941,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 							Status: buildapi.BuildStatus{
 								LatestImage: image.Status.LatestImage,
-								Stack: buildapi.BuildStack{
+								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
@@ -2181,11 +2202,11 @@ func generation(i *buildapi.Image) string {
 
 func resolvedSourceResolver(image *buildapi.Image) *buildapi.SourceResolver {
 	sr := image.SourceResolver()
-	sr.ResolvedSource(buildapi.ResolvedSourceConfig{
-		Git: &buildapi.ResolvedGitSource{
+	sr.ResolvedSource(corev1alpha1.ResolvedSourceConfig{
+		Git: &corev1alpha1.ResolvedGitSource{
 			URL:      image.Spec.Source.Git.URL + "-resolved",
 			Revision: image.Spec.Source.Git.Revision + "-resolved",
-			Type:     buildapi.Branch,
+			Type:     corev1alpha1.Branch,
 		},
 	})
 	return sr
@@ -2234,12 +2255,12 @@ func builds(image *buildapi.Image, sourceResolver *buildapi.SourceResolver, coun
 			},
 			Spec: buildapi.BuildSpec{
 				Tags: []string{image.Spec.Tag},
-				Builder: buildapi.BuildBuilderSpec{
+				Builder: corev1alpha1.BuildBuilderSpec{
 					Image: "builder-image/foo@sha256:112312",
 				},
 				ServiceAccount: image.Spec.ServiceAccount,
-				Source: buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				Source: corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      sourceResolver.Status.Source.Git.URL,
 						Revision: sourceResolver.Status.Source.Git.Revision,
 					},
@@ -2247,7 +2268,7 @@ func builds(image *buildapi.Image, sourceResolver *buildapi.SourceResolver, coun
 			},
 			Status: buildapi.BuildStatus{
 				LatestImage: fmt.Sprintf("%s@sha256:build-%d", image.Spec.Tag, i),
-				Stack: buildapi.BuildStack{
+				Stack: corev1alpha1.BuildStack{
 					RunImage: runImageRef,
 					ID:       "io.buildpacks.stacks.bionic",
 				},

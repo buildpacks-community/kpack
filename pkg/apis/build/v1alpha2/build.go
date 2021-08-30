@@ -23,11 +23,11 @@ func (b *Build) ServiceAccount() string {
 	return b.Spec.ServiceAccount
 }
 
-func (b *Build) BuilderSpec() BuildBuilderSpec {
+func (b *Build) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return b.Spec.Builder
 }
 
-func (b *Build) Bindings() []Binding {
+func (b *Build) Bindings() []corev1alpha1.Binding {
 	return b.Spec.Bindings
 }
 
@@ -96,6 +96,17 @@ func (b *Build) BuiltImage() string {
 	return b.Status.LatestImage
 }
 
+func (b *Build) CacheImage() string {
+	if b == nil {
+		return ""
+	}
+	if !b.IsSuccess() {
+		return ""
+	}
+
+	return b.Status.LatestCacheImage
+}
+
 func (b *Build) IsSuccess() bool {
 	if b == nil {
 		return false
@@ -123,7 +134,7 @@ func (b *Build) Finished() bool {
 	return !b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsUnknown()
 }
 
-func (b *Build) NotaryV1Config() *NotaryV1Config {
+func (b *Build) NotaryV1Config() *corev1alpha1.NotaryV1Config {
 	if b == nil || b.Spec.Notary == nil {
 		return nil
 	}
@@ -153,7 +164,7 @@ func (b *Build) builtWithStack(runImage string) bool {
 	return lastBuildRunImageRef.Identifier() == builderRunImageRef.Identifier()
 }
 
-func (b *Build) builtWithBuildpacks(buildpacks BuildpackMetadataList) bool {
+func (b *Build) builtWithBuildpacks(buildpacks corev1alpha1.BuildpackMetadataList) bool {
 	for _, bp := range b.Status.BuildMetadata {
 		if !buildpacks.Include(bp) {
 			return false

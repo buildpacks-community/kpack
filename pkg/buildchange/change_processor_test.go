@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
@@ -109,8 +109,8 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 		when("CONFIG", func() {
 			when("has no difference", func() {
 				oldConfig := buildchange.Config{
-					Source: buildapi.SourceConfig{
-						Git: &buildapi.Git{
+					Source: corev1alpha1.SourceConfig{
+						Git: &corev1alpha1.Git{
 							URL:      "some-git-url",
 							Revision: "some-git-revision",
 						},
@@ -145,8 +145,8 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 								corev1.ResourceMemory: resourceQuantity(t, "512M"),
 							},
 						},
-						Source: buildapi.SourceConfig{
-							Git: &buildapi.Git{
+						Source: corev1alpha1.SourceConfig{
+							Git: &corev1alpha1.Git{
 								URL:      "some-git-url",
 								Revision: "some-git-revision",
 							},
@@ -168,10 +168,10 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 								corev1.ResourceMemory: resourceQuantity(t, "512M"),
 							},
 						},
-						Source: buildapi.SourceConfig{
-							Blob: &buildapi.Blob{URL: "some-blob-url"},
+						Source: corev1alpha1.SourceConfig{
+							Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 						},
-						Bindings: []buildapi.Binding{
+						Bindings: []corev1alpha1.Binding{
 							{
 								Name: "binding-name",
 								MetadataRef: &corev1.LocalObjectReference{
@@ -274,7 +274,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 
 		when("BUILDPACK", func() {
 			when("has no difference", func() {
-				oldBuildpacks := []buildapi.BuildpackInfo{
+				oldBuildpacks := []corev1alpha1.BuildpackInfo{
 					{Id: "some-buildpack-id", Version: "some-buildpack-version"},
 				}
 				newBuildpacks := oldBuildpacks
@@ -291,11 +291,11 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 
 			when("has difference", func() {
 				change := buildchange.NewBuildpackChange(
-					[]buildapi.BuildpackInfo{
+					[]corev1alpha1.BuildpackInfo{
 						{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 						{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 					},
-					[]buildapi.BuildpackInfo{
+					[]corev1alpha1.BuildpackInfo{
 						{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
 					})
 
@@ -403,11 +403,11 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 			stackChange := buildchange.NewStackChange(oldRunImageRef, newRunImageRef)
 
 			buildpackChange := buildchange.NewBuildpackChange(
-				[]buildapi.BuildpackInfo{
+				[]corev1alpha1.BuildpackInfo{
 					{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 					{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 				},
-				[]buildapi.BuildpackInfo{
+				[]corev1alpha1.BuildpackInfo{
 					{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
 				})
 
@@ -427,8 +427,8 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 							corev1.ResourceMemory: resourceQuantity(t, "512M"),
 						},
 					},
-					Source: buildapi.SourceConfig{
-						Git: &buildapi.Git{
+					Source: corev1alpha1.SourceConfig{
+						Git: &corev1alpha1.Git{
 							URL:      "some-git-url",
 							Revision: "some-git-revision",
 						},
@@ -450,10 +450,10 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 							corev1.ResourceMemory: resourceQuantity(t, "512M"),
 						},
 					},
-					Source: buildapi.SourceConfig{
-						Blob: &buildapi.Blob{URL: "some-blob-url"},
+					Source: corev1alpha1.SourceConfig{
+						Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 					},
-					Bindings: []buildapi.Binding{
+					Bindings: []corev1alpha1.Binding{
 						{
 							Name: "binding-name",
 							MetadataRef: &corev1.LocalObjectReference{

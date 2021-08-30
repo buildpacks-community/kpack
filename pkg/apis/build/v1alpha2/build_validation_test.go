@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestBuildValidation(t *testing.T) {
@@ -22,13 +24,13 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		},
 		Spec: BuildSpec{
 			Tags: []string{"some/image"},
-			Builder: BuildBuilderSpec{
+			Builder: corev1alpha1.BuildBuilderSpec{
 				Image:            "builder/bionic-builder@sha256:e431a4f94fb84854fd081da62762192f36fd093fdfb85ad3bc009b9309524e2d",
 				ImagePullSecrets: nil,
 			},
 			ServiceAccount: "some/service-account",
-			Source: SourceConfig{
-				Git: &Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "http://github.com/repo",
 					Revision: "master",
 				},
@@ -87,29 +89,29 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("multiple sources", func() {
-			build.Spec.Source.Git = &Git{
+			build.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/repo",
 				Revision: "master",
 			}
-			build.Spec.Source.Blob = &Blob{
+			build.Spec.Source.Blob = &corev1alpha1.Blob{
 				URL: "http://blob.com/url",
 			}
 			assertValidationError(build, apis.ErrMultipleOneOf("git", "blob").ViaField("spec", "source"))
 
-			build.Spec.Source.Registry = &Registry{
+			build.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "registry.com/image",
 			}
 			assertValidationError(build, apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
-			build.Spec.Source = SourceConfig{}
+			build.Spec.Source = corev1alpha1.SourceConfig{}
 
 			assertValidationError(build, apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {
-			build.Spec.Source.Git = &Git{
+			build.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "",
 				Revision: "master",
 			}
@@ -118,7 +120,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates git revision", func() {
-			build.Spec.Source.Git = &Git{
+			build.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/url",
 				Revision: "",
 			}
@@ -128,14 +130,14 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("validates blob url", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &Blob{URL: ""}
+			build.Spec.Source.Blob = &corev1alpha1.Blob{URL: ""}
 
 			assertValidationError(build, apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
 		})
 
 		it("validates registry url", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Registry = &Registry{Image: ""}
+			build.Spec.Source.Registry = &corev1alpha1.Registry{Image: ""}
 
 			assertValidationError(build, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
@@ -147,7 +149,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have a name", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
@@ -155,7 +157,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have a valid name", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{Name: "&", MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
@@ -163,7 +165,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have metadata", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{Name: "apm"},
 			}
 
@@ -171,7 +173,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have non-empty metadata", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{Name: "apm", MetadataRef: &corev1.LocalObjectReference{}},
 			}
 
@@ -179,7 +181,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have non-empty secrets", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{
 					Name:        "apm",
 					MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
@@ -191,7 +193,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings name uniqueness", func() {
-			build.Spec.Bindings = []Binding{
+			build.Spec.Bindings = []corev1alpha1.Binding{
 				{
 					Name:        "apm",
 					MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
@@ -208,6 +210,15 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			assertValidationError(build, apis.ErrGeneric("duplicate binding name \"apm\"", "spec.bindings[0].name", "spec.bindings[2].name"))
+		})
+
+		it("validates not registry AND volume cache are both specified", func() {
+			build.Spec.Cache = &BuildCacheConfig{
+				Volume:   &BuildPersistentVolumeCache{ClaimName: "pvc"},
+				Registry: &RegistryCache{Tag: "test"},
+			}
+
+			assertValidationError(build, apis.ErrGeneric("only one type of cache can be specified", "spec.cache.volume", "spec.cache.registry"))
 		})
 
 		it("combining errors", func() {

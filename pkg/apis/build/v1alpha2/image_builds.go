@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const (
@@ -29,7 +31,7 @@ const (
 
 type BuildReason string
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes, cacheName string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
 
 	return &Build{
@@ -54,7 +56,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Builder:               builder.BuildBuilderSpec(),
 			ServiceAccount:        im.Spec.ServiceAccount,
 			Source:                sourceResolver.SourceConfig(),
-			CacheName:             im.Status.BuildCacheName,
+			Cache:                 im.getBuildCacheConfig(),
 			Bindings:              im.Bindings(),
 			Env:                   im.Env(),
 			ProjectDescriptorPath: im.Spec.ProjectDescriptorPath,
@@ -64,6 +66,28 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Cosign:                im.Spec.Cosign,
 		},
 	}
+}
+
+func (is *ImageSpec) NeedVolumeCache() bool {
+	return is.Cache != nil && is.Cache.Volume != nil && is.Cache.Volume.Size != nil
+}
+
+func (is *ImageSpec) NeedRegistryCache() bool {
+	return is.Cache != nil && is.Cache.Registry != nil && is.Cache.Registry.Tag != ""
+}
+
+func (im *Image) getBuildCacheConfig() *BuildCacheConfig {
+	buildCacheConfig := BuildCacheConfig{}
+
+	if im.Spec.NeedRegistryCache() {
+		buildCacheConfig.Registry = im.Spec.Cache.Registry.DeepCopy()
+	}
+
+	if im.Spec.NeedVolumeCache() {
+		buildCacheConfig.Volume = &BuildPersistentVolumeCache{ClaimName: im.Status.BuildCacheName}
+	}
+
+	return &buildCacheConfig
 }
 
 func lastBuild(latestBuild *Build) *LastBuild {
@@ -77,6 +101,7 @@ func lastBuild(latestBuild *Build) *LastBuild {
 
 	return &LastBuild{
 		Image:   latestBuild.BuiltImage(),
+		Cache:   BuildCache{Image: latestBuild.CacheImage()},
 		StackId: latestBuild.Stack(),
 	}
 }
@@ -88,7 +113,7 @@ func (im *Image) LatestForImage(build *Build) string {
 	return im.Status.LatestImage
 }
 
-func (im *Image) Bindings() Bindings {
+func (im *Image) Bindings() corev1alpha1.Bindings {
 	if im.Spec.Build == nil {
 		return nil
 	}
@@ -113,10 +138,6 @@ func (im *Image) CacheName() string {
 	return kmeta.ChildName(im.Name, "-cache")
 }
 
-func (im *Image) NeedCache() bool {
-	return im.Spec.CacheSize != nil
-}
-
 func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -131,7 +152,7 @@ func (im *Image) BuildCache() *corev1.PersistentVolumeClaim {
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: *im.Spec.CacheSize,
+					corev1.ResourceStorage: *im.Spec.Cache.Volume.Size,
 				},
 			},
 		},
@@ -198,5 +219,5 @@ func combine(map1, map2 map[string]string) map[string]string {
 }
 
 func (im *Image) disableAdditionalImageNames() bool {
-	return im.Spec.ImageTaggingStrategy == None
+	return im.Spec.ImageTaggingStrategy == corev1alpha1.None
 }

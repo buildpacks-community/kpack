@@ -1,10 +1,14 @@
-package v1alpha2
+package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+//todo not this lol
+const imagePullSecretsDirName = "image-pull-secrets-dir"
+
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type SourceConfig struct {
 	Git      *Git      `json:"git,omitempty"`
 	Blob     *Blob     `json:"blob,omitempty"`
@@ -200,6 +204,7 @@ func (bs *ResolvedBlobSource) IsPollable() bool {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type ResolvedRegistrySource struct {
 	Image   string `json:"image"`
 	SubPath string `json:"subPath,omitempty"`

@@ -16,6 +16,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -41,8 +42,8 @@ type BuildPodable interface {
 	GetName() string
 	GetNamespace() string
 	ServiceAccount() string
-	BuilderSpec() buildapi.BuildBuilderSpec
-	Bindings() []buildapi.Binding
+	BuilderSpec() corev1alpha1.BuildBuilderSpec
+	Bindings() []corev1alpha1.Binding
 
 	BuildPod(buildapi.BuildPodImages, []corev1.Secret, []corev1.Taint, buildapi.BuildPodBuilderConfig) (*corev1.Pod, error)
 }

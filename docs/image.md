@@ -9,7 +9,9 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `builder`: Configuration of the `builder` resource the image builds will use. See more info [Builder Configuration](builders.md).
 - `serviceAccount`: The Service Account name that will be used for credential lookup.
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.
-- `cacheSize`: The size of the Volume Claim that will be used by the build cache.
+- `cache`: Caching configuration, two variants are available:
+  - `volume.size`: Creates a Volume Claim of the given size
+  - `registry.tag`: Creates an image with cached contents
 - `failedBuildHistoryLimit`: The maximum number of failed builds for an image that will be retained.
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
@@ -153,7 +155,9 @@ spec:
   builder:
     name: sample-builder
     kind: ClusterBuilder
-  cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
+  cache:
+    volume:
+      size: "1.5Gi" # Optional, if not set then the caching feature is disabled
   failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   source:
@@ -196,7 +200,9 @@ spec:
   builder:
     name: sample-builder
     kind: ClusterBuilder
-  cacheSize: "1.5Gi" # Optional, if not set then the caching feature is disabled
+  cache:
+    volume:
+      size: "1.5Gi" # Optional, if not set then the caching feature is disabled
   failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   source:
