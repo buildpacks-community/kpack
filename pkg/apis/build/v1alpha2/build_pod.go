@@ -569,7 +569,7 @@ func (b *Build) notarySecretVolume() corev1.Volume {
 }
 
 func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config BuildPodBuilderConfig) (*corev1.Pod, error) {
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerAndCosignSecrets)
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -600,34 +600,49 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 			),
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				notaryConfig := b.NotaryV1Config()
-
-				if notaryConfig == nil {
-					step(corev1.Container{
-						Name:            "completion",
-						Image:           images.CompletionImage,
-						ImagePullPolicy: corev1.PullIfNotPresent,
-						Resources:       b.Spec.Resources,
-					})
-				} else {
-					step(corev1.Container{
-						Name:  "completion",
-						Image: images.CompletionImage,
-						Args: append(
-							[]string{
-								"-notary-v1-url=" + notaryConfig.URL,
-							},
-							secretArgs...,
-						),
-						Resources: b.Spec.Resources,
-						VolumeMounts: append(
-							secretVolumeMounts,
-							notaryV1Volume,
-							reportVolume,
-						),
-						ImagePullPolicy: corev1.PullIfNotPresent,
-					})
+				volumeMounts := []corev1.VolumeMount{
+					reportVolume,
 				}
+				args := []string{}
+
+				_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+				hasCosign := len(cosignVolumeMounts) > 0
+
+				if b.NotaryV1Config() != nil {
+					volumeMounts = append(volumeMounts, notaryV1Volume)
+					args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
+				}
+
+				if b.NotaryV1Config() != nil || hasCosign {
+					_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+					volumeMounts = append(volumeMounts, secretVolumeMounts...)
+					args = append(args, secretArgs...)
+				}
+
+				if hasCosign {
+					volumeMounts = append(volumeMounts, cosignVolumeMounts...)
+					args = append(
+						args,
+						"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
+						"-build-number="+b.Labels[BuildNumberLabel],
+					)
+
+					if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
+						for _, annotation := range b.Spec.Cosign.Annotations {
+							args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
+						}
+					}
+				}
+
+				step(corev1.Container{
+					Name:            "completion",
+					Image:           images.CompletionImage,
+					Command:         []string{"/cnb/process/web"},
+					Args:            args,
+					Resources:       b.Spec.Resources,
+					VolumeMounts:    volumeMounts,
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				})
 			}),
 			InitContainers: []corev1.Container{
 				{
@@ -679,6 +694,10 @@ func gitAndDockerAndCosignSecrets(secret corev1.Secret) bool {
 
 func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
+}
+
+func dockerAndCosignSecrets(secret corev1.Secret) bool {
+	return dockerSecrets(secret) || cosignSecrets(secret)
 }
 
 func cosignSecrets(secret corev1.Secret) bool {

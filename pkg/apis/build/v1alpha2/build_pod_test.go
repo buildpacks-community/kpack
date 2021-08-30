@@ -900,8 +900,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						{
 							Name:            "completion",
 							Image:           config.CompletionImage,
+							Command:         []string{"/cnb/process/web"},
+							Args:            []string{},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources:       build.Spec.Resources,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "report-dir",
+									MountPath: "/var/report",
+								},
+							},
 						},
 					},
 					InitContainers: []corev1.Container{
@@ -949,8 +957,245 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}, pod.Spec)
+			})
 
-				// TODO: Add cosign for rebase Pod scenario
+			when("cosign secrets are present on the build", func() {
+				it("skips invalid secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.NotNil(t, pod.Spec.Containers[0])
+					assert.NotNil(t, pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					invalidSecretName := "invalid-cosign-secret"
+					assertSecretNotPresent(t, pod, invalidSecretName)
+
+					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+					})
+				})
+
+				it("sets up the completion image to use cosign secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					validSecrets := []string{
+						"cosign-secret-1",
+						"cosign-secret-no-password-1",
+						"cosign-secret-no-password-2",
+					}
+
+					for _, secretName := range validSecrets {
+						assertSecretPresent(t, pod, secretName)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      fmt.Sprintf("secret-volume-%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+						})
+					}
+
+					require.Equal(t,
+						[]string{
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-build-timestamp=19440606.133000",
+							"-build-number=12",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				when("a notary config is present on the build", func() {
+					it("sets up the completion image to sign the image", func() {
+						build.Spec.Notary = &buildapi.NotaryConfig{
+							V1: &buildapi.NotaryV1Config{
+								URL: "some-notary-url",
+								SecretRef: buildapi.NotarySecretRef{
+									Name: "some-notary-secret",
+								},
+							},
+						}
+
+						pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
+						require.NoError(t, err)
+						require.Equal(t,
+							[]string{
+								"-notary-v1-url=some-notary-url",
+								"-basic-docker=docker-secret-1=acr.io",
+								"-dockerconfig=docker-secret-2",
+								"-dockercfg=docker-secret-3",
+							},
+							pod.Spec.Containers[0].Args,
+						)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      "notary-dir",
+							ReadOnly:  true,
+							MountPath: "/var/notary/v1",
+						})
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      "report-dir",
+							ReadOnly:  false,
+							MountPath: "/var/report",
+						})
+
+						require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+							Name: "notary-dir",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "some-notary-secret",
+								},
+							},
+						})
+					})
+				})
+			})
+
+			when("a notary config is present on the build", func() {
+				build.Spec.Notary = &buildapi.NotaryConfig{
+					V1: &buildapi.NotaryV1Config{
+						URL: "some-notary-url",
+						SecretRef: buildapi.NotarySecretRef{
+							Name: "some-notary-secret",
+						},
+					},
+				}
+
+				it("errs if platformApi does not support report.toml", func() {
+					buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
+
+					_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
+					require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
+				})
+
+				it("sets up the completion image to sign the image", func() {
+					pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					require.Equal(t,
+						[]string{
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "notary-dir",
+						ReadOnly:  true,
+						MountPath: "/var/notary/v1",
+					})
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "report-dir",
+						ReadOnly:  false,
+						MountPath: "/var/report",
+					})
+
+					require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+						Name: "notary-dir",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "some-notary-secret",
+							},
+						},
+					})
+				})
+			})
+
+			when("cosign secrets and a notary config are present on the build", func() {
+				it.Before(func() {
+					build.Spec.Notary = &buildapi.NotaryConfig{
+						V1: &buildapi.NotaryV1Config{
+							URL: "some-notary-url",
+							SecretRef: buildapi.NotarySecretRef{
+								Name: "some-notary-secret",
+							},
+						},
+					}
+				})
+
+				it("skips invalid secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					invalidSecretName := "invalid-cosign-secret"
+					assertSecretNotPresent(t, pod, invalidSecretName)
+
+					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+					})
+				})
+
+				it("sets up the completion image to use cosign secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					validSecrets := []string{
+						"cosign-secret-1",
+						"cosign-secret-no-password-1",
+						"cosign-secret-no-password-2",
+					}
+
+					for _, secretName := range validSecrets {
+						assertSecretPresent(t, pod, secretName)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      fmt.Sprintf("secret-volume-%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+						})
+					}
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "notary-dir",
+						ReadOnly:  true,
+						MountPath: "/var/notary/v1",
+					})
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "report-dir",
+						ReadOnly:  false,
+						MountPath: "/var/report",
+					})
+
+					require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+						Name: "notary-dir",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "some-notary-secret",
+							},
+						},
+					})
+
+					require.Equal(t,
+						[]string{
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-build-timestamp=19440606.133000",
+							"-build-number=12",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("errs if platformApi does not support report.toml", func() {
+					buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
+
+					_, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
+					require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
+				})
 			})
 		})
 
