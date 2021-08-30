@@ -17,6 +17,9 @@
 package v1alpha1
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -44,39 +47,20 @@ var (
 )
 
 // +k8s:openapi-gen=true
-type BuildBuilderSpec struct {
-	Image string `json:"image,omitempty"`
-	// +patchMergeKey=name
-	// +patchStrategy=merge
-	// +listType
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-}
-
-// +k8s:openapi-gen=true
 type BuildSpec struct {
 	// +listType
-	Tags           []string         `json:"tags,omitempty"`
-	Builder        BuildBuilderSpec `json:"builder,omitempty"`
-	ServiceAccount string           `json:"serviceAccount,omitempty"`
-	Source         SourceConfig     `json:"source"`
-	CacheName      string           `json:"cacheName,omitempty"`
+	Tags           []string                      `json:"tags,omitempty"`
+	Builder        corev1alpha1.BuildBuilderSpec `json:"builder,omitempty"`
+	ServiceAccount string                        `json:"serviceAccount,omitempty"`
+	Source         corev1alpha1.SourceConfig     `json:"source"`
+	CacheName      string                        `json:"cacheName,omitempty"`
 	// +listType
-	Bindings Bindings `json:"bindings,omitempty"`
+	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
 	// +listType
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	LastBuild *LastBuild                  `json:"lastBuild,omitempty"`
-	Notary    *NotaryConfig               `json:"notary,omitempty"`
-}
-
-// +k8s:openapi-gen=true
-type Bindings []Binding
-
-// +k8s:openapi-gen=true
-type Binding struct {
-	Name        string                       `json:"name",omitempty"`
-	MetadataRef *corev1.LocalObjectReference `json:"metadataRef,omitempty"`
-	SecretRef   *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	Notary    *corev1alpha1.NotaryConfig  `json:"notary,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -86,18 +70,12 @@ type LastBuild struct {
 }
 
 // +k8s:openapi-gen=true
-type BuildStack struct {
-	RunImage string `json:"runImage,omitempty"`
-	ID       string `json:"id,omitempty"`
-}
-
-// +k8s:openapi-gen=true
 type BuildStatus struct {
 	corev1alpha1.Status `json:",inline"`
-	BuildMetadata       BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack               BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                `json:"latestImage,omitempty"`
-	PodName             string                `json:"podName,omitempty"`
+	BuildMetadata       corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	Stack               corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage         string                             `json:"latestImage,omitempty"`
+	PodName             string                             `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType
@@ -112,4 +90,12 @@ type BuildList struct {
 
 	// +k8s:listType=atomic
 	Items []Build `json:"items"`
+}
+
+func (*Build) ConvertTo(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
+}
+
+func (*Build) ConvertFrom(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }

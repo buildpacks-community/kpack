@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestImageValidation(t *testing.T) {
@@ -32,8 +34,8 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				Name: "builder-name",
 			},
 			ServiceAccount: "some/service-account",
-			Source: SourceConfig{
-				Git: &Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "http://github.com/repo",
 					Revision: "master",
 				},
@@ -41,8 +43,8 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			CacheSize:                &cacheSize,
 			FailedBuildHistoryLimit:  &limit,
 			SuccessBuildHistoryLimit: &limit,
-			ImageTaggingStrategy:     None,
-			Build: &ImageBuild{
+			ImageTaggingStrategy:     corev1alpha1.None,
+			Build: &corev1alpha1.ImageBuild{
 				Env: []corev1.EnvVar{
 					{
 						Name:  "keyA",
@@ -78,7 +80,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 			image.SetDefaults(ctx)
 
-			assert.Equal(t, image.Spec.ImageTaggingStrategy, BuildNumber)
+			assert.Equal(t, image.Spec.ImageTaggingStrategy, corev1alpha1.BuildNumber)
 		})
 
 		it("defaults SuccessBuildHistoryLimit,FailedBuildHistoryLimit to 10", func() {
@@ -157,29 +159,29 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("multiple sources", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/repo",
 				Revision: "master",
 			}
-			image.Spec.Source.Blob = &Blob{
+			image.Spec.Source.Blob = &corev1alpha1.Blob{
 				URL: "http://blob.com/url",
 			}
 			assertValidationError(image, ctx, apis.ErrMultipleOneOf("git", "blob").ViaField("spec", "source"))
 
-			image.Spec.Source.Registry = &Registry{
+			image.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "registry.com/image",
 			}
 			assertValidationError(image, ctx, apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
-			image.Spec.Source = SourceConfig{}
+			image.Spec.Source = corev1alpha1.SourceConfig{}
 
 			assertValidationError(image, ctx, apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "",
 				Revision: "master",
 			}
@@ -188,7 +190,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates git revision", func() {
-			image.Spec.Source.Git = &Git{
+			image.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/url",
 				Revision: "",
 			}
@@ -198,27 +200,27 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("validates blob url", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Blob = &Blob{URL: ""}
+			image.Spec.Source.Blob = &corev1alpha1.Blob{URL: ""}
 
 			assertValidationError(image, ctx, apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
 		})
 
 		it("validates registry image exists", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Registry = &Registry{Image: ""}
+			image.Spec.Source.Registry = &corev1alpha1.Registry{Image: ""}
 
 			assertValidationError(image, ctx, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
 
 		it("validates registry image valide", func() {
 			image.Spec.Source.Git = nil
-			image.Spec.Source.Registry = &Registry{Image: "NotValid@@!"}
+			image.Spec.Source.Registry = &corev1alpha1.Registry{Image: "NotValid@@!"}
 
 			assertValidationError(image, ctx, apis.ErrInvalidValue(image.Spec.Source.Registry.Image, "image").ViaField("spec", "source", "registry"))
 		})
 
 		it("validates build bindings", func() {
-			image.Spec.Build.Bindings = []Binding{
+			image.Spec.Build.Bindings = []corev1alpha1.Binding{
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
@@ -285,10 +287,10 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		when("validating the notary config", func() {
 			it("handles a valid notary config", func() {
-				image.Spec.Notary = &NotaryConfig{
-					V1: &NotaryV1Config{
+				image.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
 						URL: "some-url",
-						SecretRef: NotarySecretRef{
+						SecretRef: corev1alpha1.NotarySecretRef{
 							Name: "some-secret-name",
 						},
 					},
@@ -297,10 +299,10 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("handles an empty notary url", func() {
-				image.Spec.Notary = &NotaryConfig{
-					V1: &NotaryV1Config{
+				image.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
 						URL: "",
-						SecretRef: NotarySecretRef{
+						SecretRef: corev1alpha1.NotarySecretRef{
 							Name: "some-secret-name",
 						},
 					},
@@ -310,10 +312,10 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("handles an empty notary secret ref", func() {
-				image.Spec.Notary = &NotaryConfig{
-					V1: &NotaryV1Config{
+				image.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
 						URL: "some-url",
-						SecretRef: NotarySecretRef{
+						SecretRef: corev1alpha1.NotarySecretRef{
 							Name: "",
 						},
 					},

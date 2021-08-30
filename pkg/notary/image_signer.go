@@ -12,7 +12,7 @@ import (
 	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/theupdateframework/notary"
 	"github.com/theupdateframework/notary/client"

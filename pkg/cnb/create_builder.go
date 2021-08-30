@@ -5,6 +5,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 type RegistryClient interface {
@@ -83,7 +84,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 
 	return buildapi.BuilderRecord{
 		Image: identifier,
-		Stack: buildapi.BuildStack{
+		Stack: corev1alpha1.BuildStack{
 			RunImage: clusterStack.Status.RunImage.LatestImage,
 			ID:       clusterStack.Status.Id,
 		},
@@ -95,10 +96,10 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 	}, nil
 }
 
-func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) buildapi.BuildpackMetadataList {
-	m := make(buildapi.BuildpackMetadataList, 0, len(buildpacks))
+func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) corev1alpha1.BuildpackMetadataList {
+	m := make(corev1alpha1.BuildpackMetadataList, 0, len(buildpacks))
 	for _, b := range buildpacks {
-		m = append(m, buildapi.BuildpackMetadata{
+		m = append(m, corev1alpha1.BuildpackMetadata{
 			Id:       b.Id,
 			Version:  b.Version,
 			Homepage: b.Homepage,

@@ -9,7 +9,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -205,7 +205,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpacks from multiple images", func() {
-			storeBuildpacks, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
+			storeBuildpacks, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
 				{
 					Image: buildpackageA,
 				},
@@ -216,22 +216,22 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Len(t, storeBuildpacks, 4)
-			require.Contains(t, storeBuildpacks, buildapi.StoreBuildpack{
-				BuildpackInfo: buildapi.BuildpackInfo{
+			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.multi",
 					Version: "0.0.1",
 				},
-				Buildpackage: buildapi.BuildpackageInfo{
+				Buildpackage: corev1alpha1.BuildpackageInfo{
 					Id:       "org.buildpack.meta",
 					Version:  "0.0.2",
 					Homepage: "some-homepage",
 				},
-				StoreImage: buildapi.StoreImage{
+				StoreImage: corev1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
 				API:      "0.2",
 				Homepage: "buildpack.multi.com/v1",
-				Stacks: []buildapi.BuildpackStack{
+				Stacks: []corev1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
 						Mixins: []string{"multi:mixin"},
@@ -244,22 +244,22 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				Digest: "sha256:52f341c7c36e21e5c344856dd61bc8c2d1188647f259eaba6d375e37c9aed08e",
 				Size:   20,
 			})
-			require.Contains(t, storeBuildpacks, buildapi.StoreBuildpack{
-				BuildpackInfo: buildapi.BuildpackInfo{
+			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.multi",
 					Version: "0.0.2",
 				},
-				Buildpackage: buildapi.BuildpackageInfo{
+				Buildpackage: corev1alpha1.BuildpackageInfo{
 					Id:       "org.buildpack.meta",
 					Version:  "0.0.2",
 					Homepage: "some-homepage",
 				},
-				StoreImage: buildapi.StoreImage{
+				StoreImage: corev1alpha1.StoreImage{
 					Image: buildpackageA,
 				},
 				API:      "0.2",
 				Homepage: "buildpack.multi.com/v2",
-				Stacks: []buildapi.BuildpackStack{
+				Stacks: []corev1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
 						Mixins: []string{"multi:mixin"},
@@ -274,26 +274,26 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.Contains(t, storeBuildpacks,
-				buildapi.StoreBuildpack{
-					BuildpackInfo: buildapi.BuildpackInfo{
+				corev1alpha1.StoreBuildpack{
+					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      "org.buildpack.meta",
 						Version: "0.0.2",
 					},
-					Buildpackage: buildapi.BuildpackageInfo{
+					Buildpackage: corev1alpha1.BuildpackageInfo{
 						Id:       "org.buildpack.meta",
 						Version:  "0.0.2",
 						Homepage: "some-homepage",
 					},
-					StoreImage: buildapi.StoreImage{
+					StoreImage: corev1alpha1.StoreImage{
 						Image: buildpackageA,
 					},
 					API:      "0.2",
 					Homepage: "buildpack.meta.com",
-					Order: []buildapi.OrderEntry{
+					Order: []corev1alpha1.OrderEntry{
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id:      "org.buildpack.multi",
 										Version: "0.0.1",
 									},
@@ -301,9 +301,9 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id:      "org.buildpack.multi",
 										Version: "0.0.2",
 									},
@@ -311,7 +311,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					Stacks: []buildapi.BuildpackStack{
+					Stacks: []corev1alpha1.BuildpackStack{
 						{
 							ID:     "org.some.stack",
 							Mixins: []string{"meta:mixin"},
@@ -325,12 +325,12 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Size:   10,
 				})
 
-			require.Contains(t, storeBuildpacks, buildapi.StoreBuildpack{
-				BuildpackInfo: buildapi.BuildpackInfo{
+			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.simple",
 					Version: "0.0.1",
 				},
-				Buildpackage: buildapi.BuildpackageInfo{
+				Buildpackage: corev1alpha1.BuildpackageInfo{
 					Id:       "org.buildpack.simple",
 					Version:  "0.0.1",
 					Homepage: "some-homepage",
@@ -340,7 +340,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				Size:     40,
 				API:      "0.2",
 				Homepage: "buildpack.simple.com",
-				Stacks: []buildapi.BuildpackStack{
+				Stacks: []corev1alpha1.BuildpackStack{
 					{
 						ID:     "org.some.stack",
 						Mixins: []string{"simple:mixin"},
@@ -349,14 +349,14 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						ID: "org.simple.only.stack",
 					},
 				},
-				StoreImage: buildapi.StoreImage{
+				StoreImage: corev1alpha1.StoreImage{
 					Image: buildpackageB,
 				},
 			})
 		})
 
 		it("returns all buildpacks in a deterministic order", func() {
-			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
+			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
 				{
 					Image: buildpackageA,
 				},
@@ -367,7 +367,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, []buildapi.StoreImage{
+				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
 					{
 						Image: buildpackageA,
 					},
@@ -434,7 +434,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 
 			fakeClient.AddImage("image/with_duplicates", imageWithDuplicates, expectedKeychain)
 
-			images := []buildapi.StoreImage{
+			images := []corev1alpha1.StoreImage{
 				{
 					Image: buildpackageA,
 				},

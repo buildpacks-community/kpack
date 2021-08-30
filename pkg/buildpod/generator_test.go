@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -192,7 +193,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			var build = &testBuildPodable{
 				serviceAccount: serviceAccountName,
 				namespace:      namespace,
-				buildBuilderSpec: buildapi.BuildBuilderSpec{
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
 					Image:            linuxBuilderImage,
 					ImagePullSecrets: builderPullSecrets,
 				},
@@ -224,7 +225,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			var build = &testBuildPodable{
 				serviceAccount: serviceAccountName,
 				namespace:      namespace,
-				buildBuilderSpec: buildapi.BuildBuilderSpec{
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
 					Image:            linuxBuilderImage,
 					ImagePullSecrets: builderPullSecrets,
 				},
@@ -245,7 +246,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it("rejects a build with a binding secret that is attached to a service account", func() {
 			var build = &testBuildPodable{
 				namespace: namespace,
-				bindings: []buildapi.Binding{
+				bindings: []corev1alpha1.Binding{
 					{
 						Name:        "naughty",
 						MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
@@ -264,7 +265,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				var build = &testBuildPodable{
 					serviceAccount: serviceAccountName,
 					namespace:      namespace,
-					buildBuilderSpec: buildapi.BuildBuilderSpec{
+					buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
 						Image:            windowsBuilderImage,
 						ImagePullSecrets: builderPullSecrets,
 					},
@@ -310,7 +311,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				var build = &testBuildPodable{
 					serviceAccount: serviceAccountName,
 					namespace:      namespace,
-					buildBuilderSpec: buildapi.BuildBuilderSpec{
+					buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
 						Image:            windowsBuilderImage,
 						ImagePullSecrets: builderPullSecrets,
 					},
@@ -335,11 +336,11 @@ func randomImage(t *testing.T) ggcrv1.Image {
 }
 
 type testBuildPodable struct {
-	buildBuilderSpec buildapi.BuildBuilderSpec
+	buildBuilderSpec corev1alpha1.BuildBuilderSpec
 	serviceAccount   string
 	namespace        string
 	buildPodCalls    []buildPodCall
-	bindings         []buildapi.Binding
+	bindings         []corev1alpha1.Binding
 }
 
 type buildPodCall struct {
@@ -361,7 +362,7 @@ func (tb *testBuildPodable) ServiceAccount() string {
 	return tb.serviceAccount
 }
 
-func (tb *testBuildPodable) BuilderSpec() buildapi.BuildBuilderSpec {
+func (tb *testBuildPodable) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
@@ -375,7 +376,7 @@ func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, secrets []c
 	return &corev1.Pod{}, nil
 }
 
-func (tb *testBuildPodable) Bindings() []buildapi.Binding {
+func (tb *testBuildPodable) Bindings() []corev1alpha1.Binding {
 	return tb.bindings
 }
 

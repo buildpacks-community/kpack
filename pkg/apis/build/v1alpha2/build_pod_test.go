@@ -13,6 +13,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestBuildPod(t *testing.T) {
@@ -39,7 +40,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	builderImageRef := buildapi.BuildBuilderSpec{
+	builderImageRef := corev1alpha1.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "some-image-secret"},
@@ -60,8 +61,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			Builder:        builderImageRef,
 			ServiceAccount: serviceAccount,
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
@@ -71,7 +72,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					ClaimName: "some-cache-name",
 				},
 			},
-			Bindings: []buildapi.Binding{
+			Bindings: []corev1alpha1.Binding{
 				{
 					Name: "database",
 					MetadataRef: &corev1.LocalObjectReference{
@@ -426,7 +427,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		it("configures prepare with the blob source", func() {
 			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &buildapi.Blob{
+			build.Spec.Source.Blob = &corev1alpha1.Blob{
 				URL: "https://some-blobstore.example.com/some-blob",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -444,7 +445,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and empty imagePullSecrets when not provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &buildapi.Registry{
+			build.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 			}
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -469,7 +470,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		it("configures prepare with the registry source and a secret volume when is imagePullSecrets provided", func() {
 			build.Spec.Source.Git = nil
 			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &buildapi.Registry{
+			build.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "some-registry.io/some-image",
 				ImagePullSecrets: []corev1.LocalObjectReference{
 					{Name: "registry-secret"},
@@ -1014,10 +1015,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			when("a notary config is present on the build", func() {
 				it("sets up the completion image to sign the image", func() {
-					build.Spec.Notary = &buildapi.NotaryConfig{
-						V1: &buildapi.NotaryV1Config{
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
 							URL: "some-notary-url",
-							SecretRef: buildapi.NotarySecretRef{
+							SecretRef: corev1alpha1.NotarySecretRef{
 								Name: "some-notary-secret",
 							},
 						},
@@ -1059,10 +1060,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("a notary config is present on the build", func() {
-			build.Spec.Notary = &buildapi.NotaryConfig{
-				V1: &buildapi.NotaryV1Config{
+			build.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-url",
-					SecretRef: buildapi.NotarySecretRef{
+					SecretRef: corev1alpha1.NotarySecretRef{
 						Name: "some-notary-secret",
 					},
 				},
@@ -1351,7 +1352,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("configures the completion container for notary on windows", func() {
-				build.Spec.Notary = &buildapi.NotaryConfig{V1: &buildapi.NotaryV1Config{
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-server",
 				}}
 

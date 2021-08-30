@@ -8,7 +8,7 @@ import (
 
 const ActivePolling = "ActivePolling"
 
-func (sr *SourceResolver) ResolvedSource(config ResolvedSourceConfig) {
+func (sr *SourceResolver) ResolvedSource(config corev1alpha1.ResolvedSourceConfig) {
 	resolvedSource := config.ResolvedSource()
 
 	if resolvedSource.IsUnknown() && sr.Status.ObservedGeneration == sr.ObjectMeta.Generation {
@@ -53,6 +53,6 @@ func (sr SourceResolver) IsRegistry() bool {
 	return sr.Spec.Source.Registry != nil
 }
 
-func (st *SourceResolver) SourceConfig() SourceConfig {
+func (st *SourceResolver) SourceConfig() corev1alpha1.SourceConfig {
 	return st.Status.Source.ResolvedSource().SourceConfig()
 }

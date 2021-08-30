@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
@@ -102,8 +102,8 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 							corev1.ResourceMemory: resourceQuantity(t, "512M"),
 						},
 					},
-					Source: buildapi.SourceConfig{
-						Git: &buildapi.Git{
+					Source: corev1alpha1.SourceConfig{
+						Git: &corev1alpha1.Git{
 							URL:      "some-git-url",
 							Revision: "some-git-revision",
 						},
@@ -126,10 +126,10 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 							corev1.ResourceMemory: resourceQuantity(t, "512M"),
 						},
 					},
-					Source: buildapi.SourceConfig{
-						Blob: &buildapi.Blob{URL: "some-blob-url"},
+					Source: corev1alpha1.SourceConfig{
+						Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 					},
-					Bindings: []buildapi.Binding{
+					Bindings: []corev1alpha1.Binding{
 						{
 							Name: "binding-name",
 							MetadataRef: &corev1.LocalObjectReference{
@@ -192,7 +192,7 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 				LogTest{
 					changesStr: changesToStr(t, buildchange.GenericChange{
 						Reason: "BUILDPACK",
-						Old: []buildapi.BuildpackInfo{
+						Old: []corev1alpha1.BuildpackInfo{
 							{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 							{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 						},
@@ -243,8 +243,8 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 						corev1.ResourceMemory: resourceQuantity(t, "512M"),
 					},
 				},
-				Source: buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				Source: corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      "some-git-url",
 						Revision: "some-git-revision",
 					},
@@ -267,10 +267,10 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 						corev1.ResourceMemory: resourceQuantity(t, "512M"),
 					},
 				},
-				Source: buildapi.SourceConfig{
-					Blob: &buildapi.Blob{URL: "some-blob-url"},
+				Source: corev1alpha1.SourceConfig{
+					Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 				},
-				Bindings: []buildapi.Binding{
+				Bindings: []corev1alpha1.Binding{
 					{
 						Name: "binding-name",
 						MetadataRef: &corev1.LocalObjectReference{
@@ -349,11 +349,11 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 					},
 					buildchange.GenericChange{
 						Reason: "BUILDPACK",
-						Old: []buildapi.BuildpackInfo{
+						Old: []corev1alpha1.BuildpackInfo{
 							{Id: "another-buildpack-id", Version: "another-buildpack-old-version"},
 							{Id: "some-buildpack-id", Version: "some-buildpack-old-version"},
 						},
-						New: []buildapi.BuildpackInfo{
+						New: []corev1alpha1.BuildpackInfo{
 							{Id: "some-buildpack-id", Version: "some-buildpack-new-version"},
 						},
 					},

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestRemoteGitResolver(t *testing.T) {
@@ -28,8 +28,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns type commit", func() {
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      url,
 						Revision: nonHEADCommit,
 					},
@@ -37,12 +37,12 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      url,
 						Revision: nonHEADCommit,
 						SubPath:  "/foo/bar",
-						Type:     buildapi.Commit,
+						Type:     corev1alpha1.Commit,
 					},
 				})
 			})
@@ -52,8 +52,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns branch with resolved commit", func() {
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      url,
 						Revision: "master",
 					},
@@ -61,11 +61,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      url,
 						Revision: fixtureHEADMasterCommit,
-						Type:     buildapi.Branch,
+						Type:     corev1alpha1.Branch,
 						SubPath:  "/foo/bar",
 					},
 				})
@@ -78,8 +78,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      tagsUrl,
 						Revision: tag,
 					},
@@ -87,11 +87,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      tagsUrl,
 						Revision: tagCommit,
-						Type:     buildapi.Tag,
+						Type:     corev1alpha1.Tag,
 						SubPath:  "/foo/bar",
 					},
 				})
@@ -102,8 +102,8 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns an unknown type", func() {
 				gitResolver := &remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, buildapi.SourceConfig{
-					Git: &buildapi.Git{
+				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
 						URL:      "git@localhost:org/repo",
 						Revision: tag,
 					},
@@ -111,11 +111,11 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "git@localhost:org/repo",
 						Revision: tag,
-						Type:     buildapi.Unknown,
+						Type:     corev1alpha1.Unknown,
 						SubPath:  "/foo/bar",
 					},
 				})

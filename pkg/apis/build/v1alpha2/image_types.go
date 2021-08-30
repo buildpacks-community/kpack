@@ -40,17 +40,17 @@ type Image struct {
 
 // +k8s:openapi-gen=true
 type ImageSpec struct {
-	Tag                      string                 `json:"tag"`
-	Builder                  corev1.ObjectReference `json:"builder,omitempty"`
-	ServiceAccount           string                 `json:"serviceAccount,omitempty"`
-	Source                   SourceConfig           `json:"source"`
-	Cache                    *ImageCacheConfig      `json:"cache,omitempty"`
-	FailedBuildHistoryLimit  *int64                 `json:"failedBuildHistoryLimit,omitempty"`
-	SuccessBuildHistoryLimit *int64                 `json:"successBuildHistoryLimit,omitempty"`
-	ImageTaggingStrategy     ImageTaggingStrategy   `json:"imageTaggingStrategy,omitempty"`
-	ProjectDescriptorPath    string                 `json:"projectDescriptorPath,omitempty"`
-	Build                    *ImageBuild            `json:"build,omitempty"`
-	Notary                   *NotaryConfig          `json:"notary,omitempty"`
+	Tag                      string                            `json:"tag"`
+	Builder                  corev1.ObjectReference            `json:"builder,omitempty"`
+	ServiceAccount           string                            `json:"serviceAccount,omitempty"`
+	Source                   corev1alpha1.SourceConfig         `json:"source"`
+	Cache                    *ImageCacheConfig                 `json:"cache,omitempty"`
+	FailedBuildHistoryLimit  *int64                            `json:"failedBuildHistoryLimit,omitempty"`
+	SuccessBuildHistoryLimit *int64                            `json:"successBuildHistoryLimit,omitempty"`
+	ImageTaggingStrategy     corev1alpha1.ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
+	ProjectDescriptorPath    string                            `json:"projectDescriptorPath,omitempty"`
+	Build                    *corev1alpha1.ImageBuild          `json:"build,omitempty"`
+	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -73,22 +73,6 @@ type RegistryCache struct {
 type ImageBuilder struct {
 	metav1.TypeMeta `json:",inline"`
 	Name            string `json:"name"`
-}
-
-type ImageTaggingStrategy string
-
-const (
-	None        ImageTaggingStrategy = "None"
-	BuildNumber ImageTaggingStrategy = "BuildNumber"
-)
-
-// +k8s:openapi-gen=true
-type ImageBuild struct {
-	// +listType
-	Bindings Bindings `json:"bindings,omitempty"`
-	// +listType
-	Env       []corev1.EnvVar             `json:"env,omitempty"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // +k8s:openapi-gen=true

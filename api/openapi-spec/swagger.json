@@ -4256,34 +4256,6 @@
       "type": "string",
       "format": "date-time"
     },
-    "kpack.build.v1alpha1.Binding": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "metadataRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        },
-        "name": {
-          "type": "string"
-        },
-        "secretRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.Blob": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "url": {
-          "type": "string"
-        }
-      }
-    },
     "kpack.build.v1alpha1.Build": {
       "type": "object",
       "required": [
@@ -4306,23 +4278,6 @@
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha1.BuildStatus"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildBuilderSpec": {
-      "type": "object",
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -4361,12 +4316,12 @@
         "bindings": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
+            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
           },
           "x-kubernetes-list-type": ""
         },
         "builder": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.BuildBuilderSpec"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildBuilderSpec"
         },
         "cacheName": {
           "type": "string"
@@ -4382,7 +4337,7 @@
           "$ref": "#/definitions/kpack.build.v1alpha1.LastBuild"
         },
         "notary": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
@@ -4391,7 +4346,7 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         },
         "tags": {
           "type": "array",
@@ -4402,24 +4357,13 @@
         }
       }
     },
-    "kpack.build.v1alpha1.BuildStack": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "runImage": {
-          "type": "string"
-        }
-      }
-    },
     "kpack.build.v1alpha1.BuildStatus": {
       "type": "object",
       "properties": {
         "buildMetadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackMetadata"
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackMetadata"
           }
         },
         "conditions": {
@@ -4443,7 +4387,7 @@
           "type": "string"
         },
         "stack": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildStack"
         },
         "stepStates": {
           "type": "array",
@@ -4519,7 +4463,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -4540,7 +4484,7 @@
         "builderMetadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackMetadata"
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackMetadata"
           }
         },
         "conditions": {
@@ -4571,95 +4515,14 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           }
         },
         "os": {
           "type": "string"
         },
         "stack": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.BuildStack"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildpackInfo": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildpackMetadata": {
-      "type": "object",
-      "required": [
-        "id",
-        "version"
-      ],
-      "properties": {
-        "homepage": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildpackRef": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "optional": {
-          "type": "boolean"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildpackStack": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "mixins": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "x-kubernetes-list-type": ""
-        }
-      }
-    },
-    "kpack.build.v1alpha1.BuildpackageInfo": {
-      "type": "object",
-      "properties": {
-        "homepage": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildStack"
         }
       }
     },
@@ -4721,7 +4584,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -4925,7 +4788,7 @@
         "sources": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.StoreImage"
+            "$ref": "#/definitions/kpack.core.v1alpha1.StoreImage"
           },
           "x-kubernetes-list-type": ""
         }
@@ -4937,7 +4800,7 @@
         "buildpacks": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.StoreBuildpack"
+            "$ref": "#/definitions/kpack.core.v1alpha1.StoreBuildpack"
           },
           "x-kubernetes-list-type": ""
         },
@@ -4954,21 +4817,6 @@
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
           "type": "integer",
           "format": "int64"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.Git": {
-      "type": "object",
-      "required": [
-        "url",
-        "revision"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
         }
       }
     },
@@ -4994,47 +4842,6 @@
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha1.ImageStatus"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ImageBuild": {
-      "type": "object",
-      "properties": {
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.Binding"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "env": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "resources": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ImageBuilder": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
         }
       }
     },
@@ -5072,7 +4879,7 @@
       ],
       "properties": {
         "build": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.ImageBuild"
+          "$ref": "#/definitions/kpack.core.v1alpha1.ImageBuild"
         },
         "builder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -5088,13 +4895,13 @@
           "type": "string"
         },
         "notary": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
         "serviceAccount": {
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         },
         "successBuildHistoryLimit": {
           "type": "integer",
@@ -5164,7 +4971,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -5178,86 +4985,6 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
         "tag": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.NotaryConfig": {
-      "type": "object",
-      "properties": {
-        "v1": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.NotaryV1Config"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.NotarySecretRef": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.NotaryV1Config": {
-      "type": "object",
-      "required": [
-        "url",
-        "secretRef"
-      ],
-      "properties": {
-        "secretRef": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.NotarySecretRef"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.OrderEntry": {
-      "type": "object",
-      "properties": {
-        "group": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackRef"
-          },
-          "x-kubernetes-list-type": ""
-        }
-      }
-    },
-    "kpack.build.v1alpha1.Registry": {
-      "type": "object",
-      "required": [
-        "image"
-      ],
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ResolvedBlobSource": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "subPath": {
-          "type": "string"
-        },
-        "url": {
           "type": "string"
         }
       }
@@ -5288,82 +5015,6 @@
         "userId": {
           "type": "integer",
           "format": "int32"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ResolvedGitSource": {
-      "type": "object",
-      "required": [
-        "url",
-        "revision",
-        "type"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string"
-        },
-        "subPath": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ResolvedRegistrySource": {
-      "type": "object",
-      "required": [
-        "image"
-      ],
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "subPath": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.ResolvedSourceConfig": {
-      "type": "object",
-      "properties": {
-        "blob": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.ResolvedBlobSource"
-        },
-        "git": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.ResolvedGitSource"
-        },
-        "registry": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.ResolvedRegistrySource"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.SourceConfig": {
-      "type": "object",
-      "properties": {
-        "blob": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.Blob"
-        },
-        "git": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.Git"
-        },
-        "registry": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.Registry"
-        },
-        "subPath": {
-          "type": "string"
         }
       }
     },
@@ -5428,7 +5079,7 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         }
       }
     },
@@ -5450,65 +5101,7 @@
           "format": "int64"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.ResolvedSourceConfig"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.StoreBuildpack": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "api": {
-          "type": "string"
-        },
-        "buildpackage": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackageInfo"
-        },
-        "diffId": {
-          "type": "string"
-        },
-        "digest": {
-          "type": "string"
-        },
-        "homepage": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "order": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.OrderEntry"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "size": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "stacks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha1.BuildpackStack"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "storeImage": {
-          "$ref": "#/definitions/kpack.build.v1alpha1.StoreImage"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha1.StoreImage": {
-      "type": "object",
-      "properties": {
-        "image": {
-          "type": "string"
+          "$ref": "#/definitions/kpack.core.v1alpha1.ResolvedSourceConfig"
         }
       }
     },
@@ -5523,17 +5116,6 @@
         },
         "secretRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.Blob": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "url": {
-          "type": "string"
         }
       }
     },
@@ -5559,23 +5141,6 @@
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildStatus"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildBuilderSpec": {
-      "type": "object",
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -5641,12 +5206,12 @@
         "bindings": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.Binding"
+            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
           },
           "x-kubernetes-list-type": ""
         },
         "builder": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.BuildBuilderSpec"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildBuilderSpec"
         },
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildCacheConfig"
@@ -5662,7 +5227,7 @@
           "$ref": "#/definitions/kpack.build.v1alpha2.LastBuild"
         },
         "notary": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
         "projectDescriptorPath": {
           "type": "string"
@@ -5674,7 +5239,7 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         },
         "tags": {
           "type": "array",
@@ -5702,7 +5267,7 @@
         "buildMetadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.BuildpackMetadata"
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackMetadata"
           }
         },
         "conditions": {
@@ -5729,7 +5294,7 @@
           "type": "string"
         },
         "stack": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.BuildStack"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildStack"
         },
         "stepStates": {
           "type": "array",
@@ -5805,7 +5370,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -5826,7 +5391,7 @@
         "builderMetadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.BuildpackMetadata"
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackMetadata"
           }
         },
         "conditions": {
@@ -5857,95 +5422,14 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           }
         },
         "os": {
           "type": "string"
         },
         "stack": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.BuildStack"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildpackInfo": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildpackMetadata": {
-      "type": "object",
-      "required": [
-        "id",
-        "version"
-      ],
-      "properties": {
-        "homepage": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildpackRef": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "optional": {
-          "type": "boolean"
-        },
-        "version": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildpackStack": {
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "mixins": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "x-kubernetes-list-type": ""
-        }
-      }
-    },
-    "kpack.build.v1alpha2.BuildpackageInfo": {
-      "type": "object",
-      "properties": {
-        "homepage": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildStack"
         }
       }
     },
@@ -6007,7 +5491,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -6217,7 +5701,7 @@
         "sources": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.StoreImage"
+            "$ref": "#/definitions/kpack.core.v1alpha1.StoreImage"
           },
           "x-kubernetes-list-type": ""
         }
@@ -6229,7 +5713,7 @@
         "buildpacks": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.StoreBuildpack"
+            "$ref": "#/definitions/kpack.core.v1alpha1.StoreBuildpack"
           },
           "x-kubernetes-list-type": ""
         },
@@ -6246,21 +5730,6 @@
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
           "type": "integer",
           "format": "int64"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.Git": {
-      "type": "object",
-      "required": [
-        "url",
-        "revision"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
         }
       }
     },
@@ -6286,28 +5755,6 @@
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha2.ImageStatus"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.ImageBuild": {
-      "type": "object",
-      "properties": {
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.Binding"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "env": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "resources": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         }
       }
     },
@@ -6383,7 +5830,7 @@
       ],
       "properties": {
         "build": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.ImageBuild"
+          "$ref": "#/definitions/kpack.core.v1alpha1.ImageBuild"
         },
         "builder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -6399,7 +5846,7 @@
           "type": "string"
         },
         "notary": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
         "projectDescriptorPath": {
           "type": "string"
@@ -6408,7 +5855,7 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         },
         "successBuildHistoryLimit": {
           "type": "integer",
@@ -6481,7 +5928,7 @@
         "order": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.OrderEntry"
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
           },
           "x-kubernetes-list-type": ""
         },
@@ -6499,72 +5946,6 @@
         }
       }
     },
-    "kpack.build.v1alpha2.NotaryConfig": {
-      "type": "object",
-      "properties": {
-        "v1": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.NotaryV1Config"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.NotarySecretRef": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.NotaryV1Config": {
-      "type": "object",
-      "required": [
-        "url",
-        "secretRef"
-      ],
-      "properties": {
-        "secretRef": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.NotarySecretRef"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.OrderEntry": {
-      "type": "object",
-      "properties": {
-        "group": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.BuildpackRef"
-          },
-          "x-kubernetes-list-type": ""
-        }
-      }
-    },
-    "kpack.build.v1alpha2.Registry": {
-      "type": "object",
-      "required": [
-        "image"
-      ],
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        }
-      }
-    },
     "kpack.build.v1alpha2.RegistryCache": {
       "type": "object",
       "required": [
@@ -6572,20 +5953,6 @@
       ],
       "properties": {
         "tag": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.ResolvedBlobSource": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "subPath": {
-          "type": "string"
-        },
-        "url": {
           "type": "string"
         }
       }
@@ -6616,82 +5983,6 @@
         "userId": {
           "type": "integer",
           "format": "int32"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.ResolvedGitSource": {
-      "type": "object",
-      "required": [
-        "url",
-        "revision",
-        "type"
-      ],
-      "properties": {
-        "revision": {
-          "type": "string"
-        },
-        "subPath": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.ResolvedRegistrySource": {
-      "type": "object",
-      "required": [
-        "image"
-      ],
-      "properties": {
-        "image": {
-          "type": "string"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "x-kubernetes-list-type": "",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "subPath": {
-          "type": "string"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.ResolvedSourceConfig": {
-      "type": "object",
-      "properties": {
-        "blob": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedBlobSource"
-        },
-        "git": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedGitSource"
-        },
-        "registry": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedRegistrySource"
-        }
-      }
-    },
-    "kpack.build.v1alpha2.SourceConfig": {
-      "type": "object",
-      "properties": {
-        "blob": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.Blob"
-        },
-        "git": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.Git"
-        },
-        "registry": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.Registry"
-        },
-        "subPath": {
-          "type": "string"
         }
       }
     },
@@ -6756,7 +6047,7 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.SourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
         }
       }
     },
@@ -6778,64 +6069,140 @@
           "format": "int64"
         },
         "source": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedSourceConfig"
+          "$ref": "#/definitions/kpack.core.v1alpha1.ResolvedSourceConfig"
         }
       }
     },
-    "kpack.build.v1alpha2.StoreBuildpack": {
+    "kpack.core.v1alpha1.Binding": {
+      "type": "object",
+      "properties": {
+        "metadataRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        },
+        "name": {
+          "type": "string"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.Blob": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildBuilderSpec": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+          },
+          "x-kubernetes-list-type": "",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildStack": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "runImage": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildpackInfo": {
       "type": "object",
       "required": [
         "id"
       ],
       "properties": {
-        "api": {
-          "type": "string"
-        },
-        "buildpackage": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.BuildpackageInfo"
-        },
-        "diffId": {
-          "type": "string"
-        },
-        "digest": {
-          "type": "string"
-        },
-        "homepage": {
-          "type": "string"
-        },
         "id": {
           "type": "string"
-        },
-        "order": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.OrderEntry"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "size": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "stacks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.build.v1alpha2.BuildpackStack"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "storeImage": {
-          "$ref": "#/definitions/kpack.build.v1alpha2.StoreImage"
         },
         "version": {
           "type": "string"
         }
       }
     },
-    "kpack.build.v1alpha2.StoreImage": {
+    "kpack.core.v1alpha1.BuildpackMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "homepage": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildpackRef": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildpackStack": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "mixins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.core.v1alpha1.BuildpackageInfo": {
       "type": "object",
       "properties": {
-        "image": {
+        "homepage": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
           "type": "string"
         }
       }
@@ -6874,6 +6241,199 @@
         }
       }
     },
+    "kpack.core.v1alpha1.Git": {
+      "type": "object",
+      "required": [
+        "url",
+        "revision"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.ImageBuild": {
+      "type": "object",
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.NotaryConfig": {
+      "type": "object",
+      "properties": {
+        "v1": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotaryV1Config"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.NotarySecretRef": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.NotaryV1Config": {
+      "type": "object",
+      "required": [
+        "url",
+        "secretRef"
+      ],
+      "properties": {
+        "secretRef": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.NotarySecretRef"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.OrderEntry": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackRef"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.core.v1alpha1.Registry": {
+      "type": "object",
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+          },
+          "x-kubernetes-list-type": "",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.ResolvedBlobSource": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "subPath": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.ResolvedGitSource": {
+      "type": "object",
+      "required": [
+        "url",
+        "revision",
+        "type"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string"
+        },
+        "subPath": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.ResolvedRegistrySource": {
+      "type": "object",
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+          },
+          "x-kubernetes-list-type": "",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "subPath": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.ResolvedSourceConfig": {
+      "type": "object",
+      "properties": {
+        "blob": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.ResolvedBlobSource"
+        },
+        "git": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.ResolvedGitSource"
+        },
+        "registry": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.ResolvedRegistrySource"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.SourceConfig": {
+      "type": "object",
+      "properties": {
+        "blob": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.Blob"
+        },
+        "git": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.Git"
+        },
+        "registry": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.Registry"
+        },
+        "subPath": {
+          "type": "string"
+        }
+      }
+    },
     "kpack.core.v1alpha1.Status": {
       "description": "Status shows how we expect folks to embed Conditions in their Status field. WARNING: Adding fields to this struct will add them to all Knative resources.",
       "type": "object",
@@ -6891,6 +6451,64 @@
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.StoreBuildpack": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "api": {
+          "type": "string"
+        },
+        "buildpackage": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackageInfo"
+        },
+        "diffId": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "homepage": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "order": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "size": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "stacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackStack"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "storeImage": {
+          "$ref": "#/definitions/kpack.core.v1alpha1.StoreImage"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.StoreImage": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
         }
       }
     },

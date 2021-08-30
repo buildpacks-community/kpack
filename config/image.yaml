@@ -37,6 +37,14 @@ spec:
     - name: Ready
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: kpack-webhook
+          namespace: kpack
+      conversionReviewVersions: ["v1"]
   names:
     kind: Image
     singular: image

@@ -56,7 +56,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Name:         "builder-Name",
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
-		BuilderMetadata: []BuildpackMetadata{
+		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -80,10 +80,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []BuildpackMetadata{
+			BuildMetadata: []corev1alpha1.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
-			Stack: BuildStack{
+			Stack: corev1alpha1.BuildStack{
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stack.bionic",
 			},
@@ -92,16 +92,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#build", func() {
-		sourceResolver.Status.Source = ResolvedSourceConfig{
-			Git: &ResolvedGitSource{
+		sourceResolver.Status.Source = corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
 				URL:      "https://some.git/url",
 				Revision: "revision",
-				Type:     Commit,
+				Type:     corev1alpha1.Commit,
 			},
 		}
 
-		latestBuild.Spec.Source = SourceConfig{
-			Git: &Git{
+		latestBuild.Spec.Source = corev1alpha1.SourceConfig{
+			Git: &corev1alpha1.Git{
 				URL:      "https://some.git/url",
 				Revision: "revision",
 			},
@@ -143,8 +143,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets blob url when image source is blob", func() {
-			sourceResolver.Status.Source = ResolvedSourceConfig{
-				Blob: &ResolvedBlobSource{
+			sourceResolver.Status.Source = corev1alpha1.ResolvedSourceConfig{
+				Blob: &corev1alpha1.ResolvedBlobSource{
 					URL: "https://some.place/blob.jar",
 				},
 			}
@@ -155,8 +155,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets registry image when image source is registry", func() {
-			sourceResolver.Status.Source = ResolvedSourceConfig{
-				Registry: &ResolvedRegistrySource{
+			sourceResolver.Status.Source = corev1alpha1.ResolvedSourceConfig{
+				Registry: &corev1alpha1.ResolvedRegistrySource{
 					Image: "some-registry.io/some-image",
 				},
 			}
@@ -168,7 +168,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("with excludes additional tags names when explicitly disabled", func() {
 			image.Spec.Tag = "imagename/foo:test"
-			image.Spec.ImageTaggingStrategy = None
+			image.Spec.ImageTaggingStrategy = corev1alpha1.None
 			build := image.Build(sourceResolver, builder, latestBuild, "", "", 1)
 			require.Len(t, build.Spec.Tags, 1)
 		})
@@ -204,7 +204,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds the env vars to the build spec", func() {
-			image.Spec.Build = &ImageBuild{
+			image.Spec.Build = &corev1alpha1.ImageBuild{
 				Env: []corev1.EnvVar{
 					{Name: "keyA", Value: "new"},
 				},
@@ -228,7 +228,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds build resources", func() {
-			image.Spec.Build = &ImageBuild{
+			image.Spec.Build = &corev1alpha1.ImageBuild{
 				Resources: corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("2"),
@@ -246,10 +246,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sets the notary config when present", func() {
-			image.Spec.Notary = &NotaryConfig{
-				V1: &NotaryV1Config{
+			image.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-server",
-					SecretRef: NotarySecretRef{
+					SecretRef: corev1alpha1.NotarySecretRef{
 						Name: "some-secret-name",
 					},
 				},
@@ -263,15 +263,15 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 type TestBuilderResource struct {
 	BuilderReady     bool
-	BuilderMetadata  []BuildpackMetadata
+	BuilderMetadata  []corev1alpha1.BuildpackMetadata
 	ImagePullSecrets []corev1.LocalObjectReference
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
 }
 
-func (t TestBuilderResource) BuildBuilderSpec() BuildBuilderSpec {
-	return BuildBuilderSpec{
+func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
+	return corev1alpha1.BuildBuilderSpec{
 		Image:            t.LatestImage,
 		ImagePullSecrets: t.ImagePullSecrets,
 	}
@@ -281,7 +281,7 @@ func (t TestBuilderResource) Ready() bool {
 	return t.BuilderReady
 }
 
-func (t TestBuilderResource) BuildpackMetadata() BuildpackMetadataList {
+func (t TestBuilderResource) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
 	return t.BuilderMetadata
 }
 

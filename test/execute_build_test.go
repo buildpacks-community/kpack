@@ -139,7 +139,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterStoreName,
 			},
 			Spec: buildapi.ClusterStoreSpec{
-				Sources: []buildapi.StoreImage{
+				Sources: []corev1alpha1.StoreImage{
 					{
 						Image: builderImage,
 					},
@@ -183,31 +183,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []buildapi.OrderEntry{
+					Order: []corev1alpha1.OrderEntry{
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -235,31 +235,31 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []buildapi.OrderEntry{
+					Order: []corev1alpha1.OrderEntry{
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/nodejs",
 									},
 								},
 							},
 						},
 						{
-							Group: []buildapi.BuildpackRef{
+							Group: []corev1alpha1.BuildpackRef{
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/bellsoft-liberica",
 									},
 								},
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/gradle",
 									},
 									Optional: true,
 								},
 								{
-									BuildpackInfo: buildapi.BuildpackInfo{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
 									},
 								},
@@ -291,20 +291,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		imageSources := map[string]buildapi.SourceConfig{
+		imageSources := map[string]corev1alpha1.SourceConfig{
 			"test-git-image": {
-				Git: &buildapi.Git{
+				Git: &corev1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 					Revision: "master",
 				},
 			},
 			"test-blob-image": {
-				Blob: &buildapi.Blob{
+				Blob: &corev1alpha1.Blob{
 					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 				},
 			},
 			"test-registry-image": {
-				Registry: &buildapi.Registry{
+				Registry: &corev1alpha1.Registry{
 					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 				},
 			},
@@ -346,8 +346,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 									Size: &cacheSize,
 								},
 							},
-							ImageTaggingStrategy: buildapi.None,
-							Build: &buildapi.ImageBuild{
+							ImageTaggingStrategy: corev1alpha1.None,
+							Build: &corev1alpha1.ImageBuild{
 								Resources: expectedResources,
 							},
 						},
@@ -409,15 +409,15 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 				Name: clusterBuilderName,
 			},
 			ServiceAccount: serviceAccountName,
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 					Revision: "master",
 				},
 			},
 			Cache:                cacheConfig,
-			ImageTaggingStrategy: buildapi.None,
-			Build: &buildapi.ImageBuild{
+			ImageTaggingStrategy: corev1alpha1.None,
+			Build: &corev1alpha1.ImageBuild{
 				Resources: expectedResources,
 			},
 		},

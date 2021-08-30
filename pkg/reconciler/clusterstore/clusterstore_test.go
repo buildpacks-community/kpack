@@ -60,7 +60,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initialGeneration,
 		},
 		Spec: buildapi.ClusterStoreSpec{
-			Sources: []buildapi.StoreImage{
+			Sources: []corev1alpha1.StoreImage{
 				{
 					Image: "some.registry/some-image-1",
 				},
@@ -72,25 +72,25 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	when("#Reconcile", func() {
-		readBuildpacks := []buildapi.StoreBuildpack{
+		readBuildpacks := []corev1alpha1.StoreBuildpack{
 			{
-				BuildpackInfo: buildapi.BuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "paketo-buildpacks/node-engine",
 					Version: "0.0.116",
 				},
 				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
-				StoreImage: buildapi.StoreImage{
+				StoreImage: corev1alpha1.StoreImage{
 					Image: "some.registry/some-image-1",
 				},
 				Order: nil,
 			},
 			{
-				BuildpackInfo: buildapi.BuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "paketo-buildpacks/npm",
 					Version: "0.0.71",
 				},
 				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
-				StoreImage: buildapi.StoreImage{
+				StoreImage: corev1alpha1.StoreImage{
 					Image: "some.registry/some-image-2",
 				},
 				Order: nil,

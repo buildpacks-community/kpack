@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const (
@@ -86,7 +88,7 @@ func (im *Image) LatestForImage(build *Build) string {
 	return im.Status.LatestImage
 }
 
-func (im *Image) Bindings() Bindings {
+func (im *Image) Bindings() corev1alpha1.Bindings {
 	if im.Spec.Build == nil {
 		return nil
 	}
@@ -196,5 +198,5 @@ func combine(map1, map2 map[string]string) map[string]string {
 }
 
 func (im *Image) disableAdditionalImageNames() bool {
-	return im.Spec.ImageTaggingStrategy == None
+	return im.Spec.ImageTaggingStrategy == corev1alpha1.None
 }
