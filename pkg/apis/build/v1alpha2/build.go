@@ -135,10 +135,14 @@ func (b *Build) Finished() bool {
 }
 
 func (b *Build) NotaryV1Config() *corev1alpha1.NotaryV1Config {
-	if b == nil || b.Spec.Notary == nil {
+	if b.Spec.Notary == nil {
 		return nil
 	}
 	return b.Spec.Notary.V1
+}
+
+func (b *Build) DefaultProcess() string {
+	return b.Spec.DefaultProcess
 }
 
 func (b *Build) rebasable(builderStack string) bool {

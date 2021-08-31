@@ -3943,7 +3943,7 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-							Type: []string{"string"}, Format: "",
+							Type:        []string{"string"}, Format: "",
 						},
 					},
 					"reason": {
