@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestClusterStoreValidation(t *testing.T) {
@@ -20,7 +22,7 @@ func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
 			Name: "store-name",
 		},
 		Spec: ClusterStoreSpec{
-			Sources: []StoreImage{
+			Sources: []corev1alpha1.StoreImage{
 				{
 					Image: "some-registry.io/store-image-1@sha256:78c1b9419976227e05be9d243b7fa583bea44a5258e52018b2af4cdfe23d148d",
 				},
@@ -51,7 +53,7 @@ func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sources should contain a valid image", func() {
-			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, StoreImage{Image: "invalid image"})
+			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, corev1alpha1.StoreImage{Image: "invalid image"})
 			assertValidationError(clusterStore, apis.ErrInvalidArrayValue(clusterStore.Spec.Sources[3], "sources", 3).ViaField("spec"))
 		})
 	})

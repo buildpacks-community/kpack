@@ -10,7 +10,7 @@ import (
 	git2go "github.com/libgit2/git2go/v31"
 	"github.com/pkg/errors"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const defaultRemote = "origin"
@@ -20,16 +20,16 @@ var discardLogger = log.New(ioutil.Discard, "", 0)
 type remoteGitResolver struct {
 }
 
-func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig buildapi.SourceConfig) (buildapi.ResolvedSourceConfig, error) {
+func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
 	dir, err := ioutil.TempDir("", "git-resolve")
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{}, err
+		return corev1alpha1.ResolvedSourceConfig{}, err
 	}
 	defer os.RemoveAll(dir)
 
 	repository, err := git2go.InitRepository(dir, false)
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{}, errors.Wrap(err, "initializing repo")
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "initializing repo")
 	}
 	defer repository.Free()
 
@@ -38,7 +38,7 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig buildapi.So
 		Flags: git2go.RemoteCreateSkipInsteadof,
 	})
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{}, errors.Wrap(err, "create remote")
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "create remote")
 	}
 	defer remote.Free()
 
@@ -47,11 +47,11 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig buildapi.So
 		CertificateCheckCallback: certificateCheckCallback(discardLogger),
 	}, nil, nil)
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{
-			Git: &buildapi.ResolvedGitSource{
+		return corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
 				URL:      sourceConfig.Git.URL,
 				Revision: sourceConfig.Git.Revision,
-				Type:     buildapi.Unknown,
+				Type:     corev1alpha1.Unknown,
 				SubPath:  sourceConfig.SubPath,
 			},
 		}, nil
@@ -59,14 +59,14 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig buildapi.So
 
 	references, err := remote.Ls()
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{}, errors.Wrap(err, "remote ls")
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "remote ls")
 	}
 
 	for _, ref := range references {
 		for _, format := range refRevParseRules {
 			if fmt.Sprintf(format, sourceConfig.Git.Revision) == ref.Name {
-				return buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				return corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      sourceConfig.Git.URL,
 						Revision: ref.Id.String(),
 						Type:     sourceType(ref),
@@ -77,24 +77,24 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig buildapi.So
 		}
 	}
 
-	return buildapi.ResolvedSourceConfig{
-		Git: &buildapi.ResolvedGitSource{
+	return corev1alpha1.ResolvedSourceConfig{
+		Git: &corev1alpha1.ResolvedGitSource{
 			URL:      sourceConfig.Git.URL,
 			Revision: sourceConfig.Git.Revision,
-			Type:     buildapi.Commit,
+			Type:     corev1alpha1.Commit,
 			SubPath:  sourceConfig.SubPath,
 		},
 	}, nil
 }
 
-func sourceType(reference git2go.RemoteHead) buildapi.GitSourceKind {
+func sourceType(reference git2go.RemoteHead) corev1alpha1.GitSourceKind {
 	switch {
 	case strings.HasPrefix(reference.Name, "refs/heads"):
-		return buildapi.Branch
+		return corev1alpha1.Branch
 	case strings.HasPrefix(reference.Name, "refs/tags"):
-		return buildapi.Tag
+		return corev1alpha1.Tag
 	default:
-		return buildapi.Unknown
+		return corev1alpha1.Unknown
 	}
 }
 

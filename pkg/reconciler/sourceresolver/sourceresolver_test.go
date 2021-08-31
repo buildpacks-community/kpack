@@ -75,8 +75,8 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 				Spec: buildapi.SourceResolverSpec{
 					ServiceAccount: serviceAccount,
-					Source: buildapi.SourceConfig{
-						Git: &buildapi.Git{
+					Source: corev1alpha1.SourceConfig{
+						Git: &corev1alpha1.Git{
 							URL:      "https://github.com/build-me",
 							Revision: "1234",
 						},
@@ -84,11 +84,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			resolvedSource := buildapi.ResolvedSourceConfig{
-				Git: &buildapi.ResolvedGitSource{
+			resolvedSource := corev1alpha1.ResolvedSourceConfig{
+				Git: &corev1alpha1.ResolvedGitSource{
 					URL:      "https://example.com/something",
 					Revision: "abcdef",
-					Type:     buildapi.Branch,
+					Type:     corev1alpha1.Branch,
 				},
 			}
 
@@ -136,11 +136,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a branch is the source", func() {
-				resolvedSource := buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				resolvedSource := corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "https://example.com/something",
 						Revision: "abcdef",
-						Type:     buildapi.Branch,
+						Type:     corev1alpha1.Branch,
 					},
 				}
 
@@ -173,11 +173,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 												},
 											},
 										},
-										Source: buildapi.ResolvedSourceConfig{
-											Git: &buildapi.ResolvedGitSource{
+										Source: corev1alpha1.ResolvedSourceConfig{
+											Git: &corev1alpha1.ResolvedGitSource{
 												URL:      "https://example.com/something",
 												Revision: "abcdef",
-												Type:     buildapi.Branch,
+												Type:     corev1alpha1.Branch,
 											},
 										},
 									},
@@ -194,11 +194,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a specific commit sha is the source", func() {
-				resolvedSource := buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				resolvedSource := corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "https://example.com/something",
 						Revision: "abcdef",
-						Type:     buildapi.Commit,
+						Type:     corev1alpha1.Commit,
 					},
 				}
 
@@ -231,11 +231,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 												},
 											},
 										},
-										Source: buildapi.ResolvedSourceConfig{
-											Git: &buildapi.ResolvedGitSource{
+										Source: corev1alpha1.ResolvedSourceConfig{
+											Git: &corev1alpha1.ResolvedGitSource{
 												URL:      "https://example.com/something",
 												Revision: "abcdef",
-												Type:     buildapi.Commit,
+												Type:     corev1alpha1.Commit,
 											},
 										},
 									},
@@ -249,11 +249,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("git resolves to unknown", func() {
-				resolvedSource := buildapi.ResolvedSourceConfig{
-					Git: &buildapi.ResolvedGitSource{
+				resolvedSource := corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "https://example.com/something",
 						Revision: "abcdef",
-						Type:     buildapi.Unknown,
+						Type:     corev1alpha1.Unknown,
 					},
 				}
 
@@ -288,11 +288,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 												},
 											},
 										},
-										Source: buildapi.ResolvedSourceConfig{
-											Git: &buildapi.ResolvedGitSource{
+										Source: corev1alpha1.ResolvedSourceConfig{
+											Git: &corev1alpha1.ResolvedGitSource{
 												URL:      "https://example.com/something",
 												Revision: "abcdef",
-												Type:     buildapi.Unknown,
+												Type:     corev1alpha1.Unknown,
 											},
 										},
 									},
@@ -303,11 +303,11 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("ignores unknown when source has been previously resolved", func() {
-					alreadyResolvedSource := buildapi.ResolvedSourceConfig{
-						Git: &buildapi.ResolvedGitSource{
+					alreadyResolvedSource := corev1alpha1.ResolvedSourceConfig{
+						Git: &corev1alpha1.ResolvedGitSource{
 							URL:      "https://example.com/something",
 							Revision: "abcdef",
-							Type:     buildapi.Commit,
+							Type:     corev1alpha1.Commit,
 						},
 					}
 
@@ -333,16 +333,16 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 				Spec: buildapi.SourceResolverSpec{
 					ServiceAccount: serviceAccount,
-					Source: buildapi.SourceConfig{
-						Blob: &buildapi.Blob{
+					Source: corev1alpha1.SourceConfig{
+						Blob: &corev1alpha1.Blob{
 							URL: "https://some-blobstore.example.com/some-blob",
 						},
 					},
 				},
 			}
 
-			resolvedSource := buildapi.ResolvedSourceConfig{
-				Blob: &buildapi.ResolvedBlobSource{
+			resolvedSource := corev1alpha1.ResolvedSourceConfig{
+				Blob: &corev1alpha1.ResolvedBlobSource{
 					URL: "https://some-blobstore.example.com/some-blob",
 				},
 			}
@@ -376,8 +376,8 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 									},
-									Source: buildapi.ResolvedSourceConfig{
-										Blob: &buildapi.ResolvedBlobSource{
+									Source: corev1alpha1.ResolvedSourceConfig{
+										Blob: &corev1alpha1.ResolvedBlobSource{
 											URL: "https://some-blobstore.example.com/some-blob",
 										},
 									},
@@ -398,16 +398,16 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				},
 				Spec: buildapi.SourceResolverSpec{
 					ServiceAccount: serviceAccount,
-					Source: buildapi.SourceConfig{
-						Registry: &buildapi.Registry{
+					Source: corev1alpha1.SourceConfig{
+						Registry: &corev1alpha1.Registry{
 							Image: "some-registry.io/some-image@sha256:abcdef123456",
 						},
 					},
 				},
 			}
 
-			resolvedSource := buildapi.ResolvedSourceConfig{
-				Registry: &buildapi.ResolvedRegistrySource{
+			resolvedSource := corev1alpha1.ResolvedSourceConfig{
+				Registry: &corev1alpha1.ResolvedRegistrySource{
 					Image: "some-registry.io/some-image@sha256:abcdef123456",
 				},
 			}
@@ -441,8 +441,8 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 									},
-									Source: buildapi.ResolvedSourceConfig{
-										Registry: &buildapi.ResolvedRegistrySource{
+									Source: corev1alpha1.ResolvedSourceConfig{
+										Registry: &corev1alpha1.ResolvedRegistrySource{
 											Image: "some-registry.io/some-image@sha256:abcdef123456",
 										},
 									},
@@ -456,7 +456,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 	})
 }
 
-func resolvedSourceResolver(sourceResolver *buildapi.SourceResolver, resolvedSource buildapi.ResolvedSourceConfig) *buildapi.SourceResolver {
+func resolvedSourceResolver(sourceResolver *buildapi.SourceResolver, resolvedSource corev1alpha1.ResolvedSourceConfig) *buildapi.SourceResolver {
 	sourceResolver.ResolvedSource(resolvedSource)
 	return sourceResolver
 }

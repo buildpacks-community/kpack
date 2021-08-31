@@ -37,6 +37,14 @@ spec:
     - name: Succeeded
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Succeeded\")].status"
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: kpack-webhook
+          namespace: kpack
+      conversionReviewVersions: [ "v1" ]
   names:
     kind: Build
     singular: build

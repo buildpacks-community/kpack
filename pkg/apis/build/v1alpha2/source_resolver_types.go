@@ -20,14 +20,14 @@ type SourceResolver struct {
 
 // +k8s:openapi-gen=true
 type SourceResolverSpec struct {
-	ServiceAccount string       `json:"serviceAccount,omitempty"`
-	Source         SourceConfig `json:"source"`
+	ServiceAccount string                    `json:"serviceAccount,omitempty"`
+	Source         corev1alpha1.SourceConfig `json:"source"`
 }
 
 // +k8s:openapi-gen=true
 type SourceResolverStatus struct {
 	corev1alpha1.Status `json:",inline"`
-	Source              ResolvedSourceConfig `json:"source,omitempty"`
+	Source              corev1alpha1.ResolvedSourceConfig `json:"source,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

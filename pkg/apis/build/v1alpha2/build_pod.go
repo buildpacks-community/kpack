@@ -11,6 +11,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const (
@@ -822,7 +824,7 @@ func tolerations(taints []corev1.Taint) []corev1.Toleration {
 	return t
 }
 
-func builderSecretVolume(bbs BuildBuilderSpec) corev1.Volume {
+func builderSecretVolume(bbs corev1alpha1.BuildBuilderSpec) corev1.Volume {
 	if len(bbs.ImagePullSecrets) > 0 {
 		return corev1.Volume{
 			Name: builderPullSecretsDirName,

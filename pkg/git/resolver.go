@@ -6,6 +6,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 type Resolver struct {
@@ -20,10 +21,10 @@ func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 	}
 }
 
-func (r *Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceResolver) (buildapi.ResolvedSourceConfig, error) {
+func (r *Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceResolver) (corev1alpha1.ResolvedSourceConfig, error) {
 	keychain, err := r.gitKeychain.KeychainForServiceAccount(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount)
 	if err != nil {
-		return buildapi.ResolvedSourceConfig{}, err
+		return corev1alpha1.ResolvedSourceConfig{}, err
 	}
 
 	return r.remoteGitResolver.Resolve(keychain, sourceResolver.Spec.Source)

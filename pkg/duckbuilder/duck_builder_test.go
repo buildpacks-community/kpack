@@ -38,13 +38,13 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuilderMetadata: buildapi.BuildpackMetadataList{
+			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "test.builder",
 					Version: "test.version",
 				},
 			},
-			Stack: buildapi.BuildStack{
+			Stack: corev1alpha1.BuildStack{
 				RunImage: "some/run@sha256:12345678",
 			},
 			LatestImage: "some/builder@sha256:12345678",
@@ -82,7 +82,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildBuilderSpec provides latest image and pull secrets", func() {
-		require.Equal(t, buildapi.BuildBuilderSpec{
+		require.Equal(t, corev1alpha1.BuildBuilderSpec{
 			Image: "some/builder@sha256:12345678",
 			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
@@ -93,7 +93,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("BuildpackMetadata provides buildpack metadata", func() {
-		require.Equal(t, buildapi.BuildpackMetadataList{
+		require.Equal(t, corev1alpha1.BuildpackMetadataList{
 			{
 				Id:      "test.builder",
 				Version: "test.version",

@@ -16,6 +16,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestRebuild(t *testing.T) {
@@ -94,15 +95,15 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 				Name: clusterBuilderName,
 			},
 			ServiceAccount: serviceAccountName,
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 					Revision: "master",
 				},
 			},
 			Cache:                cacheConfig,
-			ImageTaggingStrategy: buildapi.None,
-			Build: &buildapi.ImageBuild{
+			ImageTaggingStrategy: corev1alpha1.None,
+			Build: &corev1alpha1.ImageBuild{
 				Resources: expectedResources,
 			},
 		},

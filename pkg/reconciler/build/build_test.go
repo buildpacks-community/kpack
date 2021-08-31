@@ -88,7 +88,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		Spec: buildapi.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 			ServiceAccount: serviceAccountName,
-			Builder: buildapi.BuildBuilderSpec{
+			Builder: corev1alpha1.BuildBuilderSpec{
 				Image: "somebuilder/123@sha256:12334563ad",
 				ImagePullSecrets: []corev1.LocalObjectReference{
 					{Name: "some-image-secret"},
@@ -108,8 +108,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					corev1.ResourceMemory: resource.MustParse("128M"),
 				},
 			},
-			Source: buildapi.SourceConfig{
-				Git: &buildapi.Git{
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
 					URL:      "giturl.com/git.git",
 					Revision: "gitrev1234",
 				},
@@ -565,13 +565,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									PodName: "build-name-build-pod",
-									BuildMetadata: buildapi.BuildpackMetadataList{{
+									BuildMetadata: corev1alpha1.BuildpackMetadataList{{
 										Id:       "io.buildpack.executed",
 										Version:  "1.1",
 										Homepage: "mysupercoolsite.com",
 									}},
 									LatestImage: identifier,
-									Stack: buildapi.BuildStack{
+									Stack: corev1alpha1.BuildStack{
 										RunImage: "somerun/123@sha256:12334563ad",
 										ID:       "io.buildpacks.stacks.bionic",
 									},
@@ -651,7 +651,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildMetadata: buildapi.BuildpackMetadataList{{
+								BuildMetadata: corev1alpha1.BuildpackMetadataList{{
 									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
@@ -707,7 +707,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildMetadata: buildapi.BuildpackMetadataList{{
+								BuildMetadata: corev1alpha1.BuildpackMetadataList{{
 									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},

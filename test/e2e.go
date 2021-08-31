@@ -166,7 +166,7 @@ func prepareTestWorkspace(t *testing.T, ctx context.Context, clients *clients, c
 			Name: clusterStoreName,
 		},
 		Spec: buildapi.ClusterStoreSpec{
-			Sources: []buildapi.StoreImage{
+			Sources: []corev1alpha1.StoreImage{
 				{
 					Image: builderImage,
 				},
@@ -214,31 +214,31 @@ func prepareTestWorkspace(t *testing.T, ctx context.Context, clients *clients, c
 					Name: clusterStoreName,
 					Kind: "ClusterStore",
 				},
-				Order: []buildapi.OrderEntry{
+				Order: []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/nodejs",
 								},
 							},
 						},
 					},
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/bellsoft-liberica",
 								},
 							},
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/gradle",
 								},
 								Optional: true,
 							},
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/executable-jar",
 								},
 							},
@@ -267,31 +267,31 @@ func prepareTestWorkspace(t *testing.T, ctx context.Context, clients *clients, c
 					Name: clusterStoreName,
 					Kind: "ClusterStore",
 				},
-				Order: []buildapi.OrderEntry{
+				Order: []corev1alpha1.OrderEntry{
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/nodejs",
 								},
 							},
 						},
 					},
 					{
-						Group: []buildapi.BuildpackRef{
+						Group: []corev1alpha1.BuildpackRef{
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/bellsoft-liberica",
 								},
 							},
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/gradle",
 								},
 								Optional: true,
 							},
 							{
-								BuildpackInfo: buildapi.BuildpackInfo{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id: "paketo-buildpacks/executable-jar",
 								},
 							},

@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func NewConfigChange(oldConfig, newConfig Config) Change {
@@ -22,8 +23,8 @@ type configChange struct {
 type Config struct {
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Bindings  buildapi.Bindings           `json:"bindings,omitempty"`
-	Source    buildapi.SourceConfig       `json:"source,omitempty"`
+	Bindings  corev1alpha1.Bindings       `json:"bindings,omitempty"`
+	Source    corev1alpha1.SourceConfig   `json:"source,omitempty"`
 }
 
 func (c configChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonConfig }

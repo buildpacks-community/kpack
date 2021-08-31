@@ -24,14 +24,14 @@ func (b *DuckBuilder) Ready() bool {
 		(b.Generation == b.Status.ObservedGeneration)
 }
 
-func (b *DuckBuilder) BuildBuilderSpec() buildapi.BuildBuilderSpec {
-	return buildapi.BuildBuilderSpec{
+func (b *DuckBuilder) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
+	return corev1alpha1.BuildBuilderSpec{
 		Image:            b.Status.LatestImage,
 		ImagePullSecrets: b.Spec.ImagePullSecrets,
 	}
 }
 
-func (b *DuckBuilder) BuildpackMetadata() buildapi.BuildpackMetadataList {
+func (b *DuckBuilder) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
 	return b.Status.BuilderMetadata
 }
 

@@ -2,7 +2,8 @@ package cnb
 
 import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 type RemoteBuildpackInfo struct {
@@ -24,8 +25,8 @@ type RemoteBuildpackRef struct {
 	Layers                   []buildpackLayer
 }
 
-func (r RemoteBuildpackRef) buildpackRef() buildapi.BuildpackRef {
-	return buildapi.BuildpackRef{
+func (r RemoteBuildpackRef) buildpackRef() corev1alpha1.BuildpackRef {
+	return corev1alpha1.BuildpackRef{
 		BuildpackInfo: r.DescriptiveBuildpackInfo.BuildpackInfo,
 		Optional:      r.Optional,
 	}

@@ -5,51 +5,50 @@ import (
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 )
 
 type FakeStoreReader struct {
-	ReadStub        func(authn.Keychain, []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error)
+	ReadStub        func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)
 	readMutex       sync.RWMutex
 	readArgsForCall []struct {
 		arg1 authn.Keychain
-		arg2 []buildapi.StoreImage
+		arg2 []v1alpha1.StoreImage
 	}
 	readReturns struct {
-		result1 []buildapi.StoreBuildpack
+		result1 []v1alpha1.StoreBuildpack
 		result2 error
 	}
 	readReturnsOnCall map[int]struct {
-		result1 []buildapi.StoreBuildpack
+		result1 []v1alpha1.StoreBuildpack
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStoreReader) Read(arg1 authn.Keychain, arg2 []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error) {
-	var arg2Copy []buildapi.StoreImage
+func (fake *FakeStoreReader) Read(arg1 authn.Keychain, arg2 []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error) {
+	var arg2Copy []v1alpha1.StoreImage
 	if arg2 != nil {
-		arg2Copy = make([]buildapi.StoreImage, len(arg2))
+		arg2Copy = make([]v1alpha1.StoreImage, len(arg2))
 		copy(arg2Copy, arg2)
 	}
 	fake.readMutex.Lock()
 	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
 		arg1 authn.Keychain
-		arg2 []buildapi.StoreImage
+		arg2 []v1alpha1.StoreImage
 	}{arg1, arg2Copy})
-	stub := fake.ReadStub
-	fakeReturns := fake.readReturns
 	fake.recordInvocation("Read", []interface{}{arg1, arg2Copy})
 	fake.readMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2)
+	if fake.ReadStub != nil {
+		return fake.ReadStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.readReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -59,41 +58,41 @@ func (fake *FakeStoreReader) ReadCallCount() int {
 	return len(fake.readArgsForCall)
 }
 
-func (fake *FakeStoreReader) ReadCalls(stub func(authn.Keychain, []buildapi.StoreImage) ([]buildapi.StoreBuildpack, error)) {
+func (fake *FakeStoreReader) ReadCalls(stub func(authn.Keychain, []v1alpha1.StoreImage) ([]v1alpha1.StoreBuildpack, error)) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = stub
 }
 
-func (fake *FakeStoreReader) ReadArgsForCall(i int) (authn.Keychain, []buildapi.StoreImage) {
+func (fake *FakeStoreReader) ReadArgsForCall(i int) (authn.Keychain, []v1alpha1.StoreImage) {
 	fake.readMutex.RLock()
 	defer fake.readMutex.RUnlock()
 	argsForCall := fake.readArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStoreReader) ReadReturns(result1 []buildapi.StoreBuildpack, result2 error) {
+func (fake *FakeStoreReader) ReadReturns(result1 []v1alpha1.StoreBuildpack, result2 error) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = nil
 	fake.readReturns = struct {
-		result1 []buildapi.StoreBuildpack
+		result1 []v1alpha1.StoreBuildpack
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStoreReader) ReadReturnsOnCall(i int, result1 []buildapi.StoreBuildpack, result2 error) {
+func (fake *FakeStoreReader) ReadReturnsOnCall(i int, result1 []v1alpha1.StoreBuildpack, result2 error) {
 	fake.readMutex.Lock()
 	defer fake.readMutex.Unlock()
 	fake.ReadStub = nil
 	if fake.readReturnsOnCall == nil {
 		fake.readReturnsOnCall = make(map[int]struct {
-			result1 []buildapi.StoreBuildpack
+			result1 []v1alpha1.StoreBuildpack
 			result2 error
 		})
 	}
 	fake.readReturnsOnCall[i] = struct {
-		result1 []buildapi.StoreBuildpack
+		result1 []v1alpha1.StoreBuildpack
 		result2 error
 	}{result1, result2}
 }

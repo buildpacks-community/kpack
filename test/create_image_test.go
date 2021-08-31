@@ -15,6 +15,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestCreateImage(t *testing.T) {
@@ -48,20 +49,20 @@ func testCreateImage(ctx context.Context, cfg config, clients *clients) func(t *
 				},
 			}
 
-			imageSources := map[string]buildapi.SourceConfig{
+			imageSources := map[string]corev1alpha1.SourceConfig{
 				"test-git-image": {
-					Git: &buildapi.Git{
+					Git: &corev1alpha1.Git{
 						URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 						Revision: "master",
 					},
 				},
 				"test-blob-image": {
-					Blob: &buildapi.Blob{
+					Blob: &corev1alpha1.Blob{
 						URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 					},
 				},
 				"test-registry-image": {
-					Registry: &buildapi.Registry{
+					Registry: &corev1alpha1.Registry{
 						Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 					},
 				},
@@ -113,8 +114,8 @@ func testCreateImage(ctx context.Context, cfg config, clients *clients) func(t *
 											Size: &cacheSize,
 										},
 									},
-									ImageTaggingStrategy: buildapi.None,
-									Build: &buildapi.ImageBuild{
+									ImageTaggingStrategy: corev1alpha1.None,
+									Build: &corev1alpha1.ImageBuild{
 										Resources: expectedResources,
 									},
 								},

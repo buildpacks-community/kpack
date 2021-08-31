@@ -29,23 +29,14 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding":                    schema_pkg_apis_build_v1alpha1_Binding(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob":                       schema_pkg_apis_build_v1alpha1_Blob(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build":                      schema_pkg_apis_build_v1alpha1_Build(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec":           schema_pkg_apis_build_v1alpha1_BuildBuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildList":                  schema_pkg_apis_build_v1alpha1_BuildList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec":                  schema_pkg_apis_build_v1alpha1_BuildSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack":                 schema_pkg_apis_build_v1alpha1_BuildStack(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus":                schema_pkg_apis_build_v1alpha1_BuildStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Builder":                    schema_pkg_apis_build_v1alpha1_Builder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderList":                schema_pkg_apis_build_v1alpha1_BuilderList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderSpec":                schema_pkg_apis_build_v1alpha1_BuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus":              schema_pkg_apis_build_v1alpha1_BuilderStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackInfo":              schema_pkg_apis_build_v1alpha1_BuildpackInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata":          schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackRef":               schema_pkg_apis_build_v1alpha1_BuildpackRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackStack":             schema_pkg_apis_build_v1alpha1_BuildpackStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackageInfo":           schema_pkg_apis_build_v1alpha1_BuildpackageInfo(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilder":             schema_pkg_apis_build_v1alpha1_ClusterBuilder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderList":         schema_pkg_apis_build_v1alpha1_ClusterBuilderList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderSpec":         schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref),
@@ -59,36 +50,19 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreList":           schema_pkg_apis_build_v1alpha1_ClusterStoreList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreSpec":           schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Git":                        schema_pkg_apis_build_v1alpha1_Git(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Image":                      schema_pkg_apis_build_v1alpha1_Image(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild":                 schema_pkg_apis_build_v1alpha1_ImageBuild(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuilder":               schema_pkg_apis_build_v1alpha1_ImageBuilder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageList":                  schema_pkg_apis_build_v1alpha1_ImageList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec":                  schema_pkg_apis_build_v1alpha1_ImageSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus":                schema_pkg_apis_build_v1alpha1_ImageStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild":                  schema_pkg_apis_build_v1alpha1_LastBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec":      schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig":               schema_pkg_apis_build_v1alpha1_NotaryConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef":            schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config":             schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry":                 schema_pkg_apis_build_v1alpha1_OrderEntry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry":                   schema_pkg_apis_build_v1alpha1_Registry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource":         schema_pkg_apis_build_v1alpha1_ResolvedBlobSource(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedClusterStack":       schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedGitSource":          schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedRegistrySource":     schema_pkg_apis_build_v1alpha1_ResolvedRegistrySource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedSourceConfig":       schema_pkg_apis_build_v1alpha1_ResolvedSourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig":               schema_pkg_apis_build_v1alpha1_SourceConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolver":             schema_pkg_apis_build_v1alpha1_SourceResolver(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverList":         schema_pkg_apis_build_v1alpha1_SourceResolverList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverSpec":         schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverStatus":       schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreBuildpack":             schema_pkg_apis_build_v1alpha1_StoreBuildpack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage":                 schema_pkg_apis_build_v1alpha1_StoreImage(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding":                    schema_pkg_apis_build_v1alpha2_Binding(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Blob":                       schema_pkg_apis_build_v1alpha2_Blob(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Build":                      schema_pkg_apis_build_v1alpha2_Build(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec":           schema_pkg_apis_build_v1alpha2_BuildBuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache":                 schema_pkg_apis_build_v1alpha2_BuildCache(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig":           schema_pkg_apis_build_v1alpha2_BuildCacheConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildList":                  schema_pkg_apis_build_v1alpha2_BuildList(ref),
@@ -100,11 +74,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderList":                schema_pkg_apis_build_v1alpha2_BuilderList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderSpec":                schema_pkg_apis_build_v1alpha2_BuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus":              schema_pkg_apis_build_v1alpha2_BuilderStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackInfo":              schema_pkg_apis_build_v1alpha2_BuildpackInfo(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata":          schema_pkg_apis_build_v1alpha2_BuildpackMetadata(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackRef":               schema_pkg_apis_build_v1alpha2_BuildpackRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackStack":             schema_pkg_apis_build_v1alpha2_BuildpackStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackageInfo":           schema_pkg_apis_build_v1alpha2_BuildpackageInfo(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilder":             schema_pkg_apis_build_v1alpha2_ClusterBuilder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderList":         schema_pkg_apis_build_v1alpha2_ClusterBuilderList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderSpec":         schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref),
@@ -118,9 +87,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreList":           schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec":           schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Git":                        schema_pkg_apis_build_v1alpha2_Git(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                      schema_pkg_apis_build_v1alpha2_Image(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":                 schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":               schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig":           schema_pkg_apis_build_v1alpha2_ImageCacheConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageList":                  schema_pkg_apis_build_v1alpha2_ImageList(ref),
@@ -129,77 +96,38 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus":                schema_pkg_apis_build_v1alpha2_ImageStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild":                  schema_pkg_apis_build_v1alpha2_LastBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NamespacedBuilderSpec":      schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig":               schema_pkg_apis_build_v1alpha2_NotaryConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotarySecretRef":            schema_pkg_apis_build_v1alpha2_NotarySecretRef(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryV1Config":             schema_pkg_apis_build_v1alpha2_NotaryV1Config(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry":                 schema_pkg_apis_build_v1alpha2_OrderEntry(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Registry":                   schema_pkg_apis_build_v1alpha2_Registry(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.RegistryCache":              schema_pkg_apis_build_v1alpha2_RegistryCache(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedBlobSource":         schema_pkg_apis_build_v1alpha2_ResolvedBlobSource(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedClusterStack":       schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedGitSource":          schema_pkg_apis_build_v1alpha2_ResolvedGitSource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedRegistrySource":     schema_pkg_apis_build_v1alpha2_ResolvedRegistrySource(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedSourceConfig":       schema_pkg_apis_build_v1alpha2_ResolvedSourceConfig(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig":               schema_pkg_apis_build_v1alpha2_SourceConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolver":             schema_pkg_apis_build_v1alpha2_SourceResolver(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverList":         schema_pkg_apis_build_v1alpha2_SourceResolverList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverSpec":         schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverStatus":       schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreBuildpack":             schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref),
-		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage":                 schema_pkg_apis_build_v1alpha2_StoreImage(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding":                     schema_pkg_apis_core_v1alpha1_Binding(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Blob":                        schema_pkg_apis_core_v1alpha1_Blob(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec":            schema_pkg_apis_core_v1alpha1_BuildBuilderSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack":                  schema_pkg_apis_core_v1alpha1_BuildStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackInfo":               schema_pkg_apis_core_v1alpha1_BuildpackInfo(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata":           schema_pkg_apis_core_v1alpha1_BuildpackMetadata(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackRef":                schema_pkg_apis_core_v1alpha1_BuildpackRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStack":              schema_pkg_apis_core_v1alpha1_BuildpackStack(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackageInfo":            schema_pkg_apis_core_v1alpha1_BuildpackageInfo(ref),
 		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition":                   schema_pkg_apis_core_v1alpha1_Condition(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Git":                         schema_pkg_apis_core_v1alpha1_Git(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageBuild":                  schema_pkg_apis_core_v1alpha1_ImageBuild(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig":                schema_pkg_apis_core_v1alpha1_NotaryConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotarySecretRef":             schema_pkg_apis_core_v1alpha1_NotarySecretRef(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryV1Config":              schema_pkg_apis_core_v1alpha1_NotaryV1Config(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry":                  schema_pkg_apis_core_v1alpha1_OrderEntry(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Registry":                    schema_pkg_apis_core_v1alpha1_Registry(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedBlobSource":          schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedGitSource":           schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedRegistrySource":      schema_pkg_apis_core_v1alpha1_ResolvedRegistrySource(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig":        schema_pkg_apis_core_v1alpha1_ResolvedSourceConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig":                schema_pkg_apis_core_v1alpha1_SourceConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Status":                      schema_pkg_apis_core_v1alpha1_Status(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack":              schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref),
+		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage":                  schema_pkg_apis_core_v1alpha1_StoreImage(ref),
 		"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.VolatileTime":                schema_pkg_apis_core_v1alpha1_VolatileTime(ref),
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_Binding(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"metadataRef": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-						},
-					},
-					"secretRef": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_Blob(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url"},
-			},
-		},
 	}
 }
 
@@ -244,45 +172,6 @@ func schema_pkg_apis_build_v1alpha1_Build(ref common.ReferenceCallback) common.O
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -358,7 +247,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
 						},
 					},
 					"serviceAccount": {
@@ -369,7 +258,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cacheName": {
@@ -389,7 +278,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding"),
 									},
 								},
 							},
@@ -424,7 +313,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"notary": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
 				},
@@ -432,31 +321,7 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildStack(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"runImage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -498,7 +363,7 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -506,7 +371,7 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -560,7 +425,7 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
 	}
 }
 
@@ -687,7 +552,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderSpec(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -697,7 +562,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderSpec(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -739,7 +604,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -751,7 +616,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -759,7 +624,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -790,161 +655,7 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildpackInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildpackMetadata(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"homepage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id", "version"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildpackRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"optional": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildpackStack(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"mixins": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_BuildpackageInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"homepage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"},
 	}
 }
 
@@ -1071,7 +782,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -1086,7 +797,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -1445,7 +1156,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 									},
 								},
 							},
@@ -1455,7 +1166,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"},
 	}
 }
 
@@ -1502,7 +1213,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreBuildpack"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
 									},
 								},
 							},
@@ -1512,32 +1223,7 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreBuildpack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_Git(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"revision": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url", "revision"},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"},
 	}
 }
 
@@ -1582,92 +1268,6 @@ func schema_pkg_apis_build_v1alpha1_Image(ref common.ReferenceCallback) common.O
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"bindings": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding"),
-									},
-								},
-							},
-						},
-					},
-					"env": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
-									},
-								},
-							},
-						},
-					},
-					"resources": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Binding", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ImageBuilder(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
 	}
 }
 
@@ -1742,7 +1342,7 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cacheSize": {
@@ -1770,12 +1370,12 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"build": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageBuild"),
 						},
 					},
 					"notary": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
 				},
@@ -1783,7 +1383,7 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
 	}
 }
 
@@ -1926,7 +1526,7 @@ func schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -1942,167 +1542,7 @@ func schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_NotaryConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"v1": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotaryV1Config"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_NotarySecretRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_NotaryV1Config(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"secretRef": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef"),
-						},
-					},
-				},
-				Required: []string{"url", "secretRef"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NotarySecretRef"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_OrderEntry(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"group": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackRef"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackRef"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_Registry(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"image"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url"},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -2163,153 +1603,6 @@ func schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref common.ReferenceCal
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ResolvedGitSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"revision": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url", "revision", "type"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ResolvedRegistrySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"image"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_ResolvedSourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"git": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedGitSource"),
-						},
-					},
-					"blob": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource"),
-						},
-					},
-					"registry": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedRegistrySource"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedBlobSource", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedGitSource", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedRegistrySource"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_SourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"git": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Git"),
-						},
-					},
-					"blob": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob"),
-						},
-					},
-					"registry": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry"),
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Blob", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Git", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Registry"},
 	}
 }
 
@@ -2417,7 +1710,7 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref common.ReferenceCallb
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 				},
@@ -2425,7 +1718,7 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceConfig"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"},
 	}
 }
 
@@ -2463,133 +1756,14 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref common.ReferenceCal
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedSourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ResolvedSourceConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"buildpackage": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackageInfo"),
-						},
-					},
-					"storeImage": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage"),
-						},
-					},
-					"diffId": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"digest": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"size": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int64",
-						},
-					},
-					"api": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"homepage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"order": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry"),
-									},
-								},
-							},
-						},
-					},
-					"stacks": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackStack"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildpackageInfo", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.OrderEntry", "github.com/pivotal/kpack/pkg/apis/build/v1alpha1.StoreImage"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha1_StoreImage(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"},
 	}
 }
 
@@ -2620,25 +1794,6 @@ func schema_pkg_apis_build_v1alpha2_Binding(ref common.ReferenceCallback) common
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.LocalObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_Blob(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url"},
-			},
-		},
 	}
 }
 
@@ -2683,45 +1838,6 @@ func schema_pkg_apis_build_v1alpha2_Build(ref common.ReferenceCallback) common.O
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -2857,7 +1973,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
 						},
 					},
 					"serviceAccount": {
@@ -2868,7 +1984,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cache": {
@@ -2887,7 +2003,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding"),
 									},
 								},
 							},
@@ -2928,7 +2044,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"notary": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
 				},
@@ -2936,7 +2052,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -3002,7 +2118,7 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -3010,7 +2126,7 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -3070,7 +2186,7 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
 	}
 }
 
@@ -3197,7 +2313,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -3207,7 +2323,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -3249,7 +2365,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -3261,7 +2377,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -3269,7 +2385,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -3300,161 +2416,7 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildpackInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildpackMetadata(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"homepage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id", "version"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildpackRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"optional": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildpackStack(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"mixins": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_BuildpackageInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"homepage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"},
 	}
 }
 
@@ -3581,7 +2543,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -3596,7 +2558,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -3960,7 +2922,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 									},
 								},
 							},
@@ -3975,7 +2937,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -4022,7 +2984,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreBuildpack"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
 									},
 								},
 							},
@@ -4032,32 +2994,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreBuildpack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_Git(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"revision": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url", "revision"},
-			},
-		},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"},
 	}
 }
 
@@ -4102,59 +3039,6 @@ func schema_pkg_apis_build_v1alpha2_Image(ref common.ReferenceCallback) common.O
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"bindings": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding"),
-									},
-								},
-							},
-						},
-					},
-					"env": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
-									},
-								},
-							},
-						},
-					},
-					"resources": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Binding", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -4305,7 +3189,7 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cache": {
@@ -4339,12 +3223,12 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"build": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageBuild"),
 						},
 					},
 					"notary": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
 				},
@@ -4352,7 +3236,7 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -4502,7 +3386,7 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -4518,142 +3402,7 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_NotaryConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"v1": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryV1Config"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotaryV1Config"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_NotarySecretRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_NotaryV1Config(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"secretRef": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotarySecretRef"),
-						},
-					},
-				},
-				Required: []string{"url", "secretRef"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NotarySecretRef"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_OrderEntry(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"group": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackRef"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackRef"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_Registry(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"image"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -4671,31 +3420,6 @@ func schema_pkg_apis_build_v1alpha2_RegistryCache(ref common.ReferenceCallback) 
 					},
 				},
 				Required: []string{"tag"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_ResolvedBlobSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url"},
 			},
 		},
 	}
@@ -4758,153 +3482,6 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref common.ReferenceCal
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_ResolvedGitSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"url": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"revision": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"url", "revision", "type"},
-			},
-		},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_ResolvedRegistrySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"image": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"imagePullSecrets": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"image"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_ResolvedSourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"git": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedGitSource"),
-						},
-					},
-					"blob": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedBlobSource"),
-						},
-					},
-					"registry": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedRegistrySource"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedBlobSource", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedGitSource", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedRegistrySource"},
-	}
-}
-
-func schema_pkg_apis_build_v1alpha2_SourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"git": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Git"),
-						},
-					},
-					"blob": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Blob"),
-						},
-					},
-					"registry": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Registry"),
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Blob", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Git", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Registry"},
 	}
 }
 
@@ -5012,7 +3589,7 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref common.ReferenceCallb
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 				},
@@ -5020,7 +3597,7 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceConfig"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"},
 	}
 }
 
@@ -5058,18 +3635,767 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref common.ReferenceCal
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedSourceConfig"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedSourceConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"},
 	}
 }
 
-func schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_core_v1alpha1_Binding(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"metadataRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"url"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildBuilderSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"imagePullSecrets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type":       "",
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildStack(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"runImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildpackInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"id"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildpackMetadata(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"homepage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"id", "version"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildpackRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"optional": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"id"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildpackStack(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"mixins": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"id"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_BuildpackageInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"homepage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Conditions defines a readiness condition for a Knative resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type of condition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status of the condition, one of True, False, Unknown.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"severity": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Severity with which to treat failures of this type of condition. When this is not specified, it defaults to Error.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
+							Type: []string{"string"}, Format: "",
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The reason for the condition's last transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A human readable message indicating details about the transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"type", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.VolatileTime"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_Git(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"revision": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"url", "revision"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_ImageBuild(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"bindings": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding"),
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+									},
+								},
+							},
+						},
+					},
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_NotaryConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"v1": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryV1Config"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryV1Config"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_NotarySecretRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_NotaryV1Config(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"secretRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotarySecretRef"),
+						},
+					},
+				},
+				Required: []string{"url", "secretRef"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotarySecretRef"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_OrderEntry(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"group": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackRef"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackRef"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_Registry(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"imagePullSecrets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type":       "",
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"image"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"url"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"revision": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"url", "revision", "type"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_ResolvedRegistrySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"imagePullSecrets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type":       "",
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"image"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_ResolvedSourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"git": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedGitSource"),
+						},
+					},
+					"blob": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedBlobSource"),
+						},
+					},
+					"registry": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedRegistrySource"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedBlobSource", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedGitSource", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedRegistrySource"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_SourceConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"git": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Git"),
+						},
+					},
+					"blob": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Blob"),
+						},
+					},
+					"registry": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Registry"),
+						},
+					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Blob", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Git", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Registry"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_Status(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Status shows how we expect folks to embed Conditions in their Status field. WARNING: Adding fields to this struct will add them to all Knative resources.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"observedGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions the latest available observations of a resource's current state.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
+	}
+}
+
+func schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -5089,12 +4415,12 @@ func schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref common.ReferenceCallback)
 					},
 					"buildpackage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackageInfo"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackageInfo"),
 						},
 					},
 					"storeImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage"),
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 						},
 					},
 					"diffId": {
@@ -5138,7 +4464,7 @@ func schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -5155,7 +4481,7 @@ func schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackStack"),
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStack"),
 									},
 								},
 							},
@@ -5166,11 +4492,11 @@ func schema_pkg_apis_build_v1alpha2_StoreBuildpack(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackStack", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildpackageInfo", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.OrderEntry", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.StoreImage"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackageInfo", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"},
 	}
 }
 
-func schema_pkg_apis_build_v1alpha2_StoreImage(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_core_v1alpha1_StoreImage(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -5185,104 +4511,6 @@ func schema_pkg_apis_build_v1alpha2_StoreImage(ref common.ReferenceCallback) com
 				},
 			},
 		},
-	}
-}
-
-func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Conditions defines a readiness condition for a Knative resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of condition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status of the condition, one of True, False, Unknown.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"severity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Severity with which to treat failures of this type of condition. When this is not specified, it defaults to Error.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-							Type:        []string{"string"}, Format: "",
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The reason for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A human readable message indicating details about the transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.VolatileTime"},
-	}
-}
-
-func schema_pkg_apis_core_v1alpha1_Status(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Status shows how we expect folks to embed Conditions in their Status field. WARNING: Adding fields to this struct will add them to all Knative resources.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"observedGeneration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"conditions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-patch-merge-key": "type",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Conditions the latest available observations of a resource's current state.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
 	}
 }
 
