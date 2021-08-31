@@ -242,18 +242,6 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, testV1alpha2Image, v1alpha2Image)
 		})
 
-		it("can't convert new fields to v1alpha1", func() {
-			v1alpha2Image.Spec.ProjectDescriptorPath = "some-path"
-			v1alpha2Image.Spec.Cache.Registry = &RegistryCache{
-				Tag: "some-cache-tag",
-			}
-
-			testV1alpha1Image := &v1alpha1.Image{}
-			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
-			require.NoError(t, err)
-			require.Equal(t, testV1alpha1Image, v1alpha1Image)
-		})
-
 		it("handles null values", func() {
 			v1alpha2Image.Spec.Build = nil
 			v1alpha2Image.Spec.Notary = nil

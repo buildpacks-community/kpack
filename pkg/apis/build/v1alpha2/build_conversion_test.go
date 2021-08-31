@@ -224,22 +224,6 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, testV1alpha2Build, v1alpha2Build)
 		})
 
-		it("can't convert new fields to v1alpha1", func() {
-			v1alpha2Build.Spec.ProjectDescriptorPath = "some-path"
-			v1alpha2Build.Spec.Cache.Registry = &RegistryCache{
-				Tag: "some-cache-tag",
-			}
-			v1alpha2Build.Spec.LastBuild.Cache = BuildCache{
-				Image: "some-cache-image",
-			}
-			v1alpha2Build.Status.LatestCacheImage = "some-latest-cache"
-
-			testV1alpha1Build := &v1alpha1.Build{}
-			err := v1alpha2Build.ConvertTo(context.TODO(), testV1alpha1Build)
-			require.NoError(t, err)
-			require.Equal(t, testV1alpha1Build, v1alpha1Build)
-		})
-
 		it("handles null values", func() {
 			v1alpha2Build.Spec.LastBuild = nil
 			v1alpha2Build.Spec.Notary = nil
