@@ -2,8 +2,8 @@
 
 ### Prerequisites
 
-  * [libgit2](https://libgit2.org/)
-    * macOS: `brew instal libgit2`
+  * [libgit2](https://libgit2.org/) >= 1.1.0
+    * macOS: `brew install libgit2`
 
 ## Unit Tests
 
