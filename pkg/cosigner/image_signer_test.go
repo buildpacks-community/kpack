@@ -119,6 +119,21 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
 		})
+
+		it("errors when signing fails", func() {
+			cliSignCmdCallCount := 0
+
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmdCallCount++
+				return fmt.Errorf("fake error")
+			}
+
+			expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/secret-name-1/cosign.key: fake error", secretLocation)
+			err := signer.Sign(reportPath, nil)
+			assert.Error(t, err)
+			assert.Equal(t, expectedErrorMessage, err.Error())
+			assert.Equal(t, 1, cliSignCmdCallCount)
+		})
 	})
 }
 
