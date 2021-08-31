@@ -13,10 +13,6 @@ import (
 const defaultProjectDescriptorPath = "project.toml"
 
 func ProcessProjectDescriptor(appDir, descriptorPath, platformDir string, logger *log.Logger) error {
-	var (
-		d descriptor
-	)
-
 	file := filepath.Join(appDir, defaultProjectDescriptorPath)
 	if descriptorPath != "" {
 		file = filepath.Join(appDir, descriptorPath)
@@ -31,24 +27,56 @@ func ProcessProjectDescriptor(appDir, descriptorPath, platformDir string, logger
 		return fmt.Errorf("unable to determine if project descriptor file exists: %w", err)
 	}
 
-	_, err := toml.DecodeFile(file, &d)
+	d, err := parseProjectDescriptor(file, logger)
 	if err != nil {
 		return err
 	}
-	if d.Build.Buildpacks != nil {
+	if d.IO.Buildpacks.Group != nil {
 		logger.Println("info: buildpacks provided in project descriptor file will be ignored")
 	}
 
-	if d.Build.Builder != "" {
+	if d.IO.Buildpacks.Builder != "" {
 		logger.Println("info: builder provided in project descriptor file will be ignored")
 	}
-	if err := processFiles(appDir, d); err != nil {
+	if err := processFiles(appDir, d.IO.Buildpacks.build); err != nil {
 		return err
 	}
-	return serializeEnvVars(d.Build.Env, platformDir)
+	return serializeEnvVars(d.IO.Buildpacks.Env, platformDir)
 }
 
-func processFiles(appDir string, d descriptor) error {
+func parseProjectDescriptor(file string, logger *log.Logger) (descriptorV2, error) {
+	var d descriptorV2
+	if _, err := toml.DecodeFile(file, &d); err != nil {
+		return descriptorV2{}, err
+	}
+
+	switch sv := d.Project.SchemaVersion; sv {
+	case "0.2":
+		return d, nil
+	case "": // v1 descriptor
+		var dV1 descriptorV1
+		if _, err := toml.DecodeFile(file, &dV1); err != nil {
+			return descriptorV2{}, err
+		}
+		return v1ToV2(dV1), nil
+	default:
+		logger.Println(fmt.Sprintf("warning: project descriptor version %s is unsupported and %s will be ignored", sv, file))
+		return descriptorV2{}, nil
+	}
+}
+
+func v1ToV2(v1 descriptorV1) descriptorV2 {
+	return descriptorV2{
+		IO: ioTable{
+			Buildpacks: cnbTableV2{
+				build: v1.Build.build,
+				Group: v1.Build.Buildpacks,
+			},
+		},
+	}
+}
+
+func processFiles(appDir string, d build) error {
 	fileFilter, err := getFileFilter(d)
 	if err != nil {
 		return err
@@ -77,23 +105,48 @@ func processFiles(appDir string, d descriptor) error {
 	})
 }
 
-func getFileFilter(d descriptor) (func(string) bool, error) {
-	if d.Build.Exclude != nil && d.Build.Include != nil {
-		return nil, fmt.Errorf("%s: cannot have both include and exclude defined", defaultProjectDescriptorPath)
+func getFileFilter(d build) (func(string) bool, error) {
+	if d.Exclude != nil && d.Include != nil {
+		return nil, fmt.Errorf("project descriptor cannot have both include and exclude defined")
 	}
 
-	if len(d.Build.Exclude) > 0 {
-		excludes := ignore.CompileIgnoreLines(d.Build.Exclude...)
+	if len(d.Exclude) > 0 {
+		excludes := ignore.CompileIgnoreLines(d.Exclude...)
 		return func(fileName string) bool {
 			return !excludes.MatchesPath(fileName)
 		}, nil
 	}
-	if len(d.Build.Include) > 0 {
-		includes := ignore.CompileIgnoreLines(d.Build.Include...)
+	if len(d.Include) > 0 {
+		includes := ignore.CompileIgnoreLines(d.Include...)
 		return includes.MatchesPath, nil
 	}
 
 	return nil, nil
+}
+
+type descriptorV2 struct {
+	Project project `toml:"_"`
+	IO      ioTable `toml:"io"`
+}
+
+type project struct {
+	SchemaVersion string `toml:"schema-version"`
+}
+
+type ioTable struct {
+	Buildpacks cnbTableV2 `toml:"buildpacks"`
+}
+
+type cnbTableV2 struct {
+	build `toml:",inline"`
+	Group []buildpack `toml:"group"`
+}
+
+type build struct {
+	Include []string      `toml:"include"`
+	Exclude []string      `toml:"exclude"`
+	Builder string        `toml:"builder"`
+	Env     []envVariable `toml:"env"`
 }
 
 type buildpack struct {
@@ -102,14 +155,11 @@ type buildpack struct {
 	Uri     string `json:"uri" toml:"uri"`
 }
 
-type build struct {
-	Include    []string      `toml:"include"`
-	Exclude    []string      `toml:"exclude"`
-	Buildpacks []buildpack   `toml:"buildpacks"`
-	Builder    string        `toml:"builder"`
-	Env        []envVariable `toml:"env"`
+type descriptorV1 struct {
+	Build cnbTableV1 `toml:"build"`
 }
 
-type descriptor struct {
-	Build build `toml:"build"`
+type cnbTableV1 struct {
+	build      `toml:",inline"`
+	Buildpacks []buildpack `toml:"buildpacks"`
 }

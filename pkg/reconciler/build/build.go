@@ -31,6 +31,7 @@ const (
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
 	GetBuiltImage(context.Context, *buildapi.Build) (cnb.BuiltImage, error)
+	GetCacheImage(context.Context, *buildapi.Build) (string, error)
 }
 
 type PodGenerator interface {
@@ -110,8 +111,14 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 			return err
 		}
 
+		cacheImageId, err := c.MetadataRetriever.GetCacheImage(ctx, build)
+		if err != nil {
+			return err
+		}
+
 		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
 		build.Status.LatestImage = image.Identifier
+		build.Status.LatestCacheImage = cacheImageId
 		build.Status.Stack.RunImage = image.Stack.RunImage
 		build.Status.Stack.ID = image.Stack.ID
 	}

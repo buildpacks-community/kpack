@@ -788,7 +788,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 							},
 							Platform: APIVersions{
 								Deprecated: []string{"0.1"},
-								Supported:  []string{"0.2", "0.6", "0.7"},
+								Supported:  []string{"0.2", "0.7"},
 							},
 						},
 					},
@@ -798,7 +798,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				lifecycleProvider.image = lifecycleImg
 
 				_, err = subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
-				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.6, 0.7, expecting one of: 0.3, 0.4, 0.5")
+				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.7, expecting one of: 0.3, 0.4, 0.5, 0.6")
 			})
 		})
 	})

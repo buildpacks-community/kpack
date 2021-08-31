@@ -24,6 +24,7 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.ListNotEmpty(bs.Tags, "tags").
 		Also(validate.Tags(bs.Tags)).
+		Also(bs.Cache.Validate(ctx).ViaField("cache")).
 		Also(bs.Builder.Validate(ctx).ViaField("builder")).
 		Also(bs.Source.Validate(ctx).ViaField("source")).
 		Also(bs.Bindings.Validate(ctx).ViaField("bindings")).
@@ -109,4 +110,12 @@ func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
 	}
 
 	return validate.Image(lb.Image)
+}
+
+func (c *BuildCacheConfig) Validate(context context.Context) *apis.FieldError {
+	if c != nil && c.Volume != nil && c.Registry != nil {
+		return apis.ErrGeneric("only one type of cache can be specified", "volume", "registry")
+	}
+
+	return nil
 }

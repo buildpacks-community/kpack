@@ -5514,9 +5514,6 @@
     },
     "kpack.build.v1alpha2.Binding": {
       "type": "object",
-      "required": [
-        "name"
-      ],
       "properties": {
         "metadataRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
@@ -5582,6 +5579,25 @@
         }
       }
     },
+    "kpack.build.v1alpha2.BuildCache": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildCacheConfig": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.RegistryCache"
+        },
+        "volume": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildPersistentVolumeCache"
+        }
+      }
+    },
     "kpack.build.v1alpha2.BuildList": {
       "type": "object",
       "required": [
@@ -5608,6 +5624,14 @@
         }
       }
     },
+    "kpack.build.v1alpha2.BuildPersistentVolumeCache": {
+      "type": "object",
+      "properties": {
+        "persistentVolumeClaimName": {
+          "type": "string"
+        }
+      }
+    },
     "kpack.build.v1alpha2.BuildSpec": {
       "type": "object",
       "required": [
@@ -5624,8 +5648,8 @@
         "builder": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildBuilderSpec"
         },
-        "cacheName": {
-          "type": "string"
+        "cache": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildCacheConfig"
         },
         "env": {
           "type": "array",
@@ -5639,6 +5663,9 @@
         },
         "notary": {
           "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
+        },
+        "projectDescriptorPath": {
+          "type": "string"
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
@@ -5686,6 +5713,9 @@
           },
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "latestCacheImage": {
+          "type": "string"
         },
         "latestImage": {
           "type": "string"
@@ -6058,6 +6088,9 @@
         },
         "runImage": {
           "$ref": "#/definitions/kpack.build.v1alpha2.ClusterStackSpecImage"
+        },
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         }
       }
     },
@@ -6178,6 +6211,9 @@
     "kpack.build.v1alpha2.ClusterStoreSpec": {
       "type": "object",
       "properties": {
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "sources": {
           "type": "array",
           "items": {
@@ -6294,6 +6330,17 @@
         }
       }
     },
+    "kpack.build.v1alpha2.ImageCacheConfig": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.RegistryCache"
+        },
+        "volume": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImagePersistentVolumeCache"
+        }
+      }
+    },
     "kpack.build.v1alpha2.ImageList": {
       "type": "object",
       "required": [
@@ -6320,6 +6367,14 @@
         }
       }
     },
+    "kpack.build.v1alpha2.ImagePersistentVolumeCache": {
+      "type": "object",
+      "properties": {
+        "size": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        }
+      }
+    },
     "kpack.build.v1alpha2.ImageSpec": {
       "type": "object",
       "required": [
@@ -6333,8 +6388,8 @@
         "builder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
         },
-        "cacheSize": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        "cache": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImageCacheConfig"
         },
         "failedBuildHistoryLimit": {
           "type": "integer",
@@ -6345,6 +6400,9 @@
         },
         "notary": {
           "$ref": "#/definitions/kpack.build.v1alpha2.NotaryConfig"
+        },
+        "projectDescriptorPath": {
+          "type": "string"
         },
         "serviceAccount": {
           "type": "string"
@@ -6406,6 +6464,9 @@
     "kpack.build.v1alpha2.LastBuild": {
       "type": "object",
       "properties": {
+        "cache": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildCache"
+        },
         "image": {
           "type": "string"
         },
@@ -6501,6 +6562,17 @@
           "x-kubernetes-list-type": "",
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.RegistryCache": {
+      "type": "object",
+      "required": [
+        "tag"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string"
         }
       }
     },

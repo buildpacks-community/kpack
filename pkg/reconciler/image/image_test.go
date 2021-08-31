@@ -391,9 +391,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("reconciling build caches", func() {
 			cacheSize := resource.MustParse("1.5")
+			image.Spec.Cache = &buildapi.ImageCacheConfig{
+				Volume: &buildapi.ImagePersistentVolumeCache{
+					Size: &cacheSize,
+				},
+			}
 
 			it("creates a cache if requested", func() {
-				image.Spec.CacheSize = &cacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -444,7 +448,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not create a cache if a cache already exists", func() {
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = image.CacheName()
 
 				rt.Test(rtesting.TableRow{
@@ -464,7 +468,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 				image.Status.BuildCacheName = imageCacheName
 				newCacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &newCacheSize
+				image.Spec.Cache.Volume.Size = &newCacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -520,7 +524,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("updates build cache if desired labels change", func() {
 				var imageCacheName = image.CacheName()
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = imageCacheName
 				cache := image.BuildCache()
 
@@ -565,7 +569,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("deletes a cache if already exists and not requested", func() {
 				image.Status.BuildCacheName = image.CacheName()
-				image.Spec.CacheSize = nil
+				image.Spec.Cache.Volume.Size = nil
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -713,6 +717,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &buildapi.BuildCacheConfig{},
 								Source: buildapi.SourceConfig{
 									Git: &buildapi.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -802,6 +807,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &buildapi.BuildCacheConfig{},
 								Source: buildapi.SourceConfig{
 									Git: &buildapi.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -891,6 +897,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: builder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &buildapi.BuildCacheConfig{},
 								Source: buildapi.SourceConfig{
 									Git: &buildapi.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -981,6 +988,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Image: clusterBuilder.Status.LatestImage,
 								},
 								ServiceAccount: image.Spec.ServiceAccount,
+								Cache:          &buildapi.BuildCacheConfig{},
 								Source: buildapi.SourceConfig{
 									Git: &buildapi.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1013,7 +1021,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a desired build cache", func() {
 				cacheSize := resource.MustParse("2.5")
-				image.Spec.CacheSize = &cacheSize
+				image.Spec.Cache = &buildapi.ImageCacheConfig{
+					Volume: &buildapi.ImagePersistentVolumeCache{
+						Size: &cacheSize,
+					},
+				}
 				image.Status.BuildCacheName = image.CacheName()
 
 				sourceResolver := resolvedSourceResolver(image)
@@ -1075,7 +1087,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								CacheName: image.CacheName(),
+								Cache: &buildapi.BuildCacheConfig{
+									Volume: &buildapi.BuildPersistentVolumeCache{
+										ClaimName: image.CacheName(),
+									},
+								},
 							},
 						},
 					},
@@ -1217,6 +1233,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1342,6 +1359,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1501,6 +1519,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1655,6 +1674,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1799,6 +1819,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
+								Cache: &buildapi.BuildCacheConfig{},
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
