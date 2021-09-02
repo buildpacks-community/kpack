@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/lifecycle"
 	"github.com/pivotal/kpack/pkg/cosigner"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -47,6 +49,12 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	var report lifecycle.ExportReport
+	_, err := toml.DecodeFile(reportFilePath, &report)
+	if err != nil {
+		logger.Fatalf("toml decode: %v", err)
+	}
 
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
 	if err != nil {
@@ -89,7 +97,7 @@ func main() {
 	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)
 	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
 
-	if err := cosignSigner.Sign(reportFilePath, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
+	if err := cosignSigner.Sign(report, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 
@@ -99,7 +107,7 @@ func main() {
 			Client:  &registry.Client{},
 			Factory: &notary.RemoteRepositoryFactory{},
 		}
-		if err := signer.Sign(notaryV1URL, notarySecretDir, reportFilePath, creds); err != nil {
+		if err := signer.Sign(notaryV1URL, notarySecretDir, report, creds); err != nil {
 			logger.Fatal(err)
 		}
 	}

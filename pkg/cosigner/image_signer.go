@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
@@ -34,13 +33,7 @@ func NewImageSigner(logger *log.Logger) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(reportFilePath string, annotations map[string]interface{}, cosignRepositories map[string]interface{}, cosignDockerMediaTypes map[string]interface{}) error {
-	var report lifecycle.ExportReport
-	_, err := toml.DecodeFile(reportFilePath, &report)
-	if err != nil {
-		return fmt.Errorf("toml decode: %v", err)
-	}
-
+func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string]interface{}, cosignRepositories map[string]interface{}, cosignDockerMediaTypes map[string]interface{}) error {
 	if len(report.Image.Tags) < 1 {
 		s.Logger.Println("no image tag to sign")
 		return nil

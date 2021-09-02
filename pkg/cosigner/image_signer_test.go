@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/lifecycle"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 	"github.com/stretchr/testify/assert"
@@ -21,8 +23,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
 		logger = log.New(ioutil.Discard, "", 0)
 
-		signer     = NewImageSigner(logger)
-		reportPath string
+		signer = NewImageSigner(logger)
+		report lifecycle.ExportReport
 	)
 
 	when("#Sign", func() {
@@ -30,7 +32,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			// Override secretLocation for test
 			secretLocation = createCosignKeyFiles(t)
 
-			reportPath = createReportToml(t, secretLocation)
+			report = createReportToml(t, secretLocation)
 
 			os.Unsetenv(cosignRepositoryEnv)
 			os.Unsetenv(cosignDockerMediaTypesEnv)
@@ -53,7 +55,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, nil, nil, nil)
+			err := signer.Sign(report, nil, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -93,7 +95,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, nil, nil, nil)
+			err := signer.Sign(report, nil, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -117,7 +119,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, expectedAnnotation, nil, nil)
+			err := signer.Sign(report, expectedAnnotation, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -132,7 +134,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/secret-name-1/cosign.key: fake error", secretLocation)
-			err := signer.Sign(reportPath, nil, nil, nil)
+			err := signer.Sign(report, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Equal(t, expectedErrorMessage, err.Error())
 			assert.Equal(t, 1, cliSignCmdCallCount)
@@ -157,7 +159,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				"secret-name-1": "registry.example.com/fakeproject",
 			}
 
-			err := signer.Sign(reportPath, nil, cosignRepositories, nil)
+			err := signer.Sign(report, nil, cosignRepositories, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -184,7 +186,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				"secret-name-1": "1",
 			}
 
-			err := signer.Sign(reportPath, nil, nil, cosignDockerMediaTypes)
+			err := signer.Sign(report, nil, nil, cosignDockerMediaTypes)
 			assert.Nil(t, err)
 			assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -214,7 +216,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				"secret-name-2": "1",
 			}
 
-			err := signer.Sign(reportPath, nil, cosignRepositories, cosignDockerMediaTypes)
+			err := signer.Sign(report, nil, cosignRepositories, cosignDockerMediaTypes)
 			assert.Nil(t, err)
 			assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -236,15 +238,12 @@ func createCosignKeyFiles(t *testing.T) string {
 	return secretLocation
 }
 
-func createReportToml(t *testing.T, secretLocation string) string {
-	reportPath := fmt.Sprintf("%s/report.toml", secretLocation)
-	reportFile, err := os.Create(reportPath)
+func createReportToml(t *testing.T, secretLocation string) lifecycle.ExportReport {
+	var report lifecycle.ExportReport
+	_, err := toml.Decode(`[image]
+	tags = ["example-registry.io/test:latest", "example-registry.io/test:other-tag"]`, &report)
 	assert.Nil(t, err)
-	_, err = reportFile.WriteString(`[image]
-		tags = ["example-registry.io/test:latest", "example-registry.io/test:other-tag"]`)
-	assert.Nil(t, err)
-
-	return reportPath
+	return report
 }
 
 func assertUnset(t *testing.T, envName string, msg ...string) {

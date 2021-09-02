@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -41,13 +40,7 @@ type ImageSigner struct {
 	Factory RepositoryFactory
 }
 
-func (s *ImageSigner) Sign(url, notarySecretDir, reportFilePath string, keychain authn.Keychain) error {
-	var report lifecycle.ExportReport
-	_, err := toml.DecodeFile(reportFilePath, &report)
-	if err != nil {
-		return err
-	}
-
+func (s *ImageSigner) Sign(url, notarySecretDir string, report lifecycle.ExportReport, keychain authn.Keychain) error {
 	gun, targets, err := s.makeGUNAndTargets(report, keychain)
 	if err != nil {
 		return err
