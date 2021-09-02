@@ -157,7 +157,9 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 		return nil, err
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerAndCosignSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
+	cosignVolumes, _, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+	secretVolumes = append(secretVolumes, cosignVolumes...)
 
 	bindingVolumes, bindingVolumeMounts := b.setupBindings()
 
@@ -547,7 +549,9 @@ func (b *Build) notarySecretVolume() corev1.Volume {
 }
 
 func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config BuildPodBuilderConfig) (*corev1.Pod, error) {
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerAndCosignSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
+	cosignVolumes, _, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+	secretVolumes = append(secretVolumes, cosignVolumes...)
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -624,16 +628,12 @@ func (b *Build) cacheVolume(os string) []corev1.Volume {
 	}}
 }
 
-func gitAndDockerAndCosignSecrets(secret corev1.Secret) bool {
-	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret) || cosignSecrets(secret)
+func gitAndDockerSecrets(secret corev1.Secret) bool {
+	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret)
 }
 
 func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
-}
-
-func dockerAndCosignSecrets(secret corev1.Secret) bool {
-	return dockerSecrets(secret) || cosignSecrets(secret)
 }
 
 func cosignSecrets(secret corev1.Secret) bool {
