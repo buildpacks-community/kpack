@@ -24,24 +24,24 @@ const (
 )
 
 var (
-	buildNumber             string
-	buildTimestamp          string
 	notaryV1URL             string
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	cosignAnnotations       flaghelpers.CredentialsFlags
+	cosignRepositories      flaghelpers.CredentialsFlags
+	cosignDockerMediaTypes  flaghelpers.CredentialsFlags
 	logger                  *log.Logger
 )
 
 func init() {
-	flag.StringVar(&buildNumber, "build-number", "1", "Build number")
-	flag.StringVar(&buildTimestamp, "build-timestamp", "", "Build timestamp")
 	flag.StringVar(&notaryV1URL, "notary-v1-url", "", "Notary V1 server url")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&cosignAnnotations, "cosign-annotations", "Cosign custom signing annotations")
+	flag.Var(&cosignRepositories, "cosign-repositories", "Cosign signing repository of the form 'secretname=registry.example.com/project'")
+	flag.Var(&cosignDockerMediaTypes, "cosign-docker-media-types", "Cosign signing with legacy docker media types of the form 'secretname=1'")
 	logger = log.New(os.Stdout, "", 0)
 }
 
@@ -85,24 +85,11 @@ func main() {
 		Logger: logger,
 	}
 
-	annotations := map[string]interface{}{
-		buildNumberKey:    buildNumber,
-		buildTimestampKey: buildTimestamp,
-	}
+	annotations := mapKeyValueArgs(cosignAnnotations)
+	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)
+	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
 
-	for _, annotation := range cosignAnnotations {
-		splitAnnotation := strings.Split(annotation, "=")
-
-		if len(splitAnnotation) != 2 {
-			logger.Fatalf("cosign annotation not formatted correctly: %s", annotation)
-		}
-
-		annotationKey := splitAnnotation[0]
-		annotationValue := splitAnnotation[1]
-		annotations[annotationKey] = annotationValue
-	}
-
-	if err := cosignSigner.Sign(reportFilePath, annotations); err != nil {
+	if err := cosignSigner.Sign(reportFilePath, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 
@@ -118,4 +105,23 @@ func main() {
 	}
 
 	logger.Println("Build successful")
+}
+
+func mapKeyValueArgs(args flaghelpers.CredentialsFlags) map[string]interface{} {
+	overrides := make(map[string]interface{})
+
+	for _, arg := range args {
+		splitArg := strings.Split(arg, "=")
+
+		if len(splitArg) != 2 {
+			logger.Fatalf("argument not formatted as -arg=key=value: %s", arg)
+		}
+
+		key := splitArg[0]
+		value := splitArg[1]
+
+		overrides[key] = value
+	}
+
+	return overrides
 }

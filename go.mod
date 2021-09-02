@@ -37,10 +37,9 @@ require (
 	knative.dev/pkg v0.0.0-20210819054404-bda81c029160
 )
 
-replace github.com/prometheus/common => github.com/prometheus/common v0.26.0
-
-replace k8s.io/client-go => k8s.io/client-go v0.20.7
-
-replace k8s.io/api => k8s.io/api v0.20.7
-
-replace github.com/tj/assert => github.com/tj/assert v0.0.3
+replace (
+	github.com/prometheus/common => github.com/prometheus/common v0.26.0
+	k8s.io/client-go => k8s.io/client-go v0.20.7
+	k8s.io/api => k8s.io/api v0.20.7
+	github.com/tj/assert => github.com/tj/assert v0.0.3
+)

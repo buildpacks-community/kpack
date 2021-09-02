@@ -16,13 +16,15 @@ import (
 )
 
 const (
-	SecretTemplateName             = "secret-volume-%s"
-	SecretPathName                 = "/var/build-secrets/%s"
-	BuildLabel                     = "kpack.io/build"
-	DOCKERSecretAnnotationPrefix   = "kpack.io/docker"
-	GITSecretAnnotationPrefix      = "kpack.io/git"
-	COSIGNSecretDataCosignKey      = "cosign.key"
-	COSIGNSecretDataCosignPassword = "cosign.password"
+	SecretTemplateName                     = "secret-volume-%s"
+	SecretPathName                         = "/var/build-secrets/%s"
+	BuildLabel                             = "kpack.io/build"
+	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
+	GITSecretAnnotationPrefix              = "kpack.io/git"
+	COSIGNRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
+	COSIGNDockerMediaTypesAnnotationPrefix = "kpack.io/cosign.docker-media-types"
+	COSIGNSecretDataCosignKey              = "cosign.key"
+	COSIGNSecretDataCosignPassword         = "cosign.password"
 
 	cacheDirName              = "cache-dir"
 	layersDirName             = "layers-dir"
@@ -662,7 +664,13 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
 		case string(secret.Data[COSIGNSecretDataCosignKey]) != "":
-			// Allow cosign secrets with cosign.key set
+			if cosignRepository := secret.ObjectMeta.Annotations[COSIGNRespositoryAnnotationPrefix]; cosignRepository != "" {
+				args = append(args, fmt.Sprintf("-cosign-repositories=%s=%s", secret.Name, cosignRepository))
+			}
+
+			if cosignDockerMediaType := secret.ObjectMeta.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
+				args = append(args, fmt.Sprintf("-cosign-docker-media-types=%s=%s", secret.Name, cosignDockerMediaType))
+			}
 		default:
 			//ignoring secret
 			continue
@@ -832,7 +840,7 @@ func (b *Build) completionContainer(secrets []corev1.Secret, completionImage str
 	}
 	args := []string{}
 
-	_, cosignVolumeMounts, _ := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
+	_, cosignVolumeMounts, cosignArgs := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
 	hasCosign := len(cosignVolumeMounts) > 0
 
 	if b.NotaryV1Config() != nil {
@@ -850,8 +858,8 @@ func (b *Build) completionContainer(secrets []corev1.Secret, completionImage str
 		volumeMounts = append(volumeMounts, cosignVolumeMounts...)
 		args = append(
 			args,
-			"-build-timestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
-			"-build-number="+b.Labels[BuildNumberLabel],
+			"-cosign-annotations=buildTimestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
+			"-cosign-annotations=buildNumber="+b.Labels[BuildNumberLabel],
 		)
 
 		if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
@@ -859,6 +867,8 @@ func (b *Build) completionContainer(secrets []corev1.Secret, completionImage str
 				args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
 			}
 		}
+
+		args = append(args, cosignArgs...)
 	}
 
 	return corev1.Container{

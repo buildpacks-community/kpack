@@ -174,6 +174,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-1",
+				Annotations: map[string]string{
+					"kpack.io/cosign.ignored":            "test",
+					"kpack.io/cosign.repository":         "testRepository.com/fake-project-1",
+					"kpack.io/cosign.docker-media-types": "1",
+				},
 			},
 			Data: map[string][]byte{
 				"cosign.key":      []byte("fake-key"),
@@ -184,6 +189,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-no-password-1",
+				Annotations: map[string]string{
+					"kpack.io/cosign.repository": "testRepository.com/fake-project-2",
+				},
 			},
 			Data: map[string][]byte{
 				"cosign.key":      []byte("fake-key"),
@@ -194,6 +202,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cosign-secret-no-password-2",
+				Annotations: map[string]string{
+					"kpack.io/cosign.docker-media-types": "1",
+				},
 			},
 			Data: map[string][]byte{
 				"cosign.key": []byte("fake-key"),
@@ -1121,8 +1132,38 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
-							"-build-timestamp=19440606.133000",
-							"-build-number=12",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("handles custom cosign annotations", func() {
+					build.Spec.Cosign = &buildapi.CosignConfig{
+						Annotations: []buildapi.CosignAnnotation{
+							{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+						},
+					}
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					require.Equal(t,
+						[]string{
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
 						},
 						pod.Spec.Containers[0].Args,
 					)
@@ -1258,8 +1299,39 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
-							"-build-timestamp=19440606.133000",
-							"-build-number=12",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("handles custom cosign annotations", func() {
+					build.Spec.Cosign = &buildapi.CosignConfig{
+						Annotations: []buildapi.CosignAnnotation{
+							{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+						},
+					}
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					require.Equal(t,
+						[]string{
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
 						},
 						pod.Spec.Containers[0].Args,
 					)
@@ -1316,8 +1388,38 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-build-timestamp=19440606.133000",
-						"-build-number=12",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
+			})
+
+			it("handles custom cosign annotations", func() {
+				build.Spec.Cosign = &buildapi.CosignConfig{
+					Annotations: []buildapi.CosignAnnotation{
+						{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+					},
+				}
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Equal(t,
+					[]string{
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1453,8 +1555,39 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-build-timestamp=19440606.133000",
-						"-build-number=12",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
+			})
+
+			it("handles custom cosign annotations", func() {
+				build.Spec.Cosign = &buildapi.CosignConfig{
+					Annotations: []buildapi.CosignAnnotation{
+						{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+					},
+				}
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), nil, buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Equal(t,
+					[]string{
+						"-notary-v1-url=some-notary-url",
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
 					},
 					pod.Spec.Containers[0].Args,
 				)

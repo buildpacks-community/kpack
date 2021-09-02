@@ -31,6 +31,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			secretLocation = createCosignKeyFiles(t)
 
 			reportPath = createReportToml(t, secretLocation)
+
+			os.Unsetenv(cosignRepositoryEnv)
+			os.Unsetenv(cosignDockerMediaTypesEnv)
 		})
 
 		it("signs images", func() {
@@ -50,7 +53,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, nil)
+			err := signer.Sign(reportPath, nil, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -90,7 +93,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, nil)
+			err := signer.Sign(reportPath, nil, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -114,7 +117,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return nil
 			}
 
-			err := signer.Sign(reportPath, expectedAnnotation)
+			err := signer.Sign(reportPath, expectedAnnotation, nil, nil)
 			assert.Nil(t, err)
 
 			assert.Equal(t, 2, cliSignCmdCallCount)
@@ -129,10 +132,94 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/secret-name-1/cosign.key: fake error", secretLocation)
-			err := signer.Sign(reportPath, nil)
+			err := signer.Sign(reportPath, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Equal(t, expectedErrorMessage, err.Error())
 			assert.Equal(t, 1, cliSignCmdCallCount)
+		})
+
+		it("sets COSIGN_REPOSITORY environment variable", func() {
+			cliSignCmdCallCount := 0
+
+			assert.Empty(t, len(os.Getenv(cosignRepositoryEnv)))
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				t.Helper()
+				if cliSignCmdCallCount == 0 {
+					assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignRepositoryEnv))
+				} else {
+					assertUnset(t, cosignRepositoryEnv)
+				}
+				cliSignCmdCallCount++
+				return nil
+			}
+
+			cosignRepositories := map[string]interface{}{
+				"secret-name-1": "registry.example.com/fakeproject",
+			}
+
+			err := signer.Sign(reportPath, nil, cosignRepositories, nil)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, cliSignCmdCallCount)
+
+			assertUnset(t, cosignRepositoryEnv)
+		})
+
+		it("sets COSIGN_DOCKER_MEDIA_TYPES environment variable", func() {
+			cliSignCmdCallCount := 0
+
+			assertUnset(t, cosignDockerMediaTypesEnv)
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				t.Helper()
+				if cliSignCmdCallCount == 0 {
+					assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
+				} else {
+					assertUnset(t, cosignDockerMediaTypesEnv)
+				}
+
+				cliSignCmdCallCount++
+				return nil
+			}
+
+			cosignDockerMediaTypes := map[string]interface{}{
+				"secret-name-1": "1",
+			}
+
+			err := signer.Sign(reportPath, nil, nil, cosignDockerMediaTypes)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, cliSignCmdCallCount)
+
+			assertUnset(t, cosignDockerMediaTypesEnv)
+		})
+
+		it("sets both COSIGN_REPOSITORY and COSIGN_DOCKER_MEDIA_TYPES environment variable", func() {
+			cliSignCmdCallCount := 0
+
+			assertUnset(t, cosignDockerMediaTypesEnv)
+			assertUnset(t, cosignRepositoryEnv)
+			cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				t.Helper()
+				assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
+				assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignRepositoryEnv))
+				cliSignCmdCallCount++
+				return nil
+			}
+
+			cosignRepositories := map[string]interface{}{
+				"secret-name-1": "registry.example.com/fakeproject",
+				"secret-name-2": "registry.example.com/fakeproject",
+			}
+
+			cosignDockerMediaTypes := map[string]interface{}{
+				"secret-name-1": "1",
+				"secret-name-2": "1",
+			}
+
+			err := signer.Sign(reportPath, nil, cosignRepositories, cosignDockerMediaTypes)
+			assert.Nil(t, err)
+			assert.Equal(t, 2, cliSignCmdCallCount)
+
+			assertUnset(t, cosignDockerMediaTypesEnv)
+			assertUnset(t, cosignRepositoryEnv)
 		})
 	})
 }
@@ -158,4 +245,10 @@ func createReportToml(t *testing.T, secretLocation string) string {
 	assert.Nil(t, err)
 
 	return reportPath
+}
+
+func assertUnset(t *testing.T, envName string, msg ...string) {
+	value, isSet := os.LookupEnv(envName)
+	assert.False(t, isSet)
+	assert.Equal(t, "", value)
 }
