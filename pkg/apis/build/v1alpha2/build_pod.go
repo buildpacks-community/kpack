@@ -17,12 +17,12 @@ import (
 
 const (
 	SecretTemplateName                     = "secret-volume-%s"
-	SecretPathName                         = "/var/build-secrets/%s"
+	DefaultSecretPathName                  = "/var/build-secrets/%s"
 	BuildLabel                             = "kpack.io/build"
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
-	COSIGNRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
 	COSIGNDockerMediaTypesAnnotationPrefix = "kpack.io/cosign.docker-media-types"
+	COSIGNRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
 	COSIGNSecretDataCosignKey              = "cosign.key"
 	COSIGNSecretDataCosignPassword         = "cosign.password"
 
@@ -647,6 +647,8 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		args         []string
 	)
 	for _, secret := range secrets {
+		secretPathName := DefaultSecretPathName
+
 		switch {
 		case !filter(secret):
 			continue
@@ -671,6 +673,8 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			if cosignDockerMediaType := secret.ObjectMeta.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
 				args = append(args, fmt.Sprintf("-cosign-docker-media-types=%s=%s", secret.Name, cosignDockerMediaType))
 			}
+
+			secretPathName = fmt.Sprintf(DefaultSecretPathName, "cosign/%s")
 		default:
 			//ignoring secret
 			continue
@@ -689,7 +693,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      volumeName,
-			MountPath: fmt.Sprintf(SecretPathName, secret.Name),
+			MountPath: fmt.Sprintf(secretPathName, secret.Name),
 		})
 	}
 

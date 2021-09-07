@@ -1104,7 +1104,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
-						MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
 					})
 				})
 
@@ -1123,7 +1123,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 							Name:      fmt.Sprintf("secret-volume-%s", secretName),
-							MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
 						})
 					}
 
@@ -1248,7 +1248,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
-						MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
 					})
 				})
 
@@ -1269,7 +1269,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 							Name:      fmt.Sprintf("secret-volume-%s", secretName),
-							MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
 						})
 					}
 
@@ -1360,7 +1360,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 					Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
-					MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+					MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
 				})
 			})
 
@@ -1379,7 +1379,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 						Name:      fmt.Sprintf("secret-volume-%s", secretName),
-						MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
 					})
 				}
 
@@ -1504,7 +1504,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 					Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
-					MountPath: fmt.Sprintf("/var/build-secrets/%s", invalidSecretName),
+					MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
 				})
 			})
 
@@ -1525,7 +1525,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 						Name:      fmt.Sprintf("secret-volume-%s", secretName),
-						MountPath: fmt.Sprintf("/var/build-secrets/%s", secretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
 					})
 				}
 

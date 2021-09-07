@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
-	"regexp"
 
 	"github.com/buildpacks/lifecycle"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
@@ -24,7 +22,7 @@ const (
 
 var (
 	cliSignCmd     = cli.SignCmd
-	secretLocation = "/var/build-secrets"
+	secretLocation = "/var/build-secrets/cosign"
 )
 
 func NewImageSigner(logger *log.Logger) *ImageSigner {
@@ -39,7 +37,12 @@ func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string
 		return nil
 	}
 
-	cosignSecrets := findCosignSecrets(secretLocation)
+	cosignSecrets, err := findCosignSecrets()
+	if err != nil {
+		s.Logger.Printf("no keys found for cosign signing: %v\n", err)
+		return nil
+	}
+
 	if len(cosignSecrets) == 0 {
 		s.Logger.Println("no keys found for cosign signing")
 		return nil
@@ -83,22 +86,19 @@ func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string
 	return nil
 }
 
-// Only look at `/secretLocation/folder/cosign.key` folder/file structure
-// Returns list of the secret `folder` name only
-func findCosignSecrets(dir string) []string {
-	var files []string
-	filepath.Walk(dir, func(fullpath string, f os.FileInfo, err error) error {
-		if err != nil || f == nil {
-			return nil
-		}
+func findCosignSecrets() ([]string, error) {
+	var result []string
 
-		if !f.IsDir() {
-			r, err := regexp.MatchString(`^`+regexp.QuoteMeta(secretLocation)+`\/[^\/]+\/cosign.key`, fullpath)
-			if err == nil && r {
-				files = append(files, filepath.Base(filepath.Dir(fullpath)))
-			}
+	files, err := ioutil.ReadDir(secretLocation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, path := range files {
+		if path.IsDir() {
+			result = append(result, path.Name())
 		}
-		return nil
-	})
-	return files
+	}
+
+	return result, nil
 }
