@@ -192,6 +192,36 @@ Which provides a JSON response similar to:
 }
 ```
 
+#### Push Cosign Signature to a Different Location
+Cosign signatures can be pushed to a different registry from where the image is located. To enable this, add the corresponding annotation to the cosign secret resource.
+```
+metadata:
+  name: ...
+  namespace: ...
+  annotations:
+    kpack.io/cosign.repository: other.registry.com/project/image
+data:
+  cosign.key: ...
+  cosign.password: ...
+```
+This will be equivalent to setting `COSIGN_REPOSITORY` as specified in cosign [Specifying Registry](https://github.com/sigstore/cosign#specifying-registry)
+
+The same service account that has that cosign secret attached, and would be used for signing and building the image, would require that the registry credentials for this other repository be placed under the listed `secrets` and is not required to be listed in `imagePullSecrets`. It should be noted that if you wish to push the signatures to the same registry but a different path from the image, the credential used must have access to both paths. You cannot use two separate credentials for the same registry with different paths.
+
+#### Cosign Legacy Docker Media Types
+To sign images in a registry that does not fully support OCI media types, legacy equivalents can be used by adding the corresponding annotation to the cosign secret resource:
+```
+metadata:
+  name: ...
+  namespace: ...
+  annotations:
+    kpack.io/cosign.docker-media-types: "1"
+data:
+  cosign.key: ...
+  cosign.password: ...
+```
+This will be equivalent to setting `COSIGN_DOCKER_MEDIA_TYPES=1` as specified in the cosign [registry-support](https://github.com/sigstore/cosign#registry-support)
+
 ### Sample Image with a Git Source
 
 ```yaml
