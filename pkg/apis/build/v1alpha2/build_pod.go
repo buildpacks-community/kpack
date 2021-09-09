@@ -133,7 +133,7 @@ var (
 
 type stepModifier func(corev1.Container) corev1.Container
 
-func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config BuildPodBuilderConfig) (*corev1.Pod, error) {
 	platformAPI, err := config.highestSupportedPlatformAPI(b)
 	if err != nil {
 		return nil, err

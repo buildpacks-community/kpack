@@ -109,70 +109,13 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		linuxNode := &corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "linux-node",
-				Labels: map[string]string{
-					"kubernetes.io/os": "linux",
-				},
-			},
-			Spec: corev1.NodeSpec{
-				Taints: []corev1.Taint{
-					{
-						Key:       "some-key",
-						Value:     "some-value",
-						Effect:    corev1.TaintEffectNoSchedule,
-						TimeAdded: nil,
-					},
-				},
-			},
-		}
-
-		windowsNode1 := &corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "windows-node-1",
-				Labels: map[string]string{
-					"kubernetes.io/os": "windows",
-				},
-			},
-			Spec: corev1.NodeSpec{
-				Taints: []corev1.Taint{
-					{
-						Key:       "test-key",
-						Value:     "test-value",
-						Effect:    corev1.TaintEffectNoSchedule,
-						TimeAdded: nil,
-					},
-				},
-			},
-		}
-
-		windowsNode2 := &corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "windows-node-2",
-				Labels: map[string]string{
-					"kubernetes.io/os": "windows",
-				},
-			},
-			Spec: corev1.NodeSpec{
-				Taints: []corev1.Taint{
-					{
-						Key:       "test-key",
-						Value:     "test-value",
-						Effect:    corev1.TaintEffectNoSchedule,
-						TimeAdded: nil,
-					},
-				},
-			},
-		}
-
 		keychain := &registryfakes.FakeKeychain{}
 		secretRef := registry.SecretRef{
 			ServiceAccount:   serviceAccountName,
 			Namespace:        namespace,
 			ImagePullSecrets: builderPullSecrets,
 		}
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, linuxNode, windowsNode1, windowsNode2)
+		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret)
 		buildPodConfig := buildapi.BuildPodImages{}
 
 		generator := &buildpod.Generator{
@@ -217,7 +160,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					PlatformAPIs: []string{"0.4", "0.5", "0.6"},
 					OS:           "linux",
 				},
-				Taints: nil,
 			}}, build.buildPodCalls)
 		})
 
@@ -259,73 +201,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			require.EqualError(t, err, fmt.Sprintf("build rejected: binding %q uses forbidden secret %q", "naughty", dockerSecret.Name))
 			require.Nil(t, pod)
 		})
-
-		when("windows builder image", func() {
-			it("provides all homogenous windows node taints", func() {
-				var build = &testBuildPodable{
-					serviceAccount: serviceAccountName,
-					namespace:      namespace,
-					buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
-						Image:            windowsBuilderImage,
-						ImagePullSecrets: builderPullSecrets,
-					},
-				}
-
-				pod, err := generator.Generate(context.TODO(), build)
-				require.NoError(t, err)
-				assert.NotNil(t, pod)
-
-				assert.Len(t, build.buildPodCalls, 1)
-				assert.Equal(t, build.buildPodCalls[0].Taints, []corev1.Taint{
-					{
-						Key:    "test-key",
-						Value:  "test-value",
-						Effect: corev1.TaintEffectNoSchedule,
-					},
-				})
-			})
-
-			it("provides an empty list any taints if any taints different across windows nodes", func() {
-				windowsNode3 := &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "windows-node-3",
-						Labels: map[string]string{
-							"kubernetes.io/os": "windows",
-						},
-					},
-					Spec: corev1.NodeSpec{
-						Taints: []corev1.Taint{
-							{
-								Key:       "different-key",
-								Value:     "different-value",
-								Effect:    corev1.TaintEffectNoSchedule,
-								TimeAdded: nil,
-							},
-						},
-					},
-				}
-
-				_, err := fakeK8sClient.CoreV1().Nodes().Create(context.TODO(), windowsNode3, metav1.CreateOptions{})
-				require.NoError(t, err)
-
-				var build = &testBuildPodable{
-					serviceAccount: serviceAccountName,
-					namespace:      namespace,
-					buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
-						Image:            windowsBuilderImage,
-						ImagePullSecrets: builderPullSecrets,
-					},
-				}
-
-				pod, err := generator.Generate(context.TODO(), build)
-				require.NoError(t, err)
-				assert.NotNil(t, pod)
-
-				assert.Len(t, build.buildPodCalls, 1)
-				assert.Len(t, build.buildPodCalls[0].Taints, 0)
-			})
-		})
-
 	})
 }
 
@@ -346,7 +221,6 @@ type testBuildPodable struct {
 type buildPodCall struct {
 	BuildPodImages        buildapi.BuildPodImages
 	Secrets               []corev1.Secret
-	Taints                []corev1.Taint
 	BuildPodBuilderConfig buildapi.BuildPodBuilderConfig
 }
 
@@ -366,11 +240,10 @@ func (tb *testBuildPodable) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config buildapi.BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, secrets []corev1.Secret, config buildapi.BuildPodBuilderConfig) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
 		BuildPodImages:        images,
 		Secrets:               secrets,
-		Taints:                taints,
 		BuildPodBuilderConfig: config,
 	})
 	return &corev1.Pod{}, nil
