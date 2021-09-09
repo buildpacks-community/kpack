@@ -25,7 +25,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
-	github.com/tj/assert v0.0.3 // indirect
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.19.7
 	go.uber.org/zap v1.18.1
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
