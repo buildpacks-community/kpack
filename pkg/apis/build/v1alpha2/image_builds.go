@@ -64,6 +64,9 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			LastBuild:             lastBuild(latestBuild),
 			Notary:                im.Spec.Notary,
 			DefaultProcess:        im.Spec.DefaultProcess,
+			Tolerations:           im.Tolerations(),
+			NodeSelector:          im.NodeSelector(),
+			Affinity:              im.Affinity(),
 		},
 	}
 }
@@ -132,6 +135,27 @@ func (im *Image) Resources() corev1.ResourceRequirements {
 		return corev1.ResourceRequirements{}
 	}
 	return im.Spec.Build.Resources
+}
+
+func (im *Image) Tolerations() []corev1.Toleration {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.Tolerations
+}
+
+func (im *Image) NodeSelector() map[string]string {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.NodeSelector
+}
+
+func (im *Image) Affinity() *corev1.Affinity {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.Affinity
 }
 
 func (im *Image) CacheName() string {

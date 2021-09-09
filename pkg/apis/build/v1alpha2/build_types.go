@@ -60,6 +60,10 @@ type BuildSpec struct {
 	LastBuild             *LastBuild                  `json:"lastBuild,omitempty"`
 	Notary                *corev1alpha1.NotaryConfig  `json:"notary,omitempty"`
 	DefaultProcess        string                      `json:"defaultProcess,omitempty"`
+	// +listType
+	Tolerations  []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity     *corev1.Affinity    `json:"affinity,omitempty"`
 }
 
 func (bs *BuildSpec) NeedVolumeCache() bool {
@@ -80,9 +84,6 @@ type BuildCacheConfig struct {
 type BuildPersistentVolumeCache struct {
 	ClaimName string `json:"persistentVolumeClaimName,omitempty"`
 }
-
-// +k8s:openapi-gen=true
-type Bindings []Binding
 
 // +k8s:openapi-gen=true
 type Binding struct {

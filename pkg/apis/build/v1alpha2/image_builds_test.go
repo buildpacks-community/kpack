@@ -211,7 +211,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds the env vars to the build spec", func() {
-			image.Spec.Build = &corev1alpha1.ImageBuild{
+			image.Spec.Build = &ImageBuild{
 				Env: []corev1.EnvVar{
 					{Name: "keyA", Value: "new"},
 				},
@@ -235,7 +235,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds build resources", func() {
-			image.Spec.Build = &corev1alpha1.ImageBuild{
+			image.Spec.Build = &ImageBuild{
 				Resources: corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("2"),
@@ -250,6 +250,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			build := image.Build(sourceResolver, builder, latestBuild, "", "", 1)
 			assert.Equal(t, image.Spec.Build.Resources, build.Spec.Resources)
+		})
+
+		it("adds pod configuration", func() {
+			image.Spec.Build = &ImageBuild{
+				Tolerations:  []corev1.Toleration{{Key: "some-key"}},
+				NodeSelector: map[string]string{"foo": "bar"},
+				Affinity: &corev1.Affinity{
+					NodeAffinity: &corev1.NodeAffinity{},
+				},
+			}
+
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", 1)
+			assert.Equal(t, image.Spec.Build.Tolerations, build.Spec.Tolerations)
+			assert.Equal(t, image.Spec.Build.NodeSelector, build.Spec.NodeSelector)
+			assert.Equal(t, image.Spec.Build.Affinity, build.Spec.Affinity)
 		})
 
 		it("sets the notary config when present", func() {

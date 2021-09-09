@@ -98,6 +98,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Image:   previousAppImage,
 				StackId: "com.builder.stack.io",
 			},
+			Tolerations:  []corev1.Toleration{{Key: "some-key"}},
+			NodeSelector: map[string]string{"foo": "bar"},
+			Affinity:     &corev1.Affinity{},
 		},
 	}
 
@@ -211,11 +214,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 		})
 
-		it("creates a pod with the correct node selector", func() {
+		it("sets the pod tolerations and affinity from the build and merges the os node selector", func() {
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 			require.NoError(t, err)
 
-			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
+			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux", "foo": "bar"}, pod.Spec.NodeSelector)
+			assert.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
+			assert.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
 		})
 
 		it("configures the pod security context to match the builder config user and group", func() {
@@ -947,7 +952,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					ServiceAccountName: build.Spec.ServiceAccount,
 					NodeSelector: map[string]string{
 						"kubernetes.io/os": "linux",
+						"foo":              "bar",
 					},
+					Tolerations: build.Spec.Tolerations,
+					Affinity:    build.Spec.Affinity,
 					Volumes: []corev1.Volume{
 						{
 							Name: "secret-volume-docker-secret-1",
@@ -1165,7 +1173,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
 				require.NoError(t, err)
 
-				assert.Equal(t, map[string]string{"kubernetes.io/os": "windows"}, pod.Spec.NodeSelector)
+				assert.Equal(t, map[string]string{"kubernetes.io/os": "windows", "foo": "bar"}, pod.Spec.NodeSelector)
 			})
 
 			it("removes the spec securityContext", func() {
@@ -1439,30 +1447,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
 			})
-
-			it("adds pod tolerations based on node taints", func() {
-				pod, err := build.BuildPod(config, nil, []corev1.Taint{
-					{
-						Key:    "test-key",
-						Value:  "test-value",
-						Effect: corev1.TaintEffectNoSchedule,
-					},
-				}, buildPodBuilderConfig)
-				require.NoError(t, err)
-
-				assert.Equal(t,
-					[]corev1.Toleration{
-						{
-							Key:      "test-key",
-							Operator: corev1.TolerationOpEqual,
-							Value:    "test-value",
-							Effect:   corev1.TaintEffectNoSchedule,
-						},
-					},
-					pod.Spec.Tolerations,
-				)
-			})
-
 		})
 	})
 }

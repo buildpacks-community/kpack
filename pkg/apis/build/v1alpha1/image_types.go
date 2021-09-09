@@ -52,8 +52,16 @@ type ImageSpec struct {
 	FailedBuildHistoryLimit  *int64                            `json:"failedBuildHistoryLimit,omitempty"`
 	SuccessBuildHistoryLimit *int64                            `json:"successBuildHistoryLimit,omitempty"`
 	ImageTaggingStrategy     corev1alpha1.ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
-	Build                    *corev1alpha1.ImageBuild          `json:"build,omitempty"`
+	Build                    *ImageBuild                       `json:"build,omitempty"`
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
+}
+
+type ImageBuild struct {
+	// +listType
+	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
+	// +listType
+	Env       []corev1.EnvVar             `json:"env,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // +k8s:openapi-gen=true

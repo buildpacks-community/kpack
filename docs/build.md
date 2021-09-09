@@ -37,6 +37,22 @@ spec:
     limits:
       cpu: "0.5"
       memory: "256M"
+  tolerations:
+    - key: "key1"
+      operator: "Exists"
+      effect: "NoSchedule"
+  nodeSelector:
+    disktype: ssd
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/e2e-az-name
+                operator: In
+                values:
+                  - e2e-az1
+                  - e2e-az2
 ```
 
 - `tags`: A list of docker tags to build. At least one tag is required.
@@ -50,6 +66,9 @@ spec:
 - `env`: Optional list of build time environment variables.
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
 - `resources`: Optional configurable resource limits on `CPU` and `memory`.
+- `tolerations`: Optional configurable pod spec tolerations
+- `nodeSelector`: Optional configurable pod spec nodeSelector
+- `affinity`: Optional configurabl pod spec affinity
 
 > Note: All fields on a build are immutable. Instead of updating a build, create a new one.
  
