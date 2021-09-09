@@ -11,8 +11,11 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
 
+type SignFunc func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef string, certPath string, upload bool, payloadPath string, force bool, recursive bool) error
+
 type ImageSigner struct {
-	Logger *log.Logger
+	Logger   *log.Logger
+	signFunc SignFunc
 }
 
 const (
@@ -21,13 +24,13 @@ const (
 )
 
 var (
-	cliSignCmd     = cli.SignCmd
 	secretLocation = "/var/build-secrets/cosign"
 )
 
-func NewImageSigner(logger *log.Logger) *ImageSigner {
+func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	return &ImageSigner{
-		Logger: logger,
+		Logger:   logger,
+		signFunc: signFunc,
 	}
 }
 
@@ -72,7 +75,7 @@ func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string
 			os.Setenv(cosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType))
 		}
 
-		if err := cliSignCmd(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
+		if err := s.signFunc(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
 			os.Unsetenv(cosignRepositoryEnv)
 			os.Unsetenv(cosignDockerMediaTypesEnv)
 

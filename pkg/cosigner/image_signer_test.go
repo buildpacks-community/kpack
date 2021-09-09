@@ -6,16 +6,31 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http/httptest"
+	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/sigstore/cosign/cmd/cosign/cli/download"
+	"github.com/sigstore/cosign/pkg/cosign"
 	"github.com/stretchr/testify/assert"
 )
+
+var passFunc = func(_ bool) ([]byte, error) {
+	return []byte(""), nil
+}
 
 func TestImageSigner(t *testing.T) {
 	spec.Run(t, "Test Cosign Image Signer Main", testImageSigner)
@@ -27,12 +42,10 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		reader  *os.File
 		writer  *os.File
 		scanner *bufio.Scanner
-		signer  *ImageSigner
 	)
 
 	it.Before(func() {
 		scanner, reader, writer = mockLogger(t)
-		signer = NewImageSigner(log.New(writer, "", 0))
 	})
 
 	it.After(func() {
@@ -53,7 +66,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			it("signs images", func() {
 				cliSignCmdCallCount := 0
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					assert.Equal(t, "example-registry.io/test:latest", imageRef)
 					assert.Contains(t, ko.KeyRef, "cosign.key")
@@ -68,6 +81,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -84,7 +98,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				firstPasswordSeenCount := 0
 				secondPasswordSeenCount := 0
 
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					assert.Equal(t, "example-registry.io/test:latest", imageRef)
 					assert.Contains(t, ko.KeyRef, "cosign.key")
@@ -108,6 +122,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -122,7 +137,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				cliSignCmdCallCount := 0
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					assert.Equal(t, "example-registry.io/test:latest", imageRef)
 					assert.Contains(t, ko.KeyRef, "cosign.key")
@@ -132,6 +147,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, expectedAnnotation, nil, nil)
 				assert.Nil(t, err)
 
@@ -141,12 +157,14 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			it("errors when signing fails", func() {
 				cliSignCmdCallCount := 0
 
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					cliSignCmdCallCount++
 					return fmt.Errorf("fake error")
 				}
 
 				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/secret-name-1/cosign.key: fake error", secretLocation)
+
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Error(t, err)
 				assert.Equal(t, expectedErrorMessage, err.Error())
@@ -157,7 +175,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmdCallCount := 0
 
 				assert.Empty(t, len(os.Getenv(cosignRepositoryEnv)))
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-1") {
 						assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignRepositoryEnv))
@@ -173,6 +191,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-1": "registry.example.com/fakeproject",
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, cosignRepositories, nil)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
@@ -184,7 +203,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmdCallCount := 0
 
 				assertUnset(t, cosignDockerMediaTypesEnv)
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-1") {
 						assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
@@ -200,6 +219,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-1": "1",
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
@@ -212,7 +232,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				assertUnset(t, cosignRepositoryEnv)
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
 					assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignRepositoryEnv))
@@ -230,6 +250,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-2": "1",
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, cosignRepositories, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
@@ -245,12 +266,13 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				report = createReportToml(t)
 
 				cliSignCmdCallCount := 0
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					cliSignCmdCallCount++
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -264,12 +286,13 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				report = createReportToml(t)
 
 				cliSignCmdCallCount := 0
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					cliSignCmdCallCount++
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -283,12 +306,13 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				report = createEmptyReportToml(t)
 
 				cliSignCmdCallCount := 0
-				cliSignCmd = func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					t.Helper()
 					cliSignCmdCallCount++
 					return nil
 				}
 
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(report, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -296,6 +320,42 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, "no image tag to sign", logText(scanner))
 			})
+		})
+	})
+
+	when("#Cosign.SignCmd", func() {
+		it("signs an image", func() {
+			secretLocation = t.TempDir()
+
+			repo, stop := reg(t)
+			defer stop()
+
+			imgName := path.Join(repo, "cosign-e2e")
+
+			_, _, cleanup := mkimage(t, imgName)
+			defer cleanup()
+
+			keypair(t, secretLocation, "secret-name-1")
+			privKeyPath := path.Join(secretLocation, "secret-name-1", "cosign.key")
+			pubKeyPath := path.Join(secretLocation, "secret-name-1", "cosign.pub")
+
+			ctx := context.Background()
+			// Verify+download should fail at first
+			err := verify(pubKeyPath, imgName, nil)
+			assert.NotNil(t, err)
+			err = download.SignatureCmd(ctx, imgName)
+			assert.NotNil(t, err)
+
+			// Sign
+			ko := cli.KeyOpts{KeyRef: privKeyPath, PassFunc: passFunc}
+			err = cli.SignCmd(ctx, ko, nil, imgName, "", true, "", false, false)
+			assert.Nil(t, err)
+
+			// Verify+download should pass
+			err = verify(pubKeyPath, imgName, nil)
+			assert.Nil(t, err)
+			err = download.SignatureCmd(ctx, imgName)
+			assert.Nil(t, err)
 		})
 	})
 }
@@ -329,11 +389,8 @@ func resetLogger(reader *os.File, writer *os.File) {
 func createCosignKeyFiles(t *testing.T) string {
 	dirPath := t.TempDir()
 
-	os.Mkdir(fmt.Sprintf("%s/secret-name-1", dirPath), 0700)
-	os.Mkdir(fmt.Sprintf("%s/secret-name-2", dirPath), 0700)
-
-	os.Create(fmt.Sprintf("%s/secret-name-1/cosign.key", dirPath))
-	os.Create(fmt.Sprintf("%s/secret-name-2/cosign.key", dirPath))
+	keypair(t, dirPath, "secret-name-1")
+	keypair(t, dirPath, "secret-name-2")
 
 	return dirPath
 }
@@ -357,4 +414,75 @@ func assertUnset(t *testing.T, envName string, msg ...string) {
 	value, isSet := os.LookupEnv(envName)
 	assert.False(t, isSet)
 	assert.Equal(t, "", value)
+}
+
+func reg(t *testing.T) (string, func()) {
+	r := httptest.NewServer(registry.New())
+	u, err := url.Parse(r.URL)
+	assert.Nil(t, err)
+
+	return u.Host, r.Close
+}
+
+func mkimage(t *testing.T, n string) (name.Reference, *remote.Descriptor, func()) {
+	ref, err := name.ParseReference(n, name.WeakValidation)
+	assert.Nil(t, err)
+
+	img, err := random.Image(512, 5)
+	assert.Nil(t, err)
+
+	regClientOpts := registryClientOpts(context.Background())
+
+	err = remote.Write(ref, img, regClientOpts...)
+	assert.Nil(t, err)
+
+	remoteImage, err := remote.Get(ref, regClientOpts...)
+	assert.Nil(t, err)
+
+	cleanup := func() {
+		_ = remote.Delete(ref, regClientOpts...)
+		ref := cosign.AttachedImageTag(ref.Context(), remoteImage.Descriptor.Digest, cosign.SignatureTagSuffix)
+		_ = remote.Delete(ref, regClientOpts...)
+	}
+
+	return ref, remoteImage, cleanup
+}
+
+func registryClientOpts(ctx context.Context) []remote.Option {
+	return []remote.Option{
+		remote.WithAuthFromKeychain(authn.DefaultKeychain),
+		remote.WithContext(ctx),
+	}
+}
+
+func keypair(t *testing.T, dirPath, secretName string) {
+	keys, err := cosign.GenerateKeyPair(passFunc)
+	assert.Nil(t, err)
+
+	err = os.Mkdir(filepath.Join(dirPath, secretName), 0700)
+	assert.Nil(t, err)
+
+	privKeyPath := filepath.Join(dirPath, secretName, "cosign.key")
+	err = ioutil.WriteFile(privKeyPath, keys.PrivateBytes, 0600)
+	assert.Nil(t, err)
+
+	pubKeyPath := filepath.Join(dirPath, secretName, "cosign.pub")
+	err = ioutil.WriteFile(pubKeyPath, keys.PublicBytes, 0600)
+	assert.Nil(t, err)
+
+	passwordPath := filepath.Join(dirPath, secretName, "cosign.password")
+	passwordBytes, _ := passFunc(true)
+	err = ioutil.WriteFile(passwordPath, passwordBytes, 0600)
+	assert.Nil(t, err)
+}
+
+func verify(keyRef, imageRef string, annotations map[string]interface{}) error {
+	cmd := cli.VerifyCommand{
+		KeyRef:      keyRef,
+		Annotations: &annotations,
+	}
+
+	args := []string{imageRef}
+
+	return cmd.Exec(context.Background(), args)
 }
