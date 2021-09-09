@@ -63,6 +63,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Resources:             im.Resources(),
 			LastBuild:             lastBuild(latestBuild),
 			Notary:                im.Spec.Notary,
+			DefaultProcess:        im.Spec.DefaultProcess,
 		},
 	}
 }
