@@ -88,7 +88,7 @@ func (im *Image) LatestForImage(build *Build) string {
 	return im.Status.LatestImage
 }
 
-func (im *Image) Bindings() corev1alpha1.Bindings {
+func (im *Image) Bindings() corev1alpha1.CNBBindings {
 	if im.Spec.Build == nil {
 		return nil
 	}

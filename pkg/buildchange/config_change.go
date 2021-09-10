@@ -21,10 +21,11 @@ type configChange struct {
 }
 
 type Config struct {
-	Env       []corev1.EnvVar             `json:"env,omitempty"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Bindings  corev1alpha1.Bindings       `json:"bindings,omitempty"`
-	Source    corev1alpha1.SourceConfig   `json:"source,omitempty"`
+	Env         []corev1.EnvVar             `json:"env,omitempty"`
+	Resources   corev1.ResourceRequirements `json:"resources,omitempty"`
+	Services    buildapi.Services           `json:"services,omitempty"`
+	CNBBindings corev1alpha1.CNBBindings    `json:"cnbBindings,omitempty"`
+	Source      corev1alpha1.SourceConfig   `json:"source,omitempty"`
 }
 
 func (c configChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonConfig }

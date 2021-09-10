@@ -18,7 +18,6 @@ func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 	default:
 		return fmt.Errorf("unknown version, got: %T", toImage)
 	}
-
 	return nil
 }
 
@@ -46,14 +45,14 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	to.SuccessBuildHistoryLimit = is.SuccessBuildHistoryLimit
 	to.ImageTaggingStrategy = is.ImageTaggingStrategy
 	to.Source = is.Source
-	if is.Build != nil {
-		to.Build = &v1alpha1.ImageBuild{
-			Bindings:  is.Build.Bindings,
-			Env:       is.Build.Env,
-			Resources: is.Build.Resources,
-		}
-	}
 	to.Notary = is.Notary
+
+	if is.Build != nil {
+		to.Build = &v1alpha1.ImageBuild{}
+		to.Build.Env = is.Build.Env
+		to.Build.Resources = is.Build.Resources
+		to.Build.Bindings = is.Build.CNBBindings
+	}
 }
 
 func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
@@ -71,14 +70,14 @@ func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
 	is.FailedBuildHistoryLimit = from.FailedBuildHistoryLimit
 	is.SuccessBuildHistoryLimit = from.SuccessBuildHistoryLimit
 	is.ImageTaggingStrategy = from.ImageTaggingStrategy
-	if from.Build != nil {
-		is.Build = &ImageBuild{
-			Bindings:  from.Build.Bindings,
-			Env:       from.Build.Env,
-			Resources: from.Build.Resources,
-		}
-	}
 	is.Notary = from.Notary
+
+	if from.Build != nil {
+		is.Build = &ImageBuild{}
+		is.Build.Env = from.Build.Env
+		is.Build.Resources = from.Build.Resources
+		is.Build.CNBBindings = from.Build.Bindings
+	}
 }
 
 func (is *ImageStatus) convertFrom(from *v1alpha1.ImageStatus) {

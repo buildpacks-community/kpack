@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -124,6 +125,11 @@ func main() {
 		ImageFetcher:    &registry.Client{},
 	}
 
+	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
+	if err != nil {
+		log.Fatalf("could not get dynamic client: %s", err)
+	}
+
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: buildapi.BuildPodImages{
 			BuildInitImage:         *buildInitImage,
@@ -135,6 +141,7 @@ func main() {
 		K8sClient:       k8sClient,
 		KeychainFactory: keychainFactory,
 		ImageFetcher:    &registry.Client{},
+		DynamicClient:   dynamicClient,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)

@@ -171,13 +171,10 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, expectedChanges, result.ChangesStr)
 		})
 
-		it("true if build bindings changes", func() {
-			latestBuild.Spec.Bindings = corev1alpha1.Bindings{
+		it("true if build service bindings changes", func() {
+			latestBuild.Spec.Services = buildapi.Services{
 				{
-					Name: "some-old-value",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "some-old-config-map",
-					},
+					Name: "some-value",
 				},
 			}
 
@@ -187,12 +184,53 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
     "reason": "CONFIG",
     "old": {
       "resources": {},
-      "bindings": [
+      "services": [
         {
-          "name": "some-old-value",
-          "metadataRef": {
-            "name": "some-old-config-map"
-          }
+          "name": "some-value"
+        }
+      ],
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    },
+    "new": {
+      "resources": {},
+      "source": {
+        "git": {
+          "url": "https://some.git/url",
+          "revision": "revision"
+        }
+      }
+    }
+  }
+]`)
+
+			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+			assert.NoError(t, err)
+			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+			assert.Equal(t, expectedChanges, result.ChangesStr)
+		})
+
+		it("true if build cnb bindings changes", func() {
+			latestBuild.Spec.CNBBindings = corev1alpha1.CNBBindings{
+				{
+					Name:        "some-value",
+				},
+			}
+
+			expectedChanges := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "CONFIG",
+    "old": {
+      "resources": {},
+      "cnbBindings": [
+        {
+          "name": "some-value"
         }
       ],
       "source": {

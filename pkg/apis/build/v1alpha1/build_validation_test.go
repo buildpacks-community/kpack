@@ -149,7 +149,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have a name", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
@@ -157,7 +157,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have a valid name", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{Name: "&", MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
@@ -165,7 +165,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have metadata", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{Name: "apm"},
 			}
 
@@ -173,7 +173,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have non-empty metadata", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{Name: "apm", MetadataRef: &corev1.LocalObjectReference{}},
 			}
 
@@ -181,7 +181,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings have non-empty secrets", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{
 					Name:        "apm",
 					MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
@@ -193,7 +193,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates bindings name uniqueness", func() {
-			build.Spec.Bindings = []corev1alpha1.Binding{
+			build.Spec.Bindings = []corev1alpha1.CNBBinding{
 				{
 					Name:        "apm",
 					MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},

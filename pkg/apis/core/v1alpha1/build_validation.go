@@ -14,7 +14,7 @@ func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Image(bbs.Image)
 }
 
-func (bs Bindings) Validate(ctx context.Context) *apis.FieldError {
+func (bs CNBBindings) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 	names := map[string]int{}
 	for i, b := range bs {
@@ -36,7 +36,7 @@ func (bs Bindings) Validate(ctx context.Context) *apis.FieldError {
 
 var bindingNameRE = regexp.MustCompile(`^[a-z0-9\-\.]{1,253}$`)
 
-func (b *Binding) Validate(context context.Context) *apis.FieldError {
+func (b *CNBBinding) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
 	if b.Name == "" {

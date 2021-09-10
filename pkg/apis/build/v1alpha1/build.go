@@ -27,7 +27,7 @@ func (b *Build) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return b.Spec.Builder
 }
 
-func (b *Build) Bindings() []corev1alpha1.Binding {
+func (b *Build) Bindings() corev1alpha1.CNBBindings {
 	return b.Spec.Bindings
 }
 

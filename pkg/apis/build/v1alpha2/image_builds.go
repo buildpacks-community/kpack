@@ -57,7 +57,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			ServiceAccount:        im.Spec.ServiceAccount,
 			Source:                sourceResolver.SourceConfig(),
 			Cache:                 im.getBuildCacheConfig(),
-			Bindings:              im.Bindings(),
+			Services:              im.Services(),
+			CNBBindings:           im.CNBBindings(),
 			Env:                   im.Env(),
 			ProjectDescriptorPath: im.Spec.ProjectDescriptorPath,
 			Resources:             im.Resources(),
@@ -119,11 +120,19 @@ func (im *Image) LatestForImage(build *Build) string {
 	return im.Status.LatestImage
 }
 
-func (im *Image) Bindings() corev1alpha1.Bindings {
+func (im *Image) Services() Services {
 	if im.Spec.Build == nil {
 		return nil
 	}
-	return im.Spec.Build.Bindings
+	return im.Spec.Build.Services
+}
+
+func (im *Image) CNBBindings() corev1alpha1.CNBBindings {
+	if im.Spec.Build == nil {
+		return nil
+	}
+
+	return im.Spec.Build.CNBBindings
 }
 
 func (im *Image) Env() []corev1.EnvVar {

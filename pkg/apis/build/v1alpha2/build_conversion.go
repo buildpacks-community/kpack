@@ -48,10 +48,10 @@ func (bs *BuildSpec) convertTo(to *v1alpha1.BuildSpec) {
 			StackId: bs.LastBuild.StackId,
 		}
 	}
-	to.Bindings = bs.Bindings
 	to.ServiceAccount = bs.ServiceAccount
 	to.Builder = bs.Builder
 	to.Notary = bs.Notary
+	to.Bindings = bs.CNBBindings
 }
 
 func (bs *BuildSpec) convertFrom(from *v1alpha1.BuildSpec) {
@@ -72,10 +72,10 @@ func (bs *BuildSpec) convertFrom(from *v1alpha1.BuildSpec) {
 			StackId: from.LastBuild.StackId,
 		}
 	}
-	bs.Bindings = from.Bindings
 	bs.ServiceAccount = from.ServiceAccount
 	bs.Builder = from.Builder
 	bs.Notary = from.Notary
+	bs.CNBBindings = from.Bindings
 }
 
 func (bs *BuildStatus) convertFrom(from *v1alpha1.BuildStatus) {

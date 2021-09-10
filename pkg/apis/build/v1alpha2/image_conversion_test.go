@@ -47,9 +47,7 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				SuccessBuildHistoryLimit: &buildHistoryLimit,
 				ImageTaggingStrategy:     corev1alpha1.BuildNumber,
 				Build: &ImageBuild{
-					Bindings: corev1alpha1.Bindings{{
-						Name: "some-binding",
-					}},
+					Services: nil,
 					Env: []corev1.EnvVar{
 						{
 							Name:  "blah",
@@ -111,9 +109,7 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				SuccessBuildHistoryLimit: &buildHistoryLimit,
 				ImageTaggingStrategy:     corev1alpha1.BuildNumber,
 				Build: &v1alpha1.ImageBuild{
-					Bindings: corev1alpha1.Bindings{{
-						Name: "some-binding",
-					}},
+					Bindings: nil,
 					Env: []corev1.EnvVar{
 						{
 							Name:  "blah",
@@ -246,6 +242,8 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			v1alpha2Image.Spec.Build = nil
 			v1alpha2Image.Spec.Notary = nil
 			v1alpha2Image.Spec.Cache = nil
+			v1alpha1Image.Annotations = nil
+
 			testV1alpha1Image := &v1alpha1.Image{}
 			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
 			require.NoError(t, err)
@@ -270,6 +268,22 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			testV1alpha1Image := &v1alpha1.Image{}
 			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
 			require.NoError(t, err)
+		})
+
+		it("converts v1alpha1 bindings", func() {
+			testV1Alpha2Image := &Image{}
+			bindings := corev1alpha1.CNBBindings{
+				{
+					Name:        "some-binding",
+					MetadataRef: &corev1.LocalObjectReference{Name: "some-metadata"},
+					SecretRef:   &corev1.LocalObjectReference{Name: "some-secret"},
+				},
+			}
+			v1alpha1Image.Spec.Build.Bindings = bindings
+
+			err := testV1Alpha2Image.ConvertFrom(context.TODO(), v1alpha1Image)
+			require.NoError(t, err)
+			require.Equal(t, bindings, testV1Alpha2Image.CNBBindings())
 		})
 	})
 }

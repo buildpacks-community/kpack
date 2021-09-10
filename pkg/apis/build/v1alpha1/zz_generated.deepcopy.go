@@ -101,7 +101,7 @@ func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 	in.Source.DeepCopyInto(&out.Source)
 	if in.Bindings != nil {
 		in, out := &in.Bindings, &out.Bindings
-		*out = make(corev1alpha1.Bindings, len(*in))
+		*out = make(corev1alpha1.CNBBindings, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -696,7 +696,7 @@ func (in *ImageBuild) DeepCopyInto(out *ImageBuild) {
 	*out = *in
 	if in.Bindings != nil {
 		in, out := &in.Bindings, &out.Bindings
-		*out = make(corev1alpha1.Bindings, len(*in))
+		*out = make(corev1alpha1.CNBBindings, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

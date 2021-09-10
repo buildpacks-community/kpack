@@ -250,12 +250,24 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrInvalidValue(image.Spec.Source.Registry.Image, "image").ViaField("spec", "source", "registry"))
 		})
 
-		it("validates build bindings", func() {
-			image.Spec.Build.Bindings = []corev1alpha1.Binding{
-				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
+		it("validates service bindings", func() {
+			image.Spec.Build.Services = Services{
+				{Kind: "Secret"},
 			}
 
-			assertValidationError(image, ctx, apis.ErrMissingField("spec.build.bindings[0].name"))
+			assertValidationError(image, ctx, apis.ErrMissingField("spec.build.services[0].name"))
+		})
+
+		it("validates v1alpha1 bindings have not been added", func() {
+			image.Spec.Build.CNBBindings = corev1alpha1.CNBBindings{
+				{
+					Name:        "test",
+					MetadataRef: nil,
+					SecretRef:   nil,
+				},
+			}
+
+			assertValidationError(image, ctx, apis.ErrDisallowedFields("spec.build.cnbBindings"))
 		})
 
 		it("image name is too long", func() {

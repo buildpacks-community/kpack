@@ -11,12 +11,16 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	k8sclient "k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/apis/duck"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/duckprovisionedserviceable"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
@@ -35,6 +39,7 @@ type Generator struct {
 	K8sClient       k8sclient.Interface
 	KeychainFactory registry.KeychainFactory
 	ImageFetcher    ImageFetcher
+	DynamicClient   dynamic.Interface
 }
 
 type BuildPodable interface {
@@ -42,14 +47,16 @@ type BuildPodable interface {
 	GetNamespace() string
 	ServiceAccount() string
 	BuilderSpec() corev1alpha1.BuildBuilderSpec
-	Bindings() []corev1alpha1.Binding
+	CnbBindings() corev1alpha1.CNBBindings
+	Services() buildapi.Services
 
-	BuildPod(buildapi.BuildPodImages, []corev1.Secret, buildapi.BuildPodBuilderConfig) (*corev1.Pod, error)
+	BuildPod(buildapi.BuildPodImages, []corev1.Secret, buildapi.BuildPodBuilderConfig, []buildapi.ServiceBinding) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, error) {
-	if err := g.buildAllowed(ctx, build); err != nil {
-		return nil, fmt.Errorf("build rejected: %w", err)
+	bindings, err := g.fetchServiceBindings(ctx, build)
+	if err != nil {
+		return nil, err
 	}
 
 	secrets, err := g.fetchBuildSecrets(ctx, build)
@@ -62,13 +69,13 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		return nil, err
 	}
 
-	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig)
+	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig, bindings)
 }
 
-func (g *Generator) buildAllowed(ctx context.Context, build BuildPodable) error {
+func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable) ([]buildapi.ServiceBinding, error) {
 	serviceAccounts, err := g.fetchServiceAccounts(ctx, build)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var forbiddenSecrets = map[string]bool{}
@@ -78,13 +85,69 @@ func (g *Generator) buildAllowed(ctx context.Context, build BuildPodable) error 
 		}
 	}
 
-	for _, binding := range build.Bindings() {
-		if binding.SecretRef != nil && forbiddenSecrets[binding.SecretRef.Name] {
-			return fmt.Errorf("binding %q uses forbidden secret %q", binding.Name, binding.SecretRef.Name)
+	bindings := make([]buildapi.ServiceBinding, 0)
+
+	if services := build.Services(); len(services) != 0 {
+		for _, s := range services {
+			var sb corev1alpha1.ServiceBinding
+			if s.Kind == "Secret" {
+				sb = corev1alpha1.ServiceBinding{
+					Name:      s.Name,
+					SecretRef: &corev1.LocalObjectReference{Name: s.Name},
+				}
+			} else {
+				ps, err := g.readProvisionedServiceDuckType(ctx, build, s)
+				if err != nil {
+					return nil, err
+				}
+				sb = corev1alpha1.ServiceBinding{
+					Name:      s.Name,
+					SecretRef: ps.Status.Binding,
+				}
+			}
+
+			if bindingUsesForbiddenSecret(forbiddenSecrets, sb.SecretRef.Name) {
+				return nil, errors.Errorf("build rejected: service %q uses forbidden secret %q", sb.Name, sb.SecretRef.Name)
+			}
+
+			bindings = append(bindings, &sb)
 		}
+		return bindings, nil
 	}
 
-	return nil
+	if cnbBindings := build.CnbBindings(); len(cnbBindings) != 0 {
+		for _, b := range cnbBindings {
+			if bindingUsesForbiddenSecret(forbiddenSecrets, b.SecretRef.Name) {
+				return nil, fmt.Errorf("build rejected: binding %q uses forbidden secret %q", b.Name, b.SecretRef.Name)
+			}
+			bindings = append(bindings, &corev1alpha1.CNBServiceBinding{
+				Name:        b.Name,
+				SecretRef:   b.SecretRef,
+				MetadataRef: b.MetadataRef,
+			})
+		}
+		return bindings, nil
+	}
+
+	return bindings, nil
+}
+
+func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build BuildPodable, s v1.ObjectReference) (duckprovisionedserviceable.ProvisionedServicable, error) {
+	gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
+	unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(ctx, s.Name, metav1.GetOptions{})
+	if err != nil {
+		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+	}
+	ps := duckprovisionedserviceable.ProvisionedServicable{}
+	if err := duck.FromUnstructured(unstructured, &ps); err != nil {
+		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+	}
+	return ps, nil
+}
+
+func bindingUsesForbiddenSecret(forbiddenSecrets map[string]bool, secretName string) bool {
+	_, ok := forbiddenSecrets[secretName]
+	return ok
 }
 
 func (g *Generator) fetchServiceAccounts(ctx context.Context, build BuildPodable) ([]corev1.ServiceAccount, error) {
