@@ -18,7 +18,6 @@ func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 	default:
 		return fmt.Errorf("unknown version, got: %T", toImage)
 	}
-
 	return nil
 }
 
@@ -46,8 +45,14 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	to.SuccessBuildHistoryLimit = is.SuccessBuildHistoryLimit
 	to.ImageTaggingStrategy = is.ImageTaggingStrategy
 	to.Source = is.Source
-	to.Build = is.Build
 	to.Notary = is.Notary
+
+	if fromBuild := is.Build; fromBuild != nil {
+		to.Build = &v1alpha1.ImageBuild{}
+		to.Build.Env = fromBuild.Env
+		to.Build.Resources = fromBuild.Resources
+		to.Build.Bindings = fromBuild.CnbBindings
+	}
 }
 
 func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
@@ -63,8 +68,14 @@ func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
 	is.FailedBuildHistoryLimit = from.FailedBuildHistoryLimit
 	is.SuccessBuildHistoryLimit = from.SuccessBuildHistoryLimit
 	is.ImageTaggingStrategy = from.ImageTaggingStrategy
-	is.Build = from.Build
 	is.Notary = from.Notary
+
+	if fromBuild := from.Build; fromBuild != nil {
+		is.Build = &ImageBuild{}
+		is.Build.Env = fromBuild.Env
+		is.Build.Resources = fromBuild.Resources
+		is.Build.CnbBindings = fromBuild.Bindings
+	}
 }
 
 func (is *ImageStatus) convertFrom(from *v1alpha1.ImageStatus) {

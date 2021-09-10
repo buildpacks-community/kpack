@@ -85,7 +85,7 @@ func configChange(img *buildapi.Image, lastBuild *buildapi.Build, srcResolver *b
 		old = buildchange.Config{
 			Env:       lastBuild.Spec.Env,
 			Resources: lastBuild.Spec.Resources,
-			Bindings:  lastBuild.Spec.Bindings,
+			Services:  lastBuild.Spec.Services,
 			Source:    lastBuild.Spec.Source,
 		}
 	}
@@ -93,7 +93,7 @@ func configChange(img *buildapi.Image, lastBuild *buildapi.Build, srcResolver *b
 	new = buildchange.Config{
 		Env:       img.Env(),
 		Resources: img.Resources(),
-		Bindings:  img.Bindings(),
+		Services:  img.Services(),
 		Source:    srcResolver.Status.Source.ResolvedSource().SourceConfig(),
 	}
 

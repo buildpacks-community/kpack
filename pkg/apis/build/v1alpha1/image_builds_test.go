@@ -204,7 +204,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds the env vars to the build spec", func() {
-			image.Spec.Build = &corev1alpha1.ImageBuild{
+			image.Spec.Build = &ImageBuild{
 				Env: []corev1.EnvVar{
 					{Name: "keyA", Value: "new"},
 				},
@@ -228,7 +228,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds build resources", func() {
-			image.Spec.Build = &corev1alpha1.ImageBuild{
+			image.Spec.Build = &ImageBuild{
 				Resources: corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("2"),

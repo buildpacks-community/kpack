@@ -124,6 +124,23 @@ func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
+func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
+	if ib == nil {
+		return nil
+	}
+
+	return ib.Services.Validate(ctx).ViaField("services").
+		Also(validateCnbBindingsEmpty(ib.CnbBindings).ViaField("cnbBindings"))
+}
+
+func validateCnbBindingsEmpty(bindings corev1alpha1.CnbBindings) *apis.FieldError {
+	if len(bindings) > 0 {
+		return apis.ErrDisallowedFields("")
+	}
+
+	return nil
+}
+
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	if builder.Name == "" {
 		return apis.ErrMissingField("name")

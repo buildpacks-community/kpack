@@ -23,7 +23,7 @@ type configChange struct {
 type Config struct {
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Bindings  corev1alpha1.Bindings       `json:"bindings,omitempty"`
+	Services  buildapi.Services           `json:"services,omitempty"`
 	Source    corev1alpha1.SourceConfig   `json:"source,omitempty"`
 }
 

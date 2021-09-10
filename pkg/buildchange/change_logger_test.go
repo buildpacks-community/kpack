@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -129,15 +130,9 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 					Source: corev1alpha1.SourceConfig{
 						Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 					},
-					Bindings: []corev1alpha1.Binding{
+					Services: buildapi.Services{
 						{
-							Name: "binding-name",
-							MetadataRef: &corev1.LocalObjectReference{
-								Name: "some-metadata-ref",
-							},
-							SecretRef: &corev1.LocalObjectReference{
-								Name: "some-secret-ref",
-							},
+							Name: "some-secret-ref",
 						},
 					},
 				}
@@ -145,12 +140,6 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 				out := diffOutBuilder.Reset().
 					Txt("Build reason(s): CONFIG").
 					Txt("CONFIG:").
-					New("bindings:").
-					New("- metadataRef:").
-					New("    name: some-metadata-ref").
-					New("  name: binding-name").
-					New("  secretRef:").
-					New("    name: some-secret-ref").
 					NoD("env:").
 					Old("- name: env-var-name").
 					Old("  value: env-var-value").
@@ -168,6 +157,8 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 					Old("    cpu: 100m").
 					New("    cpu: 200m").
 					NoD("    memory: 512M").
+					New("services:").
+					New("- name: some-secret-ref").
 					NoD("source:").
 					Old("  git:").
 					Old("    revision: some-git-revision").
@@ -270,15 +261,9 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 				Source: corev1alpha1.SourceConfig{
 					Blob: &corev1alpha1.Blob{URL: "some-blob-url"},
 				},
-				Bindings: []corev1alpha1.Binding{
+				Services: buildapi.Services{
 					{
-						Name: "binding-name",
-						MetadataRef: &corev1.LocalObjectReference{
-							Name: "some-metadata-ref",
-						},
-						SecretRef: &corev1.LocalObjectReference{
-							Name: "some-secret-ref",
-						},
+						Name: "some-secret-ref",
 					},
 				},
 			}
@@ -291,12 +276,6 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 				Old("old-commit-sha").
 				New("new-commit-sha").
 				Txt("CONFIG:").
-				New("bindings:").
-				New("- metadataRef:").
-				New("    name: some-metadata-ref").
-				New("  name: binding-name").
-				New("  secretRef:").
-				New("    name: some-secret-ref").
 				NoD("env:").
 				Old("- name: env-var-name").
 				Old("  value: env-var-value").
@@ -314,6 +293,8 @@ func testLog(t *testing.T, when spec.G, it spec.S) {
 				Old("    cpu: 100m").
 				New("    cpu: 200m").
 				NoD("    memory: 512M").
+				New("services:").
+				New("- name: some-secret-ref").
 				NoD("source:").
 				Old("  git:").
 				Old("    revision: some-git-revision").

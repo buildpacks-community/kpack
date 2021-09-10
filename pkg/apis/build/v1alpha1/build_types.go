@@ -55,7 +55,7 @@ type BuildSpec struct {
 	Source         corev1alpha1.SourceConfig     `json:"source"`
 	CacheName      string                        `json:"cacheName,omitempty"`
 	// +listType
-	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
+	Bindings corev1alpha1.CnbBindings `json:"bindings,omitempty"`
 	// +listType
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`

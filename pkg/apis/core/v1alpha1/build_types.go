@@ -23,11 +23,11 @@ type BuildBuilderSpec struct {
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-type Bindings []Binding
+type CnbBindings []CnbBinding
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-type Binding struct {
+type CnbBinding struct {
 	Name        string                       `json:"name,omitempty"`
 	MetadataRef *corev1.LocalObjectReference `json:"metadataRef,omitempty"`
 	SecretRef   *corev1.LocalObjectReference `json:"secretRef,omitempty"`

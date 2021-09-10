@@ -3,6 +3,7 @@ package v1alpha2
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -37,7 +38,13 @@ const (
 
 	buildChangesEnvVar = "BUILD_CHANGES"
 	platformAPIEnvVar  = "CNB_PLATFORM_API"
+
+	serviceBindingRootEnvVar = "SERVICE_BINDING_ROOT"
 )
+
+type ServiceBinding interface {
+	ServiceName() string
+}
 
 type BuildPodImages struct {
 	BuildInitImage         string
@@ -128,11 +135,15 @@ var (
 		MountPath: "/networkWait",
 		ReadOnly:  false,
 	}
+	serviceBindingRootEnv = corev1.EnvVar{
+		Name:  serviceBindingRootEnvVar,
+		Value: filepath.Join(platformVolume.MountPath, "bindings"),
+	}
 )
 
 type stepModifier func(corev1.Container) corev1.Container
 
-func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig, bindings []ServiceBinding) (*corev1.Pod, error) {
 	platformAPI, err := config.highestSupportedPlatformAPI(b)
 	if err != nil {
 		return nil, err
@@ -155,7 +166,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, gitAndDockerSecrets)
 
-	bindingVolumes, bindingVolumeMounts := b.setupBindings()
+	bindingVolumes, bindingVolumeMounts := setupBindingVolumesAndMounts(bindings)
 
 	builderImage := b.Spec.Builder.Image
 
@@ -334,6 +345,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 								Name:  platformAPIEnvVar,
 								Value: platformAPI.Original(),
 							},
+							serviceBindingRootEnv,
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
@@ -388,6 +400,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 								Name:  platformAPIEnvVar,
 								Value: platformAPI.Original(),
 							},
+							serviceBindingRootEnv,
 						},
 					},
 					ifWindows(config.OS, addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
@@ -487,7 +500,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
-				b.Spec.Source.Source().ImagePullSecretsVolume(),
+				b.Spec.Source.Source().ImagePullSecretsVolume(imagePullSecretsDirName),
 				builderSecretVolume(b.Spec.Builder),
 				b.notarySecretVolume(),
 			), bindingVolumes...),
@@ -732,55 +745,6 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 	return volumes, volumeMounts, args
 }
 
-func (b *Build) setupBindings() ([]corev1.Volume, []corev1.VolumeMount) {
-	volumes := []corev1.Volume{}
-	volumeMounts := []corev1.VolumeMount{}
-	for _, binding := range b.Spec.Bindings {
-		metadataVolume := fmt.Sprintf("binding-metadata-%s", binding.Name)
-		volumes = append(volumes,
-			corev1.Volume{
-				Name: metadataVolume,
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: binding.MetadataRef.Name,
-						},
-					},
-				},
-			},
-		)
-		volumeMounts = append(volumeMounts,
-			corev1.VolumeMount{
-				Name:      metadataVolume,
-				MountPath: fmt.Sprintf("%s/bindings/%s/metadata", platformVolume.MountPath, binding.Name),
-				ReadOnly:  true,
-			},
-		)
-		if binding.SecretRef != nil {
-			secretVolume := fmt.Sprintf("binding-secret-%s", binding.Name)
-			volumes = append(volumes,
-				corev1.Volume{
-					Name: secretVolume,
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: binding.SecretRef.Name,
-						},
-					},
-				},
-			)
-			volumeMounts = append(volumeMounts,
-				corev1.VolumeMount{
-					Name:      secretVolume,
-					MountPath: fmt.Sprintf("%s/bindings/%s/secret", platformVolume.MountPath, binding.Name),
-					ReadOnly:  true,
-				},
-			)
-		}
-	}
-
-	return volumes, volumeMounts
-}
-
 var (
 	highestSupportedPlatformVersion = semver.MustParse("0.6")
 	lowestSupportedPlatformVersion  = semver.MustParse("0.3")
@@ -844,6 +808,80 @@ func builderSecretVolume(bbs corev1alpha1.BuildBuilderSpec) corev1.Volume {
 			},
 		}
 	}
+}
+
+func setupBindingVolumesAndMounts(bindings []ServiceBinding) ([]corev1.Volume, []corev1.VolumeMount) {
+	volumes := make([]corev1.Volume, 0)
+	volumeMounts := make([]corev1.VolumeMount, 0)
+
+	for _, binding := range bindings {
+		switch b := binding.(type) {
+		case *corev1alpha1.ServiceBinding:
+			if b.SecretRef != nil {
+				secretVolume := fmt.Sprintf("service-binding-secret-%s", b.Name)
+				volumes = append(volumes,
+					corev1.Volume{
+						Name: secretVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: b.SecretRef.Name,
+							},
+						},
+					},
+				)
+				volumeMounts = append(volumeMounts,
+					corev1.VolumeMount{
+						Name:      secretVolume,
+						MountPath: fmt.Sprintf("%s/bindings/%s", platformVolume.MountPath, b.Name),
+						ReadOnly:  true,
+					},
+				)
+			}
+		case *corev1alpha1.CnbServiceBinding:
+			metadataVolume := fmt.Sprintf("binding-metadata-%s", b.Name)
+			volumes = append(volumes,
+				corev1.Volume{
+					Name: metadataVolume,
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: *b.MetadataRef,
+						},
+					},
+				},
+			)
+			volumeMounts = append(volumeMounts,
+				corev1.VolumeMount{
+					Name:      metadataVolume,
+					MountPath: fmt.Sprintf("%s/bindings/%s/metadata", platformVolume.MountPath, b.Name),
+					ReadOnly:  true,
+				},
+			)
+			if b.SecretRef != nil {
+				secretVolume := fmt.Sprintf("binding-secret-%s", b.Name)
+				volumes = append(volumes,
+					corev1.Volume{
+						Name: secretVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: b.SecretRef.Name,
+							},
+						},
+					},
+				)
+				volumeMounts = append(volumeMounts,
+					corev1.VolumeMount{
+						Name:      secretVolume,
+						MountPath: fmt.Sprintf("%s/bindings/%s/secret", platformVolume.MountPath, b.Name),
+						ReadOnly:  true,
+					},
+				)
+			}
+		default:
+			break
+		}
+	}
+
+	return volumes, volumeMounts
 }
 
 func args(args ...[]string) []string {

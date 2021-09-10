@@ -33,12 +33,12 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 					}},
 				},
 				ServiceAccount: "default",
+				Services:       nil,
 				Cache: &BuildCacheConfig{
 					Volume: &BuildPersistentVolumeCache{
 						ClaimName: "some-claim-name",
 					},
 				},
-				Bindings: nil,
 				Env: []corev1.EnvVar{{
 					Name:  "some-var",
 					Value: "some-val",
@@ -238,6 +238,22 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 			err = testV1alpha2Build.ConvertFrom(context.TODO(), v1alpha1Build)
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2Build, v1alpha2Build)
+		})
+
+		it("converts v1alpha1 bindings", func() {
+			testV1alpha2Build := &Build{}
+			bindings := corev1alpha1.CnbBindings{
+				{
+					Name:        "some-binding",
+					MetadataRef: &corev1.LocalObjectReference{Name: "some-metadata"},
+					SecretRef:   &corev1.LocalObjectReference{Name: "some-secret"},
+				},
+			}
+			v1alpha1Build.Spec.Bindings = bindings
+
+			err := testV1alpha2Build.ConvertFrom(context.TODO(), v1alpha1Build)
+			require.NoError(t, err)
+			require.Equal(t, bindings, testV1alpha2Build.CnbBindings())
 		})
 	})
 }

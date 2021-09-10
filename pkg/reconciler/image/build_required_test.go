@@ -172,12 +172,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("true if build bindings changes", func() {
-			latestBuild.Spec.Bindings = corev1alpha1.Bindings{
+			latestBuild.Spec.Services = buildapi.Services{
 				{
 					Name: "some-old-value",
-					MetadataRef: &corev1.LocalObjectReference{
-						Name: "some-old-config-map",
-					},
 				},
 			}
 
@@ -187,12 +184,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
     "reason": "CONFIG",
     "old": {
       "resources": {},
-      "bindings": [
+      "services": [
         {
-          "name": "some-old-value",
-          "metadataRef": {
-            "name": "some-old-config-map"
-          }
+          "name": "some-old-value"
         }
       ],
       "source": {
@@ -504,7 +498,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build = &corev1alpha1.ImageBuild{
+				image.Spec.Build = &buildapi.ImageBuild{
 					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},
