@@ -173,6 +173,13 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			require.Len(t, build.Spec.Tags, 1)
 		})
 
+		it("generates a build with default process when set", func() {
+			image.Spec.DefaultProcess = "sys-info"
+			image.Name = "imageName"
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", 27)
+			assert.Equal(t, "sys-info", build.Spec.DefaultProcess)
+		})
+
 		when("generates additional image names for a provided build number", func() {
 			it("with tag prefix if image name has a tag", func() {
 				image.Spec.Tag = "gcr.io/imagename/foo:test"

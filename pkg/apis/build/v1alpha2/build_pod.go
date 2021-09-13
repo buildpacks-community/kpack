@@ -384,19 +384,21 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 							"-project-metadata=/layers/project-metadata.toml"},
 							exporterCacheArgs,
 							func() []string {
-								switch {
-								case platformAPI.Equal(lowestSupportedPlatformVersion):
-									return nil
-								case platformAPI.Equal(highestSupportedPlatformVersion):
-									return []string{
-										"-report=/var/report/report.toml",
-									}
-								default:
-									return []string{
-										"-process-type=web",
-										"-report=/var/report/report.toml",
+								if b.DefaultProcess() == "" {
+									if platformAPI.Equal(lowestSupportedPlatformVersion) || platformAPI.Equal(highestSupportedPlatformVersion) {
+										return nil
+									} else {
+										return []string{fmt.Sprintf("-process-type=web")}
 									}
 								}
+								return []string{fmt.Sprintf("-process-type=%s", b.DefaultProcess())}
+							}(),
+							func() []string {
+								if platformAPI.Equal(lowestSupportedPlatformVersion) {
+									return nil
+								}
+								return []string{"-report=/var/report/report.toml"}
+
 							}(),
 							b.Spec.Tags),
 						VolumeMounts: append([]corev1.VolumeMount{

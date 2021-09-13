@@ -33,6 +33,7 @@ type Source interface {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type Git struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
@@ -61,6 +62,7 @@ func (in *Git) ImagePullSecretsVolume() corev1.Volume {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type Blob struct {
 	URL string `json:"url"`
 }
@@ -84,6 +86,7 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type Registry struct {
 	Image string `json:"image"`
 	// +patchMergeKey=name
@@ -122,6 +125,7 @@ func (r *Registry) BuildEnvVars() []corev1.EnvVar {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type ResolvedSourceConfig struct {
 	Git      *ResolvedGitSource      `json:"git,omitempty"`
 	Blob     *ResolvedBlobSource     `json:"blob,omitempty"`
@@ -155,6 +159,7 @@ const (
 )
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type ResolvedGitSource struct {
 	URL      string        `json:"url"`
 	Revision string        `json:"revision"`
@@ -181,6 +186,7 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 }
 
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 type ResolvedBlobSource struct {
 	URL     string `json:"url"`
 	SubPath string `json:"subPath,omitempty"`

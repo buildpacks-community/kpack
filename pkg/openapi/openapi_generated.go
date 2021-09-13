@@ -2054,6 +2054,12 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig"),
 						},
 					},
+					"defaultProcess": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"source"},
 			},
@@ -3298,6 +3304,12 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 					"cosign": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig"),
+						},
+					},
+					"defaultProcess": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},

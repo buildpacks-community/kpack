@@ -708,6 +708,35 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"someimage/name:tag3",
 			}, pod.Spec.InitContainers[5].Args)
 		})
+		it("configures export step with non-web default process", func() {
+			build.Spec.DefaultProcess = "sys-info"
+			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
+			require.NoError(t, err)
+
+			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
+			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
+			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
+				"layers-dir",
+				"workspace-dir",
+				"home-dir",
+				"cache-dir",
+				"report-dir",
+			})
+			assert.Equal(t, []string{
+				"-layers=/layers",
+				"-app=/workspace",
+				"-group=/layers/group.toml",
+				"-analyzed=/layers/analyzed.toml",
+				"-project-metadata=/layers/project-metadata.toml",
+				"-cache-dir=/cache",
+				"-process-type=sys-info",
+				"-report=/var/report/report.toml",
+				build.Tag(),
+				"someimage/name:tag2",
+				"someimage/name:tag3",
+			}, pod.Spec.InitContainers[5].Args)
+		})
 
 		it("configures the builder image in all lifecycle steps", func() {
 			pod, err := build.BuildPod(config, secrets, nil, buildPodBuilderConfig)
@@ -1837,7 +1866,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 					exportContainer.Args)
 			})
-
 			it("configures the completion container for notary on windows", func() {
 				build.Spec.Notary = &corev1alpha1.NotaryConfig{V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-notary-server",

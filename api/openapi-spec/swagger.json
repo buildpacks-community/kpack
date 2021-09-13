@@ -5219,6 +5219,9 @@
         "cosign": {
           "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
         },
+        "defaultProcess": {
+          "type": "string"
+        },
         "env": {
           "type": "array",
           "items": {
@@ -5873,6 +5876,9 @@
         },
         "cosign": {
           "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
+        },
+        "defaultProcess": {
+          "type": "string"
         },
         "failedBuildHistoryLimit": {
           "type": "integer",
