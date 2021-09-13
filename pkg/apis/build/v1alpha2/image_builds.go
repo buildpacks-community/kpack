@@ -67,6 +67,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Tolerations:           im.Tolerations(),
 			NodeSelector:          im.NodeSelector(),
 			Affinity:              im.Affinity(),
+			RuntimeClassName:      im.RuntimeClassName(),
+			SchedulerName:         im.SchedulerName(),
 		},
 	}
 }
@@ -156,6 +158,20 @@ func (im *Image) Affinity() *corev1.Affinity {
 		return nil
 	}
 	return im.Spec.Build.Affinity
+}
+
+func (im *Image) RuntimeClassName() *string {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.RuntimeClassName
+}
+
+func (im *Image) SchedulerName() string {
+	if im.Spec.Build == nil {
+		return ""
+	}
+	return im.Spec.Build.SchedulerName
 }
 
 func (im *Image) CacheName() string {

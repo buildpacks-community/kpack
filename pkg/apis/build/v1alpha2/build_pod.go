@@ -449,6 +449,8 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 			NodeSelector:       b.nodeSelector(config.OS),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
+			RuntimeClassName:   b.Spec.RuntimeClassName,
+			SchedulerName:      b.Spec.SchedulerName,
 			Volumes: append(append(
 				append(secretVolumes, b.cacheVolume(config.OS)...),
 				corev1.Volume{
@@ -591,6 +593,8 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 			NodeSelector:       b.nodeSelector("linux"),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
+			RuntimeClassName:   b.Spec.RuntimeClassName,
+			SchedulerName:      b.Spec.SchedulerName,
 			Volumes: append(
 				secretVolumes,
 				corev1.Volume{

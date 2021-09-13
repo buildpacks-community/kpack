@@ -61,9 +61,11 @@ type BuildSpec struct {
 	Notary                *corev1alpha1.NotaryConfig  `json:"notary,omitempty"`
 	DefaultProcess        string                      `json:"defaultProcess,omitempty"`
 	// +listType
-	Tolerations  []corev1.Toleration `json:"tolerations,omitempty"`
-	NodeSelector map[string]string   `json:"nodeSelector,omitempty"`
-	Affinity     *corev1.Affinity    `json:"affinity,omitempty"`
+	Tolerations      []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector     map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity         *corev1.Affinity    `json:"affinity,omitempty"`
+	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
+	SchedulerName    string              `json:"schedulerName,omitempty"`
 }
 
 func (bs *BuildSpec) NeedVolumeCache() bool {
