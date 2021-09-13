@@ -68,6 +68,14 @@ metadata:
   name: kpack-webhook-mutatingwebhookconfiguration-admin
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - "namespaces"
+  resourceNames:
+  - "kpack"
+  verbs:
+  - get
+- apiGroups:
   - "admissionregistration.k8s.io"
   resources:
   - "mutatingwebhookconfigurations"
