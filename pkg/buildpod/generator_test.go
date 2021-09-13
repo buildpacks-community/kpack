@@ -22,7 +22,7 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	fakev1 "github.com/pivotal/kpack/pkg/apis/fake/v1"
+	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	"github.com/pivotal/kpack/pkg/cnb"
@@ -35,7 +35,7 @@ var (
 	schemeGroupVersion = schema.GroupVersion{Group: "fake.kpack.io", Version: "v1"}
 	schemeBuilder      = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(schemeGroupVersion,
-			&fakev1.FakeProvisionedService{},
+			&psfakes.FakeProvisionedService{},
 		)
 		metav1.AddToGroupVersion(scheme, schemeGroupVersion)
 		return nil
@@ -213,7 +213,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			Type: "service.binding/some-type",
 		}
 
-		ps := &fakev1.FakeProvisionedService{
+		ps := &psfakes.FakeProvisionedService{
 
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ProvisionedService",
@@ -223,12 +223,12 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Name:      "some-provisioned-service",
 				Namespace: namespace,
 			},
-			Status: fakev1.ProvisionedServiceStatus{
+			Status: psfakes.ProvisionedServiceStatus{
 				Binding: v1.LocalObjectReference{Name: "some-ps-binding-secret"},
 			},
 		}
 
-		invalidPS := &fakev1.FakeProvisionedService{
+		invalidPS := &psfakes.FakeProvisionedService{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ProvisionedService",
 				APIVersion: "v1alpha1",
@@ -237,7 +237,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				Name:      "some-invalid-provisioned-service",
 				Namespace: namespace,
 			},
-			Status: fakev1.ProvisionedServiceStatus{
+			Status: psfakes.ProvisionedServiceStatus{
 				Binding: v1.LocalObjectReference{Name: "&"},
 			},
 		}

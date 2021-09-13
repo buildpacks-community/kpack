@@ -8,11 +8,9 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// +k8s:deepcopy-gen=true
 type FakeProvisionedService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -21,13 +19,20 @@ type FakeProvisionedService struct {
 	Status ProvisionedServiceStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen=true
+func (ps *FakeProvisionedService) DeepCopyObject() runtime.Object {
+	return &FakeProvisionedService{
+		TypeMeta:   ps.TypeMeta,
+		ObjectMeta: ps.ObjectMeta,
+		Spec:       ps.Spec,
+		Status:     ps.Status,
+	}
+}
+
 type ProvisionedServiceSpec struct {
 	//random spec
 	DatabaseSize string `json:"databaseSize,omitempty"`
 }
 
-// +k8s:deepcopy-gen=true
 type ProvisionedServiceStatus struct {
 	Binding corev1.LocalObjectReference `json:"binding,omitempty"`
 }
