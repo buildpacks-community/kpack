@@ -6,6 +6,8 @@ The stack will be referenced by a [builder](builders.md) resource.
 
 At this time only a Cluster scoped `ClusterStack` is available.
 
+Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_clusterstack.md).
+
 ### <a id='cluster-store'></a>Cluster Stack Configuration
 
 ```yaml

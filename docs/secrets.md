@@ -1,6 +1,8 @@
 # Secrets
 
-kpack utilizes kubernetes secrets to configure credentials to publish images to docker registries and access private github repositories.   
+kpack utilizes kubernetes secrets to configure credentials to publish images to docker registries and access private github repositories.
+
+Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_secret.md).
 
 ### Docker Registry Secrets
 

@@ -6,6 +6,8 @@ The store will be referenced by a [builder](builders.md) resource.
 
 At this time only a Cluster scoped `ClusterStore` is available.
 
+Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_clusterstore.md).
+
 ### <a id='cluster-store'></a>Cluster Store Configuration
 
 ```yaml

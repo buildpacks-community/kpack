@@ -195,10 +195,10 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     tutorial-image                      Unknown
     ```
     
-    You can tail the logs for image that is currently building using the [logs utility](logs.md)
+    You can tail the logs for image that is currently building using the [kp cli](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_build_logs.md)
     
     ```
-    logs -image tutorial-image -namespace default
+    kp build logs tutorial-image -n default
     ``` 
     
     Once the image finishes building you can get the fully resolved built image with `kubectl get`
@@ -266,10 +266,10 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    tutorial-image-build-2-xsf2l                                                       Unknown
    ```
 
-   You can tail the logs for the image with log utility used in step #6.
+   You can tail the logs for the image with the kp cli used in step #6.
    
    ```
-   logs -image tutorial-image -namespace default -build 2
+   kp build logs tutorial-image -n default -b 2
    ```
    
    > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build. 
