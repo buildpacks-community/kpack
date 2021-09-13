@@ -224,20 +224,34 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, testV1alpha2Build, v1alpha2Build)
 		})
 
-		it("handles null values", func() {
+		it("handles nil values", func() {
 			v1alpha2Build.Spec.LastBuild = nil
 			v1alpha2Build.Spec.Notary = nil
-			v1alpha1Build.Spec.LastBuild = nil
-			v1alpha1Build.Spec.Notary = nil
+			v1alpha2Build.Spec.Cache = nil
 			testV1alpha1Build := &v1alpha1.Build{}
 			err := v1alpha2Build.ConvertTo(context.TODO(), testV1alpha1Build)
 			require.NoError(t, err)
+
+			v1alpha1Build.Spec.LastBuild = nil
+			v1alpha1Build.Spec.Notary = nil
+			v1alpha1Build.Spec.CacheName = ""
 			require.Equal(t, testV1alpha1Build, v1alpha1Build)
 
 			testV1alpha2Build := &Build{}
 			err = testV1alpha2Build.ConvertFrom(context.TODO(), v1alpha1Build)
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2Build, v1alpha2Build)
+		})
+
+		it("handles converting builds with a registry cache", func() {
+			v1alpha2Build.Spec.Cache = &BuildCacheConfig{
+				Registry: &RegistryCache{
+					Tag: "registry.com/tag",
+				},
+			}
+			testV1alpha1Build := &v1alpha1.Build{}
+			err := v1alpha2Build.ConvertTo(context.TODO(), testV1alpha1Build)
+			require.NoError(t, err)
 		})
 	})
 }

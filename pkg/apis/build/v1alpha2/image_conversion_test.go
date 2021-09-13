@@ -242,20 +242,34 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, testV1alpha2Image, v1alpha2Image)
 		})
 
-		it("handles null values", func() {
+		it("handles nil values", func() {
 			v1alpha2Image.Spec.Build = nil
 			v1alpha2Image.Spec.Notary = nil
-			v1alpha1Image.Spec.Build = nil
-			v1alpha1Image.Spec.Notary = nil
+			v1alpha2Image.Spec.Cache = nil
 			testV1alpha1Image := &v1alpha1.Image{}
 			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
 			require.NoError(t, err)
+
+			v1alpha1Image.Spec.Build = nil
+			v1alpha1Image.Spec.Notary = nil
+			v1alpha1Image.Spec.CacheSize = nil
 			require.Equal(t, testV1alpha1Image, v1alpha1Image)
 
 			testV1alpha2Image := &Image{}
 			err = testV1alpha2Image.ConvertFrom(context.TODO(), v1alpha1Image)
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2Image, v1alpha2Image)
+		})
+
+		it("handles converting images with registry cache", func() {
+			v1alpha2Image.Spec.Cache = &ImageCacheConfig{
+				Registry: &RegistryCache{
+					Tag: "some-registry.com/tag",
+				},
+			}
+			testV1alpha1Image := &v1alpha1.Image{}
+			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
+			require.NoError(t, err)
 		})
 	})
 }
