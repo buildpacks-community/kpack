@@ -39,7 +39,7 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	to.Tag = is.Tag
 	to.Builder = is.Builder
 	to.ServiceAccount = is.ServiceAccount
-	if is.Cache.Volume != nil {
+	if is.Cache != nil && is.Cache.Volume != nil {
 		to.CacheSize = is.Cache.Volume.Size
 	}
 	to.FailedBuildHistoryLimit = is.FailedBuildHistoryLimit
@@ -55,10 +55,12 @@ func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
 	is.Builder = from.Builder
 	is.ServiceAccount = from.ServiceAccount
 	is.Source = from.Source
-	is.Cache = &ImageCacheConfig{
-		Volume: &ImagePersistentVolumeCache{
-			Size: from.CacheSize,
-		},
+	if from.CacheSize != nil {
+		is.Cache = &ImageCacheConfig{
+			Volume: &ImagePersistentVolumeCache{
+				Size: from.CacheSize,
+			},
+		}
 	}
 	is.FailedBuildHistoryLimit = from.FailedBuildHistoryLimit
 	is.SuccessBuildHistoryLimit = from.SuccessBuildHistoryLimit
