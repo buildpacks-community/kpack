@@ -7,9 +7,9 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 
     > Follow these docs to [install and setup kpack](install.md) 
 
-1. kpack log utility is downloaded and available
+1. kpack cli
 
-    > Follow these docs to [setup log utility](logs.md)
+    > Get the kp cli from the [github release](https://github.com/vmware-tanzu/kpack-cli/releases)
      
 ###  Tutorial
 1. Create a secret with push credentials for the docker registry that you plan on publishing images to with kpack.  
