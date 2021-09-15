@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
@@ -80,6 +81,7 @@ func (i *Image) validateName(imageName string) *apis.FieldError {
 
 func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 	return is.validateTag(ctx).
+		Also(is.validateAdditionalTags(ctx)).
 		Also(validateBuilder(is.Builder).ViaField("builder")).
 		Also(is.Source.Validate(ctx).ViaField("source")).
 		Also(is.Build.Validate(ctx).ViaField("build")).
@@ -95,6 +97,31 @@ func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 	}
 
 	return validate.Tag(is.Tag)
+}
+
+func (is *ImageSpec) validateAdditionalTags(ctx context.Context) *apis.FieldError {
+	return validate.Tags(is.AdditionalTags, "additionalTags").Also(is.validateSameRegistry())
+}
+
+func (is *ImageSpec) validateSameRegistry() *apis.FieldError {
+	tag, err := name.NewTag(is.Tag, name.WeakValidation)
+	// We only care about the non-nil error cases here as we validate
+	// the tag validity in other methods which should display appropriate errors.
+	if err == nil {
+		for _, t := range is.AdditionalTags {
+			addT, err := name.NewTag(t, name.WeakValidation)
+			if err == nil {
+				if addT.RegistryStr() != tag.RegistryStr() {
+					return &apis.FieldError{
+						Message: "all additionalTags must have the same registry as tag",
+						Paths:   []string{"additionalTags"},
+						Details: fmt.Sprintf("expected registry: %s, got: %s", tag.RegistryStr(), addT.RegistryStr()),
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {

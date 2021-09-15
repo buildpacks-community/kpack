@@ -991,6 +991,11 @@ func (in *ImageSpec) DeepCopyInto(out *ImageSpec) {
 		*out = new(v1alpha1.NotaryConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AdditionalTags != nil {
+		in, out := &in.AdditionalTags, &out.AdditionalTags
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

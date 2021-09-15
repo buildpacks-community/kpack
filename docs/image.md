@@ -6,6 +6,7 @@ kpack will monitor the inputs to the image configuration to rebuild the image wh
 The following defines the relevant fields of the `image` resource spec in more detail:
 
 - `tag`: The image tag.
+- `additionalTags`: Any additional list of image tags that should be published. This list of tags is mutable.
 - `builder`: Configuration of the `builder` resource the image builds will use. See more info [Builder Configuration](builders.md).
 - `serviceAccount`: The Service Account name that will be used for credential lookup.
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.

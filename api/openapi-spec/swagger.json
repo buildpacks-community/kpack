@@ -5832,6 +5832,13 @@
         "source"
       ],
       "properties": {
+        "additionalTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": ""
+        },
         "build": {
           "$ref": "#/definitions/kpack.core.v1alpha1.ImageBuild"
         },

@@ -52,6 +52,8 @@ type ImageSpec struct {
 	Build                    *corev1alpha1.ImageBuild          `json:"build,omitempty"`
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
+	// +listType
+	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
 
 // +k8s:openapi-gen=true
