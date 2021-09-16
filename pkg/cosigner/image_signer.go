@@ -34,12 +34,7 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string]interface{}, cosignRepositories map[string]interface{}, cosignDockerMediaTypes map[string]interface{}) error {
-	if len(report.Image.Tags) < 1 {
-		s.Logger.Println("no image tag to sign")
-		return nil
-	}
-
+func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, annotations map[string]interface{}, cosignRepositories map[string]interface{}, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignSecrets, err := findCosignSecrets()
 	if err != nil {
 		s.Logger.Printf("no keys found for cosign signing: %v\n", err)
@@ -53,7 +48,6 @@ func (s *ImageSigner) Sign(report lifecycle.ExportReport, annotations map[string
 
 	refImage := report.Image.Tags[0]
 
-	ctx := context.Background()
 	for _, cosignSecret := range cosignSecrets {
 		cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 		cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
