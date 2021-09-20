@@ -18,10 +18,13 @@ type ImageSigner struct {
 	signFunc SignFunc
 }
 
-var (
-	secretLocation            = "/var/build-secrets/cosign"
+const (
 	cosignRepositoryEnv       = "COSIGN_REPOSITORY"
 	cosignDockerMediaTypesEnv = "COSIGN_DOCKER_MEDIA_TYPES"
+)
+
+var (
+	secretLocation = "/var/build-secrets/cosign"
 )
 
 func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
@@ -65,7 +68,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, a
 
 		if cosignRepository, ok := cosignRepositories[cosignSecret]; ok {
 			if err := os.Setenv(cosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
-				return fmt.Errorf("failed setting COSIGN_REPOSITORY env variable: %v", err)
+				return fmt.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
 			}
 		}
 
@@ -81,7 +84,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, a
 			errorString = fmt.Sprintf("unable to sign image with %s: %v\n", cosignKeyFile, err)
 		}
 		if err := os.Unsetenv(cosignRepositoryEnv); err != nil {
-			errorString = fmt.Sprintf("%sfailed unsetting COSIGN_REPOSITORY variable: %v\n", errorString, err)
+			errorString = fmt.Sprintf("%sfailed unsetting %s variable: %v\n", errorString, cosignRepositoryEnv, err)
 		}
 		if err := os.Unsetenv(cosignDockerMediaTypesEnv); err != nil {
 			errorString = fmt.Sprintf("%sfailed unsetting COSIGN_DOCKER_MEDIA_TYPES variable: %v\n", errorString, err)

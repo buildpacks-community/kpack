@@ -266,6 +266,15 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assert.Error(t, err)
 				err = download.SignatureCmd(context.Background(), expectedImageName)
 				assert.Nil(t, err)
+
+				// Required to set COSIGN_REPOSITORY env variable to validate signature
+				// on a registry that does not contain the image
+				os.Setenv(cosignRepositoryEnv, altImageName)
+				defer os.Unsetenv(cosignRepositoryEnv)
+				err = verify(publicKey1, expectedImageName, nil)
+				assert.Error(t, err)
+				err = verify(publicKey2, expectedImageName, nil)
+				assert.Nil(t, err)
 			})
 
 			it("sets COSIGN_DOCKER_MEDIA_TYPES environment variable", func() {
@@ -329,8 +338,6 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				assertUnset(t, cosignRepositoryEnv)
 			})
-
-			// TODO: Add test for setting/unsetting environment variable errors
 		})
 
 		when("signing is skipped because", func() {

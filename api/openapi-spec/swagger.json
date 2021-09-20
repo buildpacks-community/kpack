@@ -5741,10 +5741,6 @@
     },
     "kpack.build.v1alpha2.CosignAnnotation": {
       "type": "object",
-      "required": [
-        "name",
-        "value"
-      ],
       "properties": {
         "name": {
           "type": "string"
@@ -5756,9 +5752,6 @@
     },
     "kpack.build.v1alpha2.CosignConfig": {
       "type": "object",
-      "required": [
-        "annotations"
-      ],
       "properties": {
         "annotations": {
           "type": "array",
