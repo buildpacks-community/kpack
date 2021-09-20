@@ -5,7 +5,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/notary"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
 
 const (
@@ -84,15 +84,13 @@ func main() {
 			logger.Fatalf("error obtaining home directory: %v", err)
 		}
 
-		err = creds.Save(path.Join(homeDir, ".docker", "config.json"))
+		err = creds.Save(filepath.Join(homeDir, ".docker", "config.json"))
 		if err != nil {
 			logger.Fatalf("error writing docker creds: %v", err)
 		}
 	}
 
-	cosignSigner := cosigner.ImageSigner{
-		Logger: logger,
-	}
+	cosignSigner := cosigner.NewImageSigner(logger, cli.SignCmd)
 
 	annotations := mapKeyValueArgs(cosignAnnotations)
 	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)

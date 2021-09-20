@@ -190,7 +190,6 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				err = download.SignatureCmd(context.Background(), expectedImageName)
 				assert.Nil(t, err)
 			})
-
 			it("errors early when signing fails", func() {
 				cliSignCmdCallCount := 0
 
@@ -201,7 +200,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-0")
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-0"), 0700)
-				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
+				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory\n", emptyKey, emptyKey)
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(testCtx, report, nil, nil, nil)
@@ -220,7 +219,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-3")
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-3"), 0700)
-				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
+				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory\n", emptyKey, emptyKey)
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(testCtx, report, nil, nil, nil)
@@ -330,6 +329,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				assertUnset(t, cosignRepositoryEnv)
 			})
+
+			// TODO: Add test for setting/unsetting environment variable errors
 		})
 
 		when("signing is skipped because", func() {
@@ -360,8 +361,23 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
-					t.Helper()
-					assert.Equal(t, testCtx, ctx)
+					cliSignCmdCallCount++
+					return nil
+				}
+
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				err := signer.Sign(testCtx, report, nil, nil, nil)
+				assert.EqualError(t, err, "error finding cosign signing keys: open /fake/location/that/doesnt/exist: no such file or directory")
+
+				assert.Equal(t, 0, cliSignCmdCallCount)
+			})
+
+			it("has no image.Tags in report", func() {
+				secretLocation = createCosignKeyFiles(t)
+				report = createEmptyReportToml(t)
+
+				cliSignCmdCallCount := 0
+				cliSignCmd := func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error {
 					cliSignCmdCallCount++
 					return nil
 				}
@@ -372,7 +388,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, 0, cliSignCmdCallCount)
 
-				assert.Equal(t, "no keys found for cosign signing: open /fake/location/that/doesnt/exist: no such file or directory", logText(scanner))
+				assert.Equal(t, "no image found in report to sign", logText(scanner))
 			})
 		})
 	})
