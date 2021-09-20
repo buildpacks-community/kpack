@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -97,7 +98,8 @@ func main() {
 	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)
 	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
 
-	if err := cosignSigner.Sign(report, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
+	ctx := context.Background()
+	if err := cosignSigner.Sign(ctx, report, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 

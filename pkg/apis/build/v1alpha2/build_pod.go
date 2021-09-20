@@ -668,14 +668,8 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
 		case string(secret.Data[COSIGNSecretDataCosignKey]) != "":
-			if cosignRepository := secret.ObjectMeta.Annotations[COSIGNRespositoryAnnotationPrefix]; cosignRepository != "" {
-				args = append(args, fmt.Sprintf("-cosign-repositories=%s=%s", secret.Name, cosignRepository))
-			}
-
-			if cosignDockerMediaType := secret.ObjectMeta.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
-				args = append(args, fmt.Sprintf("-cosign-docker-media-types=%s=%s", secret.Name, cosignDockerMediaType))
-			}
-
+			cosignArgs := cosignSecretArgs(secret)
+			args = append(args, cosignArgs...)
 			secretPathName = fmt.Sprintf(DefaultSecretPathName, "cosign/%s")
 		default:
 			//ignoring secret
@@ -886,4 +880,17 @@ func (b *Build) completionContainer(secrets []corev1.Secret, completionImage str
 		VolumeMounts:    volumeMounts,
 		ImagePullPolicy: corev1.PullIfNotPresent,
 	}
+}
+
+func cosignSecretArgs(secret corev1.Secret) []string {
+	cosignArgs := make([]string, 0)
+	if cosignRepository := secret.ObjectMeta.Annotations[COSIGNRespositoryAnnotationPrefix]; cosignRepository != "" {
+		cosignArgs = append(cosignArgs, fmt.Sprintf("-cosign-repositories=%s=%s", secret.Name, cosignRepository))
+	}
+
+	if cosignDockerMediaType := secret.ObjectMeta.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
+		cosignArgs = append(cosignArgs, fmt.Sprintf("-cosign-docker-media-types=%s=%s", secret.Name, cosignDockerMediaType))
+	}
+
+	return cosignArgs
 }
