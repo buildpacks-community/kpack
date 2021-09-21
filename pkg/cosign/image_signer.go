@@ -1,4 +1,4 @@
-package cosigner
+package cosign
 
 import (
 	"context"

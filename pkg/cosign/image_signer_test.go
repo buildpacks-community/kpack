@@ -1,4 +1,4 @@
-package cosigner
+package cosign
 
 import (
 	"bufio"
@@ -25,7 +25,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 	"github.com/sigstore/cosign/cmd/cosign/cli/download"
-	"github.com/sigstore/cosign/pkg/cosign"
+	sigstoreCosign "github.com/sigstore/cosign/pkg/cosign"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -523,7 +523,7 @@ func pushRandomImage(t *testing.T, imageRef string) func() {
 
 	cleanup := func() {
 		_ = remote.Delete(ref, regClientOpts...)
-		ref := cosign.AttachedImageTag(ref.Context(), remoteImage.Descriptor.Digest, cosign.SignatureTagSuffix)
+		ref := sigstoreCosign.AttachedImageTag(ref.Context(), remoteImage.Descriptor.Digest, sigstoreCosign.SignatureTagSuffix)
 		_ = remote.Delete(ref, regClientOpts...)
 	}
 
@@ -542,7 +542,7 @@ func keypair(t *testing.T, dirPath, secretName, password string) {
 		return []byte(password), nil
 	}
 
-	keys, err := cosign.GenerateKeyPair(passFunc)
+	keys, err := sigstoreCosign.GenerateKeyPair(passFunc)
 	assert.Nil(t, err)
 
 	err = os.Mkdir(filepath.Join(dirPath, secretName), 0700)

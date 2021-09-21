@@ -10,7 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
-	"github.com/pivotal/kpack/pkg/cosigner"
+	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/notary"
@@ -89,7 +89,7 @@ func main() {
 		}
 	}
 
-	cosignSigner := cosigner.NewImageSigner(logger, cli.SignCmd)
+	cosignSigner := cosign.NewImageSigner(logger, cli.SignCmd)
 
 	annotations := mapKeyValueArgs(cosignAnnotations)
 	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)
