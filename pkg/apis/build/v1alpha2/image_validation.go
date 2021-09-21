@@ -99,7 +99,7 @@ func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
 }
 
 func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
-	if is.Cache.Volume != nil && ctx.Value(HasDefaultStorageClass) == nil {
+	if is.Cache != nil && is.Cache.Volume != nil && ctx.Value(HasDefaultStorageClass) == nil {
 		return apis.ErrGeneric("spec.cache.volume.size cannot be set with no default StorageClass")
 	}
 

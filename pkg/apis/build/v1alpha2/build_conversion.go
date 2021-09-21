@@ -37,9 +37,11 @@ func (b *Build) ConvertFrom(_ context.Context, from apis.Convertible) error {
 func (bs *BuildSpec) convertTo(to *v1alpha1.BuildSpec) {
 	to.Env = bs.Env
 	to.Source = bs.Source
-	to.CacheName = bs.Cache.Volume.ClaimName
 	to.Resources = bs.Resources
 	to.Tags = bs.Tags
+	if bs.Cache != nil && bs.Cache.Volume != nil {
+		to.CacheName = bs.Cache.Volume.ClaimName
+	}
 	if bs.LastBuild != nil {
 		to.LastBuild = &v1alpha1.LastBuild{
 			Image:   bs.LastBuild.Image,
@@ -55,10 +57,12 @@ func (bs *BuildSpec) convertTo(to *v1alpha1.BuildSpec) {
 func (bs *BuildSpec) convertFrom(from *v1alpha1.BuildSpec) {
 	bs.Env = from.Env
 	bs.Source = from.Source
-	bs.Cache = &BuildCacheConfig{
-		Volume: &BuildPersistentVolumeCache{
-			ClaimName: from.CacheName,
-		},
+	if from.CacheName != "" {
+		bs.Cache = &BuildCacheConfig{
+			Volume: &BuildPersistentVolumeCache{
+				ClaimName: from.CacheName,
+			},
+		}
 	}
 	bs.Resources = from.Resources
 	bs.Tags = from.Tags
