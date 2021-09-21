@@ -11,7 +11,7 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
 
-type SignFunc func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef string, certPath string, upload bool, payloadPath string, force bool, recursive bool) error
+type SignFunc func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error
 
 type ImageSigner struct {
 	Logger   *log.Logger
@@ -23,10 +23,6 @@ const (
 	cosignDockerMediaTypesEnv = "COSIGN_DOCKER_MEDIA_TYPES"
 )
 
-var (
-	secretLocation = "/var/build-secrets/cosign"
-)
-
 func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	return &ImageSigner{
 		Logger:   logger,
@@ -34,8 +30,8 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, annotations map[string]interface{}, cosignRepositories map[string]interface{}, cosignDockerMediaTypes map[string]interface{}) error {
-	cosignSecrets, err := findCosignSecrets()
+func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+	cosignSecrets, err := findCosignSecrets(secretLocation)
 	if err != nil {
 		return fmt.Errorf("error finding cosign signing keys: %v", err)
 	}
@@ -98,7 +94,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, a
 	return nil
 }
 
-func findCosignSecrets() ([]string, error) {
+func findCosignSecrets(secretLocation string) ([]string, error) {
 	var result []string
 
 	files, err := ioutil.ReadDir(secretLocation)

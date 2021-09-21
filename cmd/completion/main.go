@@ -19,11 +19,10 @@ import (
 )
 
 const (
-	registrySecretsDir = "/var/build-secrets"
-	reportFilePath     = "/var/report/report.toml"
-	notarySecretDir    = "/var/notary/v1"
-	buildNumberKey     = "buildNumber"
-	buildTimestampKey  = "buildTimestamp"
+	registrySecretsDir   = "/var/build-secrets"
+	reportFilePath       = "/var/report/report.toml"
+	notarySecretDir      = "/var/notary/v1"
+	cosignSecretLocation = "/var/build-secrets/cosign"
 )
 
 var (
@@ -97,7 +96,7 @@ func main() {
 	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
 
 	ctx := context.Background()
-	if err := cosignSigner.Sign(ctx, report, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
+	if err := cosignSigner.Sign(ctx, report, cosignSecretLocation, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
 		logger.Fatalf("cosignSigner sign: %v\n", err)
 	}
 
