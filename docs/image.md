@@ -92,7 +92,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
 
 ### <a id='build-config'></a>Build Configuration
 
-The `build` field on the `image` resource can be used to configure env variables required during the build process and to configure resource limits on `CPU` and `memory`.
+The `build` field on the `image` resource can be used to configure env variables required during the build process, to configure resource limits on `CPU` and `memory`, and to configure pod tolerations, node selector, and affinity.
 
 ```yaml
 build:
@@ -106,6 +106,22 @@ build:
       limits:
         cpu: "0.5"
         memory: "256M"
+  tolerations:
+    - key: "key1"
+      operator: "Exists"
+      effect: "NoSchedule"
+  nodeSelector:
+    disktype: ssd
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/e2e-az-name
+                operator: In
+                values:
+                  - e2e-az1
+                  - e2e-az2
 ```
 
 See the kubernetes documentation on [setting environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) and [resource limits and requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for more information.

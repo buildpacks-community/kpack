@@ -347,7 +347,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							ImageTaggingStrategy: corev1alpha1.None,
-							Build: &corev1alpha1.ImageBuild{
+							Build: &buildapi.ImageBuild{
 								Resources: expectedResources,
 							},
 						},
@@ -417,7 +417,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 			},
 			Cache:                cacheConfig,
 			ImageTaggingStrategy: corev1alpha1.None,
-			Build: &corev1alpha1.ImageBuild{
+			Build: &buildapi.ImageBuild{
 				Resources: expectedResources,
 			},
 		},

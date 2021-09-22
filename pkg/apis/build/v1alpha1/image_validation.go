@@ -119,6 +119,14 @@ func (is *ImageSpec) validateCacheSize(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
+func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
+	if ib == nil {
+		return nil
+	}
+
+	return ib.Bindings.Validate(ctx).ViaField("bindings")
+}
+
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	if builder.Name == "" {
 		return apis.ErrMissingField("name")

@@ -21,6 +21,7 @@ const (
 	BuildLabel                   = "kpack.io/build"
 	DOCKERSecretAnnotationPrefix = "kpack.io/docker"
 	GITSecretAnnotationPrefix    = "kpack.io/git"
+	k8sOSLabel                   = "kubernetes.io/os"
 
 	cacheDirName              = "cache-dir"
 	layersDirName             = "layers-dir"
@@ -132,7 +133,7 @@ var (
 
 type stepModifier func(corev1.Container) corev1.Container
 
-func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints []corev1.Taint, config BuildPodBuilderConfig) (*corev1.Pod, error) {
+func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config BuildPodBuilderConfig) (*corev1.Pod, error) {
 	platformAPI, err := config.highestSupportedPlatformAPI(b)
 	if err != nil {
 		return nil, err
@@ -445,10 +446,11 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, taints 
 				)
 			}),
 			ServiceAccountName: b.Spec.ServiceAccount,
-			NodeSelector: map[string]string{
-				"kubernetes.io/os": config.OS,
-			},
-			Tolerations: tolerations(taints),
+			NodeSelector:       b.nodeSelector(config.OS),
+			Tolerations:        b.Spec.Tolerations,
+			Affinity:           b.Spec.Affinity,
+			RuntimeClassName:   b.Spec.RuntimeClassName,
+			SchedulerName:      b.Spec.SchedulerName,
 			Volumes: append(append(
 				append(secretVolumes, b.cacheVolume(config.OS)...),
 				corev1.Volume{
@@ -588,9 +590,11 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: b.Spec.ServiceAccount,
-			NodeSelector: map[string]string{
-				"kubernetes.io/os": "linux",
-			},
+			NodeSelector:       b.nodeSelector("linux"),
+			Tolerations:        b.Spec.Tolerations,
+			Affinity:           b.Spec.Affinity,
+			RuntimeClassName:   b.Spec.RuntimeClassName,
+			SchedulerName:      b.Spec.SchedulerName,
 			Volumes: append(
 				secretVolumes,
 				corev1.Volume{
@@ -811,19 +815,9 @@ func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (*semver.
 	return nil, errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
 }
 
-func tolerations(taints []corev1.Taint) []corev1.Toleration {
-	t := make([]corev1.Toleration, 0, len(taints))
-
-	for _, taint := range taints {
-		t = append(t, corev1.Toleration{
-			Key:      taint.Key,
-			Operator: corev1.TolerationOpEqual,
-			Value:    taint.Value,
-			Effect:   taint.Effect,
-		})
-	}
-
-	return t
+func (b Build) nodeSelector(os string) map[string]string {
+	b.Spec.NodeSelector[k8sOSLabel] = os
+	return b.Spec.NodeSelector
 }
 
 func builderSecretVolume(bbs corev1alpha1.BuildBuilderSpec) corev1.Volume {

@@ -49,9 +49,24 @@ type ImageSpec struct {
 	SuccessBuildHistoryLimit *int64                            `json:"successBuildHistoryLimit,omitempty"`
 	ImageTaggingStrategy     corev1alpha1.ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
 	ProjectDescriptorPath    string                            `json:"projectDescriptorPath,omitempty"`
-	Build                    *corev1alpha1.ImageBuild          `json:"build,omitempty"`
+	Build                    *ImageBuild                       `json:"build,omitempty"`
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type ImageBuild struct {
+	// +listType
+	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
+	// +listType
+	Env       []corev1.EnvVar             `json:"env,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	// +listType
+	Tolerations      []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector     map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity         *corev1.Affinity    `json:"affinity,omitempty"`
+	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
+	SchedulerName    string              `json:"schedulerName,omitempty"`
 }
 
 // +k8s:openapi-gen=true

@@ -4879,7 +4879,7 @@
       ],
       "properties": {
         "build": {
-          "$ref": "#/definitions/kpack.core.v1alpha1.ImageBuild"
+          "$ref": "#/definitions/kpack.build.v1alpha1.ImageBuild"
         },
         "builder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -5203,6 +5203,9 @@
         "source"
       ],
       "properties": {
+        "affinity": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
         "bindings": {
           "type": "array",
           "items": {
@@ -5229,6 +5232,12 @@
         "lastBuild": {
           "$ref": "#/definitions/kpack.build.v1alpha2.LastBuild"
         },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "notary": {
           "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
@@ -5237,6 +5246,12 @@
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "runtimeClassName": {
+          "type": "string"
+        },
+        "schedulerName": {
+          "type": "string"
         },
         "serviceAccount": {
           "type": "string"
@@ -5248,6 +5263,13 @@
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "tolerations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           },
           "x-kubernetes-list-type": ""
         }
@@ -5761,6 +5783,50 @@
         }
       }
     },
+    "kpack.build.v1alpha2.ImageBuild": {
+      "type": "object",
+      "properties": {
+        "affinity": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "runtimeClassName": {
+          "type": "string"
+        },
+        "schedulerName": {
+          "type": "string"
+        },
+        "tolerations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
     "kpack.build.v1alpha2.ImageBuilder": {
       "type": "object",
       "required": [
@@ -5833,7 +5899,7 @@
       ],
       "properties": {
         "build": {
-          "$ref": "#/definitions/kpack.core.v1alpha1.ImageBuild"
+          "$ref": "#/definitions/kpack.build.v1alpha2.ImageBuild"
         },
         "builder": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -6259,28 +6325,6 @@
         },
         "url": {
           "type": "string"
-        }
-      }
-    },
-    "kpack.core.v1alpha1.ImageBuild": {
-      "type": "object",
-      "properties": {
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "env": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
-          },
-          "x-kubernetes-list-type": ""
-        },
-        "resources": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         }
       }
     },
