@@ -49,46 +49,44 @@ func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, s
 	refImage := report.Image.Tags[0]
 
 	for _, cosignSecret := range cosignSecrets {
-		cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
-		cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
+		if err := s.sign(ctx, refImage, cosignSecret, secretLocation, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
+			return err
+		}
+	}
 
-		ko := cli.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
-			content, err := ioutil.ReadFile(cosignPasswordFile)
-			// When password file is not available, default empty password is used
-			if err != nil {
-				return []byte(""), nil
-			}
+	return nil
+}
 
-			return content, nil
-		}}
+func (s *ImageSigner) sign(ctx context.Context, refImage, cosignSecret, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
+	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
-		if cosignRepository, ok := cosignRepositories[cosignSecret]; ok {
-			if err := os.Setenv(cosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
-				return fmt.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
-			}
+	ko := cli.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
+		content, err := ioutil.ReadFile(cosignPasswordFile)
+		// When password file is not available, default empty password is used
+		if err != nil {
+			return []byte(""), nil
 		}
 
-		if cosignDockerMediaType, ok := cosignDockerMediaTypes[cosignSecret]; ok {
-			if err := os.Setenv(cosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
-				return fmt.Errorf("failed setting COSIGN_DOCKER_MEDIA_TYPES env variable: %v", err)
-			}
-		}
+		return content, nil
+	}}
 
-		// Separate error catching because each function should be attempted
-		errorString := ""
-		if err := s.signFunc(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
-			errorString = fmt.Sprintf("unable to sign image with %s: %v\n", cosignKeyFile, err)
+	if cosignRepository, ok := cosignRepositories[cosignSecret]; ok {
+		if err := os.Setenv(cosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
+			return fmt.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
 		}
-		if err := os.Unsetenv(cosignRepositoryEnv); err != nil {
-			errorString = fmt.Sprintf("%sfailed unsetting %s variable: %v\n", errorString, cosignRepositoryEnv, err)
-		}
-		if err := os.Unsetenv(cosignDockerMediaTypesEnv); err != nil {
-			errorString = fmt.Sprintf("%sfailed unsetting COSIGN_DOCKER_MEDIA_TYPES variable: %v\n", errorString, err)
-		}
+		defer os.Unsetenv(cosignRepositoryEnv)
+	}
 
-		if errorString != "" {
-			return fmt.Errorf(errorString)
+	if cosignDockerMediaType, ok := cosignDockerMediaTypes[cosignSecret]; ok {
+		if err := os.Setenv(cosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
+			return fmt.Errorf("failed setting %s env variable: %v", cosignDockerMediaTypesEnv, err)
 		}
+		defer os.Unsetenv(cosignDockerMediaTypesEnv)
+	}
+
+	if err := s.signFunc(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
+		return fmt.Errorf("unable to sign image with %s: %v\n", cosignKeyFile, err)
 	}
 
 	return nil
