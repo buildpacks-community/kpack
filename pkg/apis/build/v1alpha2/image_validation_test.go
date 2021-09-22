@@ -48,7 +48,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			FailedBuildHistoryLimit:  &limit,
 			SuccessBuildHistoryLimit: &limit,
 			ImageTaggingStrategy:     corev1alpha1.None,
-			Build: &corev1alpha1.ImageBuild{
+			Build: &ImageBuild{
 				Env: []corev1.EnvVar{
 					{
 						Name:  "keyA",
@@ -369,6 +369,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				assert.EqualError(t, err, "only one type of cache can be specified: spec.cache.registry, spec.cache.volume")
 			})
 
+		})
+
+		it("validates kubernetes.io/os node selector is unset", func() {
+			image.Spec.Build.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
+			assertValidationError(image, ctx, apis.ErrInvalidKeyName(k8sOSLabel, "spec.build.nodeSelector", "os is determined automatically"))
 		})
 	})
 }

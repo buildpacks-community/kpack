@@ -238,5 +238,10 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, err.Error(), "http://something/different")
 
 		})
+
+		it("validates kubernetes.io/os node selector is unset", func() {
+			build.Spec.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
+			assertValidationError(build, apis.ErrInvalidKeyName(k8sOSLabel, "spec.nodeSelector", "os is determined automatically"))
+		})
 	})
 }

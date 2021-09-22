@@ -504,7 +504,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				latestBuild.Spec.Env = []corev1.EnvVar{
 					{Name: "keyA", Value: "old"},
 				}
-				image.Spec.Build = &corev1alpha1.ImageBuild{
+				image.Spec.Build = &buildapi.ImageBuild{
 					Env: []corev1.EnvVar{
 						{Name: "keyA", Value: "new"},
 					},

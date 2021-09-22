@@ -27,7 +27,8 @@ func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 		Also(bs.Source.Validate(ctx).ViaField("source")).
 		Also(bs.Bindings.Validate(ctx).ViaField("bindings")).
 		Also(bs.LastBuild.Validate(ctx).ViaField("lastBuild")).
-		Also(bs.validateImmutableFields(ctx))
+		Also(bs.validateImmutableFields(ctx)).
+		Also(bs.validateNodeSelector(ctx))
 }
 
 func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldError {
@@ -50,6 +51,18 @@ func (bs *BuildSpec) validateImmutableFields(ctx context.Context) *apis.FieldErr
 		}
 	}
 	return nil
+}
+
+func (bs *BuildSpec) validateNodeSelector(_ context.Context) *apis.FieldError {
+	if len(bs.NodeSelector) == 0 {
+		return nil
+	}
+
+	if _, ok := bs.NodeSelector[k8sOSLabel]; ok {
+		return apis.ErrInvalidKeyName(k8sOSLabel, "nodeSelector", "os is determined automatically")
+	}
+	return nil
+
 }
 
 func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {

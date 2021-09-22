@@ -101,7 +101,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			FailedBuildHistoryLimit:  limit(10),
 			SuccessBuildHistoryLimit: limit(10),
 			ImageTaggingStrategy:     corev1alpha1.None,
-			Build:                    &corev1alpha1.ImageBuild{},
+			Build:                    &buildapi.ImageBuild{},
 		},
 		Status: buildapi.ImageStatus{
 			Status: corev1alpha1.Status{

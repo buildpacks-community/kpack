@@ -46,7 +46,13 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	to.SuccessBuildHistoryLimit = is.SuccessBuildHistoryLimit
 	to.ImageTaggingStrategy = is.ImageTaggingStrategy
 	to.Source = is.Source
-	to.Build = is.Build
+	if is.Build != nil {
+		to.Build = &v1alpha1.ImageBuild{
+			Bindings:  is.Build.Bindings,
+			Env:       is.Build.Env,
+			Resources: is.Build.Resources,
+		}
+	}
 	to.Notary = is.Notary
 }
 
@@ -65,7 +71,13 @@ func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
 	is.FailedBuildHistoryLimit = from.FailedBuildHistoryLimit
 	is.SuccessBuildHistoryLimit = from.SuccessBuildHistoryLimit
 	is.ImageTaggingStrategy = from.ImageTaggingStrategy
-	is.Build = from.Build
+	if from.Build != nil {
+		is.Build = &ImageBuild{
+			Bindings:  from.Build.Bindings,
+			Env:       from.Build.Env,
+			Resources: from.Build.Resources,
+		}
+	}
 	is.Notary = from.Notary
 }
 

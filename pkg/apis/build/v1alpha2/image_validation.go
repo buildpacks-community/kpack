@@ -151,6 +151,20 @@ func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
+func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
+	if ib == nil {
+		return nil
+	}
+
+	if len(ib.NodeSelector) != 0 {
+		if _, ok := ib.NodeSelector[k8sOSLabel]; ok {
+			return apis.ErrInvalidKeyName(k8sOSLabel, "nodeSelector", "os is determined automatically")
+		}
+	}
+
+	return ib.Bindings.Validate(ctx).ViaField("bindings").Also()
+}
+
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	if builder.Name == "" {
 		return apis.ErrMissingField("name")
