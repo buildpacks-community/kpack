@@ -243,7 +243,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
 
-		it("validates registry image valide", func() {
+		it("validates registry image is a valid image", func() {
 			image.Spec.Source.Git = nil
 			image.Spec.Source.Registry = &corev1alpha1.Registry{Image: "NotValid@@!"}
 
@@ -314,6 +314,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			image.Spec.Cache.Volume.Size = &cacheSize
 			err := image.Validate(apis.WithinUpdate(ctx, original))
 			assert.Nil(t, err)
+		})
+
+		it("handles nil cache", func(){
+			image.Spec.Cache = nil
+			assert.Nil(t, image.Validate(ctx))
 		})
 
 		when("validating the notary config", func() {
