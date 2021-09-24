@@ -56,6 +56,7 @@ type ImageSpec struct {
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ImageBuild struct {
 	// +listType
 	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`

@@ -3405,6 +3405,24 @@
     }
   },
   "definitions": {
+    "io.k8s.api.core.v1.Affinity": {
+      "description": "Affinity is a group of affinity scheduling rules.",
+      "type": "object",
+      "properties": {
+        "nodeAffinity": {
+          "description": "Describes node affinity scheduling rules for the pod.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeAffinity"
+        },
+        "podAffinity": {
+          "description": "Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinity"
+        },
+        "podAntiAffinity": {
+          "description": "Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodAntiAffinity"
+        }
+      }
+    },
     "io.k8s.api.core.v1.ConfigMapKeySelector": {
       "description": "Selects a key from a ConfigMap.",
       "type": "object",
@@ -3670,6 +3688,33 @@
         "optional": {
           "description": "Specify whether the Secret or it's key must be defined",
           "type": "boolean"
+        }
+      }
+    },
+    "io.k8s.api.core.v1.Toleration": {
+      "description": "The pod this Toleration is attached to tolerates any taint that matches the triple \u003ckey,value,effect\u003e using the matching operator \u003coperator\u003e.",
+      "type": "object",
+      "properties": {
+        "effect": {
+          "description": "Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.",
+          "type": "string"
+        },
+        "operator": {
+          "description": "Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.",
+          "type": "string"
+        },
+        "tolerationSeconds": {
+          "description": "TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "value": {
+          "description": "Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.",
+          "type": "string"
         }
       }
     },
@@ -4842,6 +4887,28 @@
         },
         "status": {
           "$ref": "#/definitions/kpack.build.v1alpha1.ImageStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha1.ImageBuild": {
+      "type": "object",
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         }
       }
     },
