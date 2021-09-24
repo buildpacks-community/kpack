@@ -816,6 +816,10 @@ func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (*semver.
 }
 
 func (b Build) nodeSelector(os string) map[string]string {
+	if b.Spec.NodeSelector == nil {
+		b.Spec.NodeSelector = map[string]string{}
+	}
+
 	b.Spec.NodeSelector[k8sOSLabel] = os
 	return b.Spec.NodeSelector
 }
