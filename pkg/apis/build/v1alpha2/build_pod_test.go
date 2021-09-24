@@ -223,6 +223,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
 		})
 
+		it("handles a nil node selector", func() {
+			build.Spec.NodeSelector = nil
+
+			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+			require.NoError(t, err)
+
+			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
+		})
+
 		it("configures the pod security context to match the builder config user and group", func() {
 			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 			require.NoError(t, err)
