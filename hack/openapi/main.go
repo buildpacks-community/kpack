@@ -1125,6 +1125,183 @@ const k8sOpenAPIDefinitions = `{
       }
     },
     "type": "object"
+  },
+  "io.k8s.api.core.v1.PreferredSchedulingTerm": {
+    "description": "An empty preferred scheduling term matches all objects with implicit weight 0 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).",
+    "properties": {
+      "preference": {
+        "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorTerm",
+        "description": "A node selector term, associated with the corresponding weight."
+      },
+      "weight": {
+        "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "weight",
+      "preference"
+    ],
+    "type": "object"
+  },
+  "io.k8s.api.core.v1.NodeSelector": {
+    "description": "A node selector represents the union of the results of one or more label queries over a set of nodes; that is, it represents the OR of the selectors represented by the node selector terms.",
+    "properties": {
+      "nodeSelectorTerms": {
+        "description": "Required. A list of node selector terms. The terms are ORed.",
+        "items": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorTerm"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "nodeSelectorTerms"
+    ],
+    "type": "object",
+    "x-kubernetes-map-type": "atomic"
+  },
+  "io.k8s.api.core.v1.NodeSelectorRequirement": {
+    "description": "A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+    "properties": {
+      "key": {
+        "description": "The label key that the selector applies to.",
+        "type": "string"
+      },
+      "operator": {
+        "description": "Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.",
+        "type": "string"
+      },
+      "values": {
+        "description": "An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "key",
+      "operator"
+    ],
+    "type": "object"
+  },
+  "io.k8s.api.core.v1.NodeSelectorTerm": {
+    "description": "A null or empty node selector term matches no objects. The requirements of them are ANDed. The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.",
+    "properties": {
+      "matchExpressions": {
+        "description": "A list of node selector requirements by node's labels.",
+        "items": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorRequirement"
+        },
+        "type": "array"
+      },
+      "matchFields": {
+        "description": "A list of node selector requirements by node's fields.",
+        "items": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorRequirement"
+        },
+        "type": "array"
+      }
+    },
+    "type": "object",
+    "x-kubernetes-map-type": "atomic"
+  },
+  "io.k8s.api.core.v1.PodAffinityTerm": {
+    "description": "Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running",
+    "properties": {
+	    "labelSelector": {
+	      "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+	      "description": "A label query over a set of resources, in this case pods."
+	    },
+	    "namespaceSelector": {
+	      "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+	      "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled."
+	    },
+	    "namespaces": {
+	      "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
+	      "items": {
+	        "type": "string"
+	      },
+	      "type": "array"
+	    },
+	    "topologyKey": {
+	      "description": "This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.",
+	      "type": "string"
+	    }
+    },
+    "required": [
+        "topologyKey"
+    ],
+	    "type": "object"
+  },
+  "io.k8s.api.core.v1.WeightedPodAffinityTerm": {
+    "description": "The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)",
+    "properties": {
+      "podAffinityTerm": {
+        "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinityTerm",
+        "description": "Required. A pod affinity term, associated with the corresponding weight."
+      },
+      "weight": {
+        "description": "weight associated with matching the corresponding podAffinityTerm, in the range 1-100.",
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "weight",
+      "podAffinityTerm"
+    ],
+    "type": "object"
+  },
+  "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector": {
+    "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+    "properties": {
+      "matchExpressions": {
+        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
+        "items": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement"
+        },
+        "type": "array"
+      },
+      "matchLabels": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
+        "type": "object"
+      }
+    },
+    "type": "object",
+    "x-kubernetes-map-type": "atomic"
+  },
+  "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement": {
+    "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+    "properties": {
+      "key": {
+        "description": "key is the label key that the selector applies to.",
+        "type": "string",
+        "x-kubernetes-patch-merge-key": "key",
+        "x-kubernetes-patch-strategy": "merge"
+      },
+      "operator": {
+        "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+        "type": "string"
+      },
+      "values": {
+        "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "key",
+      "operator"
+    ],
+    "type": "object"
   }
 }`
 
