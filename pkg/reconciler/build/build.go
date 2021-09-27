@@ -53,7 +53,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	podInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGVK(buildapi.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
