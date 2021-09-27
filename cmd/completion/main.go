@@ -10,12 +10,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
+	"github.com/sigstore/cosign/cmd/cosign/cli"
+
 	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/notary"
 	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/sigstore/cosign/cmd/cosign/cli"
 )
 
 const (
@@ -96,8 +97,10 @@ func main() {
 	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
 
 	ctx := context.Background()
-	if err := cosignSigner.Sign(ctx, report, cosignSecretLocation, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
-		logger.Fatalf("cosignSigner sign: %v\n", err)
+	if hasCosign() {
+		if err := cosignSigner.Sign(ctx, report, cosignSecretLocation, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
+			logger.Fatalf("cosignSigner sign: %v\n", err)
+		}
 	}
 
 	if notaryV1URL != "" {
@@ -131,4 +134,9 @@ func mapKeyValueArgs(args flaghelpers.CredentialsFlags) map[string]interface{} {
 	}
 
 	return overrides
+}
+
+func hasCosign() bool {
+	_, err := os.Stat(cosignSecretLocation)
+	return !os.IsNotExist(err)
 }

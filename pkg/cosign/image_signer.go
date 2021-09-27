@@ -34,18 +34,15 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 func (s *ImageSigner) Sign(ctx context.Context, report lifecycle.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignSecrets, err := findCosignSecrets(secretLocation)
 	if err != nil {
-		s.Logger.Printf("no keys found for cosign signing: %v\n", err)
-		return nil
+		return errors.Errorf("no keys found for cosign signing: %v\n", err)
 	}
 
 	if len(cosignSecrets) == 0 {
-		s.Logger.Println("no keys found for cosign signing")
-		return nil
+		return errors.New("no keys found for cosign signing")
 	}
 
 	if len(report.Image.Tags) == 0 {
-		s.Logger.Println("no image found in report to sign")
-		return nil
+		return errors.New("no image found in report to sign")
 	}
 
 	refImage := report.Image.Tags[0]

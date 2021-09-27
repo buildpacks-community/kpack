@@ -27,6 +27,7 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/download"
 	sigstoreCosign "github.com/sigstore/cosign/pkg/cosign"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestImageSigner(t *testing.T) {
@@ -38,7 +39,6 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		report            lifecycle.ExportReport
 		reader            *os.File
 		writer            *os.File
-		scanner           *bufio.Scanner
 		expectedImageName string
 		stopRegistry      func()
 		imageCleanup      func()
@@ -49,7 +49,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		testCtx, testCtxCancel = context.WithTimeout(context.Background(), time.Minute)
-		scanner, reader, writer = mockLogger(t)
+		_, reader, writer = mockLogger(t)
 		repo, stopRegistry = reg(t)
 
 		expectedImageName = path.Join(repo, "test-cosign-image")
@@ -341,7 +341,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("signing is skipped because", func() {
+		when("signing returns error", func() {
 			it("has no cosign secrets", func() {
 				secretLocation = t.TempDir()
 				report = createReportToml(t, expectedImageName)
@@ -356,11 +356,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
-				assert.Nil(t, err)
-
+				require.Error(t, err, "no keys found for cosign signing")
 				assert.Equal(t, 0, cliSignCmdCallCount)
-
-				assert.Equal(t, "no keys found for cosign signing", logText(scanner))
 			})
 
 			it("has invalid directory", func() {
@@ -375,8 +372,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
-				assert.Nil(t, err)
-				assert.Equal(t, "no keys found for cosign signing: open /fake/location/that/doesnt/exist: no such file or directory", logText(scanner))
+				require.Error(t, err, "no keys found for cosign signing: open /fake/location/that/doesnt/exist: no such file or directory")
 				assert.Equal(t, 0, cliSignCmdCallCount)
 			})
 
@@ -392,11 +388,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
 				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
-				assert.Nil(t, err)
-
+				require.Error(t, err, "no image found in report to sign")
 				assert.Equal(t, 0, cliSignCmdCallCount)
-
-				assert.Equal(t, "no image found in report to sign", logText(scanner))
 			})
 		})
 	})
