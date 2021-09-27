@@ -21,7 +21,7 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 
 func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.ListNotEmpty(bs.Tags, "tags").
-		Also(validate.Tags(bs.Tags)).
+		Also(validate.Tags(bs.Tags, "tags")).
 		Also(bs.Cache.Validate(ctx).ViaField("cache")).
 		Also(bs.Builder.Validate(ctx).ViaField("builder")).
 		Also(bs.Source.Validate(ctx).ViaField("source")).

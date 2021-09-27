@@ -44,13 +44,13 @@ func Tag(value string) *apis.FieldError {
 	return nil
 }
 
-func Tags(tags []string) *apis.FieldError {
+func Tags(tags []string, fieldName string) *apis.FieldError {
 	var errors *apis.FieldError = nil
 	for i, tag := range tags {
 		_, err := name.NewTag(tag, name.WeakValidation)
 		if err != nil {
 			//noinspection GoNilness
-			errors = errors.Also(apis.ErrInvalidArrayValue(tag, "tags", i))
+			errors = errors.Also(apis.ErrInvalidArrayValue(tag, fieldName, i))
 		}
 	}
 	return errors

@@ -222,7 +222,7 @@ func (im *Image) SourceResolver() *SourceResolver {
 
 func (im *Image) generateTags(buildNumber string) []string {
 	if im.disableAdditionalImageNames() {
-		return []string{im.Spec.Tag}
+		return append([]string{im.Spec.Tag}, im.Spec.AdditionalTags...)
 	}
 	now := time.Now()
 
@@ -237,9 +237,11 @@ func (im *Image) generateTags(buildNumber string) []string {
 	if tagName == "latest-" {
 		tagName = ""
 	}
-	return []string{
+	return append([]string{
 		im.Spec.Tag,
-		tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())}
+		tag.RegistryStr() + "/" + tag.RepositoryStr() + ":" + tagName + "b" + buildNumber + "." + now.Format("20060102") + "." + fmt.Sprintf("%02d%02d%02d", now.Hour(), now.Minute(), now.Second())},
+		im.Spec.AdditionalTags...,
+	)
 }
 
 func (im *Image) generateBuildName(buildNumber string) string {

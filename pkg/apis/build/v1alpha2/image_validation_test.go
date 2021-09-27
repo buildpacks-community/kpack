@@ -159,6 +159,20 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrInvalidValue(image.Spec.Tag, "tag").ViaField("spec"))
 		})
 
+		it("invalid additional image tags", func() {
+			image.Spec.AdditionalTags = []string{"valid/tag", "invalid/tag@sha256:thisisatag", "also/invalid@@"}
+			assertValidationError(image,
+				ctx,
+				apis.ErrInvalidArrayValue(image.Spec.AdditionalTags[1], "additionalTags", 1).
+					Also(apis.ErrInvalidArrayValue(image.Spec.AdditionalTags[2], "additionalTags", 2)).
+					ViaField("spec"))
+		})
+
+		it("tags from multiple registries", func() {
+			image.Spec.AdditionalTags = []string{"valid/tag", "gcr.io/valid/tag"}
+			assertValidationError(image, ctx, errors.New("all additionalTags must have the same registry as tag: spec.additionalTags\nexpected registry: index.docker.io, got: gcr.io"))
+		})
+
 		it("tag does not contain fully qualified digest", func() {
 			image.Spec.Tag = "some/app@sha256:72d10a33e3233657832967acffce652b729961da5247550ea58b2c2389cddc68"
 
