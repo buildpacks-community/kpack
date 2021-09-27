@@ -89,6 +89,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreList":           schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec":           schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation":           schema_pkg_apis_build_v1alpha2_CosignAnnotation(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig":               schema_pkg_apis_build_v1alpha2_CosignConfig(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                      schema_pkg_apis_build_v1alpha2_Image(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":                 schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":               schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
@@ -2102,6 +2104,11 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
+					"cosign": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig"),
+						},
+					},
 					"defaultProcess": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -2161,7 +2168,7 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Binding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration"},
 	}
 }
 
@@ -3107,6 +3114,61 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref common.ReferenceCallb
 	}
 }
 
+func schema_pkg_apis_build_v1alpha2_CosignAnnotation(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_CosignConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"annotations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"},
+	}
+}
+
 func schema_pkg_apis_build_v1alpha2_Image(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3441,6 +3503,11 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig"),
 						},
 					},
+					"cosign": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig"),
+						},
+					},
 					"defaultProcess": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -3470,7 +3537,7 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageCacheConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 

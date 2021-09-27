@@ -3,6 +3,7 @@ package v1alpha2_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -51,11 +52,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Name:      buildName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"some/label": "to-pass-through",
+				"some/label":                 "to-pass-through",
+				"image.kpack.io/buildNumber": "12",
 			},
 			Annotations: map[string]string{
 				"some/annotation": "to-pass-through",
 			},
+			CreationTimestamp: metav1.Date(1944, 6, 6, 13, 30, 0, 0, time.UTC),
 		},
 		Spec: buildapi.BuildSpec{
 			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
@@ -170,6 +173,70 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	cosignValidSecrets := []corev1.Secret{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-1",
+				Annotations: map[string]string{
+					"kpack.io/cosign.ignored":            "test",
+					"kpack.io/cosign.repository":         "testRepository.com/fake-project-1",
+					"kpack.io/cosign.docker-media-types": "1",
+				},
+			},
+			Data: map[string][]byte{
+				"cosign.key":      []byte("fake-key"),
+				"cosign.password": []byte("fake-password"),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-no-password-1",
+				Annotations: map[string]string{
+					"kpack.io/cosign.repository": "testRepository.com/fake-project-2",
+				},
+			},
+			Data: map[string][]byte{
+				"cosign.key":      []byte("fake-key"),
+				"cosign.password": []byte(""),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cosign-secret-no-password-2",
+				Annotations: map[string]string{
+					"kpack.io/cosign.docker-media-types": "1",
+				},
+			},
+			Data: map[string][]byte{
+				"cosign.key": []byte("fake-key"),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+	}
+
+	cosignInvalidSecrets := []corev1.Secret{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "invalid-cosign-secret",
+			},
+			Data: map[string][]byte{
+				"cosign.password": []byte("fake-password"),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "invalid-empty-cosign-secret",
+			},
+			Data: map[string][]byte{
+				"cosign.key": []byte(""),
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+	}
+
 	config := buildapi.BuildPodImages{
 		BuildInitImage:         "build/init:image",
 		BuildInitWindowsImage:  "build/init/windows:image",
@@ -195,8 +262,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Name:      build.PodName(),
 				Namespace: namespace,
 				Labels: map[string]string{
-					"some/label":     "to-pass-through",
-					"kpack.io/build": buildName,
+					"some/label":                 "to-pass-through",
+					"kpack.io/build":             buildName,
+					"image.kpack.io/buildNumber": "12",
 				},
 				Annotations: map[string]string{
 					"some/annotation": "to-pass-through",
@@ -944,8 +1012,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Name:      build.PodName(),
 					Namespace: namespace,
 					Labels: map[string]string{
-						"some/label":     "to-pass-through",
-						"kpack.io/build": buildName,
+						"some/label":                 "to-pass-through",
+						"kpack.io/build":             buildName,
+						"image.kpack.io/buildNumber": "12",
 					},
 					Annotations: map[string]string{
 						"some/annotation":               "to-pass-through",
@@ -1008,8 +1077,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						{
 							Name:            "completion",
 							Image:           config.CompletionImage,
+							Command:         []string{"/cnb/process/web"},
+							Args:            []string{},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources:       build.Spec.Resources,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "report-dir",
+									MountPath: "/var/report",
+								},
+							},
 						},
 					},
 					InitContainers: []corev1.Container{
@@ -1059,19 +1136,154 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, pod.Spec)
 			})
 
-			when("a notary config is present on the build", func() {
-				it("sets up the completion image to sign the image", func() {
-					build.Spec.Notary = &corev1alpha1.NotaryConfig{
-						V1: &corev1alpha1.NotaryV1Config{
-							URL: "some-notary-url",
-							SecretRef: corev1alpha1.NotarySecretRef{
-								Name: "some-notary-secret",
-							},
-						},
+			when("cosign secrets are present on the build", func() {
+				it("skips invalid secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.NotNil(t, pod.Spec.Containers[0])
+					assert.NotNil(t, pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					invalidSecretName := "invalid-cosign-secret"
+					assertSecretNotPresent(t, pod, invalidSecretName)
+
+					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
+					})
+				})
+
+				it("sets up the completion image to use cosign secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					validSecrets := []string{
+						"cosign-secret-1",
+						"cosign-secret-no-password-1",
+						"cosign-secret-no-password-2",
 					}
 
+					for _, secretName := range validSecrets {
+						assertSecretPresent(t, pod, secretName)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      fmt.Sprintf("secret-volume-%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
+						})
+					}
+
+					require.Equal(t,
+						[]string{
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("handles custom cosign annotations", func() {
+					build.Spec.Cosign = &buildapi.CosignConfig{
+						Annotations: []buildapi.CosignAnnotation{
+							{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+						},
+					}
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					require.Equal(t,
+						[]string{
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				when("a notary config is present on the build", func() {
+					it("sets up the completion image to sign the image", func() {
+						build.Spec.Notary = &corev1alpha1.NotaryConfig{
+							V1: &corev1alpha1.NotaryV1Config{
+								URL: "some-notary-url",
+								SecretRef: corev1alpha1.NotarySecretRef{
+									Name: "some-notary-secret",
+								},
+							},
+						}
+
+						pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+						require.NoError(t, err)
+						require.Equal(t,
+							[]string{
+								"-notary-v1-url=some-notary-url",
+								"-basic-docker=docker-secret-1=acr.io",
+								"-dockerconfig=docker-secret-2",
+								"-dockercfg=docker-secret-3",
+							},
+							pod.Spec.Containers[0].Args,
+						)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      "notary-dir",
+							ReadOnly:  true,
+							MountPath: "/var/notary/v1",
+						})
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      "report-dir",
+							ReadOnly:  false,
+							MountPath: "/var/report",
+						})
+
+						require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+							Name: "notary-dir",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "some-notary-secret",
+								},
+							},
+						})
+					})
+				})
+			})
+
+			when("a notary config is present on the build", func() {
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-notary-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-notary-secret",
+						},
+					},
+				}
+
+				it("errs if platformApi does not support report.toml", func() {
+					buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
+
+					_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+					require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
+				})
+
+				it("sets up the completion image to sign the image", func() {
 					pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
 					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
 					require.Equal(t,
 						[]string{
 							"-notary-v1-url=some-notary-url",
@@ -1102,6 +1314,206 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					})
 				})
+			})
+
+			when("cosign secrets and a notary config are present on the build", func() {
+				it.Before(func() {
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
+							URL: "some-notary-url",
+							SecretRef: corev1alpha1.NotarySecretRef{
+								Name: "some-notary-secret",
+							},
+						},
+					}
+				})
+
+				it("skips invalid secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					invalidSecretName := "invalid-cosign-secret"
+					assertSecretNotPresent(t, pod, invalidSecretName)
+
+					require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
+					})
+				})
+
+				it("sets up the completion image to use cosign secrets", func() {
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+					validSecrets := []string{
+						"cosign-secret-1",
+						"cosign-secret-no-password-1",
+						"cosign-secret-no-password-2",
+					}
+
+					for _, secretName := range validSecrets {
+						assertSecretPresent(t, pod, secretName)
+
+						require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+							Name:      fmt.Sprintf("secret-volume-%s", secretName),
+							MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
+						})
+					}
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "notary-dir",
+						ReadOnly:  true,
+						MountPath: "/var/notary/v1",
+					})
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      "report-dir",
+						ReadOnly:  false,
+						MountPath: "/var/report",
+					})
+
+					require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+						Name: "notary-dir",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "some-notary-secret",
+							},
+						},
+					})
+
+					require.Equal(t,
+						[]string{
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("handles custom cosign annotations", func() {
+					build.Spec.Cosign = &buildapi.CosignConfig{
+						Annotations: []buildapi.CosignAnnotation{
+							{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+						},
+					}
+					pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+					require.NoError(t, err)
+
+					require.Equal(t,
+						[]string{
+							"-notary-v1-url=some-notary-url",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+							"-cosign-docker-media-types=cosign-secret-1=1",
+							"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+							"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						},
+						pod.Spec.Containers[0].Args,
+					)
+				})
+
+				it("errs if platformApi does not support report.toml", func() {
+					buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
+
+					_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+					require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
+				})
+			})
+		})
+
+		when("cosign secrets are present on the build", func() {
+			it("skips invalid secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.NotNil(t, pod.Spec.Containers[0])
+				assert.NotNil(t, pod.Spec.Containers[0].Command[0])
+				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+				invalidSecretName := "invalid-cosign-secret"
+				assertSecretNotPresent(t, pod, invalidSecretName)
+
+				require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+					MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
+				})
+			})
+
+			it("sets up the completion image to use cosign secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				validSecrets := []string{
+					"cosign-secret-1",
+					"cosign-secret-no-password-1",
+					"cosign-secret-no-password-2",
+				}
+
+				for _, secretName := range validSecrets {
+					assertSecretPresent(t, pod, secretName)
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", secretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
+					})
+				}
+
+				require.Equal(t,
+					[]string{
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
+			})
+
+			it("handles custom cosign annotations", func() {
+				build.Spec.Cosign = &buildapi.CosignConfig{
+					Annotations: []buildapi.CosignAnnotation{
+						{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+					},
+				}
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Equal(t,
+					[]string{
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
 			})
 		})
 
@@ -1157,6 +1569,126 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
+			})
+		})
+
+		when("cosign secrets and a notary config are present on the build", func() {
+			it.Before(func() {
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-notary-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-notary-secret",
+						},
+					},
+				}
+			})
+
+			it("skips invalid secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignInvalidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+				invalidSecretName := "invalid-cosign-secret"
+				assertSecretNotPresent(t, pod, invalidSecretName)
+
+				require.NotContains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      fmt.Sprintf("secret-volume-%s", invalidSecretName),
+					MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", invalidSecretName),
+				})
+			})
+
+			it("sets up the completion image to use cosign secrets", func() {
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+
+				validSecrets := []string{
+					"cosign-secret-1",
+					"cosign-secret-no-password-1",
+					"cosign-secret-no-password-2",
+				}
+
+				for _, secretName := range validSecrets {
+					assertSecretPresent(t, pod, secretName)
+
+					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+						Name:      fmt.Sprintf("secret-volume-%s", secretName),
+						MountPath: fmt.Sprintf("/var/build-secrets/cosign/%s", secretName),
+					})
+				}
+
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "notary-dir",
+					ReadOnly:  true,
+					MountPath: "/var/notary/v1",
+				})
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "report-dir",
+					ReadOnly:  false,
+					MountPath: "/var/report",
+				})
+
+				require.Contains(t, pod.Spec.Volumes, corev1.Volume{
+					Name: "notary-dir",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: "some-notary-secret",
+						},
+					},
+				})
+
+				require.Equal(t,
+					[]string{
+						"-notary-v1-url=some-notary-url",
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
+			})
+
+			it("handles custom cosign annotations", func() {
+				build.Spec.Cosign = &buildapi.CosignConfig{
+					Annotations: []buildapi.CosignAnnotation{
+						{Name: "customAnnotationKey", Value: "customAnnotationValue"},
+					},
+				}
+				pod, err := build.BuildPod(config, append(secrets, cosignValidSecrets...), buildPodBuilderConfig)
+				require.NoError(t, err)
+
+				require.Equal(t,
+					[]string{
+						"-notary-v1-url=some-notary-url",
+						"-basic-docker=docker-secret-1=acr.io",
+						"-dockerconfig=docker-secret-2",
+						"-dockercfg=docker-secret-3",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+						"-cosign-docker-media-types=cosign-secret-1=1",
+						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					},
+					pod.Spec.Containers[0].Args,
+				)
+			})
+
+			it("errs if platformApi does not support report.toml", func() {
+				buildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
+
+				_, err := build.BuildPod(config, secrets, buildPodBuilderConfig)
+				require.EqualError(t, err, "unsupported builder platform API versions: 0.3,0.2")
 			})
 		})
 
@@ -1442,7 +1974,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				completionContainer := pod.Spec.Containers[0]
 				assert.Equal(t, config.CompletionWindowsImage, completionContainer.Image)
 
-				assert.Len(t, completionContainer.Args, 0)
+				assert.Equal(t, []string{
+					dnsProbeHost,
+					"--",
+					"/cnb/process/web",
+				}, completionContainer.Args)
 			})
 
 			it("does not use cache on windows", func() {

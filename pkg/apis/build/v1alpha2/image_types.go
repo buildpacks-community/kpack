@@ -51,6 +51,7 @@ type ImageSpec struct {
 	ProjectDescriptorPath    string                            `json:"projectDescriptorPath,omitempty"`
 	Build                    *ImageBuild                       `json:"build,omitempty"`
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
+	Cosign                   *CosignConfig                     `json:"cosign,omitempty"`
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
 	// +listType
 	AdditionalTags []string `json:"additionalTags,omitempty"`

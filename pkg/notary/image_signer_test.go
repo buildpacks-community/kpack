@@ -7,10 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/lifecycle"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theupdateframework/notary"
 	notaryclient "github.com/theupdateframework/notary/client"
@@ -61,9 +64,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			factory.Reset()
 
 			notaryDir := filepath.Join("testdata", "notary")
-			reportPath := filepath.Join("testdata", "report.toml")
+			report := reportToml(t, filepath.Join("testdata", "report.toml"))
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, report, keychain)
 			require.NoError(t, err)
 
 			require.Len(t, factory.Calls, 2)
@@ -85,17 +88,17 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 		it("validates the GUN is uniform for all tags", func() {
 			notaryDir := filepath.Join("testdata", "notary")
-			reportPath := filepath.Join("testdata", "report-multiple-gun.toml")
+			report := reportToml(t, filepath.Join("testdata", "report-multiple-gun.toml"))
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, report, keychain)
 			require.EqualError(t, err, "signing to multiple registries is not supported")
 		})
 
 		it("validates the notary private key exists", func() {
 			notaryDir := filepath.Join("testdata", "notary-no-key")
-			reportPath := filepath.Join("testdata", "report.toml")
+			report := reportToml(t, filepath.Join("testdata", "report.toml"))
 
-			err := signer.Sign("https://example.com/notary", notaryDir, reportPath, keychain)
+			err := signer.Sign("https://example.com/notary", notaryDir, report, keychain)
 			require.EqualError(t, err, "failed to find private key")
 		})
 	})
@@ -134,4 +137,12 @@ type FakeRepository struct {
 func (f *FakeRepository) PublishTarget(target *notaryclient.Target) error {
 	f.PublishedTargets = append(f.PublishedTargets, target)
 	return nil
+}
+
+func reportToml(t *testing.T, path string) lifecycle.ExportReport {
+	var report lifecycle.ExportReport
+	_, err := toml.DecodeFile(path, &report)
+
+	assert.Nil(t, err)
+	return report
 }

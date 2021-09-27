@@ -59,6 +59,7 @@ type BuildSpec struct {
 	Resources             corev1.ResourceRequirements `json:"resources,omitempty"`
 	LastBuild             *LastBuild                  `json:"lastBuild,omitempty"`
 	Notary                *corev1alpha1.NotaryConfig  `json:"notary,omitempty"`
+	Cosign                *CosignConfig               `json:"cosign,omitempty"`
 	DefaultProcess        string                      `json:"defaultProcess,omitempty"`
 	// +listType
 	Tolerations      []corev1.Toleration `json:"tolerations,omitempty"`

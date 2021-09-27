@@ -296,6 +296,46 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, image.Spec.Notary, build.Spec.Notary)
 		})
+
+		it("sets the cosign config when present", func() {
+			image.Spec.Cosign = &CosignConfig{
+				Annotations: []CosignAnnotation{
+					{
+						Name:  "1",
+						Value: "1",
+					},
+				},
+			}
+
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", 27)
+
+			assert.Equal(t, image.Spec.Cosign, build.Spec.Cosign)
+		})
+
+		it("sets the cosign and notary config when present", func() {
+			image.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
+					URL: "some-notary-server",
+					SecretRef: corev1alpha1.NotarySecretRef{
+						Name: "some-secret-name",
+					},
+				},
+			}
+
+			image.Spec.Cosign = &CosignConfig{
+				Annotations: []CosignAnnotation{
+					{
+						Name:  "1",
+						Value: "1",
+					},
+				},
+			}
+
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", 27)
+
+			assert.Equal(t, image.Spec.Notary, build.Spec.Notary)
+			assert.Equal(t, image.Spec.Cosign, build.Spec.Cosign)
+		})
 	})
 }
 
