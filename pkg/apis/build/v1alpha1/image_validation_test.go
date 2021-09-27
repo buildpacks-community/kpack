@@ -220,7 +220,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("validates build bindings", func() {
-			image.Spec.Build.Bindings = []corev1alpha1.Binding{
+			image.Spec.Build.Bindings = []corev1alpha1.CNBBinding{
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 

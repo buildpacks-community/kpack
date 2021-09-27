@@ -60,7 +60,9 @@ type ImageSpec struct {
 // +k8s:openapi-gen=true
 type ImageBuild struct {
 	// +listType
-	Bindings corev1alpha1.Bindings `json:"bindings,omitempty"`
+	Services Services `json:"services,omitempty"`
+	// +listType
+	CNBBindings corev1alpha1.CNBBindings `json:"cnbBindings,omitempty"`
 	// +listType
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`

@@ -4595,7 +4595,7 @@
         "bindings": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+            "$ref": "#/definitions/kpack.core.v1alpha1.CNBBinding"
           },
           "x-kubernetes-list-type": ""
         },
@@ -5130,7 +5130,7 @@
         "bindings": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+            "$ref": "#/definitions/kpack.core.v1alpha1.CNBBinding"
           },
           "x-kubernetes-list-type": ""
         },
@@ -5406,20 +5406,6 @@
         }
       }
     },
-    "kpack.build.v1alpha2.Binding": {
-      "type": "object",
-      "properties": {
-        "metadataRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        },
-        "name": {
-          "type": "string"
-        },
-        "secretRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        }
-      }
-    },
     "kpack.build.v1alpha2.Build": {
       "type": "object",
       "required": [
@@ -5507,18 +5493,18 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
-          },
-          "x-kubernetes-list-type": ""
-        },
         "builder": {
           "$ref": "#/definitions/kpack.core.v1alpha1.BuildBuilderSpec"
         },
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildCacheConfig"
+        },
+        "cnbBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/kpack.core.v1alpha1.CNBBinding"
+          },
+          "x-kubernetes-list-type": ""
         },
         "cosign": {
           "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
@@ -5559,6 +5545,13 @@
         },
         "serviceAccount": {
           "type": "string"
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+          },
+          "x-kubernetes-list-type": ""
         },
         "source": {
           "$ref": "#/definitions/kpack.core.v1alpha1.SourceConfig"
@@ -6116,10 +6109,10 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
-        "bindings": {
+        "cnbBindings": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/kpack.core.v1alpha1.Binding"
+            "$ref": "#/definitions/kpack.core.v1alpha1.CNBBinding"
           },
           "x-kubernetes-list-type": ""
         },
@@ -6144,6 +6137,13 @@
         },
         "schedulerName": {
           "type": "string"
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+          },
+          "x-kubernetes-list-type": ""
         },
         "tolerations": {
           "type": "array",
@@ -6482,20 +6482,6 @@
         }
       }
     },
-    "kpack.core.v1alpha1.Binding": {
-      "type": "object",
-      "properties": {
-        "metadataRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        },
-        "name": {
-          "type": "string"
-        },
-        "secretRef": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-        }
-      }
-    },
     "kpack.core.v1alpha1.Blob": {
       "type": "object",
       "required": [
@@ -6613,6 +6599,20 @@
         },
         "version": {
           "type": "string"
+        }
+      }
+    },
+    "kpack.core.v1alpha1.CNBBinding": {
+      "type": "object",
+      "properties": {
+        "metadataRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        },
+        "name": {
+          "type": "string"
+        },
+        "secretRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         }
       }
     },

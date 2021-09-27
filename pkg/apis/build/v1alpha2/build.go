@@ -27,8 +27,12 @@ func (b *Build) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return b.Spec.Builder
 }
 
-func (b *Build) Bindings() []corev1alpha1.Binding {
-	return b.Spec.Bindings
+func (b *Build) Services() Services {
+	return b.Spec.Services
+}
+
+func (b *Build) CnbBindings() corev1alpha1.CNBBindings {
+	return b.Spec.CNBBindings
 }
 
 func (b *Build) IsRunning() bool {

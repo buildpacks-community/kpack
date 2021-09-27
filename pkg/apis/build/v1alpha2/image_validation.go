@@ -163,7 +163,16 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	return ib.Bindings.Validate(ctx).ViaField("bindings").Also()
+	return ib.Services.Validate(ctx).ViaField("services").
+		Also(validateCnbBindingsEmpty(ib.CNBBindings).ViaField("cnbBindings"))
+}
+
+func validateCnbBindingsEmpty(bindings corev1alpha1.CNBBindings) *apis.FieldError {
+	if len(bindings) > 0 {
+		return apis.ErrDisallowedFields("")
+	}
+
+	return nil
 }
 
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {

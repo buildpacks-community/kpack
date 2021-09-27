@@ -4,9 +4,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//todo not this lol
-const imagePullSecretsDirName = "image-pull-secrets-dir"
-
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type SourceConfig struct {
@@ -29,7 +26,7 @@ func (sc *SourceConfig) Source() Source {
 
 type Source interface {
 	BuildEnvVars() []corev1.EnvVar
-	ImagePullSecretsVolume() corev1.Volume
+	ImagePullSecretsVolume(name string) corev1.Volume
 }
 
 // +k8s:openapi-gen=true
@@ -52,9 +49,9 @@ func (g *Git) BuildEnvVars() []corev1.EnvVar {
 	}
 }
 
-func (in *Git) ImagePullSecretsVolume() corev1.Volume {
+func (in *Git) ImagePullSecretsVolume(name string) corev1.Volume {
 	return corev1.Volume{
-		Name: imagePullSecretsDirName,
+		Name: name,
 		VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		},
@@ -67,9 +64,9 @@ type Blob struct {
 	URL string `json:"url"`
 }
 
-func (b *Blob) ImagePullSecretsVolume() corev1.Volume {
+func (b *Blob) ImagePullSecretsVolume(name string) corev1.Volume {
 	return corev1.Volume{
-		Name: imagePullSecretsDirName,
+		Name: name,
 		VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		},
@@ -95,10 +92,10 @@ type Registry struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
-func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
+func (r *Registry) ImagePullSecretsVolume(name string) corev1.Volume {
 	if len(r.ImagePullSecrets) > 0 {
 		return corev1.Volume{
-			Name: imagePullSecretsDirName,
+			Name: name,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: r.ImagePullSecrets[0].Name,
@@ -107,7 +104,7 @@ func (r *Registry) ImagePullSecretsVolume() corev1.Volume {
 		}
 	} else {
 		return corev1.Volume{
-			Name: imagePullSecretsDirName,
+			Name: name,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},

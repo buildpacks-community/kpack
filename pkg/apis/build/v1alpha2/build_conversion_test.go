@@ -38,7 +38,6 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 						ClaimName: "some-claim-name",
 					},
 				},
-				Bindings: nil,
 				Env: []corev1.EnvVar{{
 					Name:  "some-var",
 					Value: "some-val",
@@ -252,6 +251,22 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 			testV1alpha1Build := &v1alpha1.Build{}
 			err := v1alpha2Build.ConvertTo(context.TODO(), testV1alpha1Build)
 			require.NoError(t, err)
+		})
+
+		it("converts v1alpha1 bindings", func() {
+			testV1alpha2Build := &Build{}
+			bindings := corev1alpha1.CNBBindings{
+				{
+					Name:        "some-binding",
+					MetadataRef: &corev1.LocalObjectReference{Name: "some-metadata"},
+					SecretRef:   &corev1.LocalObjectReference{Name: "some-secret"},
+				},
+			}
+			v1alpha1Build.Spec.Bindings = bindings
+
+			err := testV1alpha2Build.ConvertFrom(context.TODO(), v1alpha1Build)
+			require.NoError(t, err)
+			require.Equal(t, bindings, testV1alpha2Build.CnbBindings())
 		})
 	})
 }
