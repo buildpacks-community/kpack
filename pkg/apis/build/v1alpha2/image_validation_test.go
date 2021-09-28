@@ -33,7 +33,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				Kind: "ClusterBuilder",
 				Name: "builder-name",
 			},
-			ServiceAccount: "some/service-account",
+			ServiceAccountName: "some/service-account",
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "http://github.com/repo",
@@ -72,11 +72,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("defaults service account to default", func() {
-			image.Spec.ServiceAccount = ""
+			image.Spec.ServiceAccountName = ""
 
 			image.SetDefaults(ctx)
 
-			assert.Equal(t, image.Spec.ServiceAccount, "default")
+			assert.Equal(t, image.Spec.ServiceAccountName, "default")
 		})
 
 		it("defaults ImageTaggingStrategy to BuildNumber", func() {

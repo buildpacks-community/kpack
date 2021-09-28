@@ -20,8 +20,8 @@ type SourceResolver struct {
 
 // +k8s:openapi-gen=true
 type SourceResolverSpec struct {
-	ServiceAccount string                    `json:"serviceAccount,omitempty"`
-	Source         corev1alpha1.SourceConfig `json:"source"`
+	ServiceAccountName string                    `json:"serviceAccount,omitempty"`
+	Source             corev1alpha1.SourceConfig `json:"source"`
 }
 
 // +k8s:openapi-gen=true

@@ -32,7 +32,7 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 						Name: "secret",
 					}},
 				},
-				ServiceAccount: "default",
+				ServiceAccountName: "default",
 				Cache: &BuildCacheConfig{
 					Volume: &BuildPersistentVolumeCache{
 						ClaimName: "some-claim-name",

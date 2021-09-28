@@ -440,7 +440,7 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 					)...,
 				)
 			}),
-			ServiceAccountName: b.Spec.ServiceAccount,
+			ServiceAccountName: b.Spec.ServiceAccountName,
 			NodeSelector:       b.nodeSelector(config.OS),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
@@ -586,7 +586,7 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 			},
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: b.Spec.ServiceAccount,
+			ServiceAccountName: b.Spec.ServiceAccountName,
 			NodeSelector:       b.nodeSelector("linux"),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
@@ -842,7 +842,7 @@ func setupBindingVolumesAndMounts(bindings []ServiceBinding) ([]corev1.Volume, [
 				)
 			}
 		default:
-			return nil,nil, errors.Errorf("unsupported binding type: %T", b)
+			return nil, nil, errors.Errorf("unsupported binding type: %T", b)
 		}
 	}
 

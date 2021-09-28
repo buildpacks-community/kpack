@@ -42,7 +42,7 @@ type Image struct {
 type ImageSpec struct {
 	Tag                      string                            `json:"tag"`
 	Builder                  corev1.ObjectReference            `json:"builder,omitempty"`
-	ServiceAccount           string                            `json:"serviceAccount,omitempty"`
+	ServiceAccountName       string                            `json:"serviceAccountName,omitempty"`
 	Source                   corev1alpha1.SourceConfig         `json:"source"`
 	Cache                    *ImageCacheConfig                 `json:"cache,omitempty"`
 	FailedBuildHistoryLimit  *int64                            `json:"failedBuildHistoryLimit,omitempty"`

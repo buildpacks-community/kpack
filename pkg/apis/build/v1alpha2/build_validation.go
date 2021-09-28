@@ -15,8 +15,8 @@ import (
 const kpackControllerServiceAccountUsername = "system:serviceaccount:kpack:controller"
 
 func (b *Build) SetDefaults(ctx context.Context) {
-	if b.Spec.ServiceAccount == "" {
-		b.Spec.ServiceAccount = "default"
+	if b.Spec.ServiceAccountName == "" {
+		b.Spec.ServiceAccountName = "default"
 	}
 }
 

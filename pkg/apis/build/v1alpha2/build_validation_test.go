@@ -29,7 +29,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				Image:            "builder/bionic-builder@sha256:e431a4f94fb84854fd081da62762192f36fd093fdfb85ad3bc009b9309524e2d",
 				ImagePullSecrets: nil,
 			},
-			ServiceAccount: "some/service-account",
+			ServiceAccountName: "some/service-account",
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "http://github.com/repo",
@@ -47,11 +47,11 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("defaults service account to default", func() {
-			build.Spec.ServiceAccount = ""
+			build.Spec.ServiceAccountName = ""
 
 			build.SetDefaults(context.TODO())
 
-			assert.Equal(t, build.Spec.ServiceAccount, "default")
+			assert.Equal(t, build.Spec.ServiceAccountName, "default")
 		})
 	})
 

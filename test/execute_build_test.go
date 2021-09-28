@@ -337,10 +337,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 							Name: imageName,
 						},
 						Spec: buildapi.ImageSpec{
-							Tag:            imageTag,
-							Builder:        builder,
-							ServiceAccount: serviceAccountName,
-							Source:         source,
+							Tag:                imageTag,
+							Builder:            builder,
+							ServiceAccountName: serviceAccountName,
+							Source:             source,
 							Cache: &buildapi.ImageCacheConfig{
 								Volume: &buildapi.ImagePersistentVolumeCache{
 									Size: &cacheSize,
@@ -408,7 +408,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 				Kind: buildapi.ClusterBuilderKind,
 				Name: clusterBuilderName,
 			},
-			ServiceAccount: serviceAccountName,
+			ServiceAccountName: serviceAccountName,
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",

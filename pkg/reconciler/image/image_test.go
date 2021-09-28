@@ -91,7 +91,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				Kind: "Builder",
 				Name: builderName,
 			},
-			ServiceAccount: serviceAccount,
+			ServiceAccountName: serviceAccount,
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "https://some.git/url",
@@ -279,8 +279,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.SourceResolverSpec{
-								ServiceAccount: image.Spec.ServiceAccount,
-								Source:         image.Spec.Source,
+								ServiceAccountName: image.Spec.ServiceAccountName,
+								Source:             image.Spec.Source,
 							},
 						},
 					},
@@ -317,7 +317,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.SourceResolverSpec{
-								ServiceAccount: "old-account",
+								ServiceAccountName: "old-account",
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      "old-url",
@@ -342,8 +342,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Spec: buildapi.SourceResolverSpec{
-									ServiceAccount: image.Spec.ServiceAccount,
-									Source:         image.Spec.Source,
+									ServiceAccountName: image.Spec.ServiceAccountName,
+									Source:             image.Spec.Source,
 								},
 							},
 						},
@@ -379,8 +379,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Spec: buildapi.SourceResolverSpec{
-									ServiceAccount: image.Spec.ServiceAccount,
-									Source:         image.Spec.Source,
+									ServiceAccountName: image.Spec.ServiceAccountName,
+									Source:             image.Spec.Source,
 								},
 							},
 						},
@@ -716,8 +716,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
-								Cache:          &buildapi.BuildCacheConfig{},
+								ServiceAccountName: image.Spec.ServiceAccountName,
+								Cache:              &buildapi.BuildCacheConfig{},
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -806,8 +806,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
-								Cache:          &buildapi.BuildCacheConfig{},
+								ServiceAccountName: image.Spec.ServiceAccountName,
+								Cache:              &buildapi.BuildCacheConfig{},
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -896,8 +896,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
-								Cache:          &buildapi.BuildCacheConfig{},
+								ServiceAccountName: image.Spec.ServiceAccountName,
+								Cache:              &buildapi.BuildCacheConfig{},
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -987,8 +987,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
-								Cache:          &buildapi.BuildCacheConfig{},
+								ServiceAccountName: image.Spec.ServiceAccountName,
+								Cache:              &buildapi.BuildCacheConfig{},
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1080,7 +1080,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1145,7 +1145,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: "old-service-account",
+								ServiceAccountName: "old-service-account",
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
@@ -1226,7 +1226,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1302,7 +1302,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      image.Spec.Source.Git.URL,
@@ -1352,7 +1352,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1444,7 +1444,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1512,7 +1512,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1604,7 +1604,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1667,7 +1667,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1732,7 +1732,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: "old-service-account",
+								ServiceAccountName: "old-service-account",
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
@@ -1812,7 +1812,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1876,7 +1876,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: "old-service-account",
+								ServiceAccountName: "old-service-account",
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      "out-of-date-git-url",
@@ -1931,7 +1931,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccount: image.Spec.ServiceAccount,
+								ServiceAccountName: image.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -2258,7 +2258,7 @@ func builds(image *buildapi.Image, sourceResolver *buildapi.SourceResolver, coun
 				Builder: corev1alpha1.BuildBuilderSpec{
 					Image: "builder-image/foo@sha256:112312",
 				},
-				ServiceAccount: image.Spec.ServiceAccount,
+				ServiceAccountName: image.Spec.ServiceAccountName,
 				Source: corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      sourceResolver.Status.Source.Git.URL,

@@ -5543,7 +5543,7 @@
         "schedulerName": {
           "type": "string"
         },
-        "serviceAccount": {
+        "serviceAccountName": {
           "type": "string"
         },
         "services": {
@@ -6260,7 +6260,7 @@
         "projectDescriptorPath": {
           "type": "string"
         },
-        "serviceAccount": {
+        "serviceAccountName": {
           "type": "string"
         },
         "source": {

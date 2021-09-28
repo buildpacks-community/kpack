@@ -61,9 +61,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			CreationTimestamp: metav1.Date(1944, 6, 6, 13, 30, 0, 0, time.UTC),
 		},
 		Spec: buildapi.BuildSpec{
-			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
-			Builder:        builderImageRef,
-			ServiceAccount: serviceAccount,
+			Tags:               []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+			Builder:            builderImageRef,
+			ServiceAccountName: serviceAccount,
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "giturl.com/git.git",
@@ -1097,7 +1097,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				require.Equal(t, corev1.PodSpec{
-					ServiceAccountName: build.Spec.ServiceAccount,
+					ServiceAccountName: build.Spec.ServiceAccountName,
 					NodeSelector: map[string]string{
 						"kubernetes.io/os": "linux",
 						"foo":              "bar",

@@ -28,9 +28,9 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				Name: "my-super-convertable-image",
 			},
 			Spec: ImageSpec{
-				Tag:            "my-tag",
-				Builder:        corev1.ObjectReference{},
-				ServiceAccount: "service-account",
+				Tag:                "my-tag",
+				Builder:            corev1.ObjectReference{},
+				ServiceAccountName: "service-account",
 				Source: corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      "https://my-github.com/git",

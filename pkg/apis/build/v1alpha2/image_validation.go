@@ -33,8 +33,8 @@ func init() {
 }
 
 func (i *Image) SetDefaults(ctx context.Context) {
-	if i.Spec.ServiceAccount == "" {
-		i.Spec.ServiceAccount = "default"
+	if i.Spec.ServiceAccountName == "" {
+		i.Spec.ServiceAccountName = "default"
 	}
 
 	if i.Spec.ImageTaggingStrategy == "" {

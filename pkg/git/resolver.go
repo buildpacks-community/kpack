@@ -22,7 +22,7 @@ func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 }
 
 func (r *Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceResolver) (corev1alpha1.ResolvedSourceConfig, error) {
-	keychain, err := r.gitKeychain.KeychainForServiceAccount(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccount)
+	keychain, err := r.gitKeychain.KeychainForServiceAccount(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccountName)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{}, err
 	}
