@@ -88,7 +88,8 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 		Also(is.Cache.Validate(ctx).ViaField("cache")).
 		Also(is.validateVolumeCache(ctx)).
 		Also(validateNotaryUnset(is.Notary).ViaField("notary")).
-		Also(is.Cosign.Validate(ctx).ViaField("cosign"))
+		Also(is.Cosign.Validate(ctx).ViaField("cosign")).
+		Also(is.validateBuildHistoryLimit())
 }
 
 func validateNotaryUnset(notaryConfig *corev1alpha1.NotaryConfig) *apis.FieldError {
@@ -195,6 +196,18 @@ func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
 	default:
 		return apis.ErrInvalidValue(builder.Kind, "kind")
 	}
+}
+
+func (is *ImageSpec) validateBuildHistoryLimit() *apis.FieldError {
+	errMsg := "build history limit must be greater than 0"
+
+	if *is.FailedBuildHistoryLimit < 1 {
+		return apis.ErrGeneric(errMsg, "failedBuildHistoryLimit")
+	}
+	if *is.SuccessBuildHistoryLimit < 1 {
+		return apis.ErrGeneric(errMsg, "successBuildHistoryLimit")
+	}
+	return nil
 }
 
 func (c *ImageCacheConfig) Validate(context context.Context) *apis.FieldError {

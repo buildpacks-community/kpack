@@ -2,6 +2,7 @@ package v1alpha2
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -280,6 +281,19 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			errMsg := "invalid image name: @NOT!!!VALID!!!, name must be a a valid label: metadata.name\na valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"
 
 			assertValidationError(image, ctx, errors.New(errMsg))
+		})
+
+		it("buildHistoryLimit is less than 1", func(){
+			errMsg := "build history limit must be greater than 0: spec.%s"
+			invalidLimit := int64(0)
+
+			image.Spec.FailedBuildHistoryLimit = &invalidLimit
+			assertValidationError(image, ctx, errors.New(fmt.Sprintf(errMsg, "failedBuildHistoryLimit")))
+
+			image.Spec.FailedBuildHistoryLimit = &defaultFailedBuildHistoryLimit
+			image.Spec.SuccessBuildHistoryLimit = &invalidLimit
+			assertValidationError(image, ctx, errors.New(fmt.Sprintf(errMsg, "successBuildHistoryLimit")))
+
 		})
 
 		it("validates cache size is not set when there is no default StorageClass", func() {
