@@ -267,7 +267,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assertValidationError(image, ctx, apis.ErrDisallowedFields("spec.build.cnbBindings"))
+			assertValidationError(image, ctx, apis.ErrGeneric("CNB binding support has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.build.cnbBindings"))
 		})
 
 		it("image name is too long", func() {
@@ -383,54 +383,26 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, image.Validate(ctx))
 		})
 
-		when("validating the notary config", func() {
-			it("handles a valid notary config", func() {
-				image.Spec.Notary = &corev1alpha1.NotaryConfig{
-					V1: &corev1alpha1.NotaryV1Config{
-						URL: "some-url",
-						SecretRef: corev1alpha1.NotarySecretRef{
-							Name: "some-secret-name",
-						},
+		it("validates that notary config is unset", func() {
+			image.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
+					URL: "some-url",
+					SecretRef: corev1alpha1.NotarySecretRef{
+						Name: "some-secret-name",
 					},
-				}
-				assert.Nil(t, image.Validate(ctx))
-			})
+				},
+			}
+			err := image.Validate(ctx)
+			assert.EqualError(t, err, "notary support has been deprecated in v1alpha2, please use v1alpha1 for notary image signing: spec.notary")
+		})
 
-			it("handles an empty notary url", func() {
-				image.Spec.Notary = &corev1alpha1.NotaryConfig{
-					V1: &corev1alpha1.NotaryV1Config{
-						URL: "",
-						SecretRef: corev1alpha1.NotarySecretRef{
-							Name: "some-secret-name",
-						},
-					},
-				}
-				err := image.Validate(ctx)
-				assert.EqualError(t, err, "missing field(s): spec.notary.v1.url")
-			})
+		it("validates not registry AND volume cache are both specified", func() {
+			original := image.DeepCopy()
 
-			it("handles an empty notary secret ref", func() {
-				image.Spec.Notary = &corev1alpha1.NotaryConfig{
-					V1: &corev1alpha1.NotaryV1Config{
-						URL: "some-url",
-						SecretRef: corev1alpha1.NotarySecretRef{
-							Name: "",
-						},
-					},
-				}
-				err := image.Validate(ctx)
-				assert.EqualError(t, err, "missing field(s): spec.notary.v1.secretRef.name")
-			})
+			image.Spec.Cache.Registry = &RegistryCache{Tag: "test"}
 
-			it("validates not registry AND volume cache are both specified", func() {
-				original := image.DeepCopy()
-
-				image.Spec.Cache.Registry = &RegistryCache{Tag: "test"}
-
-				err := image.Validate(apis.WithinUpdate(ctx, original))
-				assert.EqualError(t, err, "only one type of cache can be specified: spec.cache.registry, spec.cache.volume")
-			})
-
+			err := image.Validate(apis.WithinUpdate(ctx, original))
+			assert.EqualError(t, err, "only one type of cache can be specified: spec.cache.registry, spec.cache.volume")
 		})
 
 		it("validates kubernetes.io/os node selector is unset", func() {

@@ -275,6 +275,48 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		it("validates notary config has not been set by user", func() {
+			build.Spec.Notary = &corev1alpha1.NotaryConfig{
+				V1: &corev1alpha1.NotaryV1Config{
+					URL: "",
+					SecretRef: corev1alpha1.NotarySecretRef{
+						Name: "some-secret-name",
+					},
+				},
+			}
+			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated and cannot be set", "spec.notary"))
+
+		})
+
+		when("validating notary if build is created by kpack controller", func() {
+			ctx := apis.WithUserInfo(context.TODO(), &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
+			it("handles an empty notary url", func() {
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-secret-name",
+						},
+					},
+				}
+				err := build.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.url")
+			})
+
+			it("handles an empty notary secret ref", func() {
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "",
+						},
+					},
+				}
+				err := build.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.secretRef.name")
+			})
+		})
+
 		it("validates not registry AND volume cache are both specified", func() {
 			build.Spec.Cache = &BuildCacheConfig{
 				Volume:   &BuildPersistentVolumeCache{ClaimName: "pvc"},

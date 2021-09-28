@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
@@ -87,8 +87,16 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 		Also(is.Build.Validate(ctx).ViaField("build")).
 		Also(is.Cache.Validate(ctx).ViaField("cache")).
 		Also(is.validateVolumeCache(ctx)).
-		Also(is.Notary.Validate(ctx).ViaField("notary")).
+		Also(validateNotaryUnset(is.Notary).ViaField("notary")).
 		Also(is.Cosign.Validate(ctx).ViaField("cosign"))
+}
+
+func validateNotaryUnset(notaryConfig *corev1alpha1.NotaryConfig) *apis.FieldError {
+	if notaryConfig != nil {
+		return apis.ErrGeneric("notary support has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "")
+	}
+
+	return nil
 }
 
 func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
@@ -169,7 +177,7 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 
 func validateCnbBindingsEmpty(bindings corev1alpha1.CNBBindings) *apis.FieldError {
 	if len(bindings) > 0 {
-		return apis.ErrDisallowedFields("")
+		return apis.ErrGeneric("CNB binding support has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "")
 	}
 
 	return nil
