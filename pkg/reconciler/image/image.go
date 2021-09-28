@@ -55,17 +55,17 @@ func NewController(
 	imageInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	buildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGVK(buildapi.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
 	sourceResolverInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGVK(buildapi.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
 	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGVK(buildapi.SchemeGroupVersion.WithKind(Kind)),
+		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
