@@ -32,8 +32,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: buildapi.ImageSpec{
-			Tag:            "some/image",
-			ServiceAccount: "some/service-account",
+			Tag:                "some/image",
+			ServiceAccountName: "some/service-account",
 			Builder: corev1.ObjectReference{
 				Kind: "Builder",
 				Name: "builder-name",
@@ -70,9 +70,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Name: "image-name",
 		},
 		Spec: buildapi.BuildSpec{
-			Tags:           []string{"some/image"},
-			Builder:        builder.BuildBuilderSpec(),
-			ServiceAccount: "some/serviceaccount",
+			Tags:               []string{"some/image"},
+			Builder:            builder.BuildBuilderSpec(),
+			ServiceAccountName: "some/serviceaccount",
 		},
 		Status: buildapi.BuildStatus{
 			Status: corev1alpha1.Status{
@@ -119,7 +119,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("false for different ServiceAccount", func() {
-			image.Spec.ServiceAccount = "different"
+			image.Spec.ServiceAccountName = "different"
 
 			result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 			assert.NoError(t, err)
@@ -218,7 +218,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("true if build cnb bindings changes", func() {
 			latestBuild.Spec.CNBBindings = corev1alpha1.CNBBindings{
 				{
-					Name:        "some-value",
+					Name: "some-value",
 				},
 			}
 

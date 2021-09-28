@@ -54,7 +54,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 		Spec: BuildSpec{
 			Tags:                  im.generateTags(buildNumber),
 			Builder:               builder.BuildBuilderSpec(),
-			ServiceAccount:        im.Spec.ServiceAccount,
+			ServiceAccountName:    im.Spec.ServiceAccountName,
 			Source:                sourceResolver.SourceConfig(),
 			Cache:                 im.getBuildCacheConfig(),
 			Services:              im.Services(),
@@ -224,8 +224,8 @@ func (im *Image) SourceResolver() *SourceResolver {
 			Labels: im.Labels,
 		},
 		Spec: SourceResolverSpec{
-			ServiceAccount: im.Spec.ServiceAccount,
-			Source:         im.Spec.Source,
+			ServiceAccountName: im.Spec.ServiceAccountName,
+			Source:             im.Spec.Source,
 		},
 	}
 }

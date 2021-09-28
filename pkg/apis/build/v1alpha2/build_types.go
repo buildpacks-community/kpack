@@ -46,11 +46,11 @@ var (
 // +k8s:openapi-gen=true
 type BuildSpec struct {
 	// +listType
-	Tags           []string                      `json:"tags,omitempty"`
-	Builder        corev1alpha1.BuildBuilderSpec `json:"builder,omitempty"`
-	ServiceAccount string                        `json:"serviceAccount,omitempty"`
-	Source         corev1alpha1.SourceConfig     `json:"source"`
-	Cache          *BuildCacheConfig             `json:"cache,omitempty"`
+	Tags               []string                      `json:"tags,omitempty"`
+	Builder            corev1alpha1.BuildBuilderSpec `json:"builder,omitempty"`
+	ServiceAccountName string                        `json:"serviceAccountName,omitempty"`
+	Source             corev1alpha1.SourceConfig     `json:"source"`
+	Cache              *BuildCacheConfig             `json:"cache,omitempty"`
 	// +listType
 	Services Services `json:"services,omitempty"`
 	// +listType

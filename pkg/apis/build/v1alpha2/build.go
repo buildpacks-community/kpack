@@ -20,7 +20,7 @@ func (b *Build) Tag() string {
 }
 
 func (b *Build) ServiceAccount() string {
-	return b.Spec.ServiceAccount
+	return b.Spec.ServiceAccountName
 }
 
 func (b *Build) BuilderSpec() corev1alpha1.BuildBuilderSpec {

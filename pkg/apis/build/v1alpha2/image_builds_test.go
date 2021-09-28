@@ -29,8 +29,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: ImageSpec{
-			Tag:            "some/image",
-			ServiceAccount: "some/service-account",
+			Tag:                "some/image",
+			ServiceAccountName: "some/service-account",
 			Builder: corev1.ObjectReference{
 				Kind: "Builder",
 				Name: "builder-name",
@@ -67,9 +67,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			Name: "image-name",
 		},
 		Spec: BuildSpec{
-			Tags:           []string{"some/image"},
-			Builder:        builder.BuildBuilderSpec(),
-			ServiceAccount: "some/serviceaccount",
+			Tags:               []string{"some/image"},
+			Builder:            builder.BuildBuilderSpec(),
+			ServiceAccountName: "some/serviceaccount",
 		},
 		Status: BuildStatus{
 			Status: corev1alpha1.Status{

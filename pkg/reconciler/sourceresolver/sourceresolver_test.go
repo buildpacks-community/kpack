@@ -74,7 +74,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					Generation: originalGeneration,
 				},
 				Spec: buildapi.SourceResolverSpec{
-					ServiceAccount: serviceAccount,
+					ServiceAccountName: serviceAccount,
 					Source: corev1alpha1.SourceConfig{
 						Git: &corev1alpha1.Git{
 							URL:      "https://github.com/build-me",
@@ -332,7 +332,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					Generation: originalGeneration,
 				},
 				Spec: buildapi.SourceResolverSpec{
-					ServiceAccount: serviceAccount,
+					ServiceAccountName: serviceAccount,
 					Source: corev1alpha1.SourceConfig{
 						Blob: &corev1alpha1.Blob{
 							URL: "https://some-blobstore.example.com/some-blob",
@@ -397,7 +397,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					Generation: originalGeneration,
 				},
 				Spec: buildapi.SourceResolverSpec{
-					ServiceAccount: serviceAccount,
+					ServiceAccountName: serviceAccount,
 					Source: corev1alpha1.SourceConfig{
 						Registry: &corev1alpha1.Registry{
 							Image: "some-registry.io/some-image@sha256:abcdef123456",

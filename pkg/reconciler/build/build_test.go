@@ -86,8 +86,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: originalGeneration,
 		},
 		Spec: buildapi.BuildSpec{
-			Tags:           []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
-			ServiceAccount: serviceAccountName,
+			Tags:               []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+			ServiceAccountName: serviceAccountName,
 			Builder: corev1alpha1.BuildBuilderSpec{
 				Image: "somebuilder/123@sha256:12334563ad",
 				ImagePullSecrets: []corev1.LocalObjectReference{

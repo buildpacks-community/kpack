@@ -36,8 +36,8 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					Namespace: "namespace-name",
 				},
 				Spec: buildapi.BuildSpec{
-					Tags:           []string{"reg.io/appimage/name"},
-					ServiceAccount: "service-account",
+					Tags:               []string{"reg.io/appimage/name"},
+					ServiceAccountName: "service-account",
 				},
 				Status: buildapi.BuildStatus{},
 			}
@@ -46,7 +46,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 				it("retrieves the metadata from the registry", func() {
 					appImageSecretRef := registry.SecretRef{
-						ServiceAccount: build.Spec.ServiceAccount,
+						ServiceAccount: build.Spec.ServiceAccountName,
 						Namespace:      build.Namespace,
 					}
 					appImageKeychain := &registryfakes.FakeKeychain{}
@@ -101,7 +101,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 
 				it("retrieves the metadata from the registry", func() {
 					appImageSecretRef := registry.SecretRef{
-						ServiceAccount: build.Spec.ServiceAccount,
+						ServiceAccount: build.Spec.ServiceAccountName,
 						Namespace:      build.Namespace,
 					}
 					appImageKeychain := &registryfakes.FakeKeychain{}

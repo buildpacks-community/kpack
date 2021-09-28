@@ -37,7 +37,7 @@ func (i *Image) ConvertFrom(_ context.Context, from apis.Convertible) error {
 func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	to.Tag = is.Tag
 	to.Builder = is.Builder
-	to.ServiceAccount = is.ServiceAccount
+	to.ServiceAccount = is.ServiceAccountName
 	if is.Cache != nil && is.Cache.Volume != nil {
 		to.CacheSize = is.Cache.Volume.Size
 	}
@@ -58,7 +58,7 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 func (is *ImageSpec) convertFrom(from *v1alpha1.ImageSpec) {
 	is.Tag = from.Tag
 	is.Builder = from.Builder
-	is.ServiceAccount = from.ServiceAccount
+	is.ServiceAccountName = from.ServiceAccount
 	is.Source = from.Source
 	if from.CacheSize != nil {
 		is.Cache = &ImageCacheConfig{
