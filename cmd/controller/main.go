@@ -63,7 +63,6 @@ var (
 	rebaseImage            = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	completionImage        = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
 	completionWindowsImage = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
-	lifecycleImage         = flag.String("lifecycle-image", os.Getenv("LIFECYCLE_IMAGE"), "The image used to provide lifecycle binaries")
 )
 
 func main() {
@@ -161,7 +160,7 @@ func main() {
 		log.Fatalf("could not create empty keychain %s", err)
 	}
 
-	lifecycleProvider := config.NewLifecycleProvider(*lifecycleImage, &registry.Client{}, kpackKeychain)
+	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
 	configMapWatcher.Watch(config.LifecycleConfigName, lifecycleProvider.UpdateImage)
 
 	builderCreator := &cnb.RemoteBuilderCreator{

@@ -1,17 +1,22 @@
 package config
 
 import (
+	"context"
 	"sync/atomic"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
-	LifecycleConfigName = "lifecycle-image"
-	LifecycleConfigKey  = "image"
+	LifecycleConfigName        = "lifecycle-image"
+	LifecycleConfigKey         = "image"
+	ServiceAccountNameKey      = "serviceAccountRef.name"
+	ServiceAccountNamespaceKey = "serviceAccountRef.namespace"
 )
 
 type RegistryClient interface {
@@ -24,35 +29,28 @@ type lifecycleData struct {
 }
 
 type LifecycleProvider struct {
-	RegistryClient RegistryClient
-	Keychain       authn.Keychain
-	lifecycleData  atomic.Value
-	handlers       []func()
+	registryClient  RegistryClient
+	keychainFactory registry.KeychainFactory
+	lifecycleData   atomic.Value
+	handlers        []func()
 }
 
-func NewLifecycleProvider(lifecycleImageRef string, client RegistryClient, keychain authn.Keychain) *LifecycleProvider {
-	p := &LifecycleProvider{
-		RegistryClient: client,
-		Keychain:       keychain,
+func NewLifecycleProvider(client RegistryClient, keychainFactory registry.KeychainFactory) *LifecycleProvider {
+	return &LifecycleProvider{
+		registryClient:  client,
+		keychainFactory: keychainFactory,
 	}
-
-	data := &lifecycleData{}
-
-	p.fetchImage(lifecycleImageRef, data)
-
-	p.lifecycleData.Store(data)
-	return p
 }
 
 func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) {
-	data, shouldCallHandlers := l.updateImage(cm)
+	data, shouldCallHandlers := l.updateImage(context.Background(), cm)
 	if shouldCallHandlers {
 		l.callHandlers()
 	}
 	l.lifecycleData.Store(data)
 }
 
-func (l *LifecycleProvider) updateImage(cm *corev1.ConfigMap) (*lifecycleData, bool) {
+func (l *LifecycleProvider) updateImage(ctx context.Context, cm *corev1.ConfigMap) (*lifecycleData, bool) {
 	data := &lifecycleData{}
 	imageRef, ok := cm.Data[LifecycleConfigKey]
 	if !ok {
@@ -60,7 +58,16 @@ func (l *LifecycleProvider) updateImage(cm *corev1.ConfigMap) (*lifecycleData, b
 		return data, true
 	}
 
-	l.fetchImage(imageRef, data)
+	keychain, err := l.keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		ServiceAccount: cm.Data[ServiceAccountNameKey],
+		Namespace:      cm.Data[ServiceAccountNamespaceKey],
+	})
+	if err != nil {
+		data.err = errors.Wrapf(err, "fetching keychain to read lifecycle")
+		return data, true
+	}
+
+	l.fetchImage(keychain, imageRef, data)
 	if data.err != nil {
 		return data, true
 	}
@@ -85,8 +92,8 @@ func (l *LifecycleProvider) AddEventHandler(handler func()) {
 	l.handlers = append(l.handlers, handler)
 }
 
-func (l *LifecycleProvider) fetchImage(imageRef string, data *lifecycleData) {
-	img, _, err := l.RegistryClient.Fetch(l.Keychain, imageRef)
+func (l *LifecycleProvider) fetchImage(keychain authn.Keychain, imageRef string, data *lifecycleData) {
+	img, _, err := l.registryClient.Fetch(keychain, imageRef)
 	if err != nil {
 		data.err = errors.Wrap(err, "failed to fetch lifecycle image")
 		return

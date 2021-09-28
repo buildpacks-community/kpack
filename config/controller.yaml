@@ -107,11 +107,6 @@ spec:
             configMapKeyRef:
               name: completion-windows-image
               key: image
-        - name: LIFECYCLE_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: lifecycle-image
-              key: image
         resources:
           requests:
             cpu: 20m
