@@ -204,7 +204,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated and cannot be set", "spec.cnbBindings"))
+			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.cnbBindings"))
 
 		})
 
@@ -284,7 +284,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated and cannot be set", "spec.notary"))
+			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "spec.notary"))
 
 		})
 

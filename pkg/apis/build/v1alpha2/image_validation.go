@@ -87,17 +87,9 @@ func (is *ImageSpec) ValidateSpec(ctx context.Context) *apis.FieldError {
 		Also(is.Build.Validate(ctx).ViaField("build")).
 		Also(is.Cache.Validate(ctx).ViaField("cache")).
 		Also(is.validateVolumeCache(ctx)).
-		Also(validateNotaryUnset(is.Notary).ViaField("notary")).
+		Also(validateNotary(ctx, is.Notary).ViaField("notary")).
 		Also(is.Cosign.Validate(ctx).ViaField("cosign")).
 		Also(is.validateBuildHistoryLimit())
-}
-
-func validateNotaryUnset(notaryConfig *corev1alpha1.NotaryConfig) *apis.FieldError {
-	if notaryConfig != nil {
-		return apis.ErrGeneric("notary support has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "")
-	}
-
-	return nil
 }
 
 func (is *ImageSpec) validateTag(ctx context.Context) *apis.FieldError {
@@ -173,15 +165,7 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return ib.Services.Validate(ctx).ViaField("services").
-		Also(validateCnbBindingsEmpty(ib.CNBBindings).ViaField("cnbBindings"))
-}
-
-func validateCnbBindingsEmpty(bindings corev1alpha1.CNBBindings) *apis.FieldError {
-	if len(bindings) > 0 {
-		return apis.ErrGeneric("CNB binding support has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "")
-	}
-
-	return nil
+		Also(validateCnbBindings(ctx, ib.CNBBindings).ViaField("cnbBindings"))
 }
 
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {
@@ -216,4 +200,22 @@ func (c *ImageCacheConfig) Validate(context context.Context) *apis.FieldError {
 	}
 
 	return nil
+}
+
+func validateNotary(ctx context.Context, config *corev1alpha1.NotaryConfig) *apis.FieldError {
+	//only allow the kpack controller to create resources with notary
+	if !resourceCreatedByKpackController(apis.GetUserInfo(ctx)) && config != nil {
+		return apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "")
+	}
+
+	return config.Validate(ctx)
+}
+
+func validateCnbBindings(ctx context.Context, bindings corev1alpha1.CNBBindings) *apis.FieldError {
+	//only allow the kpack controller to create resources with cnb bindings
+	if !resourceCreatedByKpackController(apis.GetUserInfo(ctx)) && len(bindings) > 0 {
+		return apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "")
+	}
+
+	return bindings.Validate(ctx)
 }
