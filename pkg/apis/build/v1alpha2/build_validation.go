@@ -33,27 +33,9 @@ func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 		Also(bs.Services.Validate(ctx).ViaField("services")).
 		Also(bs.LastBuild.Validate(ctx).ViaField("lastBuild")).
 		Also(bs.validateImmutableFields(ctx)).
-		Also(bs.validateCnbBindings(ctx).ViaField("cnbBindings")).
+		Also(validateCnbBindings(ctx, bs.CNBBindings).ViaField("cnbBindings")).
 		Also(bs.validateNodeSelector(ctx)).
-		Also(bs.validateNotary(ctx).ViaField("notary"))
-}
-
-func (bs *BuildSpec) validateCnbBindings(ctx context.Context) *apis.FieldError {
-	//only allow the kpack controller to create resources with cnb bindings
-	if !resourceCreatedByKpackController(apis.GetUserInfo(ctx)) && len(bs.CNBBindings) > 0 {
-		return apis.ErrGeneric("use of this field has been deprecated and cannot be set", "")
-	}
-
-	return bs.CNBBindings.Validate(ctx)
-}
-
-func (bs *BuildSpec) validateNotary(ctx context.Context) *apis.FieldError {
-	//only allow the kpack controller to create resources with notary
-	if !resourceCreatedByKpackController(apis.GetUserInfo(ctx)) && bs.Notary != nil {
-		return apis.ErrGeneric("use of this field has been deprecated and cannot be set", "")
-	}
-
-	return bs.Notary.Validate(ctx)
+		Also(validateNotary(ctx, bs.Notary).ViaField("notary"))
 }
 
 func resourceCreatedByKpackController(info *authv1.UserInfo) bool {

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -259,18 +260,6 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, apis.ErrMissingField("spec.build.services[0].name"))
 		})
 
-		it("validates v1alpha1 bindings have not been added", func() {
-			image.Spec.Build.CNBBindings = corev1alpha1.CNBBindings{
-				{
-					Name:        "test",
-					MetadataRef: nil,
-					SecretRef:   nil,
-				},
-			}
-
-			assertValidationError(image, ctx, apis.ErrGeneric("CNB binding support has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.build.cnbBindings"))
-		})
-
 		it("image name is too long", func() {
 			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
 			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a a valid label: metadata.name\nmust be no more than 63 characters"))
@@ -283,7 +272,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(image, ctx, errors.New(errMsg))
 		})
 
-		it("buildHistoryLimit is less than 1", func(){
+		it("buildHistoryLimit is less than 1", func() {
 			errMsg := "build history limit must be greater than 0: spec.%s"
 			invalidLimit := int64(0)
 
@@ -397,7 +386,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, image.Validate(ctx))
 		})
 
-		it("validates that notary config is unset", func() {
+		it("validates notary config has not been set by user", func() {
 			image.Spec.Notary = &corev1alpha1.NotaryConfig{
 				V1: &corev1alpha1.NotaryV1Config{
 					URL: "some-url",
@@ -407,7 +396,112 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 			err := image.Validate(ctx)
-			assert.EqualError(t, err, "notary support has been deprecated in v1alpha2, please use v1alpha1 for notary image signing: spec.notary")
+			assert.EqualError(t, err, "use of this field has been deprecated in v1alpha2, please use v1alpha1 for notary image signing: spec.notary")
+		})
+
+		when("validating notary if build is created by kpack controller", func() {
+			ctx := apis.WithUserInfo(ctx, &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
+			it("handles an empty notary url", func() {
+				image.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-secret-name",
+						},
+					},
+				}
+				err := image.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.url")
+			})
+
+			it("handles an empty notary secret ref", func() {
+				image.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "",
+						},
+					},
+				}
+				err := image.Validate(ctx)
+				assert.EqualError(t, err, "missing field(s): spec.notary.v1.secretRef.name")
+			})
+		})
+
+		it("validates cnb bindings have not been created by a user", func() {
+			image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
+			}
+
+			assertValidationError(image, ctx, apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.build.cnbBindings"))
+
+		})
+
+		when("validating cnb bindings if they have been created by the kpack controller", func() {
+			ctx := apis.WithUserInfo(ctx, &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
+			it("validates cnb bindings have a name", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
+				}
+
+				assertValidationError(image, ctx, apis.ErrMissingField("spec.build.cnbBindings[0].name"))
+			})
+
+			it("validates cnb bindings have a valid name", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{Name: "&", MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
+				}
+
+				assertValidationError(image, ctx, apis.ErrInvalidValue("&", "spec.build.cnbBindings[0].name"))
+			})
+
+			it("validates cnb bindings have metadata", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{Name: "apm"},
+				}
+
+				assertValidationError(image, ctx, apis.ErrMissingField("spec.build.cnbBindings[0].metadataRef"))
+			})
+
+			it("validates cnb bindings have non-empty metadata", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{Name: "apm", MetadataRef: &corev1.LocalObjectReference{}},
+				}
+
+				assertValidationError(image, ctx, apis.ErrMissingField("spec.build.cnbBindings[0].metadataRef.name"))
+			})
+
+			it("validates cnb bindings have non-empty secrets", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{
+						Name:        "apm",
+						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
+						SecretRef:   &corev1.LocalObjectReference{},
+					},
+				}
+
+				assertValidationError(image, ctx, apis.ErrMissingField("spec.build.cnbBindings[0].secretRef.name"))
+			})
+
+			it("validates cnb bindings name uniqueness", func() {
+				image.Spec.Build.CNBBindings = []corev1alpha1.CNBBinding{
+					{
+						Name:        "apm",
+						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
+					},
+					{
+						Name:        "not-apm",
+						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
+						SecretRef:   &corev1.LocalObjectReference{Name: "secret"},
+					},
+					{
+						Name:        "apm",
+						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
+					},
+				}
+
+				assertValidationError(image, ctx, apis.ErrGeneric("duplicate binding name \"apm\"", "spec.build.cnbBindings[0].name", "spec.build.cnbBindings[2].name"))
+			})
 		})
 
 		it("validates not registry AND volume cache are both specified", func() {
