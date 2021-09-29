@@ -22,10 +22,10 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	"github.com/pivotal/kpack/pkg/cnb"
+	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
