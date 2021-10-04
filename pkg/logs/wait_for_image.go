@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchTools "k8s.io/client-go/tools/watch"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
@@ -29,7 +29,7 @@ func NewImageWaiter(kpackClient versioned.Interface, logTailer ImageLogTailer) *
 	return &imageWaiter{KpackClient: kpackClient, logTailer: logTailer}
 }
 
-func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *buildapi.Image) (string, error) {
+func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *v1alpha1.Image) (string, error) {
 	if done, err := imageUpdateHasResolved(image.Generation)(watch.Event{Object: image}); err != nil {
 		return "", err
 	} else if done {
@@ -44,7 +44,7 @@ func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *buildap
 		return "", err
 	}
 
-	image, ok := event.Object.(*buildapi.Image)
+	image, ok := event.Object.(*v1alpha1.Image)
 	if !ok {
 		return "", errors.New("unexpected object received")
 	}
@@ -54,7 +54,7 @@ func (w *imageWaiter) Wait(ctx context.Context, writer io.Writer, image *buildap
 
 func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, error) {
 	return func(event watch.Event) (bool, error) {
-		image, ok := event.Object.(*buildapi.Image)
+		image, ok := event.Object.(*v1alpha1.Image)
 		if !ok {
 			return false, errors.New("unexpected object received")
 		}
@@ -75,7 +75,7 @@ func imageUpdateHasResolved(generation int64) func(event watch.Event) (bool, err
 	}
 }
 
-func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, generation int64, image *buildapi.Image) (string, error) {
+func (w *imageWaiter) resultOfImageWait(ctx context.Context, writer io.Writer, generation int64, image *v1alpha1.Image) (string, error) {
 	if image.Status.LatestBuildImageGeneration == generation {
 		return w.waitBuild(ctx, writer, image.Namespace, image.Status.LatestBuildRef)
 	}
@@ -121,7 +121,7 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 }
 
 func buildHasResolved(event watch.Event) (bool, error) {
-	build, ok := event.Object.(*buildapi.Build)
+	build, ok := event.Object.(*v1alpha1.Build)
 	if !ok {
 		return false, errors.New("unexpected object received, expected Build")
 	}
@@ -138,14 +138,14 @@ func buildFailure(statusMessage string) error {
 	return errors.New(errMsg)
 }
 
-func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName string, condition watchTools.ConditionFunc) (*buildapi.Build, error) {
-	build, err := w.KpackClient.KpackV1alpha2().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
+func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName string, condition watchTools.ConditionFunc) (*v1alpha1.Build, error) {
+	build, err := w.KpackClient.KpackV1alpha1().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	event, err := watchTools.UntilWithSync(ctx,
 		&watchOneBuild{context: ctx, kpackClient: w.KpackClient, namespace: namespace, buildName: buildName},
-		&buildapi.Build{},
+		&v1alpha1.Build{},
 		func(store cache.Store) (bool, error) {
 			return condition(watch.Event{Object: build})
 		},
@@ -156,7 +156,7 @@ func (w *imageWaiter) buildWatchUntil(ctx context.Context, namespace, buildName 
 	}
 	if event != nil { // event is nil if precondition is true
 		var ok bool
-		build, ok = event.Object.(*buildapi.Build)
+		build, ok = event.Object.(*v1alpha1.Build)
 		if !ok {
 			return nil, errors.New("unexpected object received, expected Build")
 		}

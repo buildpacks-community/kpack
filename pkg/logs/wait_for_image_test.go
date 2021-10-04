@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	clientgotesting "k8s.io/client-go/testing"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 )
@@ -34,28 +34,28 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 		generation int64 = 1
 		namespace        = "some-namespace"
 
-		successfulBuild = &buildapi.Build{
+		successfulBuild = &v1alpha1.Build{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-to-follow",
 				Namespace: namespace,
 			},
-			Status: buildapi.BuildStatus{
+			Status: v1alpha1.BuildStatus{
 				Status:      conditionSuccess(corev1.ConditionTrue, ""),
 				LatestImage: "already/built@sha256:1213",
 			},
 		}
 
-		failedBuild = &buildapi.Build{
+		failedBuild = &v1alpha1.Build{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-to-follow",
 				Namespace: namespace,
 			},
-			Status: buildapi.BuildStatus{
+			Status: v1alpha1.BuildStatus{
 				Status: conditionSuccess(corev1.ConditionFalse, "some-build-error"),
 			},
 		}
 
-		image       *buildapi.Image
+		image       *v1alpha1.Image
 		clientset   *fake.Clientset
 		imageWaiter *imageWaiter
 	)
@@ -70,7 +70,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 			events: make(chan watch.Event, 100),
 		}
 
-		image = &buildapi.Image{
+		image = &v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "some-name",
 				Namespace:       namespace,
@@ -87,16 +87,16 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("the image is already in a successful state", func() {
 		it("returns the already built image and tails the finished logs", func() {
-			image.Status = buildapi.ImageStatus{
+			image.Status = v1alpha1.ImageStatus{
 				LatestImage:                successfulBuild.Status.LatestImage,
 				LatestBuildRef:             successfulBuild.Name,
 				LatestBuildImageGeneration: generation,
 				Status:                     conditionReady(corev1.ConditionTrue, generation, ""),
 			}
-			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
+			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			result, err := imageWaiter.Wait(context.TODO(), out, image)
@@ -109,11 +109,11 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("the image is already in a failed state", func() {
 		it("returns an error", func() {
-			image.Status = buildapi.ImageStatus{
+			image.Status = v1alpha1.ImageStatus{
 				Status: conditionReady(corev1.ConditionFalse, generation, "some-image-error"),
 			}
 
-			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 			_, err = imageWaiter.Wait(context.TODO(), out, image)
 			assert.EqualError(t, err, "update to image some-name failed: some-image-error")
@@ -122,23 +122,23 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("the image is building", func() {
 		it.Before(func() {
-			image.Status = buildapi.ImageStatus{
+			image.Status = v1alpha1.ImageStatus{
 				LatestBuildRef:             "build-to-follow",
 				LatestBuildImageGeneration: generation,
 				Status:                     conditionReady(corev1.ConditionUnknown, generation, ""),
 			}
 
-			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(
+			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(
 				context.TODO(),
-				&buildapi.Build{
+				&v1alpha1.Build{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "build-to-follow",
 						Namespace: namespace,
 					},
-					Status: buildapi.BuildStatus{
+					Status: v1alpha1.BuildStatus{
 						Status: conditionSuccess(corev1.ConditionUnknown, ""),
 					},
 				},
@@ -170,21 +170,21 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 	when("the build has not been scheduled yet", func() {
 		it("waits until resulting build is scheduled", func() {
 			image.Generation = generation + 1
-			image.Status = buildapi.ImageStatus{
+			image.Status = v1alpha1.ImageStatus{
 				LatestImage:                "old-image",
 				LatestBuildRef:             "build-to-follow",
 				LatestBuildImageGeneration: generation,
 				Status:                     conditionReady(corev1.ConditionUnknown, generation+1, ""),
 			}
 
-			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			imageWatcher.addEvent(watch.Event{
 				Type: watch.Modified,
-				Object: &buildapi.Image{
+				Object: &v1alpha1.Image{
 					ObjectMeta: image.ObjectMeta,
-					Status: buildapi.ImageStatus{
+					Status: v1alpha1.ImageStatus{
 						LatestBuildRef:             "build-to-follow",
 						LatestBuildImageGeneration: generation + 1,
 						Status:                     conditionReady(corev1.ConditionUnknown, generation+1, ""),
@@ -192,7 +192,7 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			_, err = clientset.KpackV1alpha2().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
+			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			result, err := imageWaiter.Wait(context.TODO(), out, image)
@@ -206,21 +206,21 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("an image update is skipped", func() {
 		it("an error is returned", func() {
-			image.Status = buildapi.ImageStatus{
+			image.Status = v1alpha1.ImageStatus{
 				LatestImage:                "old-image",
 				LatestBuildRef:             "build-to-follow",
 				LatestBuildImageGeneration: generation - 1,
 				Status:                     conditionReady(corev1.ConditionUnknown, generation, ""),
 			}
 
-			_, err := clientset.KpackV1alpha2().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
+			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			imageWatcher.addEvent(watch.Event{
 				Type: watch.Modified,
-				Object: &buildapi.Image{
+				Object: &v1alpha1.Image{
 					ObjectMeta: image.ObjectMeta,
-					Status: buildapi.ImageStatus{
+					Status: v1alpha1.ImageStatus{
 						LatestBuildRef:             "build-to-follow",
 						LatestBuildImageGeneration: image.Generation + 1,
 						Status:                     conditionReady(corev1.ConditionUnknown, image.Generation+1, ""),
