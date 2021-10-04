@@ -677,8 +677,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-1-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-1",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -735,9 +735,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-1"),
 									},
-									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
@@ -767,8 +767,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-1-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-1",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -825,9 +825,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-1"),
 									},
-									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
@@ -857,8 +857,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-1-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-1",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -915,9 +915,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-1"),
 									},
-									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
@@ -948,8 +948,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-1-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-1",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1006,9 +1006,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-1"),
 									},
-									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
@@ -1041,8 +1041,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-1-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-1",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1103,9 +1103,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-1-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-1"),
 									},
-									LatestBuildRef:             "image-name-build-1-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
@@ -1130,7 +1130,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "image-name-build-1-00001",
+								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1174,8 +1174,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-2-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-2",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1249,9 +1249,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-2"),
 									},
-									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "COMMIT,CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestImage:                image.Spec.Tag + "@sha256:just-built",
@@ -1265,7 +1265,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build when source resolver is updated", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1-00001"
+				image.Status.LatestBuildRef = "image-name-build-1"
 
 				sourceResolver := image.SourceResolver()
 				sourceResolver.ResolvedSource(corev1alpha1.ResolvedSourceConfig{
@@ -1284,7 +1284,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "image-name-build-1-00001",
+								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1331,8 +1331,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-2-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-2",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1375,9 +1375,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-2"),
 									},
-									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "COMMIT",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestImage:                image.Spec.Tag + "@sha256:just-built",
@@ -1391,7 +1391,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build when the builder buildpacks are updated", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1-00001"
+				image.Status.LatestBuildRef = "image-name-build-1"
 				const updatedBuilderImage = "some/builder@sha256:updated"
 
 				sourceResolver := resolvedSourceResolver(image)
@@ -1429,7 +1429,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "image-name-build-1-00001",
+								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1479,8 +1479,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-2-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-2",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1535,9 +1535,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-2"),
 									},
-									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "BUILDPACK",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestImage:                image.Spec.Tag + "@sha256:just-built",
@@ -1551,7 +1551,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build when the builder stack is updated", func() {
 				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1-00001"
+				image.Status.LatestBuildRef = "image-name-build-1"
 				const updatedBuilderImage = "some/builder@sha256:updated"
 
 				sourceResolver := resolvedSourceResolver(image)
@@ -1589,7 +1589,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "image-name-build-1-00001",
+								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1639,8 +1639,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-2-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-2",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1690,9 +1690,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-2-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-2"),
 									},
-									LatestBuildRef:             "image-name-build-2-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-2",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestBuildReason:          buildapi.BuildReasonStack,
 									LatestImage:                image.Spec.Tag + "@sha256:just-built",
@@ -1717,7 +1717,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "image-name-build-1-00001",
+								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
@@ -1760,8 +1760,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: []runtime.Object{
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								GenerateName: imageName + "-build-3-",
-								Namespace:    namespace,
+								Name:      imageName + "-build-3",
+								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
 									*kmeta.NewControllerRef(image),
 								},
@@ -1835,9 +1835,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions:         conditionBuildExecuting("image-name-build-3-00001"),
+										Conditions:         conditionBuildExecuting("image-name-build-3"),
 									},
-									LatestBuildRef:             "image-name-build-3-00001", // GenerateNameReactor
+									LatestBuildRef:             "image-name-build-3",
 									LatestBuildReason:          "COMMIT,CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               3,

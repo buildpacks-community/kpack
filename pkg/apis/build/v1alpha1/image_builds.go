@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -30,56 +29,6 @@ const (
 )
 
 type BuildReason string
-
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes, cacheName string, nextBuildNumber int64) *Build {
-	buildNumber := strconv.Itoa(int(nextBuildNumber))
-
-	return &Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    im.Namespace,
-			GenerateName: im.generateBuildName(buildNumber),
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(im),
-			},
-			Labels: combine(im.Labels, map[string]string{
-				BuildNumberLabel:     buildNumber,
-				ImageLabel:           im.Name,
-				ImageGenerationLabel: strconv.Itoa(int(im.Generation)),
-			}),
-			Annotations: combine(im.Annotations, map[string]string{
-				BuildReasonAnnotation:  reasons,
-				BuildChangesAnnotation: changes,
-			}),
-		},
-		Spec: BuildSpec{
-			Tags:           im.generateTags(buildNumber),
-			Builder:        builder.BuildBuilderSpec(),
-			Bindings:       im.Bindings(),
-			Env:            im.Env(),
-			Resources:      im.Resources(),
-			ServiceAccount: im.Spec.ServiceAccount,
-			Source:         sourceResolver.SourceConfig(),
-			CacheName:      im.Status.BuildCacheName,
-			LastBuild:      lastBuild(latestBuild),
-			Notary:         im.Spec.Notary,
-		},
-	}
-}
-
-func lastBuild(latestBuild *Build) *LastBuild {
-	if latestBuild == nil {
-		return nil
-	}
-
-	if latestBuild.IsFailure() {
-		return latestBuild.Spec.LastBuild
-	}
-
-	return &LastBuild{
-		Image:   latestBuild.BuiltImage(),
-		StackId: latestBuild.Stack(),
-	}
-}
 
 func (im *Image) LatestForImage(build *Build) string {
 	if build.IsSuccess() {
