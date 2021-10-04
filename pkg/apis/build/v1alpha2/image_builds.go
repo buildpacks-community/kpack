@@ -36,8 +36,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    im.Namespace,
-			GenerateName: im.generateBuildName(buildNumber),
+			Namespace: im.Namespace,
+			Name:      im.generateBuildName(buildNumber),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(im),
 			},
@@ -255,7 +255,7 @@ func (im *Image) generateTags(buildNumber string) []string {
 }
 
 func (im *Image) generateBuildName(buildNumber string) string {
-	return im.Name + "-build-" + buildNumber + "-"
+	return kmeta.ChildName(im.Name, "-build-"+buildNumber)
 }
 
 func combine(map1, map2 map[string]string) map[string]string {

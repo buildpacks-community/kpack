@@ -110,7 +110,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		it("generates a build name with build number", func() {
 			image.Name = "imageName"
 			build := image.Build(sourceResolver, builder, latestBuild, "", "", 27)
-			assert.Contains(t, build.GenerateName, "imageName-build-27-")
+			assert.Contains(t, build.Name, "imageName-build-27")
 		})
 
 		it("sets builder to be the Builder's resolved latestImage", func() {
