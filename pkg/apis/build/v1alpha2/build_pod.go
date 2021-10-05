@@ -203,7 +203,6 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 		cacheVolumes = []corev1.VolumeMount{cacheVolume}
 		exporterCacheArgs = genericCacheArgs
 	}
-
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
@@ -227,9 +226,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(
 					corev1.Container{
-						Name:  "prepare",
-						Image: images.buildInit(config.OS),
-						Args:  secretArgs,
+						Name:      "prepare",
+						Image:     images.buildInit(config.OS),
+						Args:      secretArgs,
+						Resources: b.Spec.Resources,
 						Env: append(
 							b.Spec.Source.Source().BuildEnvVars(),
 							corev1.EnvVar{
@@ -277,9 +277,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 				)
 				step(
 					corev1.Container{
-						Name:    "detect",
-						Image:   builderImage,
-						Command: []string{"/cnb/lifecycle/detector"},
+						Name:      "detect",
+						Image:     builderImage,
+						Command:   []string{"/cnb/lifecycle/detector"},
+						Resources: b.Spec.Resources,
 						Args: []string{
 							"-app=/workspace",
 							"-group=/layers/group.toml",
@@ -302,9 +303,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 				)
 				step(
 					corev1.Container{
-						Name:    "analyze",
-						Image:   builderImage,
-						Command: []string{"/cnb/lifecycle/analyzer"},
+						Name:      "analyze",
+						Image:     builderImage,
+						Command:   []string{"/cnb/lifecycle/analyzer"},
+						Resources: b.Spec.Resources,
 						Args: args([]string{
 							"-layers=/layers",
 							"-group=/layers/group.toml",
@@ -340,9 +342,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 				)
 				step(
 					corev1.Container{
-						Name:    "restore",
-						Image:   builderImage,
-						Command: []string{"/cnb/lifecycle/restorer"},
+						Name:      "restore",
+						Image:     builderImage,
+						Command:   []string{"/cnb/lifecycle/restorer"},
+						Resources: b.Spec.Resources,
 						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
@@ -363,9 +366,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 				)
 				step(
 					corev1.Container{
-						Name:    "build",
-						Image:   builderImage,
-						Command: []string{"/cnb/lifecycle/builder"},
+						Name:      "build",
+						Image:     builderImage,
+						Command:   []string{"/cnb/lifecycle/builder"},
+						Resources: b.Spec.Resources,
 						Args: []string{
 							"-layers=/layers",
 							"-app=/workspace",
@@ -390,9 +394,10 @@ func (b *Build) BuildPod(images BuildPodImages, secrets []corev1.Secret, config 
 				)
 				step(
 					corev1.Container{
-						Name:    "export",
-						Image:   builderImage,
-						Command: []string{"/cnb/lifecycle/exporter"},
+						Name:      "export",
+						Image:     builderImage,
+						Command:   []string{"/cnb/lifecycle/exporter"},
+						Resources: b.Spec.Resources,
 						Args: args([]string{
 							"-layers=/layers",
 							"-app=/workspace",
@@ -608,8 +613,9 @@ func (b *Build) rebasePod(secrets []corev1.Secret, images BuildPodImages, config
 			}),
 			InitContainers: []corev1.Container{
 				{
-					Name:  "rebase",
-					Image: images.RebaseImage,
+					Name:      "rebase",
+					Image:     images.RebaseImage,
+					Resources: b.Spec.Resources,
 					Args: args(a(
 						"--run-image",
 						config.RunImage,
