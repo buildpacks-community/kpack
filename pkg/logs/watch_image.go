@@ -19,5 +19,5 @@ type watchOneImage struct {
 
 func (w watchOneImage) Watch(options v1.ListOptions) (watch.Interface, error) {
 	options.FieldSelector = fmt.Sprintf("metadata.name=%s", w.image.Name)
-	return w.kpackClient.KpackV1alpha2().Images(w.image.Namespace).Watch(w.ctx, options)
+	return w.kpackClient.KpackV1alpha1().Images(w.image.Namespace).Watch(w.ctx, options)
 }
