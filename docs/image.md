@@ -1,7 +1,7 @@
-# Images
+# Image Resources
 
-Images provide a configuration for kpack to build and maintain a docker image utilizing [Cloud Native Buildpacks](http://buildpacks.io). 
-kpack will monitor the inputs to the image configuration to rebuild the image when the underlying source or the builder's buildpacks or stacks have changed.       
+Image resources provide a configuration for kpack to build and maintain a docker image utilizing [Cloud Native Buildpacks](http://buildpacks.io).
+kpack will monitor the inputs to the image resource to rebuild the OCI image when the underlying source or the builder's buildpacks or stacks have changed.
 
 Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_image.md).
 
@@ -69,7 +69,7 @@ The `builder` field describes the [builder resource](builders.md) that will buil
     - `name`: The name of the Builder resource in kubernetes.
     - `kind`: The type as defined in kubernetes. This will always be Builder.
 
-> Note: This image can only reference builders defined in the same namespace. This is not true for ClusterBuilders because they are not namespace scoped.
+> Note: This image resource can only reference builders defined in the same namespace. This is not true for ClusterBuilders because they are not namespace scoped.
 
 ### <a id='source-config'></a>Source Configuration
 
@@ -155,7 +155,7 @@ See the kubernetes documentation on [setting environment variables](https://kube
 ### <a id='cosign-config'></a>Cosign Configuration
 
 #### Cosign Signing Secret
-Images can be signed with cosign when a cosign formatted secret is added to the service account used to build the image. 
+OCI images built by kpack can be signed with cosign when a cosign formatted secret is added to the service account configured on the image resource.
 The secret can be added using the cosign CLI or manually. 
 
 To create a cosign signing secret through the cosign CLI, when targetted to the Kubernetes cluster, use:
@@ -165,11 +165,11 @@ Alternatively, create the cosign secret and provide your own cosign key files ma
 ```shell script
 % kubectl create secret generic <secret-name> --from-literal=cosign.password=<password> --from-file=</path/to/cosign.key>
 ```
-- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
+- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image resource.
 - `<password>`: The password provided to encrypt the private key. If not present, an empty password will be used.
 - `</path/to/cosign.key>`: The cosign private key file generated with `cosign generate-key-pair`.
 
-After adding the cosign secret, the secret must be added to the list of `secrets` attached to the service account resource that is building the image.
+After adding the cosign secret, the secret must be added to the list of `secrets` on the service account that the image is configured with.
 
 #### Adding Cosign Annotations
 By default, the build number and build timestamp information will be added to the cosign signing annotations. Users can specify additional cosign annotations under the spec key.
@@ -203,7 +203,7 @@ Which provides a JSON response similar to:
 ```
 
 #### Push Cosign Signature to a Different Location
-Cosign signatures can be pushed to a different registry from where the image is located. To enable this, add the corresponding annotation to the cosign secret resource.
+Cosign signatures can be pushed to a different registry from where the built OCI image is written to. To enable this, add the corresponding annotation to the cosign secret resource.
 ```
 metadata:
   name: ...
@@ -216,10 +216,12 @@ data:
 ```
 This will be equivalent to setting `COSIGN_REPOSITORY` as specified in cosign [Specifying Registry](https://github.com/sigstore/cosign#specifying-registry)
 
-The same service account that has that cosign secret attached, and would be used for signing and building the image, would require that the registry credentials for this other repository be placed under the listed `secrets` and is not required to be listed in `imagePullSecrets`. It should be noted that if you wish to push the signatures to the same registry but a different path from the image, the credential used must have access to both paths. You cannot use two separate credentials for the same registry with different paths.
+The service account configured on the image resource must have registry credentials for the other registry configured in the `secrets` list (they do not need to be configured as `imagePullSecrets`).
+
+It should be noted that if you wish to push the signatures to the same registry but a different repository as the image resource `tag`, the credential used must have access to both paths. You cannot use two separate credentials for the same registry.
 
 #### Cosign Legacy Docker Media Types
-To sign images in a registry that does not fully support OCI media types, legacy equivalents can be used by adding the corresponding annotation to the cosign secret resource:
+To sign docker images in a registry that does not fully support OCI media types, legacy equivalents can be used by adding the corresponding annotation to the cosign secret resource:
 ```
 metadata:
   name: ...
@@ -232,7 +234,7 @@ data:
 ```
 This will be equivalent to setting `COSIGN_DOCKER_MEDIA_TYPES=1` as specified in the cosign [registry-support](https://github.com/sigstore/cosign#registry-support)
 
-### Sample Image with a Git Source
+### Sample Image Resource with a Git Source
 
 ```yaml
 apiVersion: kpack.io/v1alpha2
@@ -277,7 +279,7 @@ Source for github can also be specified in the ssh format if there is a correspo
       revision: main
 ```
 
-### Sample Image with hosted zip or jar as a source
+### Sample Image Resource with hosted zip or jar as a source
 
 ```yaml
 apiVersion: kpack.io/v1alpha2
@@ -314,9 +316,9 @@ spec:
 
 #### Status
 
-When an image has successfully built with its current configuration, its status will report the up to date fully qualified built image reference.
+When an image resource has successfully built with its current configuration, its status will report the up to date fully qualified built OCI image reference.
 
-If you are using `kubectl` this information is available with `kubectl get <image-name>` or `kubectl describe <image-name>`. 
+If you are using `kubectl` this information is available with `kubectl get <image-resource-name>` or `kubectl describe <image-resource-name>`.
 
 ```yaml
 status:
@@ -376,6 +378,6 @@ To create the notary secret used by kpack for image signing, run the following c
 ```shell script
 % kubectl create secret generic <secret-name> --from-literal=password=<password> --from-file=$HOME/.docker/trust/private/<hash>.key
 ```
-- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
+- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image resource.
 - `<password>`: The password provided to encrypt the private key.
 - `<hash>.key`: The private key file.

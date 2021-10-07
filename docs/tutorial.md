@@ -12,7 +12,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     > Get the kp cli from the [github release](https://github.com/vmware-tanzu/kpack-cli/releases)
      
 ###  Tutorial
-1. Create a secret with push credentials for the docker registry that you plan on publishing images to with kpack.  
+1. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack.
 
    The easiest way to do that is with `kubectl secret create docker-registry`
    
@@ -39,7 +39,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md) 
 
-1. Create a service account that references the registry secret created above 
+2. Create a service account that references the registry secret created above
 
     ```yaml
     apiVersion: v1
@@ -59,9 +59,9 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
      kubectl apply -f service-account.yaml
      ```
 
-1. Create a cluster store configuration
+3. Create a cluster store configuration
     
-   A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build images. Later in this tutorial you will reference this store in a Builder configuration.   
+   A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack to build OCI images. Later in this tutorial you will reference this store in a Builder configuration.
     
     We recommend starting with buildpacks from the [paketo project](https://github.com/paketo-buildpacks). The example below pulls in java and nodejs buildpacks from the paketo project. 
     
@@ -84,7 +84,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 
     > Note: Buildpacks are packaged and distributed as buildpackages which are docker images available on a docker registry. Buildpackages for other languages are available from [paketo](https://github.com/paketo-buildpacks).
 
-1. Create a cluster stack configuration
+4. Create a cluster stack configuration
     
     A stack resource is the specification for a [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the resulting app image. 
     
@@ -109,9 +109,9 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kubectl apply -f stack.yaml
     ```
 
-1. Create a Builder configuration
-    
-    A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/) that includes the stack and buildpacks needed to build an image from your app source code. 
+5. Create a Builder configuration
+
+    A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/) that includes the stack and buildpacks needed to build an OCI image from your app source code.
     
     The Builder configuration will write to the registry with the secret configured in step one and will reference the stack and store created in step three and four. The builder order will determine the order in which buildpacks are used in the builder.
         
@@ -145,15 +145,15 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
      kubectl apply -f builder.yaml
      ```
 
-1. Apply a kpack image configuration 
+6. Apply a kpack image resource
 
-    An image configuration is the specification for an image that kpack should build and manage. 
+    An image resource is the specification for an OCI image that kpack should build and manage.
     
-    We will create a sample image that builds with the builder created in step five.
+    We will create a sample image resource that builds with the builder created in step five.
     
     The example included here utilizes the [Spring Pet Clinic sample app](https://github.com/spring-projects/spring-petclinic). We encourage you to substitute it with your own application.           
       
-    Create an image configuration:
+    Create an image resource:
     
     ```yaml
     apiVersion: kpack.io/v1alpha2
@@ -177,18 +177,19 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    - If you are using your application source, replace `source.git.url` & `source.git.revision`. 
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 
-   Apply that image to the cluster 
+   Apply that image resource to the cluster
+
     ```bash
     kubectl apply -f image.yaml
     ```
     
-   You can now check the status of the image. 
+   You can now check the status of the image resource.
    
    ```bash
    kubectl -n default get images
    ```
     
-   You should see that the image has an unknown READY status as it currently building.
+   You should see that the image resource has an unknown READY status as it is currently building.
    
    ```
     NAME                  LATESTIMAGE   READY
@@ -201,7 +202,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     kp build logs tutorial-image -n default
     ``` 
     
-    Once the image finishes building you can get the fully resolved built image with `kubectl get`
+    Once the image resource finishes building you can get the fully resolved built OCI image with `kubectl get`
     
     ```
     kubectl -n default get image tutorial-image
@@ -213,11 +214,11 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     default     tutorial-image        index.docker.io/your-project/app@sha256:6744b...   True
     ```
     
-    The latest image is available to be used locally via `docker pull` and in a kubernetes deployment.   
+    The latest OCI image is available to be used locally via `docker pull` and in a kubernetes deployment.
 
-1. Run the built app locally 
+8. Run the built app locally
 
-   Download the latest image available in step #6 and run it with docker.
+   Download the latest OCI image available in step #6 and run it with docker.
     
    ```bash
    docker run -p 8080:8080 <latest-image-with-digest>
@@ -240,16 +241,16 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     :: Built with Spring Boot :: 2.2.2.RELEASE
    ``` 
     
-1. kpack rebuilds
+9. kpack rebuilds
     
-   We recommend updating the kpack image configuration with a CI/CD tool when new commits are ready to be built.
+   We recommend updating the kpack image resource with a CI/CD tool when new commits are ready to be built.
    > Note: You can also provide a branch or tag as the `spec.git.revision` and kpack will poll and rebuild on updates!  
 
-   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image configured in step #6.
+   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image resource used in step #6.
    
    If you are using your own application please push an updated commit and use the new commit sha. If you are using Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.         
   
-   Edit the image configuration with:
+   Edit the image resource with:
    ```
    kubectl -n default edit image tutorial-image 
    ``` 
@@ -274,8 +275,6 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
    
    > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build. 
     
-1. Next steps
+10. Next steps
     
-    The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated buildpacks were used by the tutorial image, kpack will automatically create a new build to rebuild your image.    
-    
- 
+     The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated buildpacks were used by the tutorial image resource, kpack will automatically create a new build to rebuild your OCI image.
