@@ -31,15 +31,16 @@ Examples:
 - `tag: dockerhubuser/repo:my-image`
 - `tag: gcr.io/project/repo`
 
-The `additionalTags` is a list of locations the built OCI image will be written to in addition to the `tag`. This field can be modified.
+The `additionalTags` is a list of locations the built OCI image will be written to in addition to the `tag`. Additional tags must be in the same registry as the `tag`. Cross registry exporting is not supported. This field can be modified.
 
 Example:
 
 ```yaml
+tag: my-registry.io/project/repo 
 additionalTags:
 - my-registry.io/project/repo:some-version
 - my-registry.io/project/repo:some-metadata
-- other-registry.io/project/repo
+- my-registry.io/project/other-repo
 ```
 
 ### <a id='builder-config'></a>Builder Configuration
