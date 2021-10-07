@@ -1,11 +1,11 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Build
 metadata:
   name: sample
 spec:
   tags:
   - sample/image
-  serviceAccount: serviceaccount
+  serviceAccountName: serviceaccount
   builder:
     image: gcr.io/paketo-buildpacks/builder:base
   source:

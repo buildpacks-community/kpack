@@ -1,10 +1,10 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Builder
 metadata:
   name: my-builder
   namespace: default
 spec:
-  serviceAccount: default
+  serviceAccountName: default
   tag: sample/builder
   stack:
     name: base

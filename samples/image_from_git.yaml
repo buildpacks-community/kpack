@@ -1,4 +1,4 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-1
@@ -7,13 +7,13 @@ spec:
   builder:
     kind: ClusterBuilder
     name: cluster-sample-builder
-  serviceAccount: service-account
+  serviceAccountName: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
       revision: main
 ---
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-2
@@ -22,13 +22,13 @@ spec:
   builder:
     kind: Builder
     name: sample-builder
-  serviceAccount: service-account
+  serviceAccountName: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
       revision: 0eccc6c2f01d9f055087ebbf03526ed0623e014a
 ---
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-3
@@ -37,7 +37,7 @@ spec:
   builder:
     kind: ClusterBuilder
     name: cluster-sample-builder
-  serviceAccount: service-account
+  serviceAccountName: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git

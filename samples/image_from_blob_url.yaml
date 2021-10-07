@@ -1,4 +1,4 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample
@@ -7,7 +7,7 @@ spec:
   builder:
     kind: ClusterBuilder
     name: cluster-sample-builder
-  serviceAccount: service-account
+  serviceAccountName: service-account
   source:
     blob:
       url: https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar
