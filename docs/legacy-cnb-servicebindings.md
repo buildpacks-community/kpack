@@ -1,4 +1,8 @@
-# Service Bindings
+# Legacy Cloud Native Buildpacks Service Bindings
+
+CNB service bindings have been deprecated in `kpack.io/v1alpha2`. They are still available in the `kpack.io/v1alpha1` api but will eventually be removed entirely. Please migrate to the new Kubernetes Service Binding configuration.
+
+## kpack.io/v1alpha1 CNB Service Bindings
 
 kpack Images can be configured with Service Bindings as described in the [Cloud Native Buildpacks Bindings specification](https://github.com/buildpacks/spec/blob/adbc70f5672e474e984b77921c708e1475e163c1/extensions/bindings.md).       
 

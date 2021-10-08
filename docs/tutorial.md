@@ -66,7 +66,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     We recommend starting with buildpacks from the [paketo project](https://github.com/paketo-buildpacks). The example below pulls in java and nodejs buildpacks from the paketo project. 
     
     ```yaml
-    apiVersion: kpack.io/v1alpha1
+    apiVersion: kpack.io/v1alpha2
     kind: ClusterStore
     metadata:
       name: default
@@ -91,7 +91,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     We recommend starting with the [paketo base stack](https://github.com/paketo-buildpacks/stacks) as shown below:
     
     ```yaml
-    apiVersion: kpack.io/v1alpha1
+    apiVersion: kpack.io/v1alpha2
     kind: ClusterStack
     metadata:
       name: base
@@ -116,13 +116,13 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     The Builder configuration will write to the registry with the secret configured in step one and will reference the stack and store created in step three and four. The builder order will determine the order in which buildpacks are used in the builder.
         
     ```yaml
-    apiVersion: kpack.io/v1alpha1
+    apiVersion: kpack.io/v1alpha2
     kind: Builder
     metadata:
       name: my-builder
       namespace: default
     spec:
-      serviceAccount: tutorial-service-account
+      serviceAccountName: tutorial-service-account
       tag: <DOCKER-IMAGE-TAG>
       stack:
         name: base
@@ -156,14 +156,14 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
     Create an image configuration:
     
     ```yaml
-    apiVersion: kpack.io/v1alpha1
+    apiVersion: kpack.io/v1alpha2
     kind: Image
     metadata:
       name: tutorial-image
       namespace: default
     spec:
       tag: <DOCKER-IMAGE-TAG>
-      serviceAccount: tutorial-service-account
+      serviceAccountName: tutorial-service-account
       builder:
         name: my-builder
         kind: Builder

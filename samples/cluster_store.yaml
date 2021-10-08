@@ -1,4 +1,4 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: ClusterStore
 metadata:
   name: sample-cluster-store
