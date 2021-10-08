@@ -2,7 +2,7 @@
 
 kpack Images can be configured with Service Bindings as described in the [Kubernetes Service Bindings specification](https://github.com/k8s-service-bindings/spec).
 
-At build-time, service bindings are handled by the buildpacks being used for that Image. Check the desired buildpack documentation for details on the service bindings it supports.
+At build-time, service bindings are handled by the buildpacks being used for that Image. Check the desired buildpack homepage for documentation on the service bindings it supports. Buildpack homepages can be found with `kp clusterstore status <store-name>`.
 
 There are two ways to configure service bindings:
 
@@ -15,7 +15,7 @@ Requirements:
 
 * A Secret containing the service binding data
   * The Secret `stringData` field **must** contain a key-value pairs of `type:<binding type>`. The buildpacks will use read this type
-  * The Secret `type` (not `stringData.type`) **must** be set to `service.binding/<binding type>` where `<binding type>` is the value of the key set in the above bullet.
+  * The Secret `type` (not `stringData.type`) is **recommended** to be set to `service.binding/<binding type>` where `<binding type>` is the value of the key set in the above bullet.
   * The Secret `stringData` field may contain any additional key-value pairs of `<binding file name>:<binding data>`. For each key-value pair, a file will be created that is accessible during build.
 * An Image in the same namespace referencing that Secret in the `spec.build.services` field as an [ObjectReference](https://www.k8sref.io/docs/common-definitions/objectreference-/).
 
