@@ -21,6 +21,28 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
 - `cosign`: Configuration for additional cosign image signing. See [Cosign Configuration](#cosign-config) section below.
 
+### <a id='tags-config'></a> Configuring Tags
+
+The `tag` field is the location the built OCI image will be written to for each build. This field is immutable.
+
+Examples:
+
+- `tag: dockerhubuser/repo`
+- `tag: dockerhubuser/repo:my-image`
+- `tag: gcr.io/project/repo`
+
+The `additionalTags` is a list of locations the built OCI image will be written to in addition to the `tag`. Additional tags must be in the same registry as the `tag`. Cross registry exporting is not supported. This field can be modified.
+
+Example:
+
+```yaml
+tag: my-registry.io/project/repo 
+additionalTags:
+- my-registry.io/project/repo:some-version
+- my-registry.io/project/repo:some-metadata
+- my-registry.io/project/other-repo
+```
+
 ### <a id='builder-config'></a>Builder Configuration
 
 The `builder` field describes the [builder resource](builders.md) that will build the OCI images for a provided image configuration. It can be defined in exactly one of the following ways:
