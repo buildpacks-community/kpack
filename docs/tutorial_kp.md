@@ -7,11 +7,11 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
 1. kpack is installed and available on a kubernetes cluster
 
-   > Follow these docs to [install and setup kpack](install.md)
+   > Follow these docs to [install and setup kpack](install.md).
 
 2. kpack cli
 
-   > Get the kp cli from the [github release](https://github.com/vmware-tanzu/kpack-cli/releases)
+   > Get the kp cli. Installation steps can be found [here](https://github.com/vmware-tanzu/kpack-cli#installation).
 
 ### Tutorial
 
