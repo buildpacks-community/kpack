@@ -7,14 +7,14 @@ Unlike with the [Image resource](image.md), using Builds directly allows granula
 ### Configuration
 
 ```yaml
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Build
 metadata:
   name: sample-build
 spec:
   tags:
   - sample/image
-  serviceAccount: service-account
+  serviceAccountName: service-account
   builder:
     image: gcr.io/paketo-buildpacks/builder:base
     imagePullSecrets:
@@ -64,6 +64,7 @@ spec:
   - `volume.persistentVolumeClaimName`: Optional name of a persistent volume claim used for a build cache across builds.
   - `registry.tag`: Optional name of a tag used for a build cache across builds.
 - `env`: Optional list of build time environment variables.
+- `defaultProcess`: The [default process type](https://buildpacks.io/docs/app-developer-guide/run-an-app/) for the built OCI image
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
 - `resources`: Optional configurable resource limits on `CPU` and `memory`.
 - `tolerations`: Optional configurable pod spec tolerations

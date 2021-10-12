@@ -12,13 +12,13 @@ Before creating Builders you will need to create a [ClusterStack](stack.md) and 
 The Builder uses a [ClusterStore](store.md), a [ClusterStack](stack.md), and an order definition to construct a builder image.
 
 ```yaml
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Builder
 metadata:
   name: my-builder
 spec:
   tag: gcr.io/sample/builder
-  serviceAccount: default
+  serviceAccountName: default
   stack:
     name: bionic-stack
     kind: ClusterStack
@@ -50,7 +50,7 @@ spec:
 The ClusterBuilder resource is almost identical to a Builder but, it is a cluster scoped resource that can be referenced by an image in any namespace. Because ClusterBuilders are not in a namespace they cannot reference local service accounts. Instead the `serviceAccount` field is replaced with a `serviceAccountRef` field which is an object reference to a service account in any namespace.
 
 ```yaml
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: ClusterBuilder
 metadata:
   name: my-cluster-builder

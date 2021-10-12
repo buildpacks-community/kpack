@@ -1,4 +1,4 @@
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-binding
@@ -7,47 +7,16 @@ spec:
   builder:
     kind: Builder
     name: sample-builder
-  serviceAccount: service-account
+  serviceAccountName: service-account
   source:
     git:
       url: https://github.com/buildpack/sample-java-app.git
       revision: 0eccc6c2f01d9f055087ebbf03526ed0623e014a
   build:
-    bindings:
-    - name: sample
-      metadataRef:
-        name: sample-binding-metadata
----
-apiVersion: kpack.io/v1alpha1
-kind: Image
-metadata:
-  name: sample-binding-with-secret
-spec:
-  tag: sample/image-with-binding-secret
-  builder:
-    kind: Builder
-    name: sample-builder
-  serviceAccount: service-account
-  source:
-    git:
-      url: https://github.com/buildpack/sample-java-app.git
-      revision: 0eccc6c2f01d9f055087ebbf03526ed0623e014a
-  build:
-    bindings:
-    - name: sample
-      metadataRef:
-        name: sample-binding-metadata
-      secretRef:
-        name: sample-binding-secret
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sample-binding-metadata
-data:
-  kind: mysql
-  provider: sample
-  tags: ""
+    services:
+      - name: sample-binding-secret
+        kind: Secret
+        apiVersion: v1
 ---
 apiVersion: v1
 kind: Secret
@@ -55,6 +24,8 @@ metadata:
   name: sample-binding-secret
 type: Opaque
 stringData:
+  type: mysql
+  provider: sample
   hostname: localhost
   jdbcUrl: jdbc:mysql://localhost:3306/default?user=root&password=
   name: default

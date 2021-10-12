@@ -8,7 +8,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `tag`: The image tag.
 - `additionalTags`: Any additional list of image tags that should be published. This list of tags is mutable.
 - `builder`: Configuration of the `builder` resource the image builds will use. See more info [Builder Configuration](builders.md).
-- `serviceAccount`: The Service Account name that will be used for credential lookup.
+- `serviceAccountName`: The Service Account name that will be used for credential lookup.
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.
 - `cache`: Caching configuration, two variants are available:
   - `volume.size`: Creates a Volume Claim of the given size
@@ -17,9 +17,31 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
 - `imageTaggingStrategy`: Allow for builds to be additionally tagged with the build number. Valid options are `None` and `BuildNumber`.
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
+- `defaultProcess`: The [default process type](https://buildpacks.io/docs/app-developer-guide/run-an-app/) for the built OCI image
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
-- `notary`: Configuration for Notary image signing. See [Notary Configuration](#notary-config) section below.
 - `cosign`: Configuration for additional cosign image signing. See [Cosign Configuration](#cosign-config) section below.
+
+### <a id='tags-config'></a> Configuring Tags
+
+The `tag` field is the location the built OCI image will be written to for each build. This field is immutable.
+
+Examples:
+
+- `tag: dockerhubuser/repo`
+- `tag: dockerhubuser/repo:my-image`
+- `tag: gcr.io/project/repo`
+
+The `additionalTags` is a list of locations the built OCI image will be written to in addition to the `tag`. Additional tags must be in the same registry as the `tag`. Cross registry exporting is not supported. This field can be modified.
+
+Example:
+
+```yaml
+tag: my-registry.io/project/repo 
+additionalTags:
+- my-registry.io/project/repo:some-version
+- my-registry.io/project/repo:some-metadata
+- my-registry.io/project/other-repo
+```
 
 ### <a id='builder-config'></a>Builder Configuration
 
@@ -128,37 +150,6 @@ build:
 
 See the kubernetes documentation on [setting environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) and [resource limits and requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for more information.
 
-### <a id='notary-config'></a>Notary Configuration
-
-The optional `notary` field on the `image` resource can be used to configure [Notary](https://github.com/theupdateframework/notary) image signing.
-```yaml
-notary:
-  v1:
-    url: "https://example.com/notary"
-    secretRef:
-      name: "notary-secret"
-```
-- `v1.url`: The URL of the notary server.
-- `v1.secretRef.name`: A [secret](#notary-secret) containing the encrypted private key and private key password.
-
-#### Generate Signing Key
-To generate a signing key, use the following commands from the [Docker Content Trust](https://docs.docker.com/engine/security/trust/#signing-images-with-docker-content-trust) documentation:
-```shell script
-% export DOCKER_CONTENT_TRUST_SERVER=<notary-server-url>
-% docker trust key generate my-key
-% docker trust signer add --key my-key.pub my-key registry.example.com/org/app
-```
-This will generate a private key in `~/.docker/trust/private` encrypted with the user provided password.
-
-#### <a id='notary-secret'></a>Create Notary Secret 
-To create the notary secret used by kpack for image signing, run the following command:
-```shell script
-% kubectl create secret generic <secret-name> --from-literal=password=<password> --from-file=$HOME/.docker/trust/private/<hash>.key
-```
-- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
-- `<password>`: The password provided to encrypt the private key.
-- `<hash>.key`: The private key file.
-
 ### <a id='cosign-config'></a>Cosign Configuration
 
 #### Cosign Signing Secret
@@ -242,14 +233,14 @@ This will be equivalent to setting `COSIGN_DOCKER_MEDIA_TYPES=1` as specified in
 ### Sample Image with a Git Source
 
 ```yaml
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-image
   namespace: build-namespace
 spec:
   tag: gcr.io/project-name/app
-  serviceAccount: service-account
+  serviceAccountName: service-account
   builder:
     name: sample-builder
     kind: ClusterBuilder
@@ -287,14 +278,14 @@ Source for github can also be specified in the ssh format if there is a correspo
 ### Sample Image with hosted zip or jar as a source
 
 ```yaml
-apiVersion: kpack.io/v1alpha1
+apiVersion: kpack.io/v1alpha2
 kind: Image
 metadata:
   name: sample-image
   namespace: build-namespace
 spec:
   tag: gcr.io/project-name/app
-  serviceAccount: service-account
+  serviceAccountName: service-account
   builder:
     name: sample-builder
     kind: ClusterBuilder
@@ -345,3 +336,44 @@ status:
     type: Succeeded
   ...
 ```
+
+### Legacy apiVersion kpack.io/v1alpha1
+
+Notable deprecations from `kpack.io/v1alpha1` include:
+- Notary image signing
+- [Cloud Native Buildpack service bindings](docs/legacy-cnb-servicebindings.md)
+
+`kpack.io/v1alpha1` will eventually be removed entirely so please migrate existing Image resources to use `kpack.io/v1alpha2` apis.
+
+#### <a id='notary-config'></a>Notary Configuration
+
+`apiVersion` must be `kpack.io/v1alpha1`
+
+The optional `notary` field on the `image` resource can be used to configure [Notary](https://github.com/theupdateframework/notary) image signing.
+```yaml
+notary:
+  v1:
+    url: "https://example.com/notary"
+    secretRef:
+      name: "notary-secret"
+```
+- `v1.url`: The URL of the notary server.
+- `v1.secretRef.name`: A [secret](#notary-secret) containing the encrypted private key and private key password.
+
+#### Generate Signing Key
+To generate a signing key, use the following commands from the [Docker Content Trust](https://docs.docker.com/engine/security/trust/#signing-images-with-docker-content-trust) documentation:
+```shell script
+% export DOCKER_CONTENT_TRUST_SERVER=<notary-server-url>
+% docker trust key generate my-key
+% docker trust signer add --key my-key.pub my-key registry.example.com/org/app
+```
+This will generate a private key in `~/.docker/trust/private` encrypted with the user provided password.
+
+#### <a id='notary-secret'></a>Create Notary Secret
+To create the notary secret used by kpack for image signing, run the following command:
+```shell script
+% kubectl create secret generic <secret-name> --from-literal=password=<password> --from-file=$HOME/.docker/trust/private/<hash>.key
+```
+- `<secret-name>`: The name of the secret. Ensure that the secret is created in the same namespace as the eventual image config.
+- `<password>`: The password provided to encrypt the private key.
+- `<hash>.key`: The private key file.
