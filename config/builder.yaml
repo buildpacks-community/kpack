@@ -39,6 +39,7 @@ spec:
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
   names:
     kind: Builder
+    listKind: BuilderList
     singular: builder
     plural: builders
     shortNames:

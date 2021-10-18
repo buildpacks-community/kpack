@@ -47,6 +47,7 @@ spec:
       conversionReviewVersions: ["v1"]
   names:
     kind: Image
+    listKind: ImageList
     singular: image
     plural: images
     shortNames:
