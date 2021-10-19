@@ -33,6 +33,7 @@ spec:
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
   names:
     kind: SourceResolver
+    listKind: SourceResolverList
     singular: sourceresolver
     plural: sourceresolvers
     categories:

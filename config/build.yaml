@@ -47,6 +47,7 @@ spec:
       conversionReviewVersions: [ "v1" ]
   names:
     kind: Build
+    listKind: BuildList
     singular: build
     plural: builds
     shortNames:
