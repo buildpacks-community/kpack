@@ -33,6 +33,7 @@ spec:
       status: {}
   names:
     kind: ClusterStore
+    listKind: ClusterStoreList
     singular: clusterstore
     plural: clusterstores
     categories:

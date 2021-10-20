@@ -123,12 +123,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			ServiceAccount: "some-service-account",
+			ServiceAccountName: "some-service-account",
 		},
 	}
 
 	secretRef := registry.SecretRef{
-		ServiceAccount: builder.Spec.ServiceAccount,
+		ServiceAccount: builder.Spec.ServiceAccountName,
 		Namespace:      builder.Namespace,
 	}
 

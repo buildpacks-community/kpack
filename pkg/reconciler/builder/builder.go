@@ -128,7 +128,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
-		ServiceAccount: builder.Spec.ServiceAccount,
+		ServiceAccount: builder.Spec.ServiceAccountName,
 		Namespace:      builder.Namespace,
 	})
 	if err != nil {

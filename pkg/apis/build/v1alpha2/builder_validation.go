@@ -11,8 +11,8 @@ import (
 )
 
 func (cb *Builder) SetDefaults(context.Context) {
-	if cb.Spec.ServiceAccount == "" {
-		cb.Spec.ServiceAccount = "default"
+	if cb.Spec.ServiceAccountName == "" {
+		cb.Spec.ServiceAccountName = "default"
 	}
 	if cb.Spec.Stack.Kind == "" {
 		cb.Spec.Stack.Kind = ClusterStackKind
@@ -34,7 +34,7 @@ func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 
 func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return s.BuilderSpec.Validate(ctx).
-		Also(validate.FieldNotEmpty(s.ServiceAccount, "serviceAccount"))
+		Also(validate.FieldNotEmpty(s.ServiceAccountName, "serviceAccount"))
 }
 
 func validateStack(stack v1.ObjectReference) *apis.FieldError {
