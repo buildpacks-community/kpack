@@ -833,6 +833,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
+		it("configures the init containers with resources", func() {
+			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig, serviceBindings)
+			require.NoError(t, err)
+
+			initContainers := pod.Spec.InitContainers
+			for _, i := range initContainers {
+				assert.Equal(t, resources, i.Resources)
+			}
+		})
+
 		it("configures the completion container with resources", func() {
 			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig, serviceBindings)
 			require.NoError(t, err)
@@ -1161,8 +1171,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:  "rebase",
-							Image: config.RebaseImage,
+							Name:      "rebase",
+							Image:     config.RebaseImage,
+							Resources: build.Spec.Resources,
 							Args: []string{
 								"--run-image",
 								"builderregistry.io/run",
