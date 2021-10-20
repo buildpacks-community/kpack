@@ -50,7 +50,7 @@ type BuildPodable interface {
 	CnbBindings() corev1alpha1.CNBBindings
 	Services() buildapi.Services
 
-	BuildPod(buildapi.BuildPodImages, []corev1.Secret, buildapi.BuildPodBuilderConfig, []buildapi.ServiceBinding) (*corev1.Pod, error)
+	BuildPod(buildapi.BuildPodImages, buildapi.BuildContext) (*corev1.Pod, error)
 }
 
 func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, error) {
@@ -69,7 +69,11 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		return nil, err
 	}
 
-	return build.BuildPod(g.BuildPodConfig, secrets, buildPodBuilderConfig, bindings)
+	return build.BuildPod(g.BuildPodConfig, buildapi.BuildContext{
+		BuildPodBuilderConfig: buildPodBuilderConfig,
+		Secrets:               secrets,
+		Bindings:              bindings,
+	})
 }
 
 func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable) ([]buildapi.ServiceBinding, error) {
