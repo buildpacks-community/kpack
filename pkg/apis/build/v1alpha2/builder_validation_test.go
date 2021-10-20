@@ -34,7 +34,7 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 				Order: nil, // No order validation
 			},
-			ServiceAccount: "some-service-account",
+			ServiceAccountName: "some-service-account",
 		},
 	}
 
@@ -47,9 +47,9 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("defaults service account to default", func() {
-			builder.Spec.ServiceAccount = ""
+			builder.Spec.ServiceAccountName = ""
 			builder.SetDefaults(context.TODO())
-			assert.Equal(t, builder.Spec.ServiceAccount, "default")
+			assert.Equal(t, builder.Spec.ServiceAccountName, "default")
 		})
 
 		it("defaults stack.kind to ClusterStack", func() {

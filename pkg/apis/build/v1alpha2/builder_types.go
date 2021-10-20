@@ -34,8 +34,8 @@ type BuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type NamespacedBuilderSpec struct {
-	BuilderSpec    `json:",inline"`
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	BuilderSpec        `json:",inline"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 // +k8s:openapi-gen=true
