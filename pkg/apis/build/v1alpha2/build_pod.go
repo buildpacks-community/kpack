@@ -28,12 +28,12 @@ const (
 	COSIGNSecretDataCosignPassword         = "cosign.password"
 	k8sOSLabel                             = "kubernetes.io/os"
 
-	cacheDirName            = "cache-dir"
-	layersDirName           = "layers-dir"
-	platformDir             = "platform-dir"
-	homeDir                 = "home-dir"
-	workspaceDir            = "workspace-dir"
-	imagePullSecretsDirName = "image-pull-secrets-dir"
+	cacheDirName                 = "cache-dir"
+	layersDirName                = "layers-dir"
+	platformDir                  = "platform-dir"
+	homeDir                      = "home-dir"
+	workspaceDir                 = "workspace-dir"
+	registrySourcePullSecretsDir = "registry-source-pull-secrets-dir"
 
 	notaryDirName = "notary-dir"
 	reportDirName = "report-dir"
@@ -125,9 +125,9 @@ var (
 		Name:  "HOME",
 		Value: "/builder/home",
 	}
-	imagePullSecretsVolume = corev1.VolumeMount{
-		Name:      imagePullSecretsDirName,
-		MountPath: "/imagePullSecrets",
+	registrySourcePullSecretsVolume = corev1.VolumeMount{
+		Name:      registrySourcePullSecretsDir,
+		MountPath: "/registrySourcePullSecrets",
 		ReadOnly:  true,
 	}
 	notaryV1Volume = corev1.VolumeMount{
@@ -272,7 +272,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						WorkingDir:      "/workspace",
 						VolumeMounts: append(
 							append(secretVolumeMounts, imagePullVolumeMounts...),
-							imagePullSecretsVolume,
+							registrySourcePullSecretsVolume,
 							platformVolume,
 							sourceVolume,
 							homeVolume,
@@ -498,7 +498,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						},
 					},
-					b.Spec.Source.Source().ImagePullSecretsVolume(imagePullSecretsDirName),
+					b.Spec.Source.Source().ImagePullSecretsVolume(registrySourcePullSecretsDir),
 					b.notarySecretVolume(),
 				},
 				bindingVolumes),

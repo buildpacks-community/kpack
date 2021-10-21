@@ -56,14 +56,14 @@ func init() {
 }
 
 const (
-	secretsHome               = "/builder/home"
-	appDir                    = "/workspace"
-	platformDir               = "/platform"
-	buildSecretsDir           = "/var/build-secrets"
-	imagePullSecretsDir       = "/imagePullSecrets"
-	projectMetadataDir        = "/projectMetadata"
-	networkWaitLauncherDir    = "/networkWait"
-	networkWaitLauncherBinary = "network-wait-launcher.exe"
+	secretsHome                  = "/builder/home"
+	appDir                       = "/workspace"
+	platformDir                  = "/platform"
+	buildSecretsDir              = "/var/build-secrets"
+	registrySourcePullSecretsDir = "/registrySourcePullSecrets"
+	projectMetadataDir           = "/projectMetadata"
+	networkWaitLauncherDir       = "/networkWait"
+	networkWaitLauncherBinary    = "network-wait-launcher.exe"
 )
 
 func main() {
@@ -190,7 +190,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		}
 		return fetcher.Fetch(appDir, *blobURL)
 	case *registryImage != "":
-		imagePullSecrets, err := dockercreds.ParseDockerPullSecrets(imagePullSecretsDir)
+		registrySourcePullSecrets, err := dockercreds.ParseDockerPullSecrets(registrySourcePullSecretsDir)
 		if err != nil {
 			return err
 		}
@@ -198,7 +198,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		fetcher := registry.Fetcher{
 			Logger:   logger,
 			Client:   &registry.Client{},
-			Keychain: authn.NewMultiKeychain(imagePullSecrets, serviceAccountCreds),
+			Keychain: authn.NewMultiKeychain(registrySourcePullSecrets, serviceAccountCreds),
 		}
 		return fetcher.Fetch(appDir, *registryImage)
 	default:

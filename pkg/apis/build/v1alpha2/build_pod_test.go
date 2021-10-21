@@ -626,14 +626,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
 			assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts,
 				corev1.VolumeMount{
-					Name:      "image-pull-secrets-dir",
-					MountPath: "/imagePullSecrets",
+					Name:      "registry-source-pull-secrets-dir",
+					MountPath: "/registrySourcePullSecrets",
 					ReadOnly:  true,
 				})
 
 			match := 0
 			for _, v := range pod.Spec.Volumes {
-				if v.Name == "image-pull-secrets-dir" {
+				if v.Name == "registry-source-pull-secrets-dir" {
 					require.NotNil(t, v.Secret)
 					assert.Equal(t, "registry-secret", v.Secret.SecretName)
 					match++
