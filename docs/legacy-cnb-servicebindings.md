@@ -4,19 +4,19 @@ CNB service bindings have been deprecated in `kpack.io/v1alpha2`. They are still
 
 ## kpack.io/v1alpha1 CNB Service Bindings
 
-kpack Images can be configured with Service Bindings as described in the [Cloud Native Buildpacks Bindings specification](https://github.com/buildpacks/spec/blob/adbc70f5672e474e984b77921c708e1475e163c1/extensions/bindings.md).       
+kpack image resources can be configured with Service Bindings as described in the [Cloud Native Buildpacks Bindings specification](https://github.com/buildpacks/spec/blob/adbc70f5672e474e984b77921c708e1475e163c1/extensions/bindings.md).
 
-At build-time, service bindings are handled by the buildpacks being used for that Image. Check the desired buildpack documentation for details on the service bindings it supports. 
+At build-time, service bindings are handled by the buildpacks being used for that Build. Check the desired buildpack documentation for details on the service bindings it supports.
 
-To configure an Image with a service binding, you must create the following:
+To configure an image resource with a service binding, you must create the following:
 
 * A Secret containing the service binding data
   * The Secret `stringData` field must contain key-value pairs of `<binding file name>:<binding data>`. For each key-value pair, a file will be created that is accessible during build.
 * A ConfigMap containing the metadata for the service binding
-  * The ConfigMap must have the fields `data.kind` and `data.provider` populated. The buildpacks used to build the image will handle the service bindings based on these fields.
-* An Image referencing that Secret and ConfigMap in the `spec.build.bindings` field.
+  * The ConfigMap must have the fields `data.kind` and `data.provider` populated. The buildpacks used to build the OCI image will handle the service bindings based on these fields.
+* An Image resource referencing that Secret and ConfigMap in the `spec.build.bindings` field.
 
-### Sample maven app Image with a settings.xml service binding: 
+### Sample maven app Image resource with a settings.xml service binding:
 
 ```yaml
 apiVersion: kpack.io/v1alpha1
@@ -57,7 +57,7 @@ data:
   provider: sample
 ```
 
-The above example will result in the following files being available during Builds of the Image matching the [directory layout](https://github.com/buildpacks/spec/blob/adbc70f5672e474e984b77921c708e1475e163c1/extensions/bindings.md#example-directory-structure) of the CNB spec:
+The above example will result in the following files being available during Builds matching the [directory layout](https://github.com/buildpacks/spec/blob/adbc70f5672e474e984b77921c708e1475e163c1/extensions/bindings.md#example-directory-structure) of the CNB spec:
 
 ```plain
 <platform>

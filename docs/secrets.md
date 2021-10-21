@@ -1,6 +1,6 @@
 # Secrets
 
-kpack utilizes kubernetes secrets to configure credentials to publish images to docker registries and access private github repositories.
+kpack utilizes kubernetes secrets to configure credentials to publish OCI images to docker registries and access private github repositories.
 
 Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_secret.md).
 
@@ -112,7 +112,7 @@ stringData:
 
 ### Service Account
 
-To use these secrets with kpack create a service account and reference the service account in image and build config. When configuring the image resource, reference the `name` of your registry credential and the `name` of your git credential.   
+To use these secrets with kpack create a service account and reference the service account in image and build resources. When configuring the image resource, reference the `name` of your registry credential and the `name` of your git credential.
 
 ```yaml
 apiVersion: v1

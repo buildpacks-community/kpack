@@ -8,9 +8,9 @@ kpack extends [Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes
 
 kpack provides a declarative builder resource that configures a Cloud Native Buildpacks build configuration with the desired buildpack order and operating system stack.
 
-kpack provides a declarative image resource that builds an image and schedules image rebuilds on source changes and from builder buildpack and builder stack updates.
+kpack provides a declarative image resource that builds an OCI image and schedules rebuilds on source changes and from builder buildpack and builder stack updates.
 
-kpack also provides a build type to execute a single Cloud Native Buildpack image build.
+kpack also provides a build type to execute a single Cloud Native Buildpack OCI image build.
 
 ![kpack gif](docs/assets/node-min.gif)
 

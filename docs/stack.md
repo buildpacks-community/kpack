@@ -29,7 +29,7 @@ spec:
 
 ### Using a private registry
 
-To use images from a private registry, you have to add a `serviceAccountRef` referencing a serviceaccount with the secrets needed to pull from this registry.
+To use stack images from a private registry, you have to add a `serviceAccountRef` referencing a serviceaccount with the secrets needed to pull from this registry.
 
 ```yaml
 spec:
@@ -42,7 +42,7 @@ spec:
 
 ### Updating a stack
 
-The stack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new images are available.
+The stack resource will not poll for updates. A CI/CD tool is needed to update the resource with new digests when new stack images are available.
 
 ### Suggested stacks
 
