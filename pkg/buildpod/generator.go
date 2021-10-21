@@ -59,7 +59,7 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		return nil, err
 	}
 
-	secrets, err := g.fetchBuildSecrets(ctx, build)
+	secrets, imagePullSecrets, err := g.fetchBuildSecrets(ctx, build)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +73,7 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		BuildPodBuilderConfig: buildPodBuilderConfig,
 		Secrets:               secrets,
 		Bindings:              bindings,
+		ImagePullSecrets:      imagePullSecrets,
 	})
 }
 
@@ -162,24 +163,34 @@ func (g *Generator) fetchServiceAccounts(ctx context.Context, build BuildPodable
 	return serviceAccounts.Items, nil
 }
 
-func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) ([]corev1.Secret, error) {
+func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) ([]corev1.Secret, []corev1.LocalObjectReference, error) {
 	var secrets []corev1.Secret
 	var secretSet = map[string]struct{}{}
 	serviceAccount, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).Get(ctx, build.ServiceAccount(), metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, secretRef := range serviceAccount.Secrets {
 		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(ctx, secretRef.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if _, ok := secretSet[secret.Name]; !ok {
 			secrets = append(secrets, *secret)
 			secretSet[secret.Name] = struct{}{}
 		}
 	}
-	return secrets, nil
+
+	var imagePullSecrets []corev1.LocalObjectReference
+	for _, secretRef := range serviceAccount.ImagePullSecrets {
+		if _, ok := secretSet[secretRef.Name]; !ok {
+			imagePullSecrets = append(imagePullSecrets, secretRef)
+			secretSet[secretRef.Name] = struct{}{}
+		}
+
+	}
+
+	return secrets, imagePullSecrets, nil
 }
 
 func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) (buildapi.BuildPodBuilderConfig, error) {

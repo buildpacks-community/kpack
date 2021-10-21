@@ -119,6 +119,14 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Name: "docker-secret-1",
 				},
 			},
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{
+					Name: "image-pull-1",
+				},
+				{
+					Name: "image-pull-2",
+				},
+			},
 		}
 
 		builderPullSecrets := []v1.LocalObjectReference{
@@ -240,6 +248,14 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						OS:           "linux",
 					},
 					Bindings: []buildapi.ServiceBinding{},
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{
+							Name: "image-pull-1",
+						},
+						{
+							Name: "image-pull-2",
+						},
+					},
 				},
 			}}, build.buildPodCalls)
 		})
@@ -256,6 +272,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "docker-secret-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
 			fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
 
 			pod, err := generator.Generate(context.TODO(), build)
@@ -263,7 +282,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			assert.NotNil(t, pod)
 
 			assert.Len(t, build.buildPodCalls, 1)
-			assert.Len(t, build.buildPodCalls[0].BuildContext.Secrets, 2)
+			assert.Equal(t, build.buildPodCalls[0].BuildContext.Secrets, []corev1.Secret{
+				*gitSecret,
+				*dockerSecret,
+			})
+			assert.Equal(t, build.buildPodCalls[0].BuildContext.ImagePullSecrets, []corev1.LocalObjectReference{
+				{
+					Name: "image-pull-1",
+				},
+				{
+					Name: "image-pull-2",
+				},
+				{
+					Name: "image-pull-duplicate-1",
+				},
+			})
 		})
 
 		it("passes in k8s service bindings if present", func() {

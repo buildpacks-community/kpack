@@ -44,7 +44,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 	builderImageRef := corev1alpha1.BuildBuilderSpec{
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
-			{Name: "some-image-secret"},
+			{Name: "builder-pull-secret"},
 		}}
 
 	build := &buildapi.Build{
@@ -269,6 +269,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 		Secrets:  secrets,
 		Bindings: serviceBindings,
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: "image-pull-1",
+			},
+			{
+				Name: "image-pull-2",
+			},
+		},
 	}
 
 	when("BuildPod", func() {
@@ -469,7 +477,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		it("configures prepare with docker and git credentials", func() {
+		it("configures prepare with docker and git credentials and image pull secrets", func() {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
@@ -481,31 +489,49 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-basic-docker=docker-secret-1=acr.io",
 				"-dockerconfig=docker-secret-2",
 				"-dockercfg=docker-secret-3",
+				"-imagepull=image-pull-1",
+				"-imagepull=image-pull-2",
+				"-imagepull=builder-pull-secret",
 			}, pod.Spec.InitContainers[0].Args)
 
-			assert.Contains(t,
+			assert.Subset(t,
 				pod.Spec.InitContainers[0].VolumeMounts,
-				corev1.VolumeMount{
-					Name:      "secret-volume-git-secret-1",
-					MountPath: "/var/build-secrets/git-secret-1",
-				},
-				corev1.VolumeMount{
-					Name:      "secret-volume-git-secret-2",
-					MountPath: "/var/build-secrets/git-secret-2",
-				},
-				corev1.VolumeMount{
-					Name:      "secret-volume-docker-secret-1",
-					MountPath: "/var/build-secrets/docker-secret-1",
-				},
-				corev1.VolumeMount{
-					Name:      "secret-volume-docker-secret-2",
-					MountPath: "/var/build-secrets/docker-secret-2",
-				},
-				corev1.VolumeMount{
-					Name:      "secret-volume-docker-secret-3",
-					MountPath: "/var/build-secrets/docker-secret-3",
-				},
+				[]corev1.VolumeMount{
+					{
+						Name:      "secret-volume-git-secret-1",
+						MountPath: "/var/build-secrets/git-secret-1",
+					},
+					{
+						Name:      "secret-volume-git-secret-2",
+						MountPath: "/var/build-secrets/git-secret-2",
+					},
+					{
+						Name:      "secret-volume-docker-secret-1",
+						MountPath: "/var/build-secrets/docker-secret-1",
+					},
+					{
+						Name:      "secret-volume-docker-secret-2",
+						MountPath: "/var/build-secrets/docker-secret-2",
+					},
+					{
+						Name:      "secret-volume-docker-secret-3",
+						MountPath: "/var/build-secrets/docker-secret-3",
+					},
+
+					{
+						Name:      "secret-volume-image-pull-1",
+						MountPath: "/var/build-secrets/image-pull-1",
+					},
+					{
+						Name:      "secret-volume-image-pull-2",
+						MountPath: "/var/build-secrets/image-pull-2",
+					},
+					{
+						Name:      "secret-volume-builder-pull-secret",
+						MountPath: "/var/build-secrets/builder-pull-secret",
+					}},
 			)
+
 		})
 
 		it("configures prepare with the build configuration", func() {
@@ -541,11 +567,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				{
 					Name:      "home-dir",
 					MountPath: "/builder/home",
-				},
-				{
-					Name:      "builder-pull-secrets-dir",
-					MountPath: "/builderPullSecrets",
-					ReadOnly:  true,
 				},
 				{
 					Name:      "layers-dir",
@@ -587,31 +608,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				corev1.EnvVar{
 					Name:  "BLOB_URL",
 					Value: "https://some-blobstore.example.com/some-blob",
-				})
-		})
-
-		it("configures prepare with the registry source and empty imagePullSecrets when not provided", func() {
-			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = nil
-			build.Spec.Source.Registry = &corev1alpha1.Registry{
-				Image: "some-registry.io/some-image",
-			}
-			pod, err := build.BuildPod(config, buildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, "prepare", pod.Spec.InitContainers[0].Name)
-			assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts,
-				corev1.VolumeMount{
-					Name:      "image-pull-secrets-dir",
-					MountPath: "/imagePullSecrets",
-					ReadOnly:  true,
-				})
-			assert.NotNil(t, *pod.Spec.Volumes[7].EmptyDir)
-			assert.Equal(t, config.BuildInitImage, pod.Spec.InitContainers[0].Image)
-			assert.Contains(t, pod.Spec.InitContainers[0].Env,
-				corev1.EnvVar{
-					Name:  "REGISTRY_IMAGE",
-					Value: "some-registry.io/some-image",
 				})
 		})
 
@@ -862,7 +858,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("configures the init containers with resources", func() {
-			pod, err := build.BuildPod(config, secrets, buildPodBuilderConfig, serviceBindings)
+			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
 			initContainers := pod.Spec.InitContainers
@@ -884,12 +880,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
-			assert.Equal(t, corev1.Volume{
+			assert.Contains(t, pod.Spec.Volumes, corev1.Volume{
 				Name: "cache-dir",
 				VolumeSource: corev1.VolumeSource{
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "some-cache-name"},
 				},
-			}, pod.Spec.Volumes[0])
+			})
 		})
 
 		when("registry cache is requested (first build)", func() {
@@ -1056,6 +1052,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assertSecretPresent(t, pod, "docker-secret-1")
 			assertSecretPresent(t, pod, "docker-secret-2")
 			assertSecretPresent(t, pod, "docker-secret-3")
+			assertSecretPresent(t, pod, "image-pull-1")
+			assertSecretPresent(t, pod, "image-pull-2")
+			assertSecretPresent(t, pod, "builder-pull-secret")
 			assertSecretNotPresent(t, pod, "random-secret-1")
 		})
 
@@ -1064,15 +1063,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Len(t, pod.Spec.ImagePullSecrets, 1)
-			assert.Equal(t, corev1.LocalObjectReference{Name: "some-image-secret"}, pod.Spec.ImagePullSecrets[0])
-		})
-
-		it("mounts volumes for bindings", func() {
-			pod, err := build.BuildPod(config, buildContext)
-			require.NoError(t, err)
-
-			require.Len(t, pod.Spec.ImagePullSecrets, 1)
-			assert.Equal(t, corev1.LocalObjectReference{Name: "some-image-secret"}, pod.Spec.ImagePullSecrets[0])
+			assert.Equal(t, corev1.LocalObjectReference{Name: "builder-pull-secret"}, pod.Spec.ImagePullSecrets[0])
 		})
 
 		when("only 0.3 platform api is supported", func() {
@@ -1169,6 +1160,30 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						{
+							Name: "secret-volume-image-pull-1",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "image-pull-1",
+								},
+							},
+						},
+						{
+							Name: "secret-volume-image-pull-2",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "image-pull-2",
+								},
+							},
+						},
+						{
+							Name: "secret-volume-builder-pull-secret",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: "builder-pull-secret",
+								},
+							},
+						},
+						{
 							Name: "report-dir",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -1213,6 +1228,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"-basic-docker=docker-secret-1=acr.io",
 								"-dockerconfig=docker-secret-2",
 								"-dockercfg=docker-secret-3",
+								"-imagepull=image-pull-1",
+								"-imagepull=image-pull-2",
+								"-imagepull=builder-pull-secret",
 								"someimage/name", "someimage/name:tag2", "someimage/name:tag3",
 							},
 							Env: []corev1.EnvVar{
@@ -1235,6 +1253,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								{
 									Name:      "secret-volume-docker-secret-3",
 									MountPath: "/var/build-secrets/docker-secret-3",
+								},
+								{
+									Name:      "secret-volume-image-pull-1",
+									MountPath: "/var/build-secrets/image-pull-1",
+								},
+								{
+									Name:      "secret-volume-image-pull-2",
+									MountPath: "/var/build-secrets/image-pull-2",
+								},
+								{
+									Name:      "secret-volume-builder-pull-secret",
+									MountPath: "/var/build-secrets/builder-pull-secret",
 								},
 								{
 									Name:      "report-dir",
@@ -1859,6 +1889,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-basic-docker=docker-secret-1=acr.io",
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
+					"-imagepull=image-pull-1",
+					"-imagepull=image-pull-2",
+					"-imagepull=builder-pull-secret",
 				}, prepareContainer.Args)
 
 				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{

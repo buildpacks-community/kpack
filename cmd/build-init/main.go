@@ -43,6 +43,7 @@ var (
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
+	imagePullSecrets        flaghelpers.CredentialsFlags
 )
 
 func init() {
@@ -51,6 +52,7 @@ func init() {
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
+	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
 }
 
 const (
@@ -59,7 +61,6 @@ const (
 	platformDir               = "/platform"
 	buildSecretsDir           = "/var/build-secrets"
 	imagePullSecretsDir       = "/imagePullSecrets"
-	builderPullSecretsDir     = "/builderPullSecrets"
 	projectMetadataDir        = "/projectMetadata"
 	networkWaitLauncherDir    = "/networkWait"
 	networkWaitLauncherBinary = "network-wait-launcher.exe"
@@ -108,6 +109,20 @@ func main() {
 		logger.Fatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
 	}
 
+	for _, c := range imagePullSecrets {
+		credPath := filepath.Join(buildSecretsDir, c)
+
+		imagePullCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		creds, err = creds.Append(imagePullCreds)
+		if err != nil {
+			logger.Fatalf("error appending image pull creds %s", err)
+		}
+	}
+
 	err = dockercreds.VerifyReadAccess(creds, *runImage)
 	if err != nil {
 		logger.Fatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
@@ -128,17 +143,7 @@ func main() {
 		logger.Fatalf("error setting up platform env vars %s", err)
 	}
 
-	builderCreds, err := dockercreds.ParseDockerPullSecrets(builderPullSecretsDir)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	dockerCreds, err := creds.Append(builderCreds)
-	if err != nil {
-		logger.Fatalf("error appending builder creds %s", err)
-	}
-
-	err = dockerCreds.Save(path.Join(secretsHome, ".docker", "config.json"))
+	err = creds.Save(path.Join(secretsHome, ".docker", "config.json"))
 	if err != nil {
 		logger.Fatalf("error writing docker creds %s", err)
 	}

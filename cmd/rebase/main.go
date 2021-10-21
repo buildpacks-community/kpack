@@ -32,12 +32,14 @@ var (
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
+	imagePullSecrets        flaghelpers.CredentialsFlags
 )
 
 func init() {
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
+	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
 }
 
 func main() {
@@ -62,7 +64,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}
 
-	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
+	for _, c := range combine(dockerCfgCredentials, dockerConfigCredentials, imagePullSecrets) {
 		credPath := filepath.Join(buildSecretsDir, c)
 
 		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
@@ -117,4 +119,12 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	return ioutil.WriteFile(*reportFilePath, buf.Bytes(), 0777)
+}
+
+func combine(credentials ...[]string) []string {
+	var combinded []string
+	for _, creds := range credentials {
+		combinded = append(combinded, creds...)
+	}
+	return combinded
 }
