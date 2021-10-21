@@ -3,6 +3,8 @@
 Images provide a configuration for kpack to build and maintain a docker image utilizing [Cloud Native Buildpacks](http://buildpacks.io). 
 kpack will monitor the inputs to the image configuration to rebuild the image when the underlying source or the builder's buildpacks or stacks have changed.       
 
+Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_image.md).
+
 The following defines the relevant fields of the `image` resource spec in more detail:
 
 - `tag`: The image tag.

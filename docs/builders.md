@@ -7,6 +7,8 @@ Before creating Builders you will need to create a [ClusterStack](stack.md) and 
 
 > Note: The Builder and ClusterBuilder were previously named CustomBuilder and CustomClusterBuilder. The previous Builder and ClusterBuilder resources that utilized pre-built builders were removed and should no longer be used with kpack. This was discussed in an approved [RFC](https://github.com/pivotal/kpack/pull/439).
 
+Corresponding `kp` cli command docs for [builders](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_builder.md) and [cluster builders](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_clusterbuilder.md).
+
 ### <a id='builders'></a>Builders
 
 The Builder uses a [ClusterStore](store.md), a [ClusterStack](stack.md), and an order definition to construct a builder image.
