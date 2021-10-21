@@ -215,7 +215,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				ServiceAccount: serviceAccountName,
+				ServiceAccountName: serviceAccountName,
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
