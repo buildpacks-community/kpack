@@ -112,6 +112,22 @@ func conversionController(ctx context.Context, _ configmap.Watcher) *controller.
 				v1alpha1.SchemeGroupVersion.Version: &v1alpha1.Build{},
 			},
 		},
+		v1alpha2.Kind("Builder"): {
+			DefinitionName: "builders.kpack.io",
+			HubVersion:     v1alpha2.SchemeGroupVersion.Version,
+			Zygotes: map[string]conversion.ConvertibleObject{
+				v1alpha2.SchemeGroupVersion.Version: &v1alpha2.Builder{},
+				v1alpha1.SchemeGroupVersion.Version: &v1alpha1.Builder{},
+			},
+		},
+		v1alpha2.Kind("SourceResolver"): {
+			DefinitionName: "sourceresolvers.kpack.io",
+			HubVersion:     v1alpha2.SchemeGroupVersion.Version,
+			Zygotes: map[string]conversion.ConvertibleObject{
+				v1alpha2.SchemeGroupVersion.Version: &v1alpha2.SourceResolver{},
+				v1alpha1.SchemeGroupVersion.Version: &v1alpha1.SourceResolver{},
+			},
+		},
 	}
 
 	return conversion.NewConversionController(

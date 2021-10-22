@@ -34,8 +34,9 @@ type BuilderSpec struct {
 
 // +k8s:openapi-gen=true
 type NamespacedBuilderSpec struct {
-	BuilderSpec        `json:",inline"`
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	BuilderSpec                       `json:",inline"`
+	ServiceAccountName                string `json:"serviceAccountName,omitempty"`
+	BackwardsCompatibleServiceAccount string `json:"serviceAccount,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -67,4 +68,12 @@ func (*Builder) GetGroupVersionKind() schema.GroupVersionKind {
 
 func (c *Builder) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
+}
+
+func (b *NamespacedBuilderSpec) ServiceAccount() string {
+	if b.ServiceAccountName == "" && b.BackwardsCompatibleServiceAccount != "" {
+		return b.BackwardsCompatibleServiceAccount
+	}
+
+	return b.ServiceAccountName
 }
