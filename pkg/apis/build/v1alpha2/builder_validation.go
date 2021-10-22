@@ -11,7 +11,7 @@ import (
 )
 
 func (cb *Builder) SetDefaults(context.Context) {
-	if cb.Spec.ServiceAccountName == "" {
+	if cb.Spec.ServiceAccount() == "" {
 		cb.Spec.ServiceAccountName = "default"
 	}
 	if cb.Spec.Stack.Kind == "" {
@@ -34,7 +34,7 @@ func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 
 func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return s.BuilderSpec.Validate(ctx).
-		Also(validate.FieldNotEmpty(s.ServiceAccountName, "serviceAccount"))
+		Also(validate.FieldNotEmpty(s.ServiceAccount(), "serviceAccountName"))
 }
 
 func validateStack(stack v1.ObjectReference) *apis.FieldError {
