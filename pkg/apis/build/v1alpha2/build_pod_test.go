@@ -1126,154 +1126,136 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				require.Equal(t, corev1.PodSpec{
-					ServiceAccountName: build.Spec.ServiceAccountName,
-					NodeSelector: map[string]string{
-						"kubernetes.io/os": "linux",
-						"foo":              "bar",
-					},
-					Tolerations: build.Spec.Tolerations,
-					Affinity:    build.Spec.Affinity,
-					Volumes: []corev1.Volume{
-						{
-							Name: "secret-volume-docker-secret-1",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "docker-secret-1",
-								},
-							},
-						},
-						{
-							Name: "secret-volume-docker-secret-2",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "docker-secret-2",
-								},
-							},
-						},
-						{
-							Name: "secret-volume-docker-secret-3",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "docker-secret-3",
-								},
-							},
-						},
-						{
-							Name: "secret-volume-image-pull-1",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "image-pull-1",
-								},
-							},
-						},
-						{
-							Name: "secret-volume-image-pull-2",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "image-pull-2",
-								},
-							},
-						},
-						{
-							Name: "secret-volume-builder-pull-secret",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "builder-pull-secret",
-								},
-							},
-						},
-						{
-							Name: "report-dir",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
-						{
-							Name: "notary-dir",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
+				require.Equal(t, build.Spec.ServiceAccountName, pod.Spec.ServiceAccountName)
+				require.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
+				require.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
+				require.Equal(t, build.Spec.NodeSelector, map[string]string{
+					"kubernetes.io/os": "linux",
+					"foo":              "bar",
+				})
+				require.Equal(t, pod.Spec.Volumes, []corev1.Volume{
+					{
+						Name: "secret-volume-docker-secret-1",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "docker-secret-1",
 							},
 						},
 					},
-					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
-						{
-							Name:            "completion",
-							Image:           config.CompletionImage,
-							Command:         []string{"/cnb/process/web"},
-							Args:            []string{},
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Resources:       build.Spec.Resources,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "report-dir",
-									MountPath: "/var/report",
-								},
+					{
+						Name: "secret-volume-docker-secret-2",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "docker-secret-2",
 							},
 						},
 					},
-					InitContainers: []corev1.Container{
-						{
-							Name:      "rebase",
-							Image:     config.RebaseImage,
-							Resources: build.Spec.Resources,
-							Args: []string{
-								"--run-image",
-								"builderregistry.io/run",
-								"--last-built-image",
-								build.Spec.LastBuild.Image,
-								"--report",
-								"/var/report/report.toml",
-								"-basic-docker=docker-secret-1=acr.io",
-								"-dockerconfig=docker-secret-2",
-								"-dockercfg=docker-secret-3",
-								"-imagepull=image-pull-1",
-								"-imagepull=image-pull-2",
-								"-imagepull=builder-pull-secret",
-								"someimage/name", "someimage/name:tag2", "someimage/name:tag3",
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "BUILD_CHANGES",
-									Value: "some-stack-change",
-								},
-							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							WorkingDir:      "/workspace",
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "secret-volume-docker-secret-1",
-									MountPath: "/var/build-secrets/docker-secret-1",
-								},
-								{
-									Name:      "secret-volume-docker-secret-2",
-									MountPath: "/var/build-secrets/docker-secret-2",
-								},
-								{
-									Name:      "secret-volume-docker-secret-3",
-									MountPath: "/var/build-secrets/docker-secret-3",
-								},
-								{
-									Name:      "secret-volume-image-pull-1",
-									MountPath: "/var/build-secrets/image-pull-1",
-								},
-								{
-									Name:      "secret-volume-image-pull-2",
-									MountPath: "/var/build-secrets/image-pull-2",
-								},
-								{
-									Name:      "secret-volume-builder-pull-secret",
-									MountPath: "/var/build-secrets/builder-pull-secret",
-								},
-								{
-									Name:      "report-dir",
-									MountPath: "/var/report",
-								},
+					{
+						Name: "secret-volume-docker-secret-3",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "docker-secret-3",
 							},
 						},
 					},
-				}, pod.Spec)
+					{
+						Name: "secret-volume-image-pull-1",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "image-pull-1",
+							},
+						},
+					},
+					{
+						Name: "secret-volume-image-pull-2",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "image-pull-2",
+							},
+						},
+					},
+					{
+						Name: "secret-volume-builder-pull-secret",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "builder-pull-secret",
+							},
+						},
+					},
+					{
+						Name: "report-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+					{
+						Name: "notary-dir",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					},
+				})
+
+				require.Equal(t, []corev1.Container{
+					{
+						Name:      "rebase",
+						Image:     config.RebaseImage,
+						Resources: build.Spec.Resources,
+						Args: []string{
+							"--run-image",
+							"builderregistry.io/run",
+							"--last-built-image",
+							build.Spec.LastBuild.Image,
+							"--report",
+							"/var/report/report.toml",
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-imagepull=image-pull-1",
+							"-imagepull=image-pull-2",
+							"-imagepull=builder-pull-secret",
+							"someimage/name", "someimage/name:tag2", "someimage/name:tag3",
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "BUILD_CHANGES",
+								Value: "some-stack-change",
+							},
+						},
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						WorkingDir:      "/workspace",
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      "secret-volume-docker-secret-1",
+								MountPath: "/var/build-secrets/docker-secret-1",
+							},
+							{
+								Name:      "secret-volume-docker-secret-2",
+								MountPath: "/var/build-secrets/docker-secret-2",
+							},
+							{
+								Name:      "secret-volume-docker-secret-3",
+								MountPath: "/var/build-secrets/docker-secret-3",
+							},
+							{
+								Name:      "secret-volume-image-pull-1",
+								MountPath: "/var/build-secrets/image-pull-1",
+							},
+							{
+								Name:      "secret-volume-image-pull-2",
+								MountPath: "/var/build-secrets/image-pull-2",
+							},
+							{
+								Name:      "secret-volume-builder-pull-secret",
+								MountPath: "/var/build-secrets/builder-pull-secret",
+							},
+							{
+								Name:      "report-dir",
+								MountPath: "/var/report",
+							},
+						},
+					},
+				}, pod.Spec.InitContainers)
 			})
 
 			when("cosign secrets are present on the build", func() {
@@ -1377,6 +1359,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"-basic-docker=docker-secret-1=acr.io",
 								"-dockerconfig=docker-secret-2",
 								"-dockercfg=docker-secret-3",
+								"-cosign-annotations=buildTimestamp=19440606.133000",
+								"-cosign-annotations=buildNumber=12",
 							},
 							pod.Spec.Containers[0].Args,
 						)
@@ -1427,14 +1411,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
 
-					require.Equal(t,
+					require.Subset(t,
+						pod.Spec.Containers[0].Args,
 						[]string{
 							"-notary-v1-url=some-notary-url",
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 						},
-						pod.Spec.Containers[0].Args,
 					)
 
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
@@ -1460,16 +1444,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("cosign secrets and a notary config are present on the build", func() {
-				it.Before(func() {
-					build.Spec.Notary = &corev1alpha1.NotaryConfig{
-						V1: &corev1alpha1.NotaryV1Config{
-							URL: "some-notary-url",
-							SecretRef: corev1alpha1.NotarySecretRef{
-								Name: "some-notary-secret",
-							},
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-notary-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-notary-secret",
 						},
-					}
-				})
+					},
+				}
 
 				it("skips invalid secrets", func() {
 					buildContext.Secrets = append(secrets, cosignInvalidSecrets...)
@@ -1624,15 +1606,17 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				require.Equal(t,
 					[]string{
+						"-basic-git=git-secret-1=https://github.com",
+						"-ssh-git=git-secret-2=https://bitbucket.com",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
 						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
 						"-cosign-docker-media-types=cosign-secret-1=1",
 						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
 						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1650,16 +1634,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				require.Equal(t,
 					[]string{
+						"-basic-git=git-secret-1=https://github.com",
+						"-ssh-git=git-secret-2=https://bitbucket.com",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
 						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
 						"-cosign-docker-media-types=cosign-secret-1=1",
 						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
 						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1689,14 +1675,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
 
-				require.Equal(t,
+				require.Subset(t,
+					pod.Spec.Containers[0].Args,
 					[]string{
 						"-notary-v1-url=some-notary-url",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
 					},
-					pod.Spec.Containers[0].Args,
 				)
 
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
@@ -1794,15 +1780,17 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t,
 					[]string{
 						"-notary-v1-url=some-notary-url",
+						"-basic-git=git-secret-1=https://github.com",
+						"-ssh-git=git-secret-2=https://bitbucket.com",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
 						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
 						"-cosign-docker-media-types=cosign-secret-1=1",
 						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
 						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -1821,16 +1809,18 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t,
 					[]string{
 						"-notary-v1-url=some-notary-url",
+						"-basic-git=git-secret-1=https://github.com",
+						"-ssh-git=git-secret-2=https://bitbucket.com",
 						"-basic-docker=docker-secret-1=acr.io",
 						"-dockerconfig=docker-secret-2",
 						"-dockercfg=docker-secret-3",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
 						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
 						"-cosign-docker-media-types=cosign-secret-1=1",
 						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
 						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+						"-cosign-annotations=buildTimestamp=19440606.133000",
+						"-cosign-annotations=buildNumber=12",
+						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
 					},
 					pod.Spec.Containers[0].Args,
 				)
@@ -2100,9 +2090,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/process/web",
 					"-notary-v1-url=some-notary-server",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
 					"-basic-docker=docker-secret-1=acr.io",
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
 
 				assert.Equal(t, "/networkWait/network-wait-launcher", completionContainer.Command[0])
@@ -2133,6 +2127,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					dnsProbeHost,
 					"--",
 					"/cnb/process/web",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
 			})
 

@@ -19,6 +19,7 @@ import (
 const (
 	SecretTemplateName                     = "secret-volume-%s"
 	DefaultSecretPathName                  = "/var/build-secrets/%s"
+	CosignDefaultSecretPathName            = "/var/build-secrets/cosign/%s"
 	BuildLabel                             = "kpack.io/build"
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
@@ -175,17 +176,13 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	}
 
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
-	cosignVolumes, _, _ := b.setupSecretVolumesAndArgs(buildContext.Secrets, cosignSecrets)
-	secretVolumes = append(secretVolumes, cosignVolumes...)
+	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
+	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
 
 	bindingVolumes, bindingVolumeMounts, err := setupBindingVolumesAndMounts(buildContext.Bindings)
 	if err != nil {
 		return nil, err
 	}
-
-	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
-
-	builderImage := b.Spec.Builder.Image
 
 	workspaceVolume := corev1.VolumeMount{
 		Name:      sourceVolume.Name,
@@ -226,8 +223,27 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			// If the build fails, don't restart it.
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				step(b.completionContainer(buildContext.Secrets, images.completion(buildContext.os())),
-					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+				step(corev1.Container{
+					Name:    "completion",
+					Image:   images.completion(buildContext.os()),
+					Command: []string{"/cnb/process/web"},
+					Args: args(
+						b.notaryArgs(),
+						secretArgs,
+						cosignSecretArgs,
+						b.cosignArgs(),
+					),
+					Resources: b.Spec.Resources,
+					VolumeMounts: volumeMounts(
+						secretVolumeMounts,
+						cosignVolumeMounts,
+						[]corev1.VolumeMount{
+							reportVolume,
+							notaryV1Volume,
+						},
+					),
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				}, ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
 			}),
 			SecurityContext: podSecurityContext(buildContext.BuildPodBuilderConfig),
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
@@ -270,13 +286,16 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						WorkingDir:      "/workspace",
-						VolumeMounts: append(
-							append(secretVolumeMounts, imagePullVolumeMounts...),
-							registrySourcePullSecretsVolume,
-							platformVolume,
-							sourceVolume,
-							homeVolume,
-							projectMetadataVolume,
+						VolumeMounts: volumeMounts(
+							secretVolumeMounts,
+							imagePullVolumeMounts,
+							[]corev1.VolumeMount{
+								registrySourcePullSecretsVolume,
+								platformVolume,
+								sourceVolume,
+								homeVolume,
+								projectMetadataVolume,
+							},
 						),
 					},
 					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume())...,
@@ -284,7 +303,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:      "detect",
-						Image:     builderImage,
+						Image:     b.Spec.Builder.Image,
 						Command:   []string{"/cnb/lifecycle/detector"},
 						Resources: b.Spec.Resources,
 						Args: []string{
@@ -292,11 +311,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
 						},
-						VolumeMounts: append([]corev1.VolumeMount{
+						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							platformVolume,
 							workspaceVolume,
-						}, bindingVolumeMounts...),
+						}, bindingVolumeMounts),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
 							{
@@ -310,7 +329,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:      "analyze",
-						Image:     builderImage,
+						Image:     b.Spec.Builder.Image,
 						Command:   []string{"/cnb/lifecycle/analyzer"},
 						Resources: b.Spec.Resources,
 						Args: args([]string{
@@ -325,11 +344,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								return []string{b.Tag()}
 							}(),
 						),
-						VolumeMounts: append([]corev1.VolumeMount{
+						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							workspaceVolume,
 							homeVolume,
-						}, cacheVolumes...),
+						}, cacheVolumes),
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{
@@ -349,17 +368,17 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:      "restore",
-						Image:     builderImage,
+						Image:     b.Spec.Builder.Image,
 						Command:   []string{"/cnb/lifecycle/restorer"},
 						Resources: b.Spec.Resources,
 						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
 						}, genericCacheArgs),
-						VolumeMounts: append([]corev1.VolumeMount{
+						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							homeVolume,
-						}, cacheVolumes...),
+						}, cacheVolumes),
 						Env: []corev1.EnvVar{
 							{
 								Name:  platformAPIEnvVar,
@@ -373,7 +392,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:      "build",
-						Image:     builderImage,
+						Image:     b.Spec.Builder.Image,
 						Command:   []string{"/cnb/lifecycle/builder"},
 						Resources: b.Spec.Resources,
 						Args: []string{
@@ -382,11 +401,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							"-group=/layers/group.toml",
 							"-plan=/layers/plan.toml",
 						},
-						VolumeMounts: append([]corev1.VolumeMount{
+						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							platformVolume,
 							workspaceVolume,
-						}, bindingVolumeMounts...),
+						}, bindingVolumeMounts),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
 							{
@@ -401,7 +420,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:      "export",
-						Image:     builderImage,
+						Image:     b.Spec.Builder.Image,
 						Command:   []string{"/cnb/lifecycle/exporter"},
 						Resources: b.Spec.Resources,
 						Args: args([]string{
@@ -429,12 +448,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 
 							}(),
 							b.Spec.Tags),
-						VolumeMounts: append([]corev1.VolumeMount{
+						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							workspaceVolume,
 							homeVolume,
 							reportVolume,
-						}, cacheVolumes...),
+						}, cacheVolumes),
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{
@@ -459,6 +478,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			SchedulerName:      b.Spec.SchedulerName,
 			Volumes: volumes(
 				secretVolumes,
+				cosignVolumes,
 				imagePullVolumes,
 				b.cacheVolume(buildContext.os()),
 				[]corev1.Volume{
@@ -582,10 +602,30 @@ func (b *Build) notarySecretVolume() corev1.Volume {
 	}
 }
 
+func (b *Build) notaryArgs() []string {
+	if b.NotaryV1Config() == nil {
+		return nil
+	}
+	return []string{"-notary-v1-url=" + b.NotaryV1Config().URL}
+}
+
+func (b *Build) cosignArgs() []string {
+	args := []string{
+		fmt.Sprintf("-cosign-annotations=buildTimestamp=%s", b.ObjectMeta.CreationTimestamp.Format("20060102.150405")),
+		fmt.Sprintf("-cosign-annotations=buildNumber=%s", b.Labels[BuildNumberLabel]),
+	}
+
+	if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
+		for _, annotation := range b.Spec.Cosign.Annotations {
+			args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
+		}
+	}
+	return args
+}
+
 func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*corev1.Pod, error) {
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, dockerSecrets)
-	cosignVolumes, _, _ := b.setupSecretVolumesAndArgs(buildContext.Secrets, cosignSecrets)
-	secretVolumes = append(secretVolumes, cosignVolumes...)
+	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
 
@@ -608,20 +648,44 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
 			SchedulerName:      b.Spec.SchedulerName,
-			Volumes: append(
-				append(secretVolumes, imagePullVolumes...),
-				corev1.Volume{
-					Name: reportDirName,
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
+			Volumes: volumes(
+				secretVolumes,
+				cosignVolumes,
+				imagePullVolumes,
+				[]corev1.Volume{
+					{
+						Name: reportDirName,
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
 					},
+					b.notarySecretVolume(),
 				},
-				b.notarySecretVolume(),
 			),
 			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				step(b.completionContainer(buildContext.Secrets, images.CompletionImage))
-			}),
+			Containers: []corev1.Container{
+				{
+					Name:    "completion",
+					Image:   images.completion(buildContext.os()),
+					Command: []string{"/cnb/process/web"},
+					Args: args(
+						b.notaryArgs(),
+						secretArgs,
+						b.cosignArgs(),
+						cosignSecretArgs,
+					),
+					Resources: b.Spec.Resources,
+					VolumeMounts: volumeMounts(
+						secretVolumeMounts,
+						cosignVolumeMounts,
+						[]corev1.VolumeMount{
+							reportVolume,
+							notaryV1Volume,
+						},
+					),
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
+			},
 			InitContainers: []corev1.Container{
 				{
 					Name:      "rebase",
@@ -647,9 +711,13 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					WorkingDir:      "/workspace",
-					VolumeMounts: append(
-						append(secretVolumeMounts, imagePullVolumeMounts...),
-						reportVolume),
+					VolumeMounts: volumeMounts(
+						secretVolumeMounts,
+						imagePullVolumeMounts,
+						[]corev1.VolumeMount{
+							reportVolume,
+						},
+					),
 				},
 			},
 		},
@@ -678,10 +746,6 @@ func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
 }
 
-func cosignSecrets(secret corev1.Secret) bool {
-	return string(secret.Data[COSIGNSecretDataCosignKey]) != ""
-}
-
 func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
 	var (
 		volumes      []corev1.Volume
@@ -689,8 +753,6 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		args         []string
 	)
 	for _, secret := range secrets {
-		secretPathName := DefaultSecretPathName
-
 		switch {
 		case !filter(secret):
 			continue
@@ -707,10 +769,6 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Type == corev1.SecretTypeSSHAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
-		case string(secret.Data[COSIGNSecretDataCosignKey]) != "":
-			cosignArgs := cosignSecretArgs(secret)
-			args = append(args, cosignArgs...)
-			secretPathName = fmt.Sprintf(DefaultSecretPathName, "cosign/%s")
 		default:
 			//ignoring secret
 			continue
@@ -729,7 +787,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      volumeName,
-			MountPath: fmt.Sprintf(secretPathName, secret.Name),
+			MountPath: fmt.Sprintf(DefaultSecretPathName, secret.Name),
 		})
 	}
 
@@ -758,6 +816,40 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      volumeName,
 			MountPath: fmt.Sprintf(DefaultSecretPathName, secret.Name),
+		})
+	}
+
+	return volumes, volumeMounts, args
+}
+
+func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []corev1.VolumeMount, []string) {
+	var (
+		volumes      []corev1.Volume
+		volumeMounts []corev1.VolumeMount
+		args         []string
+	)
+	for _, secret := range secrets {
+		if string(secret.Data[COSIGNSecretDataCosignKey]) == "" {
+			continue
+		}
+
+		cosignArgs := cosignSecretArgs(secret)
+		args = append(args, cosignArgs...)
+
+		volumeName := fmt.Sprintf(SecretTemplateName, secret.Name)
+
+		volumes = append(volumes, corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret.Name,
+				},
+			},
+		})
+
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: fmt.Sprintf(CosignDefaultSecretPathName, secret.Name),
 		})
 	}
 
@@ -897,6 +989,14 @@ func volumes(volumes ...[]corev1.Volume) []corev1.Volume {
 	return combined
 }
 
+func volumeMounts(volumes ...[]corev1.VolumeMount) []corev1.VolumeMount {
+	var combined []corev1.VolumeMount
+	for _, v := range volumes {
+		combined = append(combined, v...)
+	}
+	return combined
+}
+
 func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Container {
 	containers := make([]corev1.Container, 0, 7)
 
@@ -909,56 +1009,8 @@ func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Contai
 	return containers
 }
 
-func (b *Build) completionContainer(secrets []corev1.Secret, completionImage string) corev1.Container {
-	volumeMounts := []corev1.VolumeMount{
-		reportVolume,
-	}
-	args := []string{}
-
-	_, cosignVolumeMounts, cosignArgs := b.setupSecretVolumesAndArgs(secrets, cosignSecrets)
-	hasCosign := len(cosignVolumeMounts) > 0
-
-	if b.NotaryV1Config() != nil {
-		volumeMounts = append(volumeMounts, notaryV1Volume)
-		args = append(args, "-notary-v1-url="+b.NotaryV1Config().URL)
-	}
-
-	if b.NotaryV1Config() != nil || hasCosign {
-		_, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(secrets, dockerSecrets)
-		volumeMounts = append(volumeMounts, secretVolumeMounts...)
-		args = append(args, secretArgs...)
-	}
-
-	if hasCosign {
-		volumeMounts = append(volumeMounts, cosignVolumeMounts...)
-		args = append(
-			args,
-			"-cosign-annotations=buildTimestamp="+b.ObjectMeta.CreationTimestamp.Format("20060102.150405"),
-			"-cosign-annotations=buildNumber="+b.Labels[BuildNumberLabel],
-		)
-
-		if b.Spec.Cosign != nil && b.Spec.Cosign.Annotations != nil {
-			for _, annotation := range b.Spec.Cosign.Annotations {
-				args = append(args, fmt.Sprintf("-cosign-annotations=%s=%s", annotation.Name, annotation.Value))
-			}
-		}
-
-		args = append(args, cosignArgs...)
-	}
-
-	return corev1.Container{
-		Name:            "completion",
-		Image:           completionImage,
-		Command:         []string{"/cnb/process/web"},
-		Args:            args,
-		Resources:       b.Spec.Resources,
-		VolumeMounts:    volumeMounts,
-		ImagePullPolicy: corev1.PullIfNotPresent,
-	}
-}
-
 func cosignSecretArgs(secret corev1.Secret) []string {
-	cosignArgs := make([]string, 0)
+	var cosignArgs []string
 	if cosignRepository := secret.ObjectMeta.Annotations[COSIGNRespositoryAnnotationPrefix]; cosignRepository != "" {
 		cosignArgs = append(cosignArgs, fmt.Sprintf("-cosign-repositories=%s=%s", secret.Name, cosignRepository))
 	}
