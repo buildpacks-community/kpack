@@ -119,6 +119,14 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Name: "docker-secret-1",
 				},
 			},
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{
+					Name: "image-pull-1",
+				},
+				{
+					Name: "image-pull-2",
+				},
+			},
 		}
 
 		builderPullSecrets := []v1.LocalObjectReference{
@@ -226,19 +234,29 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, []buildPodCall{{
 				BuildPodImages: buildPodConfig,
-				Secrets: []corev1.Secret{
-					*gitSecret,
-					*dockerSecret,
+				BuildContext: buildapi.BuildContext{
+					Secrets: []corev1.Secret{
+						*gitSecret,
+						*dockerSecret,
+					},
+					BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
+						StackID:      "some.stack.id",
+						RunImage:     "some-registry.io/run-image",
+						Uid:          1234,
+						Gid:          5678,
+						PlatformAPIs: []string{"0.4", "0.5", "0.6"},
+						OS:           "linux",
+					},
+					Bindings: []buildapi.ServiceBinding{},
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{
+							Name: "image-pull-1",
+						},
+						{
+							Name: "image-pull-2",
+						},
+					},
 				},
-				BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
-					StackID:      "some.stack.id",
-					RunImage:     "some-registry.io/run-image",
-					Uid:          1234,
-					Gid:          5678,
-					PlatformAPIs: []string{"0.4", "0.5", "0.6"},
-					OS:           "linux",
-				},
-				Bindings: []buildapi.ServiceBinding{},
 			}}, build.buildPodCalls)
 		})
 
@@ -254,6 +272,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
 			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{Name: "docker-secret-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "docker-secret-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
 			fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
 
 			pod, err := generator.Generate(context.TODO(), build)
@@ -261,7 +282,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			assert.NotNil(t, pod)
 
 			assert.Len(t, build.buildPodCalls, 1)
-			assert.Len(t, build.buildPodCalls[0].Secrets, 2)
+			assert.Equal(t, build.buildPodCalls[0].BuildContext.Secrets, []corev1.Secret{
+				*gitSecret,
+				*dockerSecret,
+			})
+			assert.Equal(t, build.buildPodCalls[0].BuildContext.ImagePullSecrets, []corev1.LocalObjectReference{
+				{
+					Name: "image-pull-1",
+				},
+				{
+					Name: "image-pull-2",
+				},
+				{
+					Name: "image-pull-duplicate-1",
+				},
+			})
 		})
 
 		it("passes in k8s service bindings if present", func() {
@@ -290,8 +325,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assert.Len(t, build.buildPodCalls[0].Bindings, 1)
-			assert.Equal(t, expectedBindings, build.buildPodCalls[0].Bindings)
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
 
 		it("passes in v1alpha1 service bindings if present", func() {
@@ -321,8 +356,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assert.Len(t, build.buildPodCalls[0].Bindings, 1)
-			assert.Equal(t, expectedBindings, build.buildPodCalls[0].Bindings)
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
 
 		it("rejects a build with a cnb binding secret that is attached to a service account", func() {
@@ -395,8 +430,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assert.Len(t, build.buildPodCalls[0].Bindings, 1)
-			assert.Equal(t, expectedBindings, build.buildPodCalls[0].Bindings)
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
 	})
 }
@@ -417,10 +452,8 @@ type testBuildPodable struct {
 }
 
 type buildPodCall struct {
-	BuildPodImages        buildapi.BuildPodImages
-	Secrets               []corev1.Secret
-	BuildPodBuilderConfig buildapi.BuildPodBuilderConfig
-	Bindings              []buildapi.ServiceBinding
+	BuildPodImages buildapi.BuildPodImages
+	BuildContext   buildapi.BuildContext
 }
 
 func (tb *testBuildPodable) GetName() string {
@@ -439,12 +472,10 @@ func (tb *testBuildPodable) BuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return tb.buildBuilderSpec
 }
 
-func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, secrets []corev1.Secret, config buildapi.BuildPodBuilderConfig, bindings []buildapi.ServiceBinding) (*corev1.Pod, error) {
+func (tb *testBuildPodable) BuildPod(images buildapi.BuildPodImages, buildContext buildapi.BuildContext) (*corev1.Pod, error) {
 	tb.buildPodCalls = append(tb.buildPodCalls, buildPodCall{
-		BuildPodImages:        images,
-		Secrets:               secrets,
-		BuildPodBuilderConfig: config,
-		Bindings:              bindings,
+		BuildPodImages: images,
+		BuildContext:   buildContext,
 	})
 	return &corev1.Pod{}, nil
 }
