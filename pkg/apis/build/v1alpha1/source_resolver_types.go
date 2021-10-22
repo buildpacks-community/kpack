@@ -1,8 +1,12 @@
 package v1alpha1
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
@@ -43,4 +47,12 @@ type SourceResolverList struct {
 
 func (*SourceResolver) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("SourceResolver")
+}
+
+func (i *SourceResolver) ConvertTo(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
+}
+
+func (i *SourceResolver) ConvertFrom(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }
