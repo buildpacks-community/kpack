@@ -800,7 +800,7 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 		volumeMounts []corev1.VolumeMount
 		args         []string
 	)
-	for _, secret := range append(secrets, b.Spec.Builder.ImagePullSecrets...) {
+	for _, secret := range deduplicate(secrets, b.Spec.Builder.ImagePullSecrets) {
 		args = append(args, fmt.Sprintf("-imagepull=%s", secret.Name))
 		volumeName := fmt.Sprintf(SecretTemplateName, secret.Name)
 
@@ -995,6 +995,21 @@ func volumeMounts(volumes ...[]corev1.VolumeMount) []corev1.VolumeMount {
 		combined = append(combined, v...)
 	}
 	return combined
+}
+
+func deduplicate(lists ...[]corev1.LocalObjectReference) []corev1.LocalObjectReference {
+	names := map[string]struct{}{}
+	var deduplicated []corev1.LocalObjectReference
+
+	for _, list := range lists {
+		for _, entry := range list {
+			if _, ok := names[entry.Name]; !ok {
+				deduplicated = append(deduplicated, entry)
+			}
+			names[entry.Name] = struct{}{}
+		}
+	}
+	return deduplicated
 }
 
 func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Container {
