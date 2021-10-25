@@ -122,6 +122,8 @@ rules:
   resourceNames:
   - "images.kpack.io"
   - "builds.kpack.io"
+  - "builders.kpack.io"
+  - "sourceresolvers.kpack.io"
   verbs:
   - update
 - apiGroups:
