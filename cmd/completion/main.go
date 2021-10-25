@@ -146,6 +146,7 @@ func signImage() error {
 			return err
 		}
 	}
+	return nil
 }
 
 func mapKeyValueArgs(args flaghelpers.CredentialsFlags) (map[string]interface{}, error) {
