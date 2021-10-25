@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle"
+	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 
 	"github.com/pivotal/kpack/pkg/cosign"
@@ -56,15 +57,26 @@ func init() {
 func main() {
 	flag.Parse()
 
+	if hasCosign() || notaryV1URL != "" {
+		err := signImage()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	logger.Println("Build successful")
+}
+
+func signImage() error {
 	var report lifecycle.ExportReport
 	_, err := toml.DecodeFile(reportFilePath, &report)
 	if err != nil {
-		logger.Fatalf("toml decode: %v", err)
+		return errors.Wrap(err, "toml decode")
 	}
 
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
 	if err != nil {
-		logger.Fatal(err)
+		return err
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
@@ -72,7 +84,7 @@ func main() {
 
 		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
 		if err != nil {
-			logger.Fatal(err)
+			return err
 		}
 
 		for domain := range dockerCfgCreds {
@@ -81,30 +93,46 @@ func main() {
 
 		creds, err = creds.Append(dockerCfgCreds)
 		if err != nil {
-			logger.Fatal(err)
+			return err
 		}
 
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			logger.Fatalf("error obtaining home directory: %v", err)
+			return errors.Wrapf(err, "error obtaining home directory")
 		}
 
 		err = creds.Save(filepath.Join(homeDir, ".docker", "config.json"))
 		if err != nil {
-			logger.Fatalf("error writing docker creds: %v", err)
+			return errors.Wrapf(err, "error writing docker creds")
 		}
 	}
 
-	cosignSigner := cosign.NewImageSigner(logger, cli.SignCmd)
-
-	annotations := mapKeyValueArgs(cosignAnnotations)
-	cosignRepositoryOverrides := mapKeyValueArgs(cosignRepositories)
-	cosignDockerMediaTypesOverrides := mapKeyValueArgs(cosignDockerMediaTypes)
-
-	ctx := context.Background()
 	if hasCosign() {
-		if err := cosignSigner.Sign(ctx, report, cosignSecretLocation, annotations, cosignRepositoryOverrides, cosignDockerMediaTypesOverrides); err != nil {
-			logger.Fatalf("cosignSigner sign: %v\n", err)
+		cosignSigner := cosign.NewImageSigner(logger, cli.SignCmd)
+
+		annotations, err := mapKeyValueArgs(cosignAnnotations)
+		if err != nil {
+			return err
+		}
+
+		repositories, err := mapKeyValueArgs(cosignRepositories)
+		if err != nil {
+			return err
+		}
+
+		mediaTypes, err := mapKeyValueArgs(cosignDockerMediaTypes)
+		if err != nil {
+			return err
+		}
+
+		if err := cosignSigner.Sign(
+			context.Background(),
+			report,
+			cosignSecretLocation,
+			annotations,
+			repositories,
+			mediaTypes); err != nil {
+			return errors.Wrap(err, "cosign sign")
 		}
 	}
 
@@ -115,21 +143,19 @@ func main() {
 			Factory: &notary.RemoteRepositoryFactory{},
 		}
 		if err := signer.Sign(notaryV1URL, notarySecretDir, report, creds); err != nil {
-			logger.Fatal(err)
+			return err
 		}
 	}
-
-	logger.Println("Build successful")
 }
 
-func mapKeyValueArgs(args flaghelpers.CredentialsFlags) map[string]interface{} {
+func mapKeyValueArgs(args flaghelpers.CredentialsFlags) (map[string]interface{}, error) {
 	overrides := make(map[string]interface{})
 
 	for _, arg := range args {
 		splitArg := strings.Split(arg, "=")
 
 		if len(splitArg) != 2 {
-			logger.Fatalf("argument not formatted as -arg=key=value: %s", arg)
+			return nil, errors.Errorf("argument not formatted as -arg=key=value: %s", arg)
 		}
 
 		key := splitArg[0]
@@ -138,7 +164,7 @@ func mapKeyValueArgs(args flaghelpers.CredentialsFlags) map[string]interface{} {
 		overrides[key] = value
 	}
 
-	return overrides
+	return overrides, nil
 }
 
 func hasCosign() bool {
