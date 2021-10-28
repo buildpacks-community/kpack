@@ -126,6 +126,16 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 	b := &bytes.Buffer{}
 	tw := newLayerWriter(b, os)
 
+	err := tw.WriteHeader(&tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     lifecycleLocation,
+		Mode:     0755,
+		ModTime:  normalizedTime,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
 	lr, err := lifecycleReader(url)
