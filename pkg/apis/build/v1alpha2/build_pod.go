@@ -227,6 +227,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					Name:    "completion",
 					Image:   images.completion(buildContext.os()),
 					Command: []string{"/cnb/process/web"},
+					Env: []corev1.EnvVar{
+						homeEnv,
+					},
 					Args: args(
 						b.notaryArgs(),
 						secretArgs,
@@ -240,10 +243,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						[]corev1.VolumeMount{
 							reportVolume,
 							notaryV1Volume,
+							homeVolume,
 						},
 					),
 					ImagePullPolicy: corev1.PullIfNotPresent,
-				}, ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...)
+				}, ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost), userprofileHomeEnv())...)
 			}),
 			SecurityContext: podSecurityContext(buildContext.BuildPodBuilderConfig),
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {

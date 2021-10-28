@@ -44,6 +44,8 @@ spec:
         service:
           name: kpack-webhook
           namespace: kpack
+          path: /convert
+          port: 443
       conversionReviewVersions: ["v1"]
   names:
     kind: Image

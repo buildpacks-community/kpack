@@ -1719,6 +1719,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
+				require.Contains(t, pod.Spec.Containers[0].Env, corev1.EnvVar{Name: "HOME", Value: "/builder/home"})
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "home-dir",
+					ReadOnly:  false,
+					MountPath: "/builder/home",
+				})
 			})
 		})
 
@@ -1790,6 +1796,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							SecretName: "some-notary-secret",
 						},
 					},
+				})
+
+				require.Contains(t, pod.Spec.Containers[0].Env, corev1.EnvVar{Name: "HOME", Value: "/builder/home"})
+				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      "home-dir",
+					ReadOnly:  false,
+					MountPath: "/builder/home",
 				})
 
 				require.Equal(t,
@@ -2115,6 +2128,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}, completionContainer.Args)
 
 				assert.Equal(t, "/networkWait/network-wait-launcher", completionContainer.Command[0])
+				assert.Subset(t, completionContainer.Env, []corev1.EnvVar{
+					{
+						Name:  "USERPROFILE",
+						Value: "/builder/home",
+					},
+				})
 				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
 					{
 						Name: "network-wait-launcher-dir",
@@ -2150,6 +2169,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-cosign-annotations=buildTimestamp=19440606.133000",
 					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
+
+				assert.Subset(t, completionContainer.Env, []corev1.EnvVar{
+					{
+						Name:  "USERPROFILE",
+						Value: "/builder/home",
+					},
+				})
 			})
 
 			it("does not use cache on windows", func() {
