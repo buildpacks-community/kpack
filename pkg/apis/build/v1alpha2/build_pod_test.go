@@ -742,6 +742,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
 			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
+			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "HOME", Value: "/builder/home"})
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -2017,6 +2018,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					{
 						Name:      "network-wait-launcher-dir",
 						MountPath: "/networkWait",
+					},
+				})
+				assert.Subset(t, restoreContainer.Env, []corev1.EnvVar{
+					{
+						Name:  "USERPROFILE",
+						Value: "/builder/home",
 					},
 				})
 				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, restoreContainer.Command)

@@ -384,6 +384,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							homeVolume,
 						}, cacheVolumes),
 						Env: []corev1.EnvVar{
+							homeEnv,
 							{
 								Name:  platformAPIEnvVar,
 								Value: platformAPI.Original(),
@@ -391,7 +392,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
-					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
+					ifWindows(buildContext.os(),
+						addNetworkWaitLauncherVolume(),
+						useNetworkWaitLauncher(dnsProbeHost),
+						userprofileHomeEnv(),
+					)...,
 				)
 				step(
 					corev1.Container{
