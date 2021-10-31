@@ -10,73 +10,73 @@ kind: ClusterRole
 metadata:
   name: kpack-controller-admin
 rules:
-- apiGroups:
-  - kpack.io
-  resources:
-  - builds
-  - builds/status
-  - builds/finalizers
-  - images
-  - images/status
-  - images/finalizers
-  - builders
-  - builders/status
-  - clusterbuilders
-  - clusterbuilders/status
-  - clusterstores
-  - clusterstores/status
-  - clusterstacks
-  - clusterstacks/status
-  - sourceresolvers
-  - sourceresolvers/status
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - patch
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  - pods
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - watch
-- apiGroups:
-    - ""
-  resources:
-    - nodes
-  verbs:
-    - list
+  - apiGroups:
+      - kpack.io
+    resources:
+      - builds
+      - builds/status
+      - builds/finalizers
+      - images
+      - images/status
+      - images/finalizers
+      - builders
+      - builders/status
+      - clusterbuilders
+      - clusterbuilders/status
+      - clusterstores
+      - clusterstores/status
+      - clusterstacks
+      - clusterstacks/status
+      - sourceresolvers
+      - sourceresolvers/status
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - patch
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+      - pods
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kpack-controller-admin-binding
 subjects:
-- kind: ServiceAccount
-  name: controller
-  namespace: kpack
+  - kind: ServiceAccount
+    name: controller
+    namespace: kpack
 roleRef:
   kind: ClusterRole
   name: kpack-controller-admin
@@ -88,14 +88,14 @@ metadata:
   name: kpack-controller-local-config
   namespace: kpack
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -103,9 +103,9 @@ metadata:
   name: kpack-controller-local-config-binding
   namespace: kpack
 subjects:
-- kind: ServiceAccount
-  name: controller
-  namespace: kpack
+  - kind: ServiceAccount
+    name: controller
+    namespace: kpack
 roleRef:
   kind: Role
   name: kpack-controller-local-config

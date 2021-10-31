@@ -1,10 +1,9 @@
 #@ load("@ytt:data", "data")
-
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  build-init-image
+  name: build-init-image
   namespace: kpack
 data:
   image: #@ data.values.build_init_image
@@ -12,7 +11,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  build-init-windows-image
+  name: build-init-windows-image
   namespace: kpack
 data:
   image: #@ data.values.build_init_windows_image
@@ -20,7 +19,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  rebase-image
+  name: rebase-image
   namespace: kpack
 data:
   image: #@ data.values.rebase_image
@@ -28,7 +27,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  lifecycle-image
+  name: lifecycle-image
   namespace: kpack
 data:
   image: #@ data.values.lifecycle_image
@@ -36,7 +35,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  completion-image
+  name: completion-image
   namespace: kpack
 data:
   image: #@ data.values.completion_image
@@ -44,7 +43,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  completion-windows-image
+  name: completion-windows-image
   namespace: kpack
 data:
   image: #@ data.values.completion_windows_image
@@ -69,48 +68,48 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       containers:
-      - name: controller
-        image: #@ data.values.controller_image
-        env:
-        - name: CONFIG_LOGGING_NAME
-          value: config-logging
-        - name: CONFIG_OBSERVABILITY_NAME
-          value: config-observability
-        - name: METRICS_DOMAIN
-          value: kpack.io
-        - name: SYSTEM_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: BUILD_INIT_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: build-init-image
-              key: image
-        - name: BUILD_INIT_WINDOWS_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: build-init-windows-image
-              key: image
-        - name: REBASE_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: rebase-image
-              key: image
-        - name: COMPLETION_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: completion-image
-              key: image
-        - name: COMPLETION_WINDOWS_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: completion-windows-image
-              key: image
-        resources:
-          requests:
-            cpu: 20m
-            memory: 100Mi
-          limits:
-            cpu: 100m
-            memory: 500Mi
+        - name: controller
+          image: #@ data.values.controller_image
+          env:
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging
+            - name: CONFIG_OBSERVABILITY_NAME
+              value: config-observability
+            - name: METRICS_DOMAIN
+              value: kpack.io
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: BUILD_INIT_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: build-init-image
+                  key: image
+            - name: BUILD_INIT_WINDOWS_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: build-init-windows-image
+                  key: image
+            - name: REBASE_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: rebase-image
+                  key: image
+            - name: COMPLETION_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: completion-image
+                  key: image
+            - name: COMPLETION_WINDOWS_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: completion-windows-image
+                  key: image
+          resources:
+            requests:
+              cpu: 20m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 500Mi

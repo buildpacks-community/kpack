@@ -11,42 +11,42 @@ metadata:
   name: kpack-webhook-certs-admin
   namespace: kpack
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  resourceNames:
-  - webhook-certs
-  verbs:
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - "coordination.k8s.io"
-  resources:
-  - "leases"
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-  - patch
-  - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames:
+      - webhook-certs
+    verbs:
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+      - patch
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -54,9 +54,9 @@ metadata:
   name: kpack-webhook-certs-admin-binding
   namespace: kpack
 subjects:
-- kind: ServiceAccount
-  name: webhook
-  namespace: kpack
+  - kind: ServiceAccount
+    name: webhook
+    namespace: kpack
 roleRef:
   kind: Role
   name: kpack-webhook-certs-admin
@@ -67,82 +67,82 @@ kind: ClusterRole
 metadata:
   name: kpack-webhook-mutatingwebhookconfiguration-admin
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - "namespaces"
-  resourceNames:
-  - "kpack"
-  verbs:
-  - get
-- apiGroups:
-  - "admissionregistration.k8s.io"
-  resources:
-  - "mutatingwebhookconfigurations"
-  resourceNames:
-  - "defaults.webhook.kpack.io"
-  verbs:
-  - update
-- apiGroups:
-  - "admissionregistration.k8s.io"
-  resources:
-  - "mutatingwebhookconfigurations"
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - "admissionregistration.k8s.io"
-  resources:
-  - "validatingwebhookconfigurations"
-  resourceNames:
-  - "validation.webhook.kpack.io"
-  verbs:
-  - update
-- apiGroups:
-  - "admissionregistration.k8s.io"
-  resources:
-  - "validatingwebhookconfigurations"
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - "storage.k8s.io"
-  resources:
-  - storageclasses
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - "apiextensions.k8s.io"
-  resources:
-  - "customresourcedefinitions"
-  resourceNames:
-  - "images.kpack.io"
-  - "builds.kpack.io"
-  - "builders.kpack.io"
-  - "sourceresolvers.kpack.io"
-  verbs:
-  - update
-- apiGroups:
-  - "apiextensions.k8s.io"
-  resources:
-  - "customresourcedefinitions"
-  verbs:
-  - get
-  - list
-  - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    resourceNames:
+      - kpack
+    verbs:
+      - get
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+    resourceNames:
+      - defaults.webhook.kpack.io
+    verbs:
+      - update
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+    resourceNames:
+      - validation.webhook.kpack.io
+    verbs:
+      - update
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - storageclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    resourceNames:
+      - images.kpack.io
+      - builds.kpack.io
+      - builders.kpack.io
+      - sourceresolvers.kpack.io
+    verbs:
+      - update
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kpack-webhook-certs-mutatingwebhookconfiguration-admin-binding
 subjects:
-- kind: ServiceAccount
-  name: webhook
-  namespace: kpack
+  - kind: ServiceAccount
+    name: webhook
+    namespace: kpack
 roleRef:
   kind: ClusterRole
   name: kpack-webhook-mutatingwebhookconfiguration-admin
