@@ -194,8 +194,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	var exporterCacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
 
-	if (!b.Spec.NeedVolumeCache() && !b.Spec.NeedRegistryCache()) || buildContext.os() == "windows" {
-		genericCacheArgs = nil
+	if b.Spec.NeedVolumeCache() && buildContext.os() != "windows" {
+		genericCacheArgs = []string{"-cache-dir=/cache"}
+		cacheVolumes = []corev1.VolumeMount{cacheVolume}
+		exporterCacheArgs = genericCacheArgs
 	} else if b.Spec.NeedRegistryCache() {
 		useCacheFromLastBuild := (b.Spec.LastBuild != nil && b.Spec.LastBuild.Cache.Image != "")
 		if useCacheFromLastBuild {
@@ -203,9 +205,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		}
 		exporterCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
 	} else {
-		genericCacheArgs = []string{"-cache-dir=/cache"}
-		cacheVolumes = []corev1.VolumeMount{cacheVolume}
-		exporterCacheArgs = genericCacheArgs
+		genericCacheArgs = nil
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

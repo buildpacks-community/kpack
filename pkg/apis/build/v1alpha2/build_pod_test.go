@@ -2185,16 +2185,31 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			it("does not use cache on windows", func() {
+			it("does not use volume cache on windows", func() {
 				buildContext.BuildPodBuilderConfig.OS = "linux"
+				build.Spec.Cache.Volume.ClaimName = "non-empty"
+
 				podWithCache, _ := build.BuildPod(config, buildContext)
 
-				build.Spec.Cache.Volume.ClaimName = "non-empty"
 				buildContext.BuildPodBuilderConfig.OS = "windows"
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
 				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
+			})
+
+			it("does use registry cache on windows", func() {
+				buildContext.BuildPodBuilderConfig.OS = "windows"
+				build.Spec.Cache = &buildapi.BuildCacheConfig{
+					Registry: &buildapi.RegistryCache{Tag: "some-tag"},
+				}
+				build.Spec.LastBuild.Cache = buildapi.BuildCache{Image: "last-cache-image"}
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Equal(t, "-cache-image=last-cache-image", pod.Spec.InitContainers[3].Args[5])
+				assert.Equal(t, "-cache-image=some-tag", pod.Spec.InitContainers[5].Args[8])
 			})
 		})
 	})
