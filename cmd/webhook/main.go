@@ -66,9 +66,7 @@ func defaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		// The resources to default.
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
-		func(ctx context.Context) context.Context {
-			return withCheckDefaultStorageClass(ctx, storageClassLister)
-		},
+		withCheckDefaultStorageClass(storageClassLister),
 		// Whether to disallow unknown fields.
 		false,
 	)
@@ -85,15 +83,14 @@ func validatingAdmissionController(ctx context.Context, _ configmap.Watcher) *co
 		// The resources to validate.
 		types,
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
-		func(ctx context.Context) context.Context {
-			return withCheckDefaultStorageClass(ctx, storageClassLister)
-		},
+		withCheckDefaultStorageClass(storageClassLister),
 		// Whether to disallow unknown fields.
 		true,
 	)
 }
 
 func conversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+	storageClassLister := getStorageClassInformer(ctx).Lister()
 
 	conversions := map[schema.GroupKind]conversion.GroupKindConversion{
 		v1alpha2.Kind("Image"): {
@@ -134,34 +131,34 @@ func conversionController(ctx context.Context, _ configmap.Watcher) *controller.
 		ctx,
 		"/convert",
 		conversions,
-		func(ctx context.Context) context.Context {
-			return ctx
-		},
+		withCheckDefaultStorageClass(storageClassLister),
 	)
 }
 
-func withCheckDefaultStorageClass(ctx context.Context, storageClassLister listersv1.StorageClassLister) context.Context {
-	storageClasses, err := storageClassLister.List(labels.NewSelector())
-	if err != nil {
-		log.Printf("failed to list storage classes: %s\n", err)
+func withCheckDefaultStorageClass(storageClassLister listersv1.StorageClassLister) func(context.Context) context.Context {
+	return func(ctx context.Context) context.Context {
+		storageClasses, err := storageClassLister.List(labels.NewSelector())
+		if err != nil {
+			log.Printf("failed to list storage classes: %s\n", err)
+			return ctx
+		}
+
+		for _, sc := range storageClasses {
+			if sc.Annotations == nil {
+				continue
+			}
+
+			if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
+				ctx = context.WithValue(ctx, v1alpha2.HasDefaultStorageClass, true)
+				if sc.AllowVolumeExpansion != nil && *sc.AllowVolumeExpansion {
+					ctx = context.WithValue(ctx, v1alpha2.IsExpandable, true)
+				}
+				break
+			}
+		}
+
 		return ctx
 	}
-
-	for _, sc := range storageClasses {
-		if sc.Annotations == nil {
-			continue
-		}
-
-		if val, ok := sc.Annotations["storageclass.kubernetes.io/is-default-class"]; ok && val == "true" {
-			ctx = context.WithValue(ctx, v1alpha2.HasDefaultStorageClass, true)
-			if sc.AllowVolumeExpansion != nil && *sc.AllowVolumeExpansion {
-				ctx = context.WithValue(ctx, v1alpha2.IsExpandable, true)
-			}
-			break
-		}
-	}
-
-	return ctx
 }
 
 // storageClassInformerKey is used for associating the Informer inside the context.Context.
