@@ -1,5 +1,0 @@
-go:
-  targets: ["./cmd/controller"]
-  build:
-    flags:
-    - -tags="static"
