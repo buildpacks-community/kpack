@@ -32,3 +32,13 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 - Tailing logs with the kpack [log utility](docs/logs.md)
  
 - Documentation on [Local Development](docs/local.md)
+
+### kpack Working Group
+
+There is a weekly working group meeting to discuss all things kpack!
+
+The meeting takes place every Tuesday at 10 AM EST.
+
+[This doc](https://docs.google.com/document/d/1I9n5pVsuos7mJPrzr5YbSPqSXymPaRbhVtcmSGEkUMc) contains the zoom link and notes, along with the recordings of previous meetings.
+
+Come join us in the [CNB slack](https://buildpacks.slack.com/channels/kpack) as well!
