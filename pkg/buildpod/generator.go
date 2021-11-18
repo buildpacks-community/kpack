@@ -83,10 +83,10 @@ func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable
 		return nil, err
 	}
 
-	var forbiddenSecrets = map[string]bool{}
+	var forbiddenSecrets = map[string]struct{}{}
 	for _, serviceAccount := range serviceAccounts {
 		for _, secret := range serviceAccount.Secrets {
-			forbiddenSecrets[secret.Name] = true
+			forbiddenSecrets[secret.Name] = struct{}{}
 		}
 	}
 
@@ -111,7 +111,7 @@ func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable
 				}
 			}
 
-			if bindingUsesForbiddenSecret(forbiddenSecrets, sb.SecretRef.Name) {
+			if bindingUsesForbiddenSecret(forbiddenSecrets, sb.SecretRef) {
 				return nil, errors.Errorf("build rejected: service %q uses forbidden secret %q", sb.Name, sb.SecretRef.Name)
 			}
 
@@ -122,7 +122,7 @@ func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable
 
 	if cnbBindings := build.CnbBindings(); len(cnbBindings) != 0 {
 		for _, b := range cnbBindings {
-			if bindingUsesForbiddenSecret(forbiddenSecrets, b.SecretRef.Name) {
+			if bindingUsesForbiddenSecret(forbiddenSecrets, b.SecretRef) {
 				return nil, fmt.Errorf("build rejected: binding %q uses forbidden secret %q", b.Name, b.SecretRef.Name)
 			}
 			bindings = append(bindings, &corev1alpha1.CNBServiceBinding{
@@ -150,8 +150,12 @@ func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build Bu
 	return ps, nil
 }
 
-func bindingUsesForbiddenSecret(forbiddenSecrets map[string]bool, secretName string) bool {
-	_, ok := forbiddenSecrets[secretName]
+func bindingUsesForbiddenSecret(forbiddenSecrets map[string]struct{}, secretRef *corev1.LocalObjectReference) bool {
+	if secretRef == nil {
+		return false
+	}
+
+	_, ok := forbiddenSecrets[secretRef.Name]
 	return ok
 }
 

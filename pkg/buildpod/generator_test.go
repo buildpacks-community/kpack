@@ -275,7 +275,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "docker-secret-1"})
 			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
 			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{Name: "image-pull-duplicate-1"})
-			fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
+			_, err := fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
+			require.NoError(t, err)
 
 			pod, err := generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
@@ -353,6 +354,35 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					Name:        "test",
 					MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
 					SecretRef:   &corev1.LocalObjectReference{Name: psBindingSecret.Name},
+				},
+			}
+
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
+		})
+
+		it("supports empty secret refs", func() {
+			var build = &testBuildPodable{
+				namespace: namespace,
+				cnbBindings: corev1alpha1.CNBBindings{
+					{
+						Name:        "test",
+						MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
+					},
+				},
+				serviceAccount: serviceAccountName,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+			_, err := generator.Generate(context.TODO(), build)
+			require.NoError(t, err)
+
+			expectedBindings := []buildapi.ServiceBinding{
+				&corev1alpha1.CNBServiceBinding{
+					Name:        "test",
+					MetadataRef: &corev1.LocalObjectReference{Name: "binding-configmap"},
 				},
 			}
 
