@@ -697,9 +697,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, names(pod.Spec.InitContainers[2].VolumeMounts))
 			assert.Equal(t, []string{
 				"-layers=/layers",
-				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
 				"-cache-dir=/cache",
+				"-group=/layers/group.toml",
 				build.Spec.LastBuild.Image,
 			}, pod.Spec.InitContainers[2].Args)
 		})
@@ -720,9 +720,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, names(pod.Spec.InitContainers[2].VolumeMounts))
 			assert.Equal(t, []string{
 				"-layers=/layers",
-				"-group=/layers/group.toml",
 				"-analyzed=/layers/analyzed.toml",
 				"-cache-dir=/cache",
+				"-group=/layers/group.toml",
 				build.Tag(),
 			}, pod.Spec.InitContainers[2].Args)
 		})
@@ -1105,11 +1105,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("no supported platform apis are available", func() {
-			buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.7"}
+			buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.999"}
 
 			it("returns an error", func() {
 				_, err := build.BuildPod(config, buildContext)
-				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.7")
+				require.EqualError(t, err, "unsupported builder platform API versions: 0.2,0.999")
 			})
 		})
 
@@ -1994,8 +1994,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/lifecycle/analyzer",
 					"-layers=/layers",
-					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
+					"-group=/layers/group.toml",
 					"someimage/name@sha256:previous",
 				}, analyzeContainer.Args)
 			})
