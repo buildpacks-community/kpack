@@ -834,7 +834,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"layers-dir",
 				"workspace-dir",
 				"home-dir",
-				"cache-dir",
 			}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			tags := []string{}
 			for _, tag := range build.Spec.Tags {
@@ -881,7 +880,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"layers-dir",
 				"workspace-dir",
 				"home-dir",
-				"cache-dir",
 			}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			tags := []string{}
 			for _, tag := range build.Spec.Tags {
@@ -1232,8 +1230,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				analyzeContainer := pod.Spec.InitContainers[1]
+				assert.Equal(t, analyzeContainer.Name, "analyze")
 				assert.NotContains(t, analyzeContainer.Args, "-cache-dir=/cache")
-				assert.Len(t, analyzeContainer.VolumeMounts, len(podWithCache.Spec.InitContainers[1].VolumeMounts)-1)
+
 			})
 
 			it("does not add the cache to restore container", func() {

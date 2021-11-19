@@ -251,7 +251,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			layersVolume,
 			workspaceVolume,
 			homeVolume,
-		}, cacheVolumes),
+		}, func() []corev1.VolumeMount {
+			if platformAPILessThan07 {
+				return cacheVolumes
+			}
+			return []corev1.VolumeMount{}
+		}()),
 		Env: []corev1.EnvVar{
 			homeEnv,
 			{
@@ -336,7 +341,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			}),
 			SecurityContext: podSecurityContext(buildContext.BuildPodBuilderConfig),
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
-				// analyze,
 				step(
 					corev1.Container{
 						Name:      "prepare",
