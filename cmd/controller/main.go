@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -63,6 +64,7 @@ var (
 	rebaseImage            = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	completionImage        = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
 	completionWindowsImage = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
+	agentName              = flag.String("agent-name", "kpack-controller", "The name of the agent this controller uses")
 )
 
 func main() {
@@ -74,7 +76,7 @@ func main() {
 	}
 
 	ctx := signals.NewContext()
-	logger, configMapWatcher, profilingServer := genericControllerSetup(ctx, clusterConfig)
+	logger, configMapWatcher, profilingServer, recorder := genericControllerSetup(ctx, clusterConfig)
 	defer logger.Sync()
 	defer metrics.FlushExporter()
 
@@ -94,6 +96,7 @@ func main() {
 		ResyncPeriod:            10 * time.Hour,
 		SourcePollingFrequency:  1 * time.Minute,
 		BuilderPollingFrequency: 1 * time.Minute,
+		Recorder:                recorder,
 	}
 
 	informerFactory := externalversions.NewSharedInformerFactory(client, options.ResyncPeriod)
@@ -169,7 +172,6 @@ func main() {
 		LifecycleProvider:      lifecycleProvider,
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
-
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
@@ -177,7 +179,6 @@ func main() {
 	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
-
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)
 
@@ -252,7 +253,7 @@ func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *buildapi
 const controllerCount = 7
 
 //lifted from knative.dev/pkg/injection/sharedmain
-func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server) {
+func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server, record.EventRecorder) {
 	metrics.MemStatsOrDie(ctx)
 
 	// Adjust our client's rate limits based on the number of controllers we are running.
@@ -269,8 +270,8 @@ func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.Sugared
 	cmw := sharedmain.SetupConfigMapWatchOrDie(ctx, logger)
 	sharedmain.WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)
 	sharedmain.WatchObservabilityConfigOrDie(ctx, cmw, profilingHandler, logger, component)
-
-	return logger, cmw, profilingServer
+	recorder := reconciler.CreateRecorder(ctx, *agentName)
+	return logger, cmw, profilingServer, recorder
 }
 
 func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInformer) {

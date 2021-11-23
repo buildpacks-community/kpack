@@ -15,6 +15,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
@@ -48,6 +49,7 @@ func NewController(
 		DuckBuilderLister:    duckbuilderInformer.Lister(),
 		SourceResolverLister: sourceResolverInformer.Lister(),
 		PvcLister:            pvcInformer.Lister(),
+		Recorder:             opt.Recorder,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -85,6 +87,7 @@ type Reconciler struct {
 	PvcLister            corelisters.PersistentVolumeClaimLister
 	Tracker              reconciler.Tracker
 	K8sClient            k8sclient.Interface
+	Recorder             record.EventRecorder
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -275,7 +278,12 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Image) 
 	}
 
 	_, err = c.Client.KpackV1alpha2().Images(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
-	return err
+	if err != nil {
+
+		return err
+	}
+	c.Recorder.Eventf(desired, corev1.EventTypeNormal, "ImageUpdated", "image %s updated", desired.Name)
+	return nil
 }
 
 func sourceResolversEqual(desiredSourceResolver *buildapi.SourceResolver, sourceResolver *buildapi.SourceResolver) bool {
