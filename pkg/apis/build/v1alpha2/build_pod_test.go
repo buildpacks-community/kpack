@@ -836,14 +836,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"home-dir",
 			}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			tags := []string{}
-			for _, tag := range build.Spec.Tags {
+			for _, tag := range build.Spec.Tags[1:] {
 				tags = append(tags, "-tag="+tag)
 			}
 			assert.Equal(t, append(append([]string{
 				"-layers=/layers",
 				"-analyzed=/layers/analyzed.toml"},
 				tags...),
-				build.Spec.LastBuild.Image), pod.Spec.InitContainers[1].Args)
+				"-previous-image="+build.Spec.LastBuild.Image, build.Tag()), pod.Spec.InitContainers[1].Args)
 		})
 
 		it("configures analyze step with the older api", func() {
@@ -882,7 +882,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"home-dir",
 			}, names(pod.Spec.InitContainers[1].VolumeMounts))
 			tags := []string{}
-			for _, tag := range build.Spec.Tags {
+			for _, tag := range build.Spec.Tags[1:] {
 				tags = append(tags, "-tag="+tag)
 			}
 			assert.Equal(t, append(append([]string{
@@ -2201,7 +2201,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, analyzeContainer.Command)
 				tags := []string{}
-				for _, tag := range build.Spec.Tags {
+				for _, tag := range build.Spec.Tags[1:] {
 					tags = append(tags, "-tag="+tag)
 				}
 				assert.Equal(t, append(append([]string{
@@ -2210,7 +2210,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"/cnb/lifecycle/analyzer",
 					"-layers=/layers",
 					"-analyzed=/layers/analyzed.toml"}, tags...),
-					"someimage/name@sha256:previous"), analyzeContainer.Args)
+					"-previous-image=someimage/name@sha256:previous", "someimage/name"), analyzeContainer.Args)
 			})
 
 			it("configures restore step", func() {

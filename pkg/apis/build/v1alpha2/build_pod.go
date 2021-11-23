@@ -235,14 +235,19 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					return []string{}
 				}
 				tags := []string{}
-				for _, tag := range b.Spec.Tags {
-					tags = append(tags, "-tag="+tag)
+				if len(b.Spec.Tags) > 1 {
+					for _, tag := range b.Spec.Tags[1:] {
+						tags = append(tags, "-tag="+tag)
+					}
 				}
 				return tags
 			}(),
 			func() []string {
 				if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
-					return []string{b.Spec.LastBuild.Image}
+					if platformAPILessThan07 {
+						return []string{b.Spec.LastBuild.Image}
+					}
+					return []string{"-previous-image=" + b.Spec.LastBuild.Image, b.Tag()}
 				}
 				return []string{b.Tag()}
 			}(),
