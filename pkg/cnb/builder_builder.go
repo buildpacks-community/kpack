@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/Masterminds/semver/v3"
 	"github.com/buildpacks/imgutil/layer"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -21,14 +22,15 @@ import (
 )
 
 const (
-	workspaceDir   = "/workspace"
-	layersDir      = "/layers"
-	cnbDir         = "/cnb"
-	platformDir    = "/platform"
-	platformEnvDir = platformDir + "/env"
-	buildpacksDir  = "/cnb/buildpacks"
-	orderTomlPath  = "/cnb/order.toml"
-	stackTomlPath  = "/cnb/stack.toml"
+	workspaceDir               = "/workspace"
+	layersDir                  = "/layers"
+	cnbDir                     = "/cnb"
+	platformDir                = "/platform"
+	platformEnvDir             = platformDir + "/env"
+	buildpacksDir              = "/cnb/buildpacks"
+	orderTomlPath              = "/cnb/order.toml"
+	stackTomlPath              = "/cnb/stack.toml"
+	relaxedMixinMinPlatformAPI = "0.7"
 )
 
 var (
@@ -180,16 +182,16 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 }
 
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
-	err := validatePlatformApis(append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...))
+	platformApis := append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...)
+	err := validatePlatformApis(platformApis)
 	if err != nil {
 		return err
 	}
-
 	buildpackApis := append(bb.LifecycleMetadata.APIs.Buildpack.Deprecated, bb.LifecycleMetadata.APIs.Buildpack.Supported...)
-
 	for _, bpInfo := range sortedBuildpacks {
+
 		bpLayerInfo := bb.buildpackLayers[bpInfo].BuildpackLayerInfo
-		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins)
+		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis))
 		if err != nil {
 			return errors.Wrapf(err, "validating buildpack %s", bpInfo)
 		}
@@ -205,6 +207,15 @@ func validatePlatformApis(builderSupportedApis []string) error {
 	}
 
 	return errors.Errorf("unsupported platform apis in kpack lifecycle: %s, expecting one of: %s", strings.Join(builderSupportedApis, ", "), strings.Join(supportedPlatformApis, ", "))
+}
+
+func relaxedMixinContract(builderSupportedApis []string) bool {
+	for _, api := range builderSupportedApis {
+		if semver.MustParse(api).Compare(semver.MustParse(relaxedMixinMinPlatformAPI)) >= 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {
