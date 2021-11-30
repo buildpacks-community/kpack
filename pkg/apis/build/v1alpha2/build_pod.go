@@ -189,24 +189,119 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		MountPath: sourceVolume.MountPath,
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
 	}
-
+	platformAPILessThan07 := platformAPI.LessThan(semver.MustParse("0.7"))
 	var genericCacheArgs []string
+	var analyzerCacheArgs []string = nil
 	var exporterCacheArgs []string
 	var cacheVolumes []corev1.VolumeMount
 
 	if b.Spec.NeedVolumeCache() && buildContext.os() != "windows" {
 		genericCacheArgs = []string{"-cache-dir=/cache"}
 		cacheVolumes = []corev1.VolumeMount{cacheVolume}
+		if platformAPILessThan07 {
+			analyzerCacheArgs = genericCacheArgs
+		}
 		exporterCacheArgs = genericCacheArgs
 	} else if b.Spec.NeedRegistryCache() {
 		useCacheFromLastBuild := (b.Spec.LastBuild != nil && b.Spec.LastBuild.Cache.Image != "")
 		if useCacheFromLastBuild {
 			genericCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.LastBuild.Cache.Image)}
 		}
+		analyzerCacheArgs = genericCacheArgs
 		exporterCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
 	} else {
 		genericCacheArgs = nil
 	}
+
+	analyzeContainer := corev1.Container{
+		Name:      "analyze",
+		Image:     b.Spec.Builder.Image,
+		Command:   []string{"/cnb/lifecycle/analyzer"},
+		Resources: b.Spec.Resources,
+		Args: args([]string{
+			"-layers=/layers",
+			"-analyzed=/layers/analyzed.toml"},
+			analyzerCacheArgs,
+			func() []string {
+				if platformAPILessThan07 {
+					return []string{
+						"-group=/layers/group.toml",
+					}
+				}
+				return []string{}
+			}(),
+			func() []string {
+				if platformAPILessThan07 {
+					return []string{}
+				}
+				tags := []string{}
+				if len(b.Spec.Tags) > 1 {
+					for _, tag := range b.Spec.Tags[1:] {
+						tags = append(tags, "-tag="+tag)
+					}
+				}
+				return tags
+			}(),
+			func() []string {
+				if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
+					if platformAPILessThan07 {
+						return []string{b.Spec.LastBuild.Image}
+					}
+					return []string{"-previous-image=" + b.Spec.LastBuild.Image, b.Tag()}
+				}
+				return []string{b.Tag()}
+			}(),
+		),
+		VolumeMounts: volumeMounts([]corev1.VolumeMount{
+			layersVolume,
+			workspaceVolume,
+			homeVolume,
+		}, func() []corev1.VolumeMount {
+			if platformAPILessThan07 {
+				return cacheVolumes
+			}
+			return []corev1.VolumeMount{}
+		}()),
+		Env: []corev1.EnvVar{
+			homeEnv,
+			{
+				Name:  platformAPIEnvVar,
+				Value: platformAPI.Original(),
+			},
+			serviceBindingRootEnv,
+		},
+		ImagePullPolicy: corev1.PullIfNotPresent,
+	}
+	analyzerContainerMods := ifWindows(
+		buildContext.os(),
+		addNetworkWaitLauncherVolume(),
+		useNetworkWaitLauncher(dnsProbeHost),
+		userprofileHomeEnv(),
+	)
+	detectContainer := corev1.Container{
+		Name:      "detect",
+		Image:     b.Spec.Builder.Image,
+		Command:   []string{"/cnb/lifecycle/detector"},
+		Resources: b.Spec.Resources,
+		Args: []string{
+			"-app=/workspace",
+			"-group=/layers/group.toml",
+			"-plan=/layers/plan.toml",
+		},
+		VolumeMounts: volumeMounts([]corev1.VolumeMount{
+			layersVolume,
+			platformVolume,
+			workspaceVolume,
+		}, bindingVolumeMounts),
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Env: []corev1.EnvVar{
+			{
+				Name:  platformAPIEnvVar,
+				Value: platformAPI.Original(),
+			},
+		},
+	}
+	detectContainerMods := ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
@@ -305,69 +400,32 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume())...,
 				)
 				step(
-					corev1.Container{
-						Name:      "detect",
-						Image:     b.Spec.Builder.Image,
-						Command:   []string{"/cnb/lifecycle/detector"},
-						Resources: b.Spec.Resources,
-						Args: []string{
-							"-app=/workspace",
-							"-group=/layers/group.toml",
-							"-plan=/layers/plan.toml",
-						},
-						VolumeMounts: volumeMounts([]corev1.VolumeMount{
-							layersVolume,
-							platformVolume,
-							workspaceVolume,
-						}, bindingVolumeMounts),
-						ImagePullPolicy: corev1.PullIfNotPresent,
-						Env: []corev1.EnvVar{
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
-							},
-						},
-					},
-					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))...,
+					func() corev1.Container {
+						if platformAPILessThan07 {
+							return detectContainer
+						}
+						return analyzeContainer
+					}(),
+					func() []stepModifier {
+						if platformAPILessThan07 {
+							return detectContainerMods
+						}
+						return analyzerContainerMods
+					}()...,
 				)
 				step(
-					corev1.Container{
-						Name:      "analyze",
-						Image:     b.Spec.Builder.Image,
-						Command:   []string{"/cnb/lifecycle/analyzer"},
-						Resources: b.Spec.Resources,
-						Args: args([]string{
-							"-layers=/layers",
-							"-group=/layers/group.toml",
-							"-analyzed=/layers/analyzed.toml"},
-							genericCacheArgs,
-							func() []string {
-								if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
-									return []string{b.Spec.LastBuild.Image}
-								}
-								return []string{b.Tag()}
-							}(),
-						),
-						VolumeMounts: volumeMounts([]corev1.VolumeMount{
-							layersVolume,
-							workspaceVolume,
-							homeVolume,
-						}, cacheVolumes),
-						Env: []corev1.EnvVar{
-							homeEnv,
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
-							},
-							serviceBindingRootEnv,
-						},
-						ImagePullPolicy: corev1.PullIfNotPresent,
-					},
-					ifWindows(buildContext.os(),
-						addNetworkWaitLauncherVolume(),
-						useNetworkWaitLauncher(dnsProbeHost),
-						userprofileHomeEnv(),
-					)...,
+					func() corev1.Container {
+						if platformAPILessThan07 {
+							return analyzeContainer
+						}
+						return detectContainer
+					}(),
+					func() []stepModifier {
+						if platformAPILessThan07 {
+							return analyzerContainerMods
+						}
+						return detectContainerMods
+					}()...,
 				)
 				step(
 					corev1.Container{
@@ -378,7 +436,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
-						}, genericCacheArgs),
+						}, genericCacheArgs, func() []string {
+							if platformAPILessThan07 {
+								return []string{}
+							}
+							return []string{"-analyzed=/layers/analyzed.toml"}
+						}()),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersVolume,
 							homeVolume,
@@ -441,7 +504,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							exporterCacheArgs,
 							func() []string {
 								if b.DefaultProcess() == "" {
-									if platformAPI.Equal(lowestSupportedPlatformVersion) || platformAPI.Equal(highestSupportedPlatformVersion) {
+									if platformAPI.Equal(lowestSupportedPlatformVersion) || platformAPI.GreaterThan(semver.MustParse("0.5")) {
 										return nil
 									} else {
 										return []string{fmt.Sprintf("-process-type=web")}
@@ -866,10 +929,9 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 }
 
 var (
-	highestSupportedPlatformVersion = semver.MustParse("0.6")
-	lowestSupportedPlatformVersion  = semver.MustParse("0.3")
+	lowestSupportedPlatformVersion = semver.MustParse("0.3")
 
-	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.6"), semver.MustParse("0.5"), semver.MustParse("0.4")}
+	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.8"), semver.MustParse("0.7"), semver.MustParse("0.6"), semver.MustParse("0.5"), semver.MustParse("0.4")}
 	supportedPlatformAPIVersions                         = append(supportedPlatformAPIVersionsWithWindowsAndReportToml, semver.MustParse("0.3"))
 )
 
