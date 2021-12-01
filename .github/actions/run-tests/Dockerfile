@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine
+FROM golang:1.16-alpine3.14
 
 RUN apk add gcc pkgconfig libc-dev make
 RUN apk add --no-cache libgit2-dev~=1.1
