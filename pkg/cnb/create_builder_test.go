@@ -729,6 +729,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 				require.NoError(t, err)
+				lifecycleProvider.image = lifecycleImg
 
 				buildpackRepository.AddBP("anystack.buildpack", "v1", []buildpackLayer{
 					{
