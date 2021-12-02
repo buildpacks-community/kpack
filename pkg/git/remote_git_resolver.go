@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	git2go "github.com/libgit2/git2go/v31"
+	git2go "github.com/libgit2/git2go/v33"
 	"github.com/pkg/errors"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"

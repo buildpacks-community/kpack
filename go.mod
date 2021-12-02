@@ -15,7 +15,7 @@ require (
 	github.com/google/go-containerregistry v0.6.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210610160139-c086c7f16d4e
 	github.com/jinzhu/gorm v1.9.12 // indirect
-	github.com/libgit2/git2go/v31 v31.4.14
+	github.com/libgit2/git2go/v33 v33.0.4
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/pkg/errors v0.9.1
