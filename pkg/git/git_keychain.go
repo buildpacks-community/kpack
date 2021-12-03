@@ -1,16 +1,15 @@
 package git
 
 import (
-	"net/url"
-	"regexp"
 	"sort"
 	"strings"
 
 	git2go "github.com/libgit2/git2go/v31"
 	"github.com/pkg/errors"
+	giturls "github.com/whilp/git-urls"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/pivotal/kpack/pkg/secret"
-	"golang.org/x/crypto/ssh"
 )
 
 type Git2GoCredential interface {
@@ -157,7 +156,7 @@ func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSec
 }
 
 func (k *secretGitKeychain) Resolve(url string, username string, allowedTypes git2go.CredentialType) (Git2GoCredential, error) {
-	host, err := hostForUrl(url)
+	u, err := giturls.Parse(url)
 	if err != nil {
 		return nil, err
 	}
@@ -165,27 +164,9 @@ func (k *secretGitKeychain) Resolve(url string, username string, allowedTypes gi
 	sort.Slice(k.creds, func(i, j int) bool { return k.creds[i].name() < k.creds[j].name() })
 
 	for _, cred := range k.creds {
-		if cred.match(host, allowedTypes) {
+		if cred.match(u.Host, allowedTypes) {
 			return cred.git2goCredential(username)
 		}
 	}
 	return nil, errors.Errorf("no credentials found for %s", url)
-}
-
-var (
-	isSchemeRegExp   = regexp.MustCompile(`^[^:]+://`)
-	scpLikeUrlRegExp = regexp.MustCompile(`^(?:(?P<user>[^@]+)@)?(?P<host>[^:\s]+):(?:(?P<port>[0-9]{1,5})(?:\/|:))?(?P<path>[^\\].*\/[^\\].*)$`)
-)
-
-func hostForUrl(u string) (string, error) {
-	if !isSchemeRegExp.MatchString(u) && scpLikeUrlRegExp.MatchString(u) {
-		m := scpLikeUrlRegExp.FindStringSubmatch(u)
-		return m[2], nil
-	}
-
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return "", err
-	}
-	return parsed.Host, nil
 }

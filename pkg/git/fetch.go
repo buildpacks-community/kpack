@@ -33,12 +33,18 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	}
 	defer remote.Free()
 
+	proxyOptions, err := proxyFromEnv(gitURL)
+	if err != nil {
+		return errors.Wrap(err, "getting proxy from env")
+	}
+
 	err = remote.Fetch([]string{"refs/*:refs/*"}, &git2go.FetchOptions{
 		DownloadTags: git2go.DownloadTagsAll,
 		RemoteCallbacks: git2go.RemoteCallbacks{
 			CredentialsCallback:      keychainAsCredentialsCallback(f.Keychain),
 			CertificateCheckCallback: certificateCheckCallback(f.Logger),
 		},
+		ProxyOptions: proxyOptions,
 	}, "")
 	if err != nil {
 		return errors.Wrap(err, "fetching remote")
