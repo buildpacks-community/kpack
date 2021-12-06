@@ -42,11 +42,11 @@ func main() {
 	flag.Parse()
 
 	image, err := lifecycleImage(
-		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.0/lifecycle-v0.13.0+linux.x86-64.tgz",
-		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.0/lifecycle-v0.13.0+windows.x86-64.tgz",
+		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.1/lifecycle-v0.13.1+linux.x86-64.tgz",
+		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.1/lifecycle-v0.13.1+windows.x86-64.tgz",
 		cnb.LifecycleMetadata{
 			LifecycleInfo: cnb.LifecycleInfo{
-				Version: "0.13.0",
+				Version: "0.13.1",
 			},
 			API: cnb.LifecycleAPI{
 				BuildpackVersion: "0.2",
