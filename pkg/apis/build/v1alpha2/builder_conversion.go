@@ -52,6 +52,7 @@ func (bs *NamespacedBuilderSpec) convertFrom(from *v1alpha1.NamespacedBuilderSpe
 }
 
 func (bst *BuilderStatus) convertFrom(from *v1alpha1.BuilderStatus) {
+	bst.Status = from.Status
 	bst.BuilderMetadata = from.BuilderMetadata
 	bst.Order = from.Order
 	bst.Stack = from.Stack
@@ -62,6 +63,7 @@ func (bst *BuilderStatus) convertFrom(from *v1alpha1.BuilderStatus) {
 }
 
 func (bst *BuilderStatus) convertTo(to *v1alpha1.BuilderStatus) {
+	to.Status = bst.Status
 	to.BuilderMetadata = bst.BuilderMetadata
 	to.Order = bst.Order
 	to.Stack = bst.Stack
