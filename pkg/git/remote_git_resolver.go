@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	git2go "github.com/libgit2/git2go/v31"
+	git2go "github.com/libgit2/git2go/v33"
 	"github.com/pkg/errors"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -49,7 +49,7 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 
 	err = remote.ConnectFetch(&git2go.RemoteCallbacks{
 		CredentialsCallback:      keychainAsCredentialsCallback(keychain),
-		CertificateCheckCallback: certificateCheckCallback(discardLogger),
+		CertificateCheckCallback: certificateCheckCallback(),
 	}, &proxyOptions, nil)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{
