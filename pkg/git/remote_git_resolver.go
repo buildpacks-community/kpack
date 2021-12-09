@@ -49,7 +49,7 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 
 	err = remote.ConnectFetch(&git2go.RemoteCallbacks{
 		CredentialsCallback:      keychainAsCredentialsCallback(keychain),
-		CertificateCheckCallback: certificateCheckCallback(discardLogger),
+		CertificateCheckCallback: certificateCheckCallback(),
 	}, &proxyOptions, nil)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{

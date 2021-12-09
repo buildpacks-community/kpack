@@ -42,7 +42,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		DownloadTags: git2go.DownloadTagsAll,
 		RemoteCallbacks: git2go.RemoteCallbacks{
 			CredentialsCallback:      keychainAsCredentialsCallback(f.Keychain),
-			CertificateCheckCallback: certificateCheckCallback(f.Logger),
+			CertificateCheckCallback: certificateCheckCallback(),
 		},
 		ProxyOptions: proxyOptions,
 	}, "")
