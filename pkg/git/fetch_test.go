@@ -88,13 +88,20 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		it("fetches a revision", testFetch("https://github.com/git-fixtures/basic", "b029517f6300c2da0f4b651b8642506cd6aaf45d"))
 
 		it("returns error on non-existent ref", func() {
-			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", "")
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", metadataDir)
 			require.EqualError(t, err, "could not find reference: doesnotexist")
 		})
 
 		it("returns error from remote fetch when authentication required", func() {
-			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", "")
+			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", metadataDir)
 			require.EqualError(t, err, "fetching remote: no auth available")
+		})
+
+		it("uses the http proxy env vars", func() {
+			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
+			defer os.Unsetenv("HTTPS_PROXY")
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
+			require.EqualError(t, err, "fetching remote: failed to resolve address for invalid-proxy: nodename nor servname provided, or not known")
 		})
 	})
 }

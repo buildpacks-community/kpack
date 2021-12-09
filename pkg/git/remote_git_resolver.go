@@ -42,15 +42,12 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 	}
 	defer remote.Free()
 
-	proxyOptions, err := proxyFromEnv(sourceConfig.Git.URL)
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "getting proxy from env")
-	}
-
-	err = remote.ConnectFetch(&git2go.RemoteCallbacks{
-		CredentialsCallback:      keychainAsCredentialsCallback(keychain),
-		CertificateCheckCallback: certificateCheckCallback(),
-	}, &proxyOptions, nil)
+	err = remote.ConnectFetch(
+		&git2go.RemoteCallbacks{
+			CredentialsCallback:      keychainAsCredentialsCallback(keychain),
+			CertificateCheckCallback: certificateCheckCallback(),
+		},
+		&git2go.ProxyOptions{Type: git2go.ProxyTypeAuto}, nil)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{
 			Git: &corev1alpha1.ResolvedGitSource{
