@@ -101,7 +101,8 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
 			defer os.Unsetenv("HTTPS_PROXY")
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
-			require.EqualError(t, err, "fetching remote: failed to resolve address for invalid-proxy: nodename nor servname provided, or not known")
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "fetching remote: failed to resolve address for invalid-proxy")
 		})
 	})
 }
