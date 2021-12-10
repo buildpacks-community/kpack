@@ -208,7 +208,22 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 								},
 								{
 									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/syft",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/dist-zip",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/spring-boot",
 									},
 								},
 							},
@@ -260,7 +275,22 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 								},
 								{
 									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/syft",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
 										Id: "paketo-buildpacks/executable-jar",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/dist-zip",
+									},
+								},
+								{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "paketo-buildpacks/spring-boot",
 									},
 								},
 							},
