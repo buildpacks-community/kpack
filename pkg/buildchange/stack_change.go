@@ -48,3 +48,5 @@ func (s stackChange) IsBuildRequired() (bool, error) {
 func (s stackChange) Old() interface{} { return s.oldRunImageDigest }
 
 func (s stackChange) New() interface{} { return s.newRunImageDigest }
+
+func (s stackChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityLow }

@@ -28,3 +28,5 @@ func (t triggerChange) IsBuildRequired() (bool, error) {
 func (t triggerChange) Old() interface{} { return "" }
 
 func (t triggerChange) New() interface{} { return t.message }
+
+func (t triggerChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityHigh }

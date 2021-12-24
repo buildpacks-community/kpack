@@ -18,9 +18,10 @@ const (
 	ImageLabel           = "image.kpack.io/image"
 	ImageGenerationLabel = "image.kpack.io/imageGeneration"
 
-	BuildReasonAnnotation  = "image.kpack.io/reason"
-	BuildChangesAnnotation = "image.kpack.io/buildChanges"
-	BuildNeededAnnotation  = "image.kpack.io/additionalBuildNeeded"
+	BuildReasonAnnotation   = "image.kpack.io/reason"
+	BuildChangesAnnotation  = "image.kpack.io/buildChanges"
+	BuildNeededAnnotation   = "image.kpack.io/additionalBuildNeeded"
+	BuildPriorityAnnotation = "image.kpack.io/priority"
 
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
@@ -31,9 +32,15 @@ const (
 
 type BuildReason string
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64, priorityClass string) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
-
+	buildAnnotations := map[string]string{
+		BuildReasonAnnotation:  reasons,
+		BuildChangesAnnotation: changes,
+	}
+	if priorityClass != "" {
+		buildAnnotations[BuildPriorityAnnotation] = priorityClass
+	}
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: im.Namespace,
@@ -46,10 +53,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 				ImageLabel:           im.Name,
 				ImageGenerationLabel: strconv.Itoa(int(im.Generation)),
 			}),
-			Annotations: combine(im.Annotations, map[string]string{
-				BuildReasonAnnotation:  reasons,
-				BuildChangesAnnotation: changes,
-			}),
+			Annotations: combine(im.Annotations, buildAnnotations),
 		},
 		Spec: BuildSpec{
 			Tags:                  im.generateTags(buildNumber),

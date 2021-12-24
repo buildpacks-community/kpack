@@ -58,3 +58,5 @@ func (c configChange) IsBuildRequired() (bool, error) {
 func (c configChange) Old() interface{} { return c.old }
 
 func (c configChange) New() interface{} { return c.new }
+
+func (c configChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityHigh }

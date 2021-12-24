@@ -65,6 +65,7 @@ spec:
         app: kpack-controller
         version: #@ data.values.version
     spec:
+      priorityClassName: kpack-control-plane
       serviceAccountName: controller
       nodeSelector:
         kubernetes.io/os: linux
@@ -72,6 +73,8 @@ spec:
       - name: controller
         image: #@ data.values.controller_image
         env:
+        - name: ENABLE_PRIORITY_CLASSES
+          value: "false"
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: CONFIG_OBSERVABILITY_NAME

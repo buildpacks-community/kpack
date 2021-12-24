@@ -63,6 +63,13 @@ func (b *Build) BuildChanges() string {
 	return b.GetAnnotations()[BuildChangesAnnotation]
 }
 
+func (b *Build) PriorityClass() string {
+	if b == nil {
+		return ""
+	}
+	return b.GetAnnotations()[BuildPriorityAnnotation]
+}
+
 func (b *Build) ImageGeneration() int64 {
 	if b == nil {
 		return 0

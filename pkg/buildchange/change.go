@@ -9,18 +9,21 @@ type Change interface {
 	IsBuildRequired() (bool, error)
 	Old() interface{}
 	New() interface{}
+	Priority() buildapi.BuildPriority
 }
 
 type GenericChange struct {
-	Reason string      `json:"reason,omitempty"`
-	Old    interface{} `json:"old,omitempty"`
-	New    interface{} `json:"new,omitempty"`
+	Reason   string                 `json:"reason,omitempty"`
+	Old      interface{}            `json:"old,omitempty"`
+	New      interface{}            `json:"new,omitempty"`
+	Priority buildapi.BuildPriority `json:"-"`
 }
 
 func newGenericChange(change Change) GenericChange {
 	return GenericChange{
-		Reason: string(change.Reason()),
-		Old:    change.Old(),
-		New:    change.New(),
+		Reason:   string(change.Reason()),
+		Old:      change.Old(),
+		New:      change.New(),
+		Priority: change.Priority(),
 	}
 }

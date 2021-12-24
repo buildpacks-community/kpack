@@ -54,6 +54,7 @@ spec:
         role: webhook
         version: #@ data.values.version
     spec:
+      priorityClassName: kpack-control-plane
       serviceAccountName: webhook
       nodeSelector:
         kubernetes.io/os: linux

@@ -116,6 +116,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
 			assert.Equal(t, "", result.ReasonsStr)
 			assert.Equal(t, "", result.ChangesStr)
+			assert.Equal(t, "", result.PriorityClass)
 		})
 
 		it("false for different ServiceAccount", func() {
@@ -126,6 +127,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
 			assert.Equal(t, "", result.ReasonsStr)
 			assert.Equal(t, "", result.ChangesStr)
+			assert.Equal(t, "", result.PriorityClass)
 		})
 
 		it("true if build env changes", func() {
@@ -169,6 +171,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 			assert.Equal(t, expectedChanges, result.ChangesStr)
+			assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 		})
 
 		it("true if build service bindings changes", func() {
@@ -213,6 +216,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 			assert.Equal(t, expectedChanges, result.ChangesStr)
+			assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 		})
 
 		it("true if build cnb bindings changes", func() {
@@ -257,6 +261,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 			assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
 			assert.Equal(t, expectedChanges, result.ChangesStr)
+			assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 		})
 
 		it("false if last build failed but no spec changes", func() {
@@ -277,6 +282,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
 			assert.Equal(t, "", result.ReasonsStr)
 			assert.Equal(t, "", result.ChangesStr)
+			assert.Equal(t, "", result.PriorityClass)
 		})
 
 		it("true if build is annotated additional build needed", func() {
@@ -288,6 +294,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.NoError(t, err)
 			assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 			assert.Equal(t, buildapi.BuildReasonTrigger, result.ReasonsStr)
+			assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 
 			var changes []buildchange.GenericChange
 			err = json.Unmarshal([]byte(result.ChangesStr), &changes)
@@ -308,6 +315,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -336,6 +344,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -363,6 +372,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -382,6 +392,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonStack, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
@@ -419,6 +430,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -455,6 +467,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -474,6 +487,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -488,6 +502,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -499,6 +514,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -510,6 +526,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -521,6 +538,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -533,6 +551,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionUnknown, result.ConditionStatus)
+				assert.Equal(t, "", result.PriorityClass)
 				assert.Equal(t, "", result.ReasonsStr)
 				assert.Equal(t, "", result.ChangesStr)
 			})
@@ -589,6 +608,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -608,6 +628,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonCommit, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
@@ -653,6 +674,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -687,6 +709,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
@@ -732,6 +755,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 
@@ -765,6 +789,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
 				assert.Equal(t, buildapi.BuildReasonConfig, result.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityClassHigh, result.PriorityClass)
 				assert.Equal(t, expectedChanges, result.ChangesStr)
 			})
 		})
