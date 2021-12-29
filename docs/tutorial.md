@@ -14,7 +14,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 ###  Tutorial
 1. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack.
 
-   The easiest way to do that is with `kubectl secret create docker-registry`
+   The easiest way to do that is with `kubectl create secret docker-registry`
    
     ```bash
     kubectl create secret docker-registry tutorial-registry-credentials \
