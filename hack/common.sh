@@ -53,7 +53,7 @@ function compile() {
   lifecycle_image_build ${lifecycle_image}
   lifecycle_image=${resolved_image_name}
 
-  ytt -f config/. \
+  ytt -f config/kpack/. \
     -v controller_image=${controller_image} \
     -v webhook_image=${webhook_image} \
     -v build_init_image=${build_init_image} \

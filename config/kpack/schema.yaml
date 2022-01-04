@@ -1,0 +1,12 @@
+#@data/values-schema
+#@overlay/match-child-defaults missing_ok=True
+---
+controller_image: "gcr.io/cf-build-service-public/kpack/controller"
+webhook_image: "gcr.io/cf-build-service-public/kpack/webhook"
+build_init_image: "gcr.io/cf-build-service-public/kpack/build-init"
+build_init_windows_image: "gcr.io/cf-build-service-public/kpack/build-init-windows"
+rebase_image: "gcr.io/cf-build-service-public/kpack/rebase"
+completion_image: "gcr.io/cf-build-service-public/kpack/completion"
+completion_windows_image: "gcr.io/cf-build-service-public/kpack/completion-windows"
+lifecycle_image: "gcr.io/cf-build-service-public/kpack/lifecycle"
+version: "dev"

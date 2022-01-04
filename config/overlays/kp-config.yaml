@@ -1,0 +1,43 @@
+#@ load("values.star", "values", "kp_default_docker_configjson")
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  kp-config
+  namespace: kpack
+data:
+  default.repository: #@ values.kp_default_repository
+  default.repository.serviceaccount: kp-default-repository-serviceaccount
+  canonical.repository: #@ values.kp_default_repository
+  canonical.repository.serviceaccount: kp-default-repository-serviceaccount
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kp-default-repository-serviceaccount
+  namespace:  kpack
+imagePullSecrets:
+  - name: kp-default-repository-secret
+secrets:
+  - name: kp-default-repository-secret
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: canonical-registry-serviceaccount
+  namespace:  kpack
+imagePullSecrets:
+  - name: kp-default-repository-secret
+secrets:
+  - name: kp-default-repository-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kp-default-repository-secret
+  namespace: kpack
+  annotations:
+    kapp.k14s.io/versioned: ""
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: #@ kp_default_docker_configjson

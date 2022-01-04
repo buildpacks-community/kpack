@@ -1,0 +1,20 @@
+#@data/values
+#@ load("@ytt:data", "data")
+#@ load("@ytt:assert", "assert")
+
+#@ def find_cert():
+#@   ca_cert_data=""
+#@   cert_count=0
+#@   for file in data.list(""):
+#@     file_data=data.read(file)
+#@     if file_data.startswith("-----BEGIN CERTIFICATE-----"):
+#@       ca_cert_data=file_data
+#@       cert_count+=1
+#@     end
+#@   end
+#@   cert_count <= 1 or assert.fail("only 1 ca cert can be provided, found %d" % cert_count)
+#@   return ca_cert_data
+#@ end
+
+---
+ca_cert_data: #@ find_cert()

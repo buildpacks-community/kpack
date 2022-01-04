@@ -1,0 +1,31 @@
+---
+apiVersion: kapp.k14s.io/v1alpha1
+kind: Config
+minimumRequiredVersion: 0.29.0
+rebaseRules:
+  - paths:
+      - [ data, image ]
+      - [ data, serviceAccountRef.name ]
+      - [ data, serviceAccountRef.namespace ]
+    type: copy
+    sources: [ existing, new ]
+    resourceMatchers:
+      - kindNamespaceNameMatcher: { kind: ConfigMap, namespace: kpack, name: lifecycle-image }
+  - paths:
+      - [ webhooks, { allIndexes: true }, clientConfig, service, path ]
+      - [ webhooks, { allIndexes: true }, clientConfig, service, port ]
+      - [ webhooks, { allIndexes: true }, namespaceSelector ]
+      - [ webhooks, { allIndexes: true }, rules ]
+    type: copy
+    sources: [ existing, new ]
+    resourceMatchers:
+      - kindNamespaceNameMatcher: { kind: MutatingWebhookConfiguration, name: defaults.webhook.kpack.io }
+      - kindNamespaceNameMatcher: { kind: ValidatingWebhookConfiguration, name: validation.webhook.kpack.io }
+  - paths:
+      - [ data, ca-cert.pem ]
+      - [ data, server-cert.pem ]
+      - [ data, server-key.pem ]
+    type: copy
+    sources: [ existing ]
+    resourceMatchers:
+      - kindNamespaceNameMatcher: { kind: Secret, namespace: kpack, name: webhook-certs }

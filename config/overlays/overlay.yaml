@@ -1,0 +1,119 @@
+#@ load("@ytt:data", "data")
+#@ load("values.star", "values")
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.subset({"metadata":{"name":"kpack-controller"}, "kind": "Deployment"})
+---
+spec:
+  template:
+    spec:
+      #@ if data.values.ca_cert_data != "":
+      #@overlay/match missing_ok=True
+      initContainers:
+        - env:
+            - name: CA_CERTS_DATA
+              value: #@ data.values.ca_cert_data
+            #@ if values.http_proxy != None:
+            - name: HTTP_PROXY
+              value: #@ values.http_proxy
+            #@ end
+            #@ if values.https_proxy != None:
+            - name: HTTPS_PROXY
+              value: #@ values.https_proxy
+            #@ end
+            #@ if values.no_proxy != None:
+            - name: NO_PROXY
+              value: #@ values.no_proxy
+          #@ end
+          image: gcr.io/cf-build-service-public/setup-ca-certs
+          imagePullPolicy: IfNotPresent
+          name: setup-ca-certs
+          volumeMounts:
+            - name: ca-certs
+              mountPath: /workspace
+          workingDir: /workspace
+      #@ end
+      #@overlay/match missing_ok=True
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        #@overlay/match by="name"
+        - name: controller
+          #@overlay/match missing_ok=True
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            #@overlay/append
+            - name: CREDENTIAL_PROVIDER_SECRET_PATH
+              value: /var/kpack/credentials
+            #@ if values.http_proxy != None:
+            #@overlay/append
+            - name: HTTP_PROXY
+              value: #@ values.http_proxy
+            #@ end
+            #@ if values.https_proxy != None:
+            #@overlay/append
+            - name: HTTPS_PROXY
+              value: #@ values.https_proxy
+            #@ end
+            #@ if values.no_proxy != None:
+            #@overlay/append
+            - name: NO_PROXY
+              value: #@ values.no_proxy
+          #@ end
+          #@overlay/match missing_ok=True
+          volumeMounts:
+            - name: credentials
+              mountPath: /var/kpack/credentials
+              readOnly: true
+            #@ if data.values.ca_cert_data != "":
+            - name: ca-certs
+              mountPath: /etc/ssl/certs
+              readOnly: true
+          #@ end
+      #@overlay/match missing_ok=True
+      volumes:
+        - name: credentials
+          secret:
+            secretName:  kp-default-repository-secret
+        #@ if data.values.ca_cert_data != "":
+        - name: ca-certs
+          emptyDir: {}
+      #@ end
+
+#@overlay/match by=overlay.subset({"metadata":{"name":"kpack-webhook"}, "kind": "Deployment"})
+---
+spec:
+  template:
+    spec:
+      #@overlay/match missing_ok=True
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        #@overlay/match by="name"
+        - name: webhook
+          #@overlay/match missing_ok=True
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+
+#@overlay/match by=overlay.subset({"kind": "ClusterRoleBinding"}), expects="1+"
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    kapp.k14s.io/update-strategy: fallback-on-replace
+
+#@overlay/match by=overlay.subset({"kind": "RoleBinding"}), expects="1+"
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    kapp.k14s.io/update-strategy: fallback-on-replace
