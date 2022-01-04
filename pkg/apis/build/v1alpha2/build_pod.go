@@ -321,7 +321,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(corev1.Container{
 					Name:    "completion",
 					Image:   images.completion(buildContext.os()),
-					Command: []string{"/cnb/process/web"},
+					Command: []string{"/cnb/process/completion"},
 					Env: []corev1.EnvVar{
 						homeEnv,
 					},
@@ -739,7 +739,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 				{
 					Name:    "completion",
 					Image:   images.completion(buildContext.os()),
-					Command: []string{"/cnb/process/web"},
+					Command: []string{"/cnb/process/completion"},
 					Args: args(
 						b.notaryArgs(),
 						secretArgs,

@@ -1492,7 +1492,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 					assert.NotNil(t, pod.Spec.Containers[0])
 					assert.NotNil(t, pod.Spec.Containers[0].Command[0])
-					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 					invalidSecretName := "invalid-cosign-secret"
 					assertSecretNotPresent(t, pod, invalidSecretName)
@@ -1635,7 +1635,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					pod, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
-					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 					require.Subset(t,
 						pod.Spec.Containers[0].Args,
@@ -1684,7 +1684,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					pod, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
-					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 					invalidSecretName := "invalid-cosign-secret"
 					assertSecretNotPresent(t, pod, invalidSecretName)
@@ -1700,7 +1700,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					pod, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
-					assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+					assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 					validSecrets := []string{
 						"cosign-secret-1",
@@ -1799,7 +1799,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 				assert.NotNil(t, pod.Spec.Containers[0])
 				assert.NotNil(t, pod.Spec.Containers[0].Command[0])
-				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+				assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 				invalidSecretName := "invalid-cosign-secret"
 				assertSecretNotPresent(t, pod, invalidSecretName)
@@ -1899,7 +1899,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
-				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+				assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 				require.Subset(t,
 					pod.Spec.Containers[0].Args,
@@ -1956,7 +1956,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
-				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+				assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 				invalidSecretName := "invalid-cosign-secret"
 				assertSecretNotPresent(t, pod, invalidSecretName)
@@ -1972,7 +1972,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
-				assert.Equal(t, "/cnb/process/web", pod.Spec.Containers[0].Command[0])
+				assert.Equal(t, "/cnb/process/completion", pod.Spec.Containers[0].Command[0])
 
 				validSecrets := []string{
 					"cosign-secret-1",
@@ -2373,7 +2373,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, []string{
 					dnsProbeHost,
 					"--",
-					"/cnb/process/web",
+					"/cnb/process/completion",
 					"-notary-v1-url=some-notary-server",
 					"-basic-git=git-secret-1=https://github.com",
 					"-ssh-git=git-secret-2=https://bitbucket.com",
@@ -2417,7 +2417,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, []string{
 					dnsProbeHost,
 					"--",
-					"/cnb/process/web",
+					"/cnb/process/completion",
 					"-basic-git=git-secret-1=https://github.com",
 					"-ssh-git=git-secret-2=https://bitbucket.com",
 					"-basic-docker=docker-secret-1=acr.io",
