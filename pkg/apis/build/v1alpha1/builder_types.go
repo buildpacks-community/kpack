@@ -69,14 +69,14 @@ func (*Builder) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(BuilderKind)
 }
 
-func (c *Builder) NamespacedName() types.NamespacedName {
-	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
+func (b *Builder) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
 }
 
-func (c *Builder) ConvertTo(_ context.Context, _ apis.Convertible) error {
+func (*Builder) ConvertTo(_ context.Context, _ apis.Convertible) error {
 	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
 }
 
-func (c *Builder) ConvertFrom(_ context.Context, _ apis.Convertible) error {
+func (*Builder) ConvertFrom(_ context.Context, _ apis.Convertible) error {
 	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }

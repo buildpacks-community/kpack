@@ -40,7 +40,7 @@ func (bs *NamespacedBuilderSpec) convertTo(to *v1alpha1.NamespacedBuilderSpec) {
 	to.Stack = bs.Stack
 	to.Store = bs.Store
 	to.Order = bs.Order
-	to.ServiceAccount = bs.ServiceAccountName
+	to.ServiceAccount = bs.ServiceAccount()
 }
 
 func (bs *NamespacedBuilderSpec) convertFrom(from *v1alpha1.NamespacedBuilderSpec) {
