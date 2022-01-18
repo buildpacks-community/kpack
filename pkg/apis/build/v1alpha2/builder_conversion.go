@@ -9,24 +9,25 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
-func (i *Builder) ConvertTo(_ context.Context, to apis.Convertible) error {
+func (b *Builder) ConvertTo(_ context.Context, to apis.Convertible) error {
 	switch toBuilder := to.(type) {
 	case *v1alpha1.Builder:
-		toBuilder.ObjectMeta = i.ObjectMeta
-		i.Spec.convertTo(&toBuilder.Spec)
-		i.Status.convertTo(&toBuilder.Status)
+		toBuilder.ObjectMeta = b.ObjectMeta
+
+		b.Spec.convertTo(&toBuilder.Spec)
+		b.Status.convertTo(&toBuilder.Status)
 	default:
 		return fmt.Errorf("unknown version, got: %T", toBuilder)
 	}
 	return nil
 }
 
-func (i *Builder) ConvertFrom(_ context.Context, from apis.Convertible) error {
+func (b *Builder) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	switch fromBuilder := from.(type) {
 	case *v1alpha1.Builder:
-		i.ObjectMeta = fromBuilder.ObjectMeta
-		i.Spec.convertFrom(&fromBuilder.Spec)
-		i.Status.convertFrom(&fromBuilder.Status)
+		b.ObjectMeta = fromBuilder.ObjectMeta
+		b.Spec.convertFrom(&fromBuilder.Spec)
+		b.Status.convertFrom(&fromBuilder.Status)
 	default:
 		return fmt.Errorf("unknown version, got: %T", fromBuilder)
 	}
@@ -34,40 +35,40 @@ func (i *Builder) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	return nil
 }
 
-func (is *NamespacedBuilderSpec) convertTo(to *v1alpha1.NamespacedBuilderSpec) {
-	to.Tag = is.Tag
-	to.Stack = is.Stack
-	to.Store = is.Store
-	to.Order = is.Order
-	to.ServiceAccount = is.ServiceAccount()
+func (bs *NamespacedBuilderSpec) convertTo(to *v1alpha1.NamespacedBuilderSpec) {
+	to.Tag = bs.Tag
+	to.Stack = bs.Stack
+	to.Store = bs.Store
+	to.Order = bs.Order
+	to.ServiceAccount = bs.ServiceAccount()
 }
 
-func (is *NamespacedBuilderSpec) convertFrom(from *v1alpha1.NamespacedBuilderSpec) {
-	is.Tag = from.Tag
-	is.Stack = from.Stack
-	is.Store = from.Store
-	is.Order = from.Order
-	is.ServiceAccountName = from.ServiceAccount
+func (bs *NamespacedBuilderSpec) convertFrom(from *v1alpha1.NamespacedBuilderSpec) {
+	bs.Tag = from.Tag
+	bs.Stack = from.Stack
+	bs.Store = from.Store
+	bs.Order = from.Order
+	bs.ServiceAccountName = from.ServiceAccount
 }
 
-func (is *BuilderStatus) convertFrom(from *v1alpha1.BuilderStatus) {
-	is.Status = from.Status
-	is.BuilderMetadata = from.BuilderMetadata
-	is.Order = from.Order
-	is.Stack = from.Stack
-	is.LatestImage = from.LatestImage
-	is.ObservedStackGeneration = from.ObservedStackGeneration
-	is.ObservedStoreGeneration = from.ObservedStoreGeneration
-	is.OS = from.OS
+func (bst *BuilderStatus) convertFrom(from *v1alpha1.BuilderStatus) {
+	bst.Status = from.Status
+	bst.BuilderMetadata = from.BuilderMetadata
+	bst.Order = from.Order
+	bst.Stack = from.Stack
+	bst.LatestImage = from.LatestImage
+	bst.ObservedStackGeneration = from.ObservedStackGeneration
+	bst.ObservedStoreGeneration = from.ObservedStoreGeneration
+	bst.OS = from.OS
 }
 
-func (is *BuilderStatus) convertTo(to *v1alpha1.BuilderStatus) {
-	to.Status = is.Status
-	to.BuilderMetadata = is.BuilderMetadata
-	to.Order = is.Order
-	to.Stack = is.Stack
-	to.LatestImage = is.LatestImage
-	to.ObservedStackGeneration = is.ObservedStackGeneration
-	to.ObservedStoreGeneration = is.ObservedStoreGeneration
-	to.OS = is.OS
+func (bst *BuilderStatus) convertTo(to *v1alpha1.BuilderStatus) {
+	to.Status = bst.Status
+	to.BuilderMetadata = bst.BuilderMetadata
+	to.Order = bst.Order
+	to.Stack = bst.Stack
+	to.LatestImage = bst.LatestImage
+	to.ObservedStackGeneration = bst.ObservedStackGeneration
+	to.ObservedStoreGeneration = bst.ObservedStoreGeneration
+	to.OS = bst.OS
 }

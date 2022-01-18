@@ -1,10 +1,14 @@
 package v1alpha1
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/apis"
 )
 
 const ClusterBuilderKind = "ClusterBuilder"
@@ -45,4 +49,12 @@ func (*ClusterBuilder) GetGroupVersionKind() schema.GroupVersionKind {
 
 func (c *ClusterBuilder) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
+}
+
+func (c *ClusterBuilder) ConvertTo(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertTo in non-hub apiVersion v1alpha1")
+}
+
+func (c *ClusterBuilder) ConvertFrom(_ context.Context, _ apis.Convertible) error {
+	return errors.New("called convertFrom in non-hub apiVersion v1alpha1")
 }
