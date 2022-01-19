@@ -137,7 +137,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
         - id: paketo-buildpacks/nodejs
     ```
 
-    - Make sure to replace `<DOCKER-IMAGE>` with the tag in the registry you configured in step #1. Something like: your-name/builder or gcr.io/your-project/builder    
+    - Replace `<DOCKER-IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--docker-server` flag when creating a Secret in step #1. The tag should be something like: your-name/builder or gcr.io/your-project/builder
  
     Apply this builder to the cluster 
    
@@ -173,7 +173,7 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
           revision: 82cb521d636b282340378d80a6307a08e3d4a4c4
     ```
 
-   - Make sure to replace `<DOCKER-IMAGE-TAG>` with the registry you configured in step #2. Something like: your-name/app or gcr.io/your-project/app    
+   - Replace `<DOCKER-IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--docker-server` flag when creating a Secret in step #1. Something like: your-name/app or gcr.io/your-project/app
    - If you are using your application source, replace `source.git.url` & `source.git.revision`. 
     > Note: To use a private git repo follow the instructions in [secrets](secrets.md)
 

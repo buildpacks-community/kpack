@@ -81,8 +81,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
       -n default
     ```
 
-    - Make sure to replace `<IMAGE-TAG>` with the tag in the registry you configured in step #1. Something like:
-      your-name/builder or gcr.io/your-project/builder
+    - Replace `<IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--registry` flag when creating a Secret in step #1. The tag should be something like: your-name/builder or gcr.io/your-project/builder
 
 5. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack.
 
