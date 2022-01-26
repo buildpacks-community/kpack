@@ -278,3 +278,5 @@ This tutorial will walk through creating a kpack [builder](builder.md) resource 
 10. Next steps
     
      The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated buildpacks were used by the tutorial image resource, kpack will automatically create a new build to rebuild your OCI image.
+
+     Now you can configure kpack to sign your images with cosign with the instructions in [kpack with Cosign Tutorial](cosign-tutorial.md).
