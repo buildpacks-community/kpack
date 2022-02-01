@@ -119,12 +119,13 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, builder.LatestImage, build.Spec.Builder.Image)
 		})
 
-		it("propagates image's annotations onto the build", func() {
+		it("sets build priority class correctly", func() {
 			build := image.Build(sourceResolver, builder, latestBuild, "some-reasons", "some-changes", 27, "some-class")
-			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/buildChanges": "some-changes", "image.kpack.io/reason": "some-reasons", "image.kpack.io/priority": "some-class"}, build.Annotations)
+			assert.Equal(t, build.Spec.PriorityClassName, "some-class")
+			assert.Equal(t, build.PriorityClassName(), "some-class")
 		})
 
-		it("does not set priority annotation when it is empty", func() {
+		it("propagates image's annotations onto the build", func() {
 			build := image.Build(sourceResolver, builder, latestBuild, "some-reasons", "some-changes", 27, "")
 			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/buildChanges": "some-changes", "image.kpack.io/reason": "some-reasons"}, build.Annotations)
 		})

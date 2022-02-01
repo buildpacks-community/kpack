@@ -317,7 +317,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Spec: corev1.PodSpec{
 			// If the build fails, don't restart it.
 			RestartPolicy:     corev1.RestartPolicyNever,
-			PriorityClassName: b.PriorityClass(),
+			PriorityClassName: b.PriorityClassName(),
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(corev1.Container{
 					Name:    "completion",
@@ -721,7 +721,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
 			SchedulerName:      b.Spec.SchedulerName,
-			PriorityClassName:  b.PriorityClass(),
+			PriorityClassName:  b.PriorityClassName(),
 			Volumes: volumes(
 				secretVolumes,
 				cosignVolumes,
