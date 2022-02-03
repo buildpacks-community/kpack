@@ -1269,6 +1269,20 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assertSecretNotPresent(t, pod, "random-secret-1")
 		})
 
+		it.Focus("fails with invalid secret name", func() {
+			buildContext.Secrets = append(buildContext.Secrets, corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "illegal-secret.name",
+				},
+			})
+
+			pod, err := build.BuildPod(config, buildContext)
+			require.Error(t, err)
+			assert.Equal(t, err.Error(), "bad name")
+
+			assertSecretNotPresent(t, pod, "illegal-secret.name")
+		})
+
 		it("deduplicates builder imagepullSecrets from service account image pull secrets", func() {
 			buildContext.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "duplicated-secret"}}
 			build.Spec.Builder.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "duplicated-secret"}}
