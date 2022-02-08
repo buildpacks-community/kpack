@@ -173,7 +173,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			RegistryClient:         registryClient,
 			KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
 			NewBuildpackRepository: newBuildpackRepo,
-			LifecycleProvider:      lifecycleProvider,
+			LifecycleProvider:      nil,
 		}
 	)
 

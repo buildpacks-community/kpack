@@ -1,7 +1,7 @@
 package cnb
 
 import (
-	"fmt"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"io"
 	"sync"
 
@@ -16,26 +16,35 @@ import (
 )
 
 func layerFromStoreBuildpack(keychain authn.Keychain, buildpack corev1alpha1.StoreBuildpack) (v1.Layer, error) {
-	reference, err := name.ParseReference(buildpack.StoreImage.Image)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse %s", buildpack.StoreImage.Image)
-	}
 
-	fullyQualifiedLayer, err := name.NewDigest(fmt.Sprintf("%s@%s", reference.Context().Name(), buildpack.Digest))
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to construct layer digest: %s", buildpack.BuildpackInfo)
-	}
-
-	return &remote.MountableLayer{
-		Layer: &mountableBuildpackLayer{
-			keychain:            keychain,
-			fullyQualifiedLayer: fullyQualifiedLayer,
-			digest:              buildpack.Digest,
-			diffId:              buildpack.DiffId,
-			size:                buildpack.Size,
-		},
-		Reference: reference,
-	}, nil
+	return imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+		Digest:   buildpack.Digest,
+		DiffId:   buildpack.DiffId,
+		Image:    buildpack.StoreImage.Image,
+		Size:     buildpack.Size,
+		Keychain: keychain,
+	})
+	//
+	//reference, err := name.ParseReference(buildpack.StoreImage.Image)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "unable to parse %s", buildpack.StoreImage.Image)
+	//}
+	//
+	//fullyQualifiedLayer, err := name.NewDigest(fmt.Sprintf("%s@%s", reference.Context().Name(), buildpack.Digest))
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "unable to construct layer digest: %s", buildpack.BuildpackInfo)
+	//}
+	//
+	//return &remote.MountableLayer{
+	//	Layer: &mountableBuildpackLayer{
+	//		keychain:            keychain,
+	//		fullyQualifiedLayer: fullyQualifiedLayer,
+	//		digest:              buildpack.Digest,
+	//		diffId:              buildpack.DiffId,
+	//		size:                buildpack.Size,
+	//	},
+	//	Reference: reference,
+	//}, nil
 }
 
 type mountableBuildpackLayer struct {
