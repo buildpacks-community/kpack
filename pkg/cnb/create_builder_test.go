@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -92,7 +92,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		}
 
 		store = &buildapi.ClusterStore{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "sample-store",
 			},
 			Status: buildapi.ClusterStoreStatus{
@@ -103,7 +103,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		}
 
 		stack = &buildapi.ClusterStack{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "sample-stack",
 			},
 			Spec: buildapi.ClusterStackSpec{
@@ -835,6 +835,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 				require.NoError(t, err)
+				lifecycleProvider.image = lifecycleImg
 
 				buildpackRepository.AddBP("anystack.buildpack", "v1", []buildpackLayer{
 					{
