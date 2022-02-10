@@ -1,3 +1,5 @@
+<img src="docs/assets/kpack.png" width="150" align="left" alt="" style="padding-right: 20px;">
+
 # kpack
 [![Build Status](https://github.com/pivotal/kpack/workflows/CI/badge.svg)](https://github.com/pivotal/kpack/actions)
 [![codecov](https://codecov.io/gh/pivotal/kpack/branch/master/graph/badge.svg)](https://codecov.io/gh/pivotal/kpack)
