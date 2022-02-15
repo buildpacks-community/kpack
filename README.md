@@ -43,4 +43,4 @@ The meeting takes place every Tuesday at 10 AM EST.
 
 [This doc](https://docs.google.com/document/d/1I9n5pVsuos7mJPrzr5YbSPqSXymPaRbhVtcmSGEkUMc) contains the zoom link and notes, along with the recordings of previous meetings.
 
-Come join us in the [CNB slack](https://buildpacks.slack.com/channels/kpack) as well!
+Come join us in the [Kubernetes slack](https://kubernetes.slack.com/channels/kpack) as well!
