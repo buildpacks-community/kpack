@@ -9,10 +9,15 @@ import (
 
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
-	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 )
 
-type SignFunc func(ctx context.Context, ko cli.KeyOpts, annotations map[string]interface{}, imageRef, certPath string, upload bool, payloadPath string, force, recursive bool) error
+type SignFunc func(
+	ctx context.Context, ko sign.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
+	certPath string, upload bool, outputSignature, outputCertificate string,
+	payloadPath string, force, recursive bool, attachment string,
+) error
 
 type ImageSigner struct {
 	Logger   *log.Logger
@@ -60,7 +65,7 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
-	ko := cli.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
+	ko := sign.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
 		content, err := ioutil.ReadFile(cosignPasswordFile)
 		// When password file is not available, default empty password is used
 		if err != nil {
@@ -84,7 +89,20 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 		defer os.Unsetenv(cosignDockerMediaTypesEnv)
 	}
 
-	if err := s.signFunc(ctx, ko, annotations, refImage, "", true, "", false, false); err != nil {
+	if err := s.signFunc(
+		ctx,
+		ko,
+		options.RegistryOptions{},
+		annotations,
+		[]string{refImage},
+		"",
+		true,
+		"",
+		"",
+		"",
+		false,
+		false,
+		""); err != nil {
 		return errors.Errorf("unable to sign image with %s: %v", cosignKeyFile, err)
 	}
 
