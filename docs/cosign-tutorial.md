@@ -33,7 +33,26 @@ This tutorial will walk through creating a kpack [image](image.md) resource to b
 
    You should see a `cosign.pub` file in your current folder. Keep this file as it will be needed to verify the signature of the images built in this tutorial.
 
-   > Note: Learn more about configuring cosign key pairs with the [kpack image documentation](image.md#cosign-configuration)
+
+   If you are using [dockerhub](https://hub.docker.com/) or a registry that does not support OCI media types, you need to add the annotation `kpack.io/cosign.docker-media-types: "1"` to the cosign secret. The secret `tutorial-cosign-key-pair` should look something like this:
+
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   type: Opaque
+   metadata:
+     name: tutorial-cosign-key-pair
+     namespace: default
+     annotations:
+       kpack.io/cosign.docker-media-types: "1"
+   data:
+     cosign.key: <PRIVATE KEY DATA>
+     cosign.password: <COSIGN PASSWORD>
+     cosign.pub: <PUBLIC KEY DATA>
+   ```
+
+    > Note: Learn more about configuring cosign key pairs with the [kpack image documentation](image.md#cosign-configuration)
+
 
 2. Create or modify the tutorial service account that is referenced in the Image resource so it includes the cosign key pair secret created in the previous step.
 
