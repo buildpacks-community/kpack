@@ -2,6 +2,7 @@ package v1alpha2
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"knative.dev/pkg/apis"
@@ -12,9 +13,21 @@ import (
 func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 	switch toImage := to.(type) {
 	case *v1alpha1.Image:
-		toImage.ObjectMeta = i.ObjectMeta
+		i.ObjectMeta.DeepCopyInto(&toImage.ObjectMeta)
 		i.Spec.convertTo(&toImage.Spec)
 		i.Status.convertTo(&toImage.Status)
+		if build := i.Spec.Build; build != nil {
+			if len(build.Services) > 0 {
+				bytes, err := json.Marshal(build.Services)
+				if err != nil {
+					return err
+				}
+				if toImage.Annotations == nil {
+					toImage.Annotations = map[string]string{}
+				}
+				toImage.Annotations["kpack.io/services"] = string(bytes)
+			}
+		}
 	default:
 		return fmt.Errorf("unknown version, got: %T", toImage)
 	}
@@ -24,9 +37,19 @@ func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 func (i *Image) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	switch fromImage := from.(type) {
 	case *v1alpha1.Image:
-		i.ObjectMeta = fromImage.ObjectMeta
+		fromImage.ObjectMeta.DeepCopyInto(&i.ObjectMeta)
 		i.Spec.convertFrom(&fromImage.Spec)
 		i.Status.convertFrom(&fromImage.Status)
+		if servicesJson, ok := i.Annotations["kpack.io/services"]; ok {
+			var services Services
+			err := json.Unmarshal([]byte(servicesJson), &services)
+			if err != nil {
+				return err
+			}
+
+			i.Spec.Build.Services = services
+			delete(i.Annotations, "kpack.io/services")
+		}
 	default:
 		return fmt.Errorf("unknown version, got: %T", fromImage)
 	}
