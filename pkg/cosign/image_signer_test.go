@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -36,7 +36,7 @@ func TestImageSigner(t *testing.T) {
 
 func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
-		report            lifecycle.ExportReport
+		report            platform.ExportReport
 		reader            *os.File
 		writer            *os.File
 		expectedImageName string
@@ -470,16 +470,16 @@ func createCosignKeyFiles(t *testing.T) string {
 	return dirPath
 }
 
-func createReportToml(t *testing.T, imageRef string) lifecycle.ExportReport {
-	var r lifecycle.ExportReport
+func createReportToml(t *testing.T, imageRef string) platform.ExportReport {
+	var r platform.ExportReport
 	_, err := toml.Decode(fmt.Sprintf(`[image]
 	tags = ["%s"]`, imageRef), &r)
 	assert.Nil(t, err)
 	return r
 }
 
-func createEmptyReportToml(t *testing.T) lifecycle.ExportReport {
-	var r lifecycle.ExportReport
+func createEmptyReportToml(t *testing.T) platform.ExportReport {
+	var r platform.ExportReport
 	_, err := toml.Decode(`[image]`, &r)
 	assert.Nil(t, err)
 	return r
