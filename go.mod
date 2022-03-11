@@ -44,6 +44,7 @@ require (
 )
 
 replace (
+	github.com/containerd/containerd => github.com/containerd/containerd v1.5.10
 	github.com/prometheus/common => github.com/prometheus/common v0.26.0
 	k8s.io/api => k8s.io/api v0.20.11
 	k8s.io/client-go => k8s.io/client-go v0.20.11
