@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
@@ -212,7 +212,7 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 		return buildapi.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
 
-	stackId, err := imagehelpers.GetStringLabel(image, lifecycle.StackIDLabel)
+	stackId, err := imagehelpers.GetStringLabel(image, platform.StackIDLabel)
 	if err != nil {
 		return buildapi.BuildPodBuilderConfig{}, errors.Wrap(err, "builder image stack ID label not present")
 	}

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
@@ -139,8 +139,8 @@ func (f *FakeRepository) PublishTarget(target *notaryclient.Target) error {
 	return nil
 }
 
-func reportToml(t *testing.T, path string) lifecycle.ExportReport {
-	var report lifecycle.ExportReport
+func reportToml(t *testing.T, path string) platform.ExportReport {
+	var report platform.ExportReport
 	_, err := toml.DecodeFile(path, &report)
 
 	assert.Nil(t, err)

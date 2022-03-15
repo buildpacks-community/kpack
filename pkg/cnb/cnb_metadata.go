@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/buildpacks/lifecycle"
+	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
+	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -78,24 +79,24 @@ func (r *RemoteMetadataRetriever) GetCacheImage(ctx context.Context, build *buil
 type BuiltImage struct {
 	Identifier        string
 	CompletedAt       time.Time
-	BuildpackMetadata []lifecycle.GroupBuildpack
+	BuildpackMetadata []lifecyclebuildpack.GroupBuildpack
 	Stack             BuiltImageStack
 }
 
 func readBuiltImage(appImage ggcrv1.Image, appImageId string) (BuiltImage, error) {
-	stackId, err := imagehelpers.GetStringLabel(appImage, lifecycle.StackIDLabel)
+	stackId, err := imagehelpers.GetStringLabel(appImage, platform.StackIDLabel)
 	if err != nil {
 		return BuiltImage{}, nil
 	}
 
-	var buildMetadata lifecycle.BuildMetadata
-	err = imagehelpers.GetLabel(appImage, lifecycle.BuildMetadataLabel, &buildMetadata)
+	var buildMetadata platform.BuildMetadata
+	err = imagehelpers.GetLabel(appImage, platform.BuildMetadataLabel, &buildMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
 
 	var layerMetadata appLayersMetadata
-	err = imagehelpers.GetLabel(appImage, lifecycle.LayerMetadataLabel, &layerMetadata)
+	err = imagehelpers.GetLabel(appImage, platform.LayerMetadataLabel, &layerMetadata)
 	if err != nil {
 		return BuiltImage{}, err
 	}
