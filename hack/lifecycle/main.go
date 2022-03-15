@@ -43,8 +43,8 @@ func main() {
 	flag.Parse()
 
 	image, err := lifecycleImage(
-		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
-		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
+		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
+		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
 		cnb.LifecycleMetadata{
 			LifecycleInfo: cnb.LifecycleInfo{
 				Version: lifecycleVersion,
