@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/cmd"
 	"github.com/pkg/errors"
 
@@ -101,7 +102,8 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	rebaser := lifecycle.Rebaser{
-		Logger: cmd.DefaultLogger,
+		Logger:      cmd.DefaultLogger,
+		PlatformAPI: api.MustParse("0.8"),
 	}
 	report, err := rebaser.Rebase(appImage, newBaseImage, tags[1:])
 	if err != nil {
