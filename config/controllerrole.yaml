@@ -9,10 +9,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kpack-controller-admin
-aggregationRule:
-  clusterRoleSelectors:
-    - matchLabels:
-        servicebinding.io/controller: "true"
 rules:
 - apiGroups:
   - kpack.io
@@ -84,6 +80,28 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: kpack-controller-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kpack-controller-servicebindings-cluster-role
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        servicebinding.io/controller: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kpack-controller-servicebindings-binding
+subjects:
+  - kind: ServiceAccount
+    name: controller
+    namespace: kpack
+roleRef:
+  kind: ClusterRole
+  name: kpack-controller-servicebindings-cluster-role
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1
