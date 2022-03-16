@@ -5,10 +5,12 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 type StoreBuildpackRepository struct {
@@ -121,4 +123,14 @@ func (b byBuildpackVersion) Swap(i, j int) {
 
 func (b byBuildpackVersion) Less(i, j int) bool {
 	return semver.MustParse(b[i].Version).LessThan(semver.MustParse(b[j].Version))
+}
+
+func layerFromStoreBuildpack(keychain authn.Keychain, buildpack corev1alpha1.StoreBuildpack) (v1.Layer, error) {
+	return imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+		Digest:   buildpack.Digest,
+		DiffId:   buildpack.DiffId,
+		Image:    buildpack.StoreImage.Image,
+		Size:     buildpack.Size,
+		Keychain: keychain,
+	})
 }

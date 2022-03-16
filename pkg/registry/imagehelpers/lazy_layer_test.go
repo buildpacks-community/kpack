@@ -1,4 +1,4 @@
-package cnb
+package imagehelpers
 
 import (
 	"bytes"
@@ -17,15 +17,13 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func TestMountableBuildpackLayer(t *testing.T) {
-	spec.Run(t, "Test Mountable Buildpack Layer", testMountableBuildpackLayer)
+func TestLazyLayer(t *testing.T) {
+	spec.Run(t, "Test Lazy Layer", testLazyLayer)
 }
 
-func testMountableBuildpackLayer(t *testing.T, when spec.G, it spec.S) {
+func testLazyLayer(t *testing.T, when spec.G, it spec.S) {
 	handler := http.NewServeMux()
 	server := httptest.NewServer(handler)
 	tagName := fmt.Sprintf("%s/some/image:tag", server.URL[7:])
@@ -64,17 +62,12 @@ func testMountableBuildpackLayer(t *testing.T, when spec.G, it spec.S) {
 			io.Copy(writer, compressed)
 		})
 
-		layer, err = layerFromStoreBuildpack(authn.DefaultKeychain, corev1alpha1.StoreBuildpack{
-			BuildpackInfo: corev1alpha1.BuildpackInfo{
-				Id:      "id.buildpack",
-				Version: "1.0",
-			},
-			DiffId: diffID.String(),
-			StoreImage: corev1alpha1.StoreImage{
-				Image: tagName,
-			},
-			Digest: digest.String(),
-			Size:   size,
+		layer, err = NewLazyMountableLayer(LazyMountableLayerArgs{
+			Digest:   digest.String(),
+			DiffId:   diffID.String(),
+			Image:    tagName,
+			Size:     size,
+			Keychain: authn.DefaultKeychain,
 		})
 		require.NoError(t, err)
 	})

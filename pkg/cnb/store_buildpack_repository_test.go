@@ -10,6 +10,7 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
 func TestBuildpackRepository(t *testing.T) {
@@ -179,7 +180,12 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.engine", "1.0.0")
 			require.NoError(t, err)
 
-			expectedLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
+			expectedLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+				Digest: engineBuildpack.Digest,
+				DiffId: engineBuildpack.DiffId,
+				Image:  engineBuildpack.StoreImage.Image,
+				Size:   engineBuildpack.Size,
+			})
 
 			require.Equal(t, info, RemoteBuildpackInfo{
 				BuildpackInfo: DescriptiveBuildpackInfo{
@@ -221,7 +227,12 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.multi", "")
 			require.NoError(t, err)
 
-			expectedLayer, err := layerFromStoreBuildpack(nil, v9Buildpack)
+			expectedLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+				Digest: v9Buildpack.Digest,
+				DiffId: v9Buildpack.DiffId,
+				Image:  v9Buildpack.StoreImage.Image,
+				Size:   v9Buildpack.Size,
+			})
 			require.NoError(t, err)
 
 			require.Equal(t, info, RemoteBuildpackInfo{
@@ -292,13 +303,28 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			info, err := storeBuildpackRepository.FindByIdAndVersion("io.buildpack.meta", "1.0.0")
 			require.NoError(t, err)
 
-			expectedEngineLayer, err := layerFromStoreBuildpack(nil, engineBuildpack)
+			expectedEngineLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+				Digest: engineBuildpack.Digest,
+				DiffId: engineBuildpack.DiffId,
+				Image:  engineBuildpack.StoreImage.Image,
+				Size:   engineBuildpack.Size,
+			})
 			require.NoError(t, err)
 
-			expectedPackageManagerLayer, err := layerFromStoreBuildpack(nil, packageManagerBuildpack)
+			expectedPackageManagerLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+				Digest: packageManagerBuildpack.Digest,
+				DiffId: packageManagerBuildpack.DiffId,
+				Image:  packageManagerBuildpack.StoreImage.Image,
+				Size:   packageManagerBuildpack.Size,
+			})
 			require.NoError(t, err)
 
-			expectedMetaLayer, err := layerFromStoreBuildpack(nil, metaBuildpack)
+			expectedMetaLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
+				Digest: metaBuildpack.Digest,
+				DiffId: metaBuildpack.DiffId,
+				Image:  metaBuildpack.StoreImage.Image,
+				Size:   metaBuildpack.Size,
+			})
 			require.NoError(t, err)
 
 			require.Equal(t, RemoteBuildpackInfo{
