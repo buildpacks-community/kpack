@@ -18,7 +18,7 @@ type BuildpackRepository interface {
 }
 
 type LifecycleProvider interface {
-	GetImage() (v1.Image, error)
+	LayerForOS(os string) (v1.Layer, LifecycleMetadata, error)
 }
 
 type NewBuildpackRepository func(clusterStore *buildapi.ClusterStore) BuildpackRepository
@@ -38,20 +38,19 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		return buildapi.BuilderRecord{}, err
 	}
 
-	lifecycleImage, err := r.LifecycleProvider.GetImage()
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	builderBldr, err := newBuilderBldr(lifecycleImage, r.KpackVersion)
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
+	builderBldr := newBuilderBldr(r.KpackVersion)
 
 	err = builderBldr.AddStack(buildImage, clusterStack)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
+
+	lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.LayerForOS(builderBldr.os)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
 
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))

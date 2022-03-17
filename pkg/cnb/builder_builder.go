@@ -40,7 +40,7 @@ var (
 
 type builderBlder struct {
 	baseImage         v1.Image
-	lifecycleImage    v1.Image
+	lifecycleLayer    v1.Layer
 	LifecycleMetadata LifecycleMetadata
 	stackId           string
 	order             []corev1alpha1.OrderEntry
@@ -53,19 +53,11 @@ type builderBlder struct {
 	os                string
 }
 
-func newBuilderBldr(lifecycleImage v1.Image, kpackVersion string) (*builderBlder, error) {
-	lifecycleMd := LifecycleMetadata{}
-	err := imagehelpers.GetLabel(lifecycleImage, lifecycleMetadataLabel, &lifecycleMd)
-	if err != nil {
-		return nil, err
-	}
-
+func newBuilderBldr(kpackVersion string) *builderBlder {
 	return &builderBlder{
-		lifecycleImage:    lifecycleImage,
-		LifecycleMetadata: lifecycleMd,
-		buildpackLayers:   map[DescriptiveBuildpackInfo]buildpackLayer{},
-		kpackVersion:      kpackVersion,
-	}, nil
+		buildpackLayers: map[DescriptiveBuildpackInfo]buildpackLayer{},
+		kpackVersion:    kpackVersion,
+	}
 }
 
 func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.ClusterStack) error {
@@ -82,6 +74,11 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.Clus
 	bb.cnbUserId = clusterStack.Status.UserID
 	bb.cnbGroupId = clusterStack.Status.GroupID
 	return nil
+}
+
+func (bb *builderBlder) AddLifecycle(lifecycleLayer v1.Layer, lifecycleMetadata LifecycleMetadata) {
+	bb.lifecycleLayer = lifecycleLayer
+	bb.LifecycleMetadata = lifecycleMetadata
 }
 
 func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
@@ -118,11 +115,6 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	lifecycleLayer, err := bb.lifecycleLayer()
-	if err != nil {
-		return nil, err
-	}
-
 	stackLayer, err := bb.stackLayer()
 	if err != nil {
 		return nil, err
@@ -137,7 +129,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		layers(
 			[]v1.Layer{
 				defaultLayer,
-				lifecycleLayer,
+				bb.lifecycleLayer,
 			},
 			buildpackLayers,
 			[]v1.Layer{
@@ -220,20 +212,6 @@ func relaxedMixinContract(builderSupportedApis []string) bool {
 
 func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {
 	return deterministicSortBySize(bb.buildpackLayers)
-}
-
-func (bb *builderBlder) lifecycleLayer() (v1.Layer, error) {
-	diffId, err := imagehelpers.GetStringLabel(bb.lifecycleImage, bb.os)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not find lifecycle for os: %s", bb.os)
-	}
-
-	hash, err := v1.NewHash(diffId)
-	if err != nil {
-		return nil, err
-	}
-
-	return bb.lifecycleImage.LayerByDiffID(hash)
 }
 
 func (bb *builderBlder) stackLayer() (v1.Layer, error) {
