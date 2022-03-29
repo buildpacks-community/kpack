@@ -12,15 +12,18 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"reflect"
 	"regexp"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/layer"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -45,25 +48,6 @@ func main() {
 	image, err := lifecycleImage(
 		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
 		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
-		cnb.LifecycleMetadata{
-			LifecycleInfo: cnb.LifecycleInfo{
-				Version: lifecycleVersion,
-			},
-			API: cnb.LifecycleAPI{
-				BuildpackVersion: "0.2",
-				PlatformVersion:  "0.3",
-			},
-			APIs: cnb.LifecycleAPIs{
-				Buildpack: cnb.APIVersions{
-					Deprecated: []string{},
-					Supported:  []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7"},
-				},
-				Platform: cnb.APIVersions{
-					Deprecated: []string{},
-					Supported:  []string{"0.3", "0.4", "0.5", "0.6", "0.7", "0.8"},
-				},
-			},
-		},
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -78,10 +62,22 @@ func main() {
 
 }
 
-func lifecycleImage(linuxUrl, windowsUrl string, lifecycleMetadata cnb.LifecycleMetadata) (v1.Image, error) {
+func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 	image, err := random.Image(0, 0)
 	if err != nil {
 		return nil, err
+	}
+
+	linuxDescriptor, err := lifecycleDescriptor(linuxUrl)
+	if err != nil {
+		return nil, err
+	}
+	windowsDescriptor, err := lifecycleDescriptor(windowsUrl)
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(linuxDescriptor, windowsDescriptor) {
+		return nil, errors.New("linux and windows lifecycle descriptors do not match. Check urls.")
 	}
 
 	linuxLayer, err := lifecycleLayer(linuxUrl, "linux")
@@ -119,8 +115,43 @@ func lifecycleImage(linuxUrl, windowsUrl string, lifecycleMetadata cnb.Lifecycle
 	}
 
 	return imagehelpers.SetLabels(image, map[string]interface{}{
-		lifecycleMetadataLabel: lifecycleMetadata,
+		lifecycleMetadataLabel: lifecycleDescriptorToMetadata(linuxDescriptor),
 	})
+}
+
+func lifecycleDescriptor(url string) (cnb.LifecycleDescriptor, error) {
+	lr, err := lifecycleReader(url)
+	if err != nil {
+		return cnb.LifecycleDescriptor{}, err
+	}
+	defer lr.Close()
+	tr := tar.NewReader(lr)
+	for {
+		header, err := tr.Next()
+		if err != nil {
+			break
+		}
+
+		name := header.Name
+		if name == "lifecycle.toml" {
+			descriptor := cnb.LifecycleDescriptor{}
+			if _, err := toml.NewDecoder(tr).Decode(&descriptor); err != nil {
+				return cnb.LifecycleDescriptor{}, err
+			}
+			return descriptor, nil
+		}
+
+		continue
+	}
+	return cnb.LifecycleDescriptor{}, errors.New("could not find lifecycle descriptor lifecyle.toml")
+}
+
+func lifecycleDescriptorToMetadata(descriptor cnb.LifecycleDescriptor) cnb.LifecycleMetadata {
+	return cnb.LifecycleMetadata{
+		LifecycleInfo: descriptor.Info,
+		API:           descriptor.API,
+		APIs:          descriptor.APIs,
+	}
 }
 
 func lifecycleLayer(url, os string) (v1.Layer, error) {
