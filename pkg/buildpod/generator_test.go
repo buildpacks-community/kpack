@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/platform"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
@@ -529,7 +529,7 @@ func createImage(t *testing.T, os string) ggcrv1.Image {
 	image, err = mutate.ConfigFile(image, config)
 	require.NoError(t, err)
 
-	image, err = imagehelpers.SetStringLabel(image, lifecycle.StackIDLabel, "some.stack.id")
+	image, err = imagehelpers.SetStringLabel(image, platform.StackIDLabel, "some.stack.id")
 	require.NoError(t, err)
 
 	image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json

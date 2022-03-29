@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buildpacks/lifecycle"
+	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -501,7 +501,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			builtImage := cnb.BuiltImage{
 				Identifier:  identifier,
 				CompletedAt: time.Now(),
-				BuildpackMetadata: []lifecycle.GroupBuildpack{{
+				BuildpackMetadata: []lifecyclebuildpack.GroupBuildpack{{
 					ID:       "io.buildpack.executed",
 					Version:  "1.1",
 					Homepage: "mysupercoolsite.com",

@@ -440,9 +440,10 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 			},
 			ServiceAccountName: serviceAccountName,
 			Source: corev1alpha1.SourceConfig{
+				SubPath: "nodejs/npm",
 				Git: &corev1alpha1.Git{
-					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
-					Revision: "master",
+					URL:      "https://github.com/paketo-buildpacks/samples",
+					Revision: "becab5f3517eeb6922971ccd3e1f7adec522f0d4",
 				},
 			},
 			Cache:                cacheConfig,

@@ -30,6 +30,7 @@ import (
 const (
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 	lifecycleLocation      = "/cnb/lifecycle/"
+	lifecycleVersion       = "0.13.5"
 )
 
 var (
@@ -42,11 +43,11 @@ func main() {
 	flag.Parse()
 
 	image, err := lifecycleImage(
-		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.3/lifecycle-v0.13.3+linux.x86-64.tgz",
-		"https://github.com/buildpacks/lifecycle/releases/download/v0.13.3/lifecycle-v0.13.3+windows.x86-64.tgz",
+		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
+		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
 		cnb.LifecycleMetadata{
 			LifecycleInfo: cnb.LifecycleInfo{
-				Version: "0.13.3",
+				Version: lifecycleVersion,
 			},
 			API: cnb.LifecycleAPI{
 				BuildpackVersion: "0.2",

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 
@@ -68,7 +68,7 @@ func main() {
 }
 
 func signImage() error {
-	var report lifecycle.ExportReport
+	var report platform.ExportReport
 	_, err := toml.DecodeFile(reportFilePath, &report)
 	if err != nil {
 		return errors.Wrap(err, "toml decode")

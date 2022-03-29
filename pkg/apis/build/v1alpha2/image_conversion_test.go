@@ -25,7 +25,8 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 
 		v1alpha2Image := &Image{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "my-super-convertable-image",
+				Annotations: map[string]string{},
+				Name:        "my-super-convertable-image",
 			},
 			Spec: ImageSpec{
 				Tag:                "my-tag",
@@ -47,7 +48,13 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				SuccessBuildHistoryLimit: &buildHistoryLimit,
 				ImageTaggingStrategy:     corev1alpha1.BuildNumber,
 				Build: &ImageBuild{
-					Services: nil,
+					Services: Services{
+						{
+							Kind:       "Secret",
+							Name:       "some-secret",
+							APIVersion: "v1",
+						},
+					},
 					Env: []corev1.EnvVar{
 						{
 							Name:  "blah",
@@ -92,6 +99,9 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 		v1alpha1Image := &v1alpha1.Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-super-convertable-image",
+				Annotations: map[string]string{
+					"kpack.io/services": `[{"kind":"Secret","name":"some-secret","apiVersion":"v1"}]`,
+				},
 			},
 			Spec: v1alpha1.ImageSpec{
 				Tag:            "my-tag",
@@ -242,7 +252,6 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			v1alpha2Image.Spec.Build = nil
 			v1alpha2Image.Spec.Notary = nil
 			v1alpha2Image.Spec.Cache = nil
-			v1alpha1Image.Annotations = nil
 
 			testV1alpha1Image := &v1alpha1.Image{}
 			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
@@ -251,6 +260,7 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			v1alpha1Image.Spec.Build = nil
 			v1alpha1Image.Spec.Notary = nil
 			v1alpha1Image.Spec.CacheSize = nil
+			v1alpha1Image.Annotations = map[string]string{}
 			require.Equal(t, testV1alpha1Image, v1alpha1Image)
 
 			testV1alpha2Image := &Image{}
