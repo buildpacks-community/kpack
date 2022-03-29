@@ -11,7 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
-	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 
 	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds"
@@ -108,7 +108,7 @@ func signImage() error {
 	}
 
 	if hasCosign() {
-		cosignSigner := cosign.NewImageSigner(logger, cli.SignCmd)
+		cosignSigner := cosign.NewImageSigner(logger, sign.SignCmd)
 
 		annotations, err := mapKeyValueArgs(cosignAnnotations)
 		if err != nil {
