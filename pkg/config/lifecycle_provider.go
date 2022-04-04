@@ -62,6 +62,7 @@ func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) {
 	lifecycle, err := l.read(context.Background(), cm)
 	if err != nil {
 		l.lifecycleData.Store(configmapRead{err: err})
+		return
 	}
 
 	if l.isNewImage(lifecycle) {
