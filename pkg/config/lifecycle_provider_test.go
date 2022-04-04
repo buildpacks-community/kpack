@@ -110,6 +110,9 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 				Data: map[string]string{"image": "some-invalid-image", "serviceAccountRef.name": "some-service-account", "serviceAccountRef.namespace": "some-service-account-namespace"},
 			})
 			require.Equal(t, callBack.called, 1)
+
+			_, _, err := p.LayerForOS("linux")
+			require.Error(t, err)
 		})
 	})
 
