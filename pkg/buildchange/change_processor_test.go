@@ -61,7 +61,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 				assert.True(t, summary.HasChanges)
 				assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
 				assert.Equal(t, expectedChangesStr, summary.ChangesStr)
-
+				assert.Equal(t, buildapi.BuildPriorityHigh, summary.Priority)
 				var changes []buildchange.GenericChange
 				err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
 				assert.NoError(t, err)
@@ -78,6 +78,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.False(t, summary.HasChanges)
 					assert.Empty(t, summary.ReasonsStr)
 					assert.Empty(t, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityNone, summary.Priority)
 				})
 			})
 
@@ -99,6 +100,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.True(t, summary.HasChanges)
 					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
 					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityHigh, summary.Priority)
 
 					var changes []buildchange.GenericChange
 					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
@@ -123,6 +125,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 				it("returns the correct ChangeSummary and does not error", func() {
 					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
+					assert.Equal(t, buildapi.BuildPriorityNone, summary.Priority)
 					assert.False(t, summary.HasChanges)
 					assert.Empty(t, summary.ReasonsStr)
 					assert.Empty(t, summary.ChangesStr)
@@ -253,6 +256,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.True(t, summary.HasChanges)
 					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
 					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityHigh, summary.Priority)
 
 					var changes []buildchange.GenericChange
 					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
@@ -273,6 +277,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					summary, err := cp.Process(change).Summarize()
 					assert.NoError(t, err)
 					assert.False(t, summary.HasChanges)
+					assert.Equal(t, buildapi.BuildPriorityNone, summary.Priority)
 					assert.Empty(t, summary.ReasonsStr)
 					assert.Empty(t, summary.ChangesStr)
 				})
@@ -318,6 +323,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.True(t, summary.HasChanges)
 					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
 					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityLow, summary.Priority)
 
 					var changes []buildchange.GenericChange
 					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
@@ -349,6 +355,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.False(t, summary.HasChanges)
 					assert.Empty(t, summary.ReasonsStr)
 					assert.Empty(t, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityNone, summary.Priority)
 				})
 			})
 
@@ -372,6 +379,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 					assert.True(t, summary.HasChanges)
 					assert.Equal(t, expectedReasonsStr, summary.ReasonsStr)
 					assert.Equal(t, expectedChangesStr, summary.ChangesStr)
+					assert.Equal(t, buildapi.BuildPriorityLow, summary.Priority)
 
 					var changes []buildchange.GenericChange
 					err = json.Unmarshal([]byte(summary.ChangesStr), &changes)
@@ -556,6 +564,7 @@ func testChangeProcessor(t *testing.T, when spec.G, it spec.S) {
 				assert.NoError(t, err)
 				assert.True(t, summary.HasChanges)
 				assert.Equal(t, "TRIGGER,COMMIT,CONFIG,BUILDPACK,STACK", summary.ReasonsStr)
+				assert.Equal(t, buildapi.BuildPriorityHigh, summary.Priority)
 				assert.Equal(t, expectedChangesStr, summary.ChangesStr)
 
 				var changes []buildchange.GenericChange

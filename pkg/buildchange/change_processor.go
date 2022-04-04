@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pkg/errors"
 )
 
@@ -48,7 +49,7 @@ func (c *ChangeProcessor) Summarize() (ChangeSummary, error) {
 		c.errStrs = append(c.errStrs, err.Error())
 	}
 
-	summary, err := NewChangeSummary(c.hasChanges(), c.reasonsStr(), changesStr)
+	summary, err := NewChangeSummary(c.hasChanges(), c.reasonsStr(), changesStr, c.priority())
 	if err != nil {
 		err := errors.Wrapf(err, "error summarizing changes")
 		c.errStrs = append(c.errStrs, err.Error())
@@ -89,4 +90,18 @@ func (c *ChangeProcessor) changesStr() (string, error) {
 	}
 
 	return string(bytes), err
+}
+
+func (c *ChangeProcessor) priority() buildapi.BuildPriority {
+	priority := buildapi.BuildPriority(buildapi.BuildPriorityNone)
+	if !c.hasChanges() {
+		return priority
+	}
+
+	for _, change := range c.changes {
+		if change.Priority > priority {
+			priority = change.Priority
+		}
+	}
+	return priority
 }

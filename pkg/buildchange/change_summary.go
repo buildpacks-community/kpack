@@ -1,18 +1,23 @@
 package buildchange
 
-import "github.com/pkg/errors"
+import (
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pkg/errors"
+)
 
 type ChangeSummary struct {
 	HasChanges bool
 	ReasonsStr string
 	ChangesStr string
+	Priority   buildapi.BuildPriority
 }
 
-func NewChangeSummary(hasChanges bool, reasonsStr, changesStr string) (ChangeSummary, error) {
+func NewChangeSummary(hasChanges bool, reasonsStr, changesStr string, priority buildapi.BuildPriority) (ChangeSummary, error) {
 	cs := ChangeSummary{
 		HasChanges: hasChanges,
 		ReasonsStr: reasonsStr,
 		ChangesStr: changesStr,
+		Priority:   priority,
 	}
 
 	if !cs.IsValid() {

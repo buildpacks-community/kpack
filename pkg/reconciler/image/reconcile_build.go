@@ -23,12 +23,14 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	if err != nil {
 		return buildapi.ImageStatus{}, errors.Wrap(err, "error determining if an image build is needed")
 	}
-
+	priorityClass := ""
+	if c.EnablePriorityClasses {
+		priorityClass = result.PriorityClass
+	}
 	switch result.ConditionStatus {
 	case corev1.ConditionTrue:
 		nextBuildNumber := currentBuildNumber + 1
-
-		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, nextBuildNumber)
+		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, nextBuildNumber, priorityClass)
 		build, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
 		if err != nil {
 			return buildapi.ImageStatus{}, err

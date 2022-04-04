@@ -21,3 +21,5 @@ func (c commitChange) IsBuildRequired() (bool, error) { return c.oldRevision != 
 func (c commitChange) Old() interface{} { return c.oldRevision }
 
 func (c commitChange) New() interface{} { return c.newRevision }
+
+func (c commitChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityHigh }

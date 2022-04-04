@@ -14,6 +14,7 @@ type buildRequiredResult struct {
 	ConditionStatus corev1.ConditionStatus
 	ReasonsStr      string
 	ChangesStr      string
+	PriorityClass   string
 }
 
 func newBuildRequiredResult(summary buildchange.ChangeSummary) buildRequiredResult {
@@ -25,6 +26,7 @@ func newBuildRequiredResult(summary buildchange.ChangeSummary) buildRequiredResu
 	}
 	result.ReasonsStr = summary.ReasonsStr
 	result.ChangesStr = summary.ChangesStr
+	result.PriorityClass = summary.Priority.PriorityClass()
 	return result
 }
 

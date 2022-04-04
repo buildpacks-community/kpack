@@ -5531,6 +5531,9 @@
         "notary": {
           "$ref": "#/definitions/kpack.core.v1alpha1.NotaryConfig"
         },
+        "priorityClassName": {
+          "type": "string"
+        },
         "projectDescriptorPath": {
           "type": "string"
         },

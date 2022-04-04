@@ -36,3 +36,5 @@ func (b buildpackChange) IsBuildRequired() (bool, error) {
 func (b buildpackChange) Old() interface{} { return b.old }
 
 func (b buildpackChange) New() interface{} { return b.new }
+
+func (b buildpackChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityLow }

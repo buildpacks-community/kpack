@@ -31,9 +31,8 @@ const (
 
 type BuildReason string
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64, priorityClass string) *Build {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
-
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: im.Namespace,
@@ -71,6 +70,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Affinity:              im.Affinity(),
 			RuntimeClassName:      im.RuntimeClassName(),
 			SchedulerName:         im.SchedulerName(),
+			PriorityClassName:     priorityClass,
 		},
 	}
 }

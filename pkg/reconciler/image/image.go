@@ -39,15 +39,17 @@ func NewController(
 	duckbuilderInformer *duckbuilder.DuckBuilderInformer,
 	sourceResolverInformer buildinformers.SourceResolverInformer,
 	pvcInformer coreinformers.PersistentVolumeClaimInformer,
+	enablePriorityClasses bool,
 ) *controller.Impl {
 	c := &Reconciler{
-		Client:               opt.Client,
-		K8sClient:            k8sClient,
-		ImageLister:          imageInformer.Lister(),
-		BuildLister:          buildInformer.Lister(),
-		DuckBuilderLister:    duckbuilderInformer.Lister(),
-		SourceResolverLister: sourceResolverInformer.Lister(),
-		PvcLister:            pvcInformer.Lister(),
+		Client:                opt.Client,
+		K8sClient:             k8sClient,
+		ImageLister:           imageInformer.Lister(),
+		BuildLister:           buildInformer.Lister(),
+		DuckBuilderLister:     duckbuilderInformer.Lister(),
+		SourceResolverLister:  sourceResolverInformer.Lister(),
+		PvcLister:             pvcInformer.Lister(),
+		EnablePriorityClasses: enablePriorityClasses,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -77,14 +79,15 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client               versioned.Interface
-	DuckBuilderLister    *duckbuilder.DuckBuilderLister
-	ImageLister          buildlisters.ImageLister
-	BuildLister          buildlisters.BuildLister
-	SourceResolverLister buildlisters.SourceResolverLister
-	PvcLister            corelisters.PersistentVolumeClaimLister
-	Tracker              reconciler.Tracker
-	K8sClient            k8sclient.Interface
+	Client                versioned.Interface
+	DuckBuilderLister     *duckbuilder.DuckBuilderLister
+	ImageLister           buildlisters.ImageLister
+	BuildLister           buildlisters.BuildLister
+	SourceResolverLister  buildlisters.SourceResolverLister
+	PvcLister             corelisters.PersistentVolumeClaimLister
+	Tracker               reconciler.Tracker
+	K8sClient             k8sclient.Interface
+	EnablePriorityClasses bool
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
