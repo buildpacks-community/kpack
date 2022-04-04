@@ -3,6 +3,7 @@ package v1alpha2
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"path/filepath"
 	"strings"
 
@@ -175,7 +176,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		return nil, err
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs, err  := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
+	if err != nil {
+		return nil, err
+	}
 	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
 
@@ -697,7 +701,7 @@ func (b *Build) cosignArgs() []string {
 }
 
 func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*corev1.Pod, error) {
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, dockerSecrets)
+	secretVolumes, secretVolumeMounts, secretArgs, _ := b.setupSecretVolumesAndArgs(buildContext.Secrets, dockerSecrets)
 	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
@@ -820,7 +824,7 @@ func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
 }
 
-func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
+func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string, error) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
@@ -849,8 +853,12 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		}
 
 		volumeName := fmt.Sprintf(SecretTemplateName, secret.Name)
+		msgs := validation.IsDNS1123Label(volumeName)
+		if len(msgs) > 0 {
+			return nil, nil, nil, errors.New("bad name")
+		}
 
-		volumes = append(volumes, corev1.Volume{
+	volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
@@ -865,7 +873,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		})
 	}
 
-	return volumes, volumeMounts, args
+	return volumes, volumeMounts, args, nil
 }
 
 func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]corev1.Volume, []corev1.VolumeMount, []string) {

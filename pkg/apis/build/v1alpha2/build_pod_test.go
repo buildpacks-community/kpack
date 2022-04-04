@@ -1269,18 +1269,57 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assertSecretNotPresent(t, pod, "random-secret-1")
 		})
 
-		it.Focus("fails with invalid secret name", func() {
-			buildContext.Secrets = append(buildContext.Secrets, corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "illegal-secret.name",
-				},
+
+		when("validating volume mounted secrets", func() {
+			it("passes with a valid volume name", func() {
+				buildContextCopy := buildContext
+				buildContextCopy.Secrets = []corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "valid-secret",
+
+						},
+						Type: corev1.SecretTypeDockerConfigJson,
+					},
+				}
+
+				_, err := build.BuildPod(config, buildContextCopy)
+				require.NoError(t, err)
+
 			})
+			it("fails when name contains non allowed characters", func() {
+				buildContextCopy := buildContext
+				buildContextCopy.Secrets = []corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "illegal-secret.name",
 
-			pod, err := build.BuildPod(config, buildContext)
-			require.Error(t, err)
-			assert.Equal(t, err.Error(), "bad name")
+						},
+						Type: corev1.SecretTypeDockerConfigJson,
+					},
+				}
 
-			assertSecretNotPresent(t, pod, "illegal-secret.name")
+				_, err := build.BuildPod(config, buildContextCopy)
+				require.Error(t, err)
+				assert.Equal(t, "bad name", err.Error())
+				//assertSecretNotPresent(t, pod, "illegal-secret.name")
+			})
+			it("fails when name is too long", func() {
+				buildContextCopy := buildContext
+				buildContextCopy.Secrets = []corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "this-is-a-secret-with-name-that-is-too-long-for-a-label",
+						},
+						Type: corev1.SecretTypeDockerConfigJson,
+					},
+				}
+
+				_, err := build.BuildPod(config, buildContextCopy)
+				require.Error(t, err)
+				assert.Equal(t, "bad name", err.Error())
+				//assertSecretNotPresent(t, pod, "illegal-secret.name")
+			})
 		})
 
 		it("deduplicates builder imagepullSecrets from service account image pull secrets", func() {
