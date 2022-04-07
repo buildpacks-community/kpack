@@ -142,7 +142,7 @@ func main() {
 		logger.Fatalf("error while processing the project descriptor: %s", err)
 	}
 
-	logger.Printf("Builder:\n Image:%s \n Name:%s \n Kind:%s ", *builderImage,
+	logger.Printf("Builder:\n Image: %s \n Name: %s \n Kind: %s ", *builderImage,
 		*builderName, *builderKind)
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
