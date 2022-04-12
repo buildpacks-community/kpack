@@ -39,8 +39,8 @@ var (
 	descriptorPath = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
 	builderImage= flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "The builder image used to build the application")
-	builderName = flag.String("builder-name", os.Getenv("BUILD_NAME"), "The builder name provided during creation")
-	builderKind = flag.String("builder-kind", os.Getenv("BUILD_KIND"), "The builder kind")
+	builderName = flag.String("builder-name", os.Getenv("BUILDER_NAME"), "The builder name provided during creation")
+	builderKind = flag.String("builder-kind", os.Getenv("BUILDER_KIND"), "The builder kind")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags

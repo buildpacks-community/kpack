@@ -377,15 +377,15 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							},
 							corev1.EnvVar{
 								Name:  "BUILDER_IMAGE",
-								Value: b.Spec.Builder.Image,
+								Value: b.BuilderSpec().Image,
 							},
 							corev1.EnvVar{
-								Name:  "BUILD_NAME",
-								Value: b.Spec.Builder.Name,
+								Name:  "BUILDER_NAME",
+								Value: b.BuilderSpec().Name,
 							},
 							corev1.EnvVar{
-								Name: "BUILD_KIND",
-								Value: b.Spec.Builder.Kind,
+								Name: "BUILDER_KIND",
+								Value: b.BuilderSpec().Kind,
 							},
 							corev1.EnvVar{
 								Name:  "DNS_PROBE_HOSTNAME",
