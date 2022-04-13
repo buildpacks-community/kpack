@@ -1,6 +1,6 @@
 #  kpack Tutorial
 
-This tutorial will walk through creating a kpack [builder](builder.md) resource and a [image](image.md) resource to build a docker image from source and allow kpack rebuild the image with updates.  
+This tutorial will walk through creating a kpack [builder](builders.md) resource and a [image](image.md) resource to build a docker image from source and allow kpack rebuild the image with updates.  
 
 ###  Prerequisites
 1. kpack is installed and available on a kubernetes cluster
