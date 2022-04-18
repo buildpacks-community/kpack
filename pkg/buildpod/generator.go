@@ -141,11 +141,11 @@ func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build Bu
 	gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
 	unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(ctx, s.Name, metav1.GetOptions{})
 	if err != nil {
-		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+		return duckprovisionedserviceable.ProvisionedServicable{}, err
 	}
 	ps := duckprovisionedserviceable.ProvisionedServicable{}
 	if err := duck.FromUnstructured(unstructured, &ps); err != nil {
-		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+		return duckprovisionedserviceable.ProvisionedServicable{}, err
 	}
 	return ps, nil
 }

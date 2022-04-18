@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type FakeProvisionedService struct {
@@ -21,6 +22,10 @@ func (ps *FakeProvisionedService) DeepCopyObject() runtime.Object {
 		Spec:       ps.Spec,
 		Status:     ps.Status,
 	}
+}
+
+func (ps *FakeProvisionedService) GetGroupVersionKind() schema.GroupVersionKind {
+	return ps.GroupVersionKind()
 }
 
 type ProvisionedServiceSpec struct {

@@ -3,6 +3,8 @@ package buildpod_test
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"knative.dev/pkg/apis/duck"
 	"testing"
 
 	"github.com/buildpacks/lifecycle/platform"
@@ -146,13 +148,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			Type: "service.binding/some-type",
 		}
 
-		invalidBindingSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-invalid-binding-secret",
-				Namespace: namespace,
-			},
-		}
-
 		psBindingSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "some-ps-binding-secret",
@@ -165,10 +160,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		ps := &psfakes.FakeProvisionedService{
-
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ProvisionedService",
-				APIVersion: "v1alpha1",
+				APIVersion: "v1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "some-provisioned-service",
@@ -179,29 +173,15 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		invalidPS := &psfakes.FakeProvisionedService{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ProvisionedService",
-				APIVersion: "v1alpha1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-invalid-provisioned-service",
-				Namespace: namespace,
-			},
-			Status: psfakes.ProvisionedServiceStatus{
-				Binding: v1.LocalObjectReference{Name: "&"},
-			},
-		}
-
 		keychain := &registryfakes.FakeKeychain{}
 		secretRef := registry.SecretRef{
 			ServiceAccount:   serviceAccountName,
 			Namespace:        namespace,
 			ImagePullSecrets: builderPullSecrets,
 		}
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret, invalidBindingSecret)
+		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret)
 		buildPodConfig := buildapi.BuildPodImages{}
-		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme.Scheme, ps, invalidPS)
+		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme.Scheme)
 
 		generator := &buildpod.Generator{
 			BuildPodConfig:  buildPodConfig,
@@ -301,13 +281,25 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("passes in k8s service bindings if present", func() {
+			// Create provisioned service here b/c client wouldn't initialize with it
+			gvr, _ := meta.UnsafeGuessKindToResource(ps.GroupVersionKind())
+			u, err := duck.ToUnstructured(ps)
+			require.NoError(t, err)
+			_, err = fakeDynamicClient.Resource(gvr).Namespace(namespace).Create(context.TODO(), u, metav1.CreateOptions{})
+			require.NoError(t, err)
+
 			var build = &testBuildPodable{
 				namespace: namespace,
 				services: buildapi.Services{
 					{
 						Kind:       "Secret",
 						APIVersion: "v1",
-						Name:       psBindingSecret.Name,
+						Name:       bindingSecret.Name,
+					},
+					{
+						Kind:       "ProvisionedService",
+						APIVersion: "v1",
+						Name:       ps.Name,
 					},
 				},
 				serviceAccount: serviceAccountName,
@@ -316,17 +308,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					ImagePullSecrets: builderPullSecrets,
 				},
 			}
-			_, err := generator.Generate(context.TODO(), build)
+			_, err = generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
 
 			expectedBindings := []buildapi.ServiceBinding{
 				&corev1alpha1.ServiceBinding{
-					Name:      psBindingSecret.Name,
+					Name:      bindingSecret.Name,
+					SecretRef: &corev1.LocalObjectReference{Name: bindingSecret.Name},
+				},
+				&corev1alpha1.ServiceBinding{
+					Name:      ps.Name,
 					SecretRef: &corev1.LocalObjectReference{Name: psBindingSecret.Name},
 				},
 			}
 
-			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 2)
 			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
 
@@ -462,6 +458,26 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
 			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
+		})
+
+		it("errors with an API error when trying to request the provisioned service", func() {
+			var build = &testBuildPodable{
+				namespace: namespace,
+				services: buildapi.Services{
+					{
+						Kind: "ProvisionedService",
+						Name: "some-provisioned-service",
+					},
+				},
+				serviceAccount: serviceAccountName,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			_, err := generator.Generate(context.TODO(), build)
+			require.EqualError(t, err, "provisionedservices \"some-provisioned-service\" not found")
 		})
 	})
 }
