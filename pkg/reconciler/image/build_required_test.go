@@ -829,7 +829,3 @@ func (t TestBuilderResource) RunImage() string {
 func (t TestBuilderResource) GetName() string {
 	return t.Name
 }
-
-func (t TestBuilderResource) GetKind() string {
-	return t.Kind
-}

@@ -20,10 +20,6 @@ func (b *DuckBuilder) GetName() string {
 	return b.Name
 }
 
-func (b *DuckBuilder) GetKind() string {
-	return b.Kind
-}
-
 type DuckBuilderSpec struct {
 	ImagePullSecrets []v1.LocalObjectReference
 }
