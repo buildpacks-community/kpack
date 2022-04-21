@@ -22,6 +22,9 @@ const (
 	BuildChangesAnnotation = "image.kpack.io/buildChanges"
 	BuildNeededAnnotation  = "image.kpack.io/additionalBuildNeeded"
 
+	BuilderNameAnnotation  = "image.kpack.io/builderName"
+	BuilderKindAnnotation  = "image.kpack.io/builderKind"
+
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
 	BuildReasonBuildpack = "BUILDPACK"
@@ -48,6 +51,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Annotations: combine(im.Annotations, map[string]string{
 				BuildReasonAnnotation:  reasons,
 				BuildChangesAnnotation: changes,
+				BuilderNameAnnotation: builder.GetName(),
+				BuilderKindAnnotation: builder.GetKind(),
 			}),
 		},
 		Spec: BuildSpec{

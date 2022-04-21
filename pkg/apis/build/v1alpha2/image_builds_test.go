@@ -55,7 +55,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 	builder := &TestBuilderResource{
 		Name:         "builder-Name",
 		LatestImage:  "some/builder@sha256:builder-digest",
-		Kind:         "builder",
+		Kind:         BuilderKind,
 		BuilderReady: true,
 		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
@@ -128,7 +128,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 		it("propagates image's annotations onto the build", func() {
 			build := image.Build(sourceResolver, builder, latestBuild, "some-reasons", "some-changes", 27, "")
-			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/buildChanges": "some-changes", "image.kpack.io/reason": "some-reasons"}, build.Annotations)
+			assert.Equal(t, map[string]string{"annotation-key": "annotation-value", "image.kpack.io/buildChanges": "some-changes", "image.kpack.io/reason": "some-reasons", "image.kpack.io/builderKind": "Builder", "image.kpack.io/builderName": "builder-Name"}, build.Annotations)
 		})
 
 		it("sets labels from image metadata and propagates image labels", func() {
@@ -360,8 +360,6 @@ func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return corev1alpha1.BuildBuilderSpec{
 		Image:            t.LatestImage,
 		ImagePullSecrets: t.ImagePullSecrets,
-		Kind:             t.Kind,
-		Name:             t.Name,
 	}
 }
 
@@ -379,4 +377,8 @@ func (t TestBuilderResource) RunImage() string {
 
 func (t TestBuilderResource) GetName() string {
 	return t.Name
+}
+
+func (t TestBuilderResource) GetKind() string {
+	return t.Kind
 }

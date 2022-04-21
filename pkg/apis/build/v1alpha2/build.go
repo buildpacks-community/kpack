@@ -193,3 +193,18 @@ func (b *Build) additionalBuildNeeded() bool {
 	_, ok := b.Annotations[BuildNeededAnnotation]
 	return ok
 }
+
+
+func (b *Build) builderName() string {
+	if b == nil {
+		return ""
+	}
+	return b.GetAnnotations()[BuilderNameAnnotation]
+}
+
+func (b *Build) builderKind() string {
+	if b == nil {
+		return ""
+	}
+	return b.GetAnnotations()[BuilderKindAnnotation]
+}
