@@ -3,8 +3,6 @@ package buildpod_test
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"knative.dev/pkg/apis/duck"
 	"testing"
 
 	"github.com/buildpacks/lifecycle/platform"
@@ -25,7 +23,6 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	"github.com/pivotal/kpack/pkg/cnb"
 	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -34,6 +31,7 @@ import (
 )
 
 var (
+	scheme             = runtime.NewScheme()
 	schemeGroupVersion = schema.GroupVersion{Group: "fake.kpack.io", Version: "v1"}
 	schemeBuilder      = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(schemeGroupVersion,
@@ -45,7 +43,7 @@ var (
 )
 
 func TestGenerator(t *testing.T) {
-	err := schemeBuilder.AddToScheme(scheme.Scheme)
+	err := schemeBuilder.AddToScheme(scheme)
 	require.NoError(t, err)
 	spec.Run(t, "Generator", testGenerator)
 }
@@ -161,8 +159,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 		ps := &psfakes.FakeProvisionedService{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       "ProvisionedService",
-				APIVersion: "v1",
+				APIVersion: "fake.kpack.io/v1",
+				Kind:       "FakeProvisionedService",
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "some-provisioned-service",
@@ -181,7 +179,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret)
 		buildPodConfig := buildapi.BuildPodImages{}
-		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme.Scheme)
+		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme, ps)
 
 		generator := &buildpod.Generator{
 			BuildPodConfig:  buildPodConfig,
@@ -281,24 +279,17 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("passes in k8s service bindings if present", func() {
-			// Create provisioned service here b/c client wouldn't initialize with it
-			gvr, _ := meta.UnsafeGuessKindToResource(ps.GroupVersionKind())
-			u, err := duck.ToUnstructured(ps)
-			require.NoError(t, err)
-			_, err = fakeDynamicClient.Resource(gvr).Namespace(namespace).Create(context.TODO(), u, metav1.CreateOptions{})
-			require.NoError(t, err)
 
 			var build = &testBuildPodable{
 				namespace: namespace,
 				services: buildapi.Services{
 					{
-						Kind:       "Secret",
-						APIVersion: "v1",
-						Name:       bindingSecret.Name,
+						Kind: "Secret",
+						Name: bindingSecret.Name,
 					},
 					{
-						Kind:       "ProvisionedService",
-						APIVersion: "v1",
+						Kind:       "FakeProvisionedService",
+						APIVersion: "fake.kpack.io/v1",
 						Name:       ps.Name,
 					},
 				},
@@ -308,7 +299,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					ImagePullSecrets: builderPullSecrets,
 				},
 			}
-			_, err = generator.Generate(context.TODO(), build)
+			_, err := generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
 
 			expectedBindings := []buildapi.ServiceBinding{
