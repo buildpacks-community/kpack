@@ -32,6 +32,8 @@ import (
 	"github.com/sigstore/cosign/pkg/signature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestImageSigner(t *testing.T) {
@@ -226,6 +228,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				err = download.SignatureCmd(context.Background(), options.RegistryOptions{}, expectedImageName)
 				assert.Nil(t, err)
 			})
+
 			it("errors early when signing fails", func() {
 				cliSignCmdCallCount := 0
 
@@ -432,6 +435,77 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				assertUnset(t, cosignRepositoryEnv)
+			})
+		})
+
+		when("builder signing occurs", func() {
+			var (
+				cosignSecrets []v1.Secret
+			)
+
+			const (
+				firstSecret    = "secret1"
+				firstNamespace = "secret-ns"
+				firstPassword  = ""
+
+				secondSecret    = "secret2"
+				secondNamespace = "other-secret-ns"
+				secondPassword  = "othertestpass"
+			)
+
+			it.Before(func() {
+				cosignSecrets = []v1.Secret{
+					keypairSecrets(t, firstSecret, firstNamespace, firstPassword),
+					keypairSecrets(t, secondSecret, secondNamespace, secondPassword),
+				}
+			})
+
+			it("signs images from the builder", func() {
+				cliSignCmdCallCount := 0
+				password1Count := 0
+				password2Count := 0
+
+				cliSignCmd := func(
+					ctx context.Context, ko sign.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
+					imageRef []string, certPath string, upload bool, outputSignature, outputCertificate string,
+					payloadPath string, force, recursive bool, attachment string,
+				) error {
+					t.Helper()
+					assert.Equal(t, testCtx, ctx)
+					assert.Equal(t, []string{expectedImageName}, imageRef)
+
+					// Check it is a Kubernetes secret
+					assert.Contains(t, ko.KeyRef, "k8s://")
+
+					password, err := ko.PassFunc(true)
+					assert.Nil(t, err)
+
+					passwordData := []byte(password)
+
+					// Check password
+					if ko.KeyRef == fmt.Sprintf("k8s://%v/%v", firstNamespace, firstSecret) {
+						password1Count++
+						assert.Equal(t, []byte(firstPassword), passwordData)
+					} else if ko.KeyRef == fmt.Sprintf("k8s://%v/%v", secondNamespace, secondSecret) {
+						password2Count++
+						assert.Equal(t, []byte(secondPassword), passwordData)
+					}
+
+					assert.Empty(t, annotations)
+					cliSignCmdCallCount++
+
+					return nil
+				}
+
+				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				_, err := signer.SignBuilder(testCtx, expectedImageName, cosignSecrets)
+				assert.Nil(t, err)
+
+				assert.Equal(t, 2, cliSignCmdCallCount)
+				assert.Equal(t, 1, password1Count)
+				assert.Equal(t, 1, password2Count)
+
+				// TODO improve this test
 			})
 		})
 
@@ -642,6 +716,29 @@ func registryClientOpts(ctx context.Context) []remote.Option {
 		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 		remote.WithContext(ctx),
 	}
+}
+
+func keypairSecrets(t *testing.T, secretName, namespace, password string) v1.Secret {
+	passFunc := func(_ bool) ([]byte, error) {
+		return []byte(password), nil
+	}
+
+	keys, err := sigstoreCosign.GenerateKeyPair(passFunc)
+	assert.Nil(t, err)
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			COSIGNSecretDataCosignKey:       keys.PrivateBytes,
+			COSIGNSecretDataCosignPublicKey: keys.PublicBytes,
+			COSIGNSecretDataCosignPassword:  keys.Password(),
+		},
+	}
+
+	return secret
 }
 
 func keypair(t *testing.T, dirPath, secretName, password string) {

@@ -9,6 +9,8 @@ import (
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
+	v1 "k8s.io/api/core/v1"
 )
 
 type SignFunc func(
@@ -25,6 +27,12 @@ type ImageSigner struct {
 const (
 	cosignRepositoryEnv       = "COSIGN_REPOSITORY"
 	cosignDockerMediaTypesEnv = "COSIGN_DOCKER_MEDIA_TYPES"
+
+	COSIGNSecretDataCosignKey              = "cosign.key"
+	COSIGNSecretDataCosignPassword         = "cosign.password"
+	COSIGNSecretDataCosignPublicKey        = "cosign.pub"
+	COSIGNDockerMediaTypesAnnotationPrefix = "kpack.io/cosign.docker-media-types"
+	COSIGNRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
 )
 
 func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
@@ -105,6 +113,56 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 	}
 
 	return nil
+}
+
+func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSecrets []v1.Secret) (string, error) {
+	for _, secret := range cosignSecrets {
+		ko := sign.KeyOpts{
+			KeyRef: fmt.Sprintf("k8s://%v/%v", secret.Namespace, secret.Name),
+			PassFunc: func(bool) ([]byte, error) {
+				if password, ok := secret.Data[COSIGNSecretDataCosignPassword]; ok {
+					return password, nil
+				}
+
+				return []byte(""), nil
+			},
+		}
+
+		if cosignRepository, ok := secret.Annotations[COSIGNRespositoryAnnotationPrefix]; ok {
+			if err := os.Setenv(cosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
+				return "", errors.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
+			}
+			defer os.Unsetenv(cosignRepositoryEnv)
+		}
+
+		if cosignDockerMediaType, ok := secret.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; ok {
+			if err := os.Setenv(cosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
+				return "", errors.Errorf("failed setting COSIGN_DOCKER_MEDIA_TYPES env variable: %v", err)
+			}
+			defer os.Unsetenv(cosignDockerMediaTypesEnv)
+		}
+
+		if err := s.signFunc(
+			ctx,
+			ko,
+			options.RegistryOptions{},
+			make(map[string]interface{}, 0),
+			[]string{refImage},
+			"",
+			true,
+			"",
+			"",
+			"",
+			false,
+			false,
+			""); err != nil {
+			return "", errors.Errorf("unable to sign image with specified key from secret %v in namespace %v: %v", secret.Name, secret.Namespace, err)
+		}
+
+		// find signature path when successful
+	}
+
+	return "", nil
 }
 
 func findCosignSecrets(secretLocation string) ([]string, error) {

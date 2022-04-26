@@ -8,6 +8,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/name"
+	cosign "github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 )
 
 const (
+<<<<<<< HEAD
 	PrepareContainerName    = "prepare"
 	AnalyzeContainerName    = "analyze"
 	DetectContainerName     = "detect"
@@ -42,6 +44,15 @@ const (
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
 	IstioInject                            = "sidecar.istio.io/inject"
+=======
+	SecretTemplateName           = "secret-volume-%s"
+	DefaultSecretPathName        = "/var/build-secrets/%s"
+	CosignDefaultSecretPathName  = "/var/build-secrets/cosign/%s"
+	BuildLabel                   = "kpack.io/build"
+	DOCKERSecretAnnotationPrefix = "kpack.io/docker"
+	GITSecretAnnotationPrefix    = "kpack.io/git"
+	k8sOSLabel                   = "kubernetes.io/os"
+>>>>>>> 90a9d692 (Support builder signing and containerized tests.)
 
 	cosignSecretDataCosignKey = "cosign.key"
 
@@ -954,7 +965,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 		args         []string
 	)
 	for _, secret := range secrets {
-		if string(secret.Data[cosignSecretDataCosignKey]) == "" {
+		if string(secret.Data[cosign.COSIGNSecretDataCosignKey]) == "" {
 			continue
 		}
 
@@ -1150,11 +1161,11 @@ func steps(f func(step func(corev1.Container, ...stepModifier))) []corev1.Contai
 
 func cosignSecretArgs(secret corev1.Secret) []string {
 	var cosignArgs []string
-	if cosignRepository := secret.ObjectMeta.Annotations[cosignRespositoryAnnotationPrefix]; cosignRepository != "" {
+	if cosignRepository := secret.ObjectMeta.Annotations[cosign.COSIGNRespositoryAnnotationPrefix]; cosignRepository != "" {
 		cosignArgs = append(cosignArgs, fmt.Sprintf("-cosign-repositories=%s=%s", secret.Name, cosignRepository))
 	}
 
-	if cosignDockerMediaType := secret.ObjectMeta.Annotations[cosignDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
+	if cosignDockerMediaType := secret.ObjectMeta.Annotations[cosign.COSIGNDockerMediaTypesAnnotationPrefix]; cosignDockerMediaType != "" {
 		cosignArgs = append(cosignArgs, fmt.Sprintf("-cosign-docker-media-types=%s=%s", secret.Name, cosignDockerMediaType))
 	}
 

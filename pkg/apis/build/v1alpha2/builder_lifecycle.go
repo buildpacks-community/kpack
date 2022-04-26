@@ -11,6 +11,8 @@ import (
 type BuilderRecord struct {
 	Image                   string
 	Stack                   corev1alpha1.BuildStack
+	Signed                  bool
+	SignaturePaths          []string
 	Buildpacks              corev1alpha1.BuildpackMetadataList
 	Order                   []corev1alpha1.OrderEntry
 	ObservedStoreGeneration int64
@@ -33,6 +35,8 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
 	bs.ObservedStackGeneration = record.ObservedStackGeneration
 	bs.OS = record.OS
+	bs.Signed = record.Signed
+	bs.SignaturePaths = record.SignaturePaths
 }
 
 func (cb *BuilderStatus) ErrorCreate(err error) {

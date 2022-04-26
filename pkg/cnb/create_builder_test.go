@@ -310,6 +310,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
 			assert.Equal(t, os, builderRecord.OS)
 
+			// This builder is not currently signed
+			assert.Equal(t, false, builderRecord.Signed)
+			assert.Empty(t, builderRecord.SignaturePaths)
+
 			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
 					Group: []corev1alpha1.BuildpackRef{

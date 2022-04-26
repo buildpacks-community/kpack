@@ -1,11 +1,19 @@
 package cnb
 
 import (
+	"context"
+	"log"
+	"os"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+
+	cosign "github.com/pivotal/kpack/pkg/cosign"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type RegistryClient interface {
@@ -29,6 +37,10 @@ type RemoteBuilderCreator struct {
 	LifecycleProvider      LifecycleProvider
 	KpackVersion           string
 }
+
+var (
+	cosignSigner = cosign.NewImageSigner(log.New(os.Stdout, "", 0), sign.SignCmd)
+)
 
 func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
 	buildpackRepo := r.NewBuildpackRepository(clusterStore)
@@ -72,6 +84,12 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 	}
 
 	identifier, err := r.RegistryClient.Save(keychain, spec.Tag, writeableImage)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	// TODO send correct secrets
+	_, err = cosignSigner.SignBuilder(context.TODO(), identifier, make([]corev1.Secret, 0))
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
