@@ -115,7 +115,7 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 	return nil
 }
 
-func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSecrets []v1.Secret) (string, error) {
+func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSecrets []v1.Secret) ([]string, error) {
 	for _, secret := range cosignSecrets {
 		ko := sign.KeyOpts{
 			KeyRef: fmt.Sprintf("k8s://%v/%v", secret.Namespace, secret.Name),
@@ -130,14 +130,14 @@ func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSe
 
 		if cosignRepository, ok := secret.Annotations[COSIGNRespositoryAnnotationPrefix]; ok {
 			if err := os.Setenv(cosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
-				return "", errors.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
+				return []string{}, errors.Errorf("failed setting %s env variable: %v", cosignRepositoryEnv, err)
 			}
 			defer os.Unsetenv(cosignRepositoryEnv)
 		}
 
 		if cosignDockerMediaType, ok := secret.Annotations[COSIGNDockerMediaTypesAnnotationPrefix]; ok {
 			if err := os.Setenv(cosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
-				return "", errors.Errorf("failed setting COSIGN_DOCKER_MEDIA_TYPES env variable: %v", err)
+				return []string{}, errors.Errorf("failed setting COSIGN_DOCKER_MEDIA_TYPES env variable: %v", err)
 			}
 			defer os.Unsetenv(cosignDockerMediaTypesEnv)
 		}
@@ -156,13 +156,13 @@ func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSe
 			false,
 			false,
 			""); err != nil {
-			return "", errors.Errorf("unable to sign image with specified key from secret %v in namespace %v: %v", secret.Name, secret.Namespace, err)
+			return []string{}, errors.Errorf("unable to sign image with specified key from secret %v in namespace %v: %v", secret.Name, secret.Namespace, err)
 		}
 
-		// find signature path when successful
+		// TODO find signature path when successful
 	}
 
-	return "", nil
+	return []string{}, nil
 }
 
 func findCosignSecrets(secretLocation string) ([]string, error) {
