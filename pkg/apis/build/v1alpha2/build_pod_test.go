@@ -30,6 +30,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		serviceAccount   = "someserviceaccount"
 		dnsProbeHost     = "index.docker.io"
 	)
+	activeDeadlineSeconds := int64(1800)
 	resources := corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("2"),
@@ -61,9 +62,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			CreationTimestamp: metav1.Date(1944, 6, 6, 13, 30, 0, 0, time.UTC),
 		},
 		Spec: buildapi.BuildSpec{
-			Tags:               []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
-			Builder:            builderImageRef,
-			ServiceAccountName: serviceAccount,
+			Tags:                  []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+			Builder:               builderImageRef,
+			ServiceAccountName:    serviceAccount,
+			ActiveDeadlineSeconds: &activeDeadlineSeconds,
 			Source: corev1alpha1.SourceConfig{
 				Git: &corev1alpha1.Git{
 					URL:      "giturl.com/git.git",

@@ -29,6 +29,7 @@ spec:
     git:
       url: https://github.com/buildpack/sample-java-app.git
       revision: main
+  activeDeadlineSeconds: 1800
   env:
   - name: "JAVA_BP_ENV"
     value: "value"
@@ -62,6 +63,7 @@ spec:
 - `builder.image`: This is the tag to the [Cloud Native Buildpacks builder image](https://buildpacks.io/docs/using-pack/working-with-builders/) to use in the build. Unlike on the Image resource, this is an image not a reference to a Builder resource.    
 - `builder.imagePullSecrets`: An optional list of pull secrets if the builder is in a private registry. [To create this secret please reference this link](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials)
 - `source`: The source location that will be the input to the build. See the [Source Configuration](#source-config) section below.
+- `activeDeadlineSeconds`: Optional configurable max active time that the pod can run for
 - `cache`: Caching configuration, two variants are available:
   - `volume.persistentVolumeClaimName`: Optional name of a persistent volume claim used for a build cache across builds.
   - `registry.tag`: Optional name of a tag used for a build cache across builds.

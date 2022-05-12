@@ -317,6 +317,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Spec: corev1.PodSpec{
 			// If the build fails, don't restart it.
 			RestartPolicy:     corev1.RestartPolicyNever,
+			ActiveDeadlineSeconds: b.Spec.ActiveDeadlineSeconds,
 			PriorityClassName: b.PriorityClassName(),
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(corev1.Container{
