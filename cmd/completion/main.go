@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,6 +13,11 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 
@@ -21,26 +29,32 @@ import (
 )
 
 const (
-	registrySecretsDir   = "/var/build-secrets"
-	reportFilePath       = "/var/report/report.toml"
-	notarySecretDir      = "/var/notary/v1"
-	cosignSecretLocation = "/var/build-secrets/cosign"
+	registrySecretsDir    = "/var/build-secrets"
+	buildMetadataFilePath = "/buildMetadata/config/metadata.toml"
+	notarySecretDir       = "/var/notary/v1"
+	cosignSecretLocation  = "/var/build-secrets/cosign"
 )
 
 var (
-	notaryV1URL             string
-	dockerCredentials       flaghelpers.CredentialsFlags
-	dockerCfgCredentials    flaghelpers.CredentialsFlags
-	dockerConfigCredentials flaghelpers.CredentialsFlags
-	cosignAnnotations       flaghelpers.CredentialsFlags
-	cosignRepositories      flaghelpers.CredentialsFlags
-	cosignDockerMediaTypes  flaghelpers.CredentialsFlags
-	basicGitCredentials     flaghelpers.CredentialsFlags
-	sshGitCredentials       flaghelpers.CredentialsFlags
-	logger                  *log.Logger
+	stackID                   string
+	stackRunImage             string
+	notaryV1URL               string
+	previousBuildpackMetadata string
+	dockerCredentials         flaghelpers.CredentialsFlags
+	dockerCfgCredentials      flaghelpers.CredentialsFlags
+	dockerConfigCredentials   flaghelpers.CredentialsFlags
+	cosignAnnotations         flaghelpers.CredentialsFlags
+	cosignRepositories        flaghelpers.CredentialsFlags
+	cosignDockerMediaTypes    flaghelpers.CredentialsFlags
+	basicGitCredentials       flaghelpers.CredentialsFlags
+	sshGitCredentials         flaghelpers.CredentialsFlags
+	logger                    *log.Logger
 )
 
 func init() {
+	flag.StringVar(&stackID, "stack-id", os.Getenv(buildapi.CompletionStackIDEnvVar), "Stack ID for build")
+	flag.StringVar(&stackRunImage, "run-image", os.Getenv(buildapi.CompletionStackRunImageEnvVar), "Stack run image for build")
+	flag.StringVar(&previousBuildpackMetadata, "previous-buildpack-metadata", os.Getenv(buildapi.BuildpackMetadataEnvVar), "Current build metadata for rebases in JSON")
 	flag.StringVar(&notaryV1URL, "notary-v1-url", "", "Notary V1 server url")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
@@ -57,9 +71,30 @@ func init() {
 func main() {
 	flag.Parse()
 
+	var report platform.ExportReport
+	_, err := toml.DecodeFile(buildapi.ReportTOMLPath, &report)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "toml decode"))
+	}
+
+	buildpackMetadata, err := getBuildpackMetadata(previousBuildpackMetadata)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buildMetadata := &build.BuildStatusMetadata{
+		BuildpackMetadata: buildpackMetadata,
+		LatestImage:       fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest),
+		StackRunImage:     stackRunImage,
+		StackID:           stackID,
+	}
+
+	if err := writeTerminationMessage(buildMetadata, buildapi.CompletionTerminationMessagePath); err != nil {
+		log.Fatal(err)
+	}
+
 	if hasCosign() || notaryV1URL != "" {
-		err := signImage()
-		if err != nil {
+		if err := signImage(report); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -67,11 +102,45 @@ func main() {
 	logger.Println("Build successful")
 }
 
-func signImage() error {
-	var report platform.ExportReport
-	_, err := toml.DecodeFile(reportFilePath, &report)
+func getBuildpackMetadata(buildpackMetadata string) (corev1alpha1.BuildpackMetadataList, error) {
+	var bpMetadata corev1alpha1.BuildpackMetadataList
+	if buildpackMetadata == "" {
+		var platformBuildMetadata platform.BuildMetadata
+		_, err := toml.DecodeFile(buildMetadataFilePath, &platformBuildMetadata)
+		if err != nil {
+			return nil, errors.Wrap(err, "toml decode")
+		}
+		bpMetadata = make([]corev1alpha1.BuildpackMetadata, len(platformBuildMetadata.Buildpacks))
+		for i, bp := range platformBuildMetadata.Buildpacks {
+			bpMetadata[i] = corev1alpha1.BuildpackMetadata{
+				Id:       bp.ID,
+				Version:  bp.Version,
+				Homepage: bp.Homepage,
+			}
+		}
+	} else { // rebasing
+		if err := json.Unmarshal([]byte(buildpackMetadata), &bpMetadata); err != nil {
+			return nil, err
+		}
+	}
+	return bpMetadata, nil
+}
+
+func writeTerminationMessage(buildMetadata *build.BuildStatusMetadata, terminationMessagePath string) error {
+	c := build.GzipMetadataCompressor{}
+	str, err := c.Compress(buildMetadata)
 	if err != nil {
-		return errors.Wrap(err, "toml decode")
+		return err
+	}
+
+	return ioutil.WriteFile(terminationMessagePath, []byte(str), 0666)
+}
+
+func signImage(report platform.ExportReport) error {
+	ctx := context.Background()
+	k8sKeychain, err := k8schain.New(ctx, nil, k8schain.Options{})
+	if err != nil {
+		logger.Println(err)
 	}
 
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
@@ -142,7 +211,8 @@ func signImage() error {
 			Client:  &registry.Client{},
 			Factory: &notary.RemoteRepositoryFactory{},
 		}
-		if err := signer.Sign(notaryV1URL, notarySecretDir, report, creds); err != nil {
+		keychain := authn.NewMultiKeychain(creds, k8sKeychain)
+		if err := signer.Sign(notaryV1URL, notarySecretDir, report, keychain); err != nil {
 			return err
 		}
 	}

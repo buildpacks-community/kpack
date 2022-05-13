@@ -107,17 +107,6 @@ func (b *Build) BuiltImage() string {
 	return b.Status.LatestImage
 }
 
-func (b *Build) CacheImage() string {
-	if b == nil {
-		return ""
-	}
-	if !b.IsSuccess() {
-		return ""
-	}
-
-	return b.Status.LatestCacheImage
-}
-
 func (b *Build) IsSuccess() bool {
 	if b == nil {
 		return false

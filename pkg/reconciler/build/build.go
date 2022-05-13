@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,7 +20,6 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -28,24 +28,22 @@ const (
 	Kind           = "Build"
 )
 
-//go:generate counterfeiter . MetadataRetriever
-type MetadataRetriever interface {
-	GetBuiltImage(context.Context, *buildapi.Build) (cnb.BuiltImage, error)
-	GetCacheImage(context.Context, *buildapi.Build) (string, error)
+type metadataDecompressor interface {
+	Decompress(string) (*BuildStatusMetadata, error)
 }
 
 type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
-		Client:            opt.Client,
-		K8sClient:         k8sClient,
-		MetadataRetriever: metadataRetriever,
-		Lister:            informer.Lister(),
-		PodLister:         podInformer.Lister(),
-		PodGenerator:      podGenerator,
+		Client:               opt.Client,
+		K8sClient:            k8sClient,
+		Lister:               informer.Lister(),
+		metadataDecompressor: &GzipMetadataCompressor{},
+		PodLister:            podInformer.Lister(),
+		PodGenerator:         podGenerator,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -61,21 +59,21 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 }
 
 type Reconciler struct {
-	Client            versioned.Interface
-	Lister            buildlisters.BuildLister
-	MetadataRetriever MetadataRetriever
-	K8sClient         k8sclient.Interface
-	PodLister         v1Listers.PodLister
-	PodGenerator      PodGenerator
+	Client               versioned.Interface
+	Lister               buildlisters.BuildLister
+	K8sClient            k8sclient.Interface
+	PodLister            v1Listers.PodLister
+	PodGenerator         PodGenerator
+	metadataDecompressor metadataDecompressor
 }
 
-func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, buildName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return err
 	}
 
-	build, err := c.Lister.Builds(namespace).Get(buildName)
+	build, err := r.Lister.Builds(namespace).Get(buildName)
 	if k8s_errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
@@ -85,42 +83,35 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	build = build.DeepCopy()
 	build.SetDefaults(ctx)
 
-	err = c.reconcile(ctx, build)
+	err = r.reconcile(ctx, build)
 	if err != nil && !controller.IsPermanentError(err) {
 		return err
 	} else if controller.IsPermanentError(err) {
 		build.Status.Error(err)
 	}
 
-	return c.updateStatus(ctx, build)
+	return r.updateStatus(ctx, build)
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error {
+func (r *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error {
 	if build.Finished() {
 		return nil
 	}
 
-	pod, err := c.reconcileBuildPod(ctx, build)
+	pod, err := r.reconcileBuildPod(ctx, build)
 	if err != nil {
 		return err
 	}
 
 	if build.MetadataReady(pod) {
-		image, err := c.MetadataRetriever.GetBuiltImage(ctx, build)
+		cm, err := r.buildMetadataFromBuildPod(pod)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to get build metadata from build pod")
 		}
-
-		cacheImageId, err := c.MetadataRetriever.GetCacheImage(ctx, build)
-		if err != nil {
-			return err
-		}
-
-		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
-		build.Status.LatestImage = image.Identifier
-		build.Status.LatestCacheImage = cacheImageId
-		build.Status.Stack.RunImage = image.Stack.RunImage
-		build.Status.Stack.ID = image.Stack.ID
+		build.Status.BuildMetadata = cm.BuildpackMetadata
+		build.Status.LatestImage = cm.LatestImage
+		build.Status.Stack.RunImage = cm.StackRunImage
+		build.Status.Stack.ID = cm.StackID
 	}
 
 	build.Status.PodName = pod.Name
@@ -130,19 +121,19 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	return nil
 }
 
-func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Build) (*corev1.Pod, error) {
-	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
+func (r *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Build) (*corev1.Pod, error) {
+	pod, err := r.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
 	} else if !k8s_errors.IsNotFound(err) {
 		return pod, nil
 	}
 
-	podConfig, err := c.PodGenerator.Generate(ctx, build)
+	podConfig, err := r.PodGenerator.Generate(ctx, build)
 	if err != nil {
 		return nil, controller.NewPermanentError(err)
 	}
-	return c.K8sClient.CoreV1().Pods(build.Namespace).Create(ctx, podConfig, metav1.CreateOptions{})
+	return r.K8sClient.CoreV1().Pods(build.Namespace).Create(ctx, podConfig, metav1.CreateOptions{})
 }
 
 func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
@@ -207,9 +198,9 @@ func stepCompleted(pod *corev1.Pod) []string {
 	return completed
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) error {
+func (r *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) error {
 	desired.Status.ObservedGeneration = desired.Generation
-	original, err := c.Lister.Builds(desired.Namespace).Get(desired.Name)
+	original, err := r.Lister.Builds(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -218,18 +209,15 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) 
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha2().Builds(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
+	_, err = r.Client.KpackV1alpha2().Builds(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }
 
-func buildMetadataFromBuiltImage(image cnb.BuiltImage) []corev1alpha1.BuildpackMetadata {
-	buildpackMetadata := make([]corev1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
-	for _, metadata := range image.BuildpackMetadata {
-		buildpackMetadata = append(buildpackMetadata, corev1alpha1.BuildpackMetadata{
-			Id:       metadata.ID,
-			Version:  metadata.Version,
-			Homepage: metadata.Homepage,
-		})
+func (r *Reconciler) buildMetadataFromBuildPod(pod *corev1.Pod) (*BuildStatusMetadata, error) {
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == "completion" {
+			return r.metadataDecompressor.Decompress(status.State.Terminated.Message)
+		}
 	}
-	return buildpackMetadata
+	return nil, errors.New("completion container not found")
 }

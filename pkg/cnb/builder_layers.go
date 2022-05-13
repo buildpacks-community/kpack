@@ -1,5 +1,9 @@
 package cnb
 
+const (
+	BuilderMetadataLabel = "io.buildpacks.builder.metadata"
+)
+
 type BuildpackLayerMetadata map[string]map[string]BuildpackLayerInfo
 
 func (l BuildpackLayerMetadata) add(layer buildpackLayer) {

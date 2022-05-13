@@ -33,7 +33,7 @@ import (
 const (
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 	lifecycleLocation      = "/cnb/lifecycle/"
-	lifecycleVersion       = "0.13.5"
+	//lifecycleVersion       = "0.13.5"
 )
 
 var (
@@ -46,8 +46,8 @@ func main() {
 	flag.Parse()
 
 	image, err := lifecycleImage(
-		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
-		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
+		"/Users/tylerp/workspace/lifecycle/out/lifecycle-v0.14.0-4+39a85d3a+linux.x86-64.tgz",
+		"/Users/tylerp/workspace/lifecycle/out/lifecycle-v0.14.0-4+39a85d3a+windows.x86-64.tgz",
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -62,17 +62,17 @@ func main() {
 
 }
 
-func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
+func lifecycleImage(linuxPath, windowsPath string) (v1.Image, error) {
 	image, err := random.Image(0, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	linuxDescriptor, err := lifecycleDescriptor(linuxUrl)
+	linuxDescriptor, err := lifecycleDescriptor(linuxPath)
 	if err != nil {
 		return nil, err
 	}
-	windowsDescriptor, err := lifecycleDescriptor(windowsUrl)
+	windowsDescriptor, err := lifecycleDescriptor(windowsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 		return nil, errors.New("linux and windows lifecycle descriptors do not match. Check urls.")
 	}
 
-	linuxLayer, err := lifecycleLayer(linuxUrl, "linux")
+	linuxLayer, err := lifecycleLayer(linuxPath, "linux")
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 		return nil, err
 	}
 
-	windowsLayer, err := lifecycleLayer(windowsUrl, "windows")
+	windowsLayer, err := lifecycleLayer(windowsPath, "windows")
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +119,8 @@ func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 	})
 }
 
-func lifecycleDescriptor(url string) (cnb.LifecycleDescriptor, error) {
-	lr, err := lifecycleReader(url)
+func lifecycleDescriptor(path string) (cnb.LifecycleDescriptor, error) {
+	lr, err := lifecycleReader(path)
 	if err != nil {
 		return cnb.LifecycleDescriptor{}, err
 	}
@@ -154,7 +154,7 @@ func lifecycleDescriptorToMetadata(descriptor cnb.LifecycleDescriptor) cnb.Lifec
 	}
 }
 
-func lifecycleLayer(url, os string) (v1.Layer, error) {
+func lifecycleLayer(lPath, os string) (v1.Layer, error) {
 	b := &bytes.Buffer{}
 	tw := newLayerWriter(b, os)
 
@@ -170,7 +170,7 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 
 	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
-	lr, err := lifecycleReader(url)
+	lr, err := lifecycleReader(lPath)
 	if err != nil {
 		return nil, err
 	}
@@ -209,18 +209,18 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 	return tarball.LayerFromReader(b)
 }
 
-func lifecycleReader(url string) (io.ReadCloser, error) {
+func lifecycleReader(path string) (io.ReadCloser, error) {
 	dir, err := ioutil.TempDir("", "lifecycle")
 	if err != nil {
 		return nil, err
 	}
 
-	lifecycleLocation := dir + "/lifecycle.tgz"
+	lifecycleLocation := path
 
-	err = download(lifecycleLocation, url)
-	if err != nil {
-		return nil, err
-	}
+	//err = download(lifecycleLocation, url)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	file, err := os.Open(lifecycleLocation)
 	if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/blob"
@@ -80,6 +82,12 @@ func main() {
 		logger.Println(err)
 	}
 
+	ctx := context.Background()
+	k8sKeychain, err := k8schain.New(ctx, nil, k8schain.Options{})
+	if err != nil {
+		logger.Println(err)
+	}
+
 	logLoadingSecrets(logger, dockerCredentials)
 	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
@@ -104,7 +112,9 @@ func main() {
 		}
 	}
 
-	err = dockercreds.VerifyWriteAccess(creds, *imageTag)
+	keychain := authn.NewMultiKeychain(creds, k8sKeychain)
+
+	err = dockercreds.VerifyWriteAccess(keychain, *imageTag)
 	if err != nil {
 		logger.Fatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
 	}
@@ -123,7 +133,7 @@ func main() {
 		}
 	}
 
-	err = dockercreds.VerifyReadAccess(creds, *runImage)
+	err = dockercreds.VerifyReadAccess(keychain, *runImage)
 	if err != nil {
 		logger.Fatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
 	}

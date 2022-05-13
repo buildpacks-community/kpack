@@ -1,6 +1,7 @@
 package v1alpha2
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -18,9 +19,10 @@ const (
 	ImageLabel           = "image.kpack.io/image"
 	ImageGenerationLabel = "image.kpack.io/imageGeneration"
 
-	BuildReasonAnnotation  = "image.kpack.io/reason"
-	BuildChangesAnnotation = "image.kpack.io/buildChanges"
-	BuildNeededAnnotation  = "image.kpack.io/additionalBuildNeeded"
+	BuildReasonAnnotation           = "image.kpack.io/reason"
+	BuildChangesAnnotation          = "image.kpack.io/buildChanges"
+	BuildNeededAnnotation           = "image.kpack.io/additionalBuildNeeded"
+	BuildLatestBPMetadataAnnotation = "image.kpack.io/latestBuildpackMetadata"
 
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
@@ -31,8 +33,15 @@ const (
 
 type BuildReason string
 
-func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64, priorityClass string) *Build {
+func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, latestBuild *Build, reasons, changes string, nextBuildNumber int64, priorityClass string) (*Build, error) {
 	buildNumber := strconv.Itoa(int(nextBuildNumber))
+	latestbpMeta, err := latestBuildpackMetadata(latestBuild)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+	}
+
 	return &Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: im.Namespace,
@@ -46,8 +55,9 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 				ImageGenerationLabel: strconv.Itoa(int(im.Generation)),
 			}),
 			Annotations: combine(im.Annotations, map[string]string{
-				BuildReasonAnnotation:  reasons,
-				BuildChangesAnnotation: changes,
+				BuildReasonAnnotation:           reasons,
+				BuildChangesAnnotation:          changes,
+				BuildLatestBPMetadataAnnotation: latestbpMeta,
 			}),
 		},
 		Spec: BuildSpec{
@@ -72,7 +82,16 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			SchedulerName:         im.SchedulerName(),
 			PriorityClassName:     priorityClass,
 		},
+	}, nil
+}
+
+func latestBuildpackMetadata(build *Build) (string, error) {
+	if build == nil {
+		return "", nil
 	}
+
+	data, err := json.Marshal(build.Status.BuildMetadata)
+	return string(data), err
 }
 
 func (is *ImageSpec) NeedVolumeCache() bool {
@@ -108,7 +127,6 @@ func lastBuild(latestBuild *Build) *LastBuild {
 
 	return &LastBuild{
 		Image:   latestBuild.BuiltImage(),
-		Cache:   BuildCache{Image: latestBuild.CacheImage()},
 		StackId: latestBuild.Stack(),
 	}
 }

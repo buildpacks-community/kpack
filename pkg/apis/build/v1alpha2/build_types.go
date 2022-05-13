@@ -98,7 +98,6 @@ type Services []corev1.ObjectReference
 // +k8s:openapi-gen=true
 type LastBuild struct {
 	Image   string     `json:"image,omitempty"`
-	Cache   BuildCache `json:"cache,omitempty"`
 	StackId string     `json:"stackId,omitempty"`
 }
 
@@ -119,7 +118,6 @@ type BuildStatus struct {
 	BuildMetadata       corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
 	Stack               corev1alpha1.BuildStack            `json:"stack,omitempty"`
 	LatestImage         string                             `json:"latestImage,omitempty"`
-	LatestCacheImage    string                             `json:"latestCacheImage,omitempty"`
 	PodName             string                             `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`

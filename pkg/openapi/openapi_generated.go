@@ -156,17 +156,20 @@ func schema_pkg_apis_build_v1alpha1_Build(ref common.ReferenceCallback) common.O
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuildStatus"),
 						},
 					},
 				},
@@ -200,7 +203,8 @@ func schema_pkg_apis_build_v1alpha1_BuildList(ref common.ReferenceCallback) comm
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -209,7 +213,8 @@ func schema_pkg_apis_build_v1alpha1_BuildList(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Build"),
 									},
 								},
 							},
@@ -241,8 +246,9 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -250,7 +256,8 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
 						},
 					},
 					"serviceAccount": {
@@ -261,7 +268,8 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cacheName": {
@@ -281,7 +289,8 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
 									},
 								},
 							},
@@ -298,7 +307,8 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -306,7 +316,8 @@ func schema_pkg_apis_build_v1alpha1_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 					"lastBuild": {
@@ -354,7 +365,8 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -366,7 +378,8 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -374,7 +387,8 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -400,7 +414,8 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ContainerState"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerState"),
 									},
 								},
 							},
@@ -417,8 +432,9 @@ func schema_pkg_apis_build_v1alpha1_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -454,17 +470,20 @@ func schema_pkg_apis_build_v1alpha1_Builder(ref common.ReferenceCallback) common
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.NamespacedBuilderSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus"),
 						},
 					},
 				},
@@ -498,7 +517,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderList(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -507,7 +527,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderList(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Builder"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Builder"),
 									},
 								},
 							},
@@ -536,12 +557,14 @@ func schema_pkg_apis_build_v1alpha1_BuilderSpec(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -555,7 +578,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderSpec(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -595,7 +619,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -607,7 +632,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -619,7 +645,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -627,7 +654,8 @@ func schema_pkg_apis_build_v1alpha1_BuilderStatus(ref common.ReferenceCallback) 
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -684,17 +712,20 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilder(ref common.ReferenceCallback)
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilderSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.BuilderStatus"),
 						},
 					},
 				},
@@ -728,7 +759,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderList(ref common.ReferenceCallb
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -737,7 +769,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderList(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilder"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterBuilder"),
 									},
 								},
 							},
@@ -766,12 +799,14 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallb
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -785,7 +820,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -793,7 +829,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterBuilderSpec(ref common.ReferenceCallb
 					},
 					"serviceAccountRef": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 				},
@@ -826,17 +863,20 @@ func schema_pkg_apis_build_v1alpha1_ClusterStack(ref common.ReferenceCallback) c
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatus"),
 						},
 					},
 				},
@@ -870,7 +910,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackList(ref common.ReferenceCallbac
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -879,7 +920,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackList(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStack"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStack"),
 									},
 								},
 							},
@@ -908,12 +950,14 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackSpec(ref common.ReferenceCallbac
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackSpecImage"),
 						},
 					},
 				},
@@ -968,7 +1012,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -982,12 +1027,14 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackStatus(ref common.ReferenceCallb
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
 						},
 					},
 					"mixins": {
@@ -1001,8 +1048,9 @@ func schema_pkg_apis_build_v1alpha1_ClusterStackStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1074,17 +1122,20 @@ func schema_pkg_apis_build_v1alpha1_ClusterStore(ref common.ReferenceCallback) c
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStoreStatus"),
 						},
 					},
 				},
@@ -1118,7 +1169,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreList(ref common.ReferenceCallbac
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -1127,7 +1179,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreList(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStore"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStore"),
 									},
 								},
 							},
@@ -1159,7 +1212,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreSpec(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 									},
 								},
 							},
@@ -1199,7 +1253,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -1216,7 +1271,8 @@ func schema_pkg_apis_build_v1alpha1_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
 									},
 								},
 							},
@@ -1252,17 +1308,20 @@ func schema_pkg_apis_build_v1alpha1_Image(ref common.ReferenceCallback) common.O
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ImageStatus"),
 						},
 					},
 				},
@@ -1291,7 +1350,8 @@ func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
 									},
 								},
 							},
@@ -1308,7 +1368,8 @@ func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -1316,7 +1377,8 @@ func schema_pkg_apis_build_v1alpha1_ImageBuild(ref common.ReferenceCallback) com
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 				},
@@ -1349,7 +1411,8 @@ func schema_pkg_apis_build_v1alpha1_ImageList(ref common.ReferenceCallback) comm
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -1358,7 +1421,8 @@ func schema_pkg_apis_build_v1alpha1_ImageList(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Image"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.Image"),
 									},
 								},
 							},
@@ -1381,13 +1445,15 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 				Properties: map[string]spec.Schema{
 					"tag": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"serviceAccount": {
@@ -1398,7 +1464,8 @@ func schema_pkg_apis_build_v1alpha1_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cacheSize": {
@@ -1469,7 +1536,8 @@ func schema_pkg_apis_build_v1alpha1_ImageStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -1563,12 +1631,14 @@ func schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref common.ReferenceCa
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -1582,7 +1652,8 @@ func schema_pkg_apis_build_v1alpha1_NamespacedBuilderSpec(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -1616,12 +1687,14 @@ func schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref common.ReferenceCal
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.ClusterStackStatusImage"),
 						},
 					},
 					"mixins": {
@@ -1635,8 +1708,9 @@ func schema_pkg_apis_build_v1alpha1_ResolvedClusterStack(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1684,17 +1758,20 @@ func schema_pkg_apis_build_v1alpha1_SourceResolver(ref common.ReferenceCallback)
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolverStatus"),
 						},
 					},
 				},
@@ -1728,7 +1805,8 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverList(ref common.ReferenceCallb
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -1737,7 +1815,8 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverList(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolver"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha1.SourceResolver"),
 									},
 								},
 							},
@@ -1766,7 +1845,8 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverSpec(ref common.ReferenceCallb
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 				},
@@ -1804,7 +1884,8 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -1812,7 +1893,8 @@ func schema_pkg_apis_build_v1alpha1_SourceResolverStatus(ref common.ReferenceCal
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
 						},
 					},
 				},
@@ -1845,17 +1927,20 @@ func schema_pkg_apis_build_v1alpha2_Build(ref common.ReferenceCallback) common.O
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus"),
 						},
 					},
 				},
@@ -1931,7 +2016,8 @@ func schema_pkg_apis_build_v1alpha2_BuildList(ref common.ReferenceCallback) comm
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -1940,7 +2026,8 @@ func schema_pkg_apis_build_v1alpha2_BuildList(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Build"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Build"),
 									},
 								},
 							},
@@ -1990,8 +2077,9 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -1999,7 +2087,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec"),
 						},
 					},
 					"serviceAccountName": {
@@ -2010,7 +2099,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cache": {
@@ -2029,7 +2119,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 									},
 								},
 							},
@@ -2046,7 +2137,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
 									},
 								},
 							},
@@ -2063,7 +2155,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -2077,7 +2170,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 					"lastBuild": {
@@ -2112,7 +2206,8 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Toleration"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -2125,8 +2220,9 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2214,7 +2310,8 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -2226,7 +2323,8 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -2234,16 +2332,11 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"latestCacheImage": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -2266,7 +2359,8 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ContainerState"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerState"),
 									},
 								},
 							},
@@ -2283,8 +2377,9 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2320,17 +2415,20 @@ func schema_pkg_apis_build_v1alpha2_Builder(ref common.ReferenceCallback) common
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NamespacedBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.NamespacedBuilderSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus"),
 						},
 					},
 				},
@@ -2364,7 +2462,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderList(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -2373,7 +2472,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderList(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder"),
 									},
 								},
 							},
@@ -2402,12 +2502,14 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -2421,7 +2523,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -2461,7 +2564,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -2473,7 +2577,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata"),
 									},
 								},
 							},
@@ -2485,7 +2590,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -2493,7 +2599,8 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
 					"latestImage": {
@@ -2550,17 +2657,20 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilder(ref common.ReferenceCallback)
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilderSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus"),
 						},
 					},
 				},
@@ -2594,7 +2704,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderList(ref common.ReferenceCallb
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -2603,7 +2714,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderList(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilder"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuilder"),
 									},
 								},
 							},
@@ -2632,12 +2744,14 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -2651,7 +2765,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -2659,7 +2774,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 					},
 					"serviceAccountRef": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 				},
@@ -2692,17 +2808,20 @@ func schema_pkg_apis_build_v1alpha2_ClusterStack(ref common.ReferenceCallback) c
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatus"),
 						},
 					},
 				},
@@ -2736,7 +2855,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackList(ref common.ReferenceCallbac
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -2745,7 +2865,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackList(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStack"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStack"),
 									},
 								},
 							},
@@ -2774,12 +2895,14 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackSpec(ref common.ReferenceCallbac
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpecImage"),
 						},
 					},
 					"serviceAccountRef": {
@@ -2839,7 +2962,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -2853,12 +2977,14 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackStatus(ref common.ReferenceCallb
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
 						},
 					},
 					"mixins": {
@@ -2872,8 +2998,9 @@ func schema_pkg_apis_build_v1alpha2_ClusterStackStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -2945,17 +3072,20 @@ func schema_pkg_apis_build_v1alpha2_ClusterStore(ref common.ReferenceCallback) c
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus"),
 						},
 					},
 				},
@@ -2989,7 +3119,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref common.ReferenceCallbac
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -2998,7 +3129,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreList(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStore"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStore"),
 									},
 								},
 							},
@@ -3030,7 +3162,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreSpec(ref common.ReferenceCallbac
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 									},
 								},
 							},
@@ -3075,7 +3208,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -3092,7 +3226,8 @@ func schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreBuildpack"),
 									},
 								},
 							},
@@ -3147,7 +3282,8 @@ func schema_pkg_apis_build_v1alpha2_CosignConfig(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"),
 									},
 								},
 							},
@@ -3183,17 +3319,20 @@ func schema_pkg_apis_build_v1alpha2_Image(ref common.ReferenceCallback) common.O
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageStatus"),
 						},
 					},
 				},
@@ -3222,7 +3361,8 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 									},
 								},
 							},
@@ -3239,7 +3379,8 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding"),
 									},
 								},
 							},
@@ -3256,7 +3397,8 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -3264,7 +3406,8 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ResourceRequirements"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 					"tolerations": {
@@ -3278,7 +3421,8 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.Toleration"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -3291,8 +3435,9 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3345,8 +3490,9 @@ func schema_pkg_apis_build_v1alpha2_ImageBuilder(ref common.ReferenceCallback) c
 					},
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -3402,7 +3548,8 @@ func schema_pkg_apis_build_v1alpha2_ImageList(ref common.ReferenceCallback) comm
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -3411,7 +3558,8 @@ func schema_pkg_apis_build_v1alpha2_ImageList(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image"),
 									},
 								},
 							},
@@ -3453,13 +3601,15 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 				Properties: map[string]spec.Schema{
 					"tag": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"builder": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"serviceAccountName": {
@@ -3470,7 +3620,8 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 					"cache": {
@@ -3534,8 +3685,9 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3576,7 +3728,8 @@ func schema_pkg_apis_build_v1alpha2_ImageStatus(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -3644,11 +3797,6 @@ func schema_pkg_apis_build_v1alpha2_LastBuild(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
-					"cache": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache"),
-						},
-					},
 					"stackId": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -3658,8 +3806,6 @@ func schema_pkg_apis_build_v1alpha2_LastBuild(ref common.ReferenceCallback) comm
 				},
 			},
 		},
-		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCache"},
 	}
 }
 
@@ -3677,12 +3823,14 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 					},
 					"stack": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"store": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
 						},
 					},
 					"order": {
@@ -3696,7 +3844,8 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -3730,8 +3879,9 @@ func schema_pkg_apis_build_v1alpha2_RegistryCache(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"tag": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -3755,12 +3905,14 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref common.ReferenceCal
 					},
 					"buildImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
 						},
 					},
 					"runImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackStatusImage"),
 						},
 					},
 					"mixins": {
@@ -3774,8 +3926,9 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterStack(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -3823,17 +3976,20 @@ func schema_pkg_apis_build_v1alpha2_SourceResolver(ref common.ReferenceCallback)
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolverStatus"),
 						},
 					},
 				},
@@ -3867,7 +4023,8 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverList(ref common.ReferenceCallb
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -3876,7 +4033,8 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverList(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolver"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.SourceResolver"),
 									},
 								},
 							},
@@ -3905,7 +4063,8 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverSpec(ref common.ReferenceCallb
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig"),
 						},
 					},
 				},
@@ -3943,7 +4102,8 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -3951,7 +4111,8 @@ func schema_pkg_apis_build_v1alpha2_SourceResolverStatus(ref common.ReferenceCal
 					},
 					"source": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ResolvedSourceConfig"),
 						},
 					},
 				},
@@ -3970,8 +4131,9 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -4006,7 +4168,8 @@ func schema_pkg_apis_core_v1alpha1_BuildBuilderSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -4052,8 +4215,9 @@ func schema_pkg_apis_core_v1alpha1_BuildpackInfo(ref common.ReferenceCallback) c
 				Properties: map[string]spec.Schema{
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"version": {
@@ -4077,14 +4241,16 @@ func schema_pkg_apis_core_v1alpha1_BuildpackMetadata(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"version": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"homepage": {
@@ -4108,8 +4274,9 @@ func schema_pkg_apis_core_v1alpha1_BuildpackRef(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"version": {
@@ -4139,8 +4306,9 @@ func schema_pkg_apis_core_v1alpha1_BuildpackStack(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"mixins": {
@@ -4154,8 +4322,9 @@ func schema_pkg_apis_core_v1alpha1_BuildpackStack(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -4238,6 +4407,7 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 					"type": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Type of condition.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4245,6 +4415,7 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4259,6 +4430,7 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
+							Default:     map[string]interface{}{},
 							Type: []string{"string"}, Format: "",
 						},
 					},
@@ -4293,14 +4465,16 @@ func schema_pkg_apis_core_v1alpha1_Git(ref common.ReferenceCallback) common.Open
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"revision": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -4337,8 +4511,9 @@ func schema_pkg_apis_core_v1alpha1_NotarySecretRef(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -4356,13 +4531,15 @@ func schema_pkg_apis_core_v1alpha1_NotaryV1Config(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotarySecretRef"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotarySecretRef"),
 						},
 					},
 				},
@@ -4391,7 +4568,8 @@ func schema_pkg_apis_core_v1alpha1_OrderEntry(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackRef"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackRef"),
 									},
 								},
 							},
@@ -4413,8 +4591,9 @@ func schema_pkg_apis_core_v1alpha1_Registry(ref common.ReferenceCallback) common
 				Properties: map[string]spec.Schema{
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"imagePullSecrets": {
@@ -4430,7 +4609,8 @@ func schema_pkg_apis_core_v1alpha1_Registry(ref common.ReferenceCallback) common
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -4453,8 +4633,9 @@ func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallba
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"subPath": {
@@ -4478,14 +4659,16 @@ func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"revision": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"subPath": {
@@ -4496,8 +4679,9 @@ func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallbac
 					},
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
@@ -4515,8 +4699,9 @@ func schema_pkg_apis_core_v1alpha1_ResolvedRegistrySource(ref common.ReferenceCa
 				Properties: map[string]spec.Schema{
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"subPath": {
@@ -4538,7 +4723,8 @@ func schema_pkg_apis_core_v1alpha1_ResolvedRegistrySource(ref common.ReferenceCa
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -4644,7 +4830,8 @@ func schema_pkg_apis_core_v1alpha1_Status(ref common.ReferenceCallback) common.O
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -4666,8 +4853,9 @@ func schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"version": {
@@ -4678,12 +4866,14 @@ func schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) 
 					},
 					"buildpackage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackageInfo"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackageInfo"),
 						},
 					},
 					"storeImage": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.StoreImage"),
 						},
 					},
 					"diffId": {
@@ -4727,7 +4917,8 @@ func schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
 									},
 								},
 							},
@@ -4744,7 +4935,8 @@ func schema_pkg_apis_core_v1alpha1_StoreBuildpack(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStack"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStack"),
 									},
 								},
 							},
@@ -4786,7 +4978,8 @@ func schema_pkg_apis_core_v1alpha1_VolatileTime(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"inner": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 				},
