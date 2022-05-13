@@ -3,12 +3,12 @@ package build_test
 import (
 	"context"
 	"errors"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 	"time"
 
-	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -24,13 +24,9 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
-	"github.com/pivotal/kpack/pkg/reconciler/build/buildfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
-
-//go:generate counterfeiter . MetadataRetriever
 
 func TestBuildReconciler(t *testing.T) {
 	spec.Run(t, "Build Reconciler", testBuildReconciler)
@@ -46,9 +42,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
-		podGenerator          = &testPodGenerator{}
-		ctx                   = context.Background()
+		podGenerator = &testPodGenerator{}
+		ctx          = context.Background()
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -63,12 +58,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
-				K8sClient:         k8sfakeClient,
-				Client:            fakeClient,
-				Lister:            listers.GetBuildLister(),
-				PodLister:         listers.GetPodLister(),
-				MetadataRetriever: fakeMetadataRetriever,
-				PodGenerator:      podGenerator,
+				K8sClient:    k8sfakeClient,
+				Client:       fakeClient,
+				Lister:       listers.GetBuildLister(),
+				PodLister:    listers.GetPodLister(),
+				PodGenerator: podGenerator,
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -76,7 +70,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-	build := &buildapi.Build{
+	bld := &buildapi.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildName,
 			Namespace: namespace,
@@ -124,13 +118,13 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		it("schedules a pod to execute the build", func() {
-			buildPod, err := podGenerator.Generate(ctx, build)
+			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 				},
 				WantErr: false,
 				WantCreates: []runtime.Object{
@@ -139,8 +133,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -161,21 +155,21 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not schedule a build if already created", func() {
-			buildPod, err := podGenerator.Generate(ctx, build)
+			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 					buildPod,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -195,22 +189,22 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("updates observed generation when processing an update", func() {
-			buildPod, err := podGenerator.Generate(ctx, build)
+			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)
-			build.Generation = 3
+			bld.Generation = 3
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 					buildPod,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 3,
@@ -230,10 +224,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("does not update status if there is no update", func() {
-			buildPod, err := podGenerator.Generate(ctx, build)
+			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)
 
-			build.Status = buildapi.BuildStatus{
+			bld.Status = buildapi.BuildStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -249,7 +243,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 					buildPod,
 				},
 				WantErr: false,
@@ -262,14 +256,14 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
@@ -289,21 +283,21 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("gracefully handles a pod that has already been created", func() {
-			buildPod, err := podGenerator.Generate(ctx, build)
+			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					build,
+					bld,
 					buildPod,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -325,7 +319,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("pod executing", func() {
 			it("updates the status step states with the statuses of the containers", func() {
-				pod, err := podGenerator.Generate(ctx, build)
+				pod, err := podGenerator.Generate(ctx, bld)
 				require.NoError(t, err)
 
 				startTime := time.Now()
@@ -363,15 +357,15 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						build,
+						bld,
 						pod,
 					},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Build{
-								ObjectMeta: build.ObjectMeta,
-								Spec:       build.Spec,
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
 								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -416,7 +410,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates the status with the container status when a container is waiting", func() {
-				pod, err := podGenerator.Generate(ctx, build)
+				pod, err := podGenerator.Generate(ctx, bld)
 				require.NoError(t, err)
 
 				pod.Status.Phase = corev1.PodPending
@@ -446,15 +440,15 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						build,
+						bld,
 						pod,
 					},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Build{
-								ObjectMeta: build.ObjectMeta,
-								Spec:       build.Spec,
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
 								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -497,24 +491,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("pod succeeded", func() {
-			const identifier = "someimage/name@sha256:1234567"
-			builtImage := cnb.BuiltImage{
-				Identifier:  identifier,
-				CompletedAt: time.Now(),
-				BuildpackMetadata: []lifecyclebuildpack.GroupBuildpack{{
-					ID:       "io.buildpack.executed",
-					Version:  "1.1",
-					Homepage: "mysupercoolsite.com",
-				}},
-				Stack: cnb.BuiltImageStack{
-					RunImage: "somerun/123@sha256:12334563ad",
-					ID:       "io.buildpacks.stacks.bionic",
-				},
-			}
-			fakeMetadataRetriever.GetBuiltImageReturns(builtImage, nil)
-
 			it("sets the build status to Succeeded", func() {
-				pod, err := podGenerator.Generate(ctx, build)
+				pod, err := podGenerator.Generate(ctx, bld)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -541,19 +519,32 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
+				compressedBuildMetadata, err := ioutil.ReadFile(filepath.Join("testdata", "metadata"))
+				require.NoError(t, err)
+
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "completion",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								Message: string(compressedBuildMetadata),
+							},
+						},
+					},
+				}
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						build,
+						bld,
 						pod,
 					},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Build{
-								ObjectMeta: build.ObjectMeta,
-								Spec:       build.Spec,
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
 								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -565,15 +556,22 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									PodName: "build-name-build-pod",
-									BuildMetadata: corev1alpha1.BuildpackMetadataList{{
-										Id:       "io.buildpack.executed",
-										Version:  "1.1",
-										Homepage: "mysupercoolsite.com",
-									}},
-									LatestImage: identifier,
+									BuildMetadata: corev1alpha1.BuildpackMetadataList{
+										{
+											Id:       "some-id",
+											Version:  "some-version",
+											Homepage: "some-homepage",
+										},
+										{
+											Id:      "some-other-id",
+											Version: "some-other-version",
+										},
+									},
+									LatestImage:      "some-latest-image",
+									LatestCacheImage: "some-cache-image",
 									Stack: corev1alpha1.BuildStack{
-										RunImage: "somerun/123@sha256:12334563ad",
-										ID:       "io.buildpacks.stacks.bionic",
+										RunImage: "some-run-image",
+										ID:       "some-stack-id",
 									},
 									StepStates: []corev1.ContainerState{
 										{
@@ -602,92 +600,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
-
-				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 1)
-			})
-
-			it("does not fetch metadata if already retrieved", func() {
-				pod, err := podGenerator.Generate(ctx, build)
-				require.NoError(t, err)
-				pod.Status.Phase = corev1.PodSucceeded
-				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
-					{
-						Name: "step-1",
-						State: corev1.ContainerState{
-							Terminated: &corev1.ContainerStateTerminated{
-								ExitCode:    0,
-								Reason:      "Terminated",
-								Message:     "Message",
-								ContainerID: "container.ID",
-							},
-						},
-					},
-					{
-						Name: "step-2",
-						State: corev1.ContainerState{
-							Terminated: &corev1.ContainerStateTerminated{
-								ExitCode:    0,
-								Reason:      "Terminated",
-								Message:     "Message",
-								ContainerID: "container.ID2",
-							},
-						},
-					},
-				}
-
-				rt.Test(rtesting.TableRow{
-					Key: key,
-					Objects: []runtime.Object{
-						&buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
-							Status: buildapi.BuildStatus{
-								Status: corev1alpha1.Status{
-									ObservedGeneration: originalGeneration,
-									Conditions: corev1alpha1.Conditions{
-										{
-											Type:   corev1alpha1.ConditionSucceeded,
-											Status: corev1.ConditionTrue,
-										},
-									},
-								},
-								BuildMetadata: corev1alpha1.BuildpackMetadataList{{
-									Id:      "io.buildpack.previouslyfetched",
-									Version: "1.1",
-								}},
-								PodName:     "build-name-build-pod",
-								LatestImage: "previously/fetched@sha256:abcd",
-								StepStates: []corev1.ContainerState{
-									{
-										Terminated: &corev1.ContainerStateTerminated{
-											ExitCode:    0,
-											Reason:      "Terminated",
-											Message:     "Message",
-											ContainerID: "container.ID",
-										},
-									},
-									{
-										Waiting: nil,
-										Running: nil,
-										Terminated: &corev1.ContainerStateTerminated{
-											ExitCode:    0,
-											Reason:      "Terminated",
-											Message:     "Message",
-											ContainerID: "container.ID2",
-										},
-									},
-								},
-								StepsCompleted: []string{
-									"step-1",
-									"step-2", //todo realistic names
-								},
-							},
-						},
-						pod,
-					},
-					WantErr: false,
-				})
-				assert.Equal(t, fakeMetadataRetriever.GetBuiltImageCallCount(), 0)
 			})
 
 			it("does not recreate pods if build has finished", func() {
@@ -695,8 +607,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Key: key,
 					Objects: []runtime.Object{
 						&buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -741,12 +653,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantErr: false,
 				})
 			})
-
 		})
 
 		when("pod failed", func() {
 			it("sets the build status to Failed", func() {
-				pod, err := podGenerator.Generate(ctx, build)
+				pod, err := podGenerator.Generate(ctx, bld)
 				require.NoError(t, err)
 				pod.Status.Phase = corev1.PodFailed
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
@@ -775,15 +686,15 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						build,
+						bld,
 						pod,
 					},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Build{
-								ObjectMeta: build.ObjectMeta,
-								Spec:       build.Spec,
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
 								Status: buildapi.BuildStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -826,8 +737,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					Key: key,
 					Objects: []runtime.Object{
 						&buildapi.Build{
-							ObjectMeta: build.ObjectMeta,
-							Spec:       build.Spec,
+							ObjectMeta: bld.ObjectMeta,
+							Spec:       bld.Spec,
 							Status: buildapi.BuildStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -865,7 +776,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		})
-
 	})
 }
 

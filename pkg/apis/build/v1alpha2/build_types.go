@@ -72,6 +72,13 @@ type BuildSpec struct {
 	PriorityClassName string              `json:"priorityClassName,omitempty"`
 }
 
+func (bs *BuildSpec) RegistryCacheTag() string {
+	if bs.Cache == nil || bs.Cache.Registry == nil {
+		return ""
+	}
+	return bs.Cache.Registry.Tag
+}
+
 func (bs *BuildSpec) NeedVolumeCache() bool {
 	return bs.Cache != nil && bs.Cache.Volume != nil && bs.Cache.Volume.ClaimName != ""
 }
@@ -92,7 +99,6 @@ type BuildPersistentVolumeCache struct {
 }
 
 // +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=true
 type Services []corev1.ObjectReference
 
 // +k8s:openapi-gen=true

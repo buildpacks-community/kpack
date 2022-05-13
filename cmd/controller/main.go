@@ -124,15 +124,9 @@ func main() {
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
 	podInformer := k8sInformerFactory.Core().V1().Pods()
-
 	keychainFactory, err := k8sdockercreds.NewSecretKeychainFactory(k8sClient)
 	if err != nil {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
-	}
-
-	metadataRetriever := &cnb.RemoteMetadataRetriever{
-		KeychainFactory: keychainFactory,
-		ImageFetcher:    &registry.Client{},
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
@@ -181,7 +175,7 @@ func main() {
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
-	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator)
+	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, buildpodGenerator)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
