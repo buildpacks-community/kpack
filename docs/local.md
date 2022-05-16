@@ -9,6 +9,10 @@ kubectl cluster-info # ensure you have access to a cluster
 
 ### Running Tests
 
+```bash
+go test ./...
+```
+
 * To run the e2e tests, kpack must be installed and running on a cluster
 
 * The KPACK_TEST_NAMESPACE_LABELS environment variable allows you define additional labels for the test namespace, e.g.
