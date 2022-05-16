@@ -53,6 +53,7 @@ type ImageSpec struct {
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 	Cosign                   *CosignConfig                     `json:"cosign,omitempty"`
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
+	ActiveDeadlineSeconds    *int64                            `json:"activeDeadlineSeconds,omitempty"`
 	// +listType
 	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
