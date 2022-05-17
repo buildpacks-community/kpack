@@ -47,7 +47,10 @@ func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	return validate.FieldNotEmpty(b.URL, "url")
+	fieldError := validate.FieldNotEmpty(b.URL, "url").
+		Also(validate.StripComponents(b.StripComponents))
+
+	return fieldError
 }
 
 func (r *Registry) Validate(ctx context.Context) *apis.FieldError {
