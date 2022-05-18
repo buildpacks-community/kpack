@@ -7,15 +7,20 @@ kubectl cluster-info # ensure you have access to a cluster
 ./hack/apply.sh <IMAGE/NAME> # <IMAGE/NAME> is a writable and publicly accessible location 
 ```
 
-### Running Tests
+### Running Unit Tests
 
 ```bash
-go test ./...
+go test ./pkg/...
+```
+
+### Running End-to-end Tests
+```bash
+go test ./test/...
 ```
 
 * To run the e2e tests, kpack must be installed and running on a cluster
 
-* The KPACK_TEST_NAMESPACE_LABELS environment variable allows you define additional labels for the test namespace, e.g.
+* The KPACK_TEST_NAMESPACE_LABELS environment variable allows you to define additional labels for the test namespace, e.g.
 
 ```bash
 export KPACK_TEST_NAMESPACE_LABELS="istio-injection=disabled,purpose=test"
@@ -24,10 +29,10 @@ export KPACK_TEST_NAMESPACE_LABELS="istio-injection=disabled,purpose=test"
 * The IMAGE_REGISTRY environment variable must point at a registry with local write access 
 
 ```bash
-IMAGE_REGISTRY=gcr.io/<some-project> go test ./...
+IMAGE_REGISTRY=gcr.io/<some-project> go test ./test/...
 ```
 
-### libgit2 v1.3.0 dependency and installation
+### Libgit2 v1.3.0 Dependency and Installation
 
 Several unit tests depend upon libgit2 v1.3.0.
 
