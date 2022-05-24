@@ -7,7 +7,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-const ClusterBuilderKind = "ClusterBuilder"
+const (
+	ClusterBuilderKind   = "ClusterBuilder"
+	ClusterBuilderCRName = "clusterbuilders.kpack.io"
+)
 
 // +genclient
 // +genclient:nonNamespaced
