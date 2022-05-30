@@ -18,7 +18,6 @@ import (
 )
 
 const (
-<<<<<<< HEAD
 	PrepareContainerName    = "prepare"
 	AnalyzeContainerName    = "analyze"
 	DetectContainerName     = "detect"
@@ -44,15 +43,9 @@ const (
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
 	IstioInject                            = "sidecar.istio.io/inject"
-=======
-	SecretTemplateName           = "secret-volume-%s"
-	DefaultSecretPathName        = "/var/build-secrets/%s"
-	CosignDefaultSecretPathName  = "/var/build-secrets/cosign/%s"
-	BuildLabel                   = "kpack.io/build"
-	DOCKERSecretAnnotationPrefix = "kpack.io/docker"
-	GITSecretAnnotationPrefix    = "kpack.io/git"
-	k8sOSLabel                   = "kubernetes.io/os"
->>>>>>> 90a9d692 (Support builder signing and containerized tests.)
+	SecretTemplateName                     = "secret-volume-%s"
+	DefaultSecretPathName                  = "/var/build-secrets/%s"
+	CosignDefaultSecretPathName            = "/var/build-secrets/cosign/%s"
 
 	cosignSecretDataCosignKey = "cosign.key"
 

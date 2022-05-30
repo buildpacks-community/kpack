@@ -13,6 +13,7 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 
 	cosign "github.com/pivotal/kpack/pkg/cosign"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -36,6 +37,7 @@ type RemoteBuilderCreator struct {
 	NewBuildpackRepository NewBuildpackRepository
 	LifecycleProvider      LifecycleProvider
 	KpackVersion           string
+	SigningSecrets         []corev1.Secret
 }
 
 var (
@@ -88,8 +90,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		return buildapi.BuilderRecord{}, err
 	}
 
-	// TODO send correct secrets
-	_, err = cosignSigner.SignBuilder(context.TODO(), identifier, make([]corev1.Secret, 0))
+	signaturePaths, err := cosignSigner.SignBuilder(context.TODO(), identifier, r.SigningSecrets)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -110,7 +111,13 @@ func (r *RemoteBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterSto
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: clusterStore.Status.ObservedGeneration,
 		OS:                      config.OS,
+		SignaturePaths:          signaturePaths,
+		Signed:                  len(signaturePaths) > 0, // if signing fails, then creating the builder also fails
 	}, nil
+}
+
+func (r *RemoteBuilderCreator) WithSecrets(secrets []corev1.Secret) {
+	r.SigningSecrets = secrets
 }
 
 func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) corev1alpha1.BuildpackMetadataList {

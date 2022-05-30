@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
@@ -47,6 +48,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
+			k8sfakeClient := k8sfake.NewSimpleClientset(listers.GetKubeObjects()...)
 			r := &clusterBuilder.Reconciler{
 				Client:               fakeClient,
 				ClusterBuilderLister: listers.GetClusterBuilderLister(),
@@ -55,6 +57,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Tracker:              fakeTracker,
 				ClusterStoreLister:   listers.GetClusterStoreLister(),
 				ClusterStackLister:   listers.GetClusterStackLister(),
+				K8sClient:            k8sfakeClient,
 			}
 			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})

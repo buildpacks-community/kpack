@@ -183,8 +183,8 @@ func main() {
 	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController, builderResync := builder.NewController(options, k8sClient, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, k8sClient, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
 

@@ -4,6 +4,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type FakeBuilderCreator struct {
@@ -29,4 +30,7 @@ func (f *FakeBuilderCreator) CreateBuilder(keychain authn.Keychain, clusterStore
 	})
 
 	return f.Record, f.CreateErr
+}
+
+func (f *FakeBuilderCreator) WithSecrets(secrets []corev1.Secret) {
 }

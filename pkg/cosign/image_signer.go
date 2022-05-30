@@ -11,6 +11,8 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "k8s.io/client-go/kubernetes"
 )
 
 type SignFunc func(
@@ -180,4 +182,26 @@ func findCosignSecrets(secretLocation string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func FindCosignSecrets(ctx context.Context, client k8sclient.Interface, namespace string, serviceAccountName string) ([]v1.Secret, error) {
+	serviceAccount, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	cosignSecrets := make([]v1.Secret, 0)
+
+	for _, secretName := range serviceAccount.Secrets {
+		secret, err := client.CoreV1().Secrets(namespace).Get(ctx, secretName.Name, metav1.GetOptions{})
+		if err != nil {
+			// failed to retrieve one secret, fails signing
+			return nil, err
+		}
+
+		cosignSecrets = append(cosignSecrets, *secret)
+	}
+
+	// successful
+	return cosignSecrets, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging/logkey"
 
@@ -19,9 +20,11 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/tracker"
+	k8sclient "k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -29,11 +32,13 @@ const (
 )
 
 type BuilderCreator interface {
+	WithSecrets([]corev1.Secret)
 	CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
 }
 
 func NewController(
 	opt reconciler.Options,
+	k8sclient k8sclient.Interface,
 	clusterBuilderInformer buildinformers.ClusterBuilderInformer,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
@@ -47,6 +52,7 @@ func NewController(
 		KeychainFactory:      keychainFactory,
 		ClusterStoreLister:   clusterStoreInformer.Lister(),
 		ClusterStackLister:   clusterStackInformer.Lister(),
+		K8sClient:            k8sclient,
 	}
 
 	logger := opt.Logger.With(
@@ -73,6 +79,7 @@ type Reconciler struct {
 	Tracker              reconciler.Tracker
 	ClusterStoreLister   buildlisters.ClusterStoreLister
 	ClusterStackLister   buildlisters.ClusterStackLister
+	K8sClient            k8sclient.Interface
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -138,6 +145,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
+
+	secrets, err := cosign.FindCosignSecrets(
+		ctx,
+		c.K8sClient,
+		builder.Spec.ServiceAccountRef.Namespace,
+		builder.Spec.ServiceAccountRef.Name)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	c.BuilderCreator.WithSecrets(secrets)
 
 	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
 }
