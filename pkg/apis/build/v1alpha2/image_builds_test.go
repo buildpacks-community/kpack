@@ -18,7 +18,7 @@ func TestImageBuilds(t *testing.T) {
 }
 
 func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
-	activeDeadlineSeconds := int64(1800)
+	buildTimeout := int64(1800)
 	image := &Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-name",
@@ -30,9 +30,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 		Spec: ImageSpec{
-			Tag:                   "some/image",
-			ServiceAccountName:    "some/service-account",
-			ActiveDeadlineSeconds: &activeDeadlineSeconds,
+			Tag:                "some/image",
+			ServiceAccountName: "some/service-account",
+			BuildTimeout:       &buildTimeout,
 			Builder: corev1.ObjectReference{
 				Kind: "Builder",
 				Name: "builder-name",

@@ -12,7 +12,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `builder`: Configuration of the `builder` resource the image builds will use. See more info [Builder Configuration](builders.md).
 - `serviceAccountName`: The Service Account name that will be used for credential lookup.
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.
-- `activeDeadlineSeconds`: Optional configurable max active time that the pod building the image can run for
+- `buildTimeout`: Optional configurable max active time that the pod building the image can run for
 - `cache`: Caching configuration, two variants are available:
   - `volume.size`: Creates a Volume Claim of the given size
   - `registry.tag`: Creates an image with cached contents

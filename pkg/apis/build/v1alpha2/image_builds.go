@@ -71,7 +71,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			RuntimeClassName:      im.RuntimeClassName(),
 			SchedulerName:         im.SchedulerName(),
 			PriorityClassName:     priorityClass,
-			ActiveDeadlineSeconds: im.Spec.ActiveDeadlineSeconds,
+			ActiveDeadlineSeconds: im.Spec.BuildTimeout,
 		},
 	}
 }
