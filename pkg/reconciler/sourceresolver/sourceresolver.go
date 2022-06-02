@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging/logkey"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -20,7 +22,6 @@ import (
 
 const (
 	ReconcilerName = "SourceResolvers"
-	Kind           = "SourceResolver"
 )
 
 //go:generate counterfeiter . Resolver
@@ -44,7 +45,11 @@ func NewController(
 		SourceResolverLister: sourceResolverInformer.Lister(),
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.SourceResolverCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 
 	c.Enqueuer = &workQueueEnqueuer{
 		enqueueAfter: impl.EnqueueAfter,

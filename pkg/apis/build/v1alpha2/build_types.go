@@ -25,6 +25,11 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
+const (
+	BuildKind   = "Build"
+	BuildCRName = "builds.kpack.io"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
