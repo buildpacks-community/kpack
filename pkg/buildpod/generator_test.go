@@ -23,7 +23,6 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
-	"github.com/pivotal/kpack/pkg/cnb"
 	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -539,11 +538,11 @@ func createImage(t *testing.T, os string) ggcrv1.Image {
 	image, err = imagehelpers.SetStringLabel(image, platform.StackIDLabel, "some.stack.id")
 	require.NoError(t, err)
 
-	image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+	image, err = imagehelpers.SetStringLabel(image, "io.buildpacks.builder.metadata", //language=json
 		`{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
 	require.NoError(t, err)
 
-	image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+	image, err = imagehelpers.SetStringLabel(image, "io.buildpacks.builder.metadata", //language=json
 		`{
   "stack": {
     "runImage": {

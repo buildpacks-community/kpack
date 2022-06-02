@@ -92,7 +92,7 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 	if err := s.signFunc(
 		ctx,
 		ko,
-		options.RegistryOptions{},
+		options.RegistryOptions{KubernetesKeychain: true},
 		annotations,
 		[]string{refImage},
 		"",
