@@ -5,22 +5,48 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/pivotal/kpack/pkg/secret"
+	"github.com/pkg/errors"
 )
 
-func ParseDockerPullSecrets(path string) (DockerCreds, error) {
-	dockerCfg, err := parseDockerCfg(filepath.Join(path, ".dockercfg"))
+func ParseDockerConfigSecret(dir string) (DockerCreds, error) {
+	dockerCfg, err := parseDockerCfg(filepath.Join(dir, ".dockercfg"))
 	if err != nil {
 		return nil, err
 	}
 
-	dockerJson, err := parseDockerConfigJson(filepath.Join(path, ".dockerconfigjson"))
+	dockerJson, err := parseDockerConfigJson(filepath.Join(dir, ".dockerconfigjson"))
 	if err != nil {
 		return nil, err
 	}
 
 	return dockerCfg.Append(dockerJson)
+}
+
+func ParseBasicAuthSecrets(volumeName string, secrets []string) (DockerCreds, error) {
+	var dockerCreds = DockerCreds{}
+	for _, s := range secrets {
+		splitSecret := strings.Split(s, "=")
+		if len(splitSecret) != 2 {
+			return nil, errors.Errorf("could not parse docker secret argument %s", s)
+		}
+		secretName := splitSecret[0]
+		domain := splitSecret[1]
+
+		auth, err := secret.ReadBasicAuthSecret(volumeName, secretName)
+		if err != nil {
+			return nil, err
+		}
+
+		dockerCreds[domain] = authn.AuthConfig{
+			Username: auth.Username,
+			Password: auth.Password,
+		}
+	}
+	return dockerCreds, nil
 }
 
 func parseDockerCfg(path string) (DockerCreds, error) {

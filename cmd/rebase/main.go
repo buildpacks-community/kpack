@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,8 @@ import (
 	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/cmd"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/buildchange"
@@ -60,7 +63,13 @@ func rebase(tags []string, logger *log.Logger) error {
 		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
 	}
 
-	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
+	logger.Println("Loading cluster credential helpers")
+	k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, dockerCredentials)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}
@@ -68,7 +77,7 @@ func rebase(tags []string, logger *log.Logger) error {
 	for _, c := range combine(dockerCfgCredentials, dockerConfigCredentials, imagePullSecrets) {
 		credPath := filepath.Join(buildSecretsDir, c)
 
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		dockerCfgCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
 			return err
 		}
@@ -77,11 +86,13 @@ func rebase(tags []string, logger *log.Logger) error {
 			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 
-		keychain, err = keychain.Append(dockerCfgCreds)
+		creds, err = creds.Append(dockerCfgCreds)
 		if err != nil {
 			return err
 		}
 	}
+
+	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
 
 	appImage, err := remote.NewImage(tags[0], keychain, remote.FromBaseImage(*lastBuiltImage))
 	if err != nil {

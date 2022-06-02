@@ -16,10 +16,5 @@ func NewVolumeSecretKeychain() (authn.Keychain, error) {
 		return DockerCreds{}, nil
 	}
 
-	secrets, err := ParseDockerPullSecrets(secretFolder)
-	if err != nil {
-		return nil, err
-	}
-
-	return secrets, nil
+	return ParseDockerConfigSecret(secretFolder)
 }

@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,24 +29,17 @@ const (
 	Kind           = "Build"
 )
 
-//go:generate counterfeiter . MetadataRetriever
-type MetadataRetriever interface {
-	GetBuiltImage(context.Context, *buildapi.Build) (cnb.BuiltImage, error)
-	GetCacheImage(context.Context, *buildapi.Build) (string, error)
-}
-
 type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, podGenerator PodGenerator) *controller.Impl {
 	c := &Reconciler{
-		Client:            opt.Client,
-		K8sClient:         k8sClient,
-		MetadataRetriever: metadataRetriever,
-		Lister:            informer.Lister(),
-		PodLister:         podInformer.Lister(),
-		PodGenerator:      podGenerator,
+		Client:       opt.Client,
+		K8sClient:    k8sClient,
+		Lister:       informer.Lister(),
+		PodLister:    podInformer.Lister(),
+		PodGenerator: podGenerator,
 	}
 
 	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
@@ -61,12 +55,11 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 }
 
 type Reconciler struct {
-	Client            versioned.Interface
-	Lister            buildlisters.BuildLister
-	MetadataRetriever MetadataRetriever
-	K8sClient         k8sclient.Interface
-	PodLister         v1Listers.PodLister
-	PodGenerator      PodGenerator
+	Client       versioned.Interface
+	Lister       buildlisters.BuildLister
+	K8sClient    k8sclient.Interface
+	PodLister    v1Listers.PodLister
+	PodGenerator PodGenerator
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -106,21 +99,15 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	}
 
 	if build.MetadataReady(pod) {
-		image, err := c.MetadataRetriever.GetBuiltImage(ctx, build)
+		buildMetadata, err := c.buildMetadataFromBuildPod(pod)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to get build metadata from build pod")
 		}
-
-		cacheImageId, err := c.MetadataRetriever.GetCacheImage(ctx, build)
-		if err != nil {
-			return err
-		}
-
-		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
-		build.Status.LatestImage = image.Identifier
-		build.Status.LatestCacheImage = cacheImageId
-		build.Status.Stack.RunImage = image.Stack.RunImage
-		build.Status.Stack.ID = image.Stack.ID
+		build.Status.BuildMetadata = buildMetadata.BuildpackMetadata
+		build.Status.LatestImage = buildMetadata.LatestImage
+		build.Status.LatestCacheImage = buildMetadata.LatestCacheImage
+		build.Status.Stack.RunImage = buildMetadata.StackRunImage
+		build.Status.Stack.ID = buildMetadata.StackID
 	}
 
 	build.Status.PodName = pod.Name
@@ -222,14 +209,11 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) 
 	return err
 }
 
-func buildMetadataFromBuiltImage(image cnb.BuiltImage) []corev1alpha1.BuildpackMetadata {
-	buildpackMetadata := make([]corev1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
-	for _, metadata := range image.BuildpackMetadata {
-		buildpackMetadata = append(buildpackMetadata, corev1alpha1.BuildpackMetadata{
-			Id:       metadata.ID,
-			Version:  metadata.Version,
-			Homepage: metadata.Homepage,
-		})
+func (c *Reconciler) buildMetadataFromBuildPod(pod *corev1.Pod) (*cnb.BuildMetadata, error) {
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == buildapi.CompletionContainerName {
+			return cnb.DecompressBuildMetadata(status.State.Terminated.Message)
+		}
 	}
-	return buildpackMetadata
+	return nil, errors.New(buildapi.CompletionContainerName + " container not found")
 }

@@ -90,7 +90,7 @@ type APIVersions struct {
 
 type APISet []string
 
-type BuiltImageStack struct {
+type builtImageStack struct {
 	RunImage string
 	ID       string
 }
