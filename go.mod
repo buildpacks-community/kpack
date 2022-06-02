@@ -6,12 +6,9 @@ require (
 	cloud.google.com/go/kms v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.1.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20220527150729-7a271a852e31
 	github.com/buildpacks/lifecycle v0.14.1
-	github.com/containerd/containerd v1.6.1 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/spec v0.20.4
 	github.com/google/go-cmp v0.5.8
