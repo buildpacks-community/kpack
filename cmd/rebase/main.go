@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/remote"
@@ -33,14 +34,14 @@ var (
 	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	reportFilePath = flag.String("report", os.Getenv("REPORT_FILE_PATH"), "The location at which to write the report.toml")
 
-	dockerCredentials       flaghelpers.CredentialsFlags
+	basicDockerCredentials  flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	imagePullSecrets        flaghelpers.CredentialsFlags
 )
 
 func init() {
-	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
+	flag.Var(&basicDockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
@@ -69,7 +70,8 @@ func rebase(tags []string, logger *log.Logger) error {
 		return err
 	}
 
-	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, dockerCredentials)
+	logLoadingSecrets(logger, basicDockerCredentials)
+	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}
@@ -92,7 +94,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		}
 	}
 
-	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
+	keychain := authn.NewMultiKeychain(creds, k8sNodeKeychain)
 
 	appImage, err := remote.NewImage(tags[0], keychain, remote.FromBaseImage(*lastBuiltImage))
 	if err != nil {
@@ -132,6 +134,19 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	return ioutil.WriteFile(*reportFilePath, buf.Bytes(), 0777)
+}
+
+func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
+	for _, secretsSlice := range secretsSlices {
+		for _, secret := range secretsSlice {
+			splitSecret := strings.Split(secret, "=")
+			if len(splitSecret) == 2 {
+				secretName := splitSecret[0]
+				domain := splitSecret[1]
+				logger.Printf("Loading secrets for %q from secret %q", domain, secretName)
+			}
+		}
+	}
 }
 
 func combine(credentials ...[]string) []string {
