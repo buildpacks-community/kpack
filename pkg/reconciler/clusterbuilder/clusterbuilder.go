@@ -3,7 +3,9 @@ package clusterBuilder
 import (
 	"context"
 
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging/logkey"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -24,7 +26,6 @@ import (
 
 const (
 	ReconcilerName = "ClusterBuilders"
-	Kind           = "ClusterBuilder"
 )
 
 type BuilderCreator interface {
@@ -47,7 +48,12 @@ func NewController(
 		ClusterStoreLister:   clusterStoreInformer.Lister(),
 		ClusterStackLister:   clusterStackInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.ClusterBuilderCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
