@@ -25,6 +25,11 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
+const (
+	BuildKind   = "Build"
+	BuildCRName = "builds.kpack.io"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -72,6 +77,13 @@ type BuildSpec struct {
 	PriorityClassName string              `json:"priorityClassName,omitempty"`
 }
 
+func (bs *BuildSpec) RegistryCacheTag() string {
+	if bs.Cache == nil || bs.Cache.Registry == nil {
+		return ""
+	}
+	return bs.Cache.Registry.Tag
+}
+
 func (bs *BuildSpec) NeedVolumeCache() bool {
 	return bs.Cache != nil && bs.Cache.Volume != nil && bs.Cache.Volume.ClaimName != ""
 }
@@ -92,7 +104,6 @@ type BuildPersistentVolumeCache struct {
 }
 
 // +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=true
 type Services []corev1.ObjectReference
 
 // +k8s:openapi-gen=true

@@ -138,7 +138,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		clusterBuilderSpec = buildapi.BuilderSpec{
 			Tag: "custom/example",
 			Stack: corev1.ObjectReference{
-				Kind: "Stack",
+				Kind: "stack",
 				Name: "some-stack",
 			},
 			Store: corev1.ObjectReference{

@@ -23,8 +23,6 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
-	"github.com/pivotal/kpack/pkg/cnb"
 	psfakes "github.com/pivotal/kpack/pkg/duckprovisionedserviceable/fake"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
@@ -32,6 +30,7 @@ import (
 )
 
 var (
+	scheme             = runtime.NewScheme()
 	schemeGroupVersion = schema.GroupVersion{Group: "fake.kpack.io", Version: "v1"}
 	schemeBuilder      = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(schemeGroupVersion,
@@ -43,7 +42,7 @@ var (
 )
 
 func TestGenerator(t *testing.T) {
-	err := schemeBuilder.AddToScheme(scheme.Scheme)
+	err := schemeBuilder.AddToScheme(scheme)
 	require.NoError(t, err)
 	spec.Run(t, "Generator", testGenerator)
 }
@@ -146,13 +145,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			Type: "service.binding/some-type",
 		}
 
-		invalidBindingSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-invalid-binding-secret",
-				Namespace: namespace,
-			},
-		}
-
 		psBindingSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "some-ps-binding-secret",
@@ -165,10 +157,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		ps := &psfakes.FakeProvisionedService{
-
 			TypeMeta: metav1.TypeMeta{
-				Kind:       "ProvisionedService",
-				APIVersion: "v1alpha1",
+				APIVersion: "fake.kpack.io/v1",
+				Kind:       "FakeProvisionedService",
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "some-provisioned-service",
@@ -179,29 +170,15 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		invalidPS := &psfakes.FakeProvisionedService{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ProvisionedService",
-				APIVersion: "v1alpha1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-invalid-provisioned-service",
-				Namespace: namespace,
-			},
-			Status: psfakes.ProvisionedServiceStatus{
-				Binding: v1.LocalObjectReference{Name: "&"},
-			},
-		}
-
 		keychain := &registryfakes.FakeKeychain{}
 		secretRef := registry.SecretRef{
 			ServiceAccount:   serviceAccountName,
 			Namespace:        namespace,
 			ImagePullSecrets: builderPullSecrets,
 		}
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret, invalidBindingSecret)
+		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret)
 		buildPodConfig := buildapi.BuildPodImages{}
-		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme.Scheme, ps, invalidPS)
+		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme, ps)
 
 		generator := &buildpod.Generator{
 			BuildPodConfig:  buildPodConfig,
@@ -301,13 +278,18 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("passes in k8s service bindings if present", func() {
+
 			var build = &testBuildPodable{
 				namespace: namespace,
 				services: buildapi.Services{
 					{
-						Kind:       "Secret",
-						APIVersion: "v1",
-						Name:       psBindingSecret.Name,
+						Kind: "Secret",
+						Name: bindingSecret.Name,
+					},
+					{
+						Kind:       "FakeProvisionedService",
+						APIVersion: "fake.kpack.io/v1",
+						Name:       ps.Name,
 					},
 				},
 				serviceAccount: serviceAccountName,
@@ -321,12 +303,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			expectedBindings := []buildapi.ServiceBinding{
 				&corev1alpha1.ServiceBinding{
-					Name:      psBindingSecret.Name,
+					Name:      bindingSecret.Name,
+					SecretRef: &corev1.LocalObjectReference{Name: bindingSecret.Name},
+				},
+				&corev1alpha1.ServiceBinding{
+					Name:      ps.Name,
 					SecretRef: &corev1.LocalObjectReference{Name: psBindingSecret.Name},
 				},
 			}
 
-			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
+			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 2)
 			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
 
@@ -463,6 +449,26 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			assert.Len(t, build.buildPodCalls[0].BuildContext.Bindings, 1)
 			assert.Equal(t, expectedBindings, build.buildPodCalls[0].BuildContext.Bindings)
 		})
+
+		it("errors with an API error when trying to request the provisioned service", func() {
+			var build = &testBuildPodable{
+				namespace: namespace,
+				services: buildapi.Services{
+					{
+						Kind: "ProvisionedService",
+						Name: "some-provisioned-service",
+					},
+				},
+				serviceAccount: serviceAccountName,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			_, err := generator.Generate(context.TODO(), build)
+			require.EqualError(t, err, "provisionedservices \"some-provisioned-service\" not found")
+		})
 	})
 }
 
@@ -532,11 +538,11 @@ func createImage(t *testing.T, os string) ggcrv1.Image {
 	image, err = imagehelpers.SetStringLabel(image, platform.StackIDLabel, "some.stack.id")
 	require.NoError(t, err)
 
-	image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+	image, err = imagehelpers.SetStringLabel(image, "io.buildpacks.builder.metadata", //language=json
 		`{ "stack": { "runImage": { "image": "some-registry.io/run-image"} } }`)
 	require.NoError(t, err)
 
-	image, err = imagehelpers.SetStringLabel(image, cnb.BuilderMetadataLabel, //language=json
+	image, err = imagehelpers.SetStringLabel(image, "io.buildpacks.builder.metadata", //language=json
 		`{
   "stack": {
     "runImage": {

@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	cnbUserId  = "CNB_USER_ID"
-	cnbGroupId = "CNB_GROUP_ID"
+	builderMetadataLabel = "io.buildpacks.builder.metadata"
+	cnbUserId            = "CNB_USER_ID"
+	cnbGroupId           = "CNB_GROUP_ID"
 )
 
 type ImageFetcher interface {
@@ -141,11 +142,11 @@ func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build Bu
 	gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
 	unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(ctx, s.Name, metav1.GetOptions{})
 	if err != nil {
-		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+		return duckprovisionedserviceable.ProvisionedServicable{}, err
 	}
 	ps := duckprovisionedserviceable.ProvisionedServicable{}
 	if err := duck.FromUnstructured(unstructured, &ps); err != nil {
-		return duckprovisionedserviceable.ProvisionedServicable{}, nil
+		return duckprovisionedserviceable.ProvisionedServicable{}, err
 	}
 	return ps, nil
 }
@@ -218,7 +219,7 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 	}
 
 	var metadata cnb.BuilderImageMetadata
-	err = imagehelpers.GetLabel(image, cnb.BuilderMetadataLabel, &metadata)
+	err = imagehelpers.GetLabel(image, builderMetadataLabel, &metadata)
 	if err != nil {
 		return buildapi.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to get builder metadata")
 	}

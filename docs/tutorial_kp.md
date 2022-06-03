@@ -20,7 +20,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
     ```bash
     docker login <REGISTRY-HOSTNAME> -u <REGISTRY-USER>
-    kp secret save kp-default-registry-creds \
+    kp secret create kp-default-registry-creds \
        --registry <REGISTRY-HOSTNAME> \
        --registry-user <REGISTRY-USER> \
        -n kpack
@@ -30,7 +30,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
    > Note: The `<REGISTRY-HOSTNAME>` must be the registry prefix for its corresponding registry
    > - For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. `kp` also offers a simplified way to create a dockerhub secret with a `--dockerhub` flag.
-   > - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON). `kp` also offers a simplified way to create a gcr secret with a `--gcr` flag.
+   > - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. `kp` also offers a simplified way to create a GCR secret with a `--gcr` flag that gets a path to a json file containing the service account password.
 
    > Note: The `<REPOSITORY>` must be a location in the docker registry that can be written to with the credentials
    > - For [dockerhub](https://hub.docker.com/) this should be `my-username/my-repo`.
@@ -81,11 +81,11 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
       -n default
     ```
 
-    - Replace `<IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--registry` flag when creating a Secret in step #1. The tag should be something like: your-name/builder or gcr.io/your-project/builder
+    - Replace `<IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--registry` flag when creating a Secret in step #1. The tag should be something like: `your-name/builder` or `gcr.io/your-project/your-repo/builder`.
 
 5. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack.
 
-   The easiest way to do that is with `kp secret save`
+   The easiest way to do that is with `kp secret create`
 
     ```bash
     kp secret save tutorial-registry-credentials \
@@ -96,15 +96,20 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
    > Note: The `<REGISTRY-HOSTNAME>` must be the registry prefix for its corresponding registry
    > - For [dockerhub](https://hub.docker.com/) this should be `https://index.docker.io/v1/`. `kp` also offers a simplified way to create a dockerhub secret with a `--dockerhub` flag.
-   > - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. If you use GCR then the username can be `_json_key` and the password can be the JSON credentials you get from the GCP UI (under `IAM -> Service Accounts` create an account or edit an existing one and create a key with type JSON). `kp` also offers a simplified way to create a gcr secret with a `--gcr` flag.
+   > - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io`. `kp` also offers a simplified way to create a GCR secret with a `--gcr` flag that followed by a path to a json file containing the service account password.
 
    Your secret create should look something like this:
 
     ```bash
-    kp secret save tutorial-registry-credentials \
+    kp secret create tutorial-registry-credentials \
        --registry https://index.docker.io/v1/ \
        --registry-user my-dockerhub-username \
        -n default
+    ```
+    or
+    ```bash
+    kp secret create tutorial-registry-credentials \
+       --gcr service_account_password.json
     ```
 
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md)

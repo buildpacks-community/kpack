@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging/logkey"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -40,7 +42,12 @@ func NewController(
 		StoreReader:        storeReader,
 		KeychainFactory:    keychainFactory,
 	}
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.ClusterStoreCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }

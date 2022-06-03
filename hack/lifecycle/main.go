@@ -33,7 +33,7 @@ import (
 const (
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 	lifecycleLocation      = "/cnb/lifecycle/"
-	lifecycleVersion       = "0.13.5"
+	lifecycleVersion       = "0.14.1"
 )
 
 var (

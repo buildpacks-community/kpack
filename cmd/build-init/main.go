@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/blob"
@@ -44,7 +46,7 @@ var (
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
-	dockerCredentials       flaghelpers.CredentialsFlags
+	basicDockerCredentials  flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	imagePullSecrets        flaghelpers.CredentialsFlags
@@ -53,7 +55,7 @@ var (
 func init() {
 	flag.Var(&basicGitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
 	flag.Var(&sshGitCredentials, "ssh-git", "SSH authentication for git of the form 'secretname=git.domain.com'")
-	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
+	flag.Var(&basicDockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
@@ -84,8 +86,8 @@ func main() {
 		logger.Println(err)
 	}
 
-	logLoadingSecrets(logger, dockerCredentials)
-	creds, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
+	logLoadingSecrets(logger, basicDockerCredentials)
+	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -93,7 +95,7 @@ func main() {
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
 		credPath := filepath.Join(buildSecretsDir, c)
 
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		dockerCfgCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -108,7 +110,13 @@ func main() {
 		}
 	}
 
-	err = dockercreds.VerifyWriteAccess(creds, *imageTag)
+	logger.Println("Loading cluster credential helpers")
+	k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	err = dockercreds.VerifyWriteAccess(authn.NewMultiKeychain(creds, k8sNodeKeychain), *imageTag)
 	if err != nil {
 		logger.Fatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
 	}
@@ -116,7 +124,7 @@ func main() {
 	for _, c := range imagePullSecrets {
 		credPath := filepath.Join(buildSecretsDir, c)
 
-		imagePullCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		imagePullCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
 			logger.Fatal(err)
 		}
@@ -127,12 +135,13 @@ func main() {
 		}
 	}
 
-	err = dockercreds.VerifyReadAccess(creds, *runImage)
+	keychain := authn.NewMultiKeychain(creds, k8sNodeKeychain)
+	err = dockercreds.VerifyReadAccess(keychain, *runImage)
 	if err != nil {
 		logger.Fatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
 	}
 
-	err = fetchSource(logger, creds)
+	err = fetchSource(logger, keychain)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -176,7 +185,7 @@ func prepareForWindows(hostname string) error {
 	return nil
 }
 
-func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds) error {
+func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 	switch {
 	case *gitURL != "":
 		logLoadingSecrets(logger, basicGitCredentials, sshGitCredentials)
@@ -197,7 +206,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		}
 		return fetcher.Fetch(appDir, *blobURL)
 	case *registryImage != "":
-		registrySourcePullSecrets, err := dockercreds.ParseDockerPullSecrets(registrySourcePullSecretsDir)
+		registrySourcePullSecrets, err := dockercreds.ParseDockerConfigSecret(registrySourcePullSecretsDir)
 		if err != nil {
 			return err
 		}
@@ -205,7 +214,7 @@ func fetchSource(logger *log.Logger, serviceAccountCreds dockercreds.DockerCreds
 		fetcher := registry.Fetcher{
 			Logger:   logger,
 			Client:   &registry.Client{},
-			Keychain: authn.NewMultiKeychain(registrySourcePullSecrets, serviceAccountCreds),
+			Keychain: authn.NewMultiKeychain(registrySourcePullSecrets, keychain),
 		}
 		return fetcher.Fetch(appDir, *registryImage)
 	default:

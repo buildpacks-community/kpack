@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +17,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging/logkey"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
@@ -52,7 +54,11 @@ func NewController(
 		EnablePriorityClasses: enablePriorityClasses,
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.ImageCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 
 	imageInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
