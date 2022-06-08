@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
@@ -32,34 +31,27 @@ type ImageFetcher interface {
 }
 
 type RemoteMetadataRetriever struct {
-	Keychain     authn.Keychain
 	ImageFetcher ImageFetcher
 }
 
-func (r *RemoteMetadataRetriever) GetBuildMetadata(report platform.ExportReport, cacheTag string) (*BuildMetadata, error) {
-	if len(report.Image.Tags) == 0 {
-		return nil, errors.New("no image found in report")
-	}
-
-	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
-
-	buildImg, err := r.getBuiltImage(builtImageRef)
+func (r *RemoteMetadataRetriever) GetBuildMetadata(builtImageRef, cacheTag string, keychain authn.Keychain) (*BuildMetadata, error) {
+	buildImg, err := r.getBuiltImage(builtImageRef, keychain)
 	if err != nil {
 		return nil, err
 	}
-	cacheImageRef, _ := r.getCacheImage(cacheTag) // if getting cache fails, use empty cache
+	cacheImageRef, _ := r.getCacheImage(cacheTag, keychain) // if getting cache fails, use empty cache
 
 	return &BuildMetadata{
 		BuildpackMetadata: buildMetadataFromBuiltImage(buildImg),
-		LatestImage:       builtImageRef,
+		LatestImage:       buildImg.identifier,
 		LatestCacheImage:  cacheImageRef,
 		StackRunImage:     buildImg.stack.RunImage,
 		StackID:           buildImg.stack.ID,
 	}, nil
 }
 
-func (r *RemoteMetadataRetriever) getBuiltImage(tag string) (builtImage, error) {
-	appImage, appImageId, err := r.ImageFetcher.Fetch(r.Keychain, tag)
+func (r *RemoteMetadataRetriever) getBuiltImage(tag string, keychain authn.Keychain) (builtImage, error) {
+	appImage, appImageId, err := r.ImageFetcher.Fetch(keychain, tag)
 	if err != nil {
 		return builtImage{}, errors.Wrap(err, "unable to fetch app image")
 	}
@@ -67,11 +59,11 @@ func (r *RemoteMetadataRetriever) getBuiltImage(tag string) (builtImage, error) 
 	return readBuiltImage(appImage, appImageId)
 }
 
-func (r *RemoteMetadataRetriever) getCacheImage(cacheTag string) (string, error) {
+func (r *RemoteMetadataRetriever) getCacheImage(cacheTag string, keychain authn.Keychain) (string, error) {
 	if cacheTag == "" {
 		return "", nil
 	}
-	_, cacheImageId, err := r.ImageFetcher.Fetch(r.Keychain, cacheTag)
+	_, cacheImageId, err := r.ImageFetcher.Fetch(keychain, cacheTag)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to fetch cache image")
 	}

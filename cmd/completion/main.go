@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -107,17 +108,26 @@ func main() {
 	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
 
 	metadataRetriever := cnb.RemoteMetadataRetriever{
-		Keychain:     keychain,
 		ImageFetcher: &registry.Client{},
 	}
 
-	buildMetadata, err := metadataRetriever.GetBuildMetadata(report, cacheTag)
+	if len(report.Image.Tags) == 0 {
+		log.Fatal("no image found in report")
+	}
+
+	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
+
+	buildMetadata, err := metadataRetriever.GetBuildMetadata(builtImageRef, cacheTag, keychain)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	data, err := cnb.CompressBuildMetadata(buildMetadata)
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(buildapi.CompletionTerminationMessagePath), 0777); err != nil {
 		log.Fatal(err)
 	}
 

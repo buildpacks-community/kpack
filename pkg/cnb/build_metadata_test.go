@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/buildpacks/lifecycle/platform"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/sclevine/spec"
@@ -66,7 +65,6 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				cacheImage = randomImage(t)
 				imageFetcher.AddImage(cacheTag, cacheImage, fakeKeychain)
 				retriever = &cnb.RemoteMetadataRetriever{
-					Keychain:     fakeKeychain,
 					ImageFetcher: imageFetcher,
 				}
 			})
@@ -89,17 +87,11 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					d, err := appImage.Digest()
 					require.NoError(t, err)
 					appDigest = d.String()
-					imageFetcher.AddImage(fmt.Sprintf("%s@%s", appTag, appDigest), appImage, fakeKeychain)
+					imageFetcher.AddImage(appTag, appImage, fakeKeychain)
 				})
 
-				it("retrieves the metadata from the report and cache tag", func() {
-					report := platform.ExportReport{
-						Image: platform.ImageReport{
-							Tags:   []string{appTag},
-							Digest: appDigest,
-						},
-					}
-					metadata, err := retriever.GetBuildMetadata(report, cacheTag)
+				it("retrieves the metadata from the image and cache tag", func() {
+					metadata, err := retriever.GetBuildMetadata(appTag, cacheTag, fakeKeychain)
 					assert.NoError(t, err)
 
 					bpMetadata := metadata.BuildpackMetadata
@@ -117,13 +109,7 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				it("does not error for bad cache tag", func() {
-					report := platform.ExportReport{
-						Image: platform.ImageReport{
-							Tags:   []string{appTag},
-							Digest: appDigest,
-						},
-					}
-					metadata, err := retriever.GetBuildMetadata(report, "invalid")
+					metadata, err := retriever.GetBuildMetadata(appTag, "invalid", fakeKeychain)
 					assert.NoError(t, err)
 					assert.Empty(t, metadata.LatestCacheImage)
 				})
@@ -136,14 +122,9 @@ func testMetadataRetriever(t *testing.T, when spec.G, it spec.S) {
 					appImage, _ = imagehelpers.SetStringLabel(appImage, "io.buildpacks.lifecycle.metadata", fmt.Sprintf(lifecycleImageLabelTemplate, lifecycle05AppKeyValue))
 					d, err := appImage.Digest()
 					require.NoError(t, err)
-					imageFetcher.AddImage(fmt.Sprintf("%s@%s", appTag, d.String()), appImage, fakeKeychain)
-					report := platform.ExportReport{
-						Image: platform.ImageReport{
-							Tags:   []string{appTag},
-							Digest: d.String(),
-						},
-					}
-					metadata, err := retriever.GetBuildMetadata(report, cacheTag)
+					imageRef := fmt.Sprintf("%s@%s", appTag, d.String())
+					imageFetcher.AddImage(imageRef, appImage, fakeKeychain)
+					metadata, err := retriever.GetBuildMetadata(imageRef, cacheTag, fakeKeychain)
 					assert.NoError(t, err)
 
 					bpMetadata := metadata.BuildpackMetadata

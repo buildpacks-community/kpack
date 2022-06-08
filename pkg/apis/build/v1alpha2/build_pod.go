@@ -28,7 +28,7 @@ const (
 
 	volumeSecretNameTemplate = "secret-volume-%s"
 
-	CompletionTerminationMessagePath = "/tmp/completion-termination-path"
+	CompletionTerminationMessagePath = "/dev/termination-log"
 	cosignDefaultSecretPath          = "/var/build-secrets/cosign/%s"
 	defaultSecretPath                = "/var/build-secrets/%s"
 	ReportTOMLPath                   = "/var/report/report.toml"
