@@ -28,10 +28,11 @@ const (
 
 	volumeSecretNameTemplate = "secret-volume-%s"
 
-	CompletionTerminationMessagePath = "/dev/termination-log"
-	cosignDefaultSecretPath          = "/var/build-secrets/cosign/%s"
-	defaultSecretPath                = "/var/build-secrets/%s"
-	ReportTOMLPath                   = "/var/report/report.toml"
+	completionTerminationMessagePathWindows = "/dev/termination-log"
+	completionTerminationMessagePathLinux   = "/tmp/termination-log"
+	cosignDefaultSecretPath                 = "/var/build-secrets/cosign/%s"
+	defaultSecretPath                       = "/var/build-secrets/%s"
+	ReportTOMLPath                          = "/var/report/report.toml"
 
 	BuildLabel = "kpack.io/build"
 	k8sOSLabel = "kubernetes.io/os"
@@ -53,10 +54,11 @@ const (
 	reportVolumeName                    = "report-dir"
 	workspaceVolumeName                 = "workspace-dir"
 
-	buildChangesEnvVar       = "BUILD_CHANGES"
-	CacheTagEnvVar           = "CACHE_TAG"
-	platformAPIEnvVar        = "CNB_PLATFORM_API"
-	serviceBindingRootEnvVar = "SERVICE_BINDING_ROOT"
+	buildChangesEnvVar           = "BUILD_CHANGES"
+	CacheTagEnvVar               = "CACHE_TAG"
+	platformAPIEnvVar            = "CNB_PLATFORM_API"
+	serviceBindingRootEnvVar     = "SERVICE_BINDING_ROOT"
+	TerminationMessagePathEnvVar = "TERMINATION_MESSAGE_PATH"
 )
 
 type ServiceBinding interface {
@@ -86,6 +88,15 @@ func (bpi *BuildPodImages) completion(os string) string {
 		return bpi.CompletionWindowsImage
 	default:
 		return bpi.CompletionImage
+	}
+}
+
+func terminationMsgPath(os string) string {
+	switch os {
+	case "windows":
+		return completionTerminationMessagePathWindows
+	default:
+		return completionTerminationMessagePathLinux
 	}
 }
 
@@ -332,23 +343,35 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			PriorityClassName: b.PriorityClassName(),
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(
-					b.completionContainer(
-						images.completion(buildContext.os()),
-						args(
+					corev1.Container{
+						Name:    CompletionContainerName,
+						Image:   images.completion(buildContext.os()),
+						Command: []string{"/cnb/process/completion"},
+						Env: []corev1.EnvVar{
+							homeEnv,
+							{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
+							{Name: TerminationMessagePathEnvVar, Value: terminationMsgPath(buildContext.os())},
+						},
+						Args: args(
 							b.notaryArgs(),
 							secretArgs,
 							b.cosignArgs(),
 							cosignSecretArgs,
 						),
-						[]corev1.EnvVar{homeEnv},
-						volumeMounts(
+						TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Resources:                b.Spec.Resources,
+						VolumeMounts: volumeMounts(
 							secretVolumeMounts,
 							cosignVolumeMounts,
 							[]corev1.VolumeMount{
 								homeMount,
+								reportMount,
+								notaryV1Mount,
 							},
 						),
-					),
+						ImagePullPolicy: corev1.PullIfNotPresent,
+					},
 					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost), userprofileHomeEnv())...)
 			}),
 			SecurityContext: podSecurityContext(buildContext.BuildPodBuilderConfig),
@@ -746,20 +769,30 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			),
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
-				b.completionContainer(
-					images.completion(buildContext.os()),
-					args(
+				{
+					Name:    CompletionContainerName,
+					Image:   images.completion(buildContext.os()),
+					Command: []string{"/cnb/process/completion"},
+					Env: []corev1.EnvVar{
+						{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
+						{Name: TerminationMessagePathEnvVar, Value: terminationMsgPath(buildContext.os())},
+					},
+					Args: args(
 						b.notaryArgs(),
 						secretArgs,
 						b.cosignArgs(),
 						cosignSecretArgs,
 					),
-					[]corev1.EnvVar{},
-					volumeMounts(
+					TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+					TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+					Resources:                b.Spec.Resources,
+					VolumeMounts: volumeMounts(
+						[]corev1.VolumeMount{reportMount, notaryV1Mount},
 						secretVolumeMounts,
 						cosignVolumeMounts,
 					),
-				),
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
 			},
 			InitContainers: []corev1.Container{
 				{
@@ -798,21 +831,6 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		},
 		Status: corev1.PodStatus{},
 	}, nil
-}
-
-func (b *Build) completionContainer(image string, args []string, env []corev1.EnvVar, volumeMounts []corev1.VolumeMount) corev1.Container {
-	return corev1.Container{
-		Name:                     CompletionContainerName,
-		Image:                    image,
-		Command:                  []string{"/cnb/process/completion"},
-		Env:                      append(env, corev1.EnvVar{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()}),
-		Args:                     args,
-		TerminationMessagePath:   CompletionTerminationMessagePath,
-		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
-		Resources:                b.Spec.Resources,
-		VolumeMounts:             append([]corev1.VolumeMount{reportMount, notaryV1Mount}, volumeMounts...),
-		ImagePullPolicy:          corev1.PullIfNotPresent,
-	}
 }
 
 func (b *Build) cacheVolume(os string) []corev1.Volume {
