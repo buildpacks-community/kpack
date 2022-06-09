@@ -129,6 +129,10 @@ func main() {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
 
+	metadataRetriever := &cnb.RemoteMetadataRetriever{
+		ImageFetcher: &registry.Client{},
+	}
+
 	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
 	if err != nil {
 		log.Fatalf("could not get dynamic client: %s", err)
@@ -175,7 +179,7 @@ func main() {
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
-	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, buildpodGenerator)
+	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory)
 	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
