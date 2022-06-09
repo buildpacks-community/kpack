@@ -320,7 +320,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"image.kpack.io/buildNumber": "12",
 				},
 				Annotations: map[string]string{
-					"some/annotation": "to-pass-through",
+					"some/annotation":         "to-pass-through",
+					"sidecar.istio.io/inject": "false",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					*kmeta.NewControllerRef(build),
@@ -1369,6 +1370,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					Annotations: map[string]string{
 						"some/annotation":               "to-pass-through",
+						"sidecar.istio.io/inject":       "false",
 						buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
 						buildapi.BuildChangesAnnotation: "some-stack-change",
 					},

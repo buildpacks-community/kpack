@@ -41,6 +41,7 @@ const (
 	cosignRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
+	IstioInject                            = "sidecar.istio.io/inject"
 
 	cosignSecretDataCosignKey = "cosign.key"
 
@@ -332,7 +333,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			Labels: combine(b.Labels, map[string]string{
 				BuildLabel: b.Name,
 			}),
-			Annotations: b.Annotations,
+			Annotations: combine(b.Annotations, map[string]string{
+				IstioInject: "false",
+			}),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
@@ -740,7 +743,9 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			Labels: combine(b.Labels, map[string]string{
 				BuildLabel: b.Name,
 			}),
-			Annotations: b.Annotations,
+			Annotations: combine(b.Annotations, map[string]string{
+				IstioInject: "false",
+			}),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
