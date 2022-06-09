@@ -320,7 +320,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"image.kpack.io/buildNumber": "12",
 				},
 				Annotations: map[string]string{
-					"some/annotation": "to-pass-through",
+					"some/annotation":         "to-pass-through",
+					"sidecar.istio.io/inject": "false",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					*kmeta.NewControllerRef(build),
@@ -1369,6 +1370,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					Annotations: map[string]string{
 						"some/annotation":               "to-pass-through",
+						"sidecar.istio.io/inject":       "false",
 						buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
 						buildapi.BuildChangesAnnotation: "some-stack-change",
 					},
@@ -1514,7 +1516,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						Command:   []string{"/cnb/process/completion"},
 						Image:     config.CompletionImage,
 						Resources: build.Spec.Resources,
-						Env:       []corev1.EnvVar{{Name: "CACHE_TAG", Value: ""}},
+						Env: []corev1.EnvVar{
+							{Name: "CACHE_TAG", Value: ""},
+							{Name: "TERMINATION_MESSAGE_PATH", Value: "/tmp/termination-log"},
+						},
 						Args: []string{
 							"-basic-docker=docker-secret-1=acr.io",
 							"-dockerconfig=docker-secret-2",
@@ -1546,7 +1551,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								MountPath: "/var/build-secrets/docker-secret-3",
 							},
 						},
-						TerminationMessagePath:   "/tmp/completion-termination-path",
+						TerminationMessagePath:   "/tmp/termination-log",
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 					},
 				}, pod.Spec.Containers)
@@ -2500,11 +2505,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
 
-				assert.Subset(t, completionContainer.Env, []corev1.EnvVar{
-					{
-						Name:  "USERPROFILE",
-						Value: "/builder/home",
-					},
+				assert.Equal(t, completionContainer.Env, []corev1.EnvVar{
+					{Name: "USERPROFILE", Value: "/builder/home"},
+					{Name: "CACHE_TAG", Value: ""},
+					{Name: "TERMINATION_MESSAGE_PATH", Value: "/dev/termination-log"},
 				})
 			})
 

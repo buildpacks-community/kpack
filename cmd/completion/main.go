@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -34,6 +35,7 @@ const (
 
 var (
 	cacheTag                string
+	terminationMsgPath      string
 	notaryV1URL             string
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -48,6 +50,7 @@ var (
 
 func init() {
 	flag.StringVar(&cacheTag, "cache-tag", os.Getenv(buildapi.CacheTagEnvVar), "Tag of image cache")
+	flag.StringVar(&terminationMsgPath, "termination-message-path", os.Getenv(buildapi.TerminationMessagePathEnvVar), "Termination path for build metadata")
 	flag.StringVar(&notaryV1URL, "notary-v1-url", "", "Notary V1 server url")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
@@ -107,11 +110,16 @@ func main() {
 	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
 
 	metadataRetriever := cnb.RemoteMetadataRetriever{
-		Keychain:     keychain,
 		ImageFetcher: &registry.Client{},
 	}
 
-	buildMetadata, err := metadataRetriever.GetBuildMetadata(report, cacheTag)
+	if len(report.Image.Tags) == 0 {
+		log.Fatal("no image found in report")
+	}
+
+	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
+
+	buildMetadata, err := metadataRetriever.GetBuildMetadata(builtImageRef, cacheTag, keychain)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +129,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := ioutil.WriteFile(buildapi.CompletionTerminationMessagePath, data, 0666); err != nil {
+	if err := os.MkdirAll(filepath.Dir(terminationMsgPath), 0777); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(terminationMsgPath, data, 0666); err != nil {
 		log.Fatal(err)
 	}
 
