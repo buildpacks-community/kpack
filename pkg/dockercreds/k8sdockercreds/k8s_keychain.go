@@ -34,11 +34,11 @@ func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFac
 
 func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
 	if !ref.IsNamespaced() {
-		k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
+		k8sKeychain, err := k8schain.NewNoClient(context.Background())
 		if err != nil {
 			return nil, err
 		}
-		return authn.NewMultiKeychain(f.volumeKeychain, k8sNodeKeychain), nil // k8s keychain with no secrets
+		return authn.NewMultiKeychain(f.volumeKeychain, k8sKeychain), nil // k8s keychain with no secrets
 	}
 
 	serviceAccountKeychain, err := keychainFromServiceAccount(ctx, ref, &secret.Fetcher{Client: f.client})

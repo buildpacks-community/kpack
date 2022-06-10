@@ -34,7 +34,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, os.RemoveAll(testSecretsDir))
 	})
 
-	it("parses .dockerconfigjson", func() {
+	it("parses .dockerconfigjson favoring auth key", func() {
 		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
   "auths": {
     "https://index.docker.io/v1/": {
@@ -54,14 +54,38 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testusername",
+				Password: "testpasswordsilliness\n",
+			},
+		}
+		require.Equal(t, expectedCreds, creds)
+	})
+
+	it("parses .dockerconfigjson setting auth key to username/password if unset", func() {
+		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
+  "auths": {
+    "https://index.docker.io/v1/": {
+      "username": "testusername",
+      "password": "testpassword"
+    }
+  }
+}`,
+		), os.ModePerm)
+		require.NoError(t, err)
+
+		creds, err := ParseDockerConfigSecret(testSecretsDir)
+		require.NoError(t, err)
+
+		expectedCreds := DockerCreds{
+			"https://index.docker.io/v1/": authn.AuthConfig{
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
+				Username: "testusername",
 				Password: "testpassword",
 			},
 		}
 		require.Equal(t, expectedCreds, creds)
-
 	})
 
-	it("parses .dockercfg", func() {
+	it("parses .dockercfg favoring auth key", func() {
 		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "https://index.docker.io/v1/": {
     "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
@@ -79,6 +103,29 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testusername",
+				Password: "testpasswordsilliness\n",
+			},
+		}
+		require.Equal(t, expectedCreds, creds)
+	})
+
+	it("parses .dockercfg setting auth key to username/password if unset", func() {
+		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
+  "https://index.docker.io/v1/": {
+    "username": "testusername",
+    "password": "testpassword"
+  }
+}`,
+		), os.ModePerm)
+		require.NoError(t, err)
+
+		creds, err := ParseDockerConfigSecret(testSecretsDir)
+		require.NoError(t, err)
+
+		expectedCreds := DockerCreds{
+			"https://index.docker.io/v1/": authn.AuthConfig{
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
+				Username: "testusername",
 				Password: "testpassword",
 			},
 		}
@@ -89,9 +136,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
   "auths": {
     "https://index.docker.io/v1/": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-      "username": "testdockerhub",
-      "password": "testdockerhubusername"
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
     }
   }
 }`,
@@ -100,7 +145,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 		err = ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "gcr.io": {
-    "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+    "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
     "username": "testusername",
     "password": "testpassword"
   }
@@ -114,11 +159,11 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 		expectedCreds := DockerCreds{
 			"https://index.docker.io/v1/": authn.AuthConfig{
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-				Username: "testdockerhub",
-				Password: "testdockerhubusername",
+				Username: "testusername",
+				Password: "testpasswordsilliness\n",
 			},
 			"gcr.io": authn.AuthConfig{
-				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
 				Username: "testusername",
 				Password: "testpassword",
 			},
