@@ -34,7 +34,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 		it("saves secrets to the provided path in json", func() {
 			creds := DockerCreds{
 				"gcr.io": authn.AuthConfig{
-					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
 					Username: "testusername",
 					Password: "testpassword",
 				},
@@ -43,7 +43,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			expectedConfigJsonContents := `{
   "auths": {
     "gcr.io": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
       "username": "testusername",
       "password": "testpassword"
     }
