@@ -60,7 +60,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ClusterStackLister: listers.GetClusterStackLister(),
 				K8sClient:          k8sfakeClient,
 			}
-			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
+			return r, rtesting.ActionRecorderList{fakeClient, k8sfakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
 	clusterStore := &buildapi.ClusterStore{
