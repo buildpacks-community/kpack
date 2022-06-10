@@ -531,8 +531,6 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 	_, _, err = registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
 	require.NoError(t, err)
 
-	validateBuildLog(t, clients, image, ctx, logTail.String())
-
 	eventually(t, func() bool {
 		return strings.Contains(logTail.String(), "Build successful")
 	}, 1*time.Second, 10*time.Second)
@@ -547,20 +545,6 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 
 	require.Equal(t, 1, len(pod.Spec.Containers))
 	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
-}
-
-func validateBuildLog(t *testing.T, clients *clients, image *buildapi.Image, ctx context.Context, output string) {
-	buildList, err := clients.client.KpackV1alpha2().Builds(image.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),
-	})
-	require.NoError(t, err)
-
-	require.Len(t, buildList.Items, 1)
-	buildSpec := buildList.Items[0].Spec.DeepCopy()
-	assert.Contains(t, output, fmt.Sprintf("Name: %s", image.Spec.Builder.Name))
-	assert.Contains(t, output, fmt.Sprintf("Image: %s", buildSpec.Builder.Image))
-	// TODO Fix, for some reason the Kind annotation is empty during the test
-	assert.Contains(t, output, fmt.Sprintf("Kind: %s", image.Spec.Builder.Kind))
 }
 
 func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageName, testNamespace string) {
