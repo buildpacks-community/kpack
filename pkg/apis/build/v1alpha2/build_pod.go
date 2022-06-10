@@ -408,6 +408,18 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								Value: buildContext.BuildPodBuilderConfig.RunImage,
 							},
 							corev1.EnvVar{
+								Name:  "BUILDER_IMAGE",
+								Value: b.BuilderSpec().Image,
+							},
+							corev1.EnvVar{
+								Name:  "BUILDER_NAME",
+								Value: b.builderName(),
+							},
+							corev1.EnvVar{
+								Name: "BUILDER_KIND",
+								Value: b.builderKind(),
+							},
+							corev1.EnvVar{
 								Name:  "DNS_PROBE_HOSTNAME",
 								Value: dnsProbeHost,
 							},

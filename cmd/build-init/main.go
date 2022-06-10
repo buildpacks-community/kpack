@@ -40,6 +40,10 @@ var (
 	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	descriptorPath = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
+	builderImage= flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "The builder image used to build the application")
+	builderName = flag.String("builder-name", os.Getenv("BUILDER_NAME"), "The builder name provided during creation")
+	builderKind = flag.String("builder-kind", os.Getenv("BUILDER_KIND"), "The builder kind")
+
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
 	basicDockerCredentials  flaghelpers.CredentialsFlags
@@ -145,6 +149,11 @@ func main() {
 	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), *descriptorPath, platformDir, logger)
 	if err != nil {
 		logger.Fatalf("error while processing the project descriptor: %s", err)
+	}
+
+	if *builderImage != "" && *builderName != "" && *builderKind != "" {
+		logger.Printf("Builder:\n Image: %s \n Name: %s \n Kind: %s ", *builderImage,
+			*builderName, *builderKind)
 	}
 
 	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
