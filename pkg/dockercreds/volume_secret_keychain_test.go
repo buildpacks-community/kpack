@@ -65,6 +65,7 @@ func testVolumeSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, authn.FromConfig(authn.AuthConfig{
+				Auth:     "c29tZS11c2VybmFtZTpzb21lLXBhc3N3b3Jk",
 				Username: "some-username",
 				Password: "some-password",
 			}), resolved)
