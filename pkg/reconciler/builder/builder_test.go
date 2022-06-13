@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
@@ -63,8 +63,27 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient, k8sfakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
+	signingSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-secret-name",
+			Namespace: testNamespace,
+		},
+	}
+
+	serviceAccount := corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-sa-name",
+			Namespace: signingSecret.Namespace,
+		},
+		Secrets: []corev1.ObjectReference{
+			{
+				Name: signingSecret.Name,
+			},
+		},
+	}
+
 	clusterStore := &buildapi.ClusterStore{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
 		},
 		Spec:   buildapi.ClusterStoreSpec{},
@@ -72,7 +91,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	clusterStack := &buildapi.ClusterStack{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-stack",
 		},
 		Status: buildapi.ClusterStackStatus{
@@ -89,7 +108,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	builder := &buildapi.Builder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Generation: initialGeneration,
 			Namespace:  testNamespace,
@@ -126,13 +145,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			ServiceAccountName: "some-service-account",
+			ServiceAccountName: serviceAccount.Name,
 		},
 	}
 
 	secretRef := registry.SecretRef{
-		ServiceAccount: builder.Spec.ServiceAccount(),
-		Namespace:      builder.Namespace,
+		ServiceAccount: serviceAccount.Name,
+		Namespace:      serviceAccount.Namespace,
 	}
 
 	when("#Reconcile", func() {
@@ -200,6 +219,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -255,6 +276,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					expectedBuilder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -307,6 +330,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -321,6 +346,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -349,7 +376,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("updates status and doesn't build builder when stack not ready", func() {
 			notReadyClusterStack := &buildapi.ClusterStack{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-stack",
 				},
 				Status: buildapi.ClusterStackStatus{
@@ -370,6 +397,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					notReadyClusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{

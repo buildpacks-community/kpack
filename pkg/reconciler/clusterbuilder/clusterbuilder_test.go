@@ -62,6 +62,25 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, rtesting.ActionRecorderList{fakeClient, k8sfakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
+	signingSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-secret-name",
+			Namespace: "some-sa-namespace",
+		},
+	}
+
+	serviceAccount := corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-sa-name",
+			Namespace: signingSecret.Namespace,
+		},
+		Secrets: []corev1.ObjectReference{
+			{
+				Name: signingSecret.Name,
+			},
+		},
+	}
+
 	clusterStore := &buildapi.ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
@@ -125,15 +144,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			ServiceAccountRef: corev1.ObjectReference{
-				Namespace: "some-sa-namespace",
-				Name:      "some-sa-name",
+				Namespace: serviceAccount.Namespace,
+				Name:      serviceAccount.Name,
 			},
 		},
 	}
 
 	secretRef := registry.SecretRef{
-		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
-		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
+		ServiceAccount: serviceAccount.Name,
+		Namespace:      serviceAccount.Namespace,
 	}
 
 	when("#Reconcile", func() {
@@ -201,6 +220,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -256,6 +277,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					expectedBuilder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -308,6 +331,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -339,6 +364,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -372,6 +399,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					notReadyClusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
