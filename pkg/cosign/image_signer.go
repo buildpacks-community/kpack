@@ -10,12 +10,11 @@ import (
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 )
 
 type SignFunc func(
-	ctx context.Context, ko sign.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
-	certPath string, upload bool, outputSignature, outputCertificate string,
+	ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
+	certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
 	payloadPath string, force, recursive bool, attachment string,
 ) error
 
@@ -65,7 +64,7 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
-	ko := sign.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
+	ko := options.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
 		content, err := ioutil.ReadFile(cosignPasswordFile)
 		// When password file is not available, default empty password is used
 		if err != nil {
@@ -88,13 +87,14 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 		}
 		defer os.Unsetenv(cosignDockerMediaTypesEnv)
 	}
-
+	ro := &options.RootOptions{}
 	if err := s.signFunc(
-		ctx,
+		ro,
 		ko,
 		options.RegistryOptions{KubernetesKeychain: true},
 		annotations,
 		[]string{refImage},
+		"",
 		"",
 		true,
 		"",
