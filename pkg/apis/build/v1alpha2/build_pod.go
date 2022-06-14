@@ -342,9 +342,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		},
 		Spec: corev1.PodSpec{
 			// If the build fails, don't restart it.
-			RestartPolicy:     corev1.RestartPolicyNever,
+			RestartPolicy:         corev1.RestartPolicyNever,
 			ActiveDeadlineSeconds: b.Spec.ActiveDeadlineSeconds,
-			PriorityClassName: b.PriorityClassName(),
+			PriorityClassName:     b.PriorityClassName(),
 			Containers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(
 					corev1.Container{
@@ -417,7 +417,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								Value: b.builderName(),
 							},
 							corev1.EnvVar{
-								Name: "BUILDER_KIND",
+								Name:  "BUILDER_KIND",
 								Value: b.builderKind(),
 							},
 							corev1.EnvVar{
