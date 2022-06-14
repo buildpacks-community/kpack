@@ -12,7 +12,6 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `builder`: Configuration of the `builder` resource the image builds will use. See more info [Builder Configuration](builders.md).
 - `serviceAccountName`: The Service Account name that will be used for credential lookup.
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.
-- `buildTimeout`: Optional configurable max active time in seconds that the pod building the image can run for
 - `cache`: Caching configuration, two variants are available:
   - `volume.size`: Creates a Volume Claim of the given size
   - `registry.tag`: Creates an image with cached contents
@@ -119,7 +118,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
 
 ### <a id='build-config'></a>Build Configuration
 
-The `build` field on the `image` resource can be used to configure env variables required during the build process, to configure resource limits on `CPU` and `memory`, and to configure pod tolerations, node selector, and affinity.
+The `build` field on the `image` resource can be used to configure env variables required during the build process, to configure resource limits on `CPU` and `memory`, and to configure pod tolerations, node selector, build timout (specified in seconds), and affinity.
 
 ```yaml
 build:
@@ -139,6 +138,7 @@ build:
       effect: "NoSchedule"
   nodeSelector:
     disktype: ssd
+  buildTimeout: 1600
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:

@@ -22,8 +22,8 @@ const (
 	BuildChangesAnnotation = "image.kpack.io/buildChanges"
 	BuildNeededAnnotation  = "image.kpack.io/additionalBuildNeeded"
 
-	BuilderNameAnnotation  = "image.kpack.io/builderName"
-	BuilderKindAnnotation  = "image.kpack.io/builderKind"
+	BuilderNameAnnotation = "image.kpack.io/builderName"
+	BuilderKindAnnotation = "image.kpack.io/builderKind"
 
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
@@ -51,8 +51,8 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			Annotations: combine(im.Annotations, map[string]string{
 				BuildReasonAnnotation:  reasons,
 				BuildChangesAnnotation: changes,
-				BuilderNameAnnotation: builder.GetName(),
-				BuilderKindAnnotation: builder.GetKind(),
+				BuilderNameAnnotation:  builder.GetName(),
+				BuilderKindAnnotation:  builder.GetKind(),
 			}),
 		},
 		Spec: BuildSpec{
@@ -76,7 +76,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			RuntimeClassName:      im.RuntimeClassName(),
 			SchedulerName:         im.SchedulerName(),
 			PriorityClassName:     priorityClass,
-			ActiveDeadlineSeconds: im.Spec.BuildTimeout,
+			ActiveDeadlineSeconds: im.BuildTimeout(),
 		},
 	}
 }
@@ -174,6 +174,13 @@ func (im *Image) Affinity() *corev1.Affinity {
 		return nil
 	}
 	return im.Spec.Build.Affinity
+}
+
+func (im *Image) BuildTimeout() *int64 {
+	if im.Spec.Build == nil {
+		return nil
+	}
+	return im.Spec.Build.BuildTimeout
 }
 
 func (im *Image) RuntimeClassName() *string {

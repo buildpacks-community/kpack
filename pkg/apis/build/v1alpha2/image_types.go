@@ -58,7 +58,6 @@ type ImageSpec struct {
 	Notary                   *corev1alpha1.NotaryConfig        `json:"notary,omitempty"`
 	Cosign                   *CosignConfig                     `json:"cosign,omitempty"`
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
-	BuildTimeout             *int64                            `json:"buildTimeout,omitempty"`
 	// +listType
 	AdditionalTags []string `json:"additionalTags,omitempty"`
 }
@@ -78,6 +77,7 @@ type ImageBuild struct {
 	Affinity         *corev1.Affinity    `json:"affinity,omitempty"`
 	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
 	SchedulerName    string              `json:"schedulerName,omitempty"`
+	BuildTimeout     *int64              `json:"buildTimeout,omitempty"`
 }
 
 // +k8s:openapi-gen=true
