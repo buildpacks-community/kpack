@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -24,24 +25,33 @@ import (
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
 	ReconcilerName = "Builds"
 	Kind           = "Build"
+	k8sOSLabel     = "kubernetes.io/os"
 )
+
+//go:generate counterfeiter . MetadataRetriever
+type MetadataRetriever interface {
+	GetBuildMetadata(string, string, authn.Keychain) (*cnb.BuildMetadata, error)
+}
 
 type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory) *controller.Impl {
 	c := &Reconciler{
-		Client:       opt.Client,
-		K8sClient:    k8sClient,
-		Lister:       informer.Lister(),
-		PodLister:    podInformer.Lister(),
-		PodGenerator: podGenerator,
+		Client:            opt.Client,
+		K8sClient:         k8sClient,
+		MetadataRetriever: metadataRetriever,
+		Lister:            informer.Lister(),
+		PodLister:         podInformer.Lister(),
+		PodGenerator:      podGenerator,
+		KeychainFactory:   keychainFactory,
 	}
 
 	logger := opt.Logger.With(
@@ -61,11 +71,13 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 }
 
 type Reconciler struct {
-	Client       versioned.Interface
-	Lister       buildlisters.BuildLister
-	K8sClient    k8sclient.Interface
-	PodLister    v1Listers.PodLister
-	PodGenerator PodGenerator
+	Client            versioned.Interface
+	KeychainFactory   registry.KeychainFactory
+	Lister            buildlisters.BuildLister
+	MetadataRetriever MetadataRetriever
+	K8sClient         k8sclient.Interface
+	PodLister         v1Listers.PodLister
+	PodGenerator      PodGenerator
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -105,9 +117,31 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	}
 
 	if build.MetadataReady(pod) {
-		buildMetadata, err := c.buildMetadataFromBuildPod(pod)
-		if err != nil {
-			return errors.Wrap(err, "failed to get build metadata from build pod")
+		var buildMetadata *cnb.BuildMetadata
+		if pod.Spec.NodeSelector != nil && pod.Spec.NodeSelector[k8sOSLabel] == "windows" {
+			cacheTag := ""
+			if build.Spec.NeedRegistryCache() {
+				cacheTag = build.Spec.Cache.Registry.Tag
+			}
+
+			keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+				ServiceAccount: build.Spec.ServiceAccountName,
+				Namespace:      build.Namespace,
+			})
+
+			if err != nil {
+				return errors.Wrap(err, "unable to create app image keychain")
+			}
+
+			buildMetadata, err = c.MetadataRetriever.GetBuildMetadata(build.Tag(), cacheTag, keychain)
+			if err != nil {
+				return err
+			}
+		} else {
+			buildMetadata, err = c.buildMetadataFromBuildPod(pod)
+			if err != nil {
+				return errors.Wrap(err, "failed to get build metadata from build pod")
+			}
 		}
 		build.Status.BuildMetadata = buildMetadata.BuildpackMetadata
 		build.Status.LatestImage = buildMetadata.LatestImage

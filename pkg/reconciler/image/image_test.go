@@ -116,6 +116,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name:      builderName,
 			Namespace: namespace,
 		},
+		TypeMeta: metav1.TypeMeta{
+			Kind: buildapi.BuilderKind,
+		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/builder@sha256:acf123",
 			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
@@ -142,6 +145,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	clusterBuilder := &buildapi.ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterBuilderName,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind: buildapi.ClusterBuilderKind,
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/clusterbuilder@sha256:acf123",
@@ -689,6 +695,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonConfig,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -779,6 +787,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: clusterBuilderName,
+									buildapi.BuilderKindAnnotation: buildapi.ClusterBuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonConfig,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -869,6 +879,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonConfig,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -960,6 +972,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: clusterBuilderName,
+									buildapi.BuilderKindAnnotation: buildapi.ClusterBuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonConfig,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -1053,6 +1067,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonConfig,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -1186,6 +1202,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									buildapi.ImageGenerationLabel: generation(image),
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: strings.Join([]string{
 										buildapi.BuildReasonCommit,
 										buildapi.BuildReasonConfig,
@@ -1343,6 +1361,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation:  buildapi.BuildReasonCommit,
 									buildapi.BuildChangesAnnotation: `[{"reason":"COMMIT","old":"1234567","new":"new-commit"}]`,
 								},
@@ -1403,6 +1423,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      builderName,
 								Namespace: namespace,
+							},
+							TypeMeta: metav1.TypeMeta{
+								Kind: buildapi.BuilderKind,
 							},
 							Status: buildapi.BuilderStatus{
 								Status: corev1alpha1.Status{
@@ -1491,6 +1514,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonBuildpack,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -1563,6 +1588,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      builderName,
 								Namespace: namespace,
+							},
+							TypeMeta: metav1.TypeMeta{
+								Kind: buildapi.BuilderKind,
 							},
 							Status: buildapi.BuilderStatus{
 								Status: corev1alpha1.Status{
@@ -1651,6 +1679,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: buildapi.BuildReasonStack,
 									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
 [
@@ -1772,6 +1802,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation: strings.Join([]string{
 										buildapi.BuildReasonCommit,
 										buildapi.BuildReasonConfig,
