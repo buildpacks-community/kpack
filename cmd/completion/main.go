@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,9 +12,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -28,6 +34,8 @@ const (
 )
 
 var (
+	cacheTag                string
+	terminationMsgPath      string
 	notaryV1URL             string
 	dockerCredentials       flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
@@ -41,6 +49,8 @@ var (
 )
 
 func init() {
+	flag.StringVar(&cacheTag, "cache-tag", os.Getenv(buildapi.CacheTagEnvVar), "Tag of image cache")
+	flag.StringVar(&terminationMsgPath, "termination-message-path", os.Getenv(buildapi.TerminationMessagePathEnvVar), "Termination path for build metadata")
 	flag.StringVar(&notaryV1URL, "notary-v1-url", "", "Notary V1 server url")
 	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
@@ -57,9 +67,78 @@ func init() {
 func main() {
 	flag.Parse()
 
-	if hasCosign() || notaryV1URL != "" {
-		err := signImage()
+	var report platform.ExportReport
+	_, err := toml.DecodeFile(reportFilePath, &report)
+	if err != nil {
+		log.Fatal(err, "error decoding report toml file")
+	}
+
+	k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	creds, err := dockercreds.ParseBasicAuthSecrets(registrySecretsDir, dockerCredentials)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
+		credPath := filepath.Join(registrySecretsDir, c)
+
+		dockerConfigCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
+			log.Fatal(err)
+		}
+
+		creds, err = creds.Append(dockerConfigCreds)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "error obtaining home directory"))
+	}
+
+	err = creds.Save(filepath.Join(homeDir, ".docker", "config.json"))
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "error writing docker creds"))
+	}
+
+	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
+
+	metadataRetriever := cnb.RemoteMetadataRetriever{
+		ImageFetcher: &registry.Client{},
+	}
+
+	if len(report.Image.Tags) == 0 {
+		log.Fatal("no image found in report")
+	}
+
+	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
+
+	buildMetadata, err := metadataRetriever.GetBuildMetadata(builtImageRef, cacheTag, keychain)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := cnb.CompressBuildMetadata(buildMetadata)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(terminationMsgPath), 0777); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(terminationMsgPath, data, 0666); err != nil {
+		log.Fatal(err)
+	}
+
+	if hasCosign() || notaryV1URL != "" {
+		if err := signImage(report, keychain); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -67,46 +146,7 @@ func main() {
 	logger.Println("Build successful")
 }
 
-func signImage() error {
-	var report platform.ExportReport
-	_, err := toml.DecodeFile(reportFilePath, &report)
-	if err != nil {
-		return errors.Wrap(err, "toml decode")
-	}
-
-	creds, err := dockercreds.ParseMountedAnnotatedSecrets(registrySecretsDir, dockerCredentials)
-	if err != nil {
-		return err
-	}
-
-	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
-		credPath := filepath.Join(registrySecretsDir, c)
-
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
-		if err != nil {
-			return err
-		}
-
-		for domain := range dockerCfgCreds {
-			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
-		}
-
-		creds, err = creds.Append(dockerCfgCreds)
-		if err != nil {
-			return err
-		}
-
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return errors.Wrapf(err, "error obtaining home directory")
-		}
-
-		err = creds.Save(filepath.Join(homeDir, ".docker", "config.json"))
-		if err != nil {
-			return errors.Wrapf(err, "error writing docker creds")
-		}
-	}
-
+func signImage(report platform.ExportReport, keychain authn.Keychain) error {
 	if hasCosign() {
 		cosignSigner := cosign.NewImageSigner(logger, sign.SignCmd)
 
@@ -142,7 +182,7 @@ func signImage() error {
 			Client:  &registry.Client{},
 			Factory: &notary.RemoteRepositoryFactory{},
 		}
-		if err := signer.Sign(notaryV1URL, notarySecretDir, report, creds); err != nil {
+		if err := signer.Sign(notaryV1URL, notarySecretDir, report, keychain); err != nil {
 			return err
 		}
 	}

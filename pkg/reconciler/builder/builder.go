@@ -3,7 +3,9 @@ package builder
 import (
 	"context"
 
+	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging/logkey"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -25,7 +27,6 @@ import (
 
 const (
 	ReconcilerName = "Builders"
-	Kind           = "Builder"
 )
 
 type NewBuildpackRepository func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository
@@ -49,7 +50,12 @@ func NewController(opt reconciler.Options,
 		ClusterStoreLister: clusterStoreInformer.Lister(),
 		ClusterStackLister: clusterStackInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.BuilderCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())

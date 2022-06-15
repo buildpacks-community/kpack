@@ -2,17 +2,21 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/cmd"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/buildchange"
@@ -30,14 +34,14 @@ var (
 	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	reportFilePath = flag.String("report", os.Getenv("REPORT_FILE_PATH"), "The location at which to write the report.toml")
 
-	dockerCredentials       flaghelpers.CredentialsFlags
+	basicDockerCredentials  flaghelpers.CredentialsFlags
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	imagePullSecrets        flaghelpers.CredentialsFlags
 )
 
 func init() {
-	flag.Var(&dockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
+	flag.Var(&basicDockerCredentials, "basic-docker", "Basic authentication for docker of the form 'secretname=git.domain.com'")
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
@@ -60,7 +64,14 @@ func rebase(tags []string, logger *log.Logger) error {
 		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
 	}
 
-	keychain, err := dockercreds.ParseMountedAnnotatedSecrets(buildSecretsDir, dockerCredentials)
+	logger.Println("Loading cluster credential helpers")
+	k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	logLoadingSecrets(logger, basicDockerCredentials)
+	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
 		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
 	}
@@ -68,7 +79,7 @@ func rebase(tags []string, logger *log.Logger) error {
 	for _, c := range combine(dockerCfgCredentials, dockerConfigCredentials, imagePullSecrets) {
 		credPath := filepath.Join(buildSecretsDir, c)
 
-		dockerCfgCreds, err := dockercreds.ParseDockerPullSecrets(credPath)
+		dockerCfgCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
 			return err
 		}
@@ -77,11 +88,13 @@ func rebase(tags []string, logger *log.Logger) error {
 			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 
-		keychain, err = keychain.Append(dockerCfgCreds)
+		creds, err = creds.Append(dockerCfgCreds)
 		if err != nil {
 			return err
 		}
 	}
+
+	keychain := authn.NewMultiKeychain(creds, k8sNodeKeychain)
 
 	appImage, err := remote.NewImage(tags[0], keychain, remote.FromBaseImage(*lastBuiltImage))
 	if err != nil {
@@ -121,6 +134,19 @@ func rebase(tags []string, logger *log.Logger) error {
 	}
 
 	return ioutil.WriteFile(*reportFilePath, buf.Bytes(), 0777)
+}
+
+func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
+	for _, secretsSlice := range secretsSlices {
+		for _, secret := range secretsSlice {
+			splitSecret := strings.Split(secret, "=")
+			if len(splitSecret) == 2 {
+				secretName := splitSecret[0]
+				domain := splitSecret[1]
+				logger.Printf("Loading secrets for %q from secret %q", domain, secretName)
+			}
+		}
+	}
 }
 
 func combine(credentials ...[]string) []string {

@@ -8,7 +8,6 @@ const (
 	buildpackOrderLabel    = "io.buildpacks.buildpack.order"
 	buildpackLayersLabel   = "io.buildpacks.buildpack.layers"
 	buildpackMetadataLabel = "io.buildpacks.builder.metadata"
-	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 	lifecycleVersionLabel  = "io.buildpacks.lifecycle.version"
 	lifecycleApisLabel     = "io.buildpacks.lifecycle.apis"
 )
@@ -90,7 +89,7 @@ type APIVersions struct {
 
 type APISet []string
 
-type BuiltImageStack struct {
+type builtImageStack struct {
 	RunImage string
 	ID       string
 }

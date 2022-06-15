@@ -47,56 +47,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			{Name: "builder-pull-secret"},
 		}}
 
-	build := &buildapi.Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      buildName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"some/label":                 "to-pass-through",
-				"image.kpack.io/buildNumber": "12",
-			},
-			Annotations: map[string]string{
-				"some/annotation": "to-pass-through",
-			},
-			CreationTimestamp: metav1.Date(1944, 6, 6, 13, 30, 0, 0, time.UTC),
-		},
-		Spec: buildapi.BuildSpec{
-			Tags:               []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
-			Builder:            builderImageRef,
-			ServiceAccountName: serviceAccount,
-			Source: corev1alpha1.SourceConfig{
-				Git: &corev1alpha1.Git{
-					URL:      "giturl.com/git.git",
-					Revision: "gitrev1234",
-				},
-			},
-			Cache: &buildapi.BuildCacheConfig{
-				Volume: &buildapi.BuildPersistentVolumeCache{
-					ClaimName: "some-cache-name",
-				},
-			},
-			Services: buildapi.Services{
-				{
-					Name: "database",
-				},
-				{
-					Name: "apm",
-				},
-			},
-			Env: []corev1.EnvVar{
-				{Name: "keyA", Value: "valueA"},
-				{Name: "keyB", Value: "valueB"},
-			},
-			Resources: resources,
-			LastBuild: &buildapi.LastBuild{
-				Image:   previousAppImage,
-				StackId: "com.builder.stack.io",
-			},
-			Tolerations:  []corev1.Toleration{{Key: "some-key"}},
-			NodeSelector: map[string]string{"foo": "bar"},
-			Affinity:     &corev1.Affinity{},
-		},
-	}
+	var (
+		build *buildapi.Build
+	)
 
 	serviceBindings := []buildapi.ServiceBinding{
 		&corev1alpha1.ServiceBinding{
@@ -300,6 +253,59 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	it.Before(func() {
+		build = &buildapi.Build{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      buildName,
+				Namespace: namespace,
+				Labels: map[string]string{
+					"some/label":                 "to-pass-through",
+					"image.kpack.io/buildNumber": "12",
+				},
+				Annotations: map[string]string{
+					"some/annotation": "to-pass-through",
+				},
+				CreationTimestamp: metav1.Date(1944, 6, 6, 13, 30, 0, 0, time.UTC),
+			},
+			Spec: buildapi.BuildSpec{
+				Tags:               []string{"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
+				Builder:            builderImageRef,
+				ServiceAccountName: serviceAccount,
+				Source: corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
+						URL:      "giturl.com/git.git",
+						Revision: "gitrev1234",
+					},
+				},
+				Cache: &buildapi.BuildCacheConfig{
+					Volume: &buildapi.BuildPersistentVolumeCache{
+						ClaimName: "some-cache-name",
+					},
+				},
+				Services: buildapi.Services{
+					{
+						Name: "database",
+					},
+					{
+						Name: "apm",
+					},
+				},
+				Env: []corev1.EnvVar{
+					{Name: "keyA", Value: "valueA"},
+					{Name: "keyB", Value: "valueB"},
+				},
+				Resources: resources,
+				LastBuild: &buildapi.LastBuild{
+					Image:   previousAppImage,
+					StackId: "com.builder.stack.io",
+				},
+				Tolerations:  []corev1.Toleration{{Key: "some-key"}},
+				NodeSelector: map[string]string{"foo": "bar"},
+				Affinity:     &corev1.Affinity{},
+			},
+		}
+	})
+
 	when("BuildPod", func() {
 		it("creates a pod with a builder owner reference and build labels and annotations", func() {
 			pod, err := build.BuildPod(config, buildContext)
@@ -314,7 +320,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"image.kpack.io/buildNumber": "12",
 				},
 				Annotations: map[string]string{
-					"some/annotation": "to-pass-through",
+					"some/annotation":         "to-pass-through",
+					"sidecar.istio.io/inject": "false",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					*kmeta.NewControllerRef(build),
@@ -1098,102 +1105,122 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("registry cache is requested (first build)", func() {
-			podWithVolumeCache, _ := build.BuildPod(config, buildContext)
-			build.Spec.Cache.Volume = nil
-			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+		when("registry cache is requested", func() {
+			var (
+				podWithVolumeCache *corev1.Pod
+			)
 
-			it("creates a pod without cache volume", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
+			it.Before(func() {
+				podWithVolumeCache, _ = build.BuildPod(config, buildContext)
+				build.Spec.Cache.Volume = nil
+				build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
+			})
+			when("first build", func() {
+				it("creates a pod without cache volume", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+					assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+				})
+
+				it("does not add the cache to analyze container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
+
+					analyzeContainer := podWithImageCache.Spec.InitContainers[2]
+					assert.NotContains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
+				})
+				it("does not add the cache to restore container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
+
+					restoreContainer := podWithImageCache.Spec.InitContainers[3]
+					assert.NotContains(t, restoreContainer.Args, "-cache-image=test-cache-image")
+				})
+				it("adds the cache to export container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
+
+					exportContainer := podWithImageCache.Spec.InitContainers[5]
+					assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+				})
+				it("adds the cache tag to the completion container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
+
+					exportContainer := podWithImageCache.Spec.Containers[0]
+					assert.Contains(t, exportContainer.Env, corev1.EnvVar{Name: "CACHE_TAG", Value: "test-cache-image"})
+				})
 			})
 
-			it("does not add the cache to analyze container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
+			when("second build", func() {
+				it.Before(func() {
+					build.Spec.LastBuild = &buildapi.LastBuild{
+						Cache: buildapi.BuildCache{
+							Image: "test-cache-image@sha",
+						},
+					}
+				})
 
-				analyzeContainer := podWithImageCache.Spec.InitContainers[2]
-				assert.NotContains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
-			})
-			it("does not add the cache to restore container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
+				it("creates a pod without cache volume", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-				restoreContainer := podWithImageCache.Spec.InitContainers[3]
-				assert.NotContains(t, restoreContainer.Args, "-cache-image=test-cache-image")
-			})
-			it("adds the cache to export container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
+					assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
+				})
 
-				exportContainer := podWithImageCache.Spec.InitContainers[5]
-				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
-			})
-		})
+				it("adds the cache to analyze container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-		when("registry cache is requested (second build)", func() {
-			podWithVolumeCache, _ := build.BuildPod(config, buildContext)
-			build.Spec.Cache.Volume = nil
-			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: "test-cache-image"}
-			build.Spec.LastBuild = &buildapi.LastBuild{
-				Cache: buildapi.BuildCache{
-					Image: "test-cache-image@sha",
-				},
-			}
+					analyzeContainer := podWithImageCache.Spec.InitContainers[1]
+					assert.Contains(t, analyzeContainer.Args, "-cache-image=test-cache-image@sha")
+				})
+				it("adds the cache to restore container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-			it("creates a pod without cache volume", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
+					restoreContainer := podWithImageCache.Spec.InitContainers[3]
+					assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image@sha")
+				})
+				it("adds the cache to export container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-				assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
-			})
+					exportContainer := podWithImageCache.Spec.InitContainers[5]
+					assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+				})
+				it("adds the cache tag to the completion container", func() {
+					podWithImageCache, err := build.BuildPod(config, buildContext)
+					require.NoError(t, err)
 
-			it("adds the cache to analyze container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
-
-				analyzeContainer := podWithImageCache.Spec.InitContainers[1]
-				assert.Contains(t, analyzeContainer.Args, "-cache-image=test-cache-image@sha")
-			})
-			it("adds the cache to restore container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
-
-				restoreContainer := podWithImageCache.Spec.InitContainers[3]
-				assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image@sha")
-			})
-			it("adds the cache to export container", func() {
-				podWithImageCache, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
-
-				exportContainer := podWithImageCache.Spec.InitContainers[5]
-				assert.Contains(t, exportContainer.Args, "-cache-image=test-cache-image")
+					exportContainer := podWithImageCache.Spec.Containers[0]
+					assert.Contains(t, exportContainer.Env, corev1.EnvVar{Name: "CACHE_TAG", Value: "test-cache-image"})
+				})
 			})
 		})
 
 		when("ImageTag is empty", func() {
-			var pod *corev1.Pod
-			var err error
-			build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: ""}
+			it.Before(func() {
+				build.Spec.Cache.Registry = &buildapi.RegistryCache{Tag: ""}
+			})
 
 			it("does not add the cache to analyze container", func() {
-				pod, err = build.BuildPod(config, buildContext)
+				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
 				analyzeContainer := pod.Spec.InitContainers[2]
 				assert.NotContains(t, analyzeContainer.Args, "-cache-image")
 			})
 			it("does not add the cache to restore container", func() {
-				pod, err = build.BuildPod(config, buildContext)
+				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
 				restoreContainer := pod.Spec.InitContainers[3]
 				assert.NotContains(t, restoreContainer.Args, "-cache-image")
 			})
 			it("does not add the cache to export container", func() {
-				pod, err = build.BuildPod(config, buildContext)
+				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
 				exportContainer := pod.Spec.InitContainers[5]
@@ -1201,22 +1228,22 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("Cache is nil", func() {
+		it("creates a pod without cache volume when cache is nil", func() {
 			buildCopy := build.DeepCopy()
 			podWithCache, _ := buildCopy.BuildPod(config, buildContext)
 			buildCopy.Spec.Cache = nil
+			pod, err := buildCopy.BuildPod(config, buildContext)
+			require.NoError(t, err)
 
-			it("creates a pod without cache volume", func() {
-				pod, err := buildCopy.BuildPod(config, buildContext)
-				require.NoError(t, err)
-
-				assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
-			})
+			assert.Len(t, pod.Spec.Volumes, len(podWithCache.Spec.Volumes)-1)
 		})
 
 		when("CacheName is empty", func() {
-			podWithCache, _ := build.BuildPod(config, buildContext)
-			build.Spec.Cache.Volume = &buildapi.BuildPersistentVolumeCache{ClaimName: ""}
+			var podWithCache *corev1.Pod
+			it.Before(func() {
+				podWithCache, _ = build.BuildPod(config, buildContext)
+				build.Spec.Cache.Volume = &buildapi.BuildPersistentVolumeCache{ClaimName: ""}
+			})
 
 			it("creates a pod without cache volume", func() {
 				pod, err := build.BuildPod(config, buildContext)
@@ -1324,11 +1351,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("creating a rebase pod", func() {
-			build.Annotations = map[string]string{
-				buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
-				buildapi.BuildChangesAnnotation: "some-stack-change",
-				"some/annotation":               "to-pass-through",
-			}
+			it.Before(func() {
+				build.Annotations[buildapi.BuildReasonAnnotation] = buildapi.BuildReasonStack
+				build.Annotations[buildapi.BuildChangesAnnotation] = "some-stack-change"
+			})
 
 			it("creates a pod just to rebase", func() {
 				pod, err := build.BuildPod(config, buildContext)
@@ -1344,6 +1370,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 					Annotations: map[string]string{
 						"some/annotation":               "to-pass-through",
+						"sidecar.istio.io/inject":       "false",
 						buildapi.BuildReasonAnnotation:  buildapi.BuildReasonStack,
 						buildapi.BuildChangesAnnotation: "some-stack-change",
 					},
@@ -1482,6 +1509,52 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}, pod.Spec.InitContainers)
+
+				require.Equal(t, []corev1.Container{
+					{
+						Name:      "completion",
+						Command:   []string{"/cnb/process/completion"},
+						Image:     config.CompletionImage,
+						Resources: build.Spec.Resources,
+						Env: []corev1.EnvVar{
+							{Name: "CACHE_TAG", Value: ""},
+							{Name: "TERMINATION_MESSAGE_PATH", Value: "/tmp/termination-log"},
+						},
+						Args: []string{
+							"-basic-docker=docker-secret-1=acr.io",
+							"-dockerconfig=docker-secret-2",
+							"-dockercfg=docker-secret-3",
+							"-cosign-annotations=buildTimestamp=19440606.133000",
+							"-cosign-annotations=buildNumber=12",
+						},
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      "report-dir",
+								MountPath: "/var/report",
+							},
+							{
+								Name:      "notary-dir",
+								MountPath: "/var/notary/v1",
+								ReadOnly:  true,
+							},
+							{
+								Name:      "secret-volume-docker-secret-1",
+								MountPath: "/var/build-secrets/docker-secret-1",
+							},
+							{
+								Name:      "secret-volume-docker-secret-2",
+								MountPath: "/var/build-secrets/docker-secret-2",
+							},
+							{
+								Name:      "secret-volume-docker-secret-3",
+								MountPath: "/var/build-secrets/docker-secret-3",
+							},
+						},
+						TerminationMessagePath:   "/tmp/termination-log",
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+					},
+				}, pod.Spec.Containers)
 			})
 
 			when("cosign secrets are present on the build", func() {
@@ -1615,14 +1688,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("a notary config is present on the build", func() {
-				build.Spec.Notary = &corev1alpha1.NotaryConfig{
-					V1: &corev1alpha1.NotaryV1Config{
-						URL: "some-notary-url",
-						SecretRef: corev1alpha1.NotarySecretRef{
-							Name: "some-notary-secret",
+				it.Before(func() {
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
+							URL: "some-notary-url",
+							SecretRef: corev1alpha1.NotarySecretRef{
+								Name: "some-notary-secret",
+							},
 						},
-					},
-				}
+					}
+				})
 
 				it("errs if platformApi does not support report.toml", func() {
 					buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
@@ -1670,14 +1745,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("cosign secrets and a notary config are present on the build", func() {
-				build.Spec.Notary = &corev1alpha1.NotaryConfig{
-					V1: &corev1alpha1.NotaryV1Config{
-						URL: "some-notary-url",
-						SecretRef: corev1alpha1.NotarySecretRef{
-							Name: "some-notary-secret",
+				it.Before(func() {
+					build.Spec.Notary = &corev1alpha1.NotaryConfig{
+						V1: &corev1alpha1.NotaryV1Config{
+							URL: "some-notary-url",
+							SecretRef: corev1alpha1.NotarySecretRef{
+								Name: "some-notary-secret",
+							},
 						},
-					},
-				}
+					}
+				})
 
 				it("skips invalid secrets", func() {
 					buildContext.Secrets = append(secrets, cosignInvalidSecrets...)
@@ -1830,22 +1907,22 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					})
 				}
 
-				require.Equal(t,
-					[]string{
-						"-basic-git=git-secret-1=https://github.com",
-						"-ssh-git=git-secret-2=https://bitbucket.com",
-						"-basic-docker=docker-secret-1=acr.io",
-						"-dockerconfig=docker-secret-2",
-						"-dockercfg=docker-secret-3",
-						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
-						"-cosign-docker-media-types=cosign-secret-1=1",
-						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
-						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-					},
-					pod.Spec.Containers[0].Args,
-				)
+				expectedArgs := []string{
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+					"-cosign-docker-media-types=cosign-secret-1=1",
+					"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+					"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
+				}
+				for _, a := range expectedArgs {
+					require.Contains(t, pod.Spec.Containers[0].Args, a)
+				}
 			})
 
 			it("handles custom cosign annotations", func() {
@@ -1857,36 +1934,37 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				buildContext.Secrets = append(secrets, cosignValidSecrets...)
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
-
-				require.Equal(t,
-					[]string{
-						"-basic-git=git-secret-1=https://github.com",
-						"-ssh-git=git-secret-2=https://bitbucket.com",
-						"-basic-docker=docker-secret-1=acr.io",
-						"-dockerconfig=docker-secret-2",
-						"-dockercfg=docker-secret-3",
-						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
-						"-cosign-docker-media-types=cosign-secret-1=1",
-						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
-						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
-					},
-					pod.Spec.Containers[0].Args,
-				)
+				expectedArgs := []string{
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+					"-cosign-docker-media-types=cosign-secret-1=1",
+					"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+					"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
+					"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+				}
+				for _, a := range expectedArgs {
+					require.Contains(t, pod.Spec.Containers[0].Args, a)
+				}
 			})
 		})
 
 		when("a notary config is present on the build", func() {
-			build.Spec.Notary = &corev1alpha1.NotaryConfig{
-				V1: &corev1alpha1.NotaryV1Config{
-					URL: "some-notary-url",
-					SecretRef: corev1alpha1.NotarySecretRef{
-						Name: "some-notary-secret",
+			it.Before(func() {
+				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+					V1: &corev1alpha1.NotaryV1Config{
+						URL: "some-notary-url",
+						SecretRef: corev1alpha1.NotarySecretRef{
+							Name: "some-notary-secret",
+						},
 					},
-				},
-			}
+				}
+			})
 
 			it("errs if platformApi does not support report.toml", func() {
 				buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
@@ -2016,23 +2094,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					MountPath: "/builder/home",
 				})
 
-				require.Equal(t,
-					[]string{
-						"-notary-v1-url=some-notary-url",
-						"-basic-git=git-secret-1=https://github.com",
-						"-ssh-git=git-secret-2=https://bitbucket.com",
-						"-basic-docker=docker-secret-1=acr.io",
-						"-dockerconfig=docker-secret-2",
-						"-dockercfg=docker-secret-3",
-						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
-						"-cosign-docker-media-types=cosign-secret-1=1",
-						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
-						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-					},
-					pod.Spec.Containers[0].Args,
-				)
+				expectedArgs := []string{
+					"-notary-v1-url=some-notary-url",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+					"-cosign-docker-media-types=cosign-secret-1=1",
+					"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+					"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
+				}
+				for _, a := range expectedArgs {
+					require.Contains(t, pod.Spec.Containers[0].Args, a)
+				}
 			})
 
 			it("handles custom cosign annotations", func() {
@@ -2045,24 +2123,24 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
-				require.Equal(t,
-					[]string{
-						"-notary-v1-url=some-notary-url",
-						"-basic-git=git-secret-1=https://github.com",
-						"-ssh-git=git-secret-2=https://bitbucket.com",
-						"-basic-docker=docker-secret-1=acr.io",
-						"-dockerconfig=docker-secret-2",
-						"-dockercfg=docker-secret-3",
-						"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
-						"-cosign-docker-media-types=cosign-secret-1=1",
-						"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
-						"-cosign-docker-media-types=cosign-secret-no-password-2=1",
-						"-cosign-annotations=buildTimestamp=19440606.133000",
-						"-cosign-annotations=buildNumber=12",
-						"-cosign-annotations=customAnnotationKey=customAnnotationValue",
-					},
-					pod.Spec.Containers[0].Args,
-				)
+				expectedArgs := []string{
+					"-notary-v1-url=some-notary-url",
+					"-basic-git=git-secret-1=https://github.com",
+					"-ssh-git=git-secret-2=https://bitbucket.com",
+					"-basic-docker=docker-secret-1=acr.io",
+					"-dockerconfig=docker-secret-2",
+					"-dockercfg=docker-secret-3",
+					"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
+					"-cosign-docker-media-types=cosign-secret-1=1",
+					"-cosign-repositories=cosign-secret-no-password-1=testRepository.com/fake-project-2",
+					"-cosign-docker-media-types=cosign-secret-no-password-2=1",
+					"-cosign-annotations=buildTimestamp=19440606.133000",
+					"-cosign-annotations=buildNumber=12",
+					"-cosign-annotations=customAnnotationKey=customAnnotationValue",
+				}
+				for _, a := range expectedArgs {
+					require.Contains(t, pod.Spec.Containers[0].Args, a)
+				}
 			})
 
 			it("errs if platformApi does not support report.toml", func() {
@@ -2427,11 +2505,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
 
-				assert.Subset(t, completionContainer.Env, []corev1.EnvVar{
-					{
-						Name:  "USERPROFILE",
-						Value: "/builder/home",
-					},
+				assert.Equal(t, completionContainer.Env, []corev1.EnvVar{
+					{Name: "USERPROFILE", Value: "/builder/home"},
+					{Name: "CACHE_TAG", Value: ""},
+					{Name: "TERMINATION_MESSAGE_PATH", Value: "/dev/termination-log"},
 				})
 			})
 
@@ -2475,7 +2552,7 @@ func assertSecretNotPresent(t *testing.T, pod *corev1.Pod, secretName string) {
 
 func isSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) bool {
 	for _, volume := range pod.Spec.Volumes {
-		if volume.Name == fmt.Sprintf(buildapi.SecretTemplateName, secretName) {
+		if volume.Name == fmt.Sprintf("secret-volume-%s", secretName) {
 			assert.Equal(t, corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: secretName,

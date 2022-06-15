@@ -2,171 +2,94 @@
 package buildfakes
 
 import (
-	"context"
 	"sync"
 
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 )
 
 type FakeMetadataRetriever struct {
-	GetBuiltImageStub        func(context.Context, *v1alpha2.Build) (cnb.BuiltImage, error)
-	getBuiltImageMutex       sync.RWMutex
-	getBuiltImageArgsForCall []struct {
-		arg1 context.Context
-		arg2 *v1alpha2.Build
+	GetBuildMetadataStub        func(string, string, authn.Keychain) (*cnb.BuildMetadata, error)
+	getBuildMetadataMutex       sync.RWMutex
+	getBuildMetadataArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 authn.Keychain
 	}
-	getBuiltImageReturns struct {
-		result1 cnb.BuiltImage
+	getBuildMetadataReturns struct {
+		result1 *cnb.BuildMetadata
 		result2 error
 	}
-	getBuiltImageReturnsOnCall map[int]struct {
-		result1 cnb.BuiltImage
-		result2 error
-	}
-	GetCacheImageStub        func(context.Context, *v1alpha2.Build) (string, error)
-	getCacheImageMutex       sync.RWMutex
-	getCacheImageArgsForCall []struct {
-		arg1 context.Context
-		arg2 *v1alpha2.Build
-	}
-	getCacheImageReturns struct {
-		result1 string
-		result2 error
-	}
-	getCacheImageReturnsOnCall map[int]struct {
-		result1 string
+	getBuildMetadataReturnsOnCall map[int]struct {
+		result1 *cnb.BuildMetadata
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImage(arg1 context.Context, arg2 *v1alpha2.Build) (cnb.BuiltImage, error) {
-	fake.getBuiltImageMutex.Lock()
-	ret, specificReturn := fake.getBuiltImageReturnsOnCall[len(fake.getBuiltImageArgsForCall)]
-	fake.getBuiltImageArgsForCall = append(fake.getBuiltImageArgsForCall, struct {
-		arg1 context.Context
-		arg2 *v1alpha2.Build
-	}{arg1, arg2})
-	fake.recordInvocation("GetBuiltImage", []interface{}{arg1, arg2})
-	fake.getBuiltImageMutex.Unlock()
-	if fake.GetBuiltImageStub != nil {
-		return fake.GetBuiltImageStub(arg1, arg2)
+func (fake *FakeMetadataRetriever) GetBuildMetadata(arg1 string, arg2 string, arg3 authn.Keychain) (*cnb.BuildMetadata, error) {
+	fake.getBuildMetadataMutex.Lock()
+	ret, specificReturn := fake.getBuildMetadataReturnsOnCall[len(fake.getBuildMetadataArgsForCall)]
+	fake.getBuildMetadataArgsForCall = append(fake.getBuildMetadataArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 authn.Keychain
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetBuildMetadata", []interface{}{arg1, arg2, arg3})
+	fake.getBuildMetadataMutex.Unlock()
+	if fake.GetBuildMetadataStub != nil {
+		return fake.GetBuildMetadataStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBuiltImageReturns
+	fakeReturns := fake.getBuildMetadataReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageCallCount() int {
-	fake.getBuiltImageMutex.RLock()
-	defer fake.getBuiltImageMutex.RUnlock()
-	return len(fake.getBuiltImageArgsForCall)
+func (fake *FakeMetadataRetriever) GetBuildMetadataCallCount() int {
+	fake.getBuildMetadataMutex.RLock()
+	defer fake.getBuildMetadataMutex.RUnlock()
+	return len(fake.getBuildMetadataArgsForCall)
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageCalls(stub func(context.Context, *v1alpha2.Build) (cnb.BuiltImage, error)) {
-	fake.getBuiltImageMutex.Lock()
-	defer fake.getBuiltImageMutex.Unlock()
-	fake.GetBuiltImageStub = stub
+func (fake *FakeMetadataRetriever) GetBuildMetadataCalls(stub func(string, string, authn.Keychain) (*cnb.BuildMetadata, error)) {
+	fake.getBuildMetadataMutex.Lock()
+	defer fake.getBuildMetadataMutex.Unlock()
+	fake.GetBuildMetadataStub = stub
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageArgsForCall(i int) (context.Context, *v1alpha2.Build) {
-	fake.getBuiltImageMutex.RLock()
-	defer fake.getBuiltImageMutex.RUnlock()
-	argsForCall := fake.getBuiltImageArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+func (fake *FakeMetadataRetriever) GetBuildMetadataArgsForCall(i int) (string, string, authn.Keychain) {
+	fake.getBuildMetadataMutex.RLock()
+	defer fake.getBuildMetadataMutex.RUnlock()
+	argsForCall := fake.getBuildMetadataArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageReturns(result1 cnb.BuiltImage, result2 error) {
-	fake.getBuiltImageMutex.Lock()
-	defer fake.getBuiltImageMutex.Unlock()
-	fake.GetBuiltImageStub = nil
-	fake.getBuiltImageReturns = struct {
-		result1 cnb.BuiltImage
+func (fake *FakeMetadataRetriever) GetBuildMetadataReturns(result1 *cnb.BuildMetadata, result2 error) {
+	fake.getBuildMetadataMutex.Lock()
+	defer fake.getBuildMetadataMutex.Unlock()
+	fake.GetBuildMetadataStub = nil
+	fake.getBuildMetadataReturns = struct {
+		result1 *cnb.BuildMetadata
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeMetadataRetriever) GetBuiltImageReturnsOnCall(i int, result1 cnb.BuiltImage, result2 error) {
-	fake.getBuiltImageMutex.Lock()
-	defer fake.getBuiltImageMutex.Unlock()
-	fake.GetBuiltImageStub = nil
-	if fake.getBuiltImageReturnsOnCall == nil {
-		fake.getBuiltImageReturnsOnCall = make(map[int]struct {
-			result1 cnb.BuiltImage
+func (fake *FakeMetadataRetriever) GetBuildMetadataReturnsOnCall(i int, result1 *cnb.BuildMetadata, result2 error) {
+	fake.getBuildMetadataMutex.Lock()
+	defer fake.getBuildMetadataMutex.Unlock()
+	fake.GetBuildMetadataStub = nil
+	if fake.getBuildMetadataReturnsOnCall == nil {
+		fake.getBuildMetadataReturnsOnCall = make(map[int]struct {
+			result1 *cnb.BuildMetadata
 			result2 error
 		})
 	}
-	fake.getBuiltImageReturnsOnCall[i] = struct {
-		result1 cnb.BuiltImage
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImage(arg1 context.Context, arg2 *v1alpha2.Build) (string, error) {
-	fake.getCacheImageMutex.Lock()
-	ret, specificReturn := fake.getCacheImageReturnsOnCall[len(fake.getCacheImageArgsForCall)]
-	fake.getCacheImageArgsForCall = append(fake.getCacheImageArgsForCall, struct {
-		arg1 context.Context
-		arg2 *v1alpha2.Build
-	}{arg1, arg2})
-	fake.recordInvocation("GetCacheImage", []interface{}{arg1, arg2})
-	fake.getCacheImageMutex.Unlock()
-	if fake.GetCacheImageStub != nil {
-		return fake.GetCacheImageStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.getCacheImageReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImageCallCount() int {
-	fake.getCacheImageMutex.RLock()
-	defer fake.getCacheImageMutex.RUnlock()
-	return len(fake.getCacheImageArgsForCall)
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImageCalls(stub func(context.Context, *v1alpha2.Build) (string, error)) {
-	fake.getCacheImageMutex.Lock()
-	defer fake.getCacheImageMutex.Unlock()
-	fake.GetCacheImageStub = stub
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImageArgsForCall(i int) (context.Context, *v1alpha2.Build) {
-	fake.getCacheImageMutex.RLock()
-	defer fake.getCacheImageMutex.RUnlock()
-	argsForCall := fake.getCacheImageArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImageReturns(result1 string, result2 error) {
-	fake.getCacheImageMutex.Lock()
-	defer fake.getCacheImageMutex.Unlock()
-	fake.GetCacheImageStub = nil
-	fake.getCacheImageReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeMetadataRetriever) GetCacheImageReturnsOnCall(i int, result1 string, result2 error) {
-	fake.getCacheImageMutex.Lock()
-	defer fake.getCacheImageMutex.Unlock()
-	fake.GetCacheImageStub = nil
-	if fake.getCacheImageReturnsOnCall == nil {
-		fake.getCacheImageReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
-		})
-	}
-	fake.getCacheImageReturnsOnCall[i] = struct {
-		result1 string
+	fake.getBuildMetadataReturnsOnCall[i] = struct {
+		result1 *cnb.BuildMetadata
 		result2 error
 	}{result1, result2}
 }
@@ -174,10 +97,8 @@ func (fake *FakeMetadataRetriever) GetCacheImageReturnsOnCall(i int, result1 str
 func (fake *FakeMetadataRetriever) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getBuiltImageMutex.RLock()
-	defer fake.getBuiltImageMutex.RUnlock()
-	fake.getCacheImageMutex.RLock()
-	defer fake.getCacheImageMutex.RUnlock()
+	fake.getBuildMetadataMutex.RLock()
+	defer fake.getBuildMetadataMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

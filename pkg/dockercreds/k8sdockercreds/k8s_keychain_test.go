@@ -123,6 +123,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, &authn.AuthConfig{
+				Auth:     "Y2ZnLXVzZXI6cHVsbC1wYXNzd29yZA==",
 				Username: "cfg-user",
 				Password: "pull-password",
 			}, dockerCfgAuthConfig)
@@ -137,6 +138,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, &authn.AuthConfig{
+				Auth:     "Y29uZmlnLWpzb24tdXNlcjpwdWxsLXBhc3N3b3Jk",
 				Username: "config-json-user",
 				Password: "pull-password",
 			}, dockerConfigAuthCfg)
@@ -259,7 +261,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, auth, authn.Anonymous)
 		})
 
-		it("returns an empty k8schain when no namespace is provided to leverage k8s.io/kubernetes/pkg/credentialprovider", func() {
+		it("do not add serviceaccount keychain when namespace is not provided", func() {
 			keychainFactory, err := NewSecretKeychainFactory(fake.NewSimpleClientset())
 			require.NoError(t, err)
 
@@ -268,10 +270,10 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			k8schain, err := k8schain.New(context.TODO(), nil, k8schain.Options{})
+			k8sKeychain, err := k8schain.NewNoClient(context.Background())
 			require.NoError(t, err)
 			volumeKeyChain := dockercreds.DockerCreds{}
-			expected := authn.NewMultiKeychain(volumeKeyChain, k8schain)
+			expected := authn.NewMultiKeychain(volumeKeyChain, k8sKeychain)
 			require.NoError(t, err)
 			assert.Equal(t, expected, keychain)
 		})

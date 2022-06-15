@@ -567,11 +567,6 @@ func mockLogger(t *testing.T) (*bufio.Scanner, *os.File, *os.File) {
 	return bufio.NewScanner(reader), reader, writer
 }
 
-func logText(scanner *bufio.Scanner) string {
-	scanner.Scan()
-	return scanner.Text()
-}
-
 func resetLogger(reader *os.File, writer *os.File) {
 	err := reader.Close()
 	if err != nil {

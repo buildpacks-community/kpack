@@ -3,6 +3,9 @@ package build
 import (
 	"context"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,6 +15,7 @@ import (
 	v1Listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging/logkey"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -21,24 +25,25 @@ import (
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
 	ReconcilerName = "Builds"
 	Kind           = "Build"
+	k8sOSLabel     = "kubernetes.io/os"
 )
 
 //go:generate counterfeiter . MetadataRetriever
 type MetadataRetriever interface {
-	GetBuiltImage(context.Context, *buildapi.Build) (cnb.BuiltImage, error)
-	GetCacheImage(context.Context, *buildapi.Build) (string, error)
+	GetBuildMetadata(string, string, authn.Keychain) (*cnb.BuildMetadata, error)
 }
 
 type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator) *controller.Impl {
+func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
@@ -46,9 +51,14 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 		Lister:            informer.Lister(),
 		PodLister:         podInformer.Lister(),
 		PodGenerator:      podGenerator,
+		KeychainFactory:   keychainFactory,
 	}
 
-	impl := controller.NewImpl(c, opt.Logger, ReconcilerName)
+	logger := opt.Logger.With(
+		zap.String(logkey.Kind, buildapi.BuildCRName),
+	)
+
+	impl := controller.NewImpl(c, logger, ReconcilerName)
 
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
@@ -62,6 +72,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 
 type Reconciler struct {
 	Client            versioned.Interface
+	KeychainFactory   registry.KeychainFactory
 	Lister            buildlisters.BuildLister
 	MetadataRetriever MetadataRetriever
 	K8sClient         k8sclient.Interface
@@ -106,21 +117,37 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	}
 
 	if build.MetadataReady(pod) {
-		image, err := c.MetadataRetriever.GetBuiltImage(ctx, build)
-		if err != nil {
-			return err
-		}
+		var buildMetadata *cnb.BuildMetadata
+		if pod.Spec.NodeSelector != nil && pod.Spec.NodeSelector[k8sOSLabel] == "windows" {
+			cacheTag := ""
+			if build.Spec.NeedRegistryCache() {
+				cacheTag = build.Spec.Cache.Registry.Tag
+			}
 
-		cacheImageId, err := c.MetadataRetriever.GetCacheImage(ctx, build)
-		if err != nil {
-			return err
-		}
+			keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+				ServiceAccount: build.Spec.ServiceAccountName,
+				Namespace:      build.Namespace,
+			})
 
-		build.Status.BuildMetadata = buildMetadataFromBuiltImage(image)
-		build.Status.LatestImage = image.Identifier
-		build.Status.LatestCacheImage = cacheImageId
-		build.Status.Stack.RunImage = image.Stack.RunImage
-		build.Status.Stack.ID = image.Stack.ID
+			if err != nil {
+				return errors.Wrap(err, "unable to create app image keychain")
+			}
+
+			buildMetadata, err = c.MetadataRetriever.GetBuildMetadata(build.Tag(), cacheTag, keychain)
+			if err != nil {
+				return err
+			}
+		} else {
+			buildMetadata, err = c.buildMetadataFromBuildPod(pod)
+			if err != nil {
+				return errors.Wrap(err, "failed to get build metadata from build pod")
+			}
+		}
+		build.Status.BuildMetadata = buildMetadata.BuildpackMetadata
+		build.Status.LatestImage = buildMetadata.LatestImage
+		build.Status.LatestCacheImage = buildMetadata.LatestCacheImage
+		build.Status.Stack.RunImage = buildMetadata.StackRunImage
+		build.Status.Stack.ID = buildMetadata.StackID
 	}
 
 	build.Status.PodName = pod.Name
@@ -222,14 +249,11 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) 
 	return err
 }
 
-func buildMetadataFromBuiltImage(image cnb.BuiltImage) []corev1alpha1.BuildpackMetadata {
-	buildpackMetadata := make([]corev1alpha1.BuildpackMetadata, 0, len(image.BuildpackMetadata))
-	for _, metadata := range image.BuildpackMetadata {
-		buildpackMetadata = append(buildpackMetadata, corev1alpha1.BuildpackMetadata{
-			Id:       metadata.ID,
-			Version:  metadata.Version,
-			Homepage: metadata.Homepage,
-		})
+func (c *Reconciler) buildMetadataFromBuildPod(pod *corev1.Pod) (*cnb.BuildMetadata, error) {
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == buildapi.CompletionContainerName {
+			return cnb.DecompressBuildMetadata(status.State.Terminated.Message)
+		}
 	}
-	return buildpackMetadata
+	return nil, errors.New(buildapi.CompletionContainerName + " container not found")
 }
