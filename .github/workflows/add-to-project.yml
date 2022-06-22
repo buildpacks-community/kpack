@@ -1,0 +1,18 @@
+name: Add issues to project
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  add-to-project:
+    name: Add To GitHub Projects Beta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add To GitHub Projects Beta
+        uses: actions/add-to-project@v0.0.5
+        with:
+          project-url: https://github.com/orgs/pivotal/projects/18
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
