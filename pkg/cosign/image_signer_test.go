@@ -34,16 +34,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	ro = &options.RootOptions{Timeout: options.DefaultTimeout}
-)
-
 func TestImageSigner(t *testing.T) {
 	spec.Run(t, "Test Cosign Image Signer Main", testImageSigner)
 }
 
 func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
+		ro = &options.RootOptions{Timeout: options.DefaultTimeout}
 		report            platform.ExportReport
 		reader            *os.File
 		writer            *os.File
@@ -51,12 +48,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		stopRegistry      func()
 		imageCleanup      func()
 		repo              string
-		testCtx           context.Context
-		testCtxCancel     context.CancelFunc
 	)
 
 	it.Before(func() {
-		testCtx, testCtxCancel = context.WithTimeout(context.Background(), ro.Timeout)
 		_, reader, writer = mockLogger(t)
 		repo, stopRegistry = reg(t)
 
@@ -66,7 +60,6 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		testCtxCancel()
 		stopRegistry()
 		imageCleanup()
 		resetLogger(reader, writer)
@@ -151,7 +144,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Nil(t, err)
 
 				assert.Equal(t, 2, cliSignCmdCallCount)
@@ -207,7 +200,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, expectedAnnotation, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, expectedAnnotation, nil, nil)
 				assert.Nil(t, err)
 
 				assert.Equal(t, 2, cliSignCmdCallCount)
@@ -264,7 +257,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Error(t, err)
 				assert.Equal(t, expectedErrorMessage, err.Error())
 				assert.Equal(t, 1, cliSignCmdCallCount)
@@ -301,7 +294,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Error(t, err)
 				assert.Equal(t, expectedErrorMessage, err.Error())
 				assert.Equal(t, 3, cliSignCmdCallCount)
@@ -350,7 +343,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, cosignRepositories, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, cosignRepositories, nil)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -398,7 +391,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, cosignDockerMediaTypes)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -433,7 +426,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, cosignRepositories, cosignDockerMediaTypes)
+				err := signer.Sign(ro, report, secretLocation, nil, cosignRepositories, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
@@ -459,7 +452,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no keys found for cosign signing")
 				assert.Equal(t, 0, cliSignCmdCallCount)
 			})
@@ -479,7 +472,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no keys found for cosign signing: open /fake/location/that/doesnt/exist: no such file or directory")
 				assert.Equal(t, 0, cliSignCmdCallCount)
 			})
@@ -499,7 +492,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
-				err := signer.Sign(testCtx, report, secretLocation, nil, nil, nil)
+				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no image found in report to sign")
 				assert.Equal(t, 0, cliSignCmdCallCount)
 			})

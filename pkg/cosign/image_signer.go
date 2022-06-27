@@ -1,7 +1,6 @@
 package cosign
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -35,7 +34,7 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) Sign(ro *options.RootOptions, report platform.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignSecrets, err := findCosignSecrets(secretLocation)
 	if err != nil {
 		return errors.Errorf("no keys found for cosign signing: %v\n", err)
@@ -52,7 +51,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, se
 	refImage := report.Image.Tags[0]
 
 	for _, cosignSecret := range cosignSecrets {
-		if err := s.sign(ctx, refImage, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
+		if err := s.sign(ro, refImage, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
 			return err
 		}
 	}
@@ -60,7 +59,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, se
 	return nil
 }
 
-func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
@@ -87,7 +86,6 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 		}
 		defer os.Unsetenv(cosignDockerMediaTypesEnv)
 	}
-	ro := &options.RootOptions{}
 	if err := s.signFunc(
 		ro,
 		ko,
