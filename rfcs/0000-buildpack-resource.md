@@ -13,8 +13,8 @@ Allow Buildpacks within kpack to be managed independently of other buildpacks wi
 ## Actions to take:
 
 Introduce a new ClusterBuildpack and Buildpack resource that provides a buildpack to be available within a Cluster or a singular namespace and be used in ClusterBuilders and Builders.
- 
-Enable buildpacks to be used directly within (Cluster)Builders 
+
+Enable buildpacks to be used directly within (Cluster)Builders
 
 ##### Buildpack Resource
 
@@ -54,10 +54,10 @@ metadata:
 spec:
   image: gcr.io/my-org/my-custom-app-buildpack:0.3.1
 status:
- conditions:
+  conditions:
   - status: "True"
     type: Ready
- buildpacks:
+  buildpacks:
   - api: "0.6"
     diffId: sha256:05aed3622d52837de1b1950069f6cca10aa3dbf7429e5c0497bae8cee2e6d901
     digest: sha256:9645b297c4c40b8476a243ae3c1ac9868986f64a000f9b95670ca9659428cec2
@@ -107,7 +107,7 @@ spec:
     namespace: private-ns
 ```
 
-The status of the ClusterBuildpack should match the status of the Buildpack resource. 
+The status of the ClusterBuildpack should match the status of the Buildpack resource.
 
 ##### ClusterStore Resources
 
@@ -115,7 +115,7 @@ With the ClusterBuildpack and Buildpack resource, the ClusterStore resource will
 
 ##### Builder Resources
 
-(Cluster)Builder resources do not need to explicitly reference Buildpack resources. 
+(Cluster)Builder resources do not need to explicitly reference Buildpack resources.
 
 An example Builder without a configured ClusterStore is shown below.
 
@@ -149,12 +149,12 @@ spec:
     kind: ClusterStack
   order:
   - group:
-    - id: paketo-buildpacks/java      
+    - id: paketo-buildpacks/java
     - name: my-custom-app-buildpack-0.3.1
       kind: Buildpack
 ```
 
-Builders may also reference a buildpack within a buildpack resource and not necessarily the entire buildpackage. This is possible by providing an ID alongside an object reference. 
+Builders may also reference a buildpack within a buildpack resource and not necessarily the entire buildpackage. This is possible by providing an ID alongside an object reference.
 
 ```yaml
 apiVersion: kpack.io/v1alpha3
