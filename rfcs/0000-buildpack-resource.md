@@ -43,7 +43,7 @@ spec:
   serviceAccountName: my-service-account
 ```
 
-The status of Buildpack resource should include the same metadata to the ClusterStore. This is to enable kpack to calculate the exact expected digest of the Builder image without needing to communicate with the registry. Additionally, this metadata may be used by external tooling such as the [kp cli](https://github.com/pivotal/kpack). The status must include the id, buildpack api, diffID, digest, size, homepage, supported stacks, and order for [meta-buildpacks](https://buildpacks.io/docs/concepts/components/buildpack/#meta-buildpack) of each buildpack within the configured buildpackage image. 
+The status of Buildpack resource should include the same metadata to the ClusterStore. This is to enable kpack to calculate the exact expected digest of the Builder image without needing to communicate with the registry. Additionally, this metadata may be used by external tooling such as the [kp cli](https://github.com/pivotal/kpack). The status must include the id, buildpack api, diffID, digest, size, homepage, supported stacks, and order if a provided buildpack is a [meta-buildpacks](https://buildpacks.io/docs/concepts/components/buildpack/#meta-buildpack) of each buildpack within the configured buildpackage image.
 
 ```yaml
 apiVersion: kpack.io/v1alpha3
@@ -167,7 +167,7 @@ spec:
     name: bionic-stack
     kind: ClusterStack
   order:
-  - group:      
+  - group:
     - name: my-custom-app-buildpack-0.3.1
       kind: Buildpack
       id: my-custom/buildpack-inside
