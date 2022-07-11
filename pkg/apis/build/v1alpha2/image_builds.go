@@ -58,6 +58,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 		Spec: BuildSpec{
 			Tags:                  im.generateTags(buildNumber),
 			Builder:               builder.BuildBuilderSpec(),
+			RunImage:              builder.RunImage(),
 			ServiceAccountName:    im.Spec.ServiceAccountName,
 			Source:                sourceResolver.SourceConfig(),
 			Cache:                 im.getBuildCacheConfig(),

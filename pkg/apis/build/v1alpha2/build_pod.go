@@ -747,6 +747,10 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
+	runImage := buildContext.BuildPodBuilderConfig.RunImage
+	if b.Spec.RunImage != "" {
+		runImage = b.Spec.RunImage
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -818,7 +822,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 					Resources: b.Spec.Resources,
 					Args: args(a(
 						"--run-image",
-						buildContext.BuildPodBuilderConfig.RunImage,
+						runImage,
 						"--last-built-image",
 						b.Spec.LastBuild.Image,
 						"--report",

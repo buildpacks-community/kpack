@@ -56,6 +56,7 @@ type BuildSpec struct {
 	ServiceAccountName string                        `json:"serviceAccountName,omitempty"`
 	Source             corev1alpha1.SourceConfig     `json:"source"`
 	Cache              *BuildCacheConfig             `json:"cache,omitempty"`
+	RunImage           string                        `json:"runImage,omitempty"`
 	// +listType
 	Services Services `json:"services,omitempty"`
 	// +listType
