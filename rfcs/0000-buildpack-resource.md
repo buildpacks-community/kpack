@@ -8,7 +8,7 @@ The ClusterStore being a monolithic specification of all available buildpacks le
 
 ## Outcome:
 
-Allow Buildpacks within kpack to be managed independently of other buildpacks with their own unique update cadence with a new ClusterBuildpack/Buildpack resource or directly within the (Cluster)Builder resource. This enables the the ClusterStore to be eventually removed.
+Allow Buildpacks within kpack to be managed independently of other buildpacks with their own unique update cadence with a new ClusterBuildpack/Buildpack resource or directly within the (Cluster)Builder resource. This enables the ClusterStore to be eventually removed.
 
 ## Actions to take:
 
