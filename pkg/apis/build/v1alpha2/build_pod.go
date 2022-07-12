@@ -209,6 +209,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		return nil, err
 	}
 
+	runImage := buildContext.BuildPodBuilderConfig.RunImage
+	if b.Spec.RunImage.Image != "" {
+		runImage = b.Spec.RunImage.Image
+	}
+
 	workspaceVolume := corev1.VolumeMount{
 		Name:      sourceMount.Name,
 		MountPath: sourceMount.MountPath,
@@ -245,6 +250,14 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Resources: b.Spec.Resources,
 		Args: args(
 			[]string{"-layers=/layers", "-analyzed=/layers/analyzed.toml"},
+			func() []string {
+				if !platformAPILessThan07 {
+					if b.Spec.RunImage.Image != "" {
+						return []string{"-run-image=" + b.Spec.RunImage.Image}
+					}
+				}
+				return []string{}
+			}(),
 			analyzerCacheArgs,
 			func() []string {
 				if platformAPILessThan07 {
@@ -405,7 +418,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							},
 							corev1.EnvVar{
 								Name:  "RUN_IMAGE",
-								Value: buildContext.BuildPodBuilderConfig.RunImage,
+								Value: runImage,
 							},
 							corev1.EnvVar{
 								Name:  "BUILDER_IMAGE",
@@ -566,6 +579,14 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								return []string{fmt.Sprintf("-report=%s", ReportTOMLPath)}
 
 							}(),
+							func() []string {
+								if platformAPILessThan07 {
+									if b.Spec.RunImage.Image != "" {
+										return []string{"-run-image=" + b.Spec.RunImage.Image}
+									}
+								}
+								return []string{}
+							}(),
 							b.Spec.Tags),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersMount,
@@ -573,13 +594,23 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							homeMount,
 							reportMount,
 						}, cacheVolumes),
-						Env: []corev1.EnvVar{
-							homeEnv,
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
+						Env: envs(
+							[]corev1.EnvVar{
+								homeEnv,
+								{
+									Name:  platformAPIEnvVar,
+									Value: platformAPI.Original(),
+								},
 							},
-						},
+							func() corev1.EnvVar {
+								if platformAPILessThan07 {
+									return corev1.EnvVar{
+										Name:  "CNB_RUN_IMAGE",
+										Value: runImage,
+									}
+								}
+								return corev1.EnvVar{}
+							}()),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 					ifWindows(buildContext.os(),
@@ -1163,4 +1194,11 @@ func cosignSecretArgs(secret corev1.Secret) []string {
 	}
 
 	return cosignArgs
+}
+
+func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
+	if envVar.Name != "" && envVar.Value != "" {
+		envs = append(envs, envVar)
+	}
+	return envs
 }

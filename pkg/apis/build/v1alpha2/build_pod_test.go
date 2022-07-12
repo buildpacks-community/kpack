@@ -282,6 +282,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						ClaimName: "some-cache-name",
 					},
 				},
+				RunImage: buildapi.BuildSpecImage{
+					Image:  "builderregistry.io/run",
+				},
 				Services: buildapi.Services{
 					{
 						Name: "database",
@@ -848,7 +851,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 			assert.Equal(t, append(append([]string{
 				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml"},
+				"-analyzed=/layers/analyzed.toml",
+				"-run-image=builderregistry.io/run"},
 				tags...),
 				"-previous-image="+build.Spec.LastBuild.Image, build.Tag()), pod.Spec.InitContainers[1].Args)
 		})
@@ -894,7 +898,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 			assert.Equal(t, append(append([]string{
 				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml"},
+				"-analyzed=/layers/analyzed.toml",
+				"-run-image=builderregistry.io/run"},
 				tags...),
 				build.Tag()), pod.Spec.InitContainers[1].Args)
 		})
@@ -1334,6 +1339,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-analyzed=/layers/analyzed.toml",
 					"-project-metadata=/layers/project-metadata.toml",
 					"-cache-dir=/cache",
+					"-run-image=builderregistry.io/run",
 					build.Tag(),
 					"someimage/name:tag2",
 					"someimage/name:tag3",
@@ -2287,7 +2293,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/lifecycle/analyzer",
 					"-layers=/layers",
-					"-analyzed=/layers/analyzed.toml"}, tags...),
+					"-analyzed=/layers/analyzed.toml", "-run-image=builderregistry.io/run"}, tags...),
 					"-previous-image=someimage/name@sha256:previous", "someimage/name"), analyzeContainer.Args)
 			})
 
