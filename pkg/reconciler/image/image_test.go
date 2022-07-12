@@ -1260,7 +1260,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache:    &buildapi.BuildCacheConfig{},
+								Cache: &buildapi.BuildCacheConfig{},
 								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
@@ -1371,8 +1371,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
-									buildapi.BuilderNameAnnotation:  builderName,
-									buildapi.BuilderKindAnnotation:  buildapi.BuilderKind,
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
 									buildapi.BuildReasonAnnotation:  buildapi.BuildReasonCommit,
 									buildapi.BuildChangesAnnotation: `[{"reason":"COMMIT","old":"1234567","new":"new-commit"}]`,
 								},
@@ -1389,7 +1389,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache:    &buildapi.BuildCacheConfig{},
+								Cache: &buildapi.BuildCacheConfig{},
 								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
@@ -1555,7 +1555,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache:    &buildapi.BuildCacheConfig{},
+								Cache: &buildapi.BuildCacheConfig{},
 								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
@@ -1720,7 +1720,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache:    &buildapi.BuildCacheConfig{},
+								Cache: &buildapi.BuildCacheConfig{},
 								RunImage: updatedRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
@@ -1868,7 +1868,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										Revision: sourceResolver.Status.Source.Git.Revision,
 									},
 								},
-								Cache:    &buildapi.BuildCacheConfig{},
+								Cache: &buildapi.BuildCacheConfig{},
 								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
