@@ -748,8 +748,8 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
 	runImage := buildContext.BuildPodBuilderConfig.RunImage
-	if b.Spec.RunImage != "" {
-		runImage = b.Spec.RunImage
+	if b.Spec.RunImage.Image != "" {
+		runImage = b.Spec.RunImage.Image
 	}
 
 	return &corev1.Pod{

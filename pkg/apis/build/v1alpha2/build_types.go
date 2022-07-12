@@ -56,7 +56,7 @@ type BuildSpec struct {
 	ServiceAccountName string                        `json:"serviceAccountName,omitempty"`
 	Source             corev1alpha1.SourceConfig     `json:"source"`
 	Cache              *BuildCacheConfig             `json:"cache,omitempty"`
-	RunImage           string                        `json:"runImage,omitempty"`
+	RunImage           BuildSpecImage                `json:"runImage,omitempty"`
 	// +listType
 	Services Services `json:"services,omitempty"`
 	// +listType
@@ -147,4 +147,9 @@ type BuildList struct {
 
 	// +k8s:listType=atomic
 	Items []Build `json:"items"`
+}
+
+// +k8s:openapi-gen=true
+type BuildSpecImage struct {
+	Image string `json:"image,omitempty"`
 }
