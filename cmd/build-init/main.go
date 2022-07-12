@@ -17,6 +17,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
 
+	_ "github.com/pivotal/kpack/internal/logrus/fatal"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/cnb"
@@ -40,9 +41,9 @@ var (
 	buildChanges   = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	descriptorPath = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
-	builderImage= flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "The builder image used to build the application")
-	builderName = flag.String("builder-name", os.Getenv("BUILDER_NAME"), "The builder name provided during creation")
-	builderKind = flag.String("builder-kind", os.Getenv("BUILDER_KIND"), "The builder kind")
+	builderImage = flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "The builder image used to build the application")
+	builderName  = flag.String("builder-name", os.Getenv("BUILDER_NAME"), "The builder name provided during creation")
+	builderKind  = flag.String("builder-kind", os.Getenv("BUILDER_KIND"), "The builder kind")
 
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
