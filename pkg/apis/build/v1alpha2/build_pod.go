@@ -252,9 +252,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			[]string{"-layers=/layers", "-analyzed=/layers/analyzed.toml"},
 			func() []string {
 				if !platformAPILessThan07 {
-					if b.Spec.RunImage.Image != "" {
-						return []string{"-run-image=" + b.Spec.RunImage.Image}
-					}
+					return []string{"-run-image=" + runImage}
 				}
 				return []string{}
 			}(),
@@ -581,9 +579,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							}(),
 							func() []string {
 								if platformAPILessThan07 {
-									if b.Spec.RunImage.Image != "" {
-										return []string{"-run-image=" + b.Spec.RunImage.Image}
-									}
+									return []string{"-run-image=" + runImage}
 								}
 								return []string{}
 							}(),
@@ -603,13 +599,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								},
 							},
 							func() corev1.EnvVar {
-								if platformAPILessThan07 {
-									return corev1.EnvVar{
-										Name:  "CNB_RUN_IMAGE",
-										Value: runImage,
-									}
+								return corev1.EnvVar{
+									Name:  "CNB_RUN_IMAGE",
+									Value: runImage,
 								}
-								return corev1.EnvVar{}
 							}()),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
