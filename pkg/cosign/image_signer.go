@@ -1,6 +1,7 @@
 package cosign
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,16 +10,26 @@ import (
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 )
 
 type SignFunc func(
-	ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
-	certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-	payloadPath string, force, recursive bool, attachment string,
+	ro *options.RootOptions,
+	ko options.KeyOpts,
+	registryOptions options.RegistryOptions,
+	annotations map[string]interface{},
+	imageRef []string,
+	certPath string,
+	certChainPath string,
+	upload bool,
+	outputSignature string,
+	outputCertificate string,
+	payloadPath string,
+	force bool,
+	recursive bool,
+	attachment string,
 ) error
 
 type ImageSigner struct {
@@ -119,7 +130,7 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 
 func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSecrets []v1.Secret) ([]string, error) {
 	for _, secret := range cosignSecrets {
-		ko := sign.KeyOpts{
+		ko := options.KeyOpts{
 			KeyRef: fmt.Sprintf("k8s://%v/%v", secret.Namespace, secret.Name),
 			PassFunc: func(bool) ([]byte, error) {
 				if password, ok := secret.Data[COSIGNSecretDataCosignPassword]; ok {
@@ -145,11 +156,12 @@ func (s *ImageSigner) SignBuilder(ctx context.Context, refImage string, cosignSe
 		}
 
 		if err := s.signFunc(
-			ctx,
+			&options.RootOptions{},
 			ko,
 			options.RegistryOptions{},
 			make(map[string]interface{}, 0),
 			[]string{refImage},
+			"",
 			"",
 			true,
 			"",

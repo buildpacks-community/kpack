@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform"
@@ -42,7 +43,7 @@ func TestImageSigner(t *testing.T) {
 
 func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
-		ro = &options.RootOptions{Timeout: options.DefaultTimeout}
+		ro                = &options.RootOptions{Timeout: options.DefaultTimeout}
 		report            platform.ExportReport
 		reader            *os.File
 		writer            *os.File
@@ -50,9 +51,12 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		stopRegistry      func()
 		imageCleanup      func()
 		repo              string
+		testCtx           context.Context
+		testCtxCancel     context.CancelFunc
 	)
 
 	it.Before(func() {
+		testCtx, testCtxCancel = context.WithTimeout(context.Background(), time.Minute)
 		_, reader, writer = mockLogger(t)
 		repo, stopRegistry = reg(t)
 
@@ -62,6 +66,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
+		testCtxCancel()
 		stopRegistry()
 		imageCleanup()
 		resetLogger(reader, writer)
@@ -466,12 +471,22 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				password2Count := 0
 
 				cliSignCmd := func(
-					ctx context.Context, ko sign.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					rootOpts *options.RootOptions,
+					ko options.KeyOpts,
+					registryOptions options.RegistryOptions,
+					annotations map[string]interface{},
+					imageRef []string,
+					certPath string,
+					certChainPath string,
+					upload bool,
+					outputSignature string,
+					outputCertificate string,
+					payloadPath string,
+					force bool,
+					recursive bool,
+					attachment string,
 				) error {
 					t.Helper()
-					assert.Equal(t, testCtx, ctx)
 					assert.Equal(t, []string{expectedImageName}, imageRef)
 
 					// Check it is a Kubernetes secret
