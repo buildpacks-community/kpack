@@ -1,7 +1,6 @@
 package cosign
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,12 +9,11 @@ import (
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 )
 
 type SignFunc func(
-	ctx context.Context, ko sign.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
-	certPath string, upload bool, outputSignature, outputCertificate string,
+	ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
+	certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
 	payloadPath string, force, recursive bool, attachment string,
 ) error
 
@@ -36,7 +34,7 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) Sign(ro *options.RootOptions, report platform.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignSecrets, err := findCosignSecrets(secretLocation)
 	if err != nil {
 		return errors.Errorf("no keys found for cosign signing: %v\n", err)
@@ -53,7 +51,7 @@ func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, se
 	refImage := report.Image.Tags[0]
 
 	for _, cosignSecret := range cosignSecrets {
-		if err := s.sign(ctx, refImage, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
+		if err := s.sign(ro, refImage, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
 			return err
 		}
 	}
@@ -61,11 +59,11 @@ func (s *ImageSigner) Sign(ctx context.Context, report platform.ExportReport, se
 	return nil
 }
 
-func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
-	ko := sign.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
+	ko := options.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
 		content, err := ioutil.ReadFile(cosignPasswordFile)
 		// When password file is not available, default empty password is used
 		if err != nil {
@@ -88,13 +86,13 @@ func (s *ImageSigner) sign(ctx context.Context, refImage, secretLocation, cosign
 		}
 		defer os.Unsetenv(cosignDockerMediaTypesEnv)
 	}
-
 	if err := s.signFunc(
-		ctx,
+		ro,
 		ko,
 		options.RegistryOptions{KubernetesKeychain: true},
 		annotations,
 		[]string{refImage},
+		"",
 		"",
 		true,
 		"",

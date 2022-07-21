@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/signals"
 
 	"github.com/pivotal/kpack/cmd"
+	_ "github.com/pivotal/kpack/internal/logrus/fatal"
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildpod"
