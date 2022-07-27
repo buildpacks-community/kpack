@@ -296,6 +296,14 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Env: []corev1.EnvVar{
 					{Name: "keyA", Value: "valueA"},
 					{Name: "keyB", Value: "valueB"},
+					{Name: "keyC", ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "my-secret",
+							},
+							Key: "keyC",
+						},
+					}},
 				},
 				Resources: resources,
 				LastBuild: &buildapi.LastBuild{
@@ -677,8 +685,25 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
 			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
-					Name:  "PLATFORM_ENV_VARS",
-					Value: `[{"name":"keyA","value":"valueA"},{"name":"keyB","value":"valueB"}]`,
+					Name:  "PLATFORM_ENV_keyA",
+					Value: "valueA",
+				})
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
+				corev1.EnvVar{
+					Name:  "PLATFORM_ENV_keyB",
+					Value: "valueB",
+				})
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
+				corev1.EnvVar{
+					Name: "PLATFORM_ENV_keyC",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "my-secret",
+							},
+							Key: "keyC",
+						},
+					},
 				})
 			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
