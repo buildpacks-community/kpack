@@ -125,7 +125,7 @@ func handleZip(img v1.Image, dir string) error {
 		return err
 	}
 
-	return archive.ExtractZip(file, info.Size(), dir)
+	return archive.ExtractZip(file, info.Size(), dir, 0)
 }
 
 func handleTar(img v1.Image, dir string) error {
@@ -145,7 +145,7 @@ func handleTar(img v1.Image, dir string) error {
 		return errors.Errorf("expected file '%s' to be a tar archive", file.Name())
 	}
 
-	return archive.ExtractTar(file, dir)
+	return archive.ExtractTar(file, dir, 0)
 }
 
 func handleTarGZ(img v1.Image, dir string) error {
@@ -161,7 +161,7 @@ func handleTarGZ(img v1.Image, dir string) error {
 	}
 	defer file.Close()
 
-	return archive.ExtractTarGZ(file, dir)
+	return archive.ExtractTarGZ(file, dir, 0)
 }
 
 func getSourceFile(img v1.Image, dir string) (*os.File, error) {
@@ -198,5 +198,5 @@ func fetchLayer(layer v1.Layer, dir string) error {
 	}
 	defer reader.Close()
 
-	return archive.ExtractTar(reader, dir)
+	return archive.ExtractTar(reader, dir, 0)
 }

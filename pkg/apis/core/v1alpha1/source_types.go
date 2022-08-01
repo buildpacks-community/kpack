@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -61,7 +63,8 @@ func (in *Git) ImagePullSecretsVolume(name string) corev1.Volume {
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type Blob struct {
-	URL string `json:"url"`
+	URL             string `json:"url"`
+	StripComponents int64  `json:"stripComponents,omitempty"`
 }
 
 func (b *Blob) ImagePullSecretsVolume(name string) corev1.Volume {
@@ -78,6 +81,10 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 		{
 			Name:  "BLOB_URL",
 			Value: b.URL,
+		},
+		{
+			Name:  "BLOB_STRIP_COMPONENTS",
+			Value: strconv.FormatInt(b.StripComponents, 10),
 		},
 	}
 }
@@ -185,14 +192,16 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type ResolvedBlobSource struct {
-	URL     string `json:"url"`
-	SubPath string `json:"subPath,omitempty"`
+	URL             string `json:"url"`
+	SubPath         string `json:"subPath,omitempty"`
+	StripComponents int64  `json:"stripComponents,omitempty"`
 }
 
 func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Blob: &Blob{
-			URL: bs.URL,
+			URL:             bs.URL,
+			StripComponents: bs.StripComponents,
 		},
 		SubPath: bs.SubPath,
 	}

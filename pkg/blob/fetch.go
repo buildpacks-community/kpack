@@ -19,7 +19,7 @@ type Fetcher struct {
 	Logger *log.Logger
 }
 
-func (f *Fetcher) Fetch(dir string, blobURL string) error {
+func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int) error {
 	u, err := url.Parse(blobURL)
 	if err != nil {
 		return err
@@ -43,14 +43,14 @@ func (f *Fetcher) Fetch(dir string, blobURL string) error {
 		if err != nil {
 			return err
 		}
-		err = archive.ExtractZip(file, info.Size(), dir)
+		err = archive.ExtractZip(file, info.Size(), dir, stripComponents)
 	case "application/x-gzip":
-		err = archive.ExtractTarGZ(file, dir)
+		err = archive.ExtractTarGZ(file, dir, stripComponents)
 	case "application/octet-stream":
 		if !archive.IsTar(file.Name()) {
 			return unexpectedBlobTypeError
 		}
-		err = archive.ExtractTar(file, dir)
+		err = archive.ExtractTar(file, dir, stripComponents)
 	default:
 		return unexpectedBlobTypeError
 	}
