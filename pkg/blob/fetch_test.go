@@ -46,7 +46,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 	for _, f := range []string{"test.zip", "test.tar", "test.tar.gz"} {
 		testFile := f
 		it("unpacks "+testFile, func() {
-			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, testFile))
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, testFile), 0)
 			require.NoError(t, err)
 
 			files, err := ioutil.ReadDir(dir)
@@ -75,7 +75,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		// Set no umask to test file mode
 		oldMask := syscall.Umask(0)
 		defer syscall.Umask(oldMask)
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "fat-zip.zip"))
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "fat-zip.zip"), 0)
 		require.NoError(t, err)
 
 		files, err := ioutil.ReadDir(dir)
@@ -91,7 +91,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("sets the correct file mode", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"))
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"), 0)
 		require.NoError(t, err)
 
 		files, err := ioutil.ReadDir(dir)
@@ -115,19 +115,34 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, 0755, int(info.Mode()))
 	})
 
+	for _, archiveFile := range []string{"parent.tar", "parent.tar.gz", "parent.zip"} {
+		it("strips parent components from "+archiveFile, func() {
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, archiveFile), 1)
+			require.NoError(t, err)
+
+			files, err := ioutil.ReadDir(dir)
+			require.NoError(t, err)
+			require.Len(t, files, 1)
+
+			testDir := files[0]
+			require.Equal(t, "child.txt", testDir.Name())
+			require.False(t, testDir.IsDir())
+		})
+	}
+
 	it("errors when url is inaccessible", func() {
 		url := fmt.Sprintf("%s/%s", server.URL, "invalid.zip")
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"))
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"), 0)
 		require.EqualError(t, err, fmt.Sprintf("failed to get blob %s", url))
 	})
 
 	it("errors when the blob file type is unexpected", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.txt"))
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.txt"), 0)
 		require.EqualError(t, err, "unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 	})
 
 	it("errors when the blob content type is unexpected", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.html"))
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.html"), 0)
 		require.EqualError(t, err, "unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 	})
 }

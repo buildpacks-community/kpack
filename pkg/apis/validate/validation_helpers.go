@@ -67,3 +67,11 @@ func Image(value string) *apis.FieldError {
 	}
 	return nil
 }
+
+func StripComponents(value int64) *apis.FieldError {
+	if value >= 0 {
+		return nil
+	}
+
+	return apis.ErrGeneric(fmt.Sprintf("expected positive integer got %d", value), "stripComponents")
+}
