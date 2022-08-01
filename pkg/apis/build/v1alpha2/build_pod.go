@@ -209,6 +209,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		return nil, err
 	}
 
+	runImage := buildContext.BuildPodBuilderConfig.RunImage
+	if b.Spec.RunImage.Image != "" {
+		runImage = b.Spec.RunImage.Image
+	}
+
 	workspaceVolume := corev1.VolumeMount{
 		Name:      sourceMount.Name,
 		MountPath: sourceMount.MountPath,
@@ -245,6 +250,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Resources: b.Spec.Resources,
 		Args: args(
 			[]string{"-layers=/layers", "-analyzed=/layers/analyzed.toml"},
+			func() []string {
+				if !platformAPILessThan07 {
+					return []string{"-run-image=" + runImage}
+				}
+				return []string{}
+			}(),
 			analyzerCacheArgs,
 			func() []string {
 				if platformAPILessThan07 {
@@ -405,7 +416,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							},
 							corev1.EnvVar{
 								Name:  "RUN_IMAGE",
-								Value: buildContext.BuildPodBuilderConfig.RunImage,
+								Value: runImage,
 							},
 							corev1.EnvVar{
 								Name:  "BUILDER_IMAGE",
@@ -566,6 +577,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								return []string{fmt.Sprintf("-report=%s", ReportTOMLPath)}
 
 							}(),
+							func() []string {
+								if platformAPILessThan07 {
+									return []string{"-run-image=" + runImage}
+								}
+								return []string{}
+							}(),
 							b.Spec.Tags),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersMount,
@@ -573,13 +590,20 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							homeMount,
 							reportMount,
 						}, cacheVolumes),
-						Env: []corev1.EnvVar{
-							homeEnv,
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
+						Env: envs(
+							[]corev1.EnvVar{
+								homeEnv,
+								{
+									Name:  platformAPIEnvVar,
+									Value: platformAPI.Original(),
+								},
 							},
-						},
+							func() corev1.EnvVar {
+								return corev1.EnvVar{
+									Name:  "CNB_RUN_IMAGE",
+									Value: runImage,
+								}
+							}()),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 					ifWindows(buildContext.os(),
@@ -747,6 +771,10 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
+	runImage := buildContext.BuildPodBuilderConfig.RunImage
+	if b.Spec.RunImage.Image != "" {
+		runImage = b.Spec.RunImage.Image
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -818,7 +846,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 					Resources: b.Spec.Resources,
 					Args: args(a(
 						"--run-image",
-						buildContext.BuildPodBuilderConfig.RunImage,
+						runImage,
 						"--last-built-image",
 						b.Spec.LastBuild.Image,
 						"--report",
@@ -1159,4 +1187,11 @@ func cosignSecretArgs(secret corev1.Secret) []string {
 	}
 
 	return cosignArgs
+}
+
+func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
+	if envVar.Name != "" && envVar.Value != "" {
+		envs = append(envs, envVar)
+	}
+	return envs
 }

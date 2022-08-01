@@ -142,6 +142,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	builderRunImage := buildapi.BuildSpecImage{
+		Image: builder.Status.Stack.RunImage,
+	}
+
 	clusterBuilder := &buildapi.ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterBuilderName,
@@ -726,6 +730,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
+								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -818,6 +823,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
+								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -910,6 +916,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
+								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1003,6 +1010,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								ServiceAccountName: image.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
+								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1108,6 +1116,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ClaimName: image.CacheName(),
 									},
 								},
+								RunImage: builderRunImage,
 							},
 						},
 					},
@@ -1252,6 +1261,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Cache: &buildapi.BuildCacheConfig{},
+								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1380,6 +1390,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Cache: &buildapi.BuildCacheConfig{},
+								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1545,6 +1556,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Cache: &buildapi.BuildCacheConfig{},
+								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1578,6 +1590,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				image.Status.BuildCounter = 1
 				image.Status.LatestBuildRef = "image-name-build-1"
 				const updatedBuilderImage = "some/builder@sha256:updated"
+				const updatedBuilderRunImage = "gcr.io/test-project/install/run@sha256:01ea3600f15a73f0ad445351c681eb0377738f5964cbcd2bab0cfec9ca891a08"
+				updatedRunImage := buildapi.BuildSpecImage{
+					Image: updatedBuilderRunImage,
+				}
 
 				sourceResolver := resolvedSourceResolver(image)
 				rt.Test(rtesting.TableRow{
@@ -1603,7 +1619,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								LatestImage: updatedBuilderImage,
 								Stack: corev1alpha1.BuildStack{
-									RunImage: "gcr.io/test-project/install/run@sha256:01ea3600f15a73f0ad445351c681eb0377738f5964cbcd2bab0cfec9ca891a08",
+									RunImage: updatedBuilderRunImage,
 									ID:       "io.buildpacks.stacks.bionic",
 								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
@@ -1705,6 +1721,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Cache: &buildapi.BuildCacheConfig{},
+								RunImage: updatedRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:just-built",
 									StackId: "io.buildpacks.stacks.bionic",
@@ -1852,6 +1869,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Cache: &buildapi.BuildCacheConfig{},
+								RunImage: builderRunImage,
 								LastBuild: &buildapi.LastBuild{
 									Image:   "some/image@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
