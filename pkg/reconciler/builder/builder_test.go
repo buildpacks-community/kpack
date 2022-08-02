@@ -18,6 +18,7 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	kreconciler "github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/builder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -57,7 +58,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ClusterStoreLister: listers.GetClusterStoreLister(),
 				ClusterStackLister: listers.GetClusterStackLister(),
 			}
-			return r, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
+			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
 
 	clusterStore := &buildapi.ClusterStore{

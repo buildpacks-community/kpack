@@ -55,7 +55,9 @@ func NewController(opt reconciler.Options,
 		zap.String(logkey.Kind, buildapi.BuilderCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewImpl(&reconciler.NetworkErrorReconciler{
+		Reconciler: c,
+	}, logger, ReconcilerName)
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
@@ -100,8 +102,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		if err != nil {
 			return err
 		}
-
-		return controller.NewPermanentError(creationError)
+		return creationError
 	}
 
 	builder.Status.BuilderRecord(builderRecord)

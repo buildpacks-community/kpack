@@ -2,12 +2,15 @@ package registry
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +25,7 @@ func (t *Client) Fetch(keychain authn.Keychain, repoName string) (v1.Image, stri
 
 	image, err := remote.Image(reference, remote.WithAuthFromKeychain(keychain))
 	if err != nil {
-		return nil, "", err
+		return nil, "", handleError(err)
 	}
 
 	identifier, err := getIdentifier(image, reference)
@@ -51,7 +54,7 @@ func (t *Client) Save(keychain authn.Keychain, tag string, image v1.Image) (stri
 	}
 	err = remote.Write(ref, image, remote.WithAuthFromKeychain(keychain))
 	if err != nil {
-		return "", err
+		return "", handleError(err)
 	}
 
 	return identifier, remote.Tag(ref.Context().Tag(timestampTag()), image, remote.WithAuthFromKeychain(keychain))
@@ -82,4 +85,16 @@ func previousDigest(keychain authn.Keychain, ref name.Reference) string {
 	}
 
 	return hash.String()
+}
+
+func handleError(err error) error {
+	if transportErr, ok := err.(*transport.Error); ok {
+		if transportErr.StatusCode != http.StatusUnauthorized &&
+			transportErr.StatusCode != http.StatusForbidden {
+			return &reconciler.NetworkError{
+				Err: err,
+			}
+		}
+	}
+	return err
 }
