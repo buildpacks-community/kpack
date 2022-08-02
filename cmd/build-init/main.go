@@ -29,9 +29,8 @@ import (
 )
 
 var (
-	platformEnvVars = flag.String("platformEnvVars", os.Getenv("PLATFORM_ENV_VARS"), "a JSON string of build time environment variables formatted as key/value pairs")
-	imageTag        = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
-	runImage        = flag.String("runImage", os.Getenv("RUN_IMAGE"), "The base image from which application images are built.")
+	imageTag = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
+	runImage = flag.String("runImage", os.Getenv("RUN_IMAGE"), "The base image from which application images are built.")
 
 	gitURL          = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
 	gitRevision     = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
@@ -159,7 +158,7 @@ func main() {
 			*builderName, *builderKind)
 	}
 
-	err = cnb.SetupPlatformEnvVars(platformDir, *platformEnvVars)
+	err = cnb.SetupPlatformEnvVars(platformDir)
 	if err != nil {
 		logger.Fatalf("error setting up platform env vars %s", err)
 	}
