@@ -149,3 +149,8 @@ type BuildList struct {
 	// +k8s:listType=atomic
 	Items []Build `json:"items"`
 }
+
+// +k8s:openapi-gen=true
+type BuildSpecImage struct {
+	Image string `json:"image,omitempty"`
+}

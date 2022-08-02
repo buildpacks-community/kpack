@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func IsTar(fileName string) bool {
@@ -25,7 +26,7 @@ func IsTar(fileName string) bool {
 	return true
 }
 
-func ExtractTar(reader io.Reader, dir string) error {
+func ExtractTar(reader io.Reader, dir string, stripComponents int) error {
 	tarReader := tar.NewReader(reader)
 	for {
 		header, err := tarReader.Next()
@@ -35,7 +36,12 @@ func ExtractTar(reader io.Reader, dir string) error {
 			return err
 		}
 
-		filePath := filepath.Join(dir, header.Name)
+		strippedFileName := stripPath(header.Name, stripComponents)
+		if strippedFileName == "" {
+			continue
+		}
+
+		filePath := filepath.Join(dir, strippedFileName)
 		switch header.Typeflag {
 		case tar.TypeDir:
 			err := os.MkdirAll(filePath, header.FileInfo().Mode())
@@ -64,13 +70,13 @@ func ExtractTar(reader io.Reader, dir string) error {
 	return nil
 }
 
-func ExtractTarGZ(reader io.Reader, dir string) error {
+func ExtractTarGZ(reader io.Reader, dir string, stripComponents int) error {
 	gzr, err := gzip.NewReader(reader)
 	if err != nil {
 		return err
 	}
 
-	return ExtractTar(gzr, dir)
+	return ExtractTar(gzr, dir, stripComponents)
 }
 
 func IsZip(fileName string) bool {
@@ -90,14 +96,20 @@ func IsZip(fileName string) bool {
 	return http.DetectContentType(buf) == "application/zip"
 }
 
-func ExtractZip(reader io.ReaderAt, size int64, dir string) error {
+func ExtractZip(reader io.ReaderAt, size int64, dir string, stripComponents int) error {
 	zipReader, err := zip.NewReader(reader, size)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range zipReader.File {
-		filePath := filepath.Join(dir, file.Name)
+
+		strippedFileName := stripPath(file.Name, stripComponents)
+		if strippedFileName == "" {
+			continue
+		}
+
+		filePath := filepath.Join(dir, strippedFileName)
 		fileMode := file.Mode()
 		if isFatFile(file.FileHeader) {
 			fileMode = 0777
@@ -149,4 +161,14 @@ func isFatFile(header zip.FileHeader) bool {
 	// This identifies FAT files, based on the `zip` source: https://golang.org/src/archive/zip/struct.go
 	firstByte := header.CreatorVersion >> 8
 	return firstByte == creatorFAT || firstByte == creatorVFAT
+}
+
+func stripPath(source string, stripComponents int) string {
+	components := strings.Split(source, string(filepath.Separator))
+
+	if len(components) <= stripComponents {
+		return ""
+	}
+
+	return filepath.Join(components[stripComponents:]...)
 }

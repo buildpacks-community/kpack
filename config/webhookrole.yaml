@@ -76,6 +76,16 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - ""
+  resources:
+  - "namespaces/finalizers"
+  verbs:
+  - "update"
+  # The webhook configured the namespace as the OwnerRef on various cluster-scoped resources,
+  # which requires we can update the system namespace finalizers.
+  resourceNames:
+  - "kpack"
+- apiGroups:
   - "admissionregistration.k8s.io"
   resources:
   - "mutatingwebhookconfigurations"
@@ -83,6 +93,7 @@ rules:
   - "defaults.webhook.kpack.io"
   verbs:
   - update
+  - delete
 - apiGroups:
   - "admissionregistration.k8s.io"
   resources:
@@ -99,6 +110,7 @@ rules:
   - "validation.webhook.kpack.io"
   verbs:
   - update
+  - delete
 - apiGroups:
   - "admissionregistration.k8s.io"
   resources:

@@ -101,10 +101,12 @@ The `source` field is a composition of a source code location and a `subpath`. I
     source:
       blob:
         url: ""
+        stripComponents: 0
       subPath: ""
     ```
     - `blob`: (Source Code is a blob/jar in a blobstore)
         - `url`: The URL of the source code blob. This blob needs to either be publicly accessible or have the access token in the URL
+        - `stripComponents`: Optional number of directory components to strip from the blobs content when extracting.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
 
 * Registry
