@@ -1,7 +1,6 @@
 package v1alpha2
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -60,6 +59,8 @@ const (
 	platformAPIEnvVar            = "CNB_PLATFORM_API"
 	serviceBindingRootEnvVar     = "SERVICE_BINDING_ROOT"
 	TerminationMessagePathEnvVar = "TERMINATION_MESSAGE_PATH"
+
+	PlatformEnvVarPrefix = "PLATFORM_ENV_"
 )
 
 type ServiceBinding interface {
@@ -195,9 +196,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	}
 	dnsProbeHost := ref.Context().RegistryStr()
 
-	envVars, err := json.Marshal(b.Spec.Env)
-	if err != nil {
-		return nil, err
+	buildEnv := b.Spec.Source.Source().BuildEnvVars()
+	for _, envVar := range b.Spec.Env {
+		envVar.Name = PlatformEnvVarPrefix + envVar.Name
+		buildEnv = append(buildEnv, envVar)
 	}
 
 	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
@@ -398,7 +400,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Args:      append(secretArgs, imagePullArgs...),
 						Resources: b.Spec.Resources,
 						Env: append(
-							b.Spec.Source.Source().BuildEnvVars(),
+							buildEnv,
 							corev1.EnvVar{
 								Name:  "SOURCE_SUB_PATH",
 								Value: b.Spec.Source.SubPath,
@@ -406,10 +408,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							corev1.EnvVar{
 								Name:  "PROJECT_DESCRIPTOR_PATH",
 								Value: b.Spec.ProjectDescriptorPath,
-							},
-							corev1.EnvVar{
-								Name:  "PLATFORM_ENV_VARS",
-								Value: string(envVars),
 							},
 							corev1.EnvVar{
 								Name:  "IMAGE_TAG",
