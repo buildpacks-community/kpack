@@ -276,18 +276,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("adds pod configuration", func() {
+			buildTimeout := int64(1800)
 			image.Spec.Build = &ImageBuild{
 				Tolerations:  []corev1.Toleration{{Key: "some-key"}},
 				NodeSelector: map[string]string{"foo": "bar"},
 				Affinity: &corev1.Affinity{
 					NodeAffinity: &corev1.NodeAffinity{},
 				},
+				BuildTimeout: &buildTimeout,
 			}
 
 			build := image.Build(sourceResolver, builder, latestBuild, "", "", 1, "")
 			assert.Equal(t, image.Spec.Build.Tolerations, build.Spec.Tolerations)
 			assert.Equal(t, image.Spec.Build.NodeSelector, build.Spec.NodeSelector)
 			assert.Equal(t, image.Spec.Build.Affinity, build.Spec.Affinity)
+			assert.Equal(t, image.Spec.Build.BuildTimeout, build.Spec.ActiveDeadlineSeconds)
 		})
 
 		it("sets the notary config when present", func() {

@@ -77,6 +77,7 @@ type ImageBuild struct {
 	Affinity         *corev1.Affinity    `json:"affinity,omitempty"`
 	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
 	SchedulerName    string              `json:"schedulerName,omitempty"`
+	BuildTimeout     *int64              `json:"buildTimeout,omitempty"`
 }
 
 // +k8s:openapi-gen=true
