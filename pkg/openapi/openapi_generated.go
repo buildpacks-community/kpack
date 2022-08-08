@@ -69,6 +69,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildList":                  schema_pkg_apis_build_v1alpha2_BuildList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildPersistentVolumeCache": schema_pkg_apis_build_v1alpha2_BuildPersistentVolumeCache(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpec":                  schema_pkg_apis_build_v1alpha2_BuildSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpecImage":             schema_pkg_apis_build_v1alpha2_BuildSpecImage(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStack":                 schema_pkg_apis_build_v1alpha2_BuildStack(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildStatus":                schema_pkg_apis_build_v1alpha2_BuildStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder":                    schema_pkg_apis_build_v1alpha2_Builder(ref),
@@ -2018,6 +2019,17 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig"),
 						},
 					},
+					"runImage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpecImage"),
+						},
+					},
+					"activeDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 					"services": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -2160,7 +2172,25 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ObjectReference", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildCacheConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuildSpecImage", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LastBuild", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildBuilderSpec", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.CNBBinding", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.NotaryConfig", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.SourceConfig", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ObjectReference", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_BuildSpecImage(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -3315,6 +3345,12 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Format: "",
 						},
 					},
+					"buildTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 				},
 			},
 		},
@@ -3974,6 +4010,12 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 							Format: "",
 						},
 					},
+					"stripComponents": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
@@ -4461,6 +4503,12 @@ func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"stripComponents": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
 						},
 					},
 				},

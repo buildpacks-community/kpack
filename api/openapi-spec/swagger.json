@@ -5490,6 +5490,10 @@
         "source"
       ],
       "properties": {
+        "activeDeadlineSeconds": {
+          "type": "integer",
+          "format": "int64"
+        },
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
@@ -5540,6 +5544,9 @@
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
+        "runImage": {
+          "$ref": "#/definitions/kpack.build.v1alpha2.BuildSpecImage"
+        },
         "runtimeClassName": {
           "type": "string"
         },
@@ -5572,6 +5579,14 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           },
           "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.BuildSpecImage": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
         }
       }
     },
@@ -6112,6 +6127,10 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
+        "buildTimeout": {
+          "type": "integer",
+          "format": "int64"
+        },
         "cnbBindings": {
           "type": "array",
           "items": {
@@ -6494,6 +6513,10 @@
         "url"
       ],
       "properties": {
+        "stripComponents": {
+          "type": "integer",
+          "format": "int64"
+        },
         "url": {
           "type": "string"
         }
@@ -6743,6 +6766,10 @@
         "url"
       ],
       "properties": {
+        "stripComponents": {
+          "type": "integer",
+          "format": "int64"
+        },
         "subPath": {
           "type": "string"
         },
