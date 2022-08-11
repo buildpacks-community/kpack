@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -38,51 +37,6 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 		})
 
-		it("requests scope push permission", func() {
-			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
-				values, err := url.ParseQuery(request.URL.RawQuery)
-				require.NoError(t, err)
-				assert.Equal(t, "repository:some/image:push,pull", values.Get("scope"))
-			})
-
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
-				writer.WriteHeader(401)
-			})
-
-			_ = VerifyWriteAccess(testKeychain{}, tagName)
-		})
-
-		it("errors when fetching token is unauthorized", func() {
-			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.WriteHeader(401)
-				writer.Write([]byte(`{"errors": [{"code":  "UNAUTHORIZED"}]}`))
-			})
-
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
-				writer.WriteHeader(401)
-			})
-
-			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, "UNAUTHORIZED")
-		})
-
-		it("errors when server responds with unauthorized but without a code such as on artifactory", func() {
-			handler.HandleFunc("/unauthorized-token/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.WriteHeader(401)
-				writer.Write([]byte(`{"statusCode":401,"details":"BAD_CREDENTIAL"}`))
-			})
-
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Add("WWW-Authenticate", fmt.Sprintf("bearer realm=\"%s/unauthorized-token/\"", server.URL))
-				writer.WriteHeader(401)
-			})
-
-			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, "UNAUTHORIZED")
-		})
-
 		it("errors when does not have permission", func() {
 			handler.HandleFunc("/v2/some/image/blobs/uploads/", func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(403)
@@ -94,24 +48,6 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 
 			err := VerifyWriteAccess(testKeychain{}, tagName)
 			assert.EqualError(t, err, fmt.Sprintf("POST %s/v2/some/image/blobs/uploads/: unexpected status code 403 Forbidden", server.URL))
-		})
-
-		it("errors when cannot reach server", func() {
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.WriteHeader(404)
-			})
-
-			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 404 Not Found", server.URL))
-		})
-
-		it("errors when server errors", func() {
-			handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-				writer.WriteHeader(500)
-			})
-
-			err := VerifyWriteAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 500 Internal Server Error", server.URL))
 		})
 	})
 
