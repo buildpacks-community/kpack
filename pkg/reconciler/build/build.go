@@ -58,7 +58,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 		zap.String(logkey.Kind, buildapi.BuildCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
