@@ -55,7 +55,7 @@ func NewController(opt reconciler.Options,
 		zap.String(logkey.Kind, buildapi.BuilderCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())

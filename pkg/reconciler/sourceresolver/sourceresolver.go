@@ -49,7 +49,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.SourceResolverCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
 	c.Enqueuer = &workQueueEnqueuer{
 		enqueueAfter: impl.EnqueueAfter,

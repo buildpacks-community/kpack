@@ -101,6 +101,7 @@ func main() {
 	}
 
 	options := reconciler.Options{
+		Context:                 ctx,
 		Logger:                  logger,
 		Client:                  client,
 		ResyncPeriod:            10 * time.Hour,
@@ -209,13 +210,13 @@ func main() {
 
 	err = runGroup(
 		ctx,
-		run(clusterStackController, routinesPerController),
-		run(imageController, routinesPerController),
-		run(buildController, routinesPerController),
-		run(builderController, routinesPerController),
-		run(clusterBuilderController, routinesPerController),
-		run(clusterStoreController, routinesPerController),
-		run(sourceResolverController, 2*routinesPerController),
+		run(ctx, clusterStackController, routinesPerController),
+		run(ctx, imageController, routinesPerController),
+		run(ctx, buildController, routinesPerController),
+		run(ctx, builderController, routinesPerController),
+		run(ctx, clusterBuilderController, routinesPerController),
+		run(ctx, clusterStoreController, routinesPerController),
+		run(ctx, sourceResolverController, 2*routinesPerController),
 		configMapWatcher.Start,
 		func(done <-chan struct{}) error {
 			return profilingServer.ListenAndServe()
@@ -230,9 +231,9 @@ func main() {
 	}
 }
 
-func run(ctrl *controller.Impl, threadiness int) doneFunc {
+func run(ctx context.Context, ctrl *controller.Impl, threadiness int) doneFunc {
 	return func(done <-chan struct{}) error {
-		return ctrl.Run(threadiness, done)
+		return ctrl.RunContext(ctx, threadiness)
 	}
 }
 

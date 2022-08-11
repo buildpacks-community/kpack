@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"time"
 
 	"go.uber.org/zap"
@@ -9,7 +10,8 @@ import (
 )
 
 type Options struct {
-	Logger *zap.SugaredLogger
+	Context context.Context
+	Logger  *zap.SugaredLogger
 
 	Client                  versioned.Interface
 	ResyncPeriod            time.Duration
