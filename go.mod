@@ -21,10 +21,8 @@ require (
 	github.com/sclevine/spec v1.4.0
 	github.com/sigstore/cosign v1.9.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
-	github.com/vdemeester/k8s-pkg-credentialprovider v1.22.4
 	github.com/whilp/git-urls v1.0.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
@@ -54,8 +52,6 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
@@ -224,6 +220,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.4.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.1.0 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
@@ -295,7 +292,6 @@ require (
 	k8s.io/gengo v0.0.0-20220307231824-4627b89bbf1b // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
-	k8s.io/legacy-cloud-providers v0.24.1 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/release-utils v0.6.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
