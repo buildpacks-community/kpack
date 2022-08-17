@@ -283,7 +283,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 				RunImage: buildapi.BuildSpecImage{
-					Image:  "builderregistry.io/run",
+					Image: "builderregistry.io/run",
 				},
 				Services: buildapi.Services{
 					{
