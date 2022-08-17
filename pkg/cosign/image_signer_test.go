@@ -40,7 +40,7 @@ func TestImageSigner(t *testing.T) {
 
 func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
-		ro = &options.RootOptions{Timeout: options.DefaultTimeout}
+		ro                = &options.RootOptions{Timeout: options.DefaultTimeout}
 		report            platform.ExportReport
 		reader            *os.File
 		writer            *os.File
@@ -100,7 +100,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					assert.Equal(t, []string{expectedImageName}, imageRef)
@@ -140,7 +140,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						payloadPath,
 						force,
 						recursive,
-						attachment)
+						attachment,
+						noTlogUpload)
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
@@ -174,7 +175,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					assert.Equal(t, []string{expectedImageName}, imageRef)
@@ -196,7 +197,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						payloadPath,
 						force,
 						recursive,
-						attachment)
+						attachment,
+						noTlogUpload,
+					)
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
@@ -232,7 +235,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					cliSignCmdCallCount++
 					return sign.SignCmd(
@@ -249,7 +252,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						payloadPath,
 						force,
 						recursive,
-						attachment)
+						attachment,
+						noTlogUpload,
+					)
 				}
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-0")
@@ -269,7 +274,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					cliSignCmdCallCount++
 					return sign.SignCmd(
@@ -286,7 +291,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						payloadPath,
 						force,
 						recursive,
-						attachment)
+						attachment,
+						noTlogUpload,
+					)
 				}
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-3")
@@ -311,7 +318,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-2") {
@@ -335,7 +342,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						payloadPath,
 						force,
 						recursive,
-						attachment)
+						attachment,
+						noTlogUpload,
+					)
 				}
 
 				cosignRepositories := map[string]interface{}{
@@ -373,7 +382,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-1") {
@@ -406,7 +415,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
@@ -444,7 +453,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					t.Helper()
 					cliSignCmdCallCount++
@@ -465,7 +474,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					cliSignCmdCallCount++
 					return nil
@@ -485,7 +494,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
 					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string,
+					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
 				) error {
 					cliSignCmdCallCount++
 					return nil
@@ -542,7 +551,9 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				"",
 				false,
 				false,
-				"")
+				"",
+				true,
+			)
 			assert.Nil(t, err)
 
 			// Verify+download should pass

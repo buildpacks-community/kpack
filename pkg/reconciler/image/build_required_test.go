@@ -63,7 +63,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-		Kind: buildapi.BuilderKind,
+		Kind:           buildapi.BuilderKind,
 	}
 
 	latestBuild := &buildapi.Build{

@@ -9,7 +9,7 @@ import (
 )
 
 type Options struct {
-	Logger  *zap.SugaredLogger
+	Logger *zap.SugaredLogger
 
 	Client                  versioned.Interface
 	ResyncPeriod            time.Duration
