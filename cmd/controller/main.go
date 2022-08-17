@@ -209,19 +209,20 @@ func main() {
 
 	err = runGroup(
 		ctx,
-		run(ctx, clusterStackController, routinesPerController),
-		run(ctx, imageController, routinesPerController),
-		run(ctx, buildController, routinesPerController),
-		run(ctx, builderController, routinesPerController),
-		run(ctx, clusterBuilderController, routinesPerController),
-		run(ctx, clusterStoreController, routinesPerController),
-		run(ctx, sourceResolverController, 2*routinesPerController),
-		configMapWatcher.Start,
-		func(done <-chan struct{}) error {
+		run(clusterStackController, routinesPerController),
+		run(imageController, routinesPerController),
+		run(buildController, routinesPerController),
+		run(builderController, routinesPerController),
+		run(clusterBuilderController, routinesPerController),
+		run(clusterStoreController, routinesPerController),
+		run(sourceResolverController, 2*routinesPerController),
+		func(ctx context.Context) error {
+			return configMapWatcher.Start(ctx.Done())
+		},
+		func(ctx context.Context) error {
 			return profilingServer.ListenAndServe()
 		},
-		func(done <-chan struct{}) error {
-			<-done
+		func(ctx context.Context) error {
 			return profilingServer.Shutdown(ctx)
 		},
 	)
@@ -230,20 +231,20 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, ctrl *controller.Impl, threadiness int) doneFunc {
-	return func(done <-chan struct{}) error {
+func run(ctrl *controller.Impl, threadiness int) doneFunc {
+	return func(ctx context.Context) error {
 		return ctrl.RunContext(ctx, threadiness)
 	}
 }
 
-type doneFunc func(done <-chan struct{}) error
+type doneFunc func(ctx context.Context) error
 
-func runGroup(ctx context.Context, fns ...doneFunc) error {
+func runGroup(ctx context.Context, fns ...func(ctx context.Context) error) error {
 	eg, egCtx := errgroup.WithContext(ctx)
 	for _, fn := range fns {
 		fnCopy := fn
 		eg.Go(func() error {
-			return fnCopy(egCtx.Done())
+			return fnCopy(egCtx)
 		})
 	}
 
