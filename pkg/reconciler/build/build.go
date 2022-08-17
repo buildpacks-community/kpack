@@ -43,7 +43,7 @@ type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory) *controller.Impl {
+func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
 		K8sClient:         k8sClient,
@@ -58,7 +58,7 @@ func NewController(opt reconciler.Options, k8sClient k8sclient.Interface, inform
 		zap.String(logkey.Kind, buildapi.BuildCRName),
 	)
 
-	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
 	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
