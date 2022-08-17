@@ -31,6 +31,7 @@ type Resolver interface {
 }
 
 func NewController(
+	ctx context.Context,
 	opt reconciler.Options,
 	sourceResolverInformer buildinformers.SourceResolverInformer,
 	gitResolver Resolver,
@@ -49,7 +50,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.SourceResolverCRName),
 	)
 
-	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
 	c.Enqueuer = &workQueueEnqueuer{
 		enqueueAfter: impl.EnqueueAfter,

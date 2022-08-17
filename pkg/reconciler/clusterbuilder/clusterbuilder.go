@@ -33,6 +33,7 @@ type BuilderCreator interface {
 }
 
 func NewController(
+	ctx context.Context,
 	opt reconciler.Options,
 	clusterBuilderInformer buildinformers.ClusterBuilderInformer,
 	builderCreator BuilderCreator,
@@ -53,7 +54,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterBuilderCRName),
 	)
 
-	impl := controller.NewContext(opt.Context, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
