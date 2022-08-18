@@ -18,7 +18,11 @@ func VerifyWriteAccess(keychain authn.Keychain, tag string) error {
 		return errors.Wrapf(err, "Error parsing reference %q", tag)
 	}
 
-	return remote.CheckPushPermission(ref, keychain, http.DefaultTransport)
+	if err = remote.CheckPushPermission(ref, keychain, http.DefaultTransport); err != nil {
+		return diagnoseIfTransportError(err)
+	}
+
+	return nil
 }
 
 func VerifyReadAccess(keychain authn.Keychain, tag string) error {
