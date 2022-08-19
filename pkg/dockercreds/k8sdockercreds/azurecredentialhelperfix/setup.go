@@ -1,4 +1,4 @@
-package setup
+package azurecredentialhelperfix
 
 import (
 	_ "github.com/vdemeester/k8s-pkg-credentialprovider/azure"
