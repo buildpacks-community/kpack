@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -270,7 +269,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			k8sKeychain, err := k8schain.NewNoClient(context.Background())
+			k8sKeychain, err := NewNoClient(context.Background())
 			require.NoError(t, err)
 			volumeKeyChain := dockercreds.DockerCreds{}
 			expected := authn.NewMultiKeychain(volumeKeyChain, k8sKeychain)

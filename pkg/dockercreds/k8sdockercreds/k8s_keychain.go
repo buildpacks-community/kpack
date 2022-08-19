@@ -34,7 +34,7 @@ func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFac
 
 func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
 	if !ref.IsNamespaced() {
-		k8sKeychain, err := k8schain.NewNoClient(context.Background())
+		k8sKeychain, err := NewNoClient(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		return nil, err
 	}
 
-	k8sKeychain, err := k8schain.New(ctx, f.client, k8schain.Options{
+	k8sKeychain, err := New(ctx, f.client, k8schain.Options{
 		Namespace:          ref.Namespace,
 		ServiceAccountName: ref.ServiceAccount,
 		ImagePullSecrets:   toStringPullSecrets(ref.ImagePullSecrets),
