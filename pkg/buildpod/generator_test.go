@@ -277,6 +277,44 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		it("returns a useful error when ServiceAccount has an invalid Secret ref", func() {
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			serviceAccount.Secrets = append(serviceAccount.Secrets, corev1.ObjectReference{})
+			_, err := fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
+			require.NoError(t, err)
+
+			pod, err := generator.Generate(context.TODO(), build)
+			require.EqualError(t, err, "ServiceAccount has invalid Secret reference")
+			require.Nil(t, pod)
+		})
+
+		it("returns a useful error when ServiceAccount has an invalid ImagePullSecret ref", func() {
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			serviceAccount.ImagePullSecrets = append(serviceAccount.ImagePullSecrets, corev1.LocalObjectReference{})
+			_, err := fakeK8sClient.CoreV1().ServiceAccounts(namespace).Update(context.TODO(), serviceAccount, metav1.UpdateOptions{})
+			require.NoError(t, err)
+
+			pod, err := generator.Generate(context.TODO(), build)
+			require.EqualError(t, err, "ServiceAccount has invalid ImagePullSecret reference")
+			require.Nil(t, pod)
+		})
+
 		it("passes in k8s service bindings if present", func() {
 
 			var build = &testBuildPodable{
