@@ -32,6 +32,7 @@ type StoreReader interface {
 }
 
 func NewController(
+	ctx context.Context,
 	opt reconciler.Options,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
@@ -47,9 +48,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterStoreCRName),
 	)
 
-	impl := controller.NewImpl(&reconciler.NetworkErrorReconciler{
-		Reconciler: c,
-	}, logger, ReconcilerName)
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }

@@ -34,6 +34,7 @@ const (
 )
 
 func NewController(
+	ctx context.Context,
 	opt reconciler.Options,
 	k8sClient k8sclient.Interface,
 	imageInformer buildinformers.ImageInformer,
@@ -58,7 +59,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ImageCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
 	imageInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 

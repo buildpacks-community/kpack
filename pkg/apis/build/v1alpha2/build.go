@@ -194,7 +194,6 @@ func (b *Build) additionalBuildNeeded() bool {
 	return ok
 }
 
-
 func (b *Build) builderName() string {
 	if b == nil {
 		return ""

@@ -32,6 +32,7 @@ type ClusterStackReader interface {
 }
 
 func NewController(
+	ctx context.Context,
 	opt reconciler.Options,
 	keychainFactory registry.KeychainFactory,
 	clusterStackInformer buildinformers.ClusterStackInformer,
@@ -47,9 +48,7 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterStackCRName),
 	)
 
-	impl := controller.NewImpl(&reconciler.NetworkErrorReconciler{
-		Reconciler: c,
-	}, logger, ReconcilerName)
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }

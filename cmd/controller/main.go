@@ -180,13 +180,13 @@ func main() {
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
-	buildController := build.NewController(options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory)
-	imageController := image.NewController(options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
-	sourceResolverController := sourceresolver.NewController(options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
-	clusterStoreController := clusterstore.NewController(options, keychainFactory, clusterStoreInformer, remoteStoreReader)
-	clusterStackController := clusterstack.NewController(options, keychainFactory, clusterStackInformer, remoteStackReader)
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory)
+	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
+	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
+	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
+	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
 
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)
@@ -216,12 +216,13 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
-		configMapWatcher.Start,
-		func(done <-chan struct{}) error {
+		func(ctx context.Context) error {
+			return configMapWatcher.Start(ctx.Done())
+		},
+		func(ctx context.Context) error {
 			return profilingServer.ListenAndServe()
 		},
-		func(done <-chan struct{}) error {
-			<-done
+		func(ctx context.Context) error {
 			return profilingServer.Shutdown(ctx)
 		},
 	)
@@ -231,19 +232,19 @@ func main() {
 }
 
 func run(ctrl *controller.Impl, threadiness int) doneFunc {
-	return func(done <-chan struct{}) error {
-		return ctrl.Run(threadiness, done)
+	return func(ctx context.Context) error {
+		return ctrl.RunContext(ctx, threadiness)
 	}
 }
 
-type doneFunc func(done <-chan struct{}) error
+type doneFunc func(ctx context.Context) error
 
-func runGroup(ctx context.Context, fns ...doneFunc) error {
+func runGroup(ctx context.Context, fns ...func(ctx context.Context) error) error {
 	eg, egCtx := errgroup.WithContext(ctx)
 	for _, fn := range fns {
 		fnCopy := fn
 		eg.Go(func() error {
-			return fnCopy(egCtx.Done())
+			return fnCopy(egCtx)
 		})
 	}
 

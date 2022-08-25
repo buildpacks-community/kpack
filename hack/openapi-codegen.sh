@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 
-set -e
 set -o errexit
 set -o nounset
 set -o pipefail
-
-OPENAPI_GEN_BIN=${1:-openapi-gen}
 
 ROOT=$(realpath $(dirname ${BASH_SOURCE})/..)
 
 cd "$ROOT"
 
-${OPENAPI_GEN_BIN} \
+go run k8s.io/kube-openapi/cmd/openapi-gen \
   -h ./hack/boilerplate/boilerplate.go.txt \
   -i github.com/pivotal/kpack/pkg/apis/build/v1alpha1,github.com/pivotal/kpack/pkg/apis/build/v1alpha2,github.com/pivotal/kpack/pkg/apis/core/v1alpha1 \
   -p ./pkg/openapi \

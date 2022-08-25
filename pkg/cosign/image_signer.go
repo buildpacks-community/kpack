@@ -12,9 +12,9 @@ import (
 )
 
 type SignFunc func(
-	ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{}, imageRef []string,
-	certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-	payloadPath string, force, recursive bool, attachment string,
+	ro *options.RootOptions, ko options.KeyOpts, regOpts options.RegistryOptions, annotations map[string]interface{},
+	imgs []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
+	payloadPath string, force bool, recursive bool, attachment string, noTlogUpload bool,
 ) error
 
 type ImageSigner struct {
@@ -100,7 +100,8 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 		"",
 		false,
 		false,
-		""); err != nil {
+		"",
+		true); err != nil {
 		return errors.Errorf("unable to sign image with %s: %v", cosignKeyFile, err)
 	}
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/go-openapi/spec"
 	"k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	"github.com/pivotal/kpack/pkg/openapi"
 )

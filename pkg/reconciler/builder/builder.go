@@ -35,7 +35,9 @@ type BuilderCreator interface {
 	CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
 }
 
-func NewController(opt reconciler.Options,
+func NewController(
+	ctx context.Context,
+	opt reconciler.Options,
 	builderInformer buildinformers.BuilderInformer,
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
@@ -55,9 +57,7 @@ func NewController(opt reconciler.Options,
 		zap.String(logkey.Kind, buildapi.BuilderCRName),
 	)
 
-	impl := controller.NewImpl(&reconciler.NetworkErrorReconciler{
-		Reconciler: c,
-	}, logger, ReconcilerName)
+	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 	builderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
