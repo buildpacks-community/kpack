@@ -1,8 +1,6 @@
 package k8sdockercreds
 
 import (
-	_ "github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
-
 	"context"
 	"encoding/json"
 
@@ -14,9 +12,12 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
 )
+
+var azureFileKeychain = azurecredentialhelperfix.AzureFileKeychain() // To support AZURE_CONTAINER_REGISTRY_CONFIG
 
 type k8sSecretKeychainFactory struct {
 	client         k8sclient.Interface
@@ -38,7 +39,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		if err != nil {
 			return nil, err
 		}
-		return authn.NewMultiKeychain(f.volumeKeychain, k8sKeychain), nil // k8s keychain with no secrets
+		return authn.NewMultiKeychain(f.volumeKeychain, k8sKeychain, azureFileKeychain), nil // k8s keychain with no secrets
 	}
 
 	serviceAccountKeychain, err := keychainFromServiceAccount(ctx, ref, &secret.Fetcher{Client: f.client})
@@ -55,7 +56,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		return nil, err
 	}
 
-	return authn.NewMultiKeychain(serviceAccountKeychain, f.volumeKeychain, k8sKeychain), nil
+	return authn.NewMultiKeychain(serviceAccountKeychain, f.volumeKeychain, k8sKeychain, azureFileKeychain), nil
 }
 
 func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {

@@ -16,6 +16,7 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds/azurecredentialhelperfix"
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
@@ -273,7 +274,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			k8sKeychain, err := k8schain.NewNoClient(context.Background())
 			require.NoError(t, err)
 			volumeKeyChain := dockercreds.DockerCreds{}
-			expected := authn.NewMultiKeychain(volumeKeyChain, k8sKeychain)
+			expected := authn.NewMultiKeychain(volumeKeyChain, k8sKeychain, azurecredentialhelperfix.AzureFileKeychain())
 			require.NoError(t, err)
 			assert.Equal(t, expected, keychain)
 		})
