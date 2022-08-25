@@ -47,7 +47,9 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterStoreCRName),
 	)
 
-	impl := controller.NewImpl(c, logger, ReconcilerName)
+	impl := controller.NewImpl(&reconciler.NetworkErrorReconciler{
+		Reconciler: c,
+	}, logger, ReconcilerName)
 	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }
@@ -82,7 +84,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	if err != nil {
-		return controller.NewPermanentError(err)
+		return err
 	}
 	return nil
 }
