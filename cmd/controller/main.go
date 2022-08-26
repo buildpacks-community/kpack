@@ -223,6 +223,7 @@ func main() {
 			return profilingServer.ListenAndServe()
 		},
 		func(ctx context.Context) error {
+			<-ctx.Done()
 			return profilingServer.Shutdown(ctx)
 		},
 	)
