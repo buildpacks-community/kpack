@@ -168,7 +168,7 @@ func signImage(report platform.ExportReport, keychain authn.Keychain) error {
 		}
 
 		if err := cosignSigner.Sign(
-			&options.RootOptions{},
+			&options.RootOptions{Timeout: options.DefaultTimeout},
 			report,
 			cosignSecretLocation,
 			annotations,
