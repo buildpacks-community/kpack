@@ -176,6 +176,10 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 		return nil, nil, err
 	}
 	for _, secretRef := range serviceAccount.Secrets {
+		if secretRef.Name == "" {
+			return []corev1.Secret{}, []corev1.LocalObjectReference{}, errors.New("ServiceAccount has invalid Secret reference")
+		}
+
 		secret, err := g.K8sClient.CoreV1().Secrets(build.GetNamespace()).Get(ctx, secretRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, nil, err
@@ -188,6 +192,10 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 
 	var imagePullSecrets []corev1.LocalObjectReference
 	for _, secretRef := range serviceAccount.ImagePullSecrets {
+		if secretRef.Name == "" {
+			return []corev1.Secret{}, []corev1.LocalObjectReference{}, errors.New("ServiceAccount has invalid ImagePullSecret reference")
+		}
+
 		if _, ok := secretSet[secretRef.Name]; !ok {
 			imagePullSecrets = append(imagePullSecrets, secretRef)
 			secretSet[secretRef.Name] = struct{}{}
