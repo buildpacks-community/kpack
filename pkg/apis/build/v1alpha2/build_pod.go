@@ -75,6 +75,10 @@ type BuildPodImages struct {
 	CompletionWindowsImage string
 }
 
+type volumeCounter struct {
+	count int
+}
+
 func (bpi *BuildPodImages) buildInit(os string) string {
 	switch os {
 	case "windows":
@@ -204,9 +208,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		buildEnv = append(buildEnv, envVar)
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
-	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
-	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
+	volCounter := &volumeCounter{count: 0}
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets, volCounter)
+	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets, volCounter)
+	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets, volCounter)
 
 	bindingVolumes, bindingVolumeMounts, err := setupBindingVolumesAndMounts(buildContext.Bindings)
 	if err != nil {
@@ -753,10 +758,11 @@ func (b *Build) cosignArgs() []string {
 }
 
 func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*corev1.Pod, error) {
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, dockerSecrets)
-	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
+	volumeCounter := &volumeCounter{count: 0}
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, dockerSecrets, volumeCounter)
+	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets, volumeCounter)
 
-	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
+	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets, volumeCounter)
 	runImage := buildContext.BuildPodBuilderConfig.RunImage
 	if b.Spec.RunImage.Image != "" {
 		runImage = b.Spec.RunImage.Image
@@ -885,7 +891,7 @@ func dockerSecrets(secret corev1.Secret) bool {
 	return secret.Annotations[DOCKERSecretAnnotationPrefix] != "" || secret.Type == corev1.SecretTypeDockercfg || secret.Type == corev1.SecretTypeDockerConfigJson
 }
 
-func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool) ([]corev1.Volume, []corev1.VolumeMount, []string) {
+func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(secret corev1.Secret) bool, volCounter *volumeCounter) ([]corev1.Volume, []corev1.VolumeMount, []string) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
@@ -913,7 +919,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			continue
 		}
 
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
+		volumeName := secretNameToVolumeName(secret.Name, volCounter)
 
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
@@ -933,7 +939,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 	return volumes, volumeMounts, args
 }
 
-func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]corev1.Volume, []corev1.VolumeMount, []string) {
+func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference, volCounter *volumeCounter) ([]corev1.Volume, []corev1.VolumeMount, []string) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
@@ -941,7 +947,7 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 	)
 	for _, secret := range deduplicate(secrets, b.Spec.Builder.ImagePullSecrets) {
 		args = append(args, fmt.Sprintf("-imagepull=%s", secret.Name))
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
+		volumeName := secretNameToVolumeName(secret.Name, volCounter)
 
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
@@ -961,7 +967,7 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 	return volumes, volumeMounts, args
 }
 
-func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []corev1.VolumeMount, []string) {
+func (b *Build) setupCosignVolumes(secrets []corev1.Secret, volCounter *volumeCounter) ([]corev1.Volume, []corev1.VolumeMount, []string) {
 	var (
 		volumes      []corev1.Volume
 		volumeMounts []corev1.VolumeMount
@@ -975,7 +981,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 		cosignArgs := cosignSecretArgs(secret)
 		args = append(args, cosignArgs...)
 
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
+		volumeName := secretNameToVolumeName(secret.Name, volCounter)
 
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
@@ -1183,4 +1189,16 @@ func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
 		envs = append(envs, envVar)
 	}
 	return envs
+}
+
+// Volume names must be valid RFC 1123 Label Names: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+func secretNameToVolumeName(secretName string, volCounter *volumeCounter) string {
+	volumeName := fmt.Sprintf(volumeSecretNameTemplate, secretName)
+	// leave space for - and 3 digits
+	if len(volumeName) > 63 {
+		volumeName = volumeName[:59]
+	}
+	volumeName = fmt.Sprintf("%s-%v", volumeName, volCounter.count)
+	volCounter.count++
+	return strings.ReplaceAll(volumeName, ".", "-")
 }
