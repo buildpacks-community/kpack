@@ -225,8 +225,73 @@ uri = "check-this-out.com"
 
 			when("using descriptor v2", func() {
 				when("the descriptor has build env vars", func() {
-					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+					when("vars where set with older v0.2 project.toml", func() {
+						when("io.buildpacks.env.build format is used", func() {
+							when("format is valid", func() {
+								it.Before(func() {
+									ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env.build]]
+name = "keyA"
+value = "valueA"
+[[io.buildpacks.env.build]]
+name = "keyB"
+value = "valueB"
+[[io.buildpacks.env.build]]
+name = "keyC"
+value = "valueC"
+# check that later keys override previous ones
+[[io.buildpacks.env.build]]
+name = "keyC"
+value = "valueAnotherC"
+				`), 0644)
+								})
+								it("writes all env var files to the platform dir", func() {
+									assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
+									checkEnvVar(t, platformDir, "keyA", "valueA")
+									checkEnvVar(t, platformDir, "keyB", "valueB")
+									checkEnvVar(t, platformDir, "keyC", "valueAnotherC")
+								})
+							})
+							when("format is invalid", func() {
+								when("'value' is invalid", func() {
+									it.Before(func() {
+										ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env.build]]
+name = "KeyA"
+value = 1
+				`), 0644)
+									})
+									it("writes all env var files to the platform dir", func() {
+										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
+										assert.EqualError(t, err, "environment variable 'KeyA' is not a string value")
+									})
+								})
+								when("'name' is invalid", func() {
+									it.Before(func() {
+										ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env.build]]
+name = 1
+value = "ValueA"
+				`), 0644)
+									})
+									it("writes all env var files to the platform dir", func() {
+										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
+										assert.EqualError(t, err, "environment variable 'name' is not a string")
+									})
+								})
+							})
+						})
+
+						when("io.buildpacks.env format is used", func() {
+							when("format is valid", func() {
+								it.Before(func() {
+									ioutil.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env]]
@@ -241,14 +306,96 @@ value = "valueC"
 # check that later keys override previous ones
 [[io.buildpacks.env]]
 name = "keyC"
+value = "valueAnotherC"`), 0644)
+								})
+								it("writes all env var files to the platform dir", func() {
+									assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
+									checkEnvVar(t, platformDir, "keyA", "valueA")
+									checkEnvVar(t, platformDir, "keyB", "valueB")
+									checkEnvVar(t, platformDir, "keyC", "valueAnotherC")
+								})
+							})
+							when("format is invalid", func() {
+								when("'value' is invalid", func() {
+									it.Before(func() {
+										ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env]]
+name = "KeyA"
+value = 1
+				`), 0644)
+									})
+									it("writes all env var files to the platform dir", func() {
+										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
+										assert.EqualError(t, err, "environment variable 'KeyA' is not a string value")
+									})
+								})
+								when("'name' is invalid", func() {
+									it.Before(func() {
+										ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env]]
+name = 1
+value = "ValueA"
+				`), 0644)
+									})
+									it("writes all env var files to the platform dir", func() {
+										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
+										assert.EqualError(t, err, "environment variable 'name' is not a string")
+									})
+								})
+							})
+						})
+					})
+
+					when("vars where set with new v0.2 project.toml", func() {
+						it.Before(func() {
+							ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.build.env]]
+name = "keyA"
+value = "valueA"
+[[io.buildpacks.build.env]]
+name = "keyB"
+value = "valueB"
+[[io.buildpacks.build.env]]
+name = "keyC"
+value = "valueC"
+# check that later keys override previous ones
+[[io.buildpacks.build.env]]
+name = "keyC"
 value = "valueAnotherC"
 				`), 0644)
+						})
+						it("writes all env var files to the platform dir", func() {
+							assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
+							checkEnvVar(t, platformDir, "keyA", "valueA")
+							checkEnvVar(t, platformDir, "keyB", "valueB")
+							checkEnvVar(t, platformDir, "keyC", "valueAnotherC")
+						})
 					})
-					it("writes all env var files to the platform dir", func() {
-						assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
-						checkEnvVar(t, platformDir, "keyA", "valueA")
-						checkEnvVar(t, platformDir, "keyB", "valueB")
-						checkEnvVar(t, platformDir, "keyC", "valueAnotherC")
+
+					when("vars where set with both versions of v0.2 project.toml", func() {
+						it.Before(func() {
+							ioutil.WriteFile(projectToml, []byte(`
+[_]
+schema-version = "0.2"
+[[io.buildpacks.env.build]]
+name = "keyA"
+value = "valueA"
+# check that new declaration must have higher precedence
+[[io.buildpacks.build.env]]
+name = "keyA"
+value = "newValueA"
+				`), 0644)
+						})
+						it("new env var declaration must have higher precedence writes, all new env var files to the platform dir", func() {
+							assert.Nil(t, cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger))
+							checkEnvVar(t, platformDir, "keyA", "newValueA")
+						})
 					})
 				})
 
