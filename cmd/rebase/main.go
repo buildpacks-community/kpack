@@ -117,7 +117,7 @@ func rebase(tags []string, logger *log.Logger) error {
 
 	rebaser := lifecycle.Rebaser{
 		Logger:      cmd.DefaultLogger,
-		PlatformAPI: api.MustParse("0.8"),
+		PlatformAPI: api.MustParse("0.9"),
 	}
 	report, err := rebaser.Rebase(appImage, newBaseImage, tags[1:])
 	if err != nil {
