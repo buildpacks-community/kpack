@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20220527150729-7a271a852e31
-	github.com/buildpacks/lifecycle v0.13.5
+	github.com/buildpacks/lifecycle v0.14.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.5.8
 	github.com/google/go-containerregistry v0.11.0
@@ -77,7 +77,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.7 // indirect
 	github.com/aws/smithy-go v1.11.3 // indirect
-	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20220228164355-396b2034c795 // indirect
+	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20220517224237-e6f29200ae04 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
