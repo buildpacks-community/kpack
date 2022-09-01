@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/buildpacks/lifecycle/platform"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -506,6 +507,26 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			_, err := generator.Generate(context.TODO(), build)
 			require.EqualError(t, err, "provisionedservices \"some-provisioned-service\" not found")
+		})
+
+		it("passes the maximum supported platform api through the build context", func() {
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+			version, err := semver.NewVersion("0.8")
+			require.NoError(t, err)
+			generator.MaximumPlatformApiVersion = version
+
+			_, err = generator.Generate(context.TODO(), build)
+			require.NoError(t, err)
+
+			require.Len(t, build.buildPodCalls, 1)
+			assert.Equal(t, version, build.buildPodCalls[0].BuildContext.MaximumPlatformApiVersion)
 		})
 	})
 }

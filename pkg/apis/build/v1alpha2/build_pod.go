@@ -56,7 +56,7 @@ const (
 
 	buildChangesEnvVar           = "BUILD_CHANGES"
 	CacheTagEnvVar               = "CACHE_TAG"
-	platformAPIEnvVar            = "CNB_PLATFORM_API"
+	platformApiVersionEnvVarName = "CNB_PLATFORM_API"
 	serviceBindingRootEnvVar     = "SERVICE_BINDING_ROOT"
 	TerminationMessagePathEnvVar = "TERMINATION_MESSAGE_PATH"
 
@@ -104,10 +104,11 @@ func terminationMsgPath(os string) string {
 
 // +k8s:deepcopy-gen=false
 type BuildContext struct {
-	BuildPodBuilderConfig BuildPodBuilderConfig
-	Secrets               []corev1.Secret
-	Bindings              []ServiceBinding
-	ImagePullSecrets      []corev1.LocalObjectReference
+	BuildPodBuilderConfig     BuildPodBuilderConfig
+	Secrets                   []corev1.Secret
+	Bindings                  []ServiceBinding
+	ImagePullSecrets          []corev1.LocalObjectReference
+	MaximumPlatformApiVersion *semver.Version
 }
 
 func (c BuildContext) os() string {
@@ -181,10 +182,11 @@ var (
 type stepModifier func(corev1.Container) corev1.Container
 
 func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*corev1.Pod, error) {
-	platformAPI, err := buildContext.BuildPodBuilderConfig.highestSupportedPlatformAPI(b)
+	platformAPI, err := buildContext.highestSupportedPlatformAPI(b)
 	if err != nil {
 		return nil, err
 	}
+	platformApiVersionEnvVar := corev1.EnvVar{Name: platformApiVersionEnvVarName, Value: platformAPI.Original()}
 
 	if b.rebasable(buildContext.BuildPodBuilderConfig.StackID) {
 		return b.rebasePod(buildContext, images)
@@ -301,10 +303,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		}()),
 		Env: []corev1.EnvVar{
 			homeEnv,
-			{
-				Name:  platformAPIEnvVar,
-				Value: platformAPI.Original(),
-			},
+			platformApiVersionEnvVar,
 			serviceBindingRootEnv,
 		},
 		ImagePullPolicy: corev1.PullIfNotPresent,
@@ -332,10 +331,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		}, bindingVolumeMounts),
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Env: []corev1.EnvVar{
-			{
-				Name:  platformAPIEnvVar,
-				Value: platformAPI.Original(),
-			},
+			platformApiVersionEnvVar,
 		},
 	}
 	detectContainerMods := ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))
@@ -503,10 +499,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						}, cacheVolumes),
 						Env: []corev1.EnvVar{
 							homeEnv,
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
-							},
+							platformApiVersionEnvVar,
 						},
 						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
@@ -535,10 +528,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						}, bindingVolumeMounts),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
-							{
-								Name:  platformAPIEnvVar,
-								Value: platformAPI.Original(),
-							},
+							platformApiVersionEnvVar,
 							serviceBindingRootEnv,
 						},
 					},
@@ -592,10 +582,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Env: envs(
 							[]corev1.EnvVar{
 								homeEnv,
-								{
-									Name:  platformAPIEnvVar,
-									Value: platformAPI.Original(),
-								},
+								platformApiVersionEnvVar,
 							},
 							func() corev1.EnvVar {
 								return corev1.EnvVar{
@@ -1015,14 +1002,17 @@ var (
 	supportedPlatformAPIVersions                         = append(supportedPlatformAPIVersionsWithWindowsAndReportToml, semver.MustParse("0.3"))
 )
 
-func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
+func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
 	for _, supportedVersion := range func() []*semver.Version {
-		if b.NotaryV1Config() != nil || bc.OS == "windows" {
+		if b.NotaryV1Config() != nil || bc.BuildPodBuilderConfig.OS == "windows" {
 			return supportedPlatformAPIVersionsWithWindowsAndReportToml
 		}
 		return supportedPlatformAPIVersions
 	}() {
-		for _, v := range bc.PlatformAPIs {
+		if bc.MaximumPlatformApiVersion != nil && bc.MaximumPlatformApiVersion.LessThan(supportedVersion) {
+			continue
+		}
+		for _, v := range bc.BuildPodBuilderConfig.PlatformAPIs {
 			version, err := semver.NewVersion(v)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unexpected platform version %s", v)
@@ -1034,7 +1024,7 @@ func (bc *BuildPodBuilderConfig) highestSupportedPlatformAPI(b *Build) (*semver.
 		}
 	}
 
-	return nil, errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.PlatformAPIs, ","))
+	return nil, errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.BuildPodBuilderConfig.PlatformAPIs, ","))
 }
 
 func (b Build) nodeSelector(os string) map[string]string {

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -2570,6 +2571,57 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, "-cache-image=some-tag", pod.Spec.InitContainers[5].Args[8])
 			})
 		})
+
+		when("selecting platform api version", func() {
+			it("chooses the configured maximum version when less than highest version from builder", func() {
+				buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"}
+
+				platformApi, err := semver.NewVersion("0.7")
+				require.NoError(t, err)
+				buildContext.MaximumPlatformApiVersion = platformApi
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				expectedEnv := corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.7"}
+
+				for _, container := range pod.Spec.InitContainers {
+					if envVar, ok := fetchEnvVar(container.Env, expectedEnv.Name); ok {
+						assert.Equal(t, expectedEnv, envVar)
+					}
+				}
+			})
+			it("chooses the highest version from builder when less than configured maximum version", func() {
+				buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"}
+
+				platformApi, err := semver.NewVersion("1.0")
+				require.NoError(t, err)
+				buildContext.MaximumPlatformApiVersion = platformApi
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				expectedEnv := corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"}
+				for _, container := range pod.Spec.InitContainers {
+					if envVar, ok := fetchEnvVar(container.Env, expectedEnv.Name); ok {
+						assert.Equal(t, expectedEnv, envVar)
+					}
+				}
+			})
+			it("chooses the highest version from builder when maximum version is not configured", func() {
+				buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"}
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				expectedEnv := corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"}
+				for _, container := range pod.Spec.InitContainers {
+					if envVar, ok := fetchEnvVar(container.Env, expectedEnv.Name); ok {
+						assert.Equal(t, expectedEnv, envVar)
+					}
+				}
+			})
+		})
 	})
 }
 
@@ -2615,4 +2667,14 @@ func names(mounts []corev1.VolumeMount) (names []string) {
 		names = append(names, m.Name)
 	}
 	return
+}
+
+func fetchEnvVar(envVars []corev1.EnvVar, name string) (corev1.EnvVar, bool) {
+	for _, envVar := range envVars {
+		if envVar.Name == name {
+			return envVar, true
+		}
+	}
+
+	return corev1.EnvVar{}, false
 }
