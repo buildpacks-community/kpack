@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -69,12 +70,13 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	buildInitImage         = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	buildInitWindowsImage  = flag.String("build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
-	rebaseImage            = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
-	completionImage        = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
-	completionWindowsImage = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
-	enablePriorityClasses  = flag.Bool("enable-priority-classes", getEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
+	buildInitImage            = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	buildInitWindowsImage     = flag.String("build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
+	rebaseImage               = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
+	completionImage           = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
+	completionWindowsImage    = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
+	enablePriorityClasses     = flag.Bool("enable-priority-classes", getEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
+	maximumPlatformApiVersion = flag.String("maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
 )
 
 func main() {
@@ -139,6 +141,11 @@ func main() {
 		log.Fatalf("could not get dynamic client: %s", err)
 	}
 
+	maxPlatformApi, err := parseMaxPlatformApiVersion()
+	if err != nil {
+		log.Fatalf("could not resolve provided maximum platform api version: %s", err)
+	}
+
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: buildapi.BuildPodImages{
 			BuildInitImage:         *buildInitImage,
@@ -147,10 +154,11 @@ func main() {
 			BuildInitWindowsImage:  *buildInitWindowsImage,
 			CompletionWindowsImage: *completionWindowsImage,
 		},
-		K8sClient:       k8sClient,
-		KeychainFactory: keychainFactory,
-		ImageFetcher:    &registry.Client{},
-		DynamicClient:   dynamicClient,
+		K8sClient:                 k8sClient,
+		KeychainFactory:           keychainFactory,
+		ImageFetcher:              &registry.Client{},
+		DynamicClient:             dynamicClient,
+		MaximumPlatformApiVersion: maxPlatformApi,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
@@ -289,4 +297,12 @@ func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInform
 	for _, informer := range indexFormers {
 		cache.WaitForCacheSync(stopCh, informer.HasSynced)
 	}
+}
+
+func parseMaxPlatformApiVersion() (*semver.Version, error) {
+	if *maximumPlatformApiVersion != "" {
+		return semver.NewVersion(*maximumPlatformApiVersion)
+	}
+
+	return nil, nil
 }

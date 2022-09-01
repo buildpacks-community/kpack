@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -36,11 +37,12 @@ type ImageFetcher interface {
 }
 
 type Generator struct {
-	BuildPodConfig  buildapi.BuildPodImages
-	K8sClient       k8sclient.Interface
-	KeychainFactory registry.KeychainFactory
-	ImageFetcher    ImageFetcher
-	DynamicClient   dynamic.Interface
+	BuildPodConfig            buildapi.BuildPodImages
+	K8sClient                 k8sclient.Interface
+	KeychainFactory           registry.KeychainFactory
+	ImageFetcher              ImageFetcher
+	DynamicClient             dynamic.Interface
+	MaximumPlatformApiVersion *semver.Version
 }
 
 type BuildPodable interface {
@@ -71,10 +73,11 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 	}
 
 	return build.BuildPod(g.BuildPodConfig, buildapi.BuildContext{
-		BuildPodBuilderConfig: buildPodBuilderConfig,
-		Secrets:               secrets,
-		Bindings:              bindings,
-		ImagePullSecrets:      imagePullSecrets,
+		BuildPodBuilderConfig:     buildPodBuilderConfig,
+		Secrets:                   secrets,
+		Bindings:                  bindings,
+		ImagePullSecrets:          imagePullSecrets,
+		MaximumPlatformApiVersion: g.MaximumPlatformApiVersion,
 	})
 }
 
