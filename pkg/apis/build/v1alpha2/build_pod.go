@@ -292,6 +292,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				return []string{b.Tag()}
 			}(),
 		),
+		SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 		VolumeMounts: volumeMounts([]corev1.VolumeMount{
 			layersMount,
 			workspaceVolume,
@@ -334,6 +335,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Env: []corev1.EnvVar{
 			platformApiVersionEnvVar,
 		},
+		SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 	}
 	detectContainerMods := ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))
 	return &corev1.Pod{
@@ -385,6 +387,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							},
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					},
 					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost), userprofileHomeEnv())...)
 			}),
@@ -392,10 +395,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			InitContainers: steps(func(step func(corev1.Container, ...stepModifier)) {
 				step(
 					corev1.Container{
-						Name:      PrepareContainerName,
-						Image:     images.buildInit(buildContext.os()),
-						Args:      append(secretArgs, imagePullArgs...),
-						Resources: b.Spec.Resources,
+						Name:            PrepareContainerName,
+						Image:           images.buildInit(buildContext.os()),
+						Args:            append(secretArgs, imagePullArgs...),
+						Resources:       b.Spec.Resources,
+						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Env: append(
 							buildEnv,
 							corev1.EnvVar{
@@ -481,10 +485,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 				step(
 					corev1.Container{
-						Name:      RestoreContainerName,
-						Image:     b.Spec.Builder.Image,
-						Command:   []string{"/cnb/lifecycle/restorer"},
-						Resources: b.Spec.Resources,
+						Name:            RestoreContainerName,
+						Image:           b.Spec.Builder.Image,
+						Command:         []string{"/cnb/lifecycle/restorer"},
+						Resources:       b.Spec.Resources,
+						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
@@ -512,10 +517,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 				step(
 					corev1.Container{
-						Name:      BuildContainerName,
-						Image:     b.Spec.Builder.Image,
-						Command:   []string{"/cnb/lifecycle/builder"},
-						Resources: b.Spec.Resources,
+						Name:            BuildContainerName,
+						Image:           b.Spec.Builder.Image,
+						Command:         []string{"/cnb/lifecycle/builder"},
+						Resources:       b.Spec.Resources,
+						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: []string{
 							"-layers=/layers",
 							"-app=/workspace",
@@ -537,10 +543,11 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 				step(
 					corev1.Container{
-						Name:      ExportContainerName,
-						Image:     b.Spec.Builder.Image,
-						Command:   []string{"/cnb/lifecycle/exporter"},
-						Resources: b.Spec.Resources,
+						Name:            ExportContainerName,
+						Image:           b.Spec.Builder.Image,
+						Command:         []string{"/cnb/lifecycle/exporter"},
+						Resources:       b.Spec.Resources,
+						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: args(
 							[]string{
 								"-layers=/layers",
@@ -657,15 +664,36 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	}, nil
 }
 
+func boolPointer(b bool) *bool {
+	return &b
+}
+
+func containerSecurityContext(config BuildPodBuilderConfig) *corev1.SecurityContext {
+	if config.OS == "windows" {
+		return nil
+
+	}
+
+	return &corev1.SecurityContext{
+		RunAsNonRoot:             boolPointer(true),
+		AllowPrivilegeEscalation: boolPointer(false),
+		Privileged:               boolPointer(false),
+		SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+		Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+	}
+}
+
 func podSecurityContext(config BuildPodBuilderConfig) *corev1.PodSecurityContext {
 	if config.OS == "windows" {
 		return nil
 	}
 
 	return &corev1.PodSecurityContext{
-		FSGroup:    &config.Gid,
-		RunAsUser:  &config.Uid,
-		RunAsGroup: &config.Gid,
+		RunAsNonRoot:   boolPointer(true),
+		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+		FSGroup:        &config.Gid,
+		RunAsUser:      &config.Uid,
+		RunAsGroup:     &config.Gid,
 	}
 }
 
@@ -785,6 +813,10 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			RuntimeClassName:   b.Spec.RuntimeClassName,
 			SchedulerName:      b.Spec.SchedulerName,
 			PriorityClassName:  b.PriorityClassName(),
+			SecurityContext: &corev1.PodSecurityContext{
+				RunAsNonRoot:   boolPointer(true),
+				SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+			},
 			Volumes: volumes(
 				secretVolumes,
 				cosignVolumes,
@@ -815,6 +847,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 						b.cosignArgs(),
 						cosignSecretArgs,
 					),
+					SecurityContext:          containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					TerminationMessagePath:   terminationMsgPath(buildContext.os()),
 					TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 					Resources:                b.Spec.Resources,
@@ -828,9 +861,10 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			},
 			InitContainers: []corev1.Container{
 				{
-					Name:      RebaseContainerName,
-					Image:     images.RebaseImage,
-					Resources: b.Spec.Resources,
+					Name:            RebaseContainerName,
+					Image:           images.RebaseImage,
+					Resources:       b.Spec.Resources,
+					SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					Args: args(a(
 						"--run-image",
 						runImage,
