@@ -2,7 +2,7 @@ package v1alpha2_test
 
 import (
 	"fmt"
-	"strings"
+	"reflect"
 	"testing"
 	"time"
 
@@ -47,7 +47,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		Image: builderImage,
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{Name: "builder-pull-secret"},
-			{Name: "builder.secret.with.dots"},
 		}}
 
 	var (
@@ -135,18 +134,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "secret.with.dots",
-			},
-			Type: corev1.SecretTypeDockerConfigJson,
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "super-long-secret-name-foooooooooooooooooooooooooooooooo",
-			},
-			Type: corev1.SecretTypeDockerConfigJson,
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 			},
 			Type: corev1.SecretTypeDockerConfigJson,
 		},
@@ -666,64 +653,49 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-dockerconfig=docker-secret-2",
 				"-dockercfg=docker-secret-3",
 				"-dockerconfig=secret.with.dots",
-				"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-				"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 				"-imagepull=image-pull-1",
 				"-imagepull=image-pull-2",
 				"-imagepull=builder-pull-secret",
-				"-imagepull=builder.secret.with.dots",
 			}, pod.Spec.InitContainers[0].Args)
 
 			assert.Subset(t,
 				pod.Spec.InitContainers[0].VolumeMounts,
 				[]corev1.VolumeMount{
 					{
-						Name:      "secret-volume-git-secret-1-0",
+						Name:      "secret-volume-0",
 						MountPath: "/var/build-secrets/git-secret-1",
 					},
 					{
-						Name:      "secret-volume-git-secret-2-1",
+						Name:      "secret-volume-1",
 						MountPath: "/var/build-secrets/git-secret-2",
 					},
 					{
-						Name:      "secret-volume-docker-secret-1-2",
+						Name:      "secret-volume-2",
 						MountPath: "/var/build-secrets/docker-secret-1",
 					},
 					{
-						Name:      "secret-volume-docker-secret-2-4",
+						Name:      "secret-volume-4",
 						MountPath: "/var/build-secrets/docker-secret-2",
 					},
 					{
-						Name:      "secret-volume-docker-secret-3-5",
+						Name:      "secret-volume-5",
 						MountPath: "/var/build-secrets/docker-secret-3",
 					},
 					{
-						Name:      "secret-volume-secret-with-dots-6",
+						Name:      "secret-volume-6",
 						MountPath: "/var/build-secrets/secret.with.dots",
 					},
 					{
-						Name:      "secret-volume-super-long-secret-name-fooooooooooooooooooooo-7",
-						MountPath: "/var/build-secrets/super-long-secret-name-foooooooooooooooooooooooooooooooo",
-					},
-					{
-						Name:      "secret-volume-other-super-long-secret-name-fooooooooooooooo-8",
-						MountPath: "/var/build-secrets/other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
-					},
-					{
-						Name:      "secret-volume-image-pull-1-0p",
+						Name:      "pull-secret-volume-0",
 						MountPath: "/var/build-secrets/image-pull-1",
 					},
 					{
-						Name:      "secret-volume-image-pull-2-1p",
+						Name:      "pull-secret-volume-1",
 						MountPath: "/var/build-secrets/image-pull-2",
 					},
 					{
-						Name:      "secret-volume-builder-pull-secret-2p",
+						Name:      "pull-secret-volume-2",
 						MountPath: "/var/build-secrets/builder-pull-secret",
-					},
-					{
-						Name:      "secret-volume-builder-secret-with-dots-3p",
-						MountPath: "/var/build-secrets/builder.secret.with.dots",
 					},
 				},
 			)
@@ -1376,7 +1348,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assertSecretPresent(t, pod, "image-pull-1")
 			assertSecretPresent(t, pod, "image-pull-2")
 			assertSecretPresent(t, pod, "builder-pull-secret")
-			assertSecretPresent(t, pod, "builder.secret.with.dots")
 			assertSecretNotPresent(t, pod, "random-secret-1")
 		})
 
@@ -1399,9 +1370,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
-			require.Len(t, pod.Spec.ImagePullSecrets, 2)
+			require.Len(t, pod.Spec.ImagePullSecrets, 1)
 			assert.Equal(t, corev1.LocalObjectReference{Name: "builder-pull-secret"}, pod.Spec.ImagePullSecrets[0])
-			assert.Equal(t, corev1.LocalObjectReference{Name: "builder.secret.with.dots"}, pod.Spec.ImagePullSecrets[1])
 		})
 
 		when("only 0.3 platform api is supported", func() {
@@ -1474,7 +1444,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.Equal(t, pod.Spec.Volumes, []corev1.Volume{
 					{
-						Name: "secret-volume-docker-secret-1-2",
+						Name: "secret-volume-2",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "docker-secret-1",
@@ -1482,7 +1452,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-docker-secret-2-4",
+						Name: "secret-volume-4",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "docker-secret-2",
@@ -1490,7 +1460,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-docker-secret-3-5",
+						Name: "secret-volume-5",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "docker-secret-3",
@@ -1498,7 +1468,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-secret-with-dots-6",
+						Name: "secret-volume-6",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "secret.with.dots",
@@ -1506,23 +1476,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-super-long-secret-name-fooooooooooooooooooooo-7",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							},
-						},
-					},
-					{
-						Name: "secret-volume-other-super-long-secret-name-fooooooooooooooo-8",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							},
-						},
-					},
-					{
-						Name: "secret-volume-image-pull-1-0p",
+						Name: "pull-secret-volume-0",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "image-pull-1",
@@ -1530,7 +1484,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-image-pull-2-1p",
+						Name: "pull-secret-volume-1",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "image-pull-2",
@@ -1538,18 +1492,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "secret-volume-builder-pull-secret-2p",
+						Name: "pull-secret-volume-2",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "builder-pull-secret",
-							},
-						},
-					},
-					{
-						Name: "secret-volume-builder-secret-with-dots-3p",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "builder.secret.with.dots",
 							},
 						},
 					},
@@ -1583,12 +1529,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-imagepull=image-pull-1",
 							"-imagepull=image-pull-2",
 							"-imagepull=builder-pull-secret",
-							"-imagepull=builder.secret.with.dots",
 							"someimage/name", "someimage/name:tag2", "someimage/name:tag3",
 						},
 						Env: []corev1.EnvVar{
@@ -1601,44 +1544,32 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						WorkingDir:      "/workspace",
 						VolumeMounts: []corev1.VolumeMount{
 							{
-								Name:      "secret-volume-docker-secret-1-2",
+								Name:      "secret-volume-2",
 								MountPath: "/var/build-secrets/docker-secret-1",
 							},
 							{
-								Name:      "secret-volume-docker-secret-2-4",
+								Name:      "secret-volume-4",
 								MountPath: "/var/build-secrets/docker-secret-2",
 							},
 							{
-								Name:      "secret-volume-docker-secret-3-5",
+								Name:      "secret-volume-5",
 								MountPath: "/var/build-secrets/docker-secret-3",
 							},
 							{
-								Name:      "secret-volume-secret-with-dots-6",
+								Name:      "secret-volume-6",
 								MountPath: "/var/build-secrets/secret.with.dots",
 							},
 							{
-								Name:      "secret-volume-super-long-secret-name-fooooooooooooooooooooo-7",
-								MountPath: "/var/build-secrets/super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							},
-							{
-								Name:      "secret-volume-other-super-long-secret-name-fooooooooooooooo-8",
-								MountPath: "/var/build-secrets/other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							},
-							{
-								Name:      "secret-volume-image-pull-1-0p",
+								Name:      "pull-secret-volume-0",
 								MountPath: "/var/build-secrets/image-pull-1",
 							},
 							{
-								Name:      "secret-volume-image-pull-2-1p",
+								Name:      "pull-secret-volume-1",
 								MountPath: "/var/build-secrets/image-pull-2",
 							},
 							{
-								Name:      "secret-volume-builder-pull-secret-2p",
+								Name:      "pull-secret-volume-2",
 								MountPath: "/var/build-secrets/builder-pull-secret",
-							},
-							{
-								Name:      "secret-volume-builder-secret-with-dots-3p",
-								MountPath: "/var/build-secrets/builder.secret.with.dots",
 							},
 							{
 								Name:      "report-dir",
@@ -1663,8 +1594,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-cosign-annotations=buildTimestamp=19440606.133000",
 							"-cosign-annotations=buildNumber=12",
 						},
@@ -1680,28 +1609,20 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								ReadOnly:  true,
 							},
 							{
-								Name:      "secret-volume-docker-secret-1-2",
+								Name:      "secret-volume-2",
 								MountPath: "/var/build-secrets/docker-secret-1",
 							},
 							{
-								Name:      "secret-volume-docker-secret-2-4",
+								Name:      "secret-volume-4",
 								MountPath: "/var/build-secrets/docker-secret-2",
 							},
 							{
-								Name:      "secret-volume-docker-secret-3-5",
+								Name:      "secret-volume-5",
 								MountPath: "/var/build-secrets/docker-secret-3",
 							},
 							{
-								Name:      "secret-volume-secret-with-dots-6",
+								Name:      "secret-volume-6",
 								MountPath: "/var/build-secrets/secret.with.dots",
-							},
-							{
-								Name:      "secret-volume-super-long-secret-name-fooooooooooooooooooooo-7",
-								MountPath: "/var/build-secrets/super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							},
-							{
-								Name:      "secret-volume-other-super-long-secret-name-fooooooooooooooo-8",
-								MountPath: "/var/build-secrets/other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							},
 						},
 						TerminationMessagePath:   "/tmp/termination-log",
@@ -1744,15 +1665,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						assertSecretPresent(t, pod, secretName)
 					}
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-1-10",
+						Name:      "secret-volume-8",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-no-password-1-11",
+						Name:      "secret-volume-9",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-no-password-2-12",
+						Name:      "secret-volume-10",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 					})
 
@@ -1762,8 +1683,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-cosign-annotations=buildTimestamp=19440606.133000",
 							"-cosign-annotations=buildNumber=12",
 							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
@@ -1792,8 +1711,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-cosign-annotations=buildTimestamp=19440606.133000",
 							"-cosign-annotations=buildNumber=12",
 							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
@@ -1827,8 +1744,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								"-dockerconfig=docker-secret-2",
 								"-dockercfg=docker-secret-3",
 								"-dockerconfig=secret.with.dots",
-								"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-								"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 								"-cosign-annotations=buildTimestamp=19440606.133000",
 								"-cosign-annotations=buildNumber=12",
 							},
@@ -1960,18 +1875,17 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						assertSecretPresent(t, pod, secretName)
 					}
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-1-10",
+						Name:      "secret-volume-8",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-no-password-1-11",
+						Name:      "secret-volume-9",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-cosign-secret-no-password-2-12",
+						Name:      "secret-volume-10",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 					})
-
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 						Name:      "notary-dir",
 						ReadOnly:  true,
@@ -1999,8 +1913,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-cosign-annotations=buildTimestamp=19440606.133000",
 							"-cosign-annotations=buildNumber=12",
 							"-cosign-repositories=cosign-secret-1=testRepository.com/fake-project-1",
@@ -2030,8 +1942,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 							"-dockerconfig=docker-secret-2",
 							"-dockercfg=docker-secret-3",
 							"-dockerconfig=secret.with.dots",
-							"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-							"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 							"-cosign-annotations=buildTimestamp=19440606.133000",
 							"-cosign-annotations=buildNumber=12",
 							"-cosign-annotations=customAnnotationKey=customAnnotationValue",
@@ -2088,15 +1998,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assertSecretPresent(t, pod, secretName)
 				}
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-1-10",
+					Name:      "secret-volume-8",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-no-password-1-11",
+					Name:      "secret-volume-9",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-no-password-2-12",
+					Name:      "secret-volume-10",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 				})
 
@@ -2255,15 +2165,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assertSecretPresent(t, pod, secretName)
 				}
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-1-10",
+					Name:      "secret-volume-8",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-no-password-1-11",
+					Name:      "secret-volume-9",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-cosign-secret-no-password-2-12",
+					Name:      "secret-volume-10",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 				})
 
@@ -2398,12 +2308,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
 					"-dockerconfig=secret.with.dots",
-					"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-					"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 					"-imagepull=image-pull-1",
 					"-imagepull=image-pull-2",
 					"-imagepull=builder-pull-secret",
-					"-imagepull=builder.secret.with.dots",
 				}, prepareContainer.Args)
 
 				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
@@ -2663,8 +2570,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
 					"-dockerconfig=secret.with.dots",
-					"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-					"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 					"-cosign-annotations=buildTimestamp=19440606.133000",
 					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
@@ -2709,8 +2614,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-dockerconfig=docker-secret-2",
 					"-dockercfg=docker-secret-3",
 					"-dockerconfig=secret.with.dots",
-					"-dockerconfig=super-long-secret-name-foooooooooooooooooooooooooooooooo",
-					"-dockerconfig=other-super-long-secret-name-foooooooooooooooooooooooooooooooo",
 					"-cosign-annotations=buildTimestamp=19440606.133000",
 					"-cosign-annotations=buildNumber=12",
 				}, completionContainer.Args)
@@ -2804,25 +2707,23 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 }
 
 func assertSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) {
-	assert.True(t, isSecretPresent(t, pod, secretName), fmt.Sprintf("secret '%s' not present", secretName))
+	t.Helper()
+	assert.True(t, isSecretPresent(pod, secretName), fmt.Sprintf("secret '%s' not present in volumes '%v'", secretName, pod.Spec.Volumes))
 }
 
 func assertSecretNotPresent(t *testing.T, pod *corev1.Pod, secretName string) {
-	assert.False(t, isSecretPresent(t, pod, secretName), fmt.Sprintf("secret '%s' present but should not be", secretName))
+	t.Helper()
+	assert.False(t, isSecretPresent(pod, secretName), fmt.Sprintf("secret '%s' present in volumes '%v' but should not be", secretName, pod.Spec.Volumes))
 }
 
-func isSecretPresent(t *testing.T, pod *corev1.Pod, secretName string) bool {
+func isSecretPresent(pod *corev1.Pod, secretName string) bool {
+	found := false
 	for _, volume := range pod.Spec.Volumes {
-		if strings.HasPrefix(volume.Name, strings.ReplaceAll(fmt.Sprintf("secret-volume-%s", secretName), ".", "-")) {
-			assert.Equal(t, corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: secretName,
-				},
-			}, volume.VolumeSource)
-			return true
+		if reflect.DeepEqual(corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: secretName}}, volume.VolumeSource) {
+			found = true
 		}
 	}
-	return false
+	return found
 }
 
 func volumeMountFromContainer(t *testing.T, containers []corev1.Container, containerName string, volumeName string) corev1.VolumeMount {

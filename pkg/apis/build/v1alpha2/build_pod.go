@@ -25,7 +25,8 @@ const (
 	RebaseContainerName     = "rebase"
 	CompletionContainerName = "completion"
 
-	volumeSecretNameTemplate = "secret-volume-%s"
+	secretVolumeNameTemplate     = "secret-volume-%v"
+	pullSecretVolumeNameTemplate = "pull-secret-volume-%v"
 
 	completionTerminationMessagePathWindows = "/dev/termination-log"
 	completionTerminationMessagePathLinux   = "/tmp/termination-log"
@@ -913,8 +914,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			continue
 		}
 
-		volumeName := secretNameToVolumeName(secret.Name, i)
-
+		volumeName := fmt.Sprintf(secretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -941,8 +941,8 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 	)
 	for i, secret := range deduplicate(secrets, b.Spec.Builder.ImagePullSecrets) {
 		args = append(args, fmt.Sprintf("-imagepull=%s", secret.Name))
-		volumeName := secretNameToVolumeName(secret.Name, fmt.Sprintf("%vp", i))
 
+		volumeName := fmt.Sprintf(pullSecretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -975,8 +975,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 		cosignArgs := cosignSecretArgs(secret)
 		args = append(args, cosignArgs...)
 
-		volumeName := secretNameToVolumeName(secret.Name, i)
-
+		volumeName := fmt.Sprintf(secretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -1183,15 +1182,4 @@ func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
 		envs = append(envs, envVar)
 	}
 	return envs
-}
-
-// Volume names must be valid RFC 1123 Label Names: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-func secretNameToVolumeName(secretName string, uniqueToken interface{}) string {
-	volumeName := fmt.Sprintf(volumeSecretNameTemplate, secretName)
-	// leave space for - and 3 digits
-	if len(volumeName) > 63 {
-		volumeName = volumeName[:59]
-	}
-	volumeName = fmt.Sprintf("%s-%v", volumeName, uniqueToken)
-	return strings.ReplaceAll(volumeName, ".", "-")
 }
