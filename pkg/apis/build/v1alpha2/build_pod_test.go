@@ -2778,7 +2778,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				validateAppArmor := func(pod *corev1.Pod) {
 					for key, value := range pod.Annotations {
 						if strings.HasPrefix(key, corev1.AppArmorBetaContainerAnnotationKeyPrefix) {
-							or(assert.Equal(t, corev1.AppArmorBetaProfileNamePrefix, value), assert.Equal(t, corev1.AppArmorBetaProfileRuntimeDefault, value))
+							assert.Equal(t, corev1.AppArmorBetaProfileRuntimeDefault, value)
 						}
 					}
 				}
@@ -2786,27 +2786,16 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				validateAppArmor(pod)
 				validateAppArmor(rebasePod)
 			})
-			it("only uses allowed se linux types", func() {
-				validateSELinux := func(options *corev1.SELinuxOptions) {
-					if options != nil {
-						or(assert.Equal(t, "", options.Type),
-							assert.Equal(t, "container_t", options.Type),
-							assert.Equal(t, "container_init_t", options.Type),
-							assert.Equal(t, "container_kvm_t", options.Type))
-
-						assert.Equal(t, "", options.User)
-						assert.Equal(t, "", options.Role)
-					}
-				}
+			it("does not use se linux options", func() {
 
 				validateContainerSELinux := func(containers []corev1.Container) {
 					for _, container := range containers {
-						validateSELinux(container.SecurityContext.SELinuxOptions)
+						assert.Nil(t, container.SecurityContext.SELinuxOptions)
 					}
 				}
 
-				validateSELinux(pod.Spec.SecurityContext.SELinuxOptions)
-				validateSELinux(rebasePod.Spec.SecurityContext.SELinuxOptions)
+				assert.Nil(t, pod.Spec.SecurityContext.SELinuxOptions)
+				assert.Nil(t, rebasePod.Spec.SecurityContext.SELinuxOptions)
 				validateContainerSELinux(pod.Spec.InitContainers)
 				validateContainerSELinux(pod.Spec.Containers)
 				validateContainerSELinux(rebasePod.Spec.InitContainers)
@@ -2847,19 +2836,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				validateProcMount(rebasePod.Spec.InitContainers)
 				validateProcMount(rebasePod.Spec.Containers)
 			})
-			it("uses allowed sysctl", func() {
-				validateProcMount := func(pod *corev1.Pod) {
-					for _, sysctl := range pod.Spec.SecurityContext.Sysctls {
-						or(assert.Equal(t, "kernel.shm_rmid_forced", sysctl.Name),
-							assert.Equal(t, "net.ipv4.ip_local_port_range", sysctl.Name),
-							assert.Equal(t, "net.ipv4.ip_unprivileged_port_start", sysctl.Name),
-							assert.Equal(t, "net.ipv4.tcp_syncookies", sysctl.Name),
-							assert.Equal(t, "net.ipv4.ping_group_range", sysctl.Name))
-					}
-				}
-
-				validateProcMount(pod)
-				validateProcMount(rebasePod)
+			it("does not use sysctl", func() {
+				assert.Empty(t, pod.Spec.SecurityContext.Sysctls)
+				assert.Empty(t, rebasePod.Spec.SecurityContext.Sysctls)
 			})
 			it("does not allow privilege escalation or privileged containers", func() {
 				validateNoPrivilegeEscalation := func(containers []corev1.Container) {
@@ -2989,16 +2968,6 @@ func fetchEnvVar(envVars []corev1.EnvVar, name string) (corev1.EnvVar, bool) {
 	}
 
 	return corev1.EnvVar{}, false
-}
-
-func or(bools ...bool) bool {
-	for _, b := range bools {
-		if b {
-			return true
-		}
-	}
-
-	return false
 }
 
 func boolPointer(b bool) *bool {
