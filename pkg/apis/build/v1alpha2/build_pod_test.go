@@ -3,6 +3,7 @@ package v1alpha2_test
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -1576,6 +1577,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 								MountPath: "/var/report",
 							},
 						},
+						SecurityContext: &corev1.SecurityContext{
+							RunAsNonRoot:             boolPointer(true),
+							AllowPrivilegeEscalation: boolPointer(false),
+							Privileged:               boolPointer(false),
+							SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+							Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+						},
 					},
 				}, pod.Spec.InitContainers)
 
@@ -1627,6 +1635,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						},
 						TerminationMessagePath:   "/tmp/termination-log",
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						SecurityContext: &corev1.SecurityContext{
+							RunAsNonRoot:             boolPointer(true),
+							AllowPrivilegeEscalation: boolPointer(false),
+							Privileged:               boolPointer(false),
+							SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+							Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+						},
 					},
 				}, pod.Spec.Containers)
 			})
@@ -2703,6 +2718,203 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				}
 			})
 		})
+
+		when("complying with the restricted pod security standard", func() {
+			// enforces https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+			var pod *corev1.Pod
+			var rebasePod *corev1.Pod
+			var err error
+
+			it.Before(func() {
+				pod, err = build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				build.Annotations[buildapi.BuildReasonAnnotation] = buildapi.BuildReasonStack
+				build.Annotations[buildapi.BuildChangesAnnotation] = "some-stack-change"
+				rebasePod, err = build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+			})
+
+			it("has non nil security contexts", func() {
+				require.NotNil(t, pod.Spec.SecurityContext)
+				require.NotNil(t, rebasePod.Spec.SecurityContext)
+				validateNonNilSecurityContexts := func(containers []corev1.Container) {
+					for _, container := range containers {
+						require.NotNil(t, container.SecurityContext, container.Name)
+					}
+				}
+
+				validateNonNilSecurityContexts(pod.Spec.InitContainers)
+				validateNonNilSecurityContexts(pod.Spec.Containers)
+				validateNonNilSecurityContexts(rebasePod.Spec.InitContainers)
+				validateNonNilSecurityContexts(rebasePod.Spec.Containers)
+			})
+
+			it("disallows sharing of host namespaces", func() {
+				validateHostNetwork := func(pod *corev1.Pod) {
+					assert.False(t, pod.Spec.HostNetwork)
+					assert.False(t, pod.Spec.HostPID)
+					assert.False(t, pod.Spec.HostIPC)
+				}
+
+				validateHostNetwork(pod)
+				validateHostNetwork(rebasePod)
+			})
+			it("disallows host ports", func() {
+				validateNoPrivilegeEscalation := func(containers []corev1.Container) {
+					for _, container := range containers {
+						for _, port := range container.Ports {
+							assert.Nil(t, port.HostPort)
+						}
+					}
+				}
+
+				validateNoPrivilegeEscalation(pod.Spec.InitContainers)
+				validateNoPrivilegeEscalation(pod.Spec.Containers)
+				validateNoPrivilegeEscalation(rebasePod.Spec.InitContainers)
+				validateNoPrivilegeEscalation(rebasePod.Spec.Containers)
+			})
+			it("only uses allowed app armor values", func() {
+				validateAppArmor := func(pod *corev1.Pod) {
+					for key, value := range pod.Annotations {
+						if strings.HasPrefix(key, corev1.AppArmorBetaContainerAnnotationKeyPrefix) {
+							assert.Equal(t, corev1.AppArmorBetaProfileRuntimeDefault, value)
+						}
+					}
+				}
+
+				validateAppArmor(pod)
+				validateAppArmor(rebasePod)
+			})
+			it("does not use se linux options", func() {
+
+				validateContainerSELinux := func(containers []corev1.Container) {
+					for _, container := range containers {
+						assert.Nil(t, container.SecurityContext.SELinuxOptions)
+					}
+				}
+
+				assert.Nil(t, pod.Spec.SecurityContext.SELinuxOptions)
+				assert.Nil(t, rebasePod.Spec.SecurityContext.SELinuxOptions)
+				validateContainerSELinux(pod.Spec.InitContainers)
+				validateContainerSELinux(pod.Spec.Containers)
+				validateContainerSELinux(rebasePod.Spec.InitContainers)
+				validateContainerSELinux(rebasePod.Spec.Containers)
+			})
+			it("uses allowed volume types", func() {
+				validateCorrectVolumeTypes := func(volumes []corev1.Volume) {
+					for _, volume := range volumes {
+						if volume.ConfigMap == nil &&
+							volume.CSI == nil &&
+							volume.DownwardAPI == nil &&
+							volume.EmptyDir == nil &&
+							volume.Ephemeral == nil &&
+							volume.PersistentVolumeClaim == nil &&
+							volume.Projected == nil &&
+							volume.Secret == nil {
+							assert.Fail(t, "invalid volume spec ")
+						}
+						assert.Nil(t, volume.HostPath)
+					}
+				}
+
+				validateCorrectVolumeTypes(pod.Spec.Volumes)
+				validateCorrectVolumeTypes(rebasePod.Spec.Volumes)
+
+			})
+			it("uses allowed proc mounts", func() {
+				validateProcMount := func(containers []corev1.Container) {
+					for _, container := range containers {
+						if procMount := container.SecurityContext.ProcMount != nil; procMount {
+							assert.Equal(t, corev1.DefaultProcMount, procMount)
+						}
+					}
+				}
+
+				validateProcMount(pod.Spec.InitContainers)
+				validateProcMount(pod.Spec.Containers)
+				validateProcMount(rebasePod.Spec.InitContainers)
+				validateProcMount(rebasePod.Spec.Containers)
+			})
+			it("does not use sysctl", func() {
+				assert.Empty(t, pod.Spec.SecurityContext.Sysctls)
+				assert.Empty(t, rebasePod.Spec.SecurityContext.Sysctls)
+			})
+			it("does not allow privilege escalation or privileged containers", func() {
+				validateNoPrivilegeEscalation := func(containers []corev1.Container) {
+					for _, container := range containers {
+						require.NotNil(t, container.SecurityContext.AllowPrivilegeEscalation, container.Name)
+						assert.False(t, *container.SecurityContext.AllowPrivilegeEscalation)
+						require.NotNil(t, container.SecurityContext.Privileged, container.Name)
+						assert.False(t, *container.SecurityContext.Privileged)
+					}
+				}
+
+				validateNoPrivilegeEscalation(pod.Spec.InitContainers)
+				validateNoPrivilegeEscalation(pod.Spec.Containers)
+				validateNoPrivilegeEscalation(rebasePod.Spec.InitContainers)
+				validateNoPrivilegeEscalation(rebasePod.Spec.Containers)
+			})
+			it("runs as non root", func() {
+				assert.True(t, *pod.Spec.SecurityContext.RunAsNonRoot)
+				if pod.Spec.SecurityContext.RunAsUser != nil {
+					assert.NotEqual(t, 0, *pod.Spec.SecurityContext.RunAsUser)
+				}
+				assert.True(t, *rebasePod.Spec.SecurityContext.RunAsNonRoot)
+				if rebasePod.Spec.SecurityContext.RunAsUser != nil {
+					assert.NotEqual(t, 0, *rebasePod.Spec.SecurityContext.RunAsUser)
+				}
+
+				validateNonRoot := func(containers []corev1.Container) {
+					for _, container := range containers {
+						require.NotNil(t, container.SecurityContext.RunAsNonRoot, container.Name)
+						assert.True(t, *container.SecurityContext.RunAsNonRoot)
+						if container.SecurityContext.RunAsUser != nil {
+							assert.NotEqual(t, 0, *container.SecurityContext.RunAsUser)
+						}
+					}
+				}
+
+				validateNonRoot(pod.Spec.InitContainers)
+				validateNonRoot(pod.Spec.Containers)
+				validateNonRoot(rebasePod.Spec.InitContainers)
+				validateNonRoot(rebasePod.Spec.Containers)
+			})
+			it("sets runtime/default seccomp profile", func() {
+				expectedSeccomp := corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault}
+
+				assert.NotNil(t, pod.Spec.SecurityContext.SeccompProfile)
+				assert.Equal(t, expectedSeccomp, *pod.Spec.SecurityContext.SeccompProfile)
+				assert.NotNil(t, rebasePod.Spec.SecurityContext.SeccompProfile)
+				assert.Equal(t, expectedSeccomp, *rebasePod.Spec.SecurityContext.SeccompProfile)
+
+				validateSeccomp := func(containers []corev1.Container) {
+					for _, container := range containers {
+						require.NotNil(t, container.SecurityContext.SeccompProfile, container.Name)
+						assert.Equal(t, expectedSeccomp, *container.SecurityContext.SeccompProfile)
+					}
+				}
+
+				validateSeccomp(pod.Spec.InitContainers)
+				validateSeccomp(pod.Spec.Containers)
+				validateSeccomp(rebasePod.Spec.InitContainers)
+				validateSeccomp(rebasePod.Spec.Containers)
+			})
+			it("drops all capabilities", func() {
+				validateCapabilityDrop := func(containers []corev1.Container) {
+					for _, container := range containers {
+						require.NotNil(t, container.SecurityContext.SeccompProfile, container.Name)
+						assert.Contains(t, container.SecurityContext.Capabilities.Drop, corev1.Capability("ALL"))
+						assert.Empty(t, container.SecurityContext.Capabilities.Add)
+					}
+				}
+
+				validateCapabilityDrop(pod.Spec.InitContainers)
+				validateCapabilityDrop(pod.Spec.Containers)
+				validateCapabilityDrop(rebasePod.Spec.InitContainers)
+				validateCapabilityDrop(rebasePod.Spec.Containers)
+			})
+		})
 	})
 }
 
@@ -2756,4 +2968,8 @@ func fetchEnvVar(envVars []corev1.EnvVar, name string) (corev1.EnvVar, bool) {
 	}
 
 	return corev1.EnvVar{}, false
+}
+
+func boolPointer(b bool) *bool {
+	return &b
 }
