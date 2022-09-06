@@ -25,7 +25,8 @@ const (
 	RebaseContainerName     = "rebase"
 	CompletionContainerName = "completion"
 
-	volumeSecretNameTemplate = "secret-volume-%s"
+	secretVolumeNameTemplate     = "secret-volume-%v"
+	pullSecretVolumeNameTemplate = "pull-secret-volume-%v"
 
 	completionTerminationMessagePathWindows = "/dev/termination-log"
 	completionTerminationMessagePathLinux   = "/tmp/termination-log"
@@ -891,7 +892,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		volumeMounts []corev1.VolumeMount
 		args         []string
 	)
-	for _, secret := range secrets {
+	for i, secret := range secrets {
 		switch {
 		case !filter(secret):
 			continue
@@ -913,8 +914,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			continue
 		}
 
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
-
+		volumeName := fmt.Sprintf(secretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -939,10 +939,10 @@ func (b *Build) setupImagePullVolumes(secrets []corev1.LocalObjectReference) ([]
 		volumeMounts []corev1.VolumeMount
 		args         []string
 	)
-	for _, secret := range deduplicate(secrets, b.Spec.Builder.ImagePullSecrets) {
+	for i, secret := range deduplicate(secrets, b.Spec.Builder.ImagePullSecrets) {
 		args = append(args, fmt.Sprintf("-imagepull=%s", secret.Name))
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
 
+		volumeName := fmt.Sprintf(pullSecretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{
@@ -967,7 +967,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 		volumeMounts []corev1.VolumeMount
 		args         []string
 	)
-	for _, secret := range secrets {
+	for i, secret := range secrets {
 		if string(secret.Data[cosignSecretDataCosignKey]) == "" {
 			continue
 		}
@@ -975,8 +975,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 		cosignArgs := cosignSecretArgs(secret)
 		args = append(args, cosignArgs...)
 
-		volumeName := fmt.Sprintf(volumeSecretNameTemplate, secret.Name)
-
+		volumeName := fmt.Sprintf(secretVolumeNameTemplate, i)
 		volumes = append(volumes, corev1.Volume{
 			Name: volumeName,
 			VolumeSource: corev1.VolumeSource{

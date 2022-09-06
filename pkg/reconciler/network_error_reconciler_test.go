@@ -2,15 +2,16 @@ package reconciler
 
 import (
 	"context"
+	"testing"
+
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 const (
 	networkErrorMsg = "some network problem"
-	otherErrorMsg = "some other error"
+	otherErrorMsg   = "some other error"
 )
 
 func TestNetworkErrorReconciler(t *testing.T) {
