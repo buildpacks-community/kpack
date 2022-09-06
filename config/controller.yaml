@@ -65,12 +65,25 @@ spec:
         app: kpack-controller
         version: #@ data.values.version
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
       priorityClassName: kpack-control-plane
       serviceAccountName: controller
       nodeSelector:
         kubernetes.io/os: linux
       containers:
       - name: controller
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          privileged: false
+          seccompProfile:
+            type: "RuntimeDefault"
+          capabilities:
+            drop:
+              - ALL
         image: #@ data.values.controller_image
         env:
         - name: ENABLE_PRIORITY_CLASSES

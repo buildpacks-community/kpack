@@ -54,12 +54,25 @@ spec:
         role: webhook
         version: #@ data.values.version
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
       priorityClassName: kpack-control-plane
       serviceAccountName: webhook
       nodeSelector:
         kubernetes.io/os: linux
       containers:
       - name: webhook
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          privileged: false
+          seccompProfile:
+            type: "RuntimeDefault"
+          capabilities:
+            drop:
+              - ALL
         image: #@ data.values.webhook_image
         ports:
         - name: https-webhook
