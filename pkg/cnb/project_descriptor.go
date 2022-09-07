@@ -41,7 +41,7 @@ func ProcessProjectDescriptor(appDir, descriptorPath, platformDir string, logger
 	if err := processFiles(appDir, d.IO.Buildpacks.build); err != nil {
 		return err
 	}
-	return serializeEnvVars(d.IO.Buildpacks.Env, platformDir)
+	return serializeEnvVars(d.env(), platformDir)
 }
 
 func parseProjectDescriptor(file string, logger *log.Logger) (descriptorV2, error) {
@@ -71,6 +71,11 @@ func v1ToV2(v1 descriptorV1) descriptorV2 {
 			Buildpacks: cnbTableV2{
 				build: v1.Build.build,
 				Group: v1.Build.Buildpacks,
+				buildEnvVariableV2: buildEnvVariableV2{
+					BuildEnv: buildEnvVariable{
+						Env: v1.Build.Env,
+					},
+				},
 			},
 		},
 	}
@@ -129,6 +134,17 @@ type descriptorV2 struct {
 	IO      ioTable `toml:"io"`
 }
 
+// Because CNB Project Descriptor v0.2 has two ways for defining environment variables.
+// see https://github.com/buildpacks/spec/blob/main/extensions/project-descriptor.md#iobuildpacksbuildenv-optional
+// This function calculates the final environment variables
+func (d *descriptorV2) env() []envVariable {
+	env := d.IO.Buildpacks.BuildEnv.Env
+	if env == nil {
+		env = d.IO.Buildpacks.EnvBuild.Env
+	}
+	return env
+}
+
 type project struct {
 	SchemaVersion string `toml:"schema-version"`
 }
@@ -138,15 +154,21 @@ type ioTable struct {
 }
 
 type cnbTableV2 struct {
-	build `toml:",inline"`
-	Group []buildpack `toml:"group"`
+	build              `toml:",inline"`
+	buildEnvVariableV2 `toml:",inline"`
+	Group              []buildpack `toml:"group"`
 }
 
 type build struct {
-	Include []string      `toml:"include"`
-	Exclude []string      `toml:"exclude"`
-	Builder string        `toml:"builder"`
-	Env     []envVariable `toml:"env"`
+	Include []string `toml:"include"`
+	Exclude []string `toml:"exclude"`
+	Builder string   `toml:"builder"`
+}
+
+type buildEnvVariableV2 struct {
+	BuildEnv buildEnvVariable `toml:"build"`
+	// Deprecated: use `[[io.buildpacks.build.env]]` instead. see https://github.com/buildpacks/pack/pull/1479
+	EnvBuild envBuildVariable `toml:"env"`
 }
 
 type buildpack struct {
@@ -161,5 +183,6 @@ type descriptorV1 struct {
 
 type cnbTableV1 struct {
 	build      `toml:",inline"`
-	Buildpacks []buildpack `toml:"buildpacks"`
+	Buildpacks []buildpack   `toml:"buildpacks"`
+	Env        []envVariable `toml:"env"`
 }

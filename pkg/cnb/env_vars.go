@@ -1,6 +1,7 @@
 package cnb
 
 import (
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -26,4 +27,56 @@ func serializeEnvVars(envVars []envVariable, platformDir string) error {
 type envVariable struct {
 	Name  string `json:"name" toml:"name"`
 	Value string `json:"value" toml:"value"`
+}
+
+type buildEnvVariable struct {
+	Env []envVariable `toml:"env"`
+}
+
+type envBuildVariable struct {
+	Env []envVariable
+}
+
+func (a *envBuildVariable) UnmarshalTOML(f interface{}) error {
+	var (
+		env []envVariable
+		err error
+	)
+	switch v := f.(type) {
+	case map[string]interface{}:
+		if envs, ok := v["build"].([]map[string]interface{}); ok {
+			env, err = buildEnv(envs)
+			if err != nil {
+				return err
+			}
+		}
+	case []map[string]interface{}:
+		env, err = buildEnv(v)
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("environment variables in project descriptor could not be parsed")
+	}
+	a.Env = env
+	return nil
+}
+
+func buildEnv(v []map[string]interface{}) ([]envVariable, error) {
+	var e []envVariable
+	for _, env := range v {
+		if name, nameOk := env["name"].(string); nameOk {
+			if value, valueOk := env["value"].(string); valueOk {
+				e = append(e, envVariable{
+					Name:  name,
+					Value: value,
+				})
+			} else {
+				return nil, errors.Errorf("environment variable '%s' is not a string value", name)
+			}
+		} else {
+			return nil, errors.New("environment variable 'name' is not a string")
+		}
+	}
+	return e, nil
 }
