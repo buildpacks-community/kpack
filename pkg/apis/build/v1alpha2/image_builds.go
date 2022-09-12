@@ -80,6 +80,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			SchedulerName:         im.SchedulerName(),
 			PriorityClassName:     priorityClass,
 			ActiveDeadlineSeconds: im.BuildTimeout(),
+			SetEpochTime:          im.Spec.Build.SetEpochTime,
 		},
 	}
 }

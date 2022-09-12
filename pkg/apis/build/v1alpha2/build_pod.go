@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -592,6 +593,13 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								homeEnv,
 								platformApiVersionEnvVar,
 							},
+							func() corev1.EnvVar {
+								if b.Spec.SetEpochTime {
+									return corev1.EnvVar{Name: "SOURCE_DATE_EPOCH", Value: time.Now().String()}
+								} else {
+									return corev1.EnvVar{Name: "", Value: ""}
+								}
+							}(),
 							func() corev1.EnvVar {
 								return corev1.EnvVar{
 									Name:  "CNB_RUN_IMAGE",
@@ -1211,9 +1219,12 @@ func cosignSecretArgs(secret corev1.Secret) []string {
 	return cosignArgs
 }
 
-func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
-	if envVar.Name != "" && envVar.Value != "" {
-		envs = append(envs, envVar)
+func envs(envs []corev1.EnvVar, envVar1 corev1.EnvVar, envVar2 corev1.EnvVar) []corev1.EnvVar {
+	if envVar1.Name != "" && envVar1.Value != "" {
+		envs = append(envs, envVar1)
+	}
+	if envVar2.Name != "" && envVar2.Value != "" {
+		envs = append(envs, envVar2)
 	}
 	return envs
 }
