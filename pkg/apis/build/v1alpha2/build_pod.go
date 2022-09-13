@@ -1219,12 +1219,11 @@ func cosignSecretArgs(secret corev1.Secret) []string {
 	return cosignArgs
 }
 
-func envs(envs []corev1.EnvVar, envVar1 corev1.EnvVar, envVar2 corev1.EnvVar) []corev1.EnvVar {
-	if envVar1.Name != "" && envVar1.Value != "" {
-		envs = append(envs, envVar1)
-	}
-	if envVar2.Name != "" && envVar2.Value != "" {
-		envs = append(envs, envVar2)
+func envs(envs []corev1.EnvVar, envVars ...corev1.EnvVar) []corev1.EnvVar {
+	for _, envVar := range envVars {
+		if envVar.Name != "" && envVar.Value != "" {
+			envs = append(envs, envVar)
+		}
 	}
 	return envs
 }
