@@ -44,7 +44,8 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			},
 			Cache: &ImageCacheConfig{
 				Volume: &ImagePersistentVolumeCache{
-					Size: &cacheSize,
+					Size:             &cacheSize,
+					StorageClassName: "sc-name",
 				},
 			},
 			FailedBuildHistoryLimit:  &limit,
@@ -285,10 +286,11 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		})
 
-		it("validates cache size is not set when there is no default StorageClass", func() {
+		it("validates cache size is not set when there is no default StorageClass and no storageClassName", func() {
 			ctx = context.TODO()
+			image.Spec.Cache.Volume.StorageClassName = ""
 
-			assertValidationError(image, ctx, apis.ErrGeneric("spec.cache.volume.size cannot be set with no default StorageClass"))
+			assertValidationError(image, ctx, apis.ErrGeneric("spec.cache.volume.size cannot be set without spec.cache.volume.storageClassName or a default StorageClass"))
 		})
 
 		it("combining errors", func() {
@@ -313,6 +315,14 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			image.Spec.Cache.Volume.Size = &cacheSize
 			err := image.Validate(apis.WithinUpdate(ctx, original))
 			assert.EqualError(t, err, "Field cannot be decreased: spec.cache.volume.size\ncurrent: 5G, requested: 4G")
+		})
+
+		it("image.cache.volume.storageClassName has not changed", func() {
+			original := image.DeepCopy()
+
+			image.Spec.Cache.Volume.StorageClassName = "sc-different"
+			err := image.Validate(apis.WithinUpdate(ctx, original))
+			assert.EqualError(t, err, "Immutable field changed: spec.cache.volume.storageClassName\ngot: sc-different, want: sc-name")
 		})
 
 		when("validating the cosign config", func() {
