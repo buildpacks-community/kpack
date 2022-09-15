@@ -3,6 +3,7 @@ package v1alpha2
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -339,6 +340,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 	}
 	detectContainerMods := ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))
+
+	dateTime, err := parseTime(b.Spec.CreationTime)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing creation time %s", b.Spec.CreationTime)
+	}
+	
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
@@ -594,11 +601,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								platformApiVersionEnvVar,
 							},
 							func() corev1.EnvVar {
-								if b.Spec.SetEpochTime {
-									return corev1.EnvVar{Name: "SOURCE_DATE_EPOCH", Value: time.Now().String()}
-								} else {
-									return corev1.EnvVar{Name: "", Value: ""}
+								if dateTime != nil {
+									return corev1.EnvVar{Name: "SOURCE_DATE_EPOCH", Value: strconv.Itoa(int(dateTime.Unix()))}
 								}
+								return corev1.EnvVar{Name:"", Value:""}
 							}(),
 							func() corev1.EnvVar {
 								return corev1.EnvVar{
@@ -1226,4 +1232,22 @@ func envs(envs []corev1.EnvVar, envVars ...corev1.EnvVar) []corev1.EnvVar {
 		}
 	}
 	return envs
+}
+
+
+func parseTime(providedTime string) (*time.Time, error) {
+	var parsedTime time.Time
+	switch providedTime {
+	case "":
+		return nil, nil
+	case "now":
+		parsedTime = time.Now().UTC()
+	default:
+		intTime, err := strconv.ParseInt(providedTime, 10, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing unix timestamp")
+		}
+		parsedTime = time.Unix(intTime, 0).UTC()
+	}
+	return &parsedTime, nil
 }

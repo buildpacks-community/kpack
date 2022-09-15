@@ -78,7 +78,7 @@ type ImageBuild struct {
 	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
 	SchedulerName    string              `json:"schedulerName,omitempty"`
 	BuildTimeout     *int64              `json:"buildTimeout,omitempty"`
-	SetEpochTime     bool                `json:"setEpochTime,omitempty"`
+	CreationTime     string              `json:"creationTime,omitempty"`
 }
 
 // +k8s:openapi-gen=true

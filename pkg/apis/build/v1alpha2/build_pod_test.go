@@ -334,7 +334,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Tolerations:  []corev1.Toleration{{Key: "some-key"}},
 				NodeSelector: map[string]string{"foo": "bar"},
 				Affinity:     &corev1.Affinity{},
-				SetEpochTime: true,
+				CreationTime: "now",
 			},
 		}
 	})
