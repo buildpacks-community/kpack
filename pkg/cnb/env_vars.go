@@ -1,10 +1,11 @@
 package cnb
 
 import (
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/pkg/errors"
 )
 
 func serializeEnvVars(envVars []envVariable, platformDir string) error {
