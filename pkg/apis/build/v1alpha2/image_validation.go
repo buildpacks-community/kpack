@@ -127,8 +127,8 @@ func (is *ImageSpec) validateSameRegistry() *apis.FieldError {
 }
 
 func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
-	if is.Cache != nil && is.Cache.Volume != nil && ctx.Value(HasDefaultStorageClass) == nil {
-		return apis.ErrGeneric("spec.cache.volume.size cannot be set with no default StorageClass")
+	if is.Cache != nil && is.Cache.Volume != nil && is.Cache.Volume.StorageClassName == "" && ctx.Value(HasDefaultStorageClass) == nil {
+		return apis.ErrGeneric("spec.cache.volume.size cannot be set without spec.cache.volume.storageClassName or a default StorageClass")
 	}
 
 	if apis.IsInUpdate(ctx) {
@@ -147,6 +147,8 @@ func (is *ImageSpec) validateVolumeCache(ctx context.Context) *apis.FieldError {
 					Details: fmt.Sprintf("current: %v, requested: %v", original.Spec.Cache.Volume.Size, is.Cache.Volume.Size),
 				}
 			}
+
+			return validate.ImmutableField(original.Spec.Cache.Volume.StorageClassName, is.Cache.Volume.StorageClassName, "cache.volume.storageClassName")
 		}
 	}
 
@@ -194,7 +196,7 @@ func (is *ImageSpec) validateBuildHistoryLimit() *apis.FieldError {
 	return nil
 }
 
-func (c *ImageCacheConfig) Validate(context context.Context) *apis.FieldError {
+func (c *ImageCacheConfig) Validate(ctx context.Context) *apis.FieldError {
 	if c != nil && c.Volume != nil && c.Registry != nil {
 		return apis.ErrGeneric("only one type of cache can be specified", "volume", "registry")
 	}

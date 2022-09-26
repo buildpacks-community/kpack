@@ -408,7 +408,6 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			it("creates a cache if requested", func() {
-
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
@@ -460,20 +459,41 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			it("does not create a cache if a cache already exists", func() {
 				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = image.CacheName()
+				storageClassName := "some-name"
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
 						image,
 						image.SourceResolver(),
-						image.BuildCache(),
+						&corev1.PersistentVolumeClaim{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.CacheName(),
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									someLabelKey: someValueToPassThrough,
+								},
+							},
+							Spec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: cacheSize,
+									},
+								},
+								StorageClassName: &storageClassName,
+							},
+						},
 						builder,
 					},
 					WantErr: false,
 				})
 			})
 
-			it("updates build cache if desired configuration changed", func() {
+			it("updates build cache if size changes", func() {
 				var imageCacheName = image.CacheName()
 
 				image.Status.BuildCacheName = imageCacheName
@@ -612,6 +632,57 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: image.ObjectMeta,
 								Spec:       image.Spec,
 								Status: buildapi.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionReadyUnknown(),
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("uses the storageClassName if provided", func() {
+				image.Spec.Cache.Volume.StorageClassName = "some-storage-class"
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						image,
+						image.SourceResolver(),
+						builder,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&corev1.PersistentVolumeClaim{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      image.CacheName(),
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(image),
+								},
+								Labels: map[string]string{
+									someLabelKey: someValueToPassThrough,
+								},
+							},
+							Spec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: cacheSize,
+									},
+								},
+								StorageClassName: &image.Spec.Cache.Volume.StorageClassName,
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Image{
+								ObjectMeta: image.ObjectMeta,
+								Spec:       image.Spec,
+								Status: buildapi.ImageStatus{
+									BuildCacheName: image.CacheName(),
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),

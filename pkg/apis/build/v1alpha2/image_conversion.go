@@ -10,10 +10,18 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 )
 
+const (
+	servicesConversionAnnotation         = "kpack.io/services"
+	storageClassNameConversionAnnotation = "kpack.io/cache.volume.storageClassName"
+)
+
 func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 	switch toImage := to.(type) {
 	case *v1alpha1.Image:
 		i.ObjectMeta.DeepCopyInto(&toImage.ObjectMeta)
+		if toImage.Annotations == nil {
+			toImage.Annotations = map[string]string{}
+		}
 		i.Spec.convertTo(&toImage.Spec)
 		i.Status.convertTo(&toImage.Status)
 		if build := i.Spec.Build; build != nil {
@@ -22,11 +30,11 @@ func (i *Image) ConvertTo(_ context.Context, to apis.Convertible) error {
 				if err != nil {
 					return err
 				}
-				if toImage.Annotations == nil {
-					toImage.Annotations = map[string]string{}
-				}
-				toImage.Annotations["kpack.io/services"] = string(bytes)
+				toImage.Annotations[servicesConversionAnnotation] = string(bytes)
 			}
+		}
+		if i.Spec.Cache != nil && i.Spec.Cache.Volume != nil && i.Spec.Cache.Volume.StorageClassName != "" {
+			toImage.Annotations[storageClassNameConversionAnnotation] = i.Spec.Cache.Volume.StorageClassName
 		}
 	default:
 		return fmt.Errorf("unknown version, got: %T", toImage)
@@ -40,7 +48,7 @@ func (i *Image) ConvertFrom(_ context.Context, from apis.Convertible) error {
 		fromImage.ObjectMeta.DeepCopyInto(&i.ObjectMeta)
 		i.Spec.convertFrom(&fromImage.Spec)
 		i.Status.convertFrom(&fromImage.Status)
-		if servicesJson, ok := i.Annotations["kpack.io/services"]; ok {
+		if servicesJson, ok := i.Annotations[servicesConversionAnnotation]; ok {
 			var services Services
 			err := json.Unmarshal([]byte(servicesJson), &services)
 			if err != nil {
@@ -48,7 +56,17 @@ func (i *Image) ConvertFrom(_ context.Context, from apis.Convertible) error {
 			}
 
 			i.Spec.Build.Services = services
-			delete(i.Annotations, "kpack.io/services")
+			delete(i.Annotations, servicesConversionAnnotation)
+		}
+		if storageClassName, ok := i.Annotations[storageClassNameConversionAnnotation]; ok {
+			if i.Spec.Cache == nil {
+				i.Spec.Cache = &ImageCacheConfig{}
+			}
+			if i.Spec.Cache.Volume == nil {
+				i.Spec.Cache.Volume = &ImagePersistentVolumeCache{}
+			}
+			i.Spec.Cache.Volume.StorageClassName = storageClassName
+			delete(i.Annotations, storageClassNameConversionAnnotation)
 		}
 	default:
 		return fmt.Errorf("unknown version, got: %T", fromImage)
