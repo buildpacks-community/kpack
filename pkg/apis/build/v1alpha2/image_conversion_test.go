@@ -22,6 +22,9 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 	when("converting to v1alpha1 and back", func() {
 		cacheSize := resource.MustParse("5G")
 		var buildHistoryLimit int64 = 5
+		var buildTimeout int64 = 7
+		runtimeClassName := "some-runtime-class-name"
+		affinity := corev1.Affinity{}
 
 		v1alpha2Image := &Image{
 			ObjectMeta: metav1.ObjectMeta{
@@ -44,6 +47,9 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 						Size:             &cacheSize,
 						StorageClassName: "some-storage-class",
 					},
+					Registry: &RegistryCache{
+						Tag: "some-tag",
+					},
 				},
 				FailedBuildHistoryLimit:  &buildHistoryLimit,
 				SuccessBuildHistoryLimit: &buildHistoryLimit,
@@ -56,6 +62,12 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 							APIVersion: "v1",
 						},
 					},
+					Tolerations: []corev1.Toleration{
+						{
+							Key: "some-key",
+							Value: "some-value",
+						},
+					},
 					Env: []corev1.EnvVar{
 						{
 							Name:  "blah",
@@ -66,6 +78,11 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 						Limits:   corev1.ResourceList{"some-limit": resource.Quantity{}},
 						Requests: corev1.ResourceList{"some-request": resource.Quantity{}},
 					},
+					NodeSelector: map[string]string{"some-node-selector-key":"some-node-selector-value"},
+					Affinity: &affinity,
+					RuntimeClassName: &runtimeClassName,
+					SchedulerName: "some-scheduler-name",
+					BuildTimeout: &buildTimeout,
 				},
 				Notary: &corev1alpha1.NotaryConfig{
 					V1: &corev1alpha1.NotaryV1Config{
@@ -75,6 +92,16 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
+				ProjectDescriptorPath: "some-project-descriptor-path",
+				Cosign: &CosignConfig{
+					Annotations: []CosignAnnotation{
+						{
+							Name:  "some-cosign-name",
+							Value: "some-cosign-value",
+						},
+					},
+				},
+				DefaultProcess: "some-default-process",
 			},
 			Status: ImageStatus{
 				Status: corev1alpha1.Status{
@@ -102,7 +129,17 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				Name: "my-super-convertable-image",
 				Annotations: map[string]string{
 					"kpack.io/services":                      `[{"kind":"Secret","name":"some-secret","apiVersion":"v1"}]`,
+					"kpack.io/tolerations": `[{"key":"some-key","value":"some-value"}]`,
+					"kpack.io/nodeSelector": `{"some-node-selector-key":"some-node-selector-value"}`,
+					"kpack.io/affinity": `{}`,
+					"kpack.io/runtimeClassName": "some-runtime-class-name",
+					"kpack.io/schedulerName": "some-scheduler-name",
+					"kpack.io/buildTimeout": "7",
 					"kpack.io/cache.volume.storageClassName": "some-storage-class",
+					"kpack.io/cache.registry.tag": "some-tag",
+					"kpack.io/projectDescriptorPath": "some-project-descriptor-path",
+					"kpack.io/cosignAnnotation": `[{"name":"some-cosign-name","value":"some-cosign-value"}]`,
+					"kpack.io/defaultProcess": "some-default-process",
 				},
 			},
 			Spec: v1alpha1.ImageSpec{
@@ -254,6 +291,9 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			v1alpha2Image.Spec.Build = nil
 			v1alpha2Image.Spec.Notary = nil
 			v1alpha2Image.Spec.Cache = nil
+			v1alpha2Image.Spec.ProjectDescriptorPath = ""
+			v1alpha2Image.Spec.Cosign = nil
+			v1alpha2Image.Spec.DefaultProcess = ""
 
 			testV1alpha1Image := &v1alpha1.Image{}
 			err := v1alpha2Image.ConvertTo(context.TODO(), testV1alpha1Image)
