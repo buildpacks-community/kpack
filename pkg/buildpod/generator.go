@@ -43,6 +43,7 @@ type Generator struct {
 	ImageFetcher              ImageFetcher
 	DynamicClient             dynamic.Interface
 	MaximumPlatformApiVersion *semver.Version
+	SupportInjectSidecars     bool
 }
 
 type BuildPodable interface {
@@ -78,6 +79,7 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		Bindings:                  bindings,
 		ImagePullSecrets:          imagePullSecrets,
 		MaximumPlatformApiVersion: g.MaximumPlatformApiVersion,
+		SupportInjectedSidecars:   g.SupportInjectSidecars,
 	})
 }
 

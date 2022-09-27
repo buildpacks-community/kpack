@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -47,10 +48,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
-		keychainFactory       = &registryfakes.FakeKeychainFactory{}
-		podGenerator          = &testPodGenerator{}
-		ctx                   = context.Background()
+		fakeMetadataRetriever   = &buildfakes.FakeMetadataRetriever{}
+		keychainFactory         = &registryfakes.FakeKeychainFactory{}
+		podGenerator            = &testPodGenerator{}
+		ctx                     = context.Background()
+		supportInjectedSidecars = false
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -65,13 +67,14 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
-				K8sClient:         k8sfakeClient,
-				Client:            fakeClient,
-				KeychainFactory:   keychainFactory,
-				Lister:            listers.GetBuildLister(),
-				MetadataRetriever: fakeMetadataRetriever,
-				PodLister:         listers.GetPodLister(),
-				PodGenerator:      podGenerator,
+				K8sClient:               k8sfakeClient,
+				Client:                  fakeClient,
+				KeychainFactory:         keychainFactory,
+				Lister:                  listers.GetBuildLister(),
+				MetadataRetriever:       fakeMetadataRetriever,
+				PodLister:               listers.GetPodLister(),
+				PodGenerator:            podGenerator,
+				SupportInjectedSidecars: supportInjectedSidecars,
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -334,7 +337,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				startTime := time.Now()
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
 					{
-						Name: "step-1",
+						Name: "prepare",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    0,
@@ -345,7 +348,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "step-2",
+						Name: "analyze",
 						State: corev1.ContainerState{
 							Running: &corev1.ContainerStateRunning{
 								StartedAt: metav1.Time{Time: startTime},
@@ -353,7 +356,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "step-3",
+						Name: "detect",
 						State: corev1.ContainerState{
 							Waiting: &corev1.ContainerStateWaiting{
 								Reason:  "Waiting",
@@ -409,7 +412,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									StepsCompleted: []string{
-										"step-1",
+										"prepare",
 									},
 								},
 							},
@@ -425,7 +428,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				pod.Status.Phase = corev1.PodPending
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
 					{
-						Name: "step-1",
+						Name: "prepare",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    0,
@@ -436,7 +439,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "step-2",
+						Name: "analyze",
 						State: corev1.ContainerState{
 							Waiting: &corev1.ContainerStateWaiting{
 								Reason:  "ImagePullBackOff",
@@ -489,7 +492,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									StepsCompleted: []string{
-										"step-1",
+										"prepare",
 									},
 								},
 							},
@@ -506,7 +509,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				pod.Status.Phase = corev1.PodSucceeded
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
 					{
-						Name: "step-1",
+						Name: "prepare",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    0,
@@ -517,7 +520,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "step-2",
+						Name: "analyze",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    0,
@@ -599,10 +602,16 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 												ContainerID: "container.ID2",
 											},
 										},
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												Message: string(compressedBuildMetadata),
+											},
+										},
 									},
 									StepsCompleted: []string{
-										"step-1",
-										"step-2",
+										"prepare",
+										"analyze",
+										"completion",
 									},
 								},
 							},
@@ -690,7 +699,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					pod.Status.Phase = corev1.PodSucceeded
 					pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
 						{
-							Name: "step-1",
+							Name: "prepare",
 							State: corev1.ContainerState{
 								Terminated: &corev1.ContainerStateTerminated{
 									ExitCode:    0,
@@ -701,7 +710,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						{
-							Name: "step-2",
+							Name: "analyze",
 							State: corev1.ContainerState{
 								Terminated: &corev1.ContainerStateTerminated{
 									ExitCode:    0,
@@ -769,8 +778,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 										StepsCompleted: []string{
-											"step-1",
-											"step-2",
+											"prepare",
+											"analyze",
 										},
 									},
 								},
@@ -846,7 +855,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				pod.Status.Phase = corev1.PodFailed
 				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
 					{
-						Name: "step-1",
+						Name: "prepare",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    1,
@@ -857,7 +866,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					{
-						Name: "step-2",
+						Name: "analyze",
 						State: corev1.ContainerState{
 							Waiting: &corev1.ContainerStateWaiting{
 								Reason:  "Waiting",
@@ -907,7 +916,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									StepsCompleted: []string{
-										"step-1",
+										"prepare",
 									},
 								},
 							},
@@ -951,12 +960,300 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								StepsCompleted: []string{
-									"step-1",
+									"prepare",
 								},
 							},
 						},
 					},
 					WantErr: false,
+				})
+			})
+		})
+
+		when("pod needs cleanup", func() {
+			supportInjectedSidecars = true
+			var startTime = time.Now()
+
+			it("updates activeDeadlineSeconds when a build terminates", func() {
+				pod := &corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      bld.GetName() + "-build-pod",
+						Namespace: bld.GetNamespace(),
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:  "completion",
+								Image: "completion-image",
+							},
+							{
+								Name:  "sidecar",
+								Image: "sidecar-image",
+							},
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								Name: "completion",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										ExitCode:    0,
+										Reason:      "Terminated",
+										Message:     "Message",
+										ContainerID: "container.ID",
+									},
+								},
+							},
+							{
+								Name: "sidecar",
+								State: corev1.ContainerState{
+									Running: &corev1.ContainerStateRunning{
+										StartedAt: metav1.Time{Time: startTime},
+									},
+								},
+							},
+						},
+						Phase: corev1.PodRunning,
+					},
+				}
+
+				deadline := int64(1)
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						bld,
+						pod,
+					},
+					WantErr: false,
+					WantUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &corev1.Pod{
+								TypeMeta: metav1.TypeMeta{},
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      bld.GetName() + "-build-pod",
+									Namespace: bld.GetNamespace(),
+								},
+								Spec: corev1.PodSpec{
+									ActiveDeadlineSeconds: &deadline,
+									Containers: []corev1.Container{
+										{
+											Name:  "completion",
+											Image: "completion-image",
+										},
+										{
+											Name:  "sidecar",
+											Image: "sidecar-image",
+										},
+									},
+								},
+								Status: corev1.PodStatus{
+									ContainerStatuses: []corev1.ContainerStatus{
+										{
+											Name: "completion",
+											State: corev1.ContainerState{
+												Terminated: &corev1.ContainerStateTerminated{
+													ExitCode:    0,
+													Reason:      "Terminated",
+													Message:     "Message",
+													ContainerID: "container.ID",
+												},
+											},
+										},
+										{
+											Name: "sidecar",
+											State: corev1.ContainerState{
+												Running: &corev1.ContainerStateRunning{
+													StartedAt: metav1.Time{Time: startTime},
+												},
+											},
+										},
+									},
+									Phase: corev1.PodRunning,
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status: buildapi.BuildStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionUnknown,
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									StepStates: []corev1.ContainerState{
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     "Message",
+												ContainerID: "container.ID",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"completion",
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("marks build as successful if completion completes even if pod fails", func() {
+
+				compressedBuildMetadata, err := os.ReadFile(filepath.Join("testdata", "metadata"))
+				require.NoError(t, err)
+
+				deadline := int64(1)
+				pod := &corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      bld.GetName() + "-build-pod",
+						Namespace: bld.GetNamespace(),
+					},
+					Spec: corev1.PodSpec{
+						ActiveDeadlineSeconds: &deadline,
+						Containers: []corev1.Container{
+							{
+								Name:  "completion",
+								Image: "completion-image",
+							},
+							{
+								Name:  "sidecar",
+								Image: "sidecar-image",
+							},
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								Name: "completion",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										ExitCode:    0,
+										Reason:      "Terminated",
+										Message:     string(compressedBuildMetadata),
+										ContainerID: "container.ID",
+									},
+								},
+							},
+							{
+								Name: "sidecar",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										ExitCode:    0,
+										Reason:      "Terminated",
+										Message:     "Message",
+										ContainerID: "container.ID2",
+									},
+								},
+							},
+						},
+						Phase:  corev1.PodFailed,
+						Reason: "DeadlineExceeded",
+					},
+				}
+
+				build := &buildapi.Build{
+					ObjectMeta: bld.ObjectMeta,
+					Spec:       bld.Spec,
+					Status: buildapi.BuildStatus{
+						Status: corev1alpha1.Status{
+							ObservedGeneration: originalGeneration,
+							Conditions: corev1alpha1.Conditions{
+								{
+									Type:   corev1alpha1.ConditionSucceeded,
+									Status: corev1.ConditionUnknown,
+								},
+							},
+						},
+						PodName: "build-name-build-pod",
+						StepStates: []corev1.ContainerState{
+							{
+								Terminated: &corev1.ContainerStateTerminated{
+									ExitCode:    0,
+									Reason:      "Terminated",
+									Message:     string(compressedBuildMetadata),
+									ContainerID: "container.ID",
+								},
+							},
+						},
+						StepsCompleted: []string{
+							"completion",
+						},
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						build,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status: buildapi.BuildStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionSucceeded,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									PodName: "build-name-build-pod",
+									BuildMetadata: corev1alpha1.BuildpackMetadataList{
+										{
+											Id:       "some-id",
+											Version:  "some-version",
+											Homepage: "some-homepage",
+										},
+										{
+											Id:      "some-other-id",
+											Version: "some-other-version",
+										},
+									},
+									LatestImage:      "some-latest-image",
+									LatestCacheImage: "some-cache-image",
+									Stack: corev1alpha1.BuildStack{
+										RunImage: "some-run-image",
+										ID:       "some-stack-id",
+									},
+									StepStates: []corev1.ContainerState{
+										{
+											Terminated: &corev1.ContainerStateTerminated{
+												ExitCode:    0,
+												Reason:      "Terminated",
+												Message:     string(compressedBuildMetadata),
+												ContainerID: "container.ID",
+											},
+										},
+									},
+									StepsCompleted: []string{
+										"completion",
+									},
+								},
+							},
+						},
+					},
 				})
 			})
 		})

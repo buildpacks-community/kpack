@@ -30,13 +30,16 @@ function compile() {
   controller_image=${IMAGE_PREFIX}controller
   webhook_image=${IMAGE_PREFIX}webhook
   build_init_image=${IMAGE_PREFIX}build-init
+  build_waiter_image=${IMAGE_PREFIX}build-waiter
   rebase_image=${IMAGE_PREFIX}rebase
   completion_image=${IMAGE_PREFIX}completion
   lifecycle_image=${IMAGE_PREFIX}lifecycle
 
   pack_build ${controller_image} "./cmd/controller" -e BP_BUILD_LIBGIT2=true -e BP_GO_BUILD_FLAGS='-tags="static"'
-
   controller_image=${resolved_image_name}
+
+  pack_build ${build_waiter_image} "./cmd/build-waiter"
+  build_waiter_image=${resolved_image_name}
 
   pack_build ${webhook_image} "./cmd/webhook"
   webhook_image=${resolved_image_name}
@@ -57,6 +60,7 @@ function compile() {
     -v controller_image=${controller_image} \
     -v webhook_image=${webhook_image} \
     -v build_init_image=${build_init_image} \
+    -v build_waiter_image=${build_waiter_image} \
     -v rebase_image=${rebase_image} \
     -v completion_image=${completion_image} \
     -v lifecycle_image=${lifecycle_image} > $output

@@ -2,14 +2,18 @@ package build
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"gomodules.xyz/jsonpatch/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	corev1Informers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 	v1Listers "k8s.io/client-go/listers/core/v1"
@@ -43,15 +47,16 @@ type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory) *controller.Impl {
+func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory, supportInjectedSidecars bool) *controller.Impl {
 	c := &Reconciler{
-		Client:            opt.Client,
-		K8sClient:         k8sClient,
-		MetadataRetriever: metadataRetriever,
-		Lister:            informer.Lister(),
-		PodLister:         podInformer.Lister(),
-		PodGenerator:      podGenerator,
-		KeychainFactory:   keychainFactory,
+		Client:                  opt.Client,
+		K8sClient:               k8sClient,
+		MetadataRetriever:       metadataRetriever,
+		Lister:                  informer.Lister(),
+		PodLister:               podInformer.Lister(),
+		PodGenerator:            podGenerator,
+		KeychainFactory:         keychainFactory,
+		SupportInjectedSidecars: supportInjectedSidecars,
 	}
 
 	logger := opt.Logger.With(
@@ -71,13 +76,14 @@ func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8scli
 }
 
 type Reconciler struct {
-	Client            versioned.Interface
-	KeychainFactory   registry.KeychainFactory
-	Lister            buildlisters.BuildLister
-	MetadataRetriever MetadataRetriever
-	K8sClient         k8sclient.Interface
-	PodLister         v1Listers.PodLister
-	PodGenerator      PodGenerator
+	Client                  versioned.Interface
+	KeychainFactory         registry.KeychainFactory
+	Lister                  buildlisters.BuildLister
+	MetadataRetriever       MetadataRetriever
+	K8sClient               k8sclient.Interface
+	PodLister               v1Listers.PodLister
+	PodGenerator            PodGenerator
+	SupportInjectedSidecars bool
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -116,6 +122,18 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 		return err
 	}
 
+	if c.SupportInjectedSidecars {
+		pod, err = c.setBuildReady(ctx, pod)
+		if err != nil {
+			return err
+		}
+
+		pod, err = c.cleanupIfNeeded(ctx, pod)
+		if err != nil {
+			return err
+		}
+	}
+
 	if build.MetadataReady(pod) {
 		var buildMetadata *cnb.BuildMetadata
 		if pod.Spec.NodeSelector != nil && pod.Spec.NodeSelector[k8sOSLabel] == "windows" {
@@ -152,9 +170,43 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 
 	build.Status.PodName = pod.Name
 	build.Status.StepStates = stepStates(pod)
-	build.Status.StepsCompleted = stepCompleted(pod)
-	build.Status.Conditions = conditionForPod(pod)
+	build.Status.StepsCompleted = stepsCompleted(pod)
+	build.Status.Conditions = conditionForPod(pod, build.Status.StepsCompleted)
 	return nil
+}
+
+func (c *Reconciler) setBuildReady(ctx context.Context, pod *corev1.Pod) (*corev1.Pod, error) {
+	if _, found := pod.Annotations[buildapi.BuildReadyAnnotation]; found {
+		return pod, nil
+	}
+
+	for _, container := range pod.Status.ContainerStatuses {
+		if !container.Ready {
+			return pod, nil
+		}
+	}
+
+	patch, err := json.Marshal([]jsonpatch.JsonPatchOperation{{
+		Operation: "replace",
+		Path:      "/metadata/annotations/" + strings.Replace(buildapi.BuildReadyAnnotation, "/", "~1", 1),
+		Value:     "true",
+	}})
+	if err != nil {
+		return nil, err
+	}
+
+	return c.K8sClient.CoreV1().Pods(pod.Namespace).Patch(ctx, pod.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
+}
+
+func (c *Reconciler) cleanupIfNeeded(ctx context.Context, pod *corev1.Pod) (*corev1.Pod, error) {
+	// check if pod is running && completion is terminated
+	if pod.Status.Phase == corev1.PodRunning && contains(stepsCompleted(pod), "completion") {
+		activeDeadlineSeconds := int64(1)
+		podCopy := pod.DeepCopy()
+		podCopy.Spec.ActiveDeadlineSeconds = &activeDeadlineSeconds
+		return c.K8sClient.CoreV1().Pods(pod.Namespace).Update(ctx, podCopy, metav1.UpdateOptions{})
+	}
+	return pod, nil
 }
 
 func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Build) (*corev1.Pod, error) {
@@ -172,7 +224,7 @@ func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Buil
 	return c.K8sClient.CoreV1().Pods(build.Namespace).Create(ctx, podConfig, metav1.CreateOptions{})
 }
 
-func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
+func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Conditions {
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
 		return corev1alpha1.Conditions{
@@ -183,6 +235,15 @@ func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
 			},
 		}
 	case corev1.PodFailed:
+		if pod.Status.Reason == "DeadlineExceeded" && contains(stepsCompleted, "completion") {
+			return corev1alpha1.Conditions{
+				{
+					Type:               corev1alpha1.ConditionSucceeded,
+					Status:             corev1.ConditionTrue,
+					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+				},
+			}
+		}
 		return corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionSucceeded,
@@ -216,18 +277,46 @@ func conditionForPod(pod *corev1.Pod) corev1alpha1.Conditions {
 	}
 }
 
+var buildSteps = map[string]struct{}{
+	buildapi.PrepareContainerName:    {},
+	buildapi.AnalyzeContainerName:    {},
+	buildapi.DetectContainerName:     {},
+	buildapi.RestoreContainerName:    {},
+	buildapi.BuildContainerName:      {},
+	buildapi.ExportContainerName:     {},
+	buildapi.CompletionContainerName: {},
+	buildapi.RebaseContainerName:     {},
+}
+
+func isBuildStep(step string) bool {
+	_, found := buildSteps[step]
+	return found
+}
+
 func stepStates(pod *corev1.Pod) []corev1.ContainerState {
-	states := make([]corev1.ContainerState, 0, len(pod.Status.InitContainerStatuses))
+	states := make([]corev1.ContainerState, 0, len(buildSteps))
 	for _, s := range pod.Status.InitContainerStatuses {
-		states = append(states, s.State)
+		if isBuildStep(s.Name) {
+			states = append(states, s.State)
+		}
+	}
+	for _, s := range pod.Status.ContainerStatuses {
+		if isBuildStep(s.Name) {
+			states = append(states, s.State)
+		}
 	}
 	return states
 }
 
-func stepCompleted(pod *corev1.Pod) []string {
-	completed := make([]string, 0, len(pod.Status.InitContainerStatuses))
+func stepsCompleted(pod *corev1.Pod) []string {
+	completed := make([]string, 0, len(buildSteps))
 	for _, s := range pod.Status.InitContainerStatuses {
-		if s.State.Terminated != nil {
+		if s.State.Terminated != nil && isBuildStep(s.Name) {
+			completed = append(completed, s.Name)
+		}
+	}
+	for _, s := range pod.Status.ContainerStatuses {
+		if s.State.Terminated != nil && isBuildStep(s.Name) {
 			completed = append(completed, s.Name)
 		}
 	}
@@ -256,4 +345,14 @@ func (c *Reconciler) buildMetadataFromBuildPod(pod *corev1.Pod) (*cnb.BuildMetad
 		}
 	}
 	return nil, errors.New(buildapi.CompletionContainerName + " container not found")
+}
+
+func contains(arr []string, s string) bool {
+	for _, item := range arr {
+		if s == item {
+			return true
+		}
+	}
+
+	return false
 }

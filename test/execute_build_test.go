@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -82,10 +81,14 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		deleteNamespace(t, ctx, clients, testNamespace)
 
+		labels := readNamespaceLabelsFromEnv()
+		if cfg.istioEnabled {
+			labels["istio-injection"] = "enabled"
+		}
 		_, err = clients.k8sClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   testNamespace,
-				Labels: readNamespaceLabelsFromEnv(),
+				Labels: labels,
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
@@ -98,28 +101,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.Before(func() {
-		reference, err := name.ParseReference(cfg.imageTag, name.WeakValidation)
+		secret, err := cfg.makeRegistrySecret(dockerSecret, testNamespace)
 		require.NoError(t, err)
 
-		auth, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-		require.NoError(t, err)
-
-		basicAuth, err := auth.Authorization()
-		require.NoError(t, err)
-
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
-				Annotations: map[string]string{
-					"kpack.io/docker": reference.Context().RegistryStr(),
-				},
-			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
-			},
-			Type: corev1.SecretTypeBasicAuth,
-		}, metav1.CreateOptions{})
+		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, secret, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Create(ctx, &corev1.ServiceAccount{
@@ -127,6 +112,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: serviceAccountName,
 			},
 			Secrets: []corev1.ObjectReference{
+				{
+					Name: dockerSecret,
+				},
+			},
+			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
 					Name: dockerSecret,
 				},
@@ -541,10 +531,6 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 	require.NoError(t, err)
 
 	require.Len(t, podList.Items, 1)
-	pod := podList.Items[0]
-
-	require.Equal(t, 1, len(pod.Spec.Containers))
-	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
 }
 
 func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageName, testNamespace string) {
@@ -577,7 +563,8 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 		build, err := clients.client.KpackV1alpha2().Builds(testNamespace).Get(ctx, rebaseBuildName, metav1.GetOptions{})
 		require.NoError(t, err)
 
-		require.LessOrEqual(t, len(build.Status.StepsCompleted), 1)
+		//rebase and completion
+		require.LessOrEqual(t, len(build.Status.StepsCompleted), 2)
 
 		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()
 	}, 5*time.Second, 1*time.Minute)

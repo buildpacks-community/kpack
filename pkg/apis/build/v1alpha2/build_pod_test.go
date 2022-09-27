@@ -1523,6 +1523,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						Name:      "rebase",
 						Image:     config.RebaseImage,
 						Resources: build.Spec.Resources,
+						Command:   []string{"/cnb/process/rebase"},
 						Args: []string{
 							"--run-image",
 							"builderregistry.io/run",
@@ -2917,6 +2918,64 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				validateCapabilityDrop(pod.Spec.Containers)
 				validateCapabilityDrop(rebasePod.Spec.InitContainers)
 				validateCapabilityDrop(rebasePod.Spec.Containers)
+			})
+		})
+
+		when("running builds in standard containers", func() {
+			it("injects a pre start init container", func() {
+				buildContext.SupportInjectedSidecars = true
+				config.BuildWaiterImage = "some-image"
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				require.Len(t, pod.Spec.InitContainers, 1)
+				preStartContainer := pod.Spec.InitContainers[0]
+				assert.Equal(t, "pre-start", preStartContainer.Name)
+				assert.Equal(t, "some-image", preStartContainer.Image)
+				assert.Contains(t, preStartContainer.Args, "-mode=copy")
+			})
+			it("sets up build steps to run buildWaiter", func() {
+				initContainerBuildPod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+				containers := map[string]corev1.Container{}
+				for _, container := range initContainerBuildPod.Spec.InitContainers {
+					containers[container.Name] = container
+				}
+				for _, container := range initContainerBuildPod.Spec.Containers {
+					containers[container.Name] = container
+				}
+
+				buildContext.SupportInjectedSidecars = true
+				config.BuildWaiterImage = "some-image"
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				require.Len(t, pod.Spec.Containers, 7)
+				for i, container := range pod.Spec.Containers {
+					assert.Equal(t, []string{"/buildWait/build-waiter"}, container.Command)
+					assert.Equal(t, "-mode=wait", container.Args[0])
+					assert.Equal(t, fmt.Sprintf("-done-file=/buildWait/%s", container.Name), container.Args[1])
+					assert.Equal(t, "-error-file=/buildWait/error", container.Args[2])
+
+					originalArgs := append(containers[container.Name].Command, containers[container.Name].Args...)
+					assert.Equal(t, fmt.Sprintf("-execute=%s", strings.Join(originalArgs, " ")), container.Args[3])
+
+					if i != 0 {
+						assert.Equal(t, fmt.Sprintf("-wait-file=/buildWait/%s", pod.Spec.Containers[i-1].Name), container.Args[4])
+					}
+
+					assert.Contains(t, container.VolumeMounts, corev1.VolumeMount{Name: "build-wait-dir", MountPath: "/buildWait", ReadOnly: false})
+				}
+			})
+			it("mounts build-waiter volume to pod", func() {
+				buildContext.SupportInjectedSidecars = true
+				config.BuildWaiterImage = "some-image"
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Contains(t, pod.Spec.Volumes, corev1.Volume{Name: "build-wait-dir", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}})
 			})
 		})
 	})
