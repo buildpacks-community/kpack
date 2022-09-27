@@ -89,7 +89,8 @@ type ImageCacheConfig struct {
 
 // +k8s:openapi-gen=true
 type ImagePersistentVolumeCache struct {
-	Size *resource.Quantity `json:"size,omitempty"`
+	Size             *resource.Quantity `json:"size,omitempty"`
+	StorageClassName string             `json:"storageClassName,omitempty"`
 }
 
 // +k8s:openapi-gen=true

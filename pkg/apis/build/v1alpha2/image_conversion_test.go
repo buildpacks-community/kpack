@@ -41,7 +41,8 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 				},
 				Cache: &ImageCacheConfig{
 					Volume: &ImagePersistentVolumeCache{
-						Size: &cacheSize,
+						Size:             &cacheSize,
+						StorageClassName: "some-storage-class",
 					},
 				},
 				FailedBuildHistoryLimit:  &buildHistoryLimit,
@@ -100,7 +101,8 @@ func testImageConversion(t *testing.T, when spec.G, it spec.S) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-super-convertable-image",
 				Annotations: map[string]string{
-					"kpack.io/services": `[{"kind":"Secret","name":"some-secret","apiVersion":"v1"}]`,
+					"kpack.io/services":                      `[{"kind":"Secret","name":"some-secret","apiVersion":"v1"}]`,
+					"kpack.io/cache.volume.storageClassName": "some-storage-class",
 				},
 			},
 			Spec: v1alpha1.ImageSpec{

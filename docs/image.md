@@ -14,6 +14,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `source`: The source code that will be monitored/built into images. See the [Source Configuration](#source-config) section below.
 - `cache`: Caching configuration, two variants are available:
   - `volume.size`: Creates a Volume Claim of the given size
+  - `volume.storageClassName`: (Optional) Creates a Volume Claim of the given storageClassName. If unset, the default storage class is used. The field is immutable.
   - `registry.tag`: Creates an image with cached contents
 - `failedBuildHistoryLimit`: The maximum number of failed builds for an image that will be retained.
 - `successBuildHistoryLimit`: The maximum number of successful builds for an image that will be retained.
@@ -254,6 +255,7 @@ spec:
   cache:
     volume:
       size: "1.5Gi" # Optional, if not set then the caching feature is disabled
+      storageClassName: "my-storage-class" # Optional, if not set then the default storageclass is used
   failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   source:
@@ -299,6 +301,7 @@ spec:
   cache:
     volume:
       size: "1.5Gi" # Optional, if not set then the caching feature is disabled
+      storageClassName: "my-storage-class" # Optional, if not set then the default storageclass is used
   failedBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   successBuildHistoryLimit: 5 # Optional, if not present defaults to 10
   source:
