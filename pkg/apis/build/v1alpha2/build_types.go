@@ -77,6 +77,7 @@ type BuildSpec struct {
 	RuntimeClassName  *string             `json:"runtimeClassName,omitempty"`
 	SchedulerName     string              `json:"schedulerName,omitempty"`
 	PriorityClassName string              `json:"priorityClassName,omitempty"`
+	CreationTime      string              `json:"creationTime,omitempty"`
 }
 
 func (bs *BuildSpec) RegistryCacheTag() string {

@@ -35,6 +35,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				Kind: "Builder",
 				Name: "builder-name",
 			},
+			Build: &ImageBuild{
+				CreationTime: "",
+			},
 		},
 	}
 

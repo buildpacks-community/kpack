@@ -334,6 +334,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Tolerations:  []corev1.Toleration{{Key: "some-key"}},
 				NodeSelector: map[string]string{"foo": "bar"},
 				Affinity:     &corev1.Affinity{},
+				CreationTime: "now",
 			},
 		}
 	})
@@ -1069,6 +1070,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
 			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			_, ok := fetchEnvVar(pod.Spec.InitContainers[5].Env, "SOURCE_DATE_EPOCH")
+			assert.Equal(t, true, ok)
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_RUN_IMAGE", Value: "builderregistry.io/run"})
 			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 				"layers-dir",
 				"workspace-dir",

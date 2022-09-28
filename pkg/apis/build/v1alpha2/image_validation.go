@@ -3,6 +3,7 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -163,6 +164,14 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 	if len(ib.NodeSelector) != 0 {
 		if _, ok := ib.NodeSelector[k8sOSLabel]; ok {
 			return apis.ErrInvalidKeyName(k8sOSLabel, "nodeSelector", "os is determined automatically")
+		}
+	}
+
+	if ib.CreationTime != "" && ib.CreationTime != "now" {
+		// check that the timestamp in CreationTime is in valid format
+		_, err := strconv.ParseInt(ib.CreationTime, 10, 64)
+		if err != nil {
+			return apis.ErrInvalidValue(ib.CreationTime, "creationTime")
 		}
 	}
 

@@ -3,7 +3,9 @@ package v1alpha2
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -338,6 +340,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 	}
 	detectContainerMods := ifWindows(buildContext.os(), addNetworkWaitLauncherVolume(), useNetworkWaitLauncher(dnsProbeHost))
+
+	dateTime, err := parseTime(b.Spec.CreationTime)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing creation time %s", b.Spec.CreationTime)
+	}
+	
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
@@ -592,6 +600,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								homeEnv,
 								platformApiVersionEnvVar,
 							},
+							func() corev1.EnvVar {
+								if dateTime != nil {
+									return corev1.EnvVar{Name: "SOURCE_DATE_EPOCH", Value: strconv.Itoa(int(dateTime.Unix()))}
+								}
+								return corev1.EnvVar{Name:"", Value:""}
+							}(),
 							func() corev1.EnvVar {
 								return corev1.EnvVar{
 									Name:  "CNB_RUN_IMAGE",
@@ -1211,9 +1225,29 @@ func cosignSecretArgs(secret corev1.Secret) []string {
 	return cosignArgs
 }
 
-func envs(envs []corev1.EnvVar, envVar corev1.EnvVar) []corev1.EnvVar {
-	if envVar.Name != "" && envVar.Value != "" {
-		envs = append(envs, envVar)
+func envs(envs []corev1.EnvVar, envVars ...corev1.EnvVar) []corev1.EnvVar {
+	for _, envVar := range envVars {
+		if envVar.Name != "" && envVar.Value != "" {
+			envs = append(envs, envVar)
+		}
 	}
 	return envs
+}
+
+
+func parseTime(providedTime string) (*time.Time, error) {
+	var parsedTime time.Time
+	switch providedTime {
+	case "":
+		return nil, nil
+	case "now":
+		parsedTime = time.Now().UTC()
+	default:
+		intTime, err := strconv.ParseInt(providedTime, 10, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing unix timestamp")
+		}
+		parsedTime = time.Unix(intTime, 0).UTC()
+	}
+	return &parsedTime, nil
 }
