@@ -2264,6 +2264,12 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
+					"creationTime": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"source"},
 			},
@@ -3503,6 +3509,12 @@ func schema_pkg_apis_build_v1alpha2_ImageBuild(ref common.ReferenceCallback) com
 							Format: "int64",
 						},
 					},
+					"creationTime": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -3626,6 +3638,12 @@ func schema_pkg_apis_build_v1alpha2_ImagePersistentVolumeCache(ref common.Refere
 					"size": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+						},
+					},
+					"storageClassName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
@@ -4488,7 +4506,7 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
 							Default:     map[string]interface{}{},
-							Type:        []string{"string"}, Format: "",
+							Type: []string{"string"}, Format: "",
 						},
 					},
 					"reason": {

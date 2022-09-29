@@ -5602,6 +5602,9 @@
         "cosign": {
           "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
         },
+        "creationTime": {
+          "type": "string"
+        },
         "defaultProcess": {
           "type": "string"
         },
@@ -6285,6 +6288,9 @@
           },
           "x-kubernetes-list-type": ""
         },
+        "creationTime": {
+          "type": "string"
+        },
         "env": {
           "type": "array",
           "items": {
@@ -6392,6 +6398,9 @@
       "properties": {
         "size": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "storageClassName": {
+          "type": "string"
         }
       }
     },
