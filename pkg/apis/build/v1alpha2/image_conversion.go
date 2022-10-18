@@ -87,8 +87,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 			is.Build = &ImageBuild{}
 		}
 		var services Services
-		err := json.Unmarshal([]byte(servicesJson), &services)
-		if err != nil {
+		if err := json.Unmarshal([]byte(servicesJson), &services); err != nil {
 			return err
 		}
 		is.Build.Services = services
@@ -99,8 +98,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 			is.Build = &ImageBuild{}
 		}
 		var tolerations []corev1.Toleration
-		err := json.Unmarshal([]byte(tolerationsJson), &tolerations)
-		if err != nil {
+		if err := json.Unmarshal([]byte(tolerationsJson), &tolerations); err != nil {
 			return err
 		}
 		is.Build.Tolerations = tolerations
@@ -111,8 +109,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 			is.Build = &ImageBuild{}
 		}
 		var nodeSelector map[string]string
-		err := json.Unmarshal([]byte(nodeSelectorJson), &nodeSelector)
-		if err != nil {
+		if err := json.Unmarshal([]byte(nodeSelectorJson), &nodeSelector); err != nil {
 			return err
 		}
 		is.Build.NodeSelector = nodeSelector
@@ -123,8 +120,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 			is.Build = &ImageBuild{}
 		}
 		var affinity *corev1.Affinity
-		err := json.Unmarshal([]byte(affinityJson), &affinity)
-		if err != nil {
+		if err := json.Unmarshal([]byte(affinityJson), &affinity); err != nil {
 			return err
 		}
 		is.Build.Affinity = affinity
@@ -181,8 +177,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 	}
 	if cosignAnnotationJson, ok := (*fromAnnotations)[cosignAnnotationConversionAnnotation]; ok {
 		var cosignAnnotation []CosignAnnotation
-		err := json.Unmarshal([]byte(cosignAnnotationJson), &cosignAnnotation)
-		if err != nil {
+		if err := json.Unmarshal([]byte(cosignAnnotationJson), &cosignAnnotation); err != nil {
 			return err
 		}
 		if is.Cosign == nil {
