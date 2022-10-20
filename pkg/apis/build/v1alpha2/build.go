@@ -155,6 +155,26 @@ func (b *Build) DefaultProcess() string {
 	return b.Spec.DefaultProcess
 }
 
+var buildSteps = map[string]struct{}{
+	PrepareContainerName:    {},
+	AnalyzeContainerName:    {},
+	DetectContainerName:     {},
+	RestoreContainerName:    {},
+	BuildContainerName:      {},
+	ExportContainerName:     {},
+	CompletionContainerName: {},
+	RebaseContainerName:     {},
+}
+
+func BuildSteps() map[string]struct{} {
+	return buildSteps
+}
+
+func IsBuildStep(step string) bool {
+	_, found := buildSteps[step]
+	return found
+}
+
 func (b *Build) rebasable(builderStack string) bool {
 	return b.Spec.LastBuild != nil &&
 		b.Annotations[BuildReasonAnnotation] == BuildReasonStack && b.Spec.LastBuild.StackId == builderStack

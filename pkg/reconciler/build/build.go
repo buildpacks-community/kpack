@@ -277,31 +277,15 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 	}
 }
 
-var buildSteps = map[string]struct{}{
-	buildapi.PrepareContainerName:    {},
-	buildapi.AnalyzeContainerName:    {},
-	buildapi.DetectContainerName:     {},
-	buildapi.RestoreContainerName:    {},
-	buildapi.BuildContainerName:      {},
-	buildapi.ExportContainerName:     {},
-	buildapi.CompletionContainerName: {},
-	buildapi.RebaseContainerName:     {},
-}
-
-func isBuildStep(step string) bool {
-	_, found := buildSteps[step]
-	return found
-}
-
 func stepStates(pod *corev1.Pod) []corev1.ContainerState {
-	states := make([]corev1.ContainerState, 0, len(buildSteps))
+	states := make([]corev1.ContainerState, 0, len(buildapi.BuildSteps()))
 	for _, s := range pod.Status.InitContainerStatuses {
-		if isBuildStep(s.Name) {
+		if buildapi.IsBuildStep(s.Name) {
 			states = append(states, s.State)
 		}
 	}
 	for _, s := range pod.Status.ContainerStatuses {
-		if isBuildStep(s.Name) {
+		if buildapi.IsBuildStep(s.Name) {
 			states = append(states, s.State)
 		}
 	}
@@ -309,14 +293,14 @@ func stepStates(pod *corev1.Pod) []corev1.ContainerState {
 }
 
 func stepsCompleted(pod *corev1.Pod) []string {
-	completed := make([]string, 0, len(buildSteps))
+	completed := make([]string, 0, len(buildapi.BuildSteps()))
 	for _, s := range pod.Status.InitContainerStatuses {
-		if s.State.Terminated != nil && isBuildStep(s.Name) {
+		if s.State.Terminated != nil && buildapi.IsBuildStep(s.Name) {
 			completed = append(completed, s.Name)
 		}
 	}
 	for _, s := range pod.Status.ContainerStatuses {
-		if s.State.Terminated != nil && isBuildStep(s.Name) {
+		if s.State.Terminated != nil && buildapi.IsBuildStep(s.Name) {
 			completed = append(completed, s.Name)
 		}
 	}
