@@ -59,7 +59,10 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 		v1alpha1ClusterStore := &v1alpha1.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        "test-cluster-store",
-				Annotations: map[string]string{"some-key": "some-value"},
+				Annotations: map[string]string{
+					"some-key": "some-value",
+					"kpack.io/clusterStoreServiceAccountRef": `{"namespace":"some-namespace","name":"some-service-account"}`,
+				},
 			},
 			Spec: v1alpha1.ClusterStoreSpec{
 				Sources: []corev1alpha1.StoreImage{{"some-image"}, {"another-image"}},
@@ -99,7 +102,6 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 
 			testV1alpha2ClusterStore := &ClusterStore{}
 			err = testV1alpha2ClusterStore.ConvertFrom(context.TODO(), v1alpha1ClusterStore)
-			v1alpha2ClusterStore.Spec.ServiceAccountRef = nil
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2ClusterStore, v1alpha2ClusterStore)
 		})
