@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strconv"
 
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
