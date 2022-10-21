@@ -21,6 +21,7 @@ func testClusterStackConversion(t *testing.T, when spec.G, it spec.S) {
 		v1alpha2ClusterStack := &ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-clusterstack",
+				Annotations: map[string]string{},
 			},
 			Spec: ClusterStackSpec{
 				BuildImage: ClusterStackSpecImage{
@@ -56,6 +57,9 @@ func testClusterStackConversion(t *testing.T, when spec.G, it spec.S) {
 		v1alpha1ClusterStack := &v1alpha1.ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-clusterstack",
+				Annotations: map[string]string{
+					"kpack.io/clusterStackServiceAccountRef": `{"kind":"service-account","namespace":"some-namespace","name":"some-service-account"}`,
+				},
 			},
 			Spec: v1alpha1.ClusterStackSpec{
 				BuildImage: v1alpha1.ClusterStackSpecImage{
@@ -92,7 +96,6 @@ func testClusterStackConversion(t *testing.T, when spec.G, it spec.S) {
 
 			testV1alpha2ClusterStack := &ClusterStack{}
 			err = testV1alpha2ClusterStack.ConvertFrom(context.TODO(), v1alpha1ClusterStack)
-			v1alpha2ClusterStack.Spec.ServiceAccountRef = nil
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2ClusterStack, v1alpha2ClusterStack)
 		})
