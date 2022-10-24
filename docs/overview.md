@@ -1,6 +1,6 @@
 ## Kubernetes Overview
 
-[Kubernetes](https://kubernetes.io) is a portable, extensible, open-source platform for managing containerized workloads and services. Nowadays, enterprises are upgrading their applications to run on containers, and [Kubernetes](https://kubernetes.io) is the standard platform to run those applications. It provides a framework to run distributed systems resiliently, takes care of scaling and failover of  workloads, and offers capabilities like:
+[Kubernetes](https://kubernetes.io) is a portable, extensible, open-source platform for managing containerized workloads and services. [Kubernetes](https://kubernetes.io) is the standard platform to run those applications. It provides a framework to run distributed systems resiliently, takes care of scaling and failover of  workloads, and offers capabilities like:
 - Service discovery
 - Storage orchestration
 - Automated rollouts and rollbacks
