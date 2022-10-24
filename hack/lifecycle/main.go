@@ -33,7 +33,7 @@ import (
 const (
 	lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
 	lifecycleLocation      = "/cnb/lifecycle/"
-	lifecycleVersion       = "0.14.2"
+	lifecycleVersion       = "0.14.3"
 )
 
 var (
@@ -256,7 +256,7 @@ func download(filepath string, url string) error {
 	return err
 }
 
-//copied from github.com/docker/docker/pkg/ioutils
+// copied from github.com/docker/docker/pkg/ioutils
 type ReadCloserWrapper struct {
 	io.Reader
 	closer func() error
