@@ -2640,7 +2640,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, completionContainer.Env, []corev1.EnvVar{
 					{Name: "USERPROFILE", Value: "/builder/home"},
 					{Name: "CACHE_TAG", Value: ""},
-					{Name: "TERMINATION_MESSAGE_PATH", Value: "/dev/termination-log"},
+					{Name: "TERMINATION_MESSAGE_PATH", Value: "/tmp/termination-log"},
 				})
 			})
 

@@ -20,7 +20,7 @@ func testClusterStackConversion(t *testing.T, when spec.G, it spec.S) {
 	when("converting to and from v1alpha1", func() {
 		v1alpha2ClusterStack := &ClusterStack{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-clusterstack",
+				Name:        "test-clusterstack",
 				Annotations: map[string]string{},
 			},
 			Spec: ClusterStackSpec{

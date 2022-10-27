@@ -79,7 +79,7 @@ func (is *ImageSpec) convertTo(to *v1alpha1.ImageSpec) {
 	}
 }
 
-func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error {
+func (i *Image) convertFromAnnotations(fromAnnotations *map[string]string) error {
 	is := &i.Spec
 	ia := i.Annotations
 	if servicesJson, ok := (*fromAnnotations)[servicesConversionAnnotation]; ok {
@@ -144,7 +144,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 		if is.Build == nil {
 			is.Build = &ImageBuild{}
 		}
-		temp , err := strconv.ParseInt(buildTimeout, 10, 64)
+		temp, err := strconv.ParseInt(buildTimeout, 10, 64)
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func (i *Image)convertFromAnnotations(fromAnnotations *map[string]string) error 
 	return nil
 }
 
-func (is *ImageSpec)convertToAnnotations(toAnnotations map[string]string) error{
+func (is *ImageSpec) convertToAnnotations(toAnnotations map[string]string) error {
 	if build := is.Build; build != nil {
 		if len(build.Services) > 0 {
 			bytes, err := json.Marshal(build.Services)

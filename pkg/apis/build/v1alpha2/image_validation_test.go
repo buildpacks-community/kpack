@@ -268,7 +268,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 				assert.Nil(t, err)
 			})
 
-			it ("pass if it sets to a valid timestamp", func() {
+			it("pass if it sets to a valid timestamp", func() {
 				image.Spec.Build.CreationTime = "1566172801" //Mon Aug 19 2019 00:00:01 GMT+0000
 				err := image.Validate(ctx)
 				assert.Nil(t, err)
