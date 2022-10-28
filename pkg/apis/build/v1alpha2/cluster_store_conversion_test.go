@@ -58,9 +58,9 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 
 		v1alpha1ClusterStore := &v1alpha1.ClusterStore{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:        "test-cluster-store",
+				Name: "test-cluster-store",
 				Annotations: map[string]string{
-					"some-key": "some-value",
+					"some-key":                               "some-value",
 					"kpack.io/clusterStoreServiceAccountRef": `{"namespace":"some-namespace","name":"some-service-account"}`,
 				},
 			},

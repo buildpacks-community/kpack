@@ -30,11 +30,10 @@ const (
 	secretVolumeNameTemplate     = "secret-volume-%v"
 	pullSecretVolumeNameTemplate = "pull-secret-volume-%v"
 
-	completionTerminationMessagePathWindows = "/dev/termination-log"
-	completionTerminationMessagePathLinux   = "/tmp/termination-log"
-	cosignDefaultSecretPath                 = "/var/build-secrets/cosign/%s"
-	defaultSecretPath                       = "/var/build-secrets/%s"
-	ReportTOMLPath                          = "/var/report/report.toml"
+	completionTerminationMessagePath = "/tmp/termination-log"
+	cosignDefaultSecretPath          = "/var/build-secrets/cosign/%s"
+	defaultSecretPath                = "/var/build-secrets/%s"
+	ReportTOMLPath                   = "/var/report/report.toml"
 
 	BuildLabel = "kpack.io/build"
 	k8sOSLabel = "kubernetes.io/os"
@@ -99,9 +98,9 @@ func (bpi *BuildPodImages) completion(os string) string {
 func terminationMsgPath(os string) string {
 	switch os {
 	case "windows":
-		return completionTerminationMessagePathWindows
+		return ""
 	default:
-		return completionTerminationMessagePathLinux
+		return completionTerminationMessagePath
 	}
 }
 
@@ -345,7 +344,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing creation time %s", b.Spec.CreationTime)
 	}
-	
+
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
@@ -374,7 +373,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
-							{Name: TerminationMessagePathEnvVar, Value: terminationMsgPath(buildContext.os())},
+							{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
 						},
 						Args: args(
 							b.notaryArgs(),
@@ -604,7 +603,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								if dateTime != nil {
 									return corev1.EnvVar{Name: "SOURCE_DATE_EPOCH", Value: strconv.Itoa(int(dateTime.Unix()))}
 								}
-								return corev1.EnvVar{Name:"", Value:""}
+								return corev1.EnvVar{Name: "", Value: ""}
 							}(),
 							func() corev1.EnvVar {
 								return corev1.EnvVar{
@@ -853,7 +852,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 					Command: []string{"/cnb/process/completion"},
 					Env: []corev1.EnvVar{
 						{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
-						{Name: TerminationMessagePathEnvVar, Value: terminationMsgPath(buildContext.os())},
+						{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
 					},
 					Args: args(
 						b.notaryArgs(),
@@ -1233,7 +1232,6 @@ func envs(envs []corev1.EnvVar, envVars ...corev1.EnvVar) []corev1.EnvVar {
 	}
 	return envs
 }
-
 
 func parseTime(providedTime string) (*time.Time, error) {
 	var parsedTime time.Time

@@ -39,7 +39,7 @@ func (s *ClusterStore) ConvertTo(_ context.Context, to apis.Convertible) error {
 func (cs *ClusterStoreSpec) convertToAnnotations(toAnnotations map[string]string) error {
 	if cs.ServiceAccountRef != nil {
 		bytes, err := json.Marshal(cs.ServiceAccountRef)
-		if err!= nil {
+		if err != nil {
 			return err
 		}
 		toAnnotations[clusterStoreServiceAccountRefAnnotation] = string(bytes)

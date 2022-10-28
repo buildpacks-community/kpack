@@ -59,7 +59,7 @@ func (cs *ClusterStackSpec) convertTo(to *v1alpha1.ClusterStackSpec) {
 func (cs *ClusterStackSpec) convertToAnnotations(toAnnotations map[string]string) error {
 	if cs.ServiceAccountRef != nil {
 		bytes, err := json.Marshal(cs.ServiceAccountRef)
-		if err!= nil {
+		if err != nil {
 			return err
 		}
 		toAnnotations[clusterStackServiceAccountRefAnnotation] = string(bytes)
