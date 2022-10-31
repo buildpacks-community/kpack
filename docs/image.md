@@ -121,7 +121,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
 
 ### <a id='build-config'></a>Build Configuration
 
-The `build` field on the `image` resource can be used to configure env variables required during the build process, to configure resource limits on `CPU` and `memory`, and to configure pod tolerations, node selector, build timout (specified in seconds), and affinity.
+The `build` field on the `image` resource can be used to configure env variables required during the build process, to configure resource limits on `CPU` and `memory`, and to configure pod tolerations, node selector, build timout (specified in seconds), and affinity. To configure "Creation Time" of the built app image, pass in the "unix EPOCH timestamp" as a string or use "now" to use the current time.  
 
 ```yaml
 build:
@@ -142,6 +142,7 @@ build:
   nodeSelector:
     disktype: ssd
   buildTimeout: 1600
+  creationTime: "now"
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:

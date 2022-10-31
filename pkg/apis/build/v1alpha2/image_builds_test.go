@@ -349,6 +349,24 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, image.Spec.Notary, build.Spec.Notary)
 			assert.Equal(t, image.Spec.Cosign, build.Spec.Cosign)
 		})
+
+		it("sets the creation time when present", func() {
+			image.Spec.Build = &ImageBuild{
+				CreationTime: "now",
+			}
+
+			build := image.Build(sourceResolver, builder, latestBuild, "", "", 1, "")
+			assert.Equal(t, "now", build.Spec.CreationTime)
+		})
+
+		it("handles a nil build spec", func() {
+			image.Spec.Build = nil
+
+			assert.NotPanics(t, func() {
+				image.Build(sourceResolver, builder, latestBuild, "", "", 1, "")
+			})
+		})
+
 	})
 }
 
