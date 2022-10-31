@@ -81,14 +81,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 
 		deleteNamespace(t, ctx, clients, testNamespace)
 
-		labels := readNamespaceLabelsFromEnv()
-		if cfg.istioEnabled {
-			labels["istio-injection"] = "enabled"
-		}
 		_, err = clients.k8sClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   testNamespace,
-				Labels: labels,
+				Labels: readNamespaceLabelsFromEnv(),
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)

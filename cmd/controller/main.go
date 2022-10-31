@@ -78,7 +78,7 @@ var (
 	enablePriorityClasses     = flag.Bool("enable-priority-classes", getEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
 	maximumPlatformApiVersion = flag.String("maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
 	buildWaiterImage          = flag.String("build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
-	supportInjectedSidecars   = flag.Bool("support-injected-sidecars", getEnvBool("SUPPORT_INJECTED_SIDECARS", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
+	injectedSidecarSupport    = flag.Bool("injected-sidecar-support", getEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
 )
 
 func main() {
@@ -162,7 +162,7 @@ func main() {
 		ImageFetcher:              &registry.Client{},
 		DynamicClient:             dynamicClient,
 		MaximumPlatformApiVersion: maxPlatformApi,
-		SupportInjectSidecars:     *supportInjectedSidecars,
+		InjectedSidecarSupport:    *injectedSidecarSupport,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
@@ -192,7 +192,7 @@ func main() {
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory, *supportInjectedSidecars)
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)

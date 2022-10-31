@@ -20,7 +20,6 @@ type config struct {
 	testRegistryUsername string
 	testRegistryPassword string
 	imageTag             string
-	istioEnabled         bool
 
 	generatedImageNames []string
 }
@@ -47,21 +46,11 @@ func loadConfig(t *testing.T) config {
 		t.Fatal("IMAGE_REGISTRY_PASSWORD env is needed for tests")
 	}
 
-	istioEnabled := false
-	value, _ := os.LookupEnv("ISTIO_ENABLED")
-	if value != "" {
-		istioEnabled, err = strconv.ParseBool(value)
-		if err != nil {
-			t.Fatal("ISTIO_ENABLED must be a valid boolean")
-		}
-	}
-
 	return config{
 		testRegistry:         registry,
 		testRegistryUsername: username,
 		testRegistryPassword: password,
 		imageTag:             registry + "/kpack-test",
-		istioEnabled:         istioEnabled,
 	}
 }
 

@@ -116,7 +116,7 @@ type BuildContext struct {
 	Bindings                  []ServiceBinding
 	ImagePullSecrets          []corev1.LocalObjectReference
 	MaximumPlatformApiVersion *semver.Version
-	SupportInjectedSidecars   bool
+	InjectedSidecarSupport    bool
 }
 
 func (c BuildContext) os() string {
@@ -190,7 +190,6 @@ var (
 		MountPath: "/buildWait",
 		ReadOnly:  false,
 	}
-
 	downwardMount = corev1.VolumeMount{
 		Name:      downwardVolumeName,
 		MountPath: "/downward",
@@ -694,8 +693,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		},
 	}
 
-	if buildContext.SupportInjectedSidecars && buildContext.os() != "windows" {
-		pod = b.useStandardContainers(images.BuildWaiterImage)(pod)
+	if buildContext.InjectedSidecarSupport && buildContext.os() != "windows" {
+		pod = b.useStandardContainers(images.BuildWaiterImage, pod)
 	}
 
 	return pod, nil
@@ -759,84 +758,80 @@ func addNetworkWaitLauncherVolume() stepModifier {
 	}
 }
 
-func setUpBuildWaiter(waitFile string) stepModifier {
-	return func(container corev1.Container) corev1.Container {
-		container.VolumeMounts = append(container.VolumeMounts, buildWaitMount)
-		startCommand := container.Command
-		containerArgs := container.Args
-		container.Command = []string{"/buildWait/build-waiter"}
-		container.Args = []string{
-			"-mode=wait",
-			fmt.Sprintf("-done-file=%s/%s", buildWaitMount.MountPath, container.Name),
-			fmt.Sprintf("-error-file=%s/%s", buildWaitMount.MountPath, "error"),
-			fmt.Sprintf("-execute=%s %s", startCommand[0], strings.Join(containerArgs, " ")),
-		}
-		if waitFile != "" {
-			container.Args = append(container.Args, fmt.Sprintf("-wait-file=%s", waitFile))
-		}
-		return container
+func setUpBuildWaiter(container corev1.Container, waitFile string) corev1.Container {
+	container.VolumeMounts = append(container.VolumeMounts, buildWaitMount)
+	startCommand := container.Command
+	containerArgs := container.Args
+	container.Command = []string{"/buildWait/build-waiter"}
+	container.Args = []string{
+		"-mode=wait",
+		fmt.Sprintf("-done-file=%s/%s", buildWaitMount.MountPath, container.Name),
+		fmt.Sprintf("-error-file=%s/%s", buildWaitMount.MountPath, "error"),
+		fmt.Sprintf("-execute=%s %s", startCommand[0], strings.Join(containerArgs, " ")),
 	}
+	if waitFile != "" {
+		container.Args = append(container.Args, fmt.Sprintf("-wait-file=%s", waitFile))
+	}
+	return container
+
 }
 
-func (b *Build) useStandardContainers(buildWaiterImage string) podModifier {
+func (b *Build) useStandardContainers(buildWaiterImage string, pod *corev1.Pod) *corev1.Pod {
 
-	return func(pod *corev1.Pod) *corev1.Pod {
-		containers := pod.Spec.InitContainers
-		pod.Spec.InitContainers = []corev1.Container{
-			{
-				Name:            "pre-start",
-				Image:           buildWaiterImage,
-				Args:            []string{"-mode=copy", fmt.Sprintf("-to=%s", path.Join(buildWaitMount.MountPath, "build-waiter"))},
-				Resources:       b.Spec.Resources,
-				ImagePullPolicy: corev1.PullIfNotPresent,
-				WorkingDir:      "/workspace",
-				VolumeMounts: volumeMounts(
-					[]corev1.VolumeMount{
-						buildWaitMount,
-					},
-				),
-			},
-		}
-		pod.Spec.Containers = append(containers, pod.Spec.Containers...)
-
-		for i := 0; i < len(pod.Spec.Containers); i++ {
-			if i == 0 {
-				pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, downwardMount)
-				pod.Spec.Containers[i] = setUpBuildWaiter("/downward/sidecars-ready")(pod.Spec.Containers[i])
-
-			} else {
-				pod.Spec.Containers[i] = setUpBuildWaiter(fmt.Sprintf("%s/%s", buildWaitMount.MountPath, pod.Spec.Containers[i-1].Name))(pod.Spec.Containers[i])
-			}
-		}
-
-		pod.Spec.Volumes = append(pod.Spec.Volumes,
-			corev1.Volume{
-				Name: buildWaitVolumeName,
-				VolumeSource: corev1.VolumeSource{
-					EmptyDir: &corev1.EmptyDirVolumeSource{},
+	containers := pod.Spec.InitContainers
+	pod.Spec.InitContainers = []corev1.Container{
+		{
+			Name:            "pre-start",
+			Image:           buildWaiterImage,
+			Args:            []string{"-mode=copy", fmt.Sprintf("-to=%s", path.Join(buildWaitMount.MountPath, "build-waiter"))},
+			Resources:       b.Spec.Resources,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			WorkingDir:      "/workspace",
+			VolumeMounts: volumeMounts(
+				[]corev1.VolumeMount{
+					buildWaitMount,
 				},
+			),
+		},
+	}
+	pod.Spec.Containers = append(containers, pod.Spec.Containers...)
+
+	for i := 0; i < len(pod.Spec.Containers); i++ {
+		if i == 0 {
+			pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, downwardMount)
+			pod.Spec.Containers[i] = setUpBuildWaiter(pod.Spec.Containers[i], "/downward/sidecars-ready")
+
+		} else {
+			pod.Spec.Containers[i] = setUpBuildWaiter(pod.Spec.Containers[i], fmt.Sprintf("%s/%s", buildWaitMount.MountPath, pod.Spec.Containers[i-1].Name))
+		}
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes,
+		corev1.Volume{
+			Name: buildWaitVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
-			corev1.Volume{
-				Name: downwardVolumeName,
-				VolumeSource: corev1.VolumeSource{
-					DownwardAPI: &corev1.DownwardAPIVolumeSource{
-						Items: []corev1.DownwardAPIVolumeFile{
-							{
-								Path: "sidecars-ready",
-								FieldRef: &corev1.ObjectFieldSelector{
-									FieldPath: fmt.Sprintf("metadata.annotations['%s']", BuildReadyAnnotation),
-								},
+		},
+		corev1.Volume{
+			Name: downwardVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				DownwardAPI: &corev1.DownwardAPIVolumeSource{
+					Items: []corev1.DownwardAPIVolumeFile{
+						{
+							Path: "sidecars-ready",
+							FieldRef: &corev1.ObjectFieldSelector{
+								FieldPath: fmt.Sprintf("metadata.annotations['%s']", BuildReadyAnnotation),
 							},
 						},
 					},
 				},
 			},
-		)
+		},
+	)
 
-		delete(pod.Annotations, IstioInject)
-		return pod
-	}
-
+	delete(pod.Annotations, IstioInject)
+	return pod
 }
 
 func userprofileHomeEnv() stepModifier {
@@ -1016,8 +1011,8 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		Status: corev1.PodStatus{},
 	}
 
-	if buildContext.SupportInjectedSidecars && buildContext.os() != "windows" {
-		pod = b.useStandardContainers(images.BuildWaiterImage)(pod)
+	if buildContext.InjectedSidecarSupport && buildContext.os() != "windows" {
+		pod = b.useStandardContainers(images.BuildWaiterImage, pod)
 	}
 
 	return pod, nil

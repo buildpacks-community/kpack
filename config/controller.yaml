@@ -96,6 +96,8 @@ spec:
         env:
         - name: ENABLE_PRIORITY_CLASSES
           value: "false"
+        - name: INJECTED_SIDECAR_SUPPORT
+          value: "false"
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: CONFIG_OBSERVABILITY_NAME

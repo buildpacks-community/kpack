@@ -539,13 +539,13 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			generator.SupportInjectSidecars = true
+			generator.InjectedSidecarSupport = true
 
 			_, err := generator.Generate(context.TODO(), build)
 			require.NoError(t, err)
 
 			require.Len(t, build.buildPodCalls, 1)
-			assert.True(t, build.buildPodCalls[0].BuildContext.SupportInjectedSidecars)
+			assert.True(t, build.buildPodCalls[0].BuildContext.InjectedSidecarSupport)
 		})
 	})
 }

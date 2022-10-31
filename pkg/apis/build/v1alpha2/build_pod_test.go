@@ -2923,7 +2923,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("running builds in standard containers", func() {
 			it("injects a pre start init container", func() {
-				buildContext.SupportInjectedSidecars = true
+				buildContext.InjectedSidecarSupport = true
 				config.BuildWaiterImage = "some-image"
 
 				pod, err := build.BuildPod(config, buildContext)
@@ -2946,7 +2946,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					containers[container.Name] = container
 				}
 
-				buildContext.SupportInjectedSidecars = true
+				buildContext.InjectedSidecarSupport = true
 				config.BuildWaiterImage = "some-image"
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
@@ -2961,21 +2961,45 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					originalArgs := append(containers[container.Name].Command, containers[container.Name].Args...)
 					assert.Equal(t, fmt.Sprintf("-execute=%s", strings.Join(originalArgs, " ")), container.Args[3])
 
-					if i != 0 {
+					if i == 0 {
+						assert.Equal(t, "-wait-file=/downward/sidecars-ready", container.Args[4])
+					} else {
 						assert.Equal(t, fmt.Sprintf("-wait-file=/buildWait/%s", pod.Spec.Containers[i-1].Name), container.Args[4])
 					}
 
 					assert.Contains(t, container.VolumeMounts, corev1.VolumeMount{Name: "build-wait-dir", MountPath: "/buildWait", ReadOnly: false})
 				}
 			})
-			it("mounts build-waiter volume to pod", func() {
-				buildContext.SupportInjectedSidecars = true
+			it("adds build-waiter volume to pod", func() {
+				buildContext.InjectedSidecarSupport = true
 				config.BuildWaiterImage = "some-image"
 
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
 				assert.Contains(t, pod.Spec.Volumes, corev1.Volume{Name: "build-wait-dir", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}})
+			})
+			it("adds downward api volume to pod", func() {
+				buildContext.InjectedSidecarSupport = true
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Contains(t, pod.Spec.Volumes,
+					corev1.Volume{
+						Name: "downward-api-dir",
+						VolumeSource: corev1.VolumeSource{
+							DownwardAPI: &corev1.DownwardAPIVolumeSource{
+								Items: []corev1.DownwardAPIVolumeFile{
+									{
+										Path:     "sidecars-ready",
+										FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.annotations['build.kpack.io/ready']"},
+									},
+								},
+							},
+						},
+					},
+				)
 			})
 		})
 	})

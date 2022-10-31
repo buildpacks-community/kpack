@@ -137,7 +137,8 @@ func (b *Build) PodName() string {
 }
 
 func (b *Build) MetadataReady(pod *corev1.Pod) bool {
-	return pod.Status.Phase == corev1.PodSucceeded || (pod.Status.Phase == corev1.PodFailed && pod.Status.Reason == "DeadlineExceeded")
+	return !b.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue() &&
+		(pod.Status.Phase == corev1.PodSucceeded || podCompletedWithActiveDeadline(pod))
 }
 
 func (b *Build) Finished() bool {
@@ -225,4 +226,18 @@ func (b *Build) builderKind() string {
 		return ""
 	}
 	return b.GetAnnotations()[BuilderKindAnnotation]
+}
+
+func podCompletedWithActiveDeadline(pod *corev1.Pod) bool {
+	if pod.Status.Phase == corev1.PodFailed && pod.Status.Reason == "DeadlineExceeded" {
+
+		for _, status := range pod.Status.ContainerStatuses {
+			if status.Name == CompletionContainerName &&
+				status.State.Terminated != nil &&
+				status.State.Terminated.ExitCode == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }

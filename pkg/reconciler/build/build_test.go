@@ -2,6 +2,7 @@ package build_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -48,11 +50,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeMetadataRetriever   = &buildfakes.FakeMetadataRetriever{}
-		keychainFactory         = &registryfakes.FakeKeychainFactory{}
-		podGenerator            = &testPodGenerator{}
-		ctx                     = context.Background()
-		supportInjectedSidecars = false
+		fakeMetadataRetriever  = &buildfakes.FakeMetadataRetriever{}
+		keychainFactory        = &registryfakes.FakeKeychainFactory{}
+		podGenerator           = &testPodGenerator{}
+		ctx                    = context.Background()
+		injectedSidecarSupport = false
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -67,14 +69,14 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
-				K8sClient:               k8sfakeClient,
-				Client:                  fakeClient,
-				KeychainFactory:         keychainFactory,
-				Lister:                  listers.GetBuildLister(),
-				MetadataRetriever:       fakeMetadataRetriever,
-				PodLister:               listers.GetPodLister(),
-				PodGenerator:            podGenerator,
-				SupportInjectedSidecars: supportInjectedSidecars,
+				K8sClient:              k8sfakeClient,
+				Client:                 fakeClient,
+				KeychainFactory:        keychainFactory,
+				Lister:                 listers.GetBuildLister(),
+				MetadataRetriever:      fakeMetadataRetriever,
+				PodLister:              listers.GetPodLister(),
+				PodGenerator:           podGenerator,
+				InjectedSidecarSupport: injectedSidecarSupport,
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -710,7 +712,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 						{
-							Name: "analyze",
+							Name: "completion",
 							State: corev1.ContainerState{
 								Terminated: &corev1.ContainerStateTerminated{
 									ExitCode:    0,
@@ -779,7 +781,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 										StepsCompleted: []string{
 											"prepare",
-											"analyze",
+											"completion",
 										},
 									},
 								},
@@ -915,9 +917,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 									},
-									StepsCompleted: []string{
-										"prepare",
-									},
+									StepsCompleted: []string{},
 								},
 							},
 						},
@@ -971,7 +971,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("pod needs cleanup", func() {
-			supportInjectedSidecars = true
+			injectedSidecarSupport = true
 			var startTime = time.Now()
 
 			it("updates activeDeadlineSeconds when a build terminates", func() {
@@ -1019,7 +1019,12 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				deadline := int64(1)
+				deadlinePatch, err := json.Marshal(map[string]interface{}{
+					"spec": map[string]interface{}{
+						"activeDeadlineSeconds": 1,
+					},
+				})
+				require.NoError(t, err)
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -1028,52 +1033,11 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						pod,
 					},
 					WantErr: false,
-					WantUpdates: []clientgotesting.UpdateActionImpl{
+					WantPatches: []clientgotesting.PatchActionImpl{
 						{
-							Object: &corev1.Pod{
-								TypeMeta: metav1.TypeMeta{},
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      bld.GetName() + "-build-pod",
-									Namespace: bld.GetNamespace(),
-								},
-								Spec: corev1.PodSpec{
-									ActiveDeadlineSeconds: &deadline,
-									Containers: []corev1.Container{
-										{
-											Name:  "completion",
-											Image: "completion-image",
-										},
-										{
-											Name:  "sidecar",
-											Image: "sidecar-image",
-										},
-									},
-								},
-								Status: corev1.PodStatus{
-									ContainerStatuses: []corev1.ContainerStatus{
-										{
-											Name: "completion",
-											State: corev1.ContainerState{
-												Terminated: &corev1.ContainerStateTerminated{
-													ExitCode:    0,
-													Reason:      "Terminated",
-													Message:     "Message",
-													ContainerID: "container.ID",
-												},
-											},
-										},
-										{
-											Name: "sidecar",
-											State: corev1.ContainerState{
-												Running: &corev1.ContainerStateRunning{
-													StartedAt: metav1.Time{Time: startTime},
-												},
-											},
-										},
-									},
-									Phase: corev1.PodRunning,
-								},
-							},
+							Name:      pod.Name,
+							PatchType: types.MergePatchType,
+							Patch:     deadlinePatch,
 						},
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
