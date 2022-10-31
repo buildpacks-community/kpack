@@ -80,7 +80,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			SchedulerName:         im.SchedulerName(),
 			PriorityClassName:     priorityClass,
 			ActiveDeadlineSeconds: im.BuildTimeout(),
-			CreationTime:          im.Spec.Build.CreationTime,
+			CreationTime:          im.Spec.creationTime(),
 		},
 	}
 }
@@ -294,4 +294,12 @@ func combine(map1, map2 map[string]string) map[string]string {
 
 func (im *Image) disableAdditionalImageNames() bool {
 	return im.Spec.ImageTaggingStrategy == corev1alpha1.None
+}
+
+func (is *ImageSpec) creationTime() string {
+	if buildSpec := is.Build; buildSpec != nil {
+		return buildSpec.CreationTime
+	}
+
+	return ""
 }
