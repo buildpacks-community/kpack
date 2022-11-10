@@ -24,7 +24,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	}
 	defer repository.Free()
 
-	remote, err := repository.Remotes.CreateWithOptions(gitURL, &git2go.RemoteCreateOptions{
+	remote, err := repository.Remotes.CreateWithOptions(parseURL(gitURL), &git2go.RemoteCreateOptions{
 		Name:  "origin",
 		Flags: git2go.RemoteCreateSkipInsteadof,
 	})
