@@ -303,7 +303,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				corev1.ResourceMemory: resource.MustParse("1G"),
 			},
 			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512M"),
+				corev1.ResourceMemory: resource.MustParse("256M"),
 			},
 		}
 

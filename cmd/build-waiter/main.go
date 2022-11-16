@@ -111,7 +111,7 @@ func copy(to string) error {
 		}
 	}
 
-	destFile, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE, 0666)
+	destFile, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE, 0777)
 	if err != nil {
 		return err
 	}
