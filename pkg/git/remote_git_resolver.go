@@ -33,7 +33,7 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 	}
 	defer repository.Free()
 
-	remote, err := repository.Remotes.CreateWithOptions(sourceConfig.Git.URL, &git2go.RemoteCreateOptions{
+	remote, err := repository.Remotes.CreateWithOptions(parseURL(sourceConfig.Git.URL), &git2go.RemoteCreateOptions{
 		Name:  defaultRemote,
 		Flags: git2go.RemoteCreateSkipInsteadof,
 	})
