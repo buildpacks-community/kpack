@@ -63,6 +63,12 @@ rules:
   - delete
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - patch
+- apiGroups:
     - ""
   resources:
     - nodes

@@ -20,6 +20,14 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name:  build-waiter-image
+  namespace: kpack
+data:
+  image: #@ data.values.build_waiter_image
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name:  rebase-image
   namespace: kpack
 data:
@@ -88,6 +96,8 @@ spec:
         env:
         - name: ENABLE_PRIORITY_CLASSES
           value: "false"
+        - name: INJECTED_SIDECAR_SUPPORT
+          value: "false"
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: CONFIG_OBSERVABILITY_NAME
@@ -107,6 +117,11 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: build-init-windows-image
+              key: image
+        - name: BUILD_WAITER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              name: build-waiter-image
               key: image
         - name: REBASE_IMAGE
           valueFrom:

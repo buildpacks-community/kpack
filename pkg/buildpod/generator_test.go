@@ -528,6 +528,25 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			require.Len(t, build.buildPodCalls, 1)
 			assert.Equal(t, version, build.buildPodCalls[0].BuildContext.MaximumPlatformApiVersion)
 		})
+
+		it("passes the injected sidecar support flag through the build context", func() {
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            linuxBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			generator.InjectedSidecarSupport = true
+
+			_, err := generator.Generate(context.TODO(), build)
+			require.NoError(t, err)
+
+			require.Len(t, build.buildPodCalls, 1)
+			assert.True(t, build.buildPodCalls[0].BuildContext.InjectedSidecarSupport)
+		})
 	})
 }
 

@@ -118,14 +118,13 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 				return nil
 			}
 
-			pod := r.Object.(*corev1.Pod)
-
 			switch r.Type {
 			case watch.Added, watch.Modified:
-
-				for _, c := range pod.Status.InitContainerStatuses {
+				pod := r.Object.(*corev1.Pod)
+				containers := map[string]readyContainer{}
+				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.State.Waiting == nil {
-						readyContainers <- readyContainer{
+						containers[c.Name] = readyContainer{
 							podName:       pod.Name,
 							containerName: c.Name,
 							namespace:     pod.Namespace,
@@ -133,13 +132,14 @@ func (c *BuildLogsClient) watchReadyContainers(ctx context.Context, readyContain
 					}
 				}
 
-				for _, c := range pod.Status.ContainerStatuses {
-					if c.State.Waiting == nil {
-						readyContainers <- readyContainer{
-							podName:       pod.Name,
-							containerName: c.Name,
-							namespace:     pod.Namespace,
-						}
+				for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
+					if !buildapi.IsBuildStep(container.Name) {
+						continue
+					}
+					if readyContainer, found := containers[container.Name]; found {
+						readyContainers <- readyContainer
+					} else {
+						break
 					}
 				}
 
@@ -160,23 +160,24 @@ func (c *BuildLogsClient) getContainers(ctx context.Context, namespace string, l
 	}
 
 	for _, pod := range pods.Items {
-		for _, c := range pod.Status.InitContainerStatuses {
+		containers := map[string]readyContainer{}
+		for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 			if c.State.Waiting == nil {
-				readyContainers = append(readyContainers, readyContainer{
+				containers[c.Name] = readyContainer{
 					podName:       pod.Name,
 					containerName: c.Name,
 					namespace:     pod.Namespace,
-				})
+				}
 			}
 		}
 
-		for _, c := range pod.Status.ContainerStatuses {
-			if c.State.Waiting == nil {
-				readyContainers = append(readyContainers, readyContainer{
-					podName:       pod.Name,
-					containerName: c.Name,
-					namespace:     pod.Namespace,
-				})
+		for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
+			if !buildapi.IsBuildStep(container.Name) {
+				continue
+			}
+
+			if readyContainer, found := containers[container.Name]; found {
+				readyContainers = append(readyContainers, readyContainer)
 			}
 		}
 	}

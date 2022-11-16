@@ -77,6 +77,8 @@ var (
 	completionWindowsImage    = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
 	enablePriorityClasses     = flag.Bool("enable-priority-classes", getEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
 	maximumPlatformApiVersion = flag.String("maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
+	buildWaiterImage          = flag.String("build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
+	injectedSidecarSupport    = flag.Bool("injected-sidecar-support", getEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
 )
 
 func main() {
@@ -149,6 +151,7 @@ func main() {
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig: buildapi.BuildPodImages{
 			BuildInitImage:         *buildInitImage,
+			BuildWaiterImage:       *buildWaiterImage,
 			CompletionImage:        *completionImage,
 			RebaseImage:            *rebaseImage,
 			BuildInitWindowsImage:  *buildInitWindowsImage,
@@ -159,6 +162,7 @@ func main() {
 		ImageFetcher:              &registry.Client{},
 		DynamicClient:             dynamicClient,
 		MaximumPlatformApiVersion: maxPlatformApi,
+		InjectedSidecarSupport:    *injectedSidecarSupport,
 	}
 
 	gitResolver := git.NewResolver(k8sClient)
@@ -188,7 +192,7 @@ func main() {
 		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
 	}
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory)
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
@@ -271,7 +275,7 @@ func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *buildapi
 
 const controllerCount = 7
 
-//lifted from knative.dev/pkg/injection/sharedmain
+// lifted from knative.dev/pkg/injection/sharedmain
 func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server) {
 	metrics.MemStatsOrDie(ctx)
 

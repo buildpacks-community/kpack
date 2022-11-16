@@ -2,6 +2,7 @@ package v1alpha2
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -43,6 +44,7 @@ const (
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
 	IstioInject                            = "sidecar.istio.io/inject"
+	BuildReadyAnnotation                   = "build.kpack.io/ready"
 
 	cosignSecretDataCosignKey = "cosign.key"
 
@@ -50,6 +52,8 @@ const (
 	homeVolumeName                      = "home-dir"
 	layersVolumeName                    = "layers-dir"
 	networkWaitLauncherVolumeName       = "network-wait-launcher-dir"
+	buildWaitVolumeName                 = "build-wait-dir"
+	downwardVolumeName                  = "downward-api-dir"
 	notaryVolumeName                    = "notary-dir"
 	platformVolumeName                  = "platform-dir"
 	registrySourcePullSecretsVolumeName = "registry-source-pull-secrets-dir"
@@ -71,6 +75,7 @@ type ServiceBinding interface {
 
 type BuildPodImages struct {
 	BuildInitImage         string
+	BuildWaiterImage       string
 	CompletionImage        string
 	RebaseImage            string
 	BuildInitWindowsImage  string
@@ -111,6 +116,7 @@ type BuildContext struct {
 	Bindings                  []ServiceBinding
 	ImagePullSecrets          []corev1.LocalObjectReference
 	MaximumPlatformApiVersion *semver.Version
+	InjectedSidecarSupport    bool
 }
 
 func (c BuildContext) os() string {
@@ -179,9 +185,19 @@ var (
 		Name:  serviceBindingRootEnvVar,
 		Value: filepath.Join(platformMount.MountPath, "bindings"),
 	}
+	buildWaitMount = corev1.VolumeMount{
+		Name:      buildWaitVolumeName,
+		MountPath: "/buildWait",
+		ReadOnly:  false,
+	}
+	downwardMount = corev1.VolumeMount{
+		Name:      downwardVolumeName,
+		MountPath: "/downward",
+	}
 )
 
 type stepModifier func(corev1.Container) corev1.Container
+type podModifier func(*corev1.Pod) *corev1.Pod
 
 func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*corev1.Pod, error) {
 	platformAPI, err := buildContext.highestSupportedPlatformAPI(b)
@@ -345,7 +361,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		return nil, errors.Wrapf(err, "parsing creation time %s", b.Spec.CreationTime)
 	}
 
-	return &corev1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace,
@@ -404,6 +420,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:            PrepareContainerName,
 						Image:           images.buildInit(buildContext.os()),
+						Command:         []string{"/cnb/process/build-init"},
 						Args:            append(secretArgs, imagePullArgs...),
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
@@ -674,7 +691,13 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				bindingVolumes),
 			ImagePullSecrets: b.Spec.Builder.ImagePullSecrets,
 		},
-	}, nil
+	}
+
+	if buildContext.InjectedSidecarSupport && buildContext.os() != "windows" {
+		pod = b.useStandardContainers(images.BuildWaiterImage, pod)
+	}
+
+	return pod, nil
 }
 
 func boolPointer(b bool) *bool {
@@ -733,6 +756,82 @@ func addNetworkWaitLauncherVolume() stepModifier {
 		container.VolumeMounts = append(container.VolumeMounts, networkWaitLauncherMount)
 		return container
 	}
+}
+
+func setUpBuildWaiter(container corev1.Container, waitFile string) corev1.Container {
+	container.VolumeMounts = append(container.VolumeMounts, buildWaitMount)
+	startCommand := container.Command
+	containerArgs := container.Args
+	container.Command = []string{"/buildWait/build-waiter"}
+	container.Args = []string{
+		"-mode=wait",
+		fmt.Sprintf("-done-file=%s/%s", buildWaitMount.MountPath, container.Name),
+		fmt.Sprintf("-error-file=%s/%s", buildWaitMount.MountPath, "error"),
+		fmt.Sprintf("-execute=%s %s", startCommand[0], strings.Join(containerArgs, " ")),
+	}
+	if waitFile != "" {
+		container.Args = append(container.Args, fmt.Sprintf("-wait-file=%s", waitFile))
+	}
+	return container
+
+}
+
+func (b *Build) useStandardContainers(buildWaiterImage string, pod *corev1.Pod) *corev1.Pod {
+
+	containers := pod.Spec.InitContainers
+	pod.Spec.InitContainers = []corev1.Container{
+		{
+			Name:            "pre-start",
+			Image:           buildWaiterImage,
+			Args:            []string{"-mode=copy", fmt.Sprintf("-to=%s", path.Join(buildWaitMount.MountPath, "build-waiter"))},
+			Resources:       b.Spec.Resources,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			WorkingDir:      "/workspace",
+			VolumeMounts: volumeMounts(
+				[]corev1.VolumeMount{
+					buildWaitMount,
+				},
+			),
+		},
+	}
+	pod.Spec.Containers = append(containers, pod.Spec.Containers...)
+
+	for i := 0; i < len(pod.Spec.Containers); i++ {
+		if i == 0 {
+			pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, downwardMount)
+			pod.Spec.Containers[i] = setUpBuildWaiter(pod.Spec.Containers[i], "/downward/sidecars-ready")
+
+		} else {
+			pod.Spec.Containers[i] = setUpBuildWaiter(pod.Spec.Containers[i], fmt.Sprintf("%s/%s", buildWaitMount.MountPath, pod.Spec.Containers[i-1].Name))
+		}
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes,
+		corev1.Volume{
+			Name: buildWaitVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		corev1.Volume{
+			Name: downwardVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				DownwardAPI: &corev1.DownwardAPIVolumeSource{
+					Items: []corev1.DownwardAPIVolumeFile{
+						{
+							Path: "sidecars-ready",
+							FieldRef: &corev1.ObjectFieldSelector{
+								FieldPath: fmt.Sprintf("metadata.annotations['%s']", BuildReadyAnnotation),
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	delete(pod.Annotations, IstioInject)
+	return pod
 }
 
 func userprofileHomeEnv() stepModifier {
@@ -804,7 +903,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		runImage = b.Spec.RunImage.Image
 	}
 
-	return &corev1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.PodName(),
 			Namespace: b.Namespace,
@@ -876,6 +975,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 				{
 					Name:            RebaseContainerName,
 					Image:           images.RebaseImage,
+					Command:         []string{"/cnb/process/rebase"},
 					Resources:       b.Spec.Resources,
 					SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					Args: args(a(
@@ -909,7 +1009,14 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			},
 		},
 		Status: corev1.PodStatus{},
-	}, nil
+	}
+
+	if buildContext.InjectedSidecarSupport && buildContext.os() != "windows" {
+		pod = b.useStandardContainers(images.BuildWaiterImage, pod)
+	}
+
+	return pod, nil
+
 }
 
 func (b *Build) cacheVolume(os string) []corev1.Volume {
