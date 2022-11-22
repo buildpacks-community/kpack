@@ -54,7 +54,11 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterBuilderCRName),
 	)
 
-	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
+	impl := controller.NewContext(
+		ctx,
+		&reconciler.NetworkErrorReconciler{Reconciler: c},
+		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
+	)
 	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
