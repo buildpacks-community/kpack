@@ -131,7 +131,7 @@ func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) 
 		return image, nil
 	}
 
-	err = c.Tracker.Track(builder, image.NamespacedName())
+	err = c.Tracker.Track(reconciler.KeyForObject(builder), image.NamespacedName())
 	if err != nil {
 		return nil, err
 	}

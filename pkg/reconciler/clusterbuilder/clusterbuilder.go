@@ -113,7 +113,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, err
 	}
 
-	err = c.Tracker.Track(clusterStore, builder.NamespacedName())
+	err = c.Tracker.Track(reconciler.KeyForObject(clusterStore), builder.NamespacedName())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -123,7 +123,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, err
 	}
 
-	err = c.Tracker.Track(clusterStack, builder.NamespacedName())
+	err = c.Tracker.Track(reconciler.KeyForObject(clusterStack), builder.NamespacedName())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

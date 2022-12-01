@@ -64,6 +64,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
 		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterStore",
+			APIVersion: "kpack.io/v1alpha2",
+		},
 		Spec:   buildapi.ClusterStoreSpec{},
 		Status: buildapi.ClusterStoreStatus{},
 	}
@@ -71,6 +75,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	clusterStack := &buildapi.ClusterStack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-stack",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterStack",
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Status: buildapi.ClusterStackStatus{
 			Status: corev1alpha1.Status{
@@ -89,6 +97,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Generation: initialGeneration,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterBuilder",
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Spec: buildapi.ClusterBuilderSpec{
 			BuilderSpec: buildapi.BuilderSpec{
@@ -162,6 +174,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
+				TypeMeta:   builder.TypeMeta,
 				Spec:       builder.Spec,
 				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
@@ -228,6 +241,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
+				TypeMeta:   builder.TypeMeta,
 				Spec:       builder.Spec,
 				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
@@ -258,8 +272,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 			})
 
-			require.True(t, fakeTracker.IsTracking(clusterStore, expectedBuilder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(clusterStack, builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterStore), expectedBuilder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -316,6 +332,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			expectedBuilder := &buildapi.ClusterBuilder{
 				ObjectMeta: builder.ObjectMeta,
+				TypeMeta:   builder.TypeMeta,
 				Spec:       builder.Spec,
 				Status: buildapi.BuilderStatus{
 					Status: corev1alpha1.Status{
@@ -352,6 +369,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-stack",
 				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ClusterStack",
+					APIVersion: "kpack.io/v1alpha2",
+				},
 				Status: buildapi.ClusterStackStatus{
 					Status: corev1alpha1.Status{
 						ObservedGeneration: 0,
@@ -376,6 +397,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					{
 						Object: &buildapi.ClusterBuilder{
 							ObjectMeta: builder.ObjectMeta,
+							TypeMeta:   builder.TypeMeta,
 							Spec:       builder.Spec,
 							Status: buildapi.BuilderStatus{
 								Status: corev1alpha1.Status{
@@ -394,11 +416,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			//still track resources
-			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, builder.NamespacedName()))
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterStore),
+				builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(notReadyClusterStack),
+				builder.NamespacedName()))
+
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
-
 	})
 }

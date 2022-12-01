@@ -3,19 +3,19 @@ package testhelpers
 import (
 	"fmt"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/pivotal/kpack/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 type FakeTracker map[string]map[types.NamespacedName]struct{}
 
-func (f FakeTracker) Track(ref v1.ObjectMetaAccessor, obj types.NamespacedName) error {
-	_, ok := f[key(ref)]
+func (f FakeTracker) Track(ref reconciler.Key, obj types.NamespacedName) error {
+	_, ok := f[ref.String()]
 	if !ok {
-		f[key(ref)] = map[types.NamespacedName]struct{}{}
+		f[ref.String()] = map[types.NamespacedName]struct{}{}
 	}
 
-	f[key(ref)][obj] = struct{}{}
+	f[ref.String()][obj] = struct{}{}
 	return nil
 }
 
@@ -23,8 +23,8 @@ func (FakeTracker) OnChanged(obj interface{}) {
 	panic("I should not be called in tests")
 }
 
-func (f FakeTracker) IsTracking(ref v1.ObjectMetaAccessor, obj types.NamespacedName) bool {
-	trackingObs, ok := f[key(ref)]
+func (f FakeTracker) IsTracking(ref reconciler.Key, obj types.NamespacedName) bool {
+	trackingObs, ok := f[ref.String()]
 	if !ok {
 		return false
 	}
@@ -33,6 +33,6 @@ func (f FakeTracker) IsTracking(ref v1.ObjectMetaAccessor, obj types.NamespacedN
 	return ok
 }
 
-func key(ref v1.ObjectMetaAccessor) string {
-	return fmt.Sprintf("%s/%s", ref.GetObjectMeta().GetNamespace(), ref.GetObjectMeta().GetName())
+func (f FakeTracker) String() string {
+	return fmt.Sprintf("%#v", f)
 }
