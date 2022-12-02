@@ -267,6 +267,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
+
+			// still track resource
+			require.True(t, fakeTracker.IsTracking(
+				reconciler.KeyForObject(builder).WithNamespace(namespace),
+				image.NamespacedName()))
 		})
 
 		when("reconciling source resolvers", func() {

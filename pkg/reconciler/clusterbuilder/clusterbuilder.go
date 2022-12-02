@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/logging/logkey"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -108,22 +111,40 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.ClusterBuilder) (buildapi.BuilderRecord, error) {
+	err := c.Tracker.Track(reconciler.Key{
+		NamespacedName: types.NamespacedName{
+			Name:      builder.Spec.Store.Name,
+			Namespace: v1.NamespaceAll,
+		},
+		GroupKind: schema.GroupKind{
+			Group: "kpack.io",
+			Kind:  buildapi.ClusterStoreKind,
+		},
+	}, builder.NamespacedName())
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	err = c.Tracker.Track(reconciler.Key{
+		NamespacedName: types.NamespacedName{
+			Name:      builder.Spec.Stack.Name,
+			Namespace: v1.NamespaceAll,
+		},
+		GroupKind: schema.GroupKind{
+			Group: "kpack.io",
+			Kind:  buildapi.ClusterStackKind,
+		},
+	}, builder.NamespacedName())
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
 	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
 
-	err = c.Tracker.Track(reconciler.KeyForObject(clusterStore), builder.NamespacedName())
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
 	clusterStack, err := c.ClusterStackLister.Get(builder.Spec.Stack.Name)
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	err = c.Tracker.Track(reconciler.KeyForObject(clusterStack), builder.NamespacedName())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

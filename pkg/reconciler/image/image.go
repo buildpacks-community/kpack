@@ -11,7 +11,9 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	k8sclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -122,6 +124,20 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) (*buildapi.Image, error) {
+	err := c.Tracker.Track(reconciler.Key{
+		NamespacedName: types.NamespacedName{
+			Name:      image.Spec.Builder.Name,
+			Namespace: image.Namespace,
+		},
+		GroupKind: schema.GroupKind{
+			Group: "kpack.io",
+			Kind:  image.Spec.Builder.Kind,
+		},
+	}, image.NamespacedName())
+	if err != nil {
+		return nil, err
+	}
+
 	builder, err := c.DuckBuilderLister.Namespace(image.Namespace).Get(image.Spec.Builder)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
@@ -129,11 +145,6 @@ func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) 
 		image.Status.Conditions = image.BuilderNotFound()
 		image.Status.ObservedGeneration = image.Generation
 		return image, nil
-	}
-
-	err = c.Tracker.Track(reconciler.KeyForObject(builder), image.NamespacedName())
-	if err != nil {
-		return nil, err
 	}
 
 	lastBuild, err := c.fetchLastBuild(image)

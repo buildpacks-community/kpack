@@ -413,5 +413,77 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(notReadyClusterStack), builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
+
+		it("updates status and doesn't build builder when the store doesn't exist", func() {
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &buildapi.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: buildapi.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: `clusterstore.kpack.io "some-store" not found`,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
+		})
+
+		it("updates status and doesn't build builder when the stack doesn't exist", func() {
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStore,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &buildapi.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: buildapi.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: `clusterstack.kpack.io "some-stack" not found`,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
+		})
 	})
 }
