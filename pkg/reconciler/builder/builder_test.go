@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -62,16 +62,24 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 	clusterStore := &buildapi.ClusterStore{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-store",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterStore",
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Spec:   buildapi.ClusterStoreSpec{},
 		Status: buildapi.ClusterStoreStatus{},
 	}
 
 	clusterStack := &buildapi.ClusterStack{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "some-stack",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterStack",
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Status: buildapi.ClusterStackStatus{
 			Status: corev1alpha1.Status{
@@ -87,7 +95,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	builder := &buildapi.Builder{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
 			Generation: initialGeneration,
 			Namespace:  testNamespace,
@@ -257,8 +265,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 			})
 
-			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(clusterStack, builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterStore),
+				builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterStack),
+				builder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -342,13 +354,16 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
-
 		})
 
 		it("updates status and doesn't build builder when stack not ready", func() {
 			notReadyClusterStack := &buildapi.ClusterStack{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-stack",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ClusterStack",
+					APIVersion: "kpack.io/v1alpha2",
 				},
 				Status: buildapi.ClusterStackStatus{
 					Status: corev1alpha1.Status{
@@ -362,6 +377,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}
+
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
@@ -392,11 +408,82 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			})
 
-			//still track resources
-			require.True(t, fakeTracker.IsTracking(clusterStore, builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(notReadyClusterStack, builder.NamespacedName()))
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(notReadyClusterStack), builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
 
+		it("updates status and doesn't build builder when the store doesn't exist", func() {
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStack,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &buildapi.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: buildapi.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: `clusterstore.kpack.io "some-store" not found`,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
+		})
+
+		it("updates status and doesn't build builder when the stack doesn't exist", func() {
+			rt.Test(rtesting.TableRow{
+				Key: builderKey,
+				Objects: []runtime.Object{
+					clusterStore,
+					builder,
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+					{
+						Object: &buildapi.Builder{
+							ObjectMeta: builder.ObjectMeta,
+							Spec:       builder.Spec,
+							Status: buildapi.BuilderStatus{
+								Status: corev1alpha1.Status{
+									ObservedGeneration: 1,
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:    corev1alpha1.ConditionReady,
+											Status:  corev1.ConditionFalse,
+											Message: `clusterstack.kpack.io "some-stack" not found`,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+
+			// still track resources
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+			require.Len(t, builderCreator.CreateBuilderCalls, 0)
+		})
 	})
 }

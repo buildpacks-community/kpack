@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/pivotal/kpack/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -40,7 +40,7 @@ type Tracker struct {
 	m sync.Mutex
 	// mapping maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[types.UID]set
+	mapping map[string]set
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -53,21 +53,21 @@ type Tracker struct {
 type set map[types.NamespacedName]time.Time
 
 // Track implements Interface.
-func (i *Tracker) Track(ref metav1.ObjectMetaAccessor, obj types.NamespacedName) error {
+func (i *Tracker) Track(ref reconciler.Key, obj types.NamespacedName) error {
 	i.m.Lock()
 	defer i.m.Unlock()
 	if i.mapping == nil {
-		i.mapping = make(map[types.UID]set)
+		i.mapping = make(map[string]set)
 	}
 
-	l, ok := i.mapping[ref.GetObjectMeta().GetUID()]
+	l, ok := i.mapping[ref.String()]
 	if !ok {
 		l = set{}
 	}
 	// Overwrite the key with a new expiration.
 	l[obj] = time.Now().Add(i.leaseDuration)
 
-	i.mapping[ref.GetObjectMeta().GetUID()] = l
+	i.mapping[ref.String()] = l
 	return nil
 }
 
@@ -77,16 +77,18 @@ func isExpired(expiry time.Time) bool {
 
 // OnChanged implements Interface.
 func (i *Tracker) OnChanged(obj interface{}) {
-	item, ok := obj.(metav1.Object)
+	reconcilerObj, ok := obj.(reconciler.Object)
 	if !ok {
 		return
 	}
+
+	key := reconciler.KeyForObject(reconcilerObj)
 
 	// TODO(mattmoor): Consider locking the mapping (global) for a
 	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[item.GetUID()]
+	s, ok := i.mapping[key.String()]
 	if !ok {
 		// TODO(mattmoor): We should consider logging here.
 		return
@@ -102,6 +104,6 @@ func (i *Tracker) OnChanged(obj interface{}) {
 	}
 
 	if len(s) == 0 {
-		delete(i.mapping, item.GetUID())
+		delete(i.mapping, key.String())
 	}
 }

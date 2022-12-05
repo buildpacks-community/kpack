@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/tracker"
 )
 
@@ -32,7 +33,7 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 						Namespace: "some-namespace",
 					},
 				}
-				err := track.Track(&builder.ObjectMeta, types.NamespacedName{
+				err := track.Track(reconciler.KeyForObject(builder), types.NamespacedName{
 					Namespace: "some-other-namespace",
 					Name:      "call-me-when-builder-changes",
 				})
@@ -58,8 +59,12 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 					ObjectMeta: v1.ObjectMeta{
 						Name: "some-name",
 					},
+					TypeMeta: v1.TypeMeta{
+						Kind:       "ClusterBuilder",
+						APIVersion: "kpack.io/v1alpha2",
+					},
 				}
-				err := track.Track(&clusterBuilder.ObjectMeta, types.NamespacedName{
+				err := track.Track(reconciler.KeyForObject(clusterBuilder), types.NamespacedName{
 					Namespace: "some-other-namespace",
 					Name:      "call-me-when-builder-changes",
 				})

@@ -24,6 +24,7 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 )
@@ -33,7 +34,6 @@ func TestImageReconciler(t *testing.T) {
 }
 
 func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
-
 	const (
 		imageName                    = "image-name"
 		builderName                  = "builder-name"
@@ -45,9 +45,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		someValueToPassThrough       = "to-pass-through"
 		originalGeneration     int64 = 1
 	)
-	var (
-		fakeTracker = testhelpers.FakeTracker{}
-	)
+	fakeTracker := testhelpers.FakeTracker{}
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
@@ -117,7 +115,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Namespace: namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind: buildapi.BuilderKind,
+			Kind:       buildapi.BuilderKind,
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/builder@sha256:acf123",
@@ -151,7 +150,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name: clusterBuilderName,
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind: buildapi.ClusterBuilderKind,
+			Kind:       buildapi.ClusterBuilderKind,
+			APIVersion: "kpack.io/v1alpha2",
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/clusterbuilder@sha256:acf123",
@@ -233,7 +233,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				WantErr: false,
 			})
 
-			require.True(t, fakeTracker.IsTracking(builder, image.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				reconciler.KeyForObject(builder).WithNamespace(namespace),
+				image.NamespacedName()))
 		})
 
 		it("sets condition not ready for non-existent builder", func() {
@@ -265,6 +267,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
+
+			// still track resource
+			require.True(t, fakeTracker.IsTracking(
+				reconciler.KeyForObject(builder).WithNamespace(namespace),
+				image.NamespacedName()))
 		})
 
 		when("reconciling source resolvers", func() {
@@ -494,7 +501,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates build cache if size changes", func() {
-				var imageCacheName = image.CacheName()
+				imageCacheName := image.CacheName()
 
 				image.Status.BuildCacheName = imageCacheName
 				newCacheSize := resource.MustParse("2.5")
@@ -553,7 +560,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates build cache if desired labels change", func() {
-				var imageCacheName = image.CacheName()
+				imageCacheName := image.CacheName()
 				image.Spec.Cache.Volume.Size = &cacheSize
 				image.Status.BuildCacheName = imageCacheName
 				cache := image.BuildCache()
@@ -2175,7 +2182,6 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
-
 			})
 
 			it("reports unknown when last build was successful and builder is not ready", func() {
@@ -2224,11 +2230,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				})
-
 			})
 
 			when("reconciling old builds", func() {
-
 				it("deletes a failed build if more than the limit", func() {
 					image.Spec.FailedBuildHistoryLimit = limit(4)
 					image.Status.LatestBuildRef = "image-name-build-5"
