@@ -140,6 +140,7 @@ func main() {
 	lifecycleConfigmapInformerFactory := informers.NewSharedInformerFactoryWithOptions(
 		k8sClient,
 		options.ResyncPeriod,
+		informers.WithNamespace(system.Namespace()),
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			options.FieldSelector = fmt.Sprintf("metadata.namespace=%s,metadata.name=%s", system.Namespace(), config.LifecycleConfigName)
 		}),
