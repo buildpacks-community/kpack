@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -28,6 +30,7 @@ import (
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/signals"
+	"knative.dev/pkg/system"
 
 	"github.com/pivotal/kpack/cmd"
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
@@ -48,6 +51,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
+	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
 )
@@ -133,6 +137,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
+	lifecycleConfigmapInformerFactory := informers.NewSharedInformerFactoryWithOptions(
+		k8sClient,
+		options.ResyncPeriod,
+		informers.WithNamespace(system.Namespace()),
+		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.FieldSelector = fmt.Sprintf("metadata.namespace=%s,metadata.name=%s", system.Namespace(), config.LifecycleConfigName)
+		}),
+	)
+	lifecycleConfigmapInformer := lifecycleConfigmapInformerFactory.Core().V1().ConfigMaps()
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		ImageFetcher: &registry.Client{},
@@ -183,7 +196,6 @@ func main() {
 	}
 
 	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
-	configMapWatcher.Watch(config.LifecycleConfigName, lifecycleProvider.UpdateImage)
 
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient:         &registry.Client{},
@@ -199,6 +211,7 @@ func main() {
 	clusterBuilderController, clusterBuilderResync := clusterBuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
+	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
 
 	lifecycleProvider.AddEventHandler(builderResync)
 	lifecycleProvider.AddEventHandler(clusterBuilderResync)
@@ -206,6 +219,7 @@ func main() {
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
 	k8sInformerFactory.Start(stopChan)
+	lifecycleConfigmapInformerFactory.Start(stopChan)
 
 	waitForSync(stopChan,
 		buildInformer.Informer(),
@@ -213,6 +227,7 @@ func main() {
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
+		lifecycleConfigmapInformer.Informer(),
 		builderInformer.Informer(),
 		clusterBuilderInformer.Informer(),
 		clusterStoreInformer.Informer(),
@@ -227,6 +242,7 @@ func main() {
 		run(builderController, routinesPerController),
 		run(clusterBuilderController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
+		run(lifecycleController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		func(ctx context.Context) error {
 			return configMapWatcher.Start(ctx.Done())

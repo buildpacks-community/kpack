@@ -87,6 +87,10 @@ func (l *Listers) GetPodLister() corev1listers.PodLister {
 	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
 }
 
+func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
+	return corev1listers.NewConfigMapLister(l.indexerFor(&corev1.ConfigMap{}))
+}
+
 func (l *Listers) GetDuckBuilderLister() *duckbuilder.DuckBuilderLister {
 	return &duckbuilder.DuckBuilderLister{
 		BuilderLister:        l.GetBuilderLister(),

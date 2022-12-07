@@ -58,17 +58,18 @@ func (l *LifecycleProvider) LayerForOS(os string) (v1.Layer, cnb.LifecycleMetada
 	}
 }
 
-func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) {
+func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) error {
 	lifecycle, err := l.read(context.Background(), cm)
 	if err != nil {
 		l.lifecycleData.Store(configmapRead{err: err})
-		return
+		return err
 	}
 
 	if l.isNewImage(lifecycle) {
 		l.callHandlers()
 	}
 	l.lifecycleData.Store(configmapRead{lifecycle: lifecycle})
+	return nil
 }
 
 func (l *LifecycleProvider) AddEventHandler(handler func()) {
