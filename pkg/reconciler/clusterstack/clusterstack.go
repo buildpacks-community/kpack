@@ -48,7 +48,13 @@ func NewController(
 		zap.String(logkey.Kind, buildapi.ClusterStackCRName),
 	)
 
-	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
+	impl := controller.NewContext(
+		ctx,
+		&reconciler.NetworkErrorReconciler{
+			Reconciler: c,
+		},
+		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
+	)
 	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 	return impl
 }
