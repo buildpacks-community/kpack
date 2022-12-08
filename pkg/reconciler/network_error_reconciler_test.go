@@ -6,7 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"knative.dev/pkg/controller"
 )
 
 const (
@@ -22,42 +24,56 @@ func testNetworkErrorReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Reconcile", func() {
 		when("network error", func() {
-			subject := &NetworkErrorReconciler{Reconciler: &fakeErrorReconciler{retry: true}}
+			r := &fakeErrorReconciler{err: &NetworkError{Err: errors.New(networkErrorMsg)}}
+			subject := &NetworkErrorReconciler{Reconciler: r}
 			it("re-throw the error", func() {
 				err := subject.Reconcile(context.Background(), "whatever")
 
 				require.Error(t, err)
 
 				var networkError *NetworkError
-				require.True(t, errors.As(err, &networkError))
-				require.Equal(t, networkErrorMsg, err.Error())
+				assert.True(t, errors.As(err, &networkError))
+				assert.False(t, controller.IsPermanentError(err))
+				assert.Equal(t, networkErrorMsg, err.Error())
 			})
 		})
 
 		when("other error", func() {
-			subject := &NetworkErrorReconciler{Reconciler: &fakeErrorReconciler{retry: false}}
+			r := &fakeErrorReconciler{err: errors.New(otherErrorMsg)}
+			subject := &NetworkErrorReconciler{Reconciler: r}
 			it("wraps it as permanent error", func() {
 				err := subject.Reconcile(context.Background(), "whatever")
 
 				require.Error(t, err)
 
 				var networkError *NetworkError
-				require.False(t, errors.As(err, &networkError))
-				require.Equal(t, otherErrorMsg, err.Error())
+				assert.False(t, errors.As(err, &networkError))
+				assert.True(t, controller.IsPermanentError(err))
+				assert.Equal(t, otherErrorMsg, err.Error())
+			})
+		})
+
+		when("not ready error", func() {
+			r := &fakeErrorReconciler{err: NewNotReadyError(otherErrorMsg)}
+			subject := &NetworkErrorReconciler{Reconciler: r}
+			it("returns the error", func() {
+				err := subject.Reconcile(context.Background(), "whatever")
+
+				require.Error(t, err)
+
+				var notReadyErr *NotReadyError
+				assert.True(t, errors.As(err, &notReadyErr))
+				assert.False(t, controller.IsPermanentError(err))
+				assert.Equal(t, otherErrorMsg, err.Error())
 			})
 		})
 	})
 }
 
 type fakeErrorReconciler struct {
-	retry bool
+	err error
 }
 
 func (r *fakeErrorReconciler) Reconcile(ctx context.Context, key string) error {
-	if r.retry {
-		err := errors.New(networkErrorMsg)
-		return &NetworkError{Err: err}
-	}
-	err := errors.New(otherErrorMsg)
-	return err
+	return r.err
 }

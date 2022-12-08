@@ -10,7 +10,6 @@ import (
 	"knative.dev/pkg/logging/logkey"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
@@ -157,7 +156,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 	}
 
 	if !clusterStack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
-		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
+		return buildapi.BuilderRecord{}, reconciler.NewNotReadyError("stack %s is not ready", clusterStack.Name)
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{

@@ -14,7 +14,8 @@ type NetworkErrorReconciler struct {
 func (r *NetworkErrorReconciler) Reconcile(ctx context.Context, key string) error {
 	if err := r.Reconciler.Reconcile(ctx, key); err != nil {
 		var networkError *NetworkError
-		if errors.As(err, &networkError) {
+		var notReadyError *NotReadyError
+		if errors.As(err, &networkError) || errors.As(err, &notReadyError) {
 			// Re-queue the key if it's a network error.
 			return err
 		}
