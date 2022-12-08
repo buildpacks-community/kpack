@@ -64,11 +64,11 @@ func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8scli
 
 	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
-	informer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	informer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	podInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
-		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	return impl
