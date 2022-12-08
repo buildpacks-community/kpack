@@ -64,11 +64,19 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	clusterBuilderInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	clusterBuilderInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
-	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
-	clusterStackInformer.Informer().AddEventHandler(reconciler.Handler(c.Tracker.OnChanged))
+	clusterStoreInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStoreKind)),
+		))
+	clusterStackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
+	))
 
 	return impl, func() {
 		impl.GlobalResync(clusterBuilderInformer.Informer())

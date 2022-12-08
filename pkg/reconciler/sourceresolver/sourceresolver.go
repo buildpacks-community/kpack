@@ -57,7 +57,7 @@ func NewController(
 		delay:        opt.SourcePollingFrequency,
 	}
 
-	sourceResolverInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	sourceResolverInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	return impl
 }

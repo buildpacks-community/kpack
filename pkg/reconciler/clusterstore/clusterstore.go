@@ -55,7 +55,7 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	clusterStoreInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	clusterStoreInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 	return impl
 }
 
