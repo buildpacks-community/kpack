@@ -82,7 +82,16 @@ func NewController(
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
 
-	duckbuilderInformer.AddEventHandler(controller.HandleAll(c.Tracker.OnChanged))
+	duckbuilderInformer.AddBuilderEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.BuilderKind)),
+	))
+	duckbuilderInformer.AddClusterBuilderEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuilderKind)),
+	))
 
 	return impl
 }
@@ -124,16 +133,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) (*buildapi.Image, error) {
-	err := c.Tracker.Track(reconciler.Key{
-		NamespacedName: types.NamespacedName{
-			Name:      image.Spec.Builder.Name,
-			Namespace: image.Namespace,
-		},
-		GroupKind: schema.GroupKind{
-			Group: "kpack.io",
-			Kind:  image.Spec.Builder.Kind,
-		},
-	}, image.NamespacedName())
+	err := c.Tracker.Track(reconcilerKeyForBuilderKind(image), image.NamespacedName())
 	if err != nil {
 		return nil, err
 	}
@@ -307,4 +307,32 @@ func sourceResolversEqual(desiredSourceResolver *buildapi.SourceResolver, source
 func buildCacheEqual(desiredBuildCache *corev1.PersistentVolumeClaim, buildCache *corev1.PersistentVolumeClaim) bool {
 	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
 		equality.Semantic.DeepEqual(desiredBuildCache.Labels, buildCache.Labels)
+}
+
+func reconcilerKeyForBuilderKind(image *buildapi.Image) reconciler.Key {
+	switch image.Spec.Builder.Kind {
+	case buildapi.ClusterBuilderKind:
+		return reconciler.Key{
+			NamespacedName: types.NamespacedName{
+				Name: image.Spec.Builder.Name,
+			},
+			GroupKind: schema.GroupKind{
+				Group: "kpack.io",
+				Kind:  buildapi.ClusterBuilderKind,
+			},
+		}
+	case buildapi.BuilderKind:
+		return reconciler.Key{
+			NamespacedName: types.NamespacedName{
+				Name:      image.Spec.Builder.Name,
+				Namespace: image.Namespace,
+			},
+			GroupKind: schema.GroupKind{
+				Group: "kpack.io",
+				Kind:  buildapi.BuilderKind,
+			},
+		}
+	}
+
+	return reconciler.Key{}
 }

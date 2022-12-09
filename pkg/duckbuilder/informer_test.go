@@ -137,17 +137,29 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("#AddEventHandler", func() {
-		it("adds the event handler to each builder's informer", func() {
+	when("#AddClusterBuilderEventHandler", func() {
+		it("adds the event handler to cluster builder's informer", func() {
 			testHandler := &testHandler{}
-			subject.AddEventHandler(testHandler)
+			subject.AddClusterBuilderEventHandler(testHandler)
 
 			assert.Eventually(t, func() bool {
-				return len(testHandler.added) == 2
+				return len(testHandler.added) == 1
+			}, 5*time.Second, time.Millisecond)
+
+			assert.Contains(t, testHandler.added, clusterBuilder)
+		})
+	})
+
+	when("#AddBuilderEventHandler", func() {
+		it("adds the event handler to  builder's informer", func() {
+			testHandler := &testHandler{}
+			subject.AddBuilderEventHandler(testHandler)
+
+			assert.Eventually(t, func() bool {
+				return len(testHandler.added) == 1
 			}, 5*time.Second, time.Millisecond)
 
 			assert.Contains(t, testHandler.added, builder)
-			assert.Contains(t, testHandler.added, clusterBuilder)
 		})
 	})
 }
