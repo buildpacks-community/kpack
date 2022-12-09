@@ -74,7 +74,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-	image := &buildapi.Image{
+	imageWithBuilder := &buildapi.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
@@ -88,6 +88,41 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			Builder: corev1.ObjectReference{
 				Kind: "Builder",
 				Name: builderName,
+			},
+			ServiceAccountName: serviceAccount,
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
+					URL:      "https://some.git/url",
+					Revision: "1234567",
+				},
+			},
+			FailedBuildHistoryLimit:  limit(10),
+			SuccessBuildHistoryLimit: limit(10),
+			ImageTaggingStrategy:     corev1alpha1.None,
+			Build:                    &buildapi.ImageBuild{},
+		},
+		Status: buildapi.ImageStatus{
+			Status: corev1alpha1.Status{
+				ObservedGeneration: originalGeneration,
+				Conditions:         conditionReadyUnknown(),
+			},
+		},
+	}
+
+	imageWithClusterBuilder := &buildapi.Image{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       imageName,
+			Namespace:  namespace,
+			Generation: originalGeneration,
+			Labels: map[string]string{
+				someLabelKey: someValueToPassThrough,
+			},
+		},
+		Spec: buildapi.ImageSpec{
+			Tag: "some/image",
+			Builder: corev1.ObjectReference{
+				Kind: "ClusterBuilder",
+				Name: clusterBuilderName,
 			},
 			ServiceAccountName: serviceAccount,
 			Source: corev1alpha1.SourceConfig{
@@ -180,22 +215,22 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("Reconcile", func() {
 		it("updates observed generation after processing an update", func() {
 			const updatedGeneration int64 = 2
-			image.ObjectMeta.Generation = updatedGeneration
+			imageWithBuilder.ObjectMeta.Generation = updatedGeneration
 
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					image,
+					imageWithBuilder,
 					builder,
 					clusterBuilder,
-					unresolvedSourceResolver(image),
+					unresolvedSourceResolver(imageWithBuilder),
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Image{
-							ObjectMeta: image.ObjectMeta,
-							Spec:       image.Spec,
+							ObjectMeta: imageWithBuilder.ObjectMeta,
+							Spec:       imageWithBuilder.Spec,
 							Status: buildapi.ImageStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: updatedGeneration,
@@ -212,10 +247,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					image,
+					imageWithBuilder,
 					builder,
 					clusterBuilder,
-					unresolvedSourceResolver(image),
+					unresolvedSourceResolver(imageWithBuilder),
 				},
 				WantErr: false,
 			})
@@ -225,31 +260,48 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					image,
+					imageWithBuilder,
 					builder,
 					clusterBuilder,
-					unresolvedSourceResolver(image),
+					unresolvedSourceResolver(imageWithBuilder),
 				},
 				WantErr: false,
 			})
 
 			require.True(t, fakeTracker.IsTracking(
 				reconciler.KeyForObject(builder).WithNamespace(namespace),
-				image.NamespacedName()))
+				imageWithBuilder.NamespacedName()))
+		})
+
+		it("tracks clusterbuilder for image", func() {
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					imageWithClusterBuilder,
+					builder,
+					clusterBuilder,
+					unresolvedSourceResolver(imageWithClusterBuilder),
+				},
+				WantErr: false,
+			})
+
+			require.True(t, fakeTracker.IsTracking(
+				reconciler.KeyForObject(clusterBuilder),
+				imageWithClusterBuilder.NamespacedName()))
 		})
 
 		it("sets condition not ready for non-existent builder", func() {
 			rt.Test(rtesting.TableRow{
 				Key: key,
 				Objects: []runtime.Object{
-					image,
+					imageWithBuilder,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 					{
 						Object: &buildapi.Image{
-							ObjectMeta: image.ObjectMeta,
-							Spec:       image.Spec,
+							ObjectMeta: imageWithBuilder.ObjectMeta,
+							Spec:       imageWithBuilder.Spec,
 							Status: buildapi.ImageStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: originalGeneration,
@@ -271,7 +323,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			// still track resource
 			require.True(t, fakeTracker.IsTracking(
 				reconciler.KeyForObject(builder).WithNamespace(namespace),
-				image.NamespacedName()))
+				imageWithBuilder.NamespacedName()))
 		})
 
 		when("reconciling source resolvers", func() {
@@ -279,25 +331,25 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
 						&buildapi.SourceResolver{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.SourceResolverName(),
+								Name:      imageWithBuilder.SourceResolverName(),
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									someLabelKey: someValueToPassThrough,
 								},
 							},
 							Spec: buildapi.SourceResolverSpec{
-								ServiceAccountName: image.Spec.ServiceAccountName,
-								Source:             image.Spec.Source,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+								Source:             imageWithBuilder.Spec.Source,
 							},
 						},
 					},
@@ -308,9 +360,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
-						image.SourceResolver(),
+						imageWithBuilder.SourceResolver(),
 					},
 					WantErr: false,
 				})
@@ -320,17 +372,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						&buildapi.SourceResolver{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.SourceResolverName(),
+								Name:      imageWithBuilder.SourceResolverName(),
 								Namespace: namespace,
 								Labels: map[string]string{
 									someLabelKey: someValueToPassThrough,
 								},
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 							},
 							Spec: buildapi.SourceResolverSpec{
@@ -349,18 +401,18 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						{
 							Object: &buildapi.SourceResolver{
 								ObjectMeta: metav1.ObjectMeta{
-									Name:      image.SourceResolverName(),
+									Name:      imageWithBuilder.SourceResolverName(),
 									Namespace: namespace,
 									Labels: map[string]string{
 										someLabelKey: someValueToPassThrough,
 									},
 									OwnerReferences: []metav1.OwnerReference{
-										*kmeta.NewControllerRef(image),
+										*kmeta.NewControllerRef(imageWithBuilder),
 									},
 								},
 								Spec: buildapi.SourceResolverSpec{
-									ServiceAccountName: image.Spec.ServiceAccountName,
-									Source:             image.Spec.Source,
+									ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+									Source:             imageWithBuilder.Spec.Source,
 								},
 							},
 						},
@@ -369,9 +421,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates source resolver if labels change", func() {
-				sourceResolver := image.SourceResolver()
+				sourceResolver := imageWithBuilder.SourceResolver()
 
-				extraLabelImage := image.DeepCopy()
+				extraLabelImage := imageWithBuilder.DeepCopy()
 				extraLabelImage.Labels["another/label"] = "label"
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -385,10 +437,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						{
 							Object: &buildapi.SourceResolver{
 								ObjectMeta: metav1.ObjectMeta{
-									Name:      image.SourceResolverName(),
+									Name:      imageWithBuilder.SourceResolverName(),
 									Namespace: namespace,
 									OwnerReferences: []metav1.OwnerReference{
-										*kmeta.NewControllerRef(image),
+										*kmeta.NewControllerRef(imageWithBuilder),
 									},
 									Labels: map[string]string{
 										someLabelKey:    someValueToPassThrough,
@@ -396,8 +448,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								Spec: buildapi.SourceResolverSpec{
-									ServiceAccountName: image.Spec.ServiceAccountName,
-									Source:             image.Spec.Source,
+									ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+									Source:             imageWithBuilder.Spec.Source,
 								},
 							},
 						},
@@ -408,7 +460,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		when("reconciling build caches", func() {
 			cacheSize := resource.MustParse("1.5")
-			image.Spec.Cache = &buildapi.ImageCacheConfig{
+			imageWithBuilder.Spec.Cache = &buildapi.ImageCacheConfig{
 				Volume: &buildapi.ImagePersistentVolumeCache{
 					Size: &cacheSize,
 				},
@@ -418,18 +470,18 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
-						image.SourceResolver(),
+						imageWithBuilder,
+						imageWithBuilder.SourceResolver(),
 						builder,
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
 						&corev1.PersistentVolumeClaim{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.CacheName(),
+								Name:      imageWithBuilder.CacheName(),
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									someLabelKey: someValueToPassThrough,
@@ -448,10 +500,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
-									BuildCacheName: image.CacheName(),
+									BuildCacheName: imageWithBuilder.CacheName(),
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
@@ -464,21 +516,21 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not create a cache if a cache already exists", func() {
-				image.Spec.Cache.Volume.Size = &cacheSize
-				image.Status.BuildCacheName = image.CacheName()
+				imageWithBuilder.Spec.Cache.Volume.Size = &cacheSize
+				imageWithBuilder.Status.BuildCacheName = imageWithBuilder.CacheName()
 				storageClassName := "some-name"
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
-						image.SourceResolver(),
+						imageWithBuilder,
+						imageWithBuilder.SourceResolver(),
 						&corev1.PersistentVolumeClaim{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.CacheName(),
+								Name:      imageWithBuilder.CacheName(),
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									someLabelKey: someValueToPassThrough,
@@ -501,24 +553,24 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates build cache if size changes", func() {
-				imageCacheName := image.CacheName()
+				imageCacheName := imageWithBuilder.CacheName()
 
-				image.Status.BuildCacheName = imageCacheName
+				imageWithBuilder.Status.BuildCacheName = imageCacheName
 				newCacheSize := resource.MustParse("2.5")
-				image.Spec.Cache.Volume.Size = &newCacheSize
+				imageWithBuilder.Spec.Cache.Volume.Size = &newCacheSize
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
-						image.SourceResolver(),
+						imageWithBuilder,
+						imageWithBuilder.SourceResolver(),
 						builder,
 						&corev1.PersistentVolumeClaim{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      imageCacheName,
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 							},
 							Spec: corev1.PersistentVolumeClaimSpec{
@@ -542,7 +594,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										someLabelKey: someValueToPassThrough,
 									},
 									OwnerReferences: []metav1.OwnerReference{
-										*kmeta.NewControllerRef(image),
+										*kmeta.NewControllerRef(imageWithBuilder),
 									},
 								},
 								Spec: corev1.PersistentVolumeClaimSpec{
@@ -560,12 +612,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("updates build cache if desired labels change", func() {
-				imageCacheName := image.CacheName()
-				image.Spec.Cache.Volume.Size = &cacheSize
-				image.Status.BuildCacheName = imageCacheName
-				cache := image.BuildCache()
+				imageCacheName := imageWithBuilder.CacheName()
+				imageWithBuilder.Spec.Cache.Volume.Size = &cacheSize
+				imageWithBuilder.Status.BuildCacheName = imageCacheName
+				cache := imageWithBuilder.BuildCache()
 
-				extraLabelImage := image.DeepCopy()
+				extraLabelImage := imageWithBuilder.DeepCopy()
 				extraLabelImage.Labels["another/label"] = "label"
 				rt.Test(rtesting.TableRow{
 					Key: key,
@@ -582,7 +634,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								ObjectMeta: metav1.ObjectMeta{
 									Name: imageCacheName,
 									OwnerReferences: []metav1.OwnerReference{
-										*kmeta.NewControllerRef(image),
+										*kmeta.NewControllerRef(imageWithBuilder),
 									},
 									Namespace: namespace,
 									Labels: map[string]string{
@@ -605,20 +657,20 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("deletes a cache if already exists and not requested", func() {
-				image.Status.BuildCacheName = image.CacheName()
-				image.Spec.Cache.Volume.Size = nil
+				imageWithBuilder.Status.BuildCacheName = imageWithBuilder.CacheName()
+				imageWithBuilder.Spec.Cache.Volume.Size = nil
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image.SourceResolver(),
+						imageWithBuilder.SourceResolver(),
 						&corev1.PersistentVolumeClaim{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.CacheName(),
-								Namespace: image.Namespace,
+								Name:      imageWithBuilder.CacheName(),
+								Namespace: imageWithBuilder.Namespace,
 							},
 						},
-						image,
+						imageWithBuilder,
 						builder,
 					},
 					WantErr: false,
@@ -630,14 +682,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									Resource: "persistentvolumeclaims",
 								},
 							},
-							Name: image.CacheName(),
+							Name: imageWithBuilder.CacheName(),
 						},
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -651,22 +703,22 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("uses the storageClassName if provided", func() {
-				image.Spec.Cache.Volume.StorageClassName = "some-storage-class"
+				imageWithBuilder.Spec.Cache.Volume.StorageClassName = "some-storage-class"
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
-						image.SourceResolver(),
+						imageWithBuilder,
+						imageWithBuilder.SourceResolver(),
 						builder,
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
 						&corev1.PersistentVolumeClaim{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.CacheName(),
+								Name:      imageWithBuilder.CacheName(),
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									someLabelKey: someValueToPassThrough,
@@ -679,17 +731,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										corev1.ResourceStorage: cacheSize,
 									},
 								},
-								StorageClassName: &image.Spec.Cache.Volume.StorageClassName,
+								StorageClassName: &imageWithBuilder.Spec.Cache.Volume.StorageClassName,
 							},
 						},
 					},
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
-									BuildCacheName: image.CacheName(),
+									BuildCacheName: imageWithBuilder.CacheName(),
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions:         conditionReadyUnknown(),
@@ -707,9 +759,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
-						unresolvedSourceResolver(image),
+						unresolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
 				})
@@ -719,16 +771,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						notReadyBuilder(builder),
-						resolvedSourceResolver(image),
+						resolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -753,11 +805,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build if no build has been scheduled", func() {
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 					},
@@ -768,12 +820,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "1",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -802,11 +854,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
 								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
@@ -821,8 +873,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -840,16 +892,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build with a cluster builder", func() {
-				image.Spec.Builder = corev1.ObjectReference{
+				imageWithBuilder.Spec.Builder = corev1.ObjectReference{
 					Kind: buildapi.ClusterBuilderKind,
 					Name: clusterBuilderName,
 				}
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						clusterBuilder,
 						sourceResolver,
@@ -861,12 +913,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "1",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -895,11 +947,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
 								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
@@ -914,8 +966,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -933,16 +985,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build with a builder", func() {
-				image.Spec.Builder = corev1.ObjectReference{
+				imageWithBuilder.Spec.Builder = corev1.ObjectReference{
 					Kind: buildapi.BuilderKind,
 					Name: builderName,
 				}
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						builder,
 						sourceResolver,
@@ -954,12 +1006,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "1",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -988,11 +1040,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
 								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
@@ -1007,8 +1059,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1026,16 +1078,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build with a cluster builder", func() {
-				image.Spec.Builder = corev1.ObjectReference{
+				imageWithBuilder.Spec.Builder = corev1.ObjectReference{
 					Kind: buildapi.ClusterBuilderKind,
 					Name: clusterBuilderName,
 				}
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						builder,
 						clusterBuilder,
@@ -1048,12 +1100,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "1",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1082,11 +1134,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Cache:              &buildapi.BuildCacheConfig{},
 								RunImage:           builderRunImage,
 								Source: corev1alpha1.SourceConfig{
@@ -1101,8 +1153,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1121,21 +1173,21 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			it("schedules a build with a desired build cache", func() {
 				cacheSize := resource.MustParse("2.5")
-				image.Spec.Cache = &buildapi.ImageCacheConfig{
+				imageWithBuilder.Spec.Cache = &buildapi.ImageCacheConfig{
 					Volume: &buildapi.ImagePersistentVolumeCache{
 						Size: &cacheSize,
 					},
 				}
-				image.Status.BuildCacheName = image.CacheName()
+				imageWithBuilder.Status.BuildCacheName = imageWithBuilder.CacheName()
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
-						image.BuildCache(),
+						imageWithBuilder.BuildCache(),
 					},
 					WantErr: false,
 					WantCreates: []runtime.Object{
@@ -1144,12 +1196,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "1",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1178,11 +1230,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1191,7 +1243,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 								Cache: &buildapi.BuildCacheConfig{
 									Volume: &buildapi.BuildPersistentVolumeCache{
-										ClaimName: image.CacheName(),
+										ClaimName: imageWithBuilder.CacheName(),
 									},
 								},
 								RunImage: builderRunImage,
@@ -1201,8 +1253,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1212,7 +1264,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									LatestBuildReason:          "CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
 									BuildCounter:               1,
-									BuildCacheName:             image.CacheName(),
+									BuildCacheName:             imageWithBuilder.CacheName(),
 								},
 							},
 						},
@@ -1221,14 +1273,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build if the previous build does not match source", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-100001"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-100001"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 						&buildapi.Build{
@@ -1236,7 +1288,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -1244,7 +1296,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1257,7 +1309,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: buildapi.BuildStatus{
-								LatestImage: image.Spec.Tag + "@sha256:just-built",
+								LatestImage: imageWithBuilder.Spec.Tag + "@sha256:just-built",
 								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
@@ -1280,13 +1332,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-2",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "2",
 									buildapi.ImageLabel:           imageName,
 									someLabelKey:                  someValueToPassThrough,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 								},
 								Annotations: map[string]string{
 									buildapi.BuilderNameAnnotation: builderName,
@@ -1327,11 +1379,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1350,8 +1402,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1360,7 +1412,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "COMMIT,CONFIG",
 									LatestBuildImageGeneration: originalGeneration,
-									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
 							},
@@ -1370,13 +1422,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build when source resolver is updated", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 
-				sourceResolver := image.SourceResolver()
+				sourceResolver := imageWithBuilder.SourceResolver()
 				sourceResolver.ResolvedSource(corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
-						URL:      image.Spec.Source.Git.URL,
+						URL:      imageWithBuilder.Spec.Source.Git.URL,
 						Revision: "new-commit",
 						Type:     corev1alpha1.Branch,
 					},
@@ -1385,7 +1437,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 						&buildapi.Build{
@@ -1393,7 +1445,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -1404,20 +1456,20 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
-										URL:      image.Spec.Source.Git.URL,
-										Revision: image.Spec.Source.Git.Revision,
+										URL:      imageWithBuilder.Spec.Source.Git.URL,
+										Revision: imageWithBuilder.Spec.Source.Git.Revision,
 									},
 								},
 							},
 							Status: buildapi.BuildStatus{
-								LatestImage: image.Spec.Tag + "@sha256:just-built",
+								LatestImage: imageWithBuilder.Spec.Tag + "@sha256:just-built",
 								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
@@ -1440,12 +1492,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-2",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "2",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1456,11 +1508,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1479,8 +1531,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1489,7 +1541,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "COMMIT",
 									LatestBuildImageGeneration: originalGeneration,
-									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
 							},
@@ -1499,15 +1551,15 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build when the builder buildpacks are updated", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 				const updatedBuilderImage = "some/builder@sha256:updated"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						&buildapi.Builder{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      builderName,
@@ -1544,7 +1596,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -1552,11 +1604,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1565,7 +1617,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: buildapi.BuildStatus{
-								LatestImage: image.Spec.Tag + "@sha256:just-built",
+								LatestImage: imageWithBuilder.Spec.Tag + "@sha256:just-built",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1594,12 +1646,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-2",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "2",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1622,11 +1674,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1645,8 +1697,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1655,7 +1707,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									LatestBuildRef:             "image-name-build-2",
 									LatestBuildReason:          "BUILDPACK",
 									LatestBuildImageGeneration: originalGeneration,
-									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
 							},
@@ -1665,19 +1717,19 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build when the builder stack is updated", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 				const updatedBuilderImage = "some/builder@sha256:updated"
 				const updatedBuilderRunImage = "gcr.io/test-project/install/run@sha256:01ea3600f15a73f0ad445351c681eb0377738f5964cbcd2bab0cfec9ca891a08"
 				updatedRunImage := buildapi.BuildSpecImage{
 					Image: updatedBuilderRunImage,
 				}
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						&buildapi.Builder{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      builderName,
@@ -1714,7 +1766,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -1722,11 +1774,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1735,7 +1787,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: buildapi.BuildStatus{
-								LatestImage: image.Spec.Tag + "@sha256:just-built",
+								LatestImage: imageWithBuilder.Spec.Tag + "@sha256:just-built",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1764,12 +1816,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-2",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "2",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1787,11 +1839,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1810,8 +1862,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1820,7 +1872,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									LatestBuildRef:             "image-name-build-2",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestBuildReason:          buildapi.BuildReasonStack,
-									LatestImage:                image.Spec.Tag + "@sha256:just-built",
+									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
 							},
@@ -1830,14 +1882,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("schedules a build with previous build's LastBuild if the last build failed", func() {
-				image.Status.BuildCounter = 2
-				image.Status.LatestBuildRef = "image-name-build200001"
+				imageWithBuilder.Status.BuildCounter = 2
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build200001"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 						&buildapi.Build{
@@ -1845,7 +1897,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-1",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "2",
@@ -1853,7 +1905,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1865,7 +1917,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 								},
 								LastBuild: &buildapi.LastBuild{
-									Image:   image.Spec.Tag + "@sha256:from-build-before-this-build",
+									Image:   imageWithBuilder.Spec.Tag + "@sha256:from-build-before-this-build",
 									StackId: "io.buildpacks.stacks.bionic",
 								},
 							},
@@ -1888,12 +1940,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      imageName + "-build-3",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel:     "3",
 									buildapi.ImageLabel:           imageName,
-									buildapi.ImageGenerationLabel: generation(image),
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
 									someLabelKey:                  someValueToPassThrough,
 								},
 								Annotations: map[string]string{
@@ -1935,11 +1987,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -1958,8 +2010,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -1977,14 +2029,14 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not schedule a build if the previous build is running", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 						&buildapi.Build{
@@ -1992,7 +2044,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Name:      "image-name-build-100001",
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -2000,7 +2052,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -2029,25 +2081,25 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not schedule a build if the previous build spec matches the current desired spec", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
-				image.Status.LatestImage = "some/image@sha256:ad3f454c"
-				image.Status.Conditions = conditionReady()
-				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.LatestImage = "some/image@sha256:ad3f454c"
+				imageWithBuilder.Status.Conditions = conditionReady()
+				imageWithBuilder.Status.LatestStack = "io.buildpacks.stacks.bionic"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 						&buildapi.Build{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      image.Status.LatestBuildRef,
+								Name:      imageWithBuilder.Status.LatestBuildRef,
 								Namespace: namespace,
 								OwnerReferences: []metav1.OwnerReference{
-									*kmeta.NewControllerRef(image),
+									*kmeta.NewControllerRef(imageWithBuilder),
 								},
 								Labels: map[string]string{
 									buildapi.BuildNumberLabel: "1",
@@ -2055,11 +2107,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{image.Spec.Tag},
+								Tags: []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
-								ServiceAccountName: image.Spec.ServiceAccountName,
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
 								Source: corev1alpha1.SourceConfig{
 									Git: &corev1alpha1.Git{
 										URL:      sourceResolver.Status.Source.Git.URL,
@@ -2068,7 +2120,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Status: buildapi.BuildStatus{
-								LatestImage: image.Status.LatestImage,
+								LatestImage: imageWithBuilder.Status.LatestImage,
 								Stack: corev1alpha1.BuildStack{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
@@ -2093,17 +2145,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("reports the last successful build on the image when the last build is successful", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
-				image.Status.LatestImage = "some/image@some-old-sha"
-				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.LatestImage = "some/image@some-old-sha"
+				imageWithBuilder.Status.LatestStack = "io.buildpacks.stacks.bionic"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: runtimeObjects(
-						successfulBuilds(image, sourceResolver, 1),
-						image,
+						successfulBuilds(imageWithBuilder, sourceResolver, 1),
+						imageWithBuilder,
 						builder,
 						sourceResolver,
 					),
@@ -2111,8 +2163,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -2139,26 +2191,26 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("reports unknown when last build was successful and source resolver is unknown", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
-				image.Status.LatestImage = "some/image@some-old-sha"
-				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.LatestImage = "some/image@some-old-sha"
+				imageWithBuilder.Status.LatestStack = "io.buildpacks.stacks.bionic"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: runtimeObjects(
-						successfulBuilds(image, sourceResolver, 1),
-						image,
+						successfulBuilds(imageWithBuilder, sourceResolver, 1),
+						imageWithBuilder,
 						builder,
-						unresolvedSourceResolver(image),
+						unresolvedSourceResolver(imageWithBuilder),
 					),
 					WantErr: false,
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -2185,17 +2237,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("reports unknown when last build was successful and builder is not ready", func() {
-				image.Status.BuildCounter = 1
-				image.Status.LatestBuildRef = "image-name-build-1"
-				image.Status.LatestImage = "some/image@some-old-sha"
-				image.Status.LatestStack = "io.buildpacks.stacks.bionic"
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
+				imageWithBuilder.Status.LatestImage = "some/image@some-old-sha"
+				imageWithBuilder.Status.LatestStack = "io.buildpacks.stacks.bionic"
 
-				sourceResolver := resolvedSourceResolver(image)
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: runtimeObjects(
-						successfulBuilds(image, sourceResolver, 1),
-						image,
+						successfulBuilds(imageWithBuilder, sourceResolver, 1),
+						imageWithBuilder,
 						sourceResolver,
 						notReadyBuilder(builder),
 					),
@@ -2203,8 +2255,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 						{
 							Object: &buildapi.Image{
-								ObjectMeta: image.ObjectMeta,
-								Spec:       image.Spec,
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
@@ -2234,17 +2286,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			when("reconciling old builds", func() {
 				it("deletes a failed build if more than the limit", func() {
-					image.Spec.FailedBuildHistoryLimit = limit(4)
-					image.Status.LatestBuildRef = "image-name-build-5"
-					image.Status.Conditions = conditionNotReady()
-					image.Status.BuildCounter = 5
-					sourceResolver := resolvedSourceResolver(image)
+					imageWithBuilder.Spec.FailedBuildHistoryLimit = limit(4)
+					imageWithBuilder.Status.LatestBuildRef = "image-name-build-5"
+					imageWithBuilder.Status.Conditions = conditionNotReady()
+					imageWithBuilder.Status.BuildCounter = 5
+					sourceResolver := resolvedSourceResolver(imageWithBuilder)
 
 					rt.Test(rtesting.TableRow{
 						Key: key,
 						Objects: runtimeObjects(
-							failedBuilds(image, sourceResolver, 5),
-							image,
+							failedBuilds(imageWithBuilder, sourceResolver, 5),
+							imageWithBuilder,
 							builder,
 							sourceResolver,
 						),
@@ -2259,26 +2311,26 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 									Subresource: "",
 								},
-								Name: image.Name + "-build-1", // first-build
+								Name: imageWithBuilder.Name + "-build-1", // first-build
 							},
 						},
 					})
 				})
 
 				it("deletes a successful build if more than the limit", func() {
-					image.Spec.SuccessBuildHistoryLimit = limit(4)
-					image.Status.LatestBuildRef = "image-name-build-5"
-					image.Status.LatestImage = "some/image@sha256:build-5"
-					image.Status.LatestStack = "io.buildpacks.stacks.bionic"
-					image.Status.Conditions = conditionReady()
-					image.Status.BuildCounter = 5
-					sourceResolver := resolvedSourceResolver(image)
+					imageWithBuilder.Spec.SuccessBuildHistoryLimit = limit(4)
+					imageWithBuilder.Status.LatestBuildRef = "image-name-build-5"
+					imageWithBuilder.Status.LatestImage = "some/image@sha256:build-5"
+					imageWithBuilder.Status.LatestStack = "io.buildpacks.stacks.bionic"
+					imageWithBuilder.Status.Conditions = conditionReady()
+					imageWithBuilder.Status.BuildCounter = 5
+					sourceResolver := resolvedSourceResolver(imageWithBuilder)
 
 					rt.Test(rtesting.TableRow{
 						Key: key,
 						Objects: runtimeObjects(
-							successfulBuilds(image, sourceResolver, 5),
-							image,
+							successfulBuilds(imageWithBuilder, sourceResolver, 5),
+							imageWithBuilder,
 							builder,
 							sourceResolver,
 						),
@@ -2293,7 +2345,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									},
 									Subresource: "",
 								},
-								Name: image.Name + "-build-1", // first-build
+								Name: imageWithBuilder.Name + "-build-1", // first-build
 							},
 						},
 					})
@@ -2302,17 +2354,17 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("defaulting has not happened", func() {
-			image.Spec.FailedBuildHistoryLimit = nil
-			image.Spec.SuccessBuildHistoryLimit = nil
+			imageWithBuilder.Spec.FailedBuildHistoryLimit = nil
+			imageWithBuilder.Spec.SuccessBuildHistoryLimit = nil
 
 			it("sets the FailedBuildHistoryLimit and SuccessBuildHistoryLimit", func() {
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						image,
+						imageWithBuilder,
 						builder,
 						clusterBuilder,
-						unresolvedSourceResolver(image),
+						unresolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
 				})

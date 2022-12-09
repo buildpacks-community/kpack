@@ -15,8 +15,11 @@ type DuckBuilderInformer struct {
 	ClusterBuilderInformer buildinformers.ClusterBuilderInformer
 }
 
-func (di *DuckBuilderInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (di *DuckBuilderInformer) AddBuilderEventHandler(handler cache.ResourceEventHandler) {
 	di.BuilderInformer.Informer().AddEventHandler(handler)
+}
+
+func (di *DuckBuilderInformer) AddClusterBuilderEventHandler(handler cache.ResourceEventHandler) {
 	di.ClusterBuilderInformer.Informer().AddEventHandler(handler)
 }
 
