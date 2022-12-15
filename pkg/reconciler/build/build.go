@@ -117,8 +117,10 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	}
 
 	pod, err := c.reconcileBuildPod(ctx, build)
-	if err != nil {
+	if err != nil && !k8s_errors.IsInvalid(err) {
 		return err
+	} else if k8s_errors.IsInvalid(err) {
+		return controller.NewPermanentError(err)
 	}
 
 	if c.InjectedSidecarSupport {

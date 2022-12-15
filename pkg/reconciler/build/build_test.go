@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,10 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -55,15 +59,17 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		podGenerator           = &testPodGenerator{}
 		ctx                    = context.Background()
 		injectedSidecarSupport = false
+		reactors               = make([]reactor, 0)
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
-
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 			k8sfakeClient := k8sfake.NewSimpleClientset(listers.GetKubeObjects()...)
-
+			for _, r := range reactors {
+				k8sfakeClient.PrependReactor(r.verb, r.resource, r.reactionFunc)
+			}
 			eventRecorder := record.NewFakeRecorder(10)
 			actionRecorderList := rtesting.ActionRecorderList{fakeClient, k8sfakeClient}
 			eventList := rtesting.EventList{Recorder: eventRecorder}
@@ -970,6 +976,53 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("a build pod cannot be created", func() {
+			it("returns a permanent error", func() {
+				pod, err := podGenerator.Generate(ctx, bld)
+				require.NoError(t, err)
+
+				podName := fmt.Sprintf("%s-build-pod", buildName)
+				reactors = append(reactors, reactor{
+					verb:     "create",
+					resource: "pods",
+					reactionFunc: func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+						a := action.DeepCopy().(clientgotesting.CreateAction)
+						return a.GetObject().(metav1.Object).GetName() == podName, nil, k8serrors.NewInvalid(schema.ParseGroupKind("v1/pod"), podName, field.ErrorList{})
+					},
+				})
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						bld,
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						pod,
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status: buildapi.BuildStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:    corev1alpha1.ConditionSucceeded,
+												Status:  corev1.ConditionFalse,
+												Message: `v1/pod "build-name-build-pod" is invalid`,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+			})
+		})
 		when("pod needs cleanup", func() {
 			injectedSidecarSupport = true
 			var startTime = time.Now()
@@ -1254,4 +1307,10 @@ func (tpg testPodGenerator) Generate(ctx context.Context, build buildpod.BuildPo
 			ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		},
 	}, nil
+}
+
+type reactor struct {
+	verb         string
+	resource     string
+	reactionFunc clientgotesting.ReactionFunc
 }
