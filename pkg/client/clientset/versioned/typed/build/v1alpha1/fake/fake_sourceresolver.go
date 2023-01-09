@@ -117,7 +117,7 @@ func (c *FakeSourceResolvers) UpdateStatus(ctx context.Context, sourceResolver *
 // Delete takes name of the sourceResolver and deletes it. Returns an error if one occurs.
 func (c *FakeSourceResolvers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(sourceresolversResource, c.ns, name), &v1alpha1.SourceResolver{})
+		Invokes(testing.NewDeleteActionWithOptions(sourceresolversResource, c.ns, name, opts), &v1alpha1.SourceResolver{})
 
 	return err
 }

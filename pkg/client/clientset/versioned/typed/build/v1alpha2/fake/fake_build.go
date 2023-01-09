@@ -117,7 +117,7 @@ func (c *FakeBuilds) UpdateStatus(ctx context.Context, build *v1alpha2.Build, op
 // Delete takes name of the build and deletes it. Returns an error if one occurs.
 func (c *FakeBuilds) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(buildsResource, c.ns, name), &v1alpha2.Build{})
+		Invokes(testing.NewDeleteActionWithOptions(buildsResource, c.ns, name, opts), &v1alpha2.Build{})
 
 	return err
 }

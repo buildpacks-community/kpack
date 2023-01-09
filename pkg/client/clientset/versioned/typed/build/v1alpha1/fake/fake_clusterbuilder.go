@@ -110,7 +110,7 @@ func (c *FakeClusterBuilders) UpdateStatus(ctx context.Context, clusterBuilder *
 // Delete takes name of the clusterBuilder and deletes it. Returns an error if one occurs.
 func (c *FakeClusterBuilders) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(clusterbuildersResource, name), &v1alpha1.ClusterBuilder{})
+		Invokes(testing.NewRootDeleteActionWithOptions(clusterbuildersResource, name, opts), &v1alpha1.ClusterBuilder{})
 	return err
 }
 
