@@ -110,7 +110,7 @@ func (c *FakeClusterStacks) UpdateStatus(ctx context.Context, clusterStack *v1al
 // Delete takes name of the clusterStack and deletes it. Returns an error if one occurs.
 func (c *FakeClusterStacks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(clusterstacksResource, name), &v1alpha1.ClusterStack{})
+		Invokes(testing.NewRootDeleteActionWithOptions(clusterstacksResource, name, opts), &v1alpha1.ClusterStack{})
 	return err
 }
 

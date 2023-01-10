@@ -110,7 +110,7 @@ func (c *FakeClusterStores) UpdateStatus(ctx context.Context, clusterStore *v1al
 // Delete takes name of the clusterStore and deletes it. Returns an error if one occurs.
 func (c *FakeClusterStores) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(clusterstoresResource, name), &v1alpha2.ClusterStore{})
+		Invokes(testing.NewRootDeleteActionWithOptions(clusterstoresResource, name, opts), &v1alpha2.ClusterStore{})
 	return err
 }
 
