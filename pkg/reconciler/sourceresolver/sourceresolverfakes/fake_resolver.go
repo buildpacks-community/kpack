@@ -46,15 +46,16 @@ func (fake *FakeResolver) CanResolve(arg1 *v1alpha2.SourceResolver) bool {
 	fake.canResolveArgsForCall = append(fake.canResolveArgsForCall, struct {
 		arg1 *v1alpha2.SourceResolver
 	}{arg1})
+	stub := fake.CanResolveStub
+	fakeReturns := fake.canResolveReturns
 	fake.recordInvocation("CanResolve", []interface{}{arg1})
 	fake.canResolveMutex.Unlock()
-	if fake.CanResolveStub != nil {
-		return fake.CanResolveStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.canResolveReturns
 	return fakeReturns.result1
 }
 
@@ -107,15 +108,16 @@ func (fake *FakeResolver) Resolve(arg1 context.Context, arg2 *v1alpha2.SourceRes
 		arg1 context.Context
 		arg2 *v1alpha2.SourceResolver
 	}{arg1, arg2})
+	stub := fake.ResolveStub
+	fakeReturns := fake.resolveReturns
 	fake.recordInvocation("Resolve", []interface{}{arg1, arg2})
 	fake.resolveMutex.Unlock()
-	if fake.ResolveStub != nil {
-		return fake.ResolveStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.resolveReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

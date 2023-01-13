@@ -30,7 +30,9 @@ type KpackV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	BuildsGetter
 	BuildersGetter
+	BuildpacksGetter
 	ClusterBuildersGetter
+	ClusterBuildpacksGetter
 	ClusterStacksGetter
 	ClusterStoresGetter
 	ImagesGetter
@@ -50,8 +52,16 @@ func (c *KpackV1alpha2Client) Builders(namespace string) BuilderInterface {
 	return newBuilders(c, namespace)
 }
 
+func (c *KpackV1alpha2Client) Buildpacks(namespace string) BuildpackInterface {
+	return newBuildpacks(c, namespace)
+}
+
 func (c *KpackV1alpha2Client) ClusterBuilders() ClusterBuilderInterface {
 	return newClusterBuilders(c)
+}
+
+func (c *KpackV1alpha2Client) ClusterBuildpacks() ClusterBuildpackInterface {
+	return newClusterBuildpacks(c)
 }
 
 func (c *KpackV1alpha2Client) ClusterStacks() ClusterStackInterface {

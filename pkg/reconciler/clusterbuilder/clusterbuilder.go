@@ -1,4 +1,4 @@
-package clusterBuilder
+package clusterbuilder
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func NewController(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStoreKind)),
-		))
+	))
 	clusterStackInformer.Informer().AddEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,

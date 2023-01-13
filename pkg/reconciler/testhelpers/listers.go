@@ -63,8 +63,16 @@ func (l *Listers) GetBuilderLister() buildlisters.BuilderLister {
 	return buildlisters.NewBuilderLister(l.indexerFor(&buildapi.Builder{}))
 }
 
+func (l *Listers) GetBuildpackLister() buildlisters.BuildpackLister {
+	return buildlisters.NewBuildpackLister(l.indexerFor(&buildapi.Buildpack{}))
+}
+
 func (l *Listers) GetClusterBuilderLister() buildlisters.ClusterBuilderLister {
 	return buildlisters.NewClusterBuilderLister(l.indexerFor(&buildapi.ClusterBuilder{}))
+}
+
+func (l *Listers) GetClusterBuildpackLister() buildlisters.ClusterBuildpackLister {
+	return buildlisters.NewClusterBuildpackLister(l.indexerFor(&buildapi.ClusterBuildpack{}))
 }
 
 func (l *Listers) GetClusterStoreLister() buildlisters.ClusterStoreLister {

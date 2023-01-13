@@ -22,7 +22,11 @@ type BuildExpansion interface{}
 
 type BuilderExpansion interface{}
 
+type BuildpackExpansion interface{}
+
 type ClusterBuilderExpansion interface{}
+
+type ClusterBuildpackExpansion interface{}
 
 type ClusterStackExpansion interface{}
 
