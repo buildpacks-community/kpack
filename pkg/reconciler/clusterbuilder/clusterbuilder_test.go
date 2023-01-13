@@ -1,4 +1,4 @@
-package clusterBuilder_test
+package clusterbuilder_test
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	kreconciler "github.com/pivotal/kpack/pkg/reconciler"
-	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
@@ -48,7 +48,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &clusterBuilder.Reconciler{
+			r := &clusterbuilder.Reconciler{
 				Client:               fakeClient,
 				ClusterBuilderLister: listers.GetClusterBuilderLister(),
 				BuilderCreator:       builderCreator,

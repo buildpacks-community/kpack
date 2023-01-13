@@ -30,15 +30,16 @@ func (fake *FakeEnqueuer) Enqueue(arg1 *v1alpha2.SourceResolver) error {
 	fake.enqueueArgsForCall = append(fake.enqueueArgsForCall, struct {
 		arg1 *v1alpha2.SourceResolver
 	}{arg1})
+	stub := fake.EnqueueStub
+	fakeReturns := fake.enqueueReturns
 	fake.recordInvocation("Enqueue", []interface{}{arg1})
 	fake.enqueueMutex.Unlock()
-	if fake.EnqueueStub != nil {
-		return fake.EnqueueStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.enqueueReturns
 	return fakeReturns.result1
 }
 

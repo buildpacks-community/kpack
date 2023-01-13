@@ -37,15 +37,16 @@ func (fake *FakeMetadataRetriever) GetBuildMetadata(arg1 string, arg2 string, ar
 		arg2 string
 		arg3 authn.Keychain
 	}{arg1, arg2, arg3})
+	stub := fake.GetBuildMetadataStub
+	fakeReturns := fake.getBuildMetadataReturns
 	fake.recordInvocation("GetBuildMetadata", []interface{}{arg1, arg2, arg3})
 	fake.getBuildMetadataMutex.Unlock()
-	if fake.GetBuildMetadataStub != nil {
-		return fake.GetBuildMetadataStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBuildMetadataReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

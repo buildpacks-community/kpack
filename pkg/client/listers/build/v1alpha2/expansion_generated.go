@@ -34,9 +34,21 @@ type BuilderListerExpansion interface{}
 // BuilderNamespaceLister.
 type BuilderNamespaceListerExpansion interface{}
 
+// BuildpackListerExpansion allows custom methods to be added to
+// BuildpackLister.
+type BuildpackListerExpansion interface{}
+
+// BuildpackNamespaceListerExpansion allows custom methods to be added to
+// BuildpackNamespaceLister.
+type BuildpackNamespaceListerExpansion interface{}
+
 // ClusterBuilderListerExpansion allows custom methods to be added to
 // ClusterBuilderLister.
 type ClusterBuilderListerExpansion interface{}
+
+// ClusterBuildpackListerExpansion allows custom methods to be added to
+// ClusterBuildpackLister.
+type ClusterBuildpackListerExpansion interface{}
 
 // ClusterStackListerExpansion allows custom methods to be added to
 // ClusterStackLister.
