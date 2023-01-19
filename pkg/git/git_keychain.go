@@ -161,6 +161,10 @@ func (k *secretGitKeychain) Resolve(url string, username string, allowedTypes gi
 		return nil, err
 	}
 
+	if username == "" {
+		username = u.User.Username()
+	}
+
 	sort.Slice(k.creds, func(i, j int) bool { return k.creds[i].name() < k.creds[j].name() })
 
 	for _, cred := range k.creds {
