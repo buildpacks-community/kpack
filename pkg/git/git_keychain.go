@@ -140,9 +140,13 @@ func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSec
 		if len(splitSecret) != 2 {
 			return nil, errors.Errorf("could not parse git secret argument %s", s)
 		}
+		domain := splitSecret[1]
+		if sshSplit := strings.Split(domain, "@"); len(sshSplit) == 2 {
+			domain = sshSplit[1]
+		}
 
 		creds = append(creds, gitSshAuthCred{
-			Domain:     splitSecret[1],
+			Domain:     domain,
 			SecretName: splitSecret[0],
 			fetchSecret: func() (secret.SSH, error) {
 				return secret.ReadSshSecret(volumeName, splitSecret[0])

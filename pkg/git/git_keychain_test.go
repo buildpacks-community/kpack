@@ -33,6 +33,7 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, os.MkdirAll(path.Join(testDir, "zzz-ssh-bitbucket-creds"), 0777))
 		require.NoError(t, os.MkdirAll(path.Join(testDir, "noscheme-creds"), 0777))
 		require.NoError(t, os.MkdirAll(path.Join(testDir, "git-ssh-creds"), 0777))
+		require.NoError(t, os.MkdirAll(path.Join(testDir, "git-ssh-creds-test-username"), 0777))
 
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "github-creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "github-creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
@@ -43,6 +44,7 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "bitbucket-creds", corev1.SSHAuthPrivateKey), []byte("private key 1"), 0600))
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "zzz-ssh-bitbucket-creds", corev1.SSHAuthPrivateKey), []byte("private key 2"), 0600))
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "git-ssh-creds", corev1.SSHAuthPrivateKey), []byte("private key 3"), 0600))
+		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "git-ssh-creds-test-username", corev1.SSHAuthPrivateKey), []byte("private key 4"), 0600))
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "basic-bitbucket-creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
 		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "basic-bitbucket-creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
 
@@ -113,6 +115,18 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				require.Equal(t, SSHGit2GoAuth{Username: "git", PrivateKey: "private key 3"}, cred)
+			})
+		})
+
+		when("ssh username is not git", func() {
+			it("correctly matches credential", func() {
+				gitKeychain, err := NewMountedSecretGitKeychain(testDir, []string{}, []string{
+					"git-ssh-creds-test-username=test@my-git-server.com",
+				})
+				cred, err := gitKeychain.Resolve("ssh://test@my-git-server.com/my-org/my-repo.git", "", git2go.CredentialTypeSSHKey)
+				require.NoError(t, err)
+
+				require.Equal(t, SSHGit2GoAuth{Username: "test", PrivateKey: "private key 4"}, cred)
 			})
 		})
 	})
