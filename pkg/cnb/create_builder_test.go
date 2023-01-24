@@ -145,21 +145,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				Name: "some-buildpackRepository",
 				Kind: "ClusterStore",
 			},
-			Order: []corev1alpha1.OrderEntry{
+			Order: []buildapi.BuilderOrderEntry{
 				{
-					Group: []corev1alpha1.BuildpackRef{
+					Group: []buildapi.BuilderBuildpackRef{
 						{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.1",
-								Version: "v1",
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.1",
+									Version: "v1",
+								},
 							},
 						},
 						{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.2",
-								Version: "v2",
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.2",
+									Version: "v2",
+								},
+								Optional: true,
 							},
-							Optional: true,
 						},
 					},
 				},
@@ -596,16 +600,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{
 					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
+						Group: []buildapi.BuilderBuildpackRef{{
+							BuildpackRef: corev1alpha1.BuildpackRef{
 								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.stack",
 									Version: "v4",
 								},
 							},
-						},
+						}},
 					},
 				}
 
@@ -637,18 +641,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.unsupported.mixin",
-									Version: "v4",
-								},
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.mixin",
+								Version: "v4",
 							},
 						},
-					},
-				}
+					}},
+				}}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
@@ -698,18 +700,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.relaxed.mixin",
-									Version: "v4",
-								},
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.relaxed.mixin",
+								Version: "v4",
 							},
 						},
-					},
-				}
+					}},
+				}}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.Nil(t, err)
@@ -739,18 +739,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.relaxed.old.mixin",
-									Version: "v4",
-								},
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.relaxed.old.mixin",
+								Version: "v4",
 							},
 						},
-					},
-				}
+					}},
+				}}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
@@ -779,18 +777,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.unsupported.buildpack.api",
-									Version: "v4",
-								},
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      "io.buildpack.unsupported.buildpack.api",
+								Version: "v4",
 							},
 						},
-					},
-				}
+					}},
+				}}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
@@ -839,18 +835,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "anystack.buildpack",
-									Version: "v1",
-								},
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      "anystack.buildpack",
+								Version: "v1",
 							},
 						},
-					},
-				}
+					}},
+				}}
 
 				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
 				require.NoError(t, err)

@@ -29,7 +29,8 @@ func (cb *Builder) Validate(ctx context.Context) *apis.FieldError {
 func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Tag(s.Tag).
 		Also(validateStack(s.Stack).ViaField("stack")).
-		Also(validateStore(s.Store).ViaField("store"))
+		Also(validateStore(s.Store).ViaField("store")).
+		Also(validateOrder(s.Order).ViaField("order"))
 }
 
 func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -61,4 +62,24 @@ func validateStore(store v1.ObjectReference) *apis.FieldError {
 	default:
 		return apis.ErrInvalidValue(store.Kind, "kind")
 	}
+}
+
+func validateOrder(order []BuilderOrderEntry) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, s := range order {
+		errs.Also(validateGroup(s).ViaIndex(i))
+	}
+	return errs
+}
+
+func validateGroup(group BuilderOrderEntry) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, s := range group.Group {
+		errs.Also(validateBuildpackRef(s).ViaIndex(i).ViaField("group"))
+	}
+	return errs
+}
+
+func validateBuildpackRef(ref BuilderBuildpackRef) *apis.FieldError {
+	return nil
 }
