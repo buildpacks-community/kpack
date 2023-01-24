@@ -623,7 +623,7 @@ func (in *ClusterStoreSpec) DeepCopyInto(out *ClusterStoreSpec) {
 	*out = *in
 	if in.Sources != nil {
 		in, out := &in.Sources, &out.Sources
-		*out = make([]corev1alpha1.StoreImage, len(*in))
+		*out = make([]corev1alpha1.ImageSource, len(*in))
 		copy(*out, *in)
 	}
 	return
@@ -645,7 +645,7 @@ func (in *ClusterStoreStatus) DeepCopyInto(out *ClusterStoreStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.Buildpacks != nil {
 		in, out := &in.Buildpacks, &out.Buildpacks
-		*out = make([]corev1alpha1.StoreBuildpack, len(*in))
+		*out = make([]corev1alpha1.BuildpackStatus, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -61,21 +61,21 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initialGeneration,
 		},
 		Spec: buildapi.ClusterBuildpackSpec{
-			Source: corev1alpha1.StoreImage{
+			Source: corev1alpha1.ImageSource{
 				Image: "some.registry/some-image-2",
 			},
 		},
 	}
 
 	when("#Reconcile", func() {
-		readBuildpacks := []corev1alpha1.StoreBuildpack{
+		readBuildpacks := []corev1alpha1.BuildpackStatus{
 			{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "paketo-buildpacks/node-engine",
 					Version: "0.0.116",
 				},
 				DiffId: "sha256:d57937f5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf4",
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: "some.registry/some-image-1",
 				},
 				Order: nil,
@@ -86,7 +86,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 					Version: "0.0.71",
 				},
 				DiffId: "sha256:c67840e5ccb6f524afa02dd95224e1914c94a02483d37b07aa668e560dcb3bf5",
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: "some.registry/some-image-2",
 				},
 				Order: nil,
@@ -131,7 +131,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
 
 			_, clusterStoreSpec := fakeStoreReader.ReadArgsForCall(0)
-			assert.Equal(t, []corev1alpha1.StoreImage{cbp.Spec.Source}, clusterStoreSpec)
+			assert.Equal(t, []corev1alpha1.ImageSource{cbp.Spec.Source}, clusterStoreSpec)
 		})
 
 		it("uses the keychain of the referenced service account", func() {

@@ -19,7 +19,7 @@ func TestBuildpackRepository(t *testing.T) {
 
 func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 	when("FindByIdAndVersion", func() {
-		engineBuildpack := corev1alpha1.StoreBuildpack{
+		engineBuildpack := corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.engine",
 				Version: "1.0.0",
@@ -27,7 +27,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			DiffId: "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:d345d1b12ae6b3f7cfc617f7adaebe06c32ce60b1aa30bb80fb622b65523de8f",
 			Size:   50,
-			StoreImage: corev1alpha1.StoreImage{
+			StoreImage: corev1alpha1.ImageSource{
 				Image: "some.registry.io/build-package",
 			},
 			Order:    nil,
@@ -43,7 +43,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		packageManagerBuildpack := corev1alpha1.StoreBuildpack{
+		packageManagerBuildpack := corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.package-manager",
 				Version: "1.0.0",
@@ -51,7 +51,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			DiffId: "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:7c1213a54d20137a7479e72150c058268a6604b98c011b4fc11ca45927923d7b",
 			Size:   40,
-			StoreImage: corev1alpha1.StoreImage{
+			StoreImage: corev1alpha1.ImageSource{
 				Image: "some.registry.io/build-package",
 			},
 			Order:    nil,
@@ -67,7 +67,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		metaBuildpack := corev1alpha1.StoreBuildpack{
+		metaBuildpack := corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.meta",
 				Version: "1.0.0",
@@ -75,7 +75,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			DiffId: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:07db84e57fdd7101104c2469984217696fdfe51591cb1edee2928514135920d6",
 			Size:   30,
-			StoreImage: corev1alpha1.StoreImage{
+			StoreImage: corev1alpha1.ImageSource{
 				Image: "some.registry.io/build-package",
 			},
 			Order: []corev1alpha1.OrderEntry{
@@ -110,7 +110,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		v8Buildpack := corev1alpha1.StoreBuildpack{
+		v8Buildpack := corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.multi",
 				Version: "8.0.0",
@@ -118,7 +118,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			DiffId: "sha256:8bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:fc14806eb95d01b6338ba1b9fea605e84db7c8c09561ae360bad5b80b5d0d80b",
 			Size:   20,
-			StoreImage: corev1alpha1.StoreImage{
+			StoreImage: corev1alpha1.ImageSource{
 				Image: "some.registry.io/build-package",
 			},
 			Order:    nil,
@@ -134,7 +134,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		v9Buildpack := corev1alpha1.StoreBuildpack{
+		v9Buildpack := corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      "io.buildpack.multi",
 				Version: "9.0.0",
@@ -142,7 +142,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 			DiffId: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			Digest: "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 			Size:   10,
-			StoreImage: corev1alpha1.StoreImage{
+			StoreImage: corev1alpha1.ImageSource{
 				Image: "some.registry.io/build-package",
 			},
 			Order:    nil,
@@ -165,7 +165,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 					Name: "some-store",
 				},
 				Status: buildapi.ClusterStoreStatus{
-					Buildpacks: []corev1alpha1.StoreBuildpack{
+					Buildpacks: []corev1alpha1.BuildpackStatus{
 						engineBuildpack,
 						v9Buildpack,
 						v8Buildpack,
@@ -272,7 +272,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("fails to find the buildpack if version is unspecified and not all buildpacks are semver conformant", func() {
-			storeBuildpackRepository.ClusterStore.Status.Buildpacks = append(storeBuildpackRepository.ClusterStore.Status.Buildpacks, corev1alpha1.StoreBuildpack{
+			storeBuildpackRepository.ClusterStore.Status.Buildpacks = append(storeBuildpackRepository.ClusterStore.Status.Buildpacks, corev1alpha1.BuildpackStatus{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "io.buildpack.multi",
 					Version: "my-wacky-version",
@@ -280,7 +280,7 @@ func testBuildpackRepository(t *testing.T, when spec.G, it spec.S) {
 				DiffId: "sha256:9bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 				Digest: "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				Size:   10,
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: "some.registry.io/build-package",
 				},
 				Order: nil,

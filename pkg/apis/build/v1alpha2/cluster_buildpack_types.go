@@ -29,8 +29,8 @@ type ClusterBuildpack struct {
 // +k8s:openapi-gen=true
 type ClusterBuildpackSpec struct {
 	// +listType
-	Source            corev1alpha1.StoreImage `json:"source,omitempty"`
-	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
+	Source            corev1alpha1.ImageSource `json:"source,omitempty"`
+	ServiceAccountRef *corev1.ObjectReference  `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -38,7 +38,7 @@ type ClusterBuildpackStatus struct {
 	corev1alpha1.Status `json:",inline"`
 
 	// +listType
-	Buildpacks []corev1alpha1.StoreBuildpack `json:"buildpacks,omitempty"`
+	Buildpacks []corev1alpha1.BuildpackStatus `json:"buildpacks,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

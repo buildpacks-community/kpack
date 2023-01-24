@@ -59,8 +59,8 @@ func (s *StoreBuildpackRepository) FindByIdAndVersion(id, version string) (Remot
 	}, nil
 }
 
-func (s *StoreBuildpackRepository) findBuildpack(id, version string) (corev1alpha1.StoreBuildpack, error) {
-	var matchingBuildpacks []corev1alpha1.StoreBuildpack
+func (s *StoreBuildpackRepository) findBuildpack(id, version string) (corev1alpha1.BuildpackStatus, error) {
+	var matchingBuildpacks []corev1alpha1.BuildpackStatus
 	for _, buildpack := range s.ClusterStore.Status.Buildpacks {
 		if buildpack.Id == id {
 			matchingBuildpacks = append(matchingBuildpacks, buildpack)
@@ -68,7 +68,7 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (corev1alph
 	}
 
 	if len(matchingBuildpacks) == 0 {
-		return corev1alpha1.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s'", id)
+		return corev1alpha1.BuildpackStatus{}, errors.Errorf("could not find buildpack with id '%s'", id)
 	}
 
 	if version == "" {
@@ -81,7 +81,7 @@ func (s *StoreBuildpackRepository) findBuildpack(id, version string) (corev1alph
 		}
 	}
 
-	return corev1alpha1.StoreBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", id, version)
+	return corev1alpha1.BuildpackStatus{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", id, version)
 }
 
 // TODO: ensure there are no cycles in the buildpack graph
@@ -101,17 +101,17 @@ func (s *StoreBuildpackRepository) layersForOrder(order corev1alpha1.Order) ([]b
 	return buildpackLayers, nil
 }
 
-func highestVersion(matchingBuildpacks []corev1alpha1.StoreBuildpack) (corev1alpha1.StoreBuildpack, error) {
+func highestVersion(matchingBuildpacks []corev1alpha1.BuildpackStatus) (corev1alpha1.BuildpackStatus, error) {
 	for _, bp := range matchingBuildpacks {
 		if _, err := semver.NewVersion(bp.Version); err != nil {
-			return corev1alpha1.StoreBuildpack{}, errors.Errorf("cannot find buildpack '%s' with latest version due to invalid semver '%s'", bp.Id, bp.Version)
+			return corev1alpha1.BuildpackStatus{}, errors.Errorf("cannot find buildpack '%s' with latest version due to invalid semver '%s'", bp.Id, bp.Version)
 		}
 	}
 	sort.Sort(byBuildpackVersion(matchingBuildpacks))
 	return matchingBuildpacks[len(matchingBuildpacks)-1], nil
 }
 
-type byBuildpackVersion []corev1alpha1.StoreBuildpack
+type byBuildpackVersion []corev1alpha1.BuildpackStatus
 
 func (b byBuildpackVersion) Len() int {
 	return len(b)
@@ -125,7 +125,7 @@ func (b byBuildpackVersion) Less(i, j int) bool {
 	return semver.MustParse(b[i].Version).LessThan(semver.MustParse(b[j].Version))
 }
 
-func layerFromStoreBuildpack(keychain authn.Keychain, buildpack corev1alpha1.StoreBuildpack) (v1.Layer, error) {
+func layerFromStoreBuildpack(keychain authn.Keychain, buildpack corev1alpha1.BuildpackStatus) (v1.Layer, error) {
 	return imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
 		Digest:   buildpack.Digest,
 		DiffId:   buildpack.DiffId,
