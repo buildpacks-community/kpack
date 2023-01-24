@@ -36,12 +36,23 @@ func testBuilderConversion(t *testing.T, when spec.G, it spec.S) {
 						Kind: "ClusterStore",
 						Name: "some-store",
 					},
-					Order: []corev1alpha1.OrderEntry{corev1alpha1.OrderEntry{
-						Group: []corev1alpha1.BuildpackRef{{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id: "org.some-buildpack",
+					Order: []BuilderOrderEntry{BuilderOrderEntry{
+						Group: []BuilderBuildpackRef{
+							{
+								BuildpackRef: corev1alpha1.BuildpackRef{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id: "org.some-buildpack",
+									},
+								},
 							},
-						}},
+							{
+								ObjectReference: corev1.ObjectReference{
+									Kind: "Buildpack",
+									Name: "some-buildpack",
+								},
+							},
+							{Image: "some-repo/some-buildpack"},
+						},
 					}},
 				},
 				ServiceAccountName: "some-service-account",
@@ -101,6 +112,13 @@ func testBuilderConversion(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, v1alpha1Builder, testV1alpha1Builder)
 
 			testV1alpha2Builder := &Builder{}
+			v1alpha2Builder.Spec.Order = []BuilderOrderEntry{{
+				Group: []BuilderBuildpackRef{{
+					BuildpackRef: corev1alpha1.BuildpackRef{
+						BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "org.some-buildpack"},
+					},
+				}},
+			}}
 			err = testV1alpha2Builder.ConvertFrom(context.TODO(), v1alpha1Builder)
 			require.NoError(t, err)
 			require.Equal(t, testV1alpha2Builder, v1alpha2Builder)

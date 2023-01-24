@@ -111,17 +111,19 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					Kind: "ClusterStore",
 					Name: "some-store",
 				},
-				Order: []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
+				Order: []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{
+						{
+							BuildpackRef: corev1alpha1.BuildpackRef{
 								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "buildpack.id.1",
 									Version: "1.0.0",
 								},
 								Optional: false,
 							},
-							{
+						},
+						{
+							BuildpackRef: corev1alpha1.BuildpackRef{
 								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "buildpack.id.2",
 									Version: "2.0.0",
@@ -130,7 +132,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-				},
+				}},
 			},
 			ServiceAccountName: "some-service-account",
 		},
