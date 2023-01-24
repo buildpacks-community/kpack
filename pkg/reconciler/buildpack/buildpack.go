@@ -28,7 +28,7 @@ const (
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	Read(keychain authn.Keychain, storeImages []corev1alpha1.StoreImage) ([]corev1alpha1.StoreBuildpack, error)
+	Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error)
 }
 
 func NewController(
@@ -128,7 +128,7 @@ func (c *Reconciler) reconcileBuildpackStatus(ctx context.Context, buildpack *bu
 		return buildpack, err
 	}
 
-	buildpacks, err := c.StoreReader.Read(keychain, []corev1alpha1.StoreImage{buildpack.Spec.Source})
+	buildpacks, err := c.StoreReader.Read(keychain, []corev1alpha1.ImageSource{buildpack.Spec.Source})
 	if err != nil {
 		buildpack.Status = buildapi.BuildpackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(buildpack.Generation, err),

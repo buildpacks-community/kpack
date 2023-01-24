@@ -628,7 +628,7 @@ func (in *BuildpackStatus) DeepCopyInto(out *BuildpackStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.Buildpacks != nil {
 		in, out := &in.Buildpacks, &out.Buildpacks
-		*out = make([]v1alpha1.StoreBuildpack, len(*in))
+		*out = make([]v1alpha1.BuildpackStatus, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -830,7 +830,7 @@ func (in *ClusterBuildpackStatus) DeepCopyInto(out *ClusterBuildpackStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.Buildpacks != nil {
 		in, out := &in.Buildpacks, &out.Buildpacks
-		*out = make([]v1alpha1.StoreBuildpack, len(*in))
+		*out = make([]v1alpha1.BuildpackStatus, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -1064,7 +1064,7 @@ func (in *ClusterStoreSpec) DeepCopyInto(out *ClusterStoreSpec) {
 	*out = *in
 	if in.Sources != nil {
 		in, out := &in.Sources, &out.Sources
-		*out = make([]v1alpha1.StoreImage, len(*in))
+		*out = make([]v1alpha1.ImageSource, len(*in))
 		copy(*out, *in)
 	}
 	if in.ServiceAccountRef != nil {
@@ -1091,7 +1091,7 @@ func (in *ClusterStoreStatus) DeepCopyInto(out *ClusterStoreStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.Buildpacks != nil {
 		in, out := &in.Buildpacks, &out.Buildpacks
-		*out = make([]v1alpha1.StoreBuildpack, len(*in))
+		*out = make([]v1alpha1.BuildpackStatus, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -16,10 +16,10 @@ type RemoteStoreReader struct {
 	RegistryClient RegistryClient
 }
 
-func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.StoreImage) ([]corev1alpha1.StoreBuildpack, error) {
+func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
 	var g errgroup.Group
 
-	c := make(chan corev1alpha1.StoreBuildpack)
+	c := make(chan corev1alpha1.BuildpackStatus)
 	for _, storeImage := range storeImages {
 		storeImageCopy := storeImage
 		g.Go(func() error {
@@ -77,7 +77,7 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1al
 						return errors.Wrapf(err, "unable to get layer %s digest", info)
 					}
 
-					c <- corev1alpha1.StoreBuildpack{
+					c <- corev1alpha1.BuildpackStatus{
 						BuildpackInfo: info,
 						Buildpackage:  packageInfo,
 						StoreImage:    storeImageCopy,
@@ -100,7 +100,7 @@ func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1al
 		close(c)
 	}()
 
-	var buildpacks []corev1alpha1.StoreBuildpack
+	var buildpacks []corev1alpha1.BuildpackStatus
 	for b := range c {
 		buildpacks = append(buildpacks, b)
 	}

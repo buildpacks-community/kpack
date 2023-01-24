@@ -125,7 +125,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterStoreName,
 			},
 			Spec: buildapi.ClusterStoreSpec{
-				Sources: []corev1alpha1.StoreImage{
+				Sources: []corev1alpha1.ImageSource{
 					{
 						Image: builderImage,
 					},

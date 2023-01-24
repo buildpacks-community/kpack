@@ -205,7 +205,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpacks from multiple images", func() {
-			storeBuildpacks, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
+			storeBuildpacks, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.ImageSource{
 				{
 					Image: buildpackageA,
 				},
@@ -216,7 +216,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			require.Len(t, storeBuildpacks, 4)
-			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+			require.Contains(t, storeBuildpacks, corev1alpha1.BuildpackStatus{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.multi",
 					Version: "0.0.1",
@@ -226,7 +226,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Version:  "0.0.2",
 					Homepage: "some-homepage",
 				},
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: buildpackageA,
 				},
 				API:      "0.2",
@@ -244,7 +244,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 				Digest: "sha256:52f341c7c36e21e5c344856dd61bc8c2d1188647f259eaba6d375e37c9aed08e",
 				Size:   20,
 			})
-			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+			require.Contains(t, storeBuildpacks, corev1alpha1.BuildpackStatus{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.multi",
 					Version: "0.0.2",
@@ -254,7 +254,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Version:  "0.0.2",
 					Homepage: "some-homepage",
 				},
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: buildpackageA,
 				},
 				API:      "0.2",
@@ -274,7 +274,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			require.Contains(t, storeBuildpacks,
-				corev1alpha1.StoreBuildpack{
+				corev1alpha1.BuildpackStatus{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      "org.buildpack.meta",
 						Version: "0.0.2",
@@ -284,7 +284,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						Version:  "0.0.2",
 						Homepage: "some-homepage",
 					},
-					StoreImage: corev1alpha1.StoreImage{
+					StoreImage: corev1alpha1.ImageSource{
 						Image: buildpackageA,
 					},
 					API:      "0.2",
@@ -325,7 +325,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 					Size:   10,
 				})
 
-			require.Contains(t, storeBuildpacks, corev1alpha1.StoreBuildpack{
+			require.Contains(t, storeBuildpacks, corev1alpha1.BuildpackStatus{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
 					Id:      "org.buildpack.simple",
 					Version: "0.0.1",
@@ -349,14 +349,14 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 						ID: "org.simple.only.stack",
 					},
 				},
-				StoreImage: corev1alpha1.StoreImage{
+				StoreImage: corev1alpha1.ImageSource{
 					Image: buildpackageB,
 				},
 			})
 		})
 
 		it("returns all buildpacks in a deterministic order", func() {
-			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
+			expectedBuildpackOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.ImageSource{
 				{
 					Image: buildpackageA,
 				},
@@ -367,7 +367,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.StoreImage{
+				subsequentOrder, err := remoteStoreReader.Read(expectedKeychain, []corev1alpha1.ImageSource{
 					{
 						Image: buildpackageA,
 					},
@@ -434,7 +434,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 
 			fakeClient.AddImage("image/with_duplicates", imageWithDuplicates, expectedKeychain)
 
-			images := []corev1alpha1.StoreImage{
+			images := []corev1alpha1.ImageSource{
 				{
 					Image: buildpackageA,
 				},

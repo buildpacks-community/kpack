@@ -28,8 +28,8 @@ type Buildpack struct {
 // +k8s:openapi-gen=true
 type BuildpackSpec struct {
 	// +listType
-	Source             corev1alpha1.StoreImage `json:"source,omitempty"`
-	ServiceAccountName string                  `json:"serviceAccountName,omitempty"`
+	Source             corev1alpha1.ImageSource `json:"source,omitempty"`
+	ServiceAccountName string                   `json:"serviceAccountName,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -37,7 +37,7 @@ type BuildpackStatus struct {
 	corev1alpha1.Status `json:",inline"`
 
 	// +listType
-	Buildpacks []corev1alpha1.StoreBuildpack `json:"buildpacks,omitempty"`
+	Buildpacks []corev1alpha1.BuildpackStatus `json:"buildpacks,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
