@@ -2284,6 +2284,87 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
+			it("includes failed builds status in not ready condition", func() {
+				imageWithBuilder.Status.BuildCounter = 1
+				failureMessage := "something went wrong"
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
+				failedBuild := &buildapi.Build{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-build-%d", imageWithBuilder.Name, 1),
+						Namespace: imageWithBuilder.Namespace,
+						OwnerReferences: []metav1.OwnerReference{
+							*kmeta.NewControllerRef(imageWithBuilder),
+						},
+						Labels: map[string]string{
+							buildapi.BuildNumberLabel: "1",
+							buildapi.ImageLabel:       imageWithBuilder.Name,
+						},
+						CreationTimestamp: metav1.NewTime(time.Now().Add(time.Duration(1) * time.Minute)),
+					},
+					Spec: buildapi.BuildSpec{
+						Tags: []string{imageWithBuilder.Spec.Tag},
+						Builder: corev1alpha1.BuildBuilderSpec{
+							Image: "builder-image/foo@sha256:112312",
+						},
+						ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+						Source: corev1alpha1.SourceConfig{
+							Git: &corev1alpha1.Git{
+								URL:      sourceResolver.Status.Source.Git.URL,
+								Revision: sourceResolver.Status.Source.Git.Revision,
+							},
+						},
+					},
+					Status: buildapi.BuildStatus{
+						Status: corev1alpha1.Status{
+							Conditions: corev1alpha1.Conditions{
+								corev1alpha1.Condition{
+									Type:    corev1alpha1.ConditionSucceeded,
+									Status:  corev1.ConditionFalse,
+									Message: failureMessage,
+								},
+							},
+						},
+					},
+				}
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: runtimeObjects(
+						[]runtime.Object{failedBuild},
+						imageWithBuilder,
+						builder,
+						sourceResolver,
+					),
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Image{
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
+								Status: buildapi.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Message: failureMessage,
+											},
+											{
+												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									LatestBuildRef: "image-name-build-1",
+									BuildCounter:   1,
+								},
+							},
+						},
+					},
+				})
+			})
+
 			when("reconciling old builds", func() {
 				it("deletes a failed build if more than the limit", func() {
 					imageWithBuilder.Spec.FailedBuildHistoryLimit = limit(4)

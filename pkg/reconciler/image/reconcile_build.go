@@ -83,7 +83,8 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,
-			Status:             unknownIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			Status:             unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			Message:            emptyMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
@@ -91,11 +92,18 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 
 }
 
-func unknownIfNil(condition *corev1alpha1.Condition) corev1.ConditionStatus {
+func unknownStatusIfNil(condition *corev1alpha1.Condition) corev1.ConditionStatus {
 	if condition == nil {
 		return corev1.ConditionUnknown
 	}
 	return condition.Status
+}
+
+func emptyMessageIfNil(condition *corev1alpha1.Condition) string {
+	if condition == nil {
+		return ""
+	}
+	return condition.Message
 }
 
 func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
