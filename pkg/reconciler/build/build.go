@@ -220,15 +220,17 @@ func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Buil
 	pod, err := c.PodLister.Pods(build.Namespace).Get(build.PodName())
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return nil, err
-	} else if !k8s_errors.IsNotFound(err) {
-		return pod, nil
 	}
 
-	podConfig, err := c.PodGenerator.Generate(ctx, build)
-	if err != nil {
-		return nil, controller.NewPermanentError(err)
+	if k8s_errors.IsNotFound(err) {
+		podConfig, err := c.PodGenerator.Generate(ctx, build)
+		if err != nil {
+			return nil, controller.NewPermanentError(err)
+		}
+		return c.K8sClient.CoreV1().Pods(build.Namespace).Create(ctx, podConfig, metav1.CreateOptions{})
 	}
-	return c.K8sClient.CoreV1().Pods(build.Namespace).Create(ctx, podConfig, metav1.CreateOptions{})
+
+	return pod, nil
 }
 
 func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Conditions {
