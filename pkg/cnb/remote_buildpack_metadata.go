@@ -4,6 +4,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 type RemoteBuildpackInfo struct {
@@ -36,4 +37,9 @@ type buildpackLayer struct {
 	v1Layer            v1.Layer
 	BuildpackInfo      DescriptiveBuildpackInfo
 	BuildpackLayerInfo BuildpackLayerInfo
+}
+
+type K8sRemoteBuildpack struct {
+	Buildpack corev1alpha1.BuildpackStatus
+	SecretRef registry.SecretRef
 }

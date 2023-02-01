@@ -28,7 +28,7 @@ func testRemoteStoreReader(t *testing.T, when spec.G, it spec.S) {
 		var (
 			expectedKeychain  = authn.NewMultiKeychain(authn.DefaultKeychain)
 			fakeClient        = registryfakes.NewFakeClient()
-			remoteStoreReader = &RemoteStoreReader{
+			remoteStoreReader = &RemoteBuildpackReader{
 				RegistryClient: fakeClient,
 			}
 		)
