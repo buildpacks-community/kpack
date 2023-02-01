@@ -88,6 +88,8 @@ func main() {
 		logger.Println(err)
 	}
 
+	logger.Println("Loading registry credentials from service account secrets")
+
 	logLoadingSecrets(logger, basicDockerCredentials)
 	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
@@ -110,6 +112,10 @@ func main() {
 		if err != nil {
 			logger.Fatal(err)
 		}
+	}
+
+	if len(creds) == 0 {
+		logger.Println("No registry credentials were loaded from service account secrets")
 	}
 
 	logger.Println("Loading cluster credential helpers")
