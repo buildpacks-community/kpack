@@ -12,11 +12,11 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
-type RemoteStoreReader struct {
+type RemoteBuildpackReader struct {
 	RegistryClient RegistryClient
 }
 
-func (r *RemoteStoreReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
+func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
 	var g errgroup.Group
 
 	c := make(chan corev1alpha1.BuildpackStatus)
