@@ -380,6 +380,10 @@ type TestBuilderResource struct {
 	Name             string
 }
 
+func (t TestBuilderResource) ConditionReadyMessage() string {
+	return ""
+}
+
 func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return corev1alpha1.BuildBuilderSpec{
 		Image:            t.LatestImage,

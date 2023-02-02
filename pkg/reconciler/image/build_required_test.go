@@ -833,3 +833,7 @@ func (t TestBuilderResource) GetName() string {
 func (t TestBuilderResource) GetKind() string {
 	return t.Kind
 }
+
+func (t TestBuilderResource) ConditionReadyMessage() string {
+	return ""
+}

@@ -47,3 +47,12 @@ func (b *DuckBuilder) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
 func (b *DuckBuilder) RunImage() string {
 	return b.Status.Stack.RunImage
 }
+
+func (b *DuckBuilder) ConditionReadyMessage() string {
+	condition := b.Status.GetCondition(corev1alpha1.ConditionReady)
+	if condition == nil {
+		return ""
+	}
+
+	return condition.Message
+}
