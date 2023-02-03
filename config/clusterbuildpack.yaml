@@ -28,5 +28,4 @@ spec:
     - clstbps
     categories:
     - kpack
-  scope: Namespaced
-
+  scope: Cluster
