@@ -1,6 +1,7 @@
 package clusterbuilder_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/cnb"
 	kreconciler "github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -49,13 +51,14 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 			r := &clusterbuilder.Reconciler{
-				Client:               fakeClient,
-				ClusterBuilderLister: listers.GetClusterBuilderLister(),
-				BuilderCreator:       builderCreator,
-				KeychainFactory:      keychainFactory,
-				Tracker:              fakeTracker,
-				ClusterStoreLister:   listers.GetClusterStoreLister(),
-				ClusterStackLister:   listers.GetClusterStackLister(),
+				Client:                 fakeClient,
+				ClusterBuilderLister:   listers.GetClusterBuilderLister(),
+				BuilderCreator:         builderCreator,
+				KeychainFactory:        keychainFactory,
+				Tracker:                fakeTracker,
+				ClusterStoreLister:     listers.GetClusterStoreLister(),
+				ClusterBuildpackLister: listers.GetClusterBuildpackLister(),
+				ClusterStackLister:     listers.GetClusterStackLister(),
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -90,6 +93,12 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
+		},
+	}
+
+	clusterBuildpack := &buildapi.ClusterBuildpack{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "buildpack.id.4",
 		},
 	}
 
@@ -211,12 +220,16 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
+			expectedResolver := cnb.NewBuildpackResolver(keychainFactory, clusterStore, nil, []*buildapi.ClusterBuildpack{clusterBuildpack})
+			expectedFetcher := cnb.NewRemoteBuildpackFetcher(expectedResolver, keychainFactory)
+
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
 					builder,
+					clusterBuildpack,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -227,8 +240,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
+				Context:      context.Background(),
 				Keychain:     &registryfakes.FakeKeychain{},
-				ClusterStore: clusterStore,
+				Resolver:     expectedResolver,
+				Fetcher:      expectedFetcher,
 				ClusterStack: clusterStack,
 				BuilderSpec:  builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
