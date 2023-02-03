@@ -29,7 +29,6 @@ func (cb *Builder) Validate(ctx context.Context) *apis.FieldError {
 func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Tag(s.Tag).
 		Also(validateStack(s.Stack).ViaField("stack")).
-		Also(validateStore(s.Store).ViaField("store")).
 		Also(validateOrder(s.Order).ViaField("order"))
 }
 

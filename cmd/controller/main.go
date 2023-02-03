@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-containerregistry/pkg/authn"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -186,7 +185,7 @@ func main() {
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
-	remoteStoreReader := &cnb.RemoteStoreReader{
+	remoteStoreReader := &cnb.RemoteBuildpackReader{
 		RegistryClient: &registry.Client{},
 	}
 
@@ -194,26 +193,21 @@ func main() {
 		RegistryClient: &registry.Client{},
 	}
 
-	kpackKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{})
-	if err != nil {
-		log.Fatalf("could not create empty keychain %s", err)
-	}
-
 	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
 
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RegistryClient:         &registry.Client{},
-		KpackVersion:           cmd.Identifer,
-		LifecycleProvider:      lifecycleProvider,
-		NewBuildpackRepository: newBuildpackRepository(kpackKeychain),
+		RegistryClient:    &registry.Client{},
+		KpackVersion:      cmd.Identifer,
+		LifecycleProvider: lifecycleProvider,
+		KeychainFactory:   keychainFactory,
 	}
 
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterStackInformer)
+	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
@@ -288,15 +282,6 @@ func runGroup(ctx context.Context, fns ...func(ctx context.Context) error) error
 	}
 
 	return eg.Wait()
-}
-
-func newBuildpackRepository(keychain authn.Keychain) func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository {
-	return func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository {
-		return &cnb.StoreBuildpackRepository{
-			Keychain:     keychain,
-			ClusterStore: clusterStore,
-		}
-	}
 }
 
 const controllerCount = 7
