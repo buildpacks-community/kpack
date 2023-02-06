@@ -93,6 +93,8 @@ func (r *buildpackResolver) Resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 	case ref.Image != "":
 		// TODO(chenbh):
 		return K8sRemoteBuildpack{}, fmt.Errorf("using images in builders not currently supported")
+	default:
+		return K8sRemoteBuildpack{}, fmt.Errorf("invalid buildpack reference")
 	}
 
 	if len(matchingBuildpacks) == 0 {
@@ -159,16 +161,24 @@ func (r *buildpackResolver) resolveFromClusterBuildpack(id string, clusterBuildp
 }
 
 func (r *buildpackResolver) resolveFromClusterStore(id string, store *v1alpha2.ClusterStore) ([]K8sRemoteBuildpack, error) {
+	if store == nil {
+		return nil, nil
+	}
+
 	var matchingBuildpacks []K8sRemoteBuildpack
 	for _, status := range store.Status.Buildpacks {
 		if status.Id == id {
+			secretRef := registry.SecretRef{}
 
-			matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
-				Buildpack: status,
-				SecretRef: registry.SecretRef{
+			if store.Spec.ServiceAccountRef != nil {
+				secretRef = registry.SecretRef{
 					ServiceAccount: store.Spec.ServiceAccountRef.Name,
 					Namespace:      store.Spec.ServiceAccountRef.Namespace,
-				},
+				}
+			}
+			matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
+				Buildpack: status,
+				SecretRef: secretRef,
 			})
 		}
 	}
@@ -183,6 +193,9 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 	switch ref.Kind {
 	case v1alpha2.BuildpackKind:
 		bp := findBuildpack(ref, r.buildpacks)
+		if bp == nil {
+			return K8sRemoteBuildpack{}, fmt.Errorf("no buildpack with name '%v'", ref.Name)
+		}
 
 		bps = bp.Status.Buildpacks
 		secretRef = registry.SecretRef{
@@ -191,12 +204,19 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 		}
 	case v1alpha2.ClusterBuildpackKind:
 		cbp := findClusterBuildpack(ref, r.clusterBuildpacks)
+		if cbp == nil {
+			return K8sRemoteBuildpack{}, fmt.Errorf("no cluster buildpack with name '%v'", ref.Name)
+		}
 
 		bps = cbp.Status.Buildpacks
-		secretRef = registry.SecretRef{
-			ServiceAccount: cbp.Spec.ServiceAccountRef.Name,
-			Namespace:      cbp.Spec.ServiceAccountRef.Namespace,
+		if cbp.Spec.ServiceAccountRef != nil {
+			secretRef = registry.SecretRef{
+				ServiceAccount: cbp.Spec.ServiceAccountRef.Name,
+				Namespace:      cbp.Spec.ServiceAccountRef.Namespace,
+			}
 		}
+	default:
+		return K8sRemoteBuildpack{}, fmt.Errorf("kind must be either %v or %v", v1alpha2.BuildpackKind, v1alpha2.ClusterBuildpackKind)
 	}
 
 	trees := NewTree(bps)
