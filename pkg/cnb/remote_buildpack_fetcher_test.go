@@ -185,10 +185,13 @@ func testRemoteBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 		})
 
-		fetcher := NewRemoteBuildpackFetcher(resolver, keychainFactory)
+		fetcher := &remoteBuildpackFetcher{
+			resolver:        resolver,
+			keychainFactory: keychainFactory,
+		}
 
 		it("returns layer info from store image", func() {
-			info, err := fetcher.Fetch(ctx, K8sRemoteBuildpack{
+			info, err := fetcher.fetch(ctx, K8sRemoteBuildpack{
 				Buildpack: engineBuildpack,
 				SecretRef: secretRef,
 			})
@@ -240,7 +243,7 @@ func testRemoteBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns all buildpack layers in a meta buildpack", func() {
-			info, err := fetcher.Fetch(ctx, K8sRemoteBuildpack{
+			info, err := fetcher.fetch(ctx, K8sRemoteBuildpack{
 				Buildpack: metaBuildpack,
 				SecretRef: secretRef,
 			})

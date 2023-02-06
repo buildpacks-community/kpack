@@ -100,19 +100,24 @@ func makeObjectRef(name, kind, id, version string) buildapi.BuilderBuildpackRef 
 }
 
 type fakeFetcher struct {
-	buildpacks map[string][]buildpackLayer
+	buildpacks         map[string][]buildpackLayer
+	observedGeneration int64
 }
 
-func (f *fakeFetcher) Fetch(ctx context.Context, buildpack K8sRemoteBuildpack) (RemoteBuildpackInfo, error) {
-	layers, ok := f.buildpacks[fmt.Sprintf("%s@%s", buildpack.Buildpack.Id, buildpack.Buildpack.Version)]
+func (f *fakeFetcher) ResolveAndFetch(_ context.Context, buildpack buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	layers, ok := f.buildpacks[fmt.Sprintf("%s@%s", buildpack.Id, buildpack.Version)]
 	if !ok {
 		return RemoteBuildpackInfo{}, errors.New("buildpack not found")
 	}
 
 	return RemoteBuildpackInfo{
-		BuildpackInfo: buildpackInfoInLayers(layers, buildpack.Buildpack.Id, buildpack.Buildpack.Version),
+		BuildpackInfo: buildpackInfoInLayers(layers, buildpack.Id, buildpack.Version),
 		Layers:        layers,
 	}, nil
+}
+
+func (f *fakeFetcher) ClusterStoreObservedGeneration() int64 {
+	return f.observedGeneration
 }
 
 func (f *fakeFetcher) AddBuildpack(t *testing.T, id, version string, layers []buildpackLayer) {

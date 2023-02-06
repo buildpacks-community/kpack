@@ -219,8 +219,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			expectedResolver := cnb.NewBuildpackResolver(keychainFactory, clusterStore, []*buildapi.Buildpack{buildpack}, []*buildapi.ClusterBuildpack{clusterBuildpack})
-			expectedFetcher := cnb.NewRemoteBuildpackFetcher(expectedResolver, keychainFactory)
+			expectedFetcher := cnb.NewRemoteBuildpackFetcher(keychainFactory, clusterStore, []*buildapi.Buildpack{buildpack}, []*buildapi.ClusterBuildpack{clusterBuildpack})
 
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
@@ -242,7 +241,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
 				Context:      context.Background(),
 				Keychain:     &registryfakes.FakeKeychain{},
-				Resolver:     expectedResolver,
 				Fetcher:      expectedFetcher,
 				ClusterStack: clusterStack,
 				BuilderSpec:  builder.Spec.BuilderSpec,

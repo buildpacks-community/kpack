@@ -20,15 +20,13 @@ type BuildpackResolver interface {
 }
 
 type buildpackResolver struct {
-	keychainFactory   registry.KeychainFactory
 	clusterstore      *v1alpha2.ClusterStore
 	buildpacks        []*v1alpha2.Buildpack
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack
 }
 
-func NewBuildpackResolver(keychainFactory registry.KeychainFactory, clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
+func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
 	return &buildpackResolver{
-		keychainFactory:   keychainFactory,
 		clusterstore:      clusterStore,
 		buildpacks:        buildpacks,
 		clusterBuildpacks: clusterBuildpacks,

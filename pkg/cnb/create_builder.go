@@ -25,7 +25,7 @@ type LifecycleProvider interface {
 }
 
 type BuilderCreator interface {
-	CreateBuilder(ctx context.Context, keychain authn.Keychain, resolver BuildpackResolver, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
+	CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
 }
 
 type RemoteBuilderCreator struct {
@@ -40,7 +40,7 @@ var _ BuilderCreator = (*RemoteBuilderCreator)(nil)
 func (r *RemoteBuilderCreator) CreateBuilder(
 	ctx context.Context,
 	builderKeychain authn.Keychain,
-	resolver BuildpackResolver, fetcher RemoteBuildpackFetcher,
+	fetcher RemoteBuildpackFetcher,
 	clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec,
 ) (buildapi.BuilderRecord, error) {
 	buildImage, _, err := r.RegistryClient.Fetch(builderKeychain, clusterStack.Status.BuildImage.LatestImage)
@@ -66,12 +66,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
 		for _, buildpack := range group.Group {
-			resolvedBuildpack, err := resolver.Resolve(buildpack)
-			if err != nil {
-				return buildapi.BuilderRecord{}, err
-			}
-
-			remoteBuildpack, err := fetcher.Fetch(ctx, resolvedBuildpack)
+			remoteBuildpack, err := fetcher.ResolveAndFetch(ctx, buildpack)
 			if err != nil {
 				return buildapi.BuilderRecord{}, err
 			}
@@ -105,7 +100,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
 		Order:                   builderBldr.order,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
-		ObservedStoreGeneration: resolver.ClusterStoreObservedGeneration(),
+		ObservedStoreGeneration: fetcher.ClusterStoreObservedGeneration(),
 		OS:                      config.OS,
 	}, nil
 }

@@ -5,7 +5,6 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
@@ -18,8 +17,7 @@ func TestBuildpackResolver(t *testing.T) {
 
 func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	var (
-		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		testNamespace   = "some-namespace"
+		testNamespace = "some-namespace"
 
 		engineBuildpack = corev1alpha1.BuildpackStatus{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
@@ -183,7 +181,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(keychainFactory, store, nil, nil)
+				resolver = NewBuildpackResolver(store, nil, nil)
 			})
 
 			it("finds it using id", func() {
@@ -272,7 +270,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(keychainFactory, nil, buildpacks, nil)
+				resolver = NewBuildpackResolver(nil, buildpacks, nil)
 			})
 
 			when("using id", func() {
@@ -442,7 +440,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(keychainFactory, nil, nil, clusterBuildpacks)
+				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks)
 			})
 
 			when("using id", func() {
