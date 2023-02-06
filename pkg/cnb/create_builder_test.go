@@ -62,8 +62,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 		ctx = context.Background()
 
-		resolver = &fakeResolver{buildpacks: map[string]K8sRemoteBuildpack{}, observedGeneration: 10}
-		fetcher  = &fakeFetcher{buildpacks: map[string][]buildpackLayer{}}
+		fetcher = &fakeFetcher{buildpacks: map[string][]buildpackLayer{}, observedGeneration: 10}
 
 		linuxLifecycle = &fakeLayer{
 			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
@@ -172,32 +171,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		}
 
 		addBuildpack = func(t *testing.T, id, version, homepage, api string, stacks []corev1alpha1.BuildpackStack) {
-			ref := buildapi.BuilderBuildpackRef{
-				BuildpackRef: corev1alpha1.BuildpackRef{
-					BuildpackInfo: corev1alpha1.BuildpackInfo{
-						Id:      id,
-						Version: version,
-					},
-				},
-			}
-
-			remote := K8sRemoteBuildpack{
-				Buildpack: corev1alpha1.BuildpackStatus{
-					BuildpackInfo: corev1alpha1.BuildpackInfo{
-						Id:      id,
-						Version: version,
-					},
-					DiffId:   buildpack1Layer.diffID,
-					Digest:   buildpack1Layer.digest,
-					Size:     buildpack1Layer.size,
-					Homepage: homepage,
-					API:      api,
-					Stacks:   stacks,
-				},
-				SecretRef: secretRef,
-			}
-
-			layer := buildpackLayer{
+			fetcher.AddBuildpack(t, id, version, []buildpackLayer{{
 				v1Layer: buildpack1Layer,
 				BuildpackInfo: DescriptiveBuildpackInfo{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
@@ -211,10 +185,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					LayerDiffID: buildpack1Layer.diffID,
 					Stacks:      stacks,
 				},
-			}
-
-			resolver.AddBuildpack(t, ref, remote)
-			fetcher.AddBuildpack(t, id, version, []buildpackLayer{layer})
+			}})
 		}
 	)
 
@@ -292,10 +263,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		resolver.AddBuildpack(t, makeRef("io.buildpack.1", "v1"), layerToRemoteBuildpack(buildpack1, buildpack1Layer, secretRef))
-		resolver.AddBuildpack(t, makeRef("io.buildpack.2", "v2"), layerToRemoteBuildpack(buildpack2, buildpack2Layer, secretRef))
-		resolver.AddBuildpack(t, makeRef("io.buildpack.3", "v3"), layerToRemoteBuildpack(buildpack3, buildpack3Layer, secretRef))
-
 		fetcher.AddBuildpack(t, "io.buildpack.1", "v1", []buildpackLayer{buildpack1})
 		fetcher.AddBuildpack(t, "io.buildpack.2", "v2", []buildpackLayer{buildpack3, buildpack2})
 	})
@@ -347,7 +314,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+			builderRecord, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -609,11 +576,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -643,7 +610,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
@@ -667,7 +634,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
@@ -712,7 +679,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Nil(t, err)
 			})
 
@@ -737,7 +704,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
 			})
 
@@ -760,7 +727,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 
@@ -803,7 +770,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 			})
 		})
@@ -830,7 +797,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, keychain, resolver, fetcher, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.999, expecting one of: 0.3, 0.4, 0.5, 0.6, 0.7, 0.8")
 			})
 		})

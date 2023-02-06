@@ -19,7 +19,6 @@ type FakeBuilderCreator struct {
 type CreateBuilderArgs struct {
 	Context      context.Context
 	Keychain     authn.Keychain
-	Resolver     cnb.BuildpackResolver
 	Fetcher      cnb.RemoteBuildpackFetcher
 	ClusterStack *buildapi.ClusterStack
 	BuilderSpec  buildapi.BuilderSpec
@@ -27,11 +26,10 @@ type CreateBuilderArgs struct {
 
 var _ cnb.BuilderCreator = (*FakeBuilderCreator)(nil)
 
-func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, keychain authn.Keychain, resolver cnb.BuildpackResolver, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, builder buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, builder buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Context:      ctx,
 		Keychain:     keychain,
-		Resolver:     resolver,
 		Fetcher:      fetcher,
 		ClusterStack: clusterStack,
 		BuilderSpec:  builder,

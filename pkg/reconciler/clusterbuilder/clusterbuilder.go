@@ -180,10 +180,9 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, err
 	}
 
-	resolver := cnb.NewBuildpackResolver(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
-	fetcher := cnb.NewRemoteBuildpackFetcher(resolver, c.KeychainFactory)
+	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
 
-	return c.BuilderCreator.CreateBuilder(ctx, keychain, resolver, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	return c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.ClusterBuilder) error {
