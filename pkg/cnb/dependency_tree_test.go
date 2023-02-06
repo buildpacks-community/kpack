@@ -14,7 +14,7 @@ func TestDependencyTree(t *testing.T) {
 }
 
 func testNewTree(t *testing.T, when spec.G, it spec.S) {
-	when("there is 1 root tree", func() {
+	when("single tree", func() {
 		it("builds the tree", func() {
 			buildpacks := []v1alpha1.BuildpackStatus{
 				{
@@ -71,7 +71,7 @@ func testNewTree(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("There is multiple root tree", func() {
+	when("multiple trees", func() {
 		it("builds the tree", func() {
 			buildpacks := []v1alpha1.BuildpackStatus{
 				{

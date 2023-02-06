@@ -6,12 +6,13 @@ import (
 	"io"
 	"testing"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	registryv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	k8scorev1 "k8s.io/api/core/v1"
 )
 
 type fakeLayer struct {
@@ -20,12 +21,12 @@ type fakeLayer struct {
 	size   int64
 }
 
-func (f fakeLayer) Digest() (v1.Hash, error) {
-	return v1.NewHash(f.digest)
+func (f fakeLayer) Digest() (registryv1.Hash, error) {
+	return registryv1.NewHash(f.digest)
 }
 
-func (f fakeLayer) DiffID() (v1.Hash, error) {
-	return v1.NewHash(f.diffID)
+func (f fakeLayer) DiffID() (registryv1.Hash, error) {
+	return registryv1.NewHash(f.diffID)
 }
 
 func (f fakeLayer) Size() (int64, error) {
@@ -74,6 +75,21 @@ func (r *fakeResolver) ClusterStoreObservedGeneration() int64 {
 
 func makeRef(id, version string) buildapi.BuilderBuildpackRef {
 	return buildapi.BuilderBuildpackRef{
+		BuildpackRef: corev1alpha1.BuildpackRef{
+			BuildpackInfo: corev1alpha1.BuildpackInfo{
+				Id:      id,
+				Version: version,
+			},
+		},
+	}
+}
+
+func makeObjectRef(name, kind, id, version string) buildapi.BuilderBuildpackRef {
+	return buildapi.BuilderBuildpackRef{
+		ObjectReference: k8scorev1.ObjectReference{
+			Name: name,
+			Kind: kind,
+		},
 		BuildpackRef: corev1alpha1.BuildpackRef{
 			BuildpackInfo: corev1alpha1.BuildpackInfo{
 				Id:      id,
