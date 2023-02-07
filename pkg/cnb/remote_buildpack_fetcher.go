@@ -14,12 +14,12 @@ import (
 )
 
 type RemoteBuildpackFetcher interface {
+	BuildpackResolver
 	ResolveAndFetch(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
-	ClusterStoreObservedGeneration() int64
 }
 
 type remoteBuildpackFetcher struct {
-	resolver        BuildpackResolver
+	BuildpackResolver
 	keychainFactory registry.KeychainFactory
 }
 
@@ -29,13 +29,13 @@ func NewRemoteBuildpackFetcher(
 	buildpacks []*buildapi.Buildpack, clusterBuildpacks []*buildapi.ClusterBuildpack,
 ) RemoteBuildpackFetcher {
 	return &remoteBuildpackFetcher{
-		resolver:        NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks),
-		keychainFactory: dockercreds.NewCachedKeychainFactory(factory),
+		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks),
+		keychainFactory:   dockercreds.NewCachedKeychainFactory(factory),
 	}
 }
 
 func (s *remoteBuildpackFetcher) ResolveAndFetch(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
-	remote, err := s.resolver.Resolve(ref)
+	remote, err := s.resolve(ref)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}
@@ -84,16 +84,12 @@ func (s *remoteBuildpackFetcher) fetch(ctx context.Context, remoteBuildpack K8sR
 	}, nil
 }
 
-func (s *remoteBuildpackFetcher) ClusterStoreObservedGeneration() int64 {
-	return s.resolver.ClusterStoreObservedGeneration()
-}
-
 // TODO: ensure there are no cycles in the buildpack graph
 func (s *remoteBuildpackFetcher) layersForOrder(ctx context.Context, order corev1alpha1.Order) ([]buildpackLayer, error) {
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
-			buildpack, err := s.resolver.Resolve(buildapi.BuilderBuildpackRef{
+			buildpack, err := s.resolve(buildapi.BuilderBuildpackRef{
 				BuildpackRef: corev1alpha1.BuildpackRef{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      buildpackRef.Id,

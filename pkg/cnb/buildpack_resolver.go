@@ -15,14 +15,16 @@ import (
 // BuildpackResolver will attempt to resolve a Buildpack reference to a
 // Buildpack from either the ClusterStore, Buildpacks, or ClusterBuildpacks
 type BuildpackResolver interface {
-	Resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
+	resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
 	ClusterStoreObservedGeneration() int64
+	UsedObjects() []v1.ObjectReference
 }
 
 type buildpackResolver struct {
 	clusterstore      *v1alpha2.ClusterStore
 	buildpacks        []*v1alpha2.Buildpack
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack
+	usedObjects       []v1.ObjectReference
 }
 
 func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
@@ -30,6 +32,7 @@ func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1a
 		clusterstore:      clusterStore,
 		buildpacks:        buildpacks,
 		clusterBuildpacks: clusterBuildpacks,
+		usedObjects:       make([]v1.ObjectReference, 0),
 	}
 }
 
@@ -40,7 +43,11 @@ func (r *buildpackResolver) ClusterStoreObservedGeneration() int64 {
 	return 0
 }
 
-func (r *buildpackResolver) Resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (r *buildpackResolver) UsedObjects() []v1.ObjectReference {
+	return r.usedObjects
+}
+
+func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	var matchingBuildpacks []K8sRemoteBuildpack
 	var err error
 	switch {
@@ -104,11 +111,13 @@ func (r *buildpackResolver) Resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 		if err != nil {
 			return K8sRemoteBuildpack{}, err
 		}
+		r.usedObjects = append(r.usedObjects, bp.source)
 		return bp, nil
 	}
 
 	for _, result := range matchingBuildpacks {
 		if result.Buildpack.Version == ref.Version {
+			r.usedObjects = append(r.usedObjects, result.source)
 			return result, nil
 		}
 	}
@@ -121,13 +130,13 @@ func (r *buildpackResolver) resolveFromBuildpack(id string, buildpacks []*v1alph
 	for _, bp := range buildpacks {
 		for _, status := range bp.Status.Buildpacks {
 			if status.Id == id {
-
 				matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
 					Buildpack: status,
 					SecretRef: registry.SecretRef{
 						ServiceAccount: bp.Spec.ServiceAccountName,
 						Namespace:      bp.Namespace,
 					},
+					source: v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind},
 				})
 			}
 		}
@@ -151,6 +160,7 @@ func (r *buildpackResolver) resolveFromClusterBuildpack(id string, clusterBuildp
 				matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
 					Buildpack: status,
 					SecretRef: secretRef,
+					source:    v1.ObjectReference{Name: cbp.Name, Namespace: cbp.Namespace, Kind: cbp.Kind},
 				})
 			}
 		}
@@ -177,6 +187,7 @@ func (r *buildpackResolver) resolveFromClusterStore(id string, store *v1alpha2.C
 			matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
 				Buildpack: status,
 				SecretRef: secretRef,
+				source:    v1.ObjectReference{Name: store.Name, Namespace: store.Namespace, Kind: store.Kind},
 			})
 		}
 	}
@@ -186,8 +197,11 @@ func (r *buildpackResolver) resolveFromClusterStore(id string, store *v1alpha2.C
 // resolveFromObjectReference will get the object and figure out the root
 // buildpack by converting it to a buildpack dependency tree
 func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (K8sRemoteBuildpack, error) {
-	var bps []corev1alpha1.BuildpackStatus
-	var secretRef registry.SecretRef
+	var (
+		bps       []corev1alpha1.BuildpackStatus
+		secretRef registry.SecretRef
+		objRef    v1.ObjectReference
+	)
 	switch ref.Kind {
 	case v1alpha2.BuildpackKind:
 		bp := findBuildpack(ref, r.buildpacks)
@@ -196,6 +210,7 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 		}
 
 		bps = bp.Status.Buildpacks
+		objRef = v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind}
 		secretRef = registry.SecretRef{
 			ServiceAccount: bp.Spec.ServiceAccountName,
 			Namespace:      bp.Namespace,
@@ -207,6 +222,7 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 		}
 
 		bps = cbp.Status.Buildpacks
+		objRef = v1.ObjectReference{Name: cbp.Name, Namespace: cbp.Namespace, Kind: cbp.Kind}
 		if cbp.Spec.ServiceAccountRef != nil {
 			secretRef = registry.SecretRef{
 				ServiceAccount: cbp.Spec.ServiceAccountRef.Name,
@@ -225,6 +241,7 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 	return K8sRemoteBuildpack{
 		Buildpack: *trees[0].Buildpack,
 		SecretRef: secretRef,
+		source:    objRef,
 	}, nil
 }
 

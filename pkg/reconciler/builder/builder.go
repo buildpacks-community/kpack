@@ -77,6 +77,16 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
+	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.BuildpackKind)),
+	))
+	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
+	))
 
 	return impl, func() {
 		impl.GlobalResync(builderInformer.Informer())
@@ -128,20 +138,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Builder) (buildapi.BuilderRecord, error) {
 	err := c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
-			Name:      builder.Spec.Store.Name,
-			Namespace: v1.NamespaceAll,
-		},
-		GroupKind: schema.GroupKind{
-			Group: "kpack.io",
-			Kind:  buildapi.ClusterStoreKind,
-		},
-	}, builder.NamespacedName())
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	err = c.Tracker.Track(reconciler.Key{
-		NamespacedName: types.NamespacedName{
 			Name:      builder.Spec.Stack.Name,
 			Namespace: v1.NamespaceAll,
 		},
@@ -191,7 +187,28 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 
 	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
 
-	return c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	buildpackSources, buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	for _, source := range buildpackSources {
+		err = c.Tracker.Track(reconciler.Key{
+			NamespacedName: types.NamespacedName{
+				Name:      source.Name,
+				Namespace: source.Namespace,
+			},
+			GroupKind: schema.GroupKind{
+				Group: "kpack.io",
+				Kind:  source.Kind,
+			},
+		}, builder.NamespacedName())
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
+	return buildRecord, nil
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder) error {
