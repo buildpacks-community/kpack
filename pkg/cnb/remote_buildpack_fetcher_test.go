@@ -186,8 +186,8 @@ func testRemoteBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		fetcher := &remoteBuildpackFetcher{
-			resolver:        resolver,
-			keychainFactory: keychainFactory,
+			BuildpackResolver: resolver,
+			keychainFactory:   keychainFactory,
 		}
 
 		it("returns layer info from store image", func() {
