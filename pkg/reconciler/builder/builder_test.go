@@ -103,11 +103,19 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Name:      "buildpack.id.3",
 			Namespace: testNamespace,
 		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Buildpack",
+			APIVersion: "kpack.io/v1alpha2",
+		},
 	}
 
 	clusterBuildpack := &buildapi.ClusterBuildpack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "buildpack.id.4",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterBuildpack",
+			APIVersion: "kpack.io/v1alpha2",
 		},
 	}
 
@@ -247,7 +255,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
-		it("tracks the stack and store for a custom builder", func() {
+		it("tracks the store and buildpack sources for a custom builder", func() {
 			builderCreator.Record = buildapi.BuilderRecord{
 				Image: builderIdentifier,
 				Stack: corev1alpha1.BuildStack{
@@ -255,6 +263,11 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:       "fake.stack.id",
 				},
 				Buildpacks: corev1alpha1.BuildpackMetadataList{},
+			}
+			builderCreator.ObjectsToTrack = []corev1.ObjectReference{
+				{Name: clusterStore.Name, Kind: clusterStore.Kind},
+				{Name: buildpack.Name, Kind: buildpack.Kind, Namespace: testNamespace},
+				{Name: clusterBuildpack.Name, Kind: clusterBuildpack.Kind},
 			}
 
 			expectedBuilder := &buildapi.Builder{
@@ -284,6 +297,8 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
+					buildpack,
+					clusterBuildpack,
 					expectedBuilder,
 				},
 				WantErr: false,
@@ -294,6 +309,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				builder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack),
+				builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(buildpack),
+				builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterBuildpack),
 				builder.NamespacedName()))
 		})
 
@@ -433,7 +454,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			// still track resources
-			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(notReadyClusterStack), builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
@@ -469,7 +489,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			// still track resources
-			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})
@@ -505,7 +524,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			// still track resources
-			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStore), builder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
 		})

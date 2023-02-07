@@ -55,12 +55,16 @@ type fakeResolver struct {
 	observedGeneration int64
 }
 
-func (r *fakeResolver) Resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	buildpack, ok := r.buildpacks[fmt.Sprintf("%s@%s", ref.Id, ref.Version)]
 	if !ok {
 		return K8sRemoteBuildpack{}, errors.New("buildpack not found")
 	}
 	return buildpack, nil
+}
+
+func (f *fakeResolver) UsedObjects() []k8scorev1.ObjectReference {
+	return nil
 }
 
 func (f *fakeResolver) AddBuildpack(t *testing.T, ref buildapi.BuilderBuildpackRef, buildpack K8sRemoteBuildpack) {
@@ -118,6 +122,14 @@ func (f *fakeFetcher) ResolveAndFetch(_ context.Context, buildpack buildapi.Buil
 
 func (f *fakeFetcher) ClusterStoreObservedGeneration() int64 {
 	return f.observedGeneration
+}
+
+func (f *fakeFetcher) UsedObjects() []k8scorev1.ObjectReference {
+	return nil
+}
+
+func (f *fakeFetcher) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	panic("Not implemented For Tests")
 }
 
 func (f *fakeFetcher) AddBuildpack(t *testing.T, id, version string, layers []buildpackLayer) {

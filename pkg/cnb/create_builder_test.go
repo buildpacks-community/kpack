@@ -314,7 +314,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+			_, builderRecord, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -576,11 +576,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+			_, original, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, other, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -610,7 +610,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
@@ -634,7 +634,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
@@ -679,7 +679,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Nil(t, err)
 			})
 
@@ -704,7 +704,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
 			})
 
@@ -727,7 +727,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 
@@ -770,7 +770,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 			})
 		})
@@ -797,7 +797,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
+				_, _, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.999, expecting one of: 0.3, 0.4, 0.5, 0.6, 0.7, 0.8")
 			})
 		})
