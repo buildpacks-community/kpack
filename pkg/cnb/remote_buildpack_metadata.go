@@ -1,10 +1,10 @@
 package cnb
 
 import (
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
+	k8sv1 "k8s.io/api/core/v1"
 )
 
 type RemoteBuildpackInfo struct {
@@ -34,7 +34,7 @@ func (r RemoteBuildpackRef) buildpackRef() corev1alpha1.BuildpackRef {
 }
 
 type buildpackLayer struct {
-	v1Layer            v1.Layer
+	v1Layer            ggcrv1.Layer
 	BuildpackInfo      DescriptiveBuildpackInfo
 	BuildpackLayerInfo BuildpackLayerInfo
 }
@@ -42,4 +42,5 @@ type buildpackLayer struct {
 type K8sRemoteBuildpack struct {
 	Buildpack corev1alpha1.BuildpackStatus
 	SecretRef registry.SecretRef
+	source    k8sv1.ObjectReference
 }
