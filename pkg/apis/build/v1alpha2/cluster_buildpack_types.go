@@ -22,8 +22,8 @@ type ClusterBuildpack struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterBuildpackSpec   `json:"spec"`
-	Status ClusterBuildpackStatus `json:"status"`
+	Spec   ClusterBuildpackSpec `json:"spec"`
+	Status BuildpackStatus      `json:"status"`
 }
 
 // +k8s:openapi-gen=true
@@ -33,16 +33,7 @@ type ClusterBuildpackSpec struct {
 	ServiceAccountRef *corev1.ObjectReference  `json:"serviceAccountRef,omitempty"`
 }
 
-// +k8s:openapi-gen=true
-type ClusterBuildpackStatus struct {
-	corev1alpha1.Status `json:",inline"`
-
-	// +listType
-	Buildpacks []corev1alpha1.BuildpackStatus `json:"buildpacks,omitempty"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // +k8s:openapi-gen=true
 type ClusterBuildpackList struct {
 	metav1.TypeMeta `json:",inline"`

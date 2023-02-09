@@ -5,6 +5,7 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/duckbuildpack"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
@@ -183,7 +184,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, nil, nil)
+				resolver = NewBuildpackResolver(store, nil)
 			})
 
 			it("finds it using id", func() {
@@ -234,7 +235,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		when("using the buildpack resources", func() {
 			var (
 				resolver   BuildpackResolver
-				buildpacks = []*buildapi.Buildpack{
+				buildpacks = []*duckbuildpack.DuckBuildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
@@ -290,7 +291,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, buildpacks, nil)
+				resolver = NewBuildpackResolver(nil, buildpacks)
 			})
 
 			when("using id", func() {
@@ -384,7 +385,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "Buildpack", "", "")
 					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "no buildpack with name 'fake-buildpack'")
+					assert.EqualError(t, err, "no buildpack or cluster buildpack with name 'fake-buildpack'")
 					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
@@ -464,13 +465,13 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		when("using the clusterbuildpack resources", func() {
 			var (
 				resolver          BuildpackResolver
-				clusterBuildpacks = []*buildapi.ClusterBuildpack{
+				clusterBuildpacks = []*duckbuildpack.DuckBuildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.meta",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								metaBuildpack,
 								engineBuildpack,
@@ -483,7 +484,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-8.0.0",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								v8Buildpack,
 							},
@@ -494,7 +495,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-9.0.0",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								v9Buildpack,
 							},
@@ -505,7 +506,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								v8Buildpack,
 								v9Buildpack,
@@ -516,7 +517,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks)
+				resolver = NewBuildpackResolver(nil, clusterBuildpacks)
 			})
 
 			when("using id", func() {
@@ -606,7 +607,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "ClusterBuildpack", "", "")
 					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "no cluster buildpack with name 'fake-buildpack'")
+					assert.EqualError(t, err, "no buildpack or cluster buildpack with name 'fake-buildpack'")
 					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
@@ -696,7 +697,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				buildpacks = []*buildapi.Buildpack{
+				buildpacks = []*duckbuildpack.DuckBuildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
@@ -710,13 +711,13 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				clusterBuildpacks = []*buildapi.ClusterBuildpack{
+				clusterBuildpacks = []*duckbuildpack.DuckBuildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-8.0.0",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								v8Buildpack,
 							},
@@ -727,7 +728,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-9.0.0",
 						},
-						Status: buildapi.ClusterBuildpackStatus{
+						Status: buildapi.BuildpackStatus{
 							Buildpacks: []corev1alpha1.BuildpackStatus{
 								v9Buildpack,
 							},
@@ -737,7 +738,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, buildpacks, clusterBuildpacks)
+				resolver = NewBuildpackResolver(store, append(buildpacks, clusterBuildpacks...))
 			})
 
 			it("records which objects were used", func() {

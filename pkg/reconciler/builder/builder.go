@@ -22,6 +22,7 @@ import (
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/duckbuildpack"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/tracker"
@@ -38,19 +39,17 @@ func NewController(
 	builderCreator cnb.BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
-	buildpackInformer buildinformers.BuildpackInformer,
-	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
+	duckBuildpackInformer *duckbuildpack.DuckBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
-		Client:                 opt.Client,
-		BuilderLister:          builderInformer.Lister(),
-		BuilderCreator:         builderCreator,
-		KeychainFactory:        keychainFactory,
-		ClusterStoreLister:     clusterStoreInformer.Lister(),
-		BuildpackLister:        buildpackInformer.Lister(),
-		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
-		ClusterStackLister:     clusterStackInformer.Lister(),
+		Client:              opt.Client,
+		BuilderLister:       builderInformer.Lister(),
+		BuilderCreator:      builderCreator,
+		KeychainFactory:     keychainFactory,
+		ClusterStoreLister:  clusterStoreInformer.Lister(),
+		DuckBuildpackLister: duckBuildpackInformer.Lister(),
+		ClusterStackLister:  clusterStackInformer.Lister(),
 	}
 
 	logger := opt.Logger.With(
@@ -77,12 +76,12 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
-	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+	duckBuildpackInformer.AddBuildpackEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.BuildpackKind)),
 	))
-	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+	duckBuildpackInformer.AddClusterBuildpackEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
@@ -94,15 +93,14 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client                 versioned.Interface
-	BuilderLister          buildlisters.BuilderLister
-	BuilderCreator         cnb.BuilderCreator
-	KeychainFactory        registry.KeychainFactory
-	Tracker                reconciler.Tracker
-	ClusterStoreLister     buildlisters.ClusterStoreLister
-	BuildpackLister        buildlisters.BuildpackLister
-	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
-	ClusterStackLister     buildlisters.ClusterStackLister
+	Client              versioned.Interface
+	BuilderLister       buildlisters.BuilderLister
+	BuilderCreator      cnb.BuilderCreator
+	KeychainFactory     registry.KeychainFactory
+	Tracker             reconciler.Tracker
+	ClusterStoreLister  buildlisters.ClusterStoreLister
+	DuckBuildpackLister *duckbuildpack.DuckBuildpackLister
+	ClusterStackLister  buildlisters.ClusterStackLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -158,12 +156,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		}
 	}
 
-	buildpacks, err := c.BuildpackLister.Buildpacks(builder.Namespace).List(labels.Everything())
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	clusterBuildpacks, err := c.ClusterBuildpackLister.List(labels.Everything())
+	duckBuildpacks, err := c.DuckBuildpackLister.Namespace(builder.Namespace).List(labels.Everything())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -185,7 +178,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, err
 	}
 
-	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
+	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, duckBuildpacks)
 
 	buildpackSources, buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
 	if err != nil {

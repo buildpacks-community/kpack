@@ -7,6 +7,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/duckbuildpack"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -21,18 +22,16 @@ type BuildpackResolver interface {
 }
 
 type buildpackResolver struct {
-	clusterstore      *v1alpha2.ClusterStore
-	buildpacks        []*v1alpha2.Buildpack
-	clusterBuildpacks []*v1alpha2.ClusterBuildpack
-	usedObjects       []v1.ObjectReference
+	clusterstore *v1alpha2.ClusterStore
+	buildpacks   []*duckbuildpack.DuckBuildpack
+	usedObjects  []v1.ObjectReference
 }
 
-func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
+func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*duckbuildpack.DuckBuildpack) BuildpackResolver {
 	return &buildpackResolver{
-		clusterstore:      clusterStore,
-		buildpacks:        buildpacks,
-		clusterBuildpacks: clusterBuildpacks,
-		usedObjects:       make([]v1.ObjectReference, 0),
+		clusterstore: clusterStore,
+		buildpacks:   buildpacks,
+		usedObjects:  make([]v1.ObjectReference, 0),
 	}
 }
 
@@ -51,31 +50,29 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 	var matchingBuildpacks []K8sRemoteBuildpack
 	var err error
 	switch {
-	case ref.Kind == v1alpha2.BuildpackKind && ref.Id != "":
-		bp := findBuildpack(ref.ObjectReference, r.buildpacks)
-		if bp == nil {
-			return K8sRemoteBuildpack{}, fmt.Errorf("buildpack not found: %v", ref.Name)
-		}
+	case ref.Kind != "" && ref.Id != "":
+		if ref.Kind == v1alpha2.ClusterStoreKind {
+			matchingBuildpacks, err = r.resolveFromClusterStore(ref.Id, r.clusterstore)
+			if err != nil {
+				return K8sRemoteBuildpack{}, err
+			}
+		} else {
+			bp := findBuildpack(ref.ObjectReference, r.buildpacks)
+			if bp == nil {
+				return K8sRemoteBuildpack{}, fmt.Errorf("buildpack or cluster buildpack '%v' not found", ref.Name)
+			}
 
-		matchingBuildpacks, err = r.resolveFromBuildpack(ref.Id, []*v1alpha2.Buildpack{bp})
-		if err != nil {
-			return K8sRemoteBuildpack{}, err
-		}
-	case ref.Kind == v1alpha2.ClusterBuildpackKind && ref.Id != "":
-		cbp := findClusterBuildpack(ref.ObjectReference, r.clusterBuildpacks)
-		if cbp == nil {
-			return K8sRemoteBuildpack{}, fmt.Errorf("cluster buildpack not found: %v", ref.Name)
-		}
-
-		matchingBuildpacks, err = r.resolveFromClusterBuildpack(ref.Id, []*v1alpha2.ClusterBuildpack{cbp})
-		if err != nil {
-			return K8sRemoteBuildpack{}, err
+			matchingBuildpacks, err = r.resolveFromBuildpack(ref.Id, []*duckbuildpack.DuckBuildpack{bp})
+			if err != nil {
+				return K8sRemoteBuildpack{}, err
+			}
 		}
 	case ref.Kind != "":
-		bp, err := r.resolveFromObjectReference(ref.ObjectReference)
+		bp, err := r.resolveFromBuildpackReference(ref.ObjectReference)
 		if err != nil {
 			return K8sRemoteBuildpack{}, err
 		}
+
 		matchingBuildpacks = []K8sRemoteBuildpack{bp}
 	case ref.Id != "":
 		bp, err := r.resolveFromBuildpack(ref.Id, r.buildpacks)
@@ -83,12 +80,6 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 			return K8sRemoteBuildpack{}, err
 		}
 		matchingBuildpacks = append(matchingBuildpacks, bp...)
-
-		cbp, err := r.resolveFromClusterBuildpack(ref.Id, r.clusterBuildpacks)
-		if err != nil {
-			return K8sRemoteBuildpack{}, err
-		}
-		matchingBuildpacks = append(matchingBuildpacks, cbp...)
 
 		cs, err := r.resolveFromClusterStore(ref.Id, r.clusterstore)
 		if err != nil {
@@ -125,42 +116,23 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 	return K8sRemoteBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", ref.Id, ref.Version)
 }
 
-func (r *buildpackResolver) resolveFromBuildpack(id string, buildpacks []*v1alpha2.Buildpack) ([]K8sRemoteBuildpack, error) {
+func (r *buildpackResolver) resolveFromBuildpack(id string, buildpacks []*duckbuildpack.DuckBuildpack) ([]K8sRemoteBuildpack, error) {
 	var matchingBuildpacks []K8sRemoteBuildpack
 	for _, bp := range buildpacks {
 		for _, status := range bp.Status.Buildpacks {
 			if status.Id == id {
-				matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
-					Buildpack: status,
-					SecretRef: registry.SecretRef{
-						ServiceAccount: bp.Spec.ServiceAccountName,
-						Namespace:      bp.Namespace,
-					},
-					source: v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind},
-				})
-			}
-		}
-	}
-	return matchingBuildpacks, nil
-}
-
-func (r *buildpackResolver) resolveFromClusterBuildpack(id string, clusterBuildpacks []*v1alpha2.ClusterBuildpack) ([]K8sRemoteBuildpack, error) {
-	var matchingBuildpacks []K8sRemoteBuildpack
-	for _, cbp := range clusterBuildpacks {
-		for _, status := range cbp.Status.Buildpacks {
-			if status.Id == id {
 				secretRef := registry.SecretRef{}
 
-				if cbp.Spec.ServiceAccountRef != nil {
+				if bp.Spec.ServiceAccountRef != nil {
 					secretRef = registry.SecretRef{
-						ServiceAccount: cbp.Spec.ServiceAccountRef.Name,
-						Namespace:      cbp.Spec.ServiceAccountRef.Namespace,
+						ServiceAccount: bp.Spec.ServiceAccountRef.Name,
+						Namespace:      bp.Spec.ServiceAccountRef.Namespace,
 					}
 				}
 				matchingBuildpacks = append(matchingBuildpacks, K8sRemoteBuildpack{
 					Buildpack: status,
 					SecretRef: secretRef,
-					source:    v1.ObjectReference{Name: cbp.Name, Namespace: cbp.Namespace, Kind: cbp.Kind},
+					source:    v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind},
 				})
 			}
 		}
@@ -194,43 +166,30 @@ func (r *buildpackResolver) resolveFromClusterStore(id string, store *v1alpha2.C
 	return matchingBuildpacks, nil
 }
 
-// resolveFromObjectReference will get the object and figure out the root
+// resolveFromBuildpackReference will get the object and figure out the root
 // buildpack by converting it to a buildpack dependency tree
-func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (K8sRemoteBuildpack, error) {
+func (r *buildpackResolver) resolveFromBuildpackReference(ref v1.ObjectReference) (K8sRemoteBuildpack, error) {
 	var (
 		bps       []corev1alpha1.BuildpackStatus
 		secretRef registry.SecretRef
 		objRef    v1.ObjectReference
 	)
-	switch ref.Kind {
-	case v1alpha2.BuildpackKind:
-		bp := findBuildpack(ref, r.buildpacks)
-		if bp == nil {
-			return K8sRemoteBuildpack{}, fmt.Errorf("no buildpack with name '%v'", ref.Name)
-		}
-
-		bps = bp.Status.Buildpacks
-		objRef = v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind}
-		secretRef = registry.SecretRef{
-			ServiceAccount: bp.Spec.ServiceAccountName,
-			Namespace:      bp.Namespace,
-		}
-	case v1alpha2.ClusterBuildpackKind:
-		cbp := findClusterBuildpack(ref, r.clusterBuildpacks)
-		if cbp == nil {
-			return K8sRemoteBuildpack{}, fmt.Errorf("no cluster buildpack with name '%v'", ref.Name)
-		}
-
-		bps = cbp.Status.Buildpacks
-		objRef = v1.ObjectReference{Name: cbp.Name, Namespace: cbp.Namespace, Kind: cbp.Kind}
-		if cbp.Spec.ServiceAccountRef != nil {
-			secretRef = registry.SecretRef{
-				ServiceAccount: cbp.Spec.ServiceAccountRef.Name,
-				Namespace:      cbp.Spec.ServiceAccountRef.Namespace,
-			}
-		}
-	default:
+	if ref.Kind != v1alpha2.BuildpackKind && ref.Kind != v1alpha2.ClusterBuildpackKind {
 		return K8sRemoteBuildpack{}, fmt.Errorf("kind must be either %v or %v", v1alpha2.BuildpackKind, v1alpha2.ClusterBuildpackKind)
+	}
+
+	bp := findBuildpack(ref, r.buildpacks)
+	if bp == nil {
+		return K8sRemoteBuildpack{}, fmt.Errorf("no buildpack or cluster buildpack with name '%v'", ref.Name)
+	}
+
+	bps = bp.Status.Buildpacks
+	objRef = v1.ObjectReference{Name: bp.Name, Namespace: bp.Namespace, Kind: bp.Kind}
+	if bp.Spec.ServiceAccountRef != nil {
+		secretRef = registry.SecretRef{
+			ServiceAccount: bp.Spec.ServiceAccountRef.Name,
+			Namespace:      bp.Spec.ServiceAccountRef.Namespace,
+		}
 	}
 
 	trees := NewTree(bps)
@@ -245,24 +204,23 @@ func (r *buildpackResolver) resolveFromObjectReference(ref v1.ObjectReference) (
 	}, nil
 }
 
-// TODO: combine findBuildpack and findClusterBuildpack into a single func
-// if/when golang generics has support for field values
-func findBuildpack(ref v1.ObjectReference, buildpacks []*v1alpha2.Buildpack) *v1alpha2.Buildpack {
+func findBuildpack(ref v1.ObjectReference, buildpacks []*duckbuildpack.DuckBuildpack) *duckbuildpack.DuckBuildpack {
 	for _, bp := range buildpacks {
-		if bp.Name == ref.Name {
+		if bp.Name == ref.Name && bp.Kind == ref.Kind {
 			return bp
 		}
 	}
 	return nil
 }
 
-func findClusterBuildpack(ref v1.ObjectReference, clusterBuildpacks []*v1alpha2.ClusterBuildpack) *v1alpha2.ClusterBuildpack {
-	for _, cbp := range clusterBuildpacks {
-		if cbp.Name == ref.Name {
-			return cbp
+func getSecretRef(bp duckbuildpack.DuckBuildpack) registry.SecretRef {
+	if bp.Spec.ServiceAccountRef != nil {
+		return registry.SecretRef{
+			ServiceAccount: bp.Spec.ServiceAccountRef.Name,
+			Namespace:      bp.Spec.ServiceAccountRef.Namespace,
 		}
 	}
-	return nil
+	return registry.SecretRef{}
 }
 
 // TODO: error if the highest version has multiple diff ids

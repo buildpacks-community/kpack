@@ -111,7 +111,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 						Object: &buildapi.ClusterBuildpack{
 							ObjectMeta: cbp.ObjectMeta,
 							Spec:       cbp.Spec,
-							Status: buildapi.ClusterBuildpackStatus{
+							Status: buildapi.BuildpackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -156,7 +156,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 						Object: &buildapi.ClusterBuildpack{
 							ObjectMeta: cbp.ObjectMeta,
 							Spec:       cbp.Spec,
-							Status: buildapi.ClusterBuildpackStatus{
+							Status: buildapi.BuildpackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{
@@ -185,7 +185,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
 
-			cbp.Status = buildapi.ClusterBuildpackStatus{
+			cbp.Status = buildapi.BuildpackStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 1,
 					Conditions: corev1alpha1.Conditions{
@@ -224,7 +224,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 						Object: &buildapi.ClusterBuildpack{
 							ObjectMeta: cbp.ObjectMeta,
 							Spec:       cbp.Spec,
-							Status: buildapi.ClusterBuildpackStatus{
+							Status: buildapi.BuildpackStatus{
 								Status: corev1alpha1.Status{
 									ObservedGeneration: 1,
 									Conditions: corev1alpha1.Conditions{

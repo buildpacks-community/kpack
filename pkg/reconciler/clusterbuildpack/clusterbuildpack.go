@@ -122,7 +122,7 @@ func (c *Reconciler) reoncileClusterBuildpackStatus(ctx context.Context, cluster
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
-		clusterBuildpack.Status = buildapi.ClusterBuildpackStatus{
+		clusterBuildpack.Status = buildapi.BuildpackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterBuildpack.Generation, err),
 		}
 		return clusterBuildpack, err
@@ -130,13 +130,13 @@ func (c *Reconciler) reoncileClusterBuildpackStatus(ctx context.Context, cluster
 
 	buildpacks, err := c.StoreReader.Read(keychain, []corev1alpha1.ImageSource{clusterBuildpack.Spec.Source})
 	if err != nil {
-		clusterBuildpack.Status = buildapi.ClusterBuildpackStatus{
+		clusterBuildpack.Status = buildapi.BuildpackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterBuildpack.Generation, err),
 		}
 		return clusterBuildpack, err
 	}
 
-	clusterBuildpack.Status = buildapi.ClusterBuildpackStatus{
+	clusterBuildpack.Status = buildapi.BuildpackStatus{
 		Buildpacks: buildpacks,
 		Status:     corev1alpha1.CreateStatusWithReadyCondition(clusterBuildpack.Generation, nil),
 	}

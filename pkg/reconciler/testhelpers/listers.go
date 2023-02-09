@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
+	"github.com/pivotal/kpack/pkg/duckbuildpack"
 )
 
 var clientSetSchemes = []func(*runtime.Scheme) error{
@@ -103,5 +104,12 @@ func (l *Listers) GetDuckBuilderLister() *duckbuilder.DuckBuilderLister {
 	return &duckbuilder.DuckBuilderLister{
 		BuilderLister:        l.GetBuilderLister(),
 		ClusterBuilderLister: l.GetClusterBuilderLister(),
+	}
+}
+
+func (l *Listers) GetDuckBuildpackLister() *duckbuildpack.DuckBuildpackLister {
+	return &duckbuildpack.DuckBuildpackLister{
+		BuildpackLister:        l.GetBuildpackLister(),
+		ClusterBuildpackLister: l.GetClusterBuildpackLister(),
 	}
 }

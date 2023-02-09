@@ -9,6 +9,7 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/dockercreds"
+	"github.com/pivotal/kpack/pkg/duckbuildpack"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
@@ -26,10 +27,10 @@ type remoteBuildpackFetcher struct {
 func NewRemoteBuildpackFetcher(
 	factory registry.KeychainFactory,
 	clusterStore *buildapi.ClusterStore,
-	buildpacks []*buildapi.Buildpack, clusterBuildpacks []*buildapi.ClusterBuildpack,
+	buildpacks []*duckbuildpack.DuckBuildpack,
 ) RemoteBuildpackFetcher {
 	return &remoteBuildpackFetcher{
-		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks),
+		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks),
 		keychainFactory:   dockercreds.NewCachedKeychainFactory(factory),
 	}
 }
