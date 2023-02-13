@@ -51,7 +51,7 @@ func testClusterBuilderConversion(t *testing.T, when spec.G, it spec.S) {
 									Name: "some-buildpack",
 								},
 							},
-							{Image: "some-repo/some-buildpack"},
+							// {Image: "some-repo/some-buildpack"},
 						},
 					}},
 				},

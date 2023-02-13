@@ -8,7 +8,6 @@ import (
 
 	"knative.dev/pkg/apis"
 
-	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
@@ -84,9 +83,10 @@ func validateBuildpackRef(ref BuilderBuildpackRef) *apis.FieldError {
 
 	switch {
 	case ref.Image != "":
-		errs = errs.Also(validate.Image(ref.Image)).
-			Also(apis.CheckDisallowedFields(ref.BuildpackInfo, v1alpha1.BuildpackInfo{})).
-			Also(apis.CheckDisallowedFields(ref.ObjectReference, v1.ObjectReference{}))
+		errs = errs.Also(apis.ErrDisallowedFields("image reference currently not supported"))
+		// errs = errs.Also(validate.Image(ref.Image)).
+		// 	Also(apis.CheckDisallowedFields(ref.BuildpackInfo, v1alpha1.BuildpackInfo{})).
+		// 	Also(apis.CheckDisallowedFields(ref.ObjectReference, v1.ObjectReference{}))
 	case ref.Id != "" || ref.Name != "" || ref.Kind != "":
 		if ref.Image != "" {
 			errs = errs.Also(apis.ErrDisallowedFields("image"))

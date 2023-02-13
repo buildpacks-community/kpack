@@ -44,9 +44,9 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 								Optional: true,
 							},
 						},
-						{
-							Image: "some-registry.io/buildpack",
-						},
+						// {
+						// 	Image: "some-registry.io/buildpack",
+						// },
 						{
 							ObjectReference: corev1.ObjectReference{
 								Name: "some-buildpack",
@@ -166,27 +166,37 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 				assertValidationError(builder, apis.ErrInvalidValue("FakeBuildpack", "kind", "must be one of Buildpack, ClusterBuildpack"))
 			})
 
-			it("invalid image", func() {
+			it("invalid when image is used", func() {
 				builder.Spec.Order = []BuilderOrderEntry{{
 					Group: []BuilderBuildpackRef{{
-						Image: "some-image@1234",
+						Image: "some-registry.io/buildpack",
 					}},
 				}}
 
-				assertValidationError(builder, apis.ErrInvalidValue("some-image@1234", "image"))
+				assertValidationError(builder, apis.ErrDisallowedFields("image reference currently not supported"))
 			})
 
-			it("invalid when both image and id are defined", func() {
-				builder.Spec.Order = []BuilderOrderEntry{{
-					Group: []BuilderBuildpackRef{{
-						Image: "foo",
-						BuildpackRef: v1alpha1.BuildpackRef{
-							BuildpackInfo: v1alpha1.BuildpackInfo{Id: "some-buildpack"},
-						},
-					}},
-				}}
-				assertValidationError(builder, apis.ErrDisallowedFields("id"))
-			})
+			// it("invalid image", func() {
+			// 	builder.Spec.Order = []BuilderOrderEntry{{
+			// 		Group: []BuilderBuildpackRef{{
+			// 			Image: "some-image@1234",
+			// 		}},
+			// 	}}
+
+			// 	assertValidationError(builder, apis.ErrInvalidValue("some-image@1234", "image"))
+			// })
+
+			// it("invalid when both image and id are defined", func() {
+			// 	builder.Spec.Order = []BuilderOrderEntry{{
+			// 		Group: []BuilderBuildpackRef{{
+			// 			Image: "foo",
+			// 			BuildpackRef: v1alpha1.BuildpackRef{
+			// 				BuildpackInfo: v1alpha1.BuildpackInfo{Id: "some-buildpack"},
+			// 			},
+			// 		}},
+			// 	}}
+			// 	assertValidationError(builder, apis.ErrDisallowedFields("id"))
+			// })
 
 			it("valid when both id and object are defined", func() {
 				builder.Spec.Order = []BuilderOrderEntry{{Group: []BuilderBuildpackRef{{
