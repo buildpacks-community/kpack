@@ -9,4 +9,5 @@ type BuilderResource interface {
 	BuildpackMetadata() corev1alpha1.BuildpackMetadataList
 	RunImage() string
 	GetKind() string
+	ConditionReadyMessage() string
 }

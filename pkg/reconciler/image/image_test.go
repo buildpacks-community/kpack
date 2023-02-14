@@ -768,11 +768,16 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("does not schedule a build if the builder is not ready", func() {
+
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
 						imageWithBuilder,
-						notReadyBuilder(builder),
+						builderWithCondition(builder, corev1alpha1.Condition{
+							Type:    corev1alpha1.ConditionReady,
+							Status:  corev1.ConditionFalse,
+							Message: "something went wrong",
+						}),
 						resolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
@@ -793,7 +798,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    buildapi.ConditionBuilderReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
-												Message: "Builder builder-name is not ready",
+												Message: "Builder builder-name is not ready: something went wrong",
 											},
 										},
 									},
@@ -2476,6 +2481,16 @@ func unresolvedSourceResolver(image *buildapi.Image) *buildapi.SourceResolver {
 
 func notReadyBuilder(builder *buildapi.Builder) runtime.Object {
 	builder.Status.Conditions = corev1alpha1.Conditions{}
+	return builder
+}
+
+func builderWithCondition(builder *buildapi.Builder, conditions ...corev1alpha1.Condition) runtime.Object {
+	builder.Status.Conditions = corev1alpha1.Conditions{}
+
+	for _, condition := range conditions {
+		builder.Status.Conditions = append(builder.Status.Conditions, condition)
+	}
+
 	return builder
 }
 

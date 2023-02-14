@@ -112,7 +112,7 @@ func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 			Type:               buildapi.ConditionBuilderReady,
 			Status:             corev1.ConditionFalse,
 			Reason:             buildapi.BuilderNotReady,
-			Message:            fmt.Sprintf("Builder %s is not ready", builder.GetName()),
+			Message:            builderError(builder),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		}
 	}
@@ -121,6 +121,16 @@ func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 		Status:             corev1.ConditionTrue,
 		LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 	}
+}
+
+func builderError(builder buildapi.BuilderResource) string {
+	errorMessage := fmt.Sprintf("Builder %s is not ready", builder.GetName())
+
+	if message := builder.ConditionReadyMessage(); message != "" {
+		errorMessage = fmt.Sprintf("%s: %s", errorMessage, message)
+	}
+
+	return errorMessage
 }
 
 func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
