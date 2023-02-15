@@ -764,6 +764,61 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						unresolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
+					//no builds are created
+					WantCreates: nil,
+				})
+			})
+
+			it("does not schedule a build if the source resolver is in failed state", func() {
+				sr := unresolvedSourceResolver(imageWithBuilder)
+				sr.Status = buildapi.SourceResolverStatus{
+					Status: corev1alpha1.Status{
+						Conditions: corev1alpha1.Conditions{
+							{
+								Type:    corev1alpha1.ConditionReady,
+								Status:  corev1.ConditionFalse,
+								Message: "something is failing",
+							},
+						},
+					},
+				}
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						imageWithBuilder,
+						builder,
+						sr,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Image{
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
+								Status: buildapi.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:   corev1alpha1.ConditionReady,
+												Status: corev1.ConditionUnknown,
+											},
+											{
+												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:    buildapi.ConditionSourceResolverReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  buildapi.SourceResolverNotReady,
+												Message: "SourceResolver image-name-source is not ready: something is failing",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				})
 			})
 
@@ -799,6 +854,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
 												Message: "Builder builder-name is not ready: something went wrong",
+											},
+											{
+												Type:   buildapi.ConditionSourceResolverReady,
+												Status: corev1.ConditionTrue,
 											},
 										},
 									},
@@ -2182,6 +2241,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:   buildapi.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
 											},
+											{
+												Type:   buildapi.ConditionSourceResolverReady,
+												Status: corev1.ConditionTrue,
+											},
 										},
 									},
 									LatestBuildRef: "image-name-build-1",
@@ -2227,6 +2290,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   buildapi.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   buildapi.ConditionSourceResolverReady,
+												Status: corev1.ConditionUnknown,
 											},
 										},
 									},
@@ -2275,6 +2342,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
 												Message: "Builder builder-name is not ready",
+											},
+											{
+												Type:   buildapi.ConditionSourceResolverReady,
+												Status: corev1.ConditionTrue,
 											},
 										},
 									},
@@ -2357,6 +2428,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+											{
+												Type:   buildapi.ConditionSourceResolverReady,
 												Status: corev1.ConditionTrue,
 											},
 										},
@@ -2575,6 +2650,10 @@ func conditionReadyUnknown() corev1alpha1.Conditions {
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
+		{
+			Type:   buildapi.ConditionSourceResolverReady,
+			Status: corev1.ConditionUnknown,
+		},
 	}
 }
 
@@ -2587,6 +2666,10 @@ func conditionBuildExecuting(buildName string) corev1alpha1.Conditions {
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
+		},
+		{
+			Type:   buildapi.ConditionSourceResolverReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
@@ -2602,6 +2685,10 @@ func conditionReady() corev1alpha1.Conditions {
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
 		},
+		{
+			Type:   buildapi.ConditionSourceResolverReady,
+			Status: corev1.ConditionTrue,
+		},
 	}
 }
 
@@ -2613,6 +2700,10 @@ func conditionNotReady() corev1alpha1.Conditions {
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
+			Status: corev1.ConditionTrue,
+		},
+		{
+			Type:   buildapi.ConditionSourceResolverReady,
 			Status: corev1.ConditionTrue,
 		},
 	}
