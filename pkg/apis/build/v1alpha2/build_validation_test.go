@@ -19,9 +19,9 @@ func TestBuildValidation(t *testing.T) {
 }
 
 func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
-	build := &Build{
+	buildWithImageRef := &Build{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "build-name",
+			Name: "buildWithImageRef-name",
 		},
 		Spec: BuildSpec{
 			Tags: []string{"some/image"},
@@ -38,26 +38,47 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 	}
+	buildWithBuilderRef := &Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "buildWithImageRef-name",
+		},
+		Spec: BuildSpec{
+			Tags: []string{"some/image"},
+			Builder: corev1alpha1.BuildBuilderSpec{
+				BuilderRef: &corev1.ObjectReference{
+					Name: "default",
+					Kind: "ClusterBuilder",
+				},
+			},
+			ServiceAccountName: "some/service-account",
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
+					URL:      "http://github.com/repo",
+					Revision: "master",
+				},
+			},
+		},
+	}
 	when("Default", func() {
 		it("does not modify already set fields", func() {
-			oldBuild := build.DeepCopy()
-			build.SetDefaults(context.TODO())
+			oldBuild := buildWithImageRef.DeepCopy()
+			buildWithImageRef.SetDefaults(context.TODO())
 
-			assert.Equal(t, build, oldBuild)
+			assert.Equal(t, buildWithImageRef, oldBuild)
 		})
 
 		it("defaults service account to default", func() {
-			build.Spec.ServiceAccountName = ""
+			buildWithImageRef.Spec.ServiceAccountName = ""
 
-			build.SetDefaults(context.TODO())
+			buildWithImageRef.SetDefaults(context.TODO())
 
-			assert.Equal(t, build.Spec.ServiceAccountName, "default")
+			assert.Equal(t, buildWithImageRef.Spec.ServiceAccountName, "default")
 		})
 	})
 
 	when("Validate", func() {
 		it("returns nil on no validation error", func() {
-			assert.Nil(t, build.Validate(context.TODO()))
+			assert.Nil(t, buildWithImageRef.Validate(context.TODO()))
 		})
 
 		assertValidationError := func(build *Build, ctx context.Context, expectedError *apis.FieldError) {
@@ -67,121 +88,136 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("missing field tag", func() {
-			build.Spec.Tags = []string{}
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("tags").ViaField("spec"))
+			buildWithImageRef.Spec.Tags = []string{}
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("tags").ViaField("spec"))
 		})
 
 		it("all tags are valid", func() {
-			build.Spec.Tags = []string{"valid/tag", "invalid/tag@sha256:thisisatag", "also/invalid@@"}
-			assertValidationError(build, context.TODO(),
+			buildWithImageRef.Spec.Tags = []string{"valid/tag", "invalid/tag@sha256:thisisatag", "also/invalid@@"}
+			assertValidationError(buildWithImageRef, context.TODO(),
 				apis.ErrInvalidArrayValue("invalid/tag@sha256:thisisatag", "tags", 1).
 					Also(apis.ErrInvalidArrayValue("also/invalid@@", "tags", 2)).
 					ViaField("spec"))
 		})
 
-		it("missing builder name", func() {
-			build.Spec.Builder.Image = ""
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("image").ViaField("spec", "builder"))
+		it("missing builder name ", func() {
+			buildWithBuilderRef.Spec.Builder.BuilderRef.Name = ""
+			assertValidationError(buildWithBuilderRef, context.TODO(), apis.ErrMissingField("name").ViaField("spec", "builder", "builderRef"))
 		})
 
-		it("invalid builder name", func() {
-			build.Spec.Builder.Image = "foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh"
-			assertValidationError(build, context.TODO(), apis.ErrInvalidValue("foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh", "image").ViaField("spec", "builder"))
+		it("missing builder kind ", func() {
+			buildWithBuilderRef.Spec.Builder.BuilderRef.Kind = ""
+			assertValidationError(buildWithBuilderRef, context.TODO(), apis.ErrMissingField("kind").ViaField("spec", "builder", "builderRef"))
+		})
+
+		it("image and builderRef are both set", func() {
+			buildWithImageRef.Spec.Builder.BuilderRef = &corev1.ObjectReference{Name: "test", Kind: "builder"}
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("image and builderRef fields must be mutually exclusive", "image", "builderRef").ViaField("spec", "builder"))
+		})
+
+		it("image and builderRef are empty", func() {
+			buildWithImageRef.Spec.Builder.Image = ""
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("one of the image or builderRef fields must not be empty", "image", "builderRef").ViaField("spec", "builder"))
+		})
+
+		it("invalid Image name", func() {
+			buildWithImageRef.Spec.Builder.Image = "foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh"
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrInvalidValue("foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh", "image").ViaField("spec", "builder"))
 		})
 
 		it("multiple sources", func() {
-			build.Spec.Source.Git = &corev1alpha1.Git{
+			buildWithImageRef.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/repo",
 				Revision: "master",
 			}
-			build.Spec.Source.Blob = &corev1alpha1.Blob{
+			buildWithImageRef.Spec.Source.Blob = &corev1alpha1.Blob{
 				URL: "http://blob.com/url",
 			}
-			assertValidationError(build, context.TODO(), apis.ErrMultipleOneOf("git", "blob").ViaField("spec", "source"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMultipleOneOf("git", "blob").ViaField("spec", "source"))
 
-			build.Spec.Source.Registry = &corev1alpha1.Registry{
+			buildWithImageRef.Spec.Source.Registry = &corev1alpha1.Registry{
 				Image: "registry.com/image",
 			}
-			assertValidationError(build, context.TODO(), apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMultipleOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("missing source", func() {
-			build.Spec.Source = corev1alpha1.SourceConfig{}
+			buildWithImageRef.Spec.Source = corev1alpha1.SourceConfig{}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingOneOf("git", "blob", "registry").ViaField("spec", "source"))
 		})
 
 		it("validates git url", func() {
-			build.Spec.Source.Git = &corev1alpha1.Git{
+			buildWithImageRef.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "",
 				Revision: "master",
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("url").ViaField("spec", "source", "git"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("url").ViaField("spec", "source", "git"))
 		})
 
 		it("validates git revision", func() {
-			build.Spec.Source.Git = &corev1alpha1.Git{
+			buildWithImageRef.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/url",
 				Revision: "",
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("revision").ViaField("spec", "source", "git"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("revision").ViaField("spec", "source", "git"))
 		})
 
 		it("validates blob url", func() {
-			build.Spec.Source.Git = nil
-			build.Spec.Source.Blob = &corev1alpha1.Blob{URL: ""}
+			buildWithImageRef.Spec.Source.Git = nil
+			buildWithImageRef.Spec.Source.Blob = &corev1alpha1.Blob{URL: ""}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("url").ViaField("spec", "source", "blob"))
 		})
 
 		it("validates registry url", func() {
-			build.Spec.Source.Git = nil
-			build.Spec.Source.Registry = &corev1alpha1.Registry{Image: ""}
+			buildWithImageRef.Spec.Source.Git = nil
+			buildWithImageRef.Spec.Source.Registry = &corev1alpha1.Registry{Image: ""}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("image").ViaField("spec", "source", "registry"))
 		})
 
 		it("validates valid lastBuilt Image", func() {
-			build.Spec.LastBuild = &LastBuild{Image: "invalid@@"}
+			buildWithImageRef.Spec.LastBuild = &LastBuild{Image: "invalid@@"}
 
-			assertValidationError(build, context.TODO(), apis.ErrInvalidValue(build.Spec.LastBuild.Image, "image").ViaField("spec", "lastBuild"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrInvalidValue(buildWithImageRef.Spec.LastBuild.Image, "image").ViaField("spec", "lastBuild"))
 		})
 
 		it("validates service bindings have a name", func() {
-			build.Spec.Services = []corev1.ObjectReference{
+			buildWithImageRef.Spec.Services = []corev1.ObjectReference{
 				{
 					Kind: "Secret",
 				},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("spec.services[0].name"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("spec.services[0].name"))
 		})
 
 		it("validates service bindings have a valid name", func() {
-			build.Spec.Services = []corev1.ObjectReference{
+			buildWithImageRef.Spec.Services = []corev1.ObjectReference{
 				{
 					Kind: "Secret",
 					Name: "&",
 				},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrInvalidValue("&", "spec.services[0].name"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrInvalidValue("&", "spec.services[0].name"))
 		})
 
 		it("validates service bindings have a kind", func() {
-			build.Spec.Services = []corev1.ObjectReference{
+			buildWithImageRef.Spec.Services = []corev1.ObjectReference{
 				{
 					Name: "my-ref",
 				},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("spec.services[0].kind"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrMissingField("spec.services[0].kind"))
 		})
 
 		it("validates service bindings name uniqueness", func() {
-			build.Spec.Services = []corev1.ObjectReference{
+			buildWithImageRef.Spec.Services = []corev1.ObjectReference{
 				{
 					Kind: "Secret",
 					Name: "apm",
@@ -196,54 +232,54 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("duplicate service name \"apm\"", "spec.services[0].name", "spec.services[2].name"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("duplicate service name \"apm\"", "spec.services[0].name", "spec.services[2].name"))
 		})
 
 		it("validates cnb bindings have not been created by a user", func() {
-			build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+			buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 				{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.cnbBindings"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for CNB bindings", "spec.cnbBindings"))
 
 		})
 
 		when("validating cnb bindings if they have been created by the kpack controller", func() {
 			ctx := apis.WithUserInfo(context.TODO(), &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
 			it("validates cnb bindings have a name", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 				}
 
-				assertValidationError(build, ctx, apis.ErrMissingField("spec.cnbBindings[0].name"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrMissingField("spec.cnbBindings[0].name"))
 			})
 
 			it("validates cnb bindings have a valid name", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{Name: "&", MetadataRef: &corev1.LocalObjectReference{Name: "metadata"}},
 				}
 
-				assertValidationError(build, ctx, apis.ErrInvalidValue("&", "spec.cnbBindings[0].name"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrInvalidValue("&", "spec.cnbBindings[0].name"))
 			})
 
 			it("validates cnb bindings have metadata", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{Name: "apm"},
 				}
 
-				assertValidationError(build, ctx, apis.ErrMissingField("spec.cnbBindings[0].metadataRef"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrMissingField("spec.cnbBindings[0].metadataRef"))
 			})
 
 			it("validates cnb bindings have non-empty metadata", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{Name: "apm", MetadataRef: &corev1.LocalObjectReference{}},
 				}
 
-				assertValidationError(build, ctx, apis.ErrMissingField("spec.cnbBindings[0].metadataRef.name"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrMissingField("spec.cnbBindings[0].metadataRef.name"))
 			})
 
 			it("validates cnb bindings have non-empty secrets", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{
 						Name:        "apm",
 						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
@@ -251,11 +287,11 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				assertValidationError(build, ctx, apis.ErrMissingField("spec.cnbBindings[0].secretRef.name"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrMissingField("spec.cnbBindings[0].secretRef.name"))
 			})
 
 			it("validates cnb bindings name uniqueness", func() {
-				build.Spec.CNBBindings = []corev1alpha1.CNBBinding{
+				buildWithImageRef.Spec.CNBBindings = []corev1alpha1.CNBBinding{
 					{
 						Name:        "apm",
 						MetadataRef: &corev1.LocalObjectReference{Name: "metadata"},
@@ -271,12 +307,12 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				assertValidationError(build, ctx, apis.ErrGeneric("duplicate binding name \"apm\"", "spec.cnbBindings[0].name", "spec.cnbBindings[2].name"))
+				assertValidationError(buildWithImageRef, ctx, apis.ErrGeneric("duplicate binding name \"apm\"", "spec.cnbBindings[0].name", "spec.cnbBindings[2].name"))
 			})
 		})
 
 		it("validates notary config has not been set by user", func() {
-			build.Spec.Notary = &corev1alpha1.NotaryConfig{
+			buildWithImageRef.Spec.Notary = &corev1alpha1.NotaryConfig{
 				V1: &corev1alpha1.NotaryV1Config{
 					URL: "",
 					SecretRef: corev1alpha1.NotarySecretRef{
@@ -284,14 +320,14 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "spec.notary"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("use of this field has been deprecated in v1alpha2, please use v1alpha1 for notary image signing", "spec.notary"))
 
 		})
 
-		when("validating notary if build is created by kpack controller", func() {
+		when("validating notary if buildWithImageRef is created by kpack controller", func() {
 			ctx := apis.WithUserInfo(context.TODO(), &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
 			it("handles an empty notary url", func() {
-				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+				buildWithImageRef.Spec.Notary = &corev1alpha1.NotaryConfig{
 					V1: &corev1alpha1.NotaryV1Config{
 						URL: "",
 						SecretRef: corev1alpha1.NotarySecretRef{
@@ -299,12 +335,12 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				err := build.Validate(ctx)
+				err := buildWithImageRef.Validate(ctx)
 				assert.EqualError(t, err, "missing field(s): spec.notary.v1.url")
 			})
 
 			it("handles an empty notary secret ref", func() {
-				build.Spec.Notary = &corev1alpha1.NotaryConfig{
+				buildWithImageRef.Spec.Notary = &corev1alpha1.NotaryConfig{
 					V1: &corev1alpha1.NotaryV1Config{
 						URL: "some-url",
 						SecretRef: corev1alpha1.NotarySecretRef{
@@ -312,41 +348,41 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				err := build.Validate(ctx)
+				err := buildWithImageRef.Validate(ctx)
 				assert.EqualError(t, err, "missing field(s): spec.notary.v1.secretRef.name")
 			})
 		})
 
 		it("validates not registry AND volume cache are both specified", func() {
-			build.Spec.Cache = &BuildCacheConfig{
+			buildWithImageRef.Spec.Cache = &BuildCacheConfig{
 				Volume:   &BuildPersistentVolumeCache{ClaimName: "pvc"},
 				Registry: &RegistryCache{Tag: "test"},
 			}
 
-			assertValidationError(build, context.TODO(), apis.ErrGeneric("only one type of cache can be specified", "spec.cache.volume", "spec.cache.registry"))
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrGeneric("only one type of cache can be specified", "spec.cache.volume", "spec.cache.registry"))
 		})
 
 		it("combining errors", func() {
-			build.Spec.Tags = []string{}
-			build.Spec.Builder.Image = ""
-			assertValidationError(build, context.TODO(),
+			buildWithImageRef.Spec.Tags = []string{}
+			buildWithImageRef.Spec.Builder.Image = ""
+			assertValidationError(buildWithImageRef, context.TODO(),
 				apis.ErrMissingField("tags").ViaField("spec").
-					Also(apis.ErrMissingField("image").ViaField("spec", "builder")))
+					Also(apis.ErrGeneric("one of the image or builderRef fields must not be empty", "image", "builderRef").ViaField("spec", "builder")))
 		})
 
 		it("validates spec is immutable", func() {
-			original := build.DeepCopy()
+			original := buildWithImageRef.DeepCopy()
 
-			build.Spec.Source.Git.URL = "http://something/different"
-			err := build.Validate(apis.WithinUpdate(context.TODO(), original))
+			buildWithImageRef.Spec.Source.Git.URL = "http://something/different"
+			err := buildWithImageRef.Validate(apis.WithinUpdate(context.TODO(), original))
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "http://something/different")
 
 		})
 
 		it("validates kubernetes.io/os node selector is unset", func() {
-			build.Spec.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
-			assertValidationError(build, context.TODO(), apis.ErrInvalidKeyName(k8sOSLabel, "spec.nodeSelector", "os is determined automatically"))
+			buildWithImageRef.Spec.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
+			assertValidationError(buildWithImageRef, context.TODO(), apis.ErrInvalidKeyName(k8sOSLabel, "spec.nodeSelector", "os is determined automatically"))
 		})
 	})
 }
