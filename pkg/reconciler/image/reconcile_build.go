@@ -13,6 +13,8 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
+const BuildRunningReason = "BuildRunning"
+
 func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, latestBuild *buildapi.Build, sourceResolver *buildapi.SourceResolver, builder buildapi.BuilderResource, buildCacheName string) (buildapi.ImageStatus, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
@@ -156,4 +158,17 @@ func buildCounter(build *buildapi.Build) (int64, error) {
 
 	buildNumber := build.Labels[buildapi.BuildNumberLabel]
 	return strconv.ParseInt(buildNumber, 10, 64)
+}
+
+func buildRunningCondition(build *buildapi.Build, builder buildapi.BuilderResource) corev1alpha1.Conditions {
+	return corev1alpha1.Conditions{
+		{
+			Type:               corev1alpha1.ConditionReady,
+			Status:             corev1.ConditionUnknown,
+			Reason:             BuildRunningReason,
+			Message:            emptyMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+		},
+		builderCondition(builder),
+	}
 }
