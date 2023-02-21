@@ -49,9 +49,6 @@ spec:
     - name: sample-cluster-buildpack
       kind: ClusterBuildpack
       id: paketo-buildpacks/nodejs
-    - name: sample-cluster-store
-      kind: ClusterStore
-      id: paketo-buildpacks/nodejs
       version: 1.2.3
 ```
 
@@ -124,8 +121,8 @@ detection will be the group selected for the remainder of the build.
   A set of buildpack references. Each buildpack reference specified is one of the following:
   - A kubernetes object reference:
     - **`kind`** _(string, required)_\
-      The kubernetes kind, must be one of `Buildpack` (Builder only),
-      `ClusterBuildpack`, or `ClusterStore`.
+      The kubernetes kind, must be either `Buildpack` (Builder only), or
+      `ClusterBuildpack`.
 
     - **`name`** _(string, required)_\
       The name of the kubernetes object.
