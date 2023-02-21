@@ -1,9 +1,12 @@
 # Kpack Release Versioning
 
-Reference: [Semantic Versioning](http://semver.org)
+Reference: 
+ - [Semantic Versioning](http://semver.org)
+ - [Kubernetes Resource Versioning](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/)
 
 Legend:
 
-- **X.Y.Z** refers to the version (git tag) of kpack that is released.
-  This versions all the Custom Resource Definition (CRDs): builds, builders, stacks, stores, secrets, images, etc (**X** is the
-  major version, **Y** is the minor version, and **Z** is the patch version.)
+- kpack follows semantic versioning rules, where **X.Y.Z** refers to the version (git tag) of kpack that is released. 
+  (**X** is the major version, **Y** is the minor version, and **Z** is the patch version.)
+
+- kpack Custom Resource Definition (CRDs) follows the kubernetes resources versioning  
