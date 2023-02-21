@@ -5,7 +5,16 @@ The Buildpack, ClusterBuildpack, and ClusterStore resources are a repository of
 [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/)
 that can be used by kpack to build OCI images.
 
-These objects will be referenced by a [builder](builders.md) resource.
+These resources are to be used with the [Builder and
+ClusterBuilder](builders.md) resources.
+
+### <a id='cnb-buildpacks'></a>Difference from CNB buildpacks
+
+Kpack will allow any image with a valid `io.buildpacks.buildpack.layers` label
+to be used as the source of a buildpackage. This means that you can also use a
+CNB builder image (i.e. `index.docker.io/paketobuildpacks/builder-jammy-base`)
+in addition to regular CNB buildpack images (i.e.
+`gcr.io/paketo-buildpacks/java:8.9.0`).
 
 ### <a id='buildpack'></a>Buildpack Configuration
 
@@ -24,8 +33,9 @@ spec:
     image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
 ```
 
-* `serviceAccountName`: A service account with the sercrets needed to pull the buildpack image.
-* `source.image`: The url of the buildpackage.
+* `serviceAccountName`: A service account with the sercrets needed to pull the
+  buildpack image.
+* `source.image`: The uri of the buildpackage.
 
 ### <a id='cluster-buildpack'></a>Cluster Buildpack Configuration
 
@@ -46,15 +56,17 @@ spec:
     image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
 ```
 
-* `serviceAccountRef`: An object reference to a service account in any namespace. The object reference must contain `name` and `namespace`.
-* `source.image`: The url of the buildpackage.
+* `serviceAccountRef`: An object reference to a service account in any
+  namespace. The object reference must contain `name` and `namespace`.
+* `source.image`: The uri of the buildpackage.
 
 
 ### <a id='cluster-store'></a>Cluster Store Configuration
 
 ClusterStore is a cluster scoped resource that can reference multiple buildpackages.
 
-Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_clusterstore.md).
+Corresponding `kp` cli command docs
+[here](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp_clusterstore.md).
 
 ```yaml
 apiVersion: kpack.io/v1alpha2
@@ -68,13 +80,13 @@ spec:
   sources:
   - image: gcr.io/cf-build-service-public/node-engine-buildpackage@sha256:95ff756f0ef0e026440a8523f4bab02fd8b45dc1a8a3a7ba063cefdba5cb9493
   - image: gcr.io/cf-build-service-public/npm-buildpackage@sha256:5058ceb9a562ec647ea5a41008b0d11e32a56e13e8c9ec20c4db63d220373e33
-  - image: gcr.io/paketo-buildpacks/builder:base
+  - image: index.docker.io/paketobuildpacks/builder-jammy-base
 ```
 
-* `serviceAccountRef`: An object reference to a service account in any namespace. The object reference must contain `name` and `namespace`.
-* `sources`:  List of buildpackage images to make available in the ClusterStore. Each image is an object with the key image.
-
-> Note: ClusterBuilders will also work with a prebuilt builder image if a builpack is not available in a buildpackage.
+* `serviceAccountRef`: An object reference to a service account in any
+  namespace. The object reference must contain `name` and `namespace`.
+* `sources`:  List of buildpackage images to make available in the
+  ClusterStore. Each image is an object with the key image.
 
 
 ### Updating Buildpacks
