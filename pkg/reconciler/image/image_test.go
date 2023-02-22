@@ -46,7 +46,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		someValueToPassThrough       = "to-pass-through"
 		originalGeneration     int64 = 1
 	)
-	fakeTracker := testhelpers.FakeTracker{}
+	fakeTracker := &testhelpers.FakeTracker{}
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {

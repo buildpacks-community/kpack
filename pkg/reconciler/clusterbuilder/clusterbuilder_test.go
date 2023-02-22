@@ -43,7 +43,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	var (
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		fakeTracker     = testhelpers.FakeTracker{}
+		fakeTracker     = &testhelpers.FakeTracker{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -251,7 +251,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
-		it("tracks the stack and buildpack sources for a custom builder", func() {
+		it("tracks the stack and store for a custom builder", func() {
 			builderCreator.Record = buildapi.BuilderRecord{
 				Image: builderIdentifier,
 				Stack: corev1alpha1.BuildStack{
@@ -259,10 +259,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					ID:       "fake.stack.id",
 				},
 				Buildpacks: corev1alpha1.BuildpackMetadataList{},
-			}
-			builderCreator.ObjectsToTrack = []corev1.ObjectReference{
-				{Name: clusterStore.Name, Kind: clusterStore.Kind},
-				{Name: clusterBuildpack.Name, Kind: clusterBuildpack.Kind},
 			}
 
 			expectedBuilder := &buildapi.ClusterBuilder{
@@ -302,8 +298,9 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				kreconciler.KeyForObject(clusterStore), expectedBuilder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(clusterBuildpack), expectedBuilder.NamespacedName()))
+
+			require.True(t, fakeTracker.IsTrackingKind(
+				kreconciler.KeyForObject(clusterBuildpack).GroupKind, builder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {

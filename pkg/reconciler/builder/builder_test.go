@@ -44,7 +44,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	var (
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		fakeTracker     = testhelpers.FakeTracker{}
+		fakeTracker     = &testhelpers.FakeTracker{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -264,11 +264,6 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 				Buildpacks: corev1alpha1.BuildpackMetadataList{},
 			}
-			builderCreator.ObjectsToTrack = []corev1.ObjectReference{
-				{Name: clusterStore.Name, Kind: clusterStore.Kind},
-				{Name: buildpack.Name, Kind: buildpack.Kind, Namespace: testNamespace},
-				{Name: clusterBuildpack.Name, Kind: clusterBuildpack.Kind},
-			}
 
 			expectedBuilder := &buildapi.Builder{
 				ObjectMeta: builder.ObjectMeta,
@@ -310,11 +305,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack),
 				builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(buildpack),
+
+			require.True(t, fakeTracker.IsTrackingKind(
+				kreconciler.KeyForObject(buildpack).GroupKind,
 				builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(clusterBuildpack),
+			require.True(t, fakeTracker.IsTrackingKind(
+				kreconciler.KeyForObject(clusterBuildpack).GroupKind,
 				builder.NamespacedName()))
 		})
 

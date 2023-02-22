@@ -69,6 +69,7 @@ func NewController(
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
 	clusterBuilderInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
 	clusterStoreInformer.Informer().AddEventHandler(controller.HandleAll(
@@ -80,11 +81,6 @@ func NewController(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
-	))
-	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(
-		controller.EnsureTypeMeta(
-			c.Tracker.OnChanged,
-			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
 	))
 
 	return impl, func() {
@@ -135,7 +131,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.ClusterBuilder) (buildapi.BuilderRecord, error) {
-	err := c.Tracker.Track(reconciler.Key{
+	c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
 			Name:      builder.Spec.Stack.Name,
 			Namespace: corev1.NamespaceAll,
@@ -145,17 +141,33 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 			Kind:  buildapi.ClusterStackKind,
 		},
 	}, builder.NamespacedName())
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
 
-	var clusterStore *buildapi.ClusterStore
+	var (
+		clusterStore *buildapi.ClusterStore
+		err          error
+	)
 	if builder.Spec.Store.Name != "" {
+		c.Tracker.Track(reconciler.Key{
+			NamespacedName: types.NamespacedName{
+				Name:      builder.Spec.Store.Name,
+				Namespace: metav1.NamespaceAll,
+			},
+			GroupKind: schema.GroupKind{
+				Group: "kpack.io",
+				Kind:  buildapi.ClusterStoreKind,
+			},
+		}, builder.NamespacedName())
+
 		clusterStore, err = c.ClusterStoreLister.Get(builder.Spec.Store.Name)
 		if err != nil {
 			return buildapi.BuilderRecord{}, err
 		}
 	}
+
+	c.Tracker.TrackKind(schema.GroupKind{
+		Group: "kpack.io",
+		Kind:  buildapi.ClusterBuildpackKind,
+	}, builder.NamespacedName())
 
 	clusterBuildpacks, err := c.ClusterBuildpackLister.List(labels.Everything())
 	if err != nil {
@@ -181,25 +193,9 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 
 	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
 
-	buildpackSources, buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	_, buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
-	}
-
-	for _, source := range buildpackSources {
-		err = c.Tracker.Track(reconciler.Key{
-			NamespacedName: types.NamespacedName{
-				Name:      source.Name,
-				Namespace: source.Namespace,
-			},
-			GroupKind: schema.GroupKind{
-				Group: "kpack.io",
-				Kind:  source.Kind,
-			},
-		}, builder.NamespacedName())
-		if err != nil {
-			return buildapi.BuilderRecord{}, err
-		}
 	}
 
 	return buildRecord, nil
