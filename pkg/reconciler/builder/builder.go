@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/logging/logkey"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,11 +33,15 @@ const (
 	ReconcilerName = "Builders"
 )
 
+type BuilderCreator interface {
+	CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) ([]corev1.ObjectReference, buildapi.BuilderRecord, error)
+}
+
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
 	builderInformer buildinformers.BuilderInformer,
-	builderCreator cnb.BuilderCreator,
+	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	buildpackInformer buildinformers.BuildpackInformer,
@@ -96,7 +102,7 @@ func NewController(
 type Reconciler struct {
 	Client                 versioned.Interface
 	BuilderLister          buildlisters.BuilderLister
-	BuilderCreator         cnb.BuilderCreator
+	BuilderCreator         BuilderCreator
 	KeychainFactory        registry.KeychainFactory
 	Tracker                reconciler.Tracker
 	ClusterStoreLister     buildlisters.ClusterStoreLister
@@ -139,7 +145,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 	err := c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
 			Name:      builder.Spec.Stack.Name,
-			Namespace: v1.NamespaceAll,
+			Namespace: metav1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
 			Group: "kpack.io",
@@ -223,6 +229,6 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha2().Builders(desired.Namespace).UpdateStatus(ctx, desired, v1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().Builders(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }

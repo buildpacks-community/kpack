@@ -23,7 +23,7 @@ func testClusterBuildpackValidation(t *testing.T, when spec.G, it spec.S) {
 			Namespace: "custom-builder-namespace",
 		},
 		Spec: ClusterBuildpackSpec{
-			Source: corev1alpha1.ImageSource{
+			ImageSource: corev1alpha1.ImageSource{
 				Image: "some-registry.io/store-image-1@sha256:78c1b9419976227e05be9d243b7fa583bea44a5258e52018b2af4cdfe23d148d",
 			},
 			ServiceAccountRef: &corev1.ObjectReference{
@@ -45,15 +45,15 @@ func testClusterBuildpackValidation(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("missing source image", func() {
-			clusterBuildpack.Spec.Source.Image = ""
-			assertValidationError(clusterBuildpack, apis.ErrMissingField("image").ViaField("spec", "source"))
+			clusterBuildpack.Spec.Image = ""
+			assertValidationError(clusterBuildpack, apis.ErrMissingField("image").ViaField("spec"))
 		})
 
 		it("invalid source image", func() {
-			clusterBuildpack.Spec.Source.Image = "ftp//invalid/tag@@"
+			clusterBuildpack.Spec.Image = "ftp//invalid/tag@@"
 
 			assertValidationError(clusterBuildpack,
-				apis.ErrInvalidValue(clusterBuildpack.Spec.Source.Image, "image").ViaField("spec", "source"),
+				apis.ErrInvalidValue(clusterBuildpack.Spec.Image, "image").ViaField("spec"),
 			)
 		})
 

@@ -26,8 +26,6 @@ type CreateBuilderArgs struct {
 	BuilderSpec  buildapi.BuilderSpec
 }
 
-var _ cnb.BuilderCreator = (*FakeBuilderCreator)(nil)
-
 func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, builder buildapi.BuilderSpec) ([]corev1.ObjectReference, buildapi.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Context:      ctx,

@@ -22,7 +22,7 @@ func testBuildpackValidation(t *testing.T, when spec.G, it spec.S) {
 			Namespace: "custom-builder-namespace",
 		},
 		Spec: BuildpackSpec{
-			Source: corev1alpha1.ImageSource{
+			ImageSource: corev1alpha1.ImageSource{
 				Image: "some-registry.io/store-image-1@sha256:78c1b9419976227e05be9d243b7fa583bea44a5258e52018b2af4cdfe23d148d",
 			},
 			ServiceAccountName: "some-service-account",
@@ -56,15 +56,15 @@ func testBuildpackValidation(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("missing source image", func() {
-			buildpack.Spec.Source.Image = ""
-			assertValidationError(buildpack, apis.ErrMissingField("image").ViaField("spec", "source"))
+			buildpack.Spec.Image = ""
+			assertValidationError(buildpack, apis.ErrMissingField("image").ViaField("spec"))
 		})
 
 		it("invalid source image", func() {
-			buildpack.Spec.Source.Image = "ftp//invalid/tag@@"
+			buildpack.Spec.Image = "ftp//invalid/tag@@"
 
 			assertValidationError(buildpack,
-				apis.ErrInvalidValue(buildpack.Spec.Source.Image, "image").ViaField("spec", "source"),
+				apis.ErrInvalidValue(buildpack.Spec.Image, "image").ViaField("spec"),
 			)
 		})
 	})

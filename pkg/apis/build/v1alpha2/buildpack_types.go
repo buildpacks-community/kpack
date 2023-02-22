@@ -28,8 +28,8 @@ type Buildpack struct {
 // +k8s:openapi-gen=true
 type BuildpackSpec struct {
 	// +listType
-	Source             corev1alpha1.ImageSource `json:"source,omitempty"`
-	ServiceAccountName string                   `json:"serviceAccountName,omitempty"`
+	corev1alpha1.ImageSource `json:",inline"`
+	ServiceAccountName       string `json:"serviceAccountName,omitempty"`
 }
 
 // +k8s:openapi-gen=true

@@ -63,7 +63,7 @@ func testBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initialGeneration,
 		},
 		Spec: buildapi.BuildpackSpec{
-			Source: corev1alpha1.ImageSource{
+			ImageSource: corev1alpha1.ImageSource{
 				Image: "some.registry/some-image-2",
 			},
 		},
@@ -133,7 +133,7 @@ func testBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
 
 			_, StoreSpec := fakeStoreReader.ReadArgsForCall(0)
-			assert.Equal(t, []corev1alpha1.ImageSource{bp.Spec.Source}, StoreSpec)
+			assert.Equal(t, []corev1alpha1.ImageSource{bp.Spec.ImageSource}, StoreSpec)
 		})
 
 		it("uses the keychain of the referenced service account", func() {

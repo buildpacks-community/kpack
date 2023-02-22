@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/logging/logkey"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,11 +33,15 @@ const (
 	ReconcilerName = "ClusterBuilders"
 )
 
+type BuilderCreator interface {
+	CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) ([]corev1.ObjectReference, buildapi.BuilderRecord, error)
+}
+
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
 	clusterBuilderInformer buildinformers.ClusterBuilderInformer,
-	builderCreator cnb.BuilderCreator,
+	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
@@ -90,7 +95,7 @@ func NewController(
 type Reconciler struct {
 	Client                 versioned.Interface
 	ClusterBuilderLister   buildlisters.ClusterBuilderLister
-	BuilderCreator         cnb.BuilderCreator
+	BuilderCreator         BuilderCreator
 	KeychainFactory        registry.KeychainFactory
 	Tracker                reconciler.Tracker
 	ClusterStoreLister     buildlisters.ClusterStoreLister
@@ -133,7 +138,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 	err := c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
 			Name:      builder.Spec.Stack.Name,
-			Namespace: v1.NamespaceAll,
+			Namespace: corev1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
 			Group: "kpack.io",

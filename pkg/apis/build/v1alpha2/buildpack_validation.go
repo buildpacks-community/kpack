@@ -18,5 +18,5 @@ func (cb *Buildpack) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (s *BuildpackSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validate.Image(s.Source.Image).ViaField("source")
+	return validate.Image(s.Image)
 }

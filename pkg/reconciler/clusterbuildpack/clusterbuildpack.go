@@ -128,7 +128,7 @@ func (c *Reconciler) reoncileClusterBuildpackStatus(ctx context.Context, cluster
 		return clusterBuildpack, err
 	}
 
-	buildpacks, err := c.StoreReader.Read(keychain, []corev1alpha1.ImageSource{clusterBuildpack.Spec.Source})
+	buildpacks, err := c.StoreReader.Read(keychain, []corev1alpha1.ImageSource{clusterBuildpack.Spec.ImageSource})
 	if err != nil {
 		clusterBuildpack.Status = buildapi.ClusterBuildpackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterBuildpack.Generation, err),

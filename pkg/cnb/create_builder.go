@@ -20,18 +20,12 @@ type LifecycleProvider interface {
 	LayerForOS(os string) (ggcrv1.Layer, LifecycleMetadata, error)
 }
 
-type BuilderCreator interface {
-	CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) ([]k8scorev1.ObjectReference, buildapi.BuilderRecord, error)
-}
-
 type RemoteBuilderCreator struct {
 	RegistryClient    RegistryClient
 	LifecycleProvider LifecycleProvider
 	KpackVersion      string
 	KeychainFactory   registry.KeychainFactory
 }
-
-var _ BuilderCreator = (*RemoteBuilderCreator)(nil)
 
 func (r *RemoteBuilderCreator) CreateBuilder(
 	ctx context.Context,

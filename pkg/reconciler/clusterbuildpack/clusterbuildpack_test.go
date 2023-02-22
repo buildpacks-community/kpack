@@ -61,7 +61,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			Generation: initialGeneration,
 		},
 		Spec: buildapi.ClusterBuildpackSpec{
-			Source: corev1alpha1.ImageSource{
+			ImageSource: corev1alpha1.ImageSource{
 				Image: "some.registry/some-image-2",
 			},
 		},
@@ -131,7 +131,7 @@ func testClusterBuildpackReconciler(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, 1, fakeStoreReader.ReadCallCount())
 
 			_, clusterStoreSpec := fakeStoreReader.ReadArgsForCall(0)
-			assert.Equal(t, []corev1alpha1.ImageSource{cbp.Spec.Source}, clusterStoreSpec)
+			assert.Equal(t, []corev1alpha1.ImageSource{cbp.Spec.ImageSource}, clusterStoreSpec)
 		})
 
 		it("uses the keychain of the referenced service account", func() {

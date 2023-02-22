@@ -27,15 +27,14 @@ metadata:
   name: sample-buildpack
 spec:
   serviceAccountName: sample-sa
-  source:
-    # image: gcr.io/paketo-buildpacks/java
-    # image: gcr.io/paketo-buildpacks/java:8.9.0
-    image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
+  # image: gcr.io/paketo-buildpacks/java
+  # image: gcr.io/paketo-buildpacks/java:8.9.0
+  image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
 ```
 
 * `serviceAccountName`: A service account with the sercrets needed to pull the
   buildpack image.
-* `source.image`: The uri of the buildpackage.
+* `image`: The uri of the buildpackage.
 
 ### <a id='cluster-buildpack'></a>Cluster Buildpack Configuration
 
@@ -50,15 +49,14 @@ spec:
   serviceAccountRef:
     name: sample-sa
     namespace: sample-namespace
-  source:
-    # image: gcr.io/paketo-buildpacks/java
-    # image: gcr.io/paketo-buildpacks/java:8.9.0
-    image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
+  # image: gcr.io/paketo-buildpacks/java
+  # image: gcr.io/paketo-buildpacks/java:8.9.0
+  image: gcr.io/paketo-buildpacks/java@sha256:fc1c6fba46b582f63b13490b89e50e93c95ce08142a8737f4a6b70c826c995de
 ```
 
 * `serviceAccountRef`: An object reference to a service account in any
   namespace. The object reference must contain `name` and `namespace`.
-* `source.image`: The uri of the buildpackage.
+* `image`: The uri of the buildpackage.
 
 
 ### <a id='cluster-store'></a>Cluster Store Configuration

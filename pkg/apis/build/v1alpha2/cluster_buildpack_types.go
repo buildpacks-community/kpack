@@ -29,8 +29,8 @@ type ClusterBuildpack struct {
 // +k8s:openapi-gen=true
 type ClusterBuildpackSpec struct {
 	// +listType
-	Source            corev1alpha1.ImageSource `json:"source,omitempty"`
-	ServiceAccountRef *corev1.ObjectReference  `json:"serviceAccountRef,omitempty"`
+	corev1alpha1.ImageSource `json:"source,omitempty"`
+	ServiceAccountRef        *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 }
 
 // +k8s:openapi-gen=true

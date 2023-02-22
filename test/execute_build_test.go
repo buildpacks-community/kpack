@@ -153,7 +153,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: buildpackName,
 			},
 			Spec: buildapi.BuildpackSpec{
-				Source: corev1alpha1.ImageSource{
+				ImageSource: corev1alpha1.ImageSource{
 					Image: "gcr.io/paketo-buildpacks/bellsoft-liberica",
 				},
 			},
@@ -165,7 +165,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterBuildpackName,
 			},
 			Spec: buildapi.ClusterBuildpackSpec{
-				Source: corev1alpha1.ImageSource{
+				ImageSource: corev1alpha1.ImageSource{
 					Image: "gcr.io/paketo-buildpacks/nodejs",
 				},
 			},
