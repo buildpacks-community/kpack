@@ -2092,7 +2092,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			it("does not schedule a build if the previous build is running", func() {
+			it("does not schedule a build if the previous build is running and updates image status with build status", func() {
 				imageWithBuilder.Status.BuildCounter = 1
 				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 
@@ -2132,8 +2132,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
-											Type:   corev1alpha1.ConditionSucceeded,
-											Status: corev1.ConditionUnknown,
+											Type:    corev1alpha1.ConditionSucceeded,
+											Status:  corev1.ConditionUnknown,
+											Message: "Some build message",
 										},
 									},
 								},
@@ -2141,6 +2142,33 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Image{
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
+								Status: buildapi.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions: corev1alpha1.Conditions{
+											{
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionUnknown,
+												Reason:  "BuildRunning",
+												Message: "Some build message",
+											},
+											{
+												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+									LatestBuildRef: "image-name-build-1",
+									BuildCounter:   1,
+								},
+							},
+						},
+					},
 				})
 			})
 

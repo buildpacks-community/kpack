@@ -143,7 +143,6 @@ func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) 
 		return nil, err
 	} else if k8serrors.IsNotFound(err) {
 		image.Status.Conditions = image.BuilderNotFound()
-		image.Status.ObservedGeneration = image.Generation
 		return image, nil
 	}
 
@@ -153,6 +152,7 @@ func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) 
 	}
 
 	if lastBuild.IsRunning() {
+		image.Status.Conditions = buildRunningCondition(lastBuild, builder)
 		return image, nil
 	}
 
