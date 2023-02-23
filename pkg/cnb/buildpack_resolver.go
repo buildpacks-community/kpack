@@ -17,14 +17,12 @@ import (
 type BuildpackResolver interface {
 	resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
 	ClusterStoreObservedGeneration() int64
-	UsedObjects() []v1.ObjectReference
 }
 
 type buildpackResolver struct {
 	clusterstore      *v1alpha2.ClusterStore
 	buildpacks        []*v1alpha2.Buildpack
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack
-	usedObjects       []v1.ObjectReference
 }
 
 func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
@@ -32,7 +30,6 @@ func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1a
 		clusterstore:      clusterStore,
 		buildpacks:        buildpacks,
 		clusterBuildpacks: clusterBuildpacks,
-		usedObjects:       make([]v1.ObjectReference, 0),
 	}
 }
 
@@ -41,10 +38,6 @@ func (r *buildpackResolver) ClusterStoreObservedGeneration() int64 {
 		return r.clusterstore.Status.ObservedGeneration
 	}
 	return 0
-}
-
-func (r *buildpackResolver) UsedObjects() []v1.ObjectReference {
-	return r.usedObjects
 }
 
 func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
@@ -111,13 +104,11 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 		if err != nil {
 			return K8sRemoteBuildpack{}, err
 		}
-		r.usedObjects = append(r.usedObjects, bp.source)
 		return bp, nil
 	}
 
 	for _, result := range matchingBuildpacks {
 		if result.Buildpack.Version == ref.Version {
-			r.usedObjects = append(r.usedObjects, result.source)
 			return result, nil
 		}
 	}

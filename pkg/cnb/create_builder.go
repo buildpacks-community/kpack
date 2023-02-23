@@ -8,7 +8,6 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	k8scorev1 "k8s.io/api/core/v1"
 )
 
 type RegistryClient interface {
@@ -32,22 +31,22 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	builderKeychain authn.Keychain,
 	fetcher RemoteBuildpackFetcher,
 	clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec,
-) ([]k8scorev1.ObjectReference, buildapi.BuilderRecord, error) {
+) (buildapi.BuilderRecord, error) {
 	buildImage, _, err := r.RegistryClient.Fetch(builderKeychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	builderBldr := newBuilderBldr(r.KpackVersion)
 
 	err = builderBldr.AddStack(buildImage, clusterStack)
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.LayerForOS(builderBldr.os)
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
@@ -58,7 +57,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		for _, buildpack := range group.Group {
 			remoteBuildpack, err := fetcher.ResolveAndFetch(ctx, buildpack)
 			if err != nil {
-				return nil, buildapi.BuilderRecord{}, err
+				return buildapi.BuilderRecord{}, err
 			}
 
 			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
@@ -68,17 +67,17 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 
 	writeableImage, err := builderBldr.WriteableImage()
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	identifier, err := r.RegistryClient.Save(builderKeychain, spec.Tag, writeableImage)
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	config, err := writeableImage.ConfigFile()
 	if err != nil {
-		return nil, buildapi.BuilderRecord{}, err
+		return buildapi.BuilderRecord{}, err
 	}
 
 	builder := buildapi.BuilderRecord{
@@ -94,7 +93,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		OS:                      config.OS,
 	}
 
-	return fetcher.UsedObjects(), builder, nil
+	return builder, nil
 }
 
 func buildpackMetadata(buildpacks []DescriptiveBuildpackInfo) corev1alpha1.BuildpackMetadataList {

@@ -63,10 +63,6 @@ func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuild
 	return buildpack, nil
 }
 
-func (f *fakeResolver) UsedObjects() []k8scorev1.ObjectReference {
-	return nil
-}
-
 func (f *fakeResolver) AddBuildpack(t *testing.T, ref buildapi.BuilderBuildpackRef, buildpack K8sRemoteBuildpack) {
 	t.Helper()
 	assert.NotEqual(t, ref.Id, "", "buildpack ref missing id")

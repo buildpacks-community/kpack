@@ -8,7 +8,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -193,12 +192,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				buildpack, err := resolver.resolve(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-				expectedUsedObjects := []corev1.ObjectReference{{
-					Name: "some-store",
-					Kind: "ClusterStore",
-				}}
-				assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 			})
 
 			it("finds it using id and version", func() {
@@ -208,26 +201,18 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				buildpack, err := resolver.resolve(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-				expectedUsedObjects := []corev1.ObjectReference{{
-					Name: "some-store",
-					Kind: "ClusterStore",
-				}}
-				assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 			})
 
 			it("fails on invalid id", func() {
 				ref := makeRef("fake-buildpack", "")
 				_, err := resolver.resolve(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-				assert.Len(t, resolver.UsedObjects(), 0)
 			})
 
 			it("fails on unknown version", func() {
 				ref := makeRef("io.buildpack.multi", "8.0.1")
 				_, err := resolver.resolve(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
-				assert.Len(t, resolver.UsedObjects(), 0)
 			})
 		})
 
@@ -301,13 +286,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.meta",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds nested ids", func() {
@@ -317,13 +295,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.meta",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds it using id and version", func() {
@@ -333,27 +304,12 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.multi-8.0.0",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
-				})
-
-				it("fails on invalid id", func() {
-					ref := makeRef("fake-buildpack", "")
-					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 
@@ -365,27 +321,18 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.meta",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeBuildpack", "", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "Buildpack", "", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "no buildpack with name 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 
@@ -397,13 +344,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.meta",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds nested id in resource", func() {
@@ -413,13 +353,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.meta",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds the correct version in resource", func() {
@@ -429,34 +362,24 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name:      "io.buildpack.multi",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "Buildpack", "io.buildpack.multi", "8.0.1")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 		})
@@ -527,12 +450,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.meta",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds nested ids", func() {
@@ -542,12 +459,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.meta",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds it using id and version", func() {
@@ -557,26 +468,18 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.multi-8.0.0",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("fails on invalid id", func() {
 					ref := makeRef("fake-buildpack", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 
@@ -588,26 +491,18 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.meta",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeClusterBuildpack", "", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "ClusterBuildpack", "", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "no cluster buildpack with name 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 
@@ -619,12 +514,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.meta",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds nested id in resource", func() {
@@ -634,12 +523,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.meta",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("finds the correct version in resource", func() {
@@ -649,33 +532,24 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					buildpack, err := resolver.resolve(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-					expectedUsedObjects := []corev1.ObjectReference{{
-						Name: "io.buildpack.multi",
-						Kind: "ClusterBuildpack",
-					}}
-					assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "ClusterBuildpack", "io.buildpack.multi", "8.0.1")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
 					_, err := resolver.resolve(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
-					assert.Len(t, resolver.UsedObjects(), 0)
 				})
 			})
 		})
@@ -753,23 +627,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				buildpack, err = resolver.resolve(makeRef("io.buildpack.multi", "9.0.0"))
 				assert.Nil(t, err)
 				assert.Equal(t, v9Buildpack, buildpack.Buildpack)
-
-				expectedUsedObjects := []corev1.ObjectReference{
-					{
-						Name: "some-store",
-						Kind: "ClusterStore",
-					},
-					{
-						Name:      "io.buildpack.multi-8.0.0",
-						Namespace: testNamespace,
-						Kind:      "Buildpack",
-					},
-					{
-						Name: "io.buildpack.multi-9.0.0",
-						Kind: "ClusterBuildpack",
-					},
-				}
-				assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 			})
 
 			it("resolves buildpacks before anything else", func() {
@@ -779,13 +636,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				buildpack, err := resolver.resolve(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-				expectedUsedObjects := []corev1.ObjectReference{{
-					Name:      "io.buildpack.multi-8.0.0",
-					Namespace: testNamespace,
-					Kind:      "Buildpack",
-				}}
-				assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 			})
 
 			it("resolves cluster buildpacks before cluster store", func() {
@@ -795,12 +645,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				buildpack, err := resolver.resolve(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
-
-				expectedUsedObjects := []corev1.ObjectReference{{
-					Name: "io.buildpack.multi-9.0.0",
-					Kind: "ClusterBuildpack",
-				}}
-				assert.Equal(t, expectedUsedObjects, resolver.UsedObjects())
 			})
 		})
 
