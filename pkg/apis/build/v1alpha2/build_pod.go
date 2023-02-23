@@ -31,10 +31,10 @@ const (
 	secretVolumeNameTemplate     = "secret-volume-%v"
 	pullSecretVolumeNameTemplate = "pull-secret-volume-%v"
 
-	completionTerminationMessagePath = "/tmp/termination-log"
-	cosignDefaultSecretPath          = "/var/build-secrets/cosign/%s"
-	defaultSecretPath                = "/var/build-secrets/%s"
-	ReportTOMLPath                   = "/var/report/report.toml"
+	terminationMessagePath  = "/tmp/termination-log"
+	cosignDefaultSecretPath = "/var/build-secrets/cosign/%s"
+	defaultSecretPath       = "/var/build-secrets/%s"
+	ReportTOMLPath          = "/var/report/report.toml"
 
 	BuildLabel = "kpack.io/build"
 	k8sOSLabel = "kubernetes.io/os"
@@ -105,7 +105,7 @@ func terminationMsgPath(os string) string {
 	case "windows":
 		return ""
 	default:
-		return completionTerminationMessagePath
+		return terminationMessagePath
 	}
 }
 
@@ -320,6 +320,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			}
 			return []corev1.VolumeMount{}
 		}()),
+		TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 		Env: []corev1.EnvVar{
 			homeEnv,
 			platformApiVersionEnvVar,
@@ -334,10 +336,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		userprofileHomeEnv(),
 	)
 	detectContainer := corev1.Container{
-		Name:      DetectContainerName,
-		Image:     b.Spec.Builder.Image,
-		Command:   []string{"/cnb/lifecycle/detector"},
-		Resources: b.Spec.Resources,
+		Name:                     DetectContainerName,
+		Image:                    b.Spec.Builder.Image,
+		Command:                  []string{"/cnb/lifecycle/detector"},
+		Resources:                b.Spec.Resources,
+		TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 		Args: []string{
 			"-app=/workspace",
 			"-group=/layers/group.toml",
@@ -389,7 +393,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
-							{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
+							{Name: TerminationMessagePathEnvVar, Value: terminationMessagePath},
 						},
 						Args: args(
 							b.notaryArgs(),
@@ -462,9 +466,15 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								Name:  buildChangesEnvVar,
 								Value: b.BuildChanges(),
 							},
+							corev1.EnvVar{
+								Name:  TerminationMessagePathEnvVar,
+								Value: terminationMessagePath,
+							},
 						),
-						ImagePullPolicy: corev1.PullIfNotPresent,
-						WorkingDir:      "/workspace",
+						ImagePullPolicy:          corev1.PullIfNotPresent,
+						WorkingDir:               "/workspace",
+						TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 						VolumeMounts: volumeMounts(
 							secretVolumeMounts,
 							imagePullVolumeMounts,
@@ -531,7 +541,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							homeEnv,
 							platformApiVersionEnvVar,
 						},
-						ImagePullPolicy: corev1.PullIfNotPresent,
+						ImagePullPolicy:          corev1.PullIfNotPresent,
+						TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 					},
 					ifWindows(buildContext.os(),
 						addNetworkWaitLauncherVolume(),
@@ -567,11 +579,13 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 				step(
 					corev1.Container{
-						Name:            ExportContainerName,
-						Image:           b.Spec.Builder.Image,
-						Command:         []string{"/cnb/lifecycle/exporter"},
-						Resources:       b.Spec.Resources,
-						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
+						Name:                     ExportContainerName,
+						Image:                    b.Spec.Builder.Image,
+						Command:                  []string{"/cnb/lifecycle/exporter"},
+						Resources:                b.Spec.Resources,
+						SecurityContext:          containerSecurityContext(buildContext.BuildPodBuilderConfig),
+						TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 						Args: args(
 							[]string{
 								"-layers=/layers",
@@ -951,7 +965,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 					Command: []string{"/cnb/process/completion"},
 					Env: []corev1.EnvVar{
 						{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
-						{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
+						{Name: TerminationMessagePathEnvVar, Value: terminationMessagePath},
 					},
 					Args: args(
 						b.notaryArgs(),
@@ -973,11 +987,13 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			},
 			InitContainers: []corev1.Container{
 				{
-					Name:            RebaseContainerName,
-					Image:           images.RebaseImage,
-					Command:         []string{"/cnb/process/rebase"},
-					Resources:       b.Spec.Resources,
-					SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
+					Name:                     RebaseContainerName,
+					Image:                    images.RebaseImage,
+					Command:                  []string{"/cnb/process/rebase"},
+					Resources:                b.Spec.Resources,
+					TerminationMessagePath:   terminationMsgPath(buildContext.os()),
+					TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+					SecurityContext:          containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					Args: args(a(
 						"--run-image",
 						runImage,

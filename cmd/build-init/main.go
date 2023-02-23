@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -19,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/cnb"
@@ -52,6 +54,8 @@ var (
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	imagePullSecrets        flaghelpers.CredentialsFlags
+	terminationMsgPath      string
+	logger                  *log.Logger
 )
 
 func init() {
@@ -61,6 +65,8 @@ func init() {
 	flag.Var(&dockerCfgCredentials, "dockercfg", "Docker Cfg credentials in the form of the path to the credential")
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&imagePullSecrets, "imagepull", "Builder Image pull credentials in the form of the path to the credential")
+	flag.StringVar(&terminationMsgPath, "termination-message-path", os.Getenv(buildapi.TerminationMessagePathEnvVar), "Termination path for build metadata")
+	logger = log.New(os.Stdout, "", 0)
 }
 
 const (
@@ -77,11 +83,9 @@ const (
 func main() {
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", 0)
-
 	err := prepareForWindows(*hostName)
 	if err != nil {
-		logger.Fatal(err)
+		logFatal(err)
 	}
 
 	if err := buildchange.Log(logger, *buildChanges); err != nil {
@@ -93,7 +97,7 @@ func main() {
 	logLoadingSecrets(logger, basicDockerCredentials)
 	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
-		logger.Fatal(err)
+		logFatal(err)
 	}
 
 	for _, c := range append(dockerCfgCredentials, dockerConfigCredentials...) {
@@ -101,7 +105,7 @@ func main() {
 
 		dockerCfgCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
-			logger.Fatal(err)
+			logFatal(err)
 		}
 
 		for domain := range dockerCfgCreds {
@@ -110,7 +114,7 @@ func main() {
 
 		creds, err = creds.Append(dockerCfgCreds)
 		if err != nil {
-			logger.Fatal(err)
+			logFatal(err)
 		}
 	}
 
@@ -121,12 +125,12 @@ func main() {
 	logger.Println("Loading cluster credential helpers")
 	k8sNodeKeychain, err := k8schain.NewNoClient(context.Background())
 	if err != nil {
-		logger.Fatal(err)
+		logFatal(err)
 	}
 
 	err = dockercreds.VerifyWriteAccess(authn.NewMultiKeychain(creds, k8sNodeKeychain), *imageTag)
 	if err != nil {
-		logger.Fatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
+		logFatal(errors.Wrapf(err, "Error verifying write access to %q", *imageTag))
 	}
 
 	for _, c := range imagePullSecrets {
@@ -134,29 +138,29 @@ func main() {
 
 		imagePullCreds, err := dockercreds.ParseDockerConfigSecret(credPath)
 		if err != nil {
-			logger.Fatal(err)
+			logFatal(err)
 		}
 
 		creds, err = creds.Append(imagePullCreds)
 		if err != nil {
-			logger.Fatalf("error appending image pull creds %s", err)
+			logFatalF("error appending image pull creds %s", err)
 		}
 	}
 
 	keychain := authn.NewMultiKeychain(creds, k8sNodeKeychain)
 	err = dockercreds.VerifyReadAccess(keychain, *runImage)
 	if err != nil {
-		logger.Fatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
+		logFatal(errors.Wrapf(err, "Error verifying read access to run image %q", *runImage))
 	}
 
 	err = fetchSource(logger, keychain)
 	if err != nil {
-		logger.Fatal(err)
+		logFatal(err)
 	}
 
 	err = cnb.ProcessProjectDescriptor(filepath.Join(appDir, *sourceSubPath), *descriptorPath, platformDir, logger)
 	if err != nil {
-		logger.Fatalf("error while processing the project descriptor: %s", err)
+		logFatalF("error while processing the project descriptor: %s", err)
 	}
 
 	if *builderImage != "" && *builderName != "" && *builderKind != "" {
@@ -166,13 +170,31 @@ func main() {
 
 	err = cnb.SetupPlatformEnvVars(platformDir)
 	if err != nil {
-		logger.Fatalf("error setting up platform env vars %s", err)
+		logFatalF("error setting up platform env vars %s", err)
 	}
 
 	err = creds.Save(path.Join(secretsHome, ".docker", "config.json"))
 	if err != nil {
-		logger.Fatalf("error writing docker creds %s", err)
+		logFatalF("error writing docker creds %s", err)
 	}
+}
+
+func logFatalF(format string, v ...any) {
+	logFatal(fmt.Sprintf(format, v...))
+}
+
+func logFatal(v ...any) {
+	str := fmt.Sprintln(v...)
+
+	if err := os.MkdirAll(filepath.Dir(terminationMsgPath), 0777); err != nil {
+		logger.Println(err)
+	}
+
+	if err := os.WriteFile(terminationMsgPath, []byte(str), 0666); err != nil {
+		logger.Println(err)
+	}
+
+	logger.Fatal(str)
 }
 
 func prepareForWindows(hostname string) error {

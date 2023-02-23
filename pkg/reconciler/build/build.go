@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
@@ -253,10 +254,24 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 				},
 			}
 		}
+
+		message := ""
+		for _, containerStatus := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+			if buildStepFailed(containerStatus) {
+				message = fmt.Sprintf("build %s failed on step %s \n", pod.Labels["image.kpack.io/buildNumber"], containerStatus.Name)
+				if terminationMessage := containerStatus.State.Terminated.Message; terminationMessage != "" {
+					message += terminationMessage
+				}
+				break
+			}
+		}
+
 		return corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionFalse,
+				Reason:             buildapi.BuildFailed,
+				Message:            message,
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
@@ -313,6 +328,10 @@ func stepsCompleted(pod *corev1.Pod) []string {
 
 func buildStepCompleted(s corev1.ContainerStatus) bool {
 	return s.State.Terminated != nil && s.State.Terminated.ExitCode == 0 && buildapi.IsBuildStep(s.Name)
+}
+
+func buildStepFailed(s corev1.ContainerStatus) bool {
+	return s.State.Terminated != nil && s.State.Terminated.ExitCode != 0 && buildapi.IsBuildStep(s.Name)
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Build) error {

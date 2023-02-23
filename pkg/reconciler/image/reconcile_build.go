@@ -87,6 +87,7 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 			Type:               corev1alpha1.ConditionReady,
 			Status:             unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
 			Message:            emptyMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			Reason:             emptyReasonIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
@@ -106,6 +107,13 @@ func emptyMessageIfNil(condition *corev1alpha1.Condition) string {
 		return ""
 	}
 	return condition.Message
+}
+
+func emptyReasonIfNil(condition *corev1alpha1.Condition) string {
+	if condition == nil {
+		return ""
+	}
+	return condition.Reason
 }
 
 func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
