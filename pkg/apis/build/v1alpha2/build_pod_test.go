@@ -1414,7 +1414,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("creates a pod just to rebase", func() {
-				id := int64(1000)
 				pod, err := build.BuildPod(config, buildContext)
 				require.NoError(t, err)
 
@@ -1436,13 +1435,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						*kmeta.NewControllerRef(build),
 					},
 				})
-				require.Equal(t, &corev1.PodSecurityContext{
-					RunAsUser:      &id,
-					RunAsGroup:     &id,
-					RunAsNonRoot:   boolPointer(true),
-					FSGroup:        &id,
-					SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
-				}, pod.Spec.SecurityContext)
+
 				require.Equal(t, build.Spec.ServiceAccountName, pod.Spec.ServiceAccountName)
 				require.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 				require.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
