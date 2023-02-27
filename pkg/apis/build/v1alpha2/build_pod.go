@@ -61,6 +61,8 @@ const (
 	TerminationMessagePathEnvVar = "TERMINATION_MESSAGE_PATH"
 
 	PlatformEnvVarPrefix = "PLATFORM_ENV_"
+	cnbUid               = 1000
+	cnbGid               = 1000
 )
 
 type ServiceBinding interface {
@@ -667,6 +669,10 @@ func boolPointer(b bool) *bool {
 	return &b
 }
 
+func int64Pointer(i int64) *int64 {
+	return &i
+}
+
 func containerSecurityContext(config BuildPodBuilderConfig) *corev1.SecurityContext {
 	if config.OS == "windows" {
 		return nil
@@ -814,6 +820,9 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 			PriorityClassName:  b.PriorityClassName(),
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot:   boolPointer(true),
+				RunAsGroup:     int64Pointer(cnbGid),
+				RunAsUser:      int64Pointer(cnbUid),
+				FSGroup:        int64Pointer(cnbGid),
 				SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 			},
 			Volumes: volumes(
