@@ -2,12 +2,14 @@ package git
 
 import (
 	"fmt"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
-	git2go "github.com/libgit2/git2go/v33"
 	"github.com/pkg/errors"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -21,33 +23,39 @@ type remoteGitResolver struct {
 }
 
 func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	dir, err := ioutil.TempDir("", "git-resolve")
+	// initialize a new repository in a temporary directory
+	dir, err := ioutil.TempDir("", "kpack-git")
 	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, err
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "creating temp dir")
 	}
 	defer os.RemoveAll(dir)
-
-	repository, err := git2go.InitRepository(dir, false)
+	// initialize a new repository
+	repository, err := gogit.PlainInit(dir, false)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "initializing repo")
 	}
-	defer repository.Free()
-
-	remote, err := repository.Remotes.CreateWithOptions(parseURL(sourceConfig.Git.URL), &git2go.RemoteCreateOptions{
-		Name:  defaultRemote,
-		Flags: git2go.RemoteCreateSkipInsteadof,
+	// create a new remote
+	remote, err := repository.CreateRemote(&config.RemoteConfig{
+		Name: defaultRemote,
+		URLs: []string{sourceConfig.Git.URL},
 	})
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "create remote")
-	}
-	defer remote.Free()
 
-	err = remote.ConnectFetch(
-		&git2go.RemoteCallbacks{
-			CredentialsCallback:      keychainAsCredentialsCallback(keychain),
-			CertificateCheckCallback: certificateCheckCallback(),
-		},
-		&git2go.ProxyOptions{Type: git2go.ProxyTypeAuto}, nil)
+	cred, err := keychain.Resolve(sourceConfig.Git.URL, "", CredentialTypeUserpass)
+	if err != nil {
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "getting auth for url")
+	}
+
+	auth, err := cred.Cred()
+	if err != nil {
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "getting auth for url")
+	}
+
+	// fetch the remote
+	err = remote.Fetch(&gogit.FetchOptions{
+		RemoteName: defaultRemote,
+		Auth:       auth,
+		Progress:   discardLogger.Writer(),
+	})
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{
 			Git: &corev1alpha1.ResolvedGitSource{
@@ -59,19 +67,25 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 		}, nil
 	}
 
-	references, err := remote.Ls()
+	// get the remote references
+	references, err := remote.List(&gogit.ListOptions{
+		Auth: auth,
+	})
 	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "remote ls")
+		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "listing remote references")
 	}
 
-	for _, ref := range references {
-		for _, format := range refRevParseRules {
-			if fmt.Sprintf(format, sourceConfig.Git.Revision) == ref.Name {
+	// iterate over the references
+	for _, reference := range references {
+		// iterate over the revRefParseRules
+		for _, revRefParseRule := range refRevParseRules {
+			// return ResolvedSourceConfig if the sourceConfig.Git.Revision matches the reference.Name()
+			if fmt.Sprintf(revRefParseRule, sourceConfig.Git.Revision) == reference.Name().String() {
 				return corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      sourceConfig.Git.URL,
-						Revision: ref.Id.String(),
-						Type:     sourceType(ref),
+						Revision: reference.Hash().String(),
+						Type:     referenceNameToType(reference.Name()),
 						SubPath:  sourceConfig.SubPath,
 					},
 				}, nil
@@ -89,11 +103,28 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 	}, nil
 }
 
-func sourceType(reference git2go.RemoteHead) corev1alpha1.GitSourceKind {
+type transportCallbackAdapter struct {
+	keychain GitKeychain
+}
+
+func keychainAsAuth(keychain GitKeychain, url string, usernameFromUrl string, allowedTypes CredentialType) (transport.AuthMethod, error) {
+	// Resolve(url string, usernameFromUrl string, allowedTypes CredentialType) (GoGitCredential, error)
+	goGitCredential, err := keychain.Resolve(url, usernameFromUrl, allowedTypes)
+	if err != nil {
+		return nil, err
+	}
+	auth, err := goGitCredential.Cred()
+	if err != nil {
+		return nil, err
+	}
+	return auth, nil
+}
+
+func referenceNameToType(referenceName plumbing.ReferenceName) corev1alpha1.GitSourceKind {
 	switch {
-	case strings.HasPrefix(reference.Name, "refs/heads"):
+	case referenceName.IsBranch():
 		return corev1alpha1.Branch
-	case strings.HasPrefix(reference.Name, "refs/tags"):
+	case referenceName.IsTag():
 		return corev1alpha1.Tag
 	default:
 		return corev1alpha1.Unknown

@@ -6,9 +6,11 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"reflect"
 	"testing"
 
-	git2go "github.com/libgit2/git2go/v33"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -157,48 +159,48 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns  alphabetical first git Auth for matching secrets with basic auth", func() {
-			cred, err := keychain.Resolve("https://github.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+			cred, err := keychain.Resolve("https://github.com/org/repo", "", CredentialTypeUserpass)
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{
-				Username: "saved-username",
+			require.Equal(t, GoGitHttpCredential{
+				User:     "saved-username",
 				Password: "saved-password",
 			}, cred)
 
-			git2goCred, err := cred.Cred()
+			gogitCred, err := cred.Cred()
 			require.NoError(t, err)
 
-			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeUserpassPlaintext)
+			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(http.BasicAuth{}).String())
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			cred, err := keychain.Resolve("https://gitlab.com/my-repo.git", "gituser", git2go.CredentialTypeSSHKey)
+			cred, err := keychain.Resolve("https://gitlab.com/my-repo.git", "gituser", CredentialTypeSSHKey)
 			require.NoError(t, err)
 
-			require.Equal(t, SSHGit2GoAuth{
-				Username:   "gituser",
-				PrivateKey: string(keys.key1),
+			require.Equal(t, &GoGitSshCredential{
+				User:       "gituser",
+				PrivateKey: keys.key1,
 			}, cred)
 
-			git2goCred, err := cred.Cred()
+			gogitCred, err := cred.Cred()
 			require.NoError(t, err)
 
-			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeSSHCustom)
+			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(ssh.PublicKeys{}).String())
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", CredentialTypeUserpass)
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{
-				Username: "noschemegit-username",
+			require.Equal(t, GoGitHttpCredential{
+				User:     "noschemegit-username",
 				Password: "noschemegit-password",
 			}, cred)
 		})
 
-		it("returns an error if no credentials found", func() {
-			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", git2go.CredentialTypeUserpassPlaintext)
-			require.EqualError(t, err, "no credentials found for https://no-creds-github.com/org/repo")
+		it("returns an error if no credential are found", func() {
+			_, err := keychain.Resolve("https://notfound.com/org/repo", "git", CredentialTypeUserpass)
+			require.EqualError(t, err, "no credentials found for https://notfound.com/org/repo")
 		})
 	})
 }

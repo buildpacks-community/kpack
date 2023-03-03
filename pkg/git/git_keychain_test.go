@@ -1,15 +1,16 @@
 package git
 
 import (
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 
-	git2go "github.com/libgit2/git2go/v33"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func TestGitFileKeychain(t *testing.T) {
@@ -66,41 +67,41 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	when("Resolve", func() {
 		it("returns alphabetical first git Auth for matching basic auth secrets", func() {
-			cred, err := keychain.Resolve("https://github.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+			cred, err := keychain.Resolve("https://github.com/org/repo", "", CredentialTypeUserpass)
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{Username: "saved-username", Password: "saved-password"}, cred)
-			git2goCred, err := cred.Cred()
+			require.Equal(t, &GoGitHttpCredential{User: "saved-username", Password: "saved-password"}, cred)
+			gogitCred, err := cred.Cred()
 			require.NoError(t, err)
 
-			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeUserpassPlaintext)
+			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(http.BasicAuth{}).String())
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", CredentialTypeUserpass)
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{Username: "noschemegit-username", Password: "noschemegit-password"}, cred)
+			require.Equal(t, &GoGitHttpCredential{User: "noschemegit-username", Password: "noschemegit-password"}, cred)
 		})
 
 		when("there are ssh and basic auth secret types", func() {
 			it("returns ssh cred for requested ssh credentials", func() {
-				cred, err := keychain.Resolve("git@bitbucket.com:org/repo", "git", git2go.CredentialTypeSSHKey)
+				cred, err := keychain.Resolve("git@bitbucket.com:org/repo", "git", CredentialTypeSSHKey)
 				require.NoError(t, err)
 
-				require.Equal(t, SSHGit2GoAuth{Username: "git", PrivateKey: "private key 1"}, cred)
+				require.Equal(t, &GoGitSshCredential{User: "git", PrivateKey: []byte("private key 1")}, cred)
 			})
 
 			it("returns basic auth secret for requested basic auth credentials", func() {
-				cred, err := keychain.Resolve("https://bitbucket.com/org/repo", "git", git2go.CredentialTypeUserpassPlaintext)
+				cred, err := keychain.Resolve("https://bitbucket.com/org/repo", "git", CredentialTypeUserpass)
 				require.NoError(t, err)
 
-				require.Equal(t, BasicGit2GoAuth{Username: "saved-username", Password: "saved-password"}, cred)
+				require.Equal(t, &GoGitHttpCredential{User: "saved-username", Password: "saved-password"}, cred)
 			})
 		})
 
 		it("returns an error if no credentials found", func() {
-			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", git2go.CredentialTypeUserpassPlaintext)
+			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", CredentialTypeUserpass)
 			require.EqualError(t, err, "no credentials found for https://no-creds-github.com/org/repo")
 		})
 
@@ -109,10 +110,10 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 				gitKeychain, err := NewMountedSecretGitKeychain(testDir, []string{}, []string{
 					"git-ssh-creds=git@my-git-server.com",
 				})
-				cred, err := gitKeychain.Resolve("ssh://git@my-git-server.com/my-org/my-repo.git", "", git2go.CredentialTypeSSHKey)
+				cred, err := gitKeychain.Resolve("ssh://git@my-git-server.com/my-org/my-repo.git", "", CredentialTypeSSHKey)
 				require.NoError(t, err)
 
-				require.Equal(t, SSHGit2GoAuth{Username: "git", PrivateKey: "private key 3"}, cred)
+				require.Equal(t, &GoGitSshCredential{User: "git", PrivateKey: []byte("private key 3")}, cred)
 			})
 		})
 	})

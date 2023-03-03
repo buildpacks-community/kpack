@@ -1,12 +1,16 @@
 package git
 
 import (
+	"github.com/BurntSushi/toml"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"log"
 	"os"
 	"path"
 
-	"github.com/BurntSushi/toml"
-	git2go "github.com/libgit2/git2go/v33"
+	// import RemoteConfig
+	"github.com/go-git/go-git/v5/config"
+
 	"github.com/pkg/errors"
 )
 
@@ -18,56 +22,59 @@ type Fetcher struct {
 func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	f.Logger.Printf("Cloning %q @ %q...", gitURL, gitRevision)
 
-	repository, err := git2go.InitRepository(dir, false)
+	// Initialize a repository in the directory using gogit.Init
+	repository, err := gogit.PlainInit(dir, false)
 	if err != nil {
 		return errors.Wrap(err, "initializing repo")
 	}
-	defer repository.Free()
 
-	remote, err := repository.Remotes.CreateWithOptions(parseURL(gitURL), &git2go.RemoteCreateOptions{
-		Name:  "origin",
-		Flags: git2go.RemoteCreateSkipInsteadof,
+	remote, err := repository.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{gitURL},
 	})
 	if err != nil {
 		return errors.Wrap(err, "creating remote")
 	}
-	defer remote.Free()
 
-	err = remote.Fetch([]string{"refs/*:refs/*"}, &git2go.FetchOptions{
-		DownloadTags: git2go.DownloadTagsAll,
-		RemoteCallbacks: git2go.RemoteCallbacks{
-			CredentialsCallback:      keychainAsCredentialsCallback(f.Keychain),
-			CertificateCheckCallback: certificateCheckCallback(),
+	err = remote.Fetch(&gogit.FetchOptions{
+		RefSpecs: []config.RefSpec{
+			config.RefSpec("refs/*:refs/*"),
 		},
-		ProxyOptions: git2go.ProxyOptions{
-			Type: git2go.ProxyTypeAuto,
-		},
-	}, "")
+		Auth:       nil,
+		Tags:       gogit.AllTags,
+		RemoteName: defaultRemote,
+	})
 	if err != nil {
 		return errors.Wrap(err, "fetching remote")
 	}
 
-	oid, err := resolveRevision(repository, gitRevision)
+	hash, err := resolveRevision(repository, gitRevision)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving revision")
 	}
 
-	commit, err := repository.LookupCommit(oid)
+	// Look up the commit using the hash
+	commit, err := repository.CommitObject(*hash)
 	if err != nil {
 		return errors.Wrap(err, "looking up commit")
 	}
 
-	err = repository.SetHeadDetached(commit.Id())
+	worktree, err := repository.Worktree()
 	if err != nil {
-		return errors.Wrap(err, "setting head detached")
-	}
-	err = repository.CheckoutHead(&git2go.CheckoutOpts{
-		Strategy: git2go.CheckoutForce,
-	})
-	if err != nil {
-		return errors.Wrap(err, "checkout head")
+		return errors.Wrap(err, "getting worktree")
 	}
 
+	err = worktree.Checkout(&gogit.CheckoutOptions{})
+	if err != nil {
+		return errors.Wrap(err, "checking out blank")
+	}
+
+	err = worktree.Checkout(&gogit.CheckoutOptions{
+		Hash:   plumbing.NewHash(hash.String()),
+		Create: false,
+	})
+
+	// Write the git revision to the metadata directory
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
@@ -82,7 +89,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 				Revision:   gitRevision,
 			},
 			Version: version{
-				Commit: commit.Id().String(),
+				Commit: commit.Hash.String(),
 			},
 		},
 	}
@@ -94,22 +101,41 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	return nil
 }
 
-func resolveRevision(repository *git2go.Repository, gitRevision string) (*git2go.Oid, error) {
-	ref, err := repository.References.Dwim(gitRevision)
+// Implement resolveRevision and return a plumbing.Hash and error
+func resolveRevision(repository *gogit.Repository, gitRevision string) (*plumbing.Hash, error) {
+	ref, err := repository.ResolveRevision(plumbing.Revision(gitRevision))
 	if err != nil {
 		return resolveCommit(gitRevision)
 	}
-
-	return ref.Target(), nil
+	return ref, nil
 }
 
-func resolveCommit(gitRevision string) (*git2go.Oid, error) {
-	oid, err := git2go.NewOid(gitRevision)
-	if err != nil {
-		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid oid
+func resolveCommit(gitRevision string) (*plumbing.Hash, error) {
+	// Use plumbing.NewHash to create a new hash
+	hash := plumbing.NewHash(gitRevision)
+	// if hash is empty
+	if hash == plumbing.ZeroHash {
+		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid hash
 	}
-	return oid, nil
+	return &hash, nil
 }
+
+//func resolveRevision(repository *git2go.Repository, gitRevision string) (*git2go.Oid, error) {
+//	ref, err := repository.References.Dwim(gitRevision)
+//	if err != nil {
+//		return resolveCommit(gitRevision)
+//	}
+//
+//	return ref.Target(), nil
+//}
+
+//func resolveCommit(gitRevision string) (*git2go.Oid, error) {
+//	oid, err := git2go.NewOid(gitRevision)
+//	if err != nil {
+//		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid oid
+//	}
+//	return oid, nil
+//}
 
 type project struct {
 	Source source `toml:"source"`

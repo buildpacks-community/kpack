@@ -76,10 +76,17 @@ var matchingDomains = []string{
 }
 
 func gitUrlMatch(urlMatch, annotatedUrl string) bool {
+	//fmt.Printf("gitUrlMatch: len(matchingDomains)->%d\n", len(matchingDomains))
 	for _, format := range matchingDomains {
+		//fmt.Printf("gitUrlMatch: urlMatch->%s, annotatedUrl->%s, format->%s\n", urlMatch, annotatedUrl, format)
+		//fmt.Printf("gitUrlMatch: checking match for formatted urlMatch. format->%s, urlMatch->%s, annotatedUrl->%s, Sprintf(format, urlMatch)->%s\n", format, urlMatch, annotatedUrl, fmt.Sprintf(format, urlMatch))
 		if fmt.Sprintf(format, urlMatch) == annotatedUrl {
+			// found match for formatted urlMatch
+			//fmt.Printf("gitUrlMatch: found match for formatted urlMatch. format->%s, urlMatch->%s, annotatedUrl->%s, Sprintf(format, urlMatch)->%s\n", format, urlMatch, annotatedUrl, fmt.Sprintf(format, urlMatch))
 			return true
 		}
 	}
+	// no match found for formatted urlMatch
+	//fmt.Printf("gitUrlMatch: no match found for formatted urlMatch. urlMatch->%s, annotatedUrl->%s\n", urlMatch, annotatedUrl)
 	return false
 }
