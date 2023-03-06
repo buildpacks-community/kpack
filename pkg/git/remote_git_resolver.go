@@ -1,60 +1,41 @@
 package git
 
 import (
-	"fmt"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"io/ioutil"
-	"log"
-	"os"
-
-	"github.com/pkg/errors"
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	"github.com/go-git/go-git/v5/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const defaultRemote = "origin"
 
-var discardLogger = log.New(ioutil.Discard, "", 0)
+type remoteGitResolver struct{}
 
-type remoteGitResolver struct {
-}
-
-func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	// initialize a new repository in a temporary directory
-	dir, err := ioutil.TempDir("", "kpack-git")
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "creating temp dir")
-	}
-	defer os.RemoveAll(dir)
-	// initialize a new repository
-	repository, err := gogit.PlainInit(dir, false)
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "initializing repo")
-	}
-	// create a new remote
-	remote, err := repository.CreateRemote(&config.RemoteConfig{
+func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
+	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},
 	})
 
-	cred, err := keychain.Resolve(sourceConfig.Git.URL, "", CredentialTypeUserpass)
+	httpsTransport, err := getHttpsTransport()
 	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "getting auth for url")
+		return corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
+				URL:      sourceConfig.Git.URL,
+				Revision: sourceConfig.Git.Revision,
+				Type:     corev1alpha1.Unknown,
+				SubPath:  sourceConfig.SubPath,
+			},
+		}, nil
 	}
+	client.InstallProtocol("https", httpsTransport)
 
-	auth, err := cred.Cred()
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "getting auth for url")
-	}
-
-	// fetch the remote
-	err = remote.Fetch(&gogit.FetchOptions{
-		RemoteName: defaultRemote,
-		Auth:       auth,
-		Progress:   discardLogger.Writer(),
+	refs, err := remote.List(&gogit.ListOptions{
+		Auth: auth,
 	})
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{
@@ -67,29 +48,16 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 		}, nil
 	}
 
-	// get the remote references
-	references, err := remote.List(&gogit.ListOptions{
-		Auth: auth,
-	})
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "listing remote references")
-	}
-
-	// iterate over the references
-	for _, reference := range references {
-		// iterate over the revRefParseRules
-		for _, revRefParseRule := range refRevParseRules {
-			// return ResolvedSourceConfig if the sourceConfig.Git.Revision matches the reference.Name()
-			if fmt.Sprintf(revRefParseRule, sourceConfig.Git.Revision) == reference.Name().String() {
-				return corev1alpha1.ResolvedSourceConfig{
-					Git: &corev1alpha1.ResolvedGitSource{
-						URL:      sourceConfig.Git.URL,
-						Revision: reference.Hash().String(),
-						Type:     referenceNameToType(reference.Name()),
-						SubPath:  sourceConfig.SubPath,
-					},
-				}, nil
-			}
+	for _, ref := range refs {
+		if ref.Name().Short() == sourceConfig.Git.Revision {
+			return corev1alpha1.ResolvedSourceConfig{
+				Git: &corev1alpha1.ResolvedGitSource{
+					URL:      sourceConfig.Git.URL,
+					Revision: ref.Hash().String(),
+					Type:     sourceType(ref),
+					SubPath:  sourceConfig.SubPath,
+				},
+			}, nil
 		}
 	}
 
@@ -103,38 +71,13 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 	}, nil
 }
 
-type transportCallbackAdapter struct {
-	keychain GitKeychain
-}
-
-func keychainAsAuth(keychain GitKeychain, url string, usernameFromUrl string, allowedTypes CredentialType) (transport.AuthMethod, error) {
-	// Resolve(url string, usernameFromUrl string, allowedTypes CredentialType) (GoGitCredential, error)
-	goGitCredential, err := keychain.Resolve(url, usernameFromUrl, allowedTypes)
-	if err != nil {
-		return nil, err
-	}
-	auth, err := goGitCredential.Cred()
-	if err != nil {
-		return nil, err
-	}
-	return auth, nil
-}
-
-func referenceNameToType(referenceName plumbing.ReferenceName) corev1alpha1.GitSourceKind {
+func sourceType(reference *plumbing.Reference) corev1alpha1.GitSourceKind {
 	switch {
-	case referenceName.IsBranch():
+	case reference.Name().IsBranch():
 		return corev1alpha1.Branch
-	case referenceName.IsTag():
+	case reference.Name().IsTag():
 		return corev1alpha1.Tag
 	default:
 		return corev1alpha1.Unknown
 	}
-}
-
-var refRevParseRules = []string{
-	"refs/%s",
-	"refs/tags/%s",
-	"refs/heads/%s",
-	"refs/remotes/%s",
-	"refs/remotes/%s/HEAD",
 }

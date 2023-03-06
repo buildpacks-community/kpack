@@ -6,21 +6,22 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"reflect"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
+	ssh2 "golang.org/x/crypto/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func Test(t *testing.T) {
+func TestK8sGitKeychain(t *testing.T) {
 	privateKeyBytes := gitTest{key1: generateRandomPrivateKey(t), key2: generateRandomPrivateKey(t)}
 	spec.Run(t, "Test Git Keychain", privateKeyBytes.testK8sGitKeychain)
 }
@@ -79,19 +80,6 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 			},
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret-4",
-					Namespace: testNamespace,
-					Annotations: map[string]string{
-						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
-					},
-				},
-				Type: v1.SecretTypeSSHAuth,
-				Data: map[string][]byte{
-					v1.SSHAuthPrivateKey: keys.key1,
-				},
-			},
-			&v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-5",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
@@ -119,6 +107,19 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 			},
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-4",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
+					},
+				},
+				Type: v1.SecretTypeSSHAuth,
+				Data: map[string][]byte{
+					v1.SSHAuthPrivateKey: keys.key1,
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-7",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
@@ -139,68 +140,85 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 				Secrets: []v1.ObjectReference{
 					{Name: "secret-1"},
 					{Name: "secret-2"},
-					{Name: "secret-3"},
 					{Name: "secret-4"},
 					{Name: "secret-5"},
+					{Name: "secret-3"},
 					{Name: "secret-6"},
 					{Name: "secret-7"},
 				},
 			})
-		keychainFactory = newK8sGitKeychainFactory(fakeClient)
+		keychain = newK8sGitKeychain(fakeClient)
 	)
 
-	when("Keychain resolves", func() {
-		var keychain GitKeychain
+	when("K8s Keychain resolves", func() {
 
-		it.Before(func() {
-			var err error
-			keychain, err = keychainFactory.KeychainForServiceAccount(context.Background(), testNamespace, serviceAccount)
-			require.NoError(t, err)
-		})
-
-		it("returns  alphabetical first git Auth for matching secrets with basic auth", func() {
-			cred, err := keychain.Resolve("https://github.com/org/repo", "", CredentialTypeUserpass)
+		it("returns alphabetical first git Auth for matching secrets with basic auth", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://github.com/org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, GoGitHttpCredential{
-				User:     "saved-username",
+			require.Equal(t, &http.BasicAuth{
+				Username: "saved-username",
 				Password: "saved-password",
-			}, cred)
-
-			gogitCred, err := cred.Cred()
-			require.NoError(t, err)
-
-			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(http.BasicAuth{}).String())
+			}, auth)
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			cred, err := keychain.Resolve("https://gitlab.com/my-repo.git", "gituser", CredentialTypeSSHKey)
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@gitlab.com:org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, &GoGitSshCredential{
-				User:       "gituser",
-				PrivateKey: keys.key1,
-			}, cred)
+			publicKeys, ok := auth.(*ssh.PublicKeys)
+			require.True(t, ok)
 
-			gogitCred, err := cred.Cred()
+			require.Equal(t, "git", publicKeys.User)
+
+			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, expectedSigner, publicKeys.Signer)
+		})
+
+		it("returns git Auth for matching secrets with ssh auth", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@bitbucket.com:org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(ssh.PublicKeys{}).String())
+			publicKeys, ok := auth.(*ssh.PublicKeys)
+			require.True(t, ok)
+
+			require.Equal(t, "git", publicKeys.User)
+
+			signer, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, signer, publicKeys.Signer)
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", CredentialTypeUserpass)
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://noschemegit.com/org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, GoGitHttpCredential{
-				User:     "noschemegit-username",
+			require.Equal(t, &http.BasicAuth{
+				Username: "noschemegit-username",
 				Password: "noschemegit-password",
-			}, cred)
+			}, auth)
 		})
 
-		it("returns an error if no credential are found", func() {
-			_, err := keychain.Resolve("https://notfound.com/org/repo", "git", CredentialTypeUserpass)
-			require.EqualError(t, err, "no credentials found for https://notfound.com/org/repo")
+		it("returns anonymous Auth for no matching secret", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://no-creds-github.com/org/repo",
+				Revision: "master",
+			})
+			require.NoError(t, err)
+			require.Nil(t, auth)
 		})
 	})
 }

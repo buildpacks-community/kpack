@@ -1,58 +1,82 @@
 package git
 
 import (
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/require"
+	ssh2 "golang.org/x/crypto/ssh"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func TestGitFileKeychain(t *testing.T) {
-	spec.Run(t, "Test Git Keychain", testGitFileKeychain)
+func TestGitKeychain(t *testing.T) {
+	privateKeyBytes := gitTest{key1: generateRandomPrivateKey(t), key2: generateRandomPrivateKey(t)}
+	spec.Run(t, "Test Git Keychain", privateKeyBytes.testGitKeychain)
 }
 
-func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
+func writeSecrets(testDir string, secrets map[string]map[string][]byte) error {
+	for name, creds := range secrets {
+		err := os.MkdirAll(path.Join(testDir, name), 0777)
+		if err != nil {
+			return err
+		}
+		for k, v := range creds {
+			err = os.WriteFile(path.Join(testDir, name, k), v, 0600)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (keys gitTest) testGitKeychain(t *testing.T, when spec.G, it spec.S) {
 
 	var testDir string
 	var keychain GitKeychain
 
 	it.Before(func() {
 		var err error
-		testDir, err = ioutil.TempDir("", "git-keychain")
+		testDir, err = os.MkdirTemp("", "git-keychain")
 		require.NoError(t, err)
 
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "github-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "more-github-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "bitbucket-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "basic-bitbucket-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "zzz-ssh-bitbucket-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "noscheme-creds"), 0777))
-		require.NoError(t, os.MkdirAll(path.Join(testDir, "git-ssh-creds"), 0777))
+		secrets := map[string]map[string][]byte{
+			"github-creds": {
+				corev1.BasicAuthUsernameKey: []byte("another-saved-username"),
+				corev1.BasicAuthPasswordKey: []byte("another-saved-password"),
+			},
+			"additional-github-creds": {
+				corev1.BasicAuthUsernameKey: []byte("saved-username"),
+				corev1.BasicAuthPasswordKey: []byte("saved-password"),
+			},
+			"bitbucket-creds": {
+				corev1.SSHAuthPrivateKey: keys.key1,
+			},
+			"basic-bitbucket-creds": {
+				corev1.BasicAuthUsernameKey: []byte("saved-username"),
+				corev1.BasicAuthPasswordKey: []byte("saved-password"),
+			},
+			"zzz-ssh-bitbucket-creds": {
+				corev1.SSHAuthPrivateKey: []byte("private key 2"),
+			},
+			"noscheme-creds": {
+				corev1.BasicAuthUsernameKey: []byte("noschemegit-username"),
+				corev1.BasicAuthPasswordKey: []byte("noschemegit-password"),
+			},
+			"git-ssh-creds": {
+				corev1.SSHAuthPrivateKey: []byte("private key 3"),
+			},
+		}
 
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "github-creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "github-creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
-
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "more-github-creds", corev1.BasicAuthUsernameKey), []byte("another-saved-username"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "more-github-creds", corev1.BasicAuthPasswordKey), []byte("another-saved-password"), 0600))
-
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "bitbucket-creds", corev1.SSHAuthPrivateKey), []byte("private key 1"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "zzz-ssh-bitbucket-creds", corev1.SSHAuthPrivateKey), []byte("private key 2"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "git-ssh-creds", corev1.SSHAuthPrivateKey), []byte("private key 3"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "basic-bitbucket-creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "basic-bitbucket-creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
-
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "noscheme-creds", corev1.BasicAuthUsernameKey), []byte("noschemegit-username"), 0600))
-		require.NoError(t, ioutil.WriteFile(path.Join(testDir, "noscheme-creds", corev1.BasicAuthPasswordKey), []byte("noschemegit-password"), 0600))
+		require.NoError(t, writeSecrets(testDir, secrets))
 
 		keychain, err = NewMountedSecretGitKeychain(testDir, []string{
 			"github-creds=https://github.com",
-			"more-github-creds=https://github.com",
+			"additional-github-creds=https://github.com",
 			"basic-bitbucket-creds=https://bitbucket.com",
 			"noscheme-creds=noschemegit.com"}, []string{
 			"zzz-ssh-bitbucket-creds=https://bitbucket.com",
@@ -66,55 +90,85 @@ func testGitFileKeychain(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("Resolve", func() {
-		it("returns alphabetical first git Auth for matching basic auth secrets", func() {
-			cred, err := keychain.Resolve("https://github.com/org/repo", "", CredentialTypeUserpass)
-			require.NoError(t, err)
+		when("there are multiple secrets for the same repository", func() {
+			it("returns alphabetical first git Auth for matching basic auth secrets", func() {
+				auth, err := keychain.Resolve("https://github.com/org/repo")
+				require.NoError(t, err)
 
-			require.Equal(t, &GoGitHttpCredential{User: "saved-username", Password: "saved-password"}, cred)
-			gogitCred, err := cred.Cred()
-			require.NoError(t, err)
-
-			require.Equal(t, reflect.TypeOf(gogitCred).Elem().String(), reflect.TypeOf(http.BasicAuth{}).String())
-		})
-
-		it("returns git Auth for matching secrets without scheme", func() {
-			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", CredentialTypeUserpass)
-			require.NoError(t, err)
-
-			require.Equal(t, &GoGitHttpCredential{User: "noschemegit-username", Password: "noschemegit-password"}, cred)
+				require.Equal(t, &http.BasicAuth{
+					Username: "saved-username",
+					Password: "saved-password",
+				}, auth)
+			})
 		})
 
 		when("there are ssh and basic auth secret types", func() {
+			it("returns ssh secret if the target is an ssh target", func() {
+				auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
+				require.NoError(t, err)
+
+				publicKeys, ok := auth.(*ssh.PublicKeys)
+				require.True(t, ok)
+
+				require.Equal(t, "git", publicKeys.User)
+
+				expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+				require.NoError(t, err)
+				require.Equal(t, expectedSigner, publicKeys.Signer)
+			})
+
 			it("returns ssh cred for requested ssh credentials", func() {
-				cred, err := keychain.Resolve("git@bitbucket.com:org/repo", "git", CredentialTypeSSHKey)
+				auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
 				require.NoError(t, err)
 
-				require.Equal(t, &GoGitSshCredential{User: "git", PrivateKey: []byte("private key 1")}, cred)
+				_, ok := auth.(*ssh.PublicKeys)
+				require.True(t, ok)
+
+				signer, err := ssh2.ParsePrivateKey(keys.key1)
+				require.NoError(t, err)
+
+				require.Equal(t, &ssh.PublicKeys{
+					User:   "git",
+					Signer: signer,
+				}, auth)
 			})
 
-			it("returns basic auth secret for requested basic auth credentials", func() {
-				cred, err := keychain.Resolve("https://bitbucket.com/org/repo", "git", CredentialTypeUserpass)
+			it("returns basic auth secret if the target is an https target", func() {
+				auth, err := keychain.Resolve("https://bitbucket.com/org/repo")
 				require.NoError(t, err)
 
-				require.Equal(t, &GoGitHttpCredential{User: "saved-username", Password: "saved-password"}, cred)
+				require.NoError(t, err)
+				require.Equal(t, &http.BasicAuth{
+					Username: "saved-username",
+					Password: "saved-password",
+				}, auth)
 			})
 		})
 
-		it("returns an error if no credentials found", func() {
-			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", CredentialTypeUserpass)
-			require.EqualError(t, err, "no credentials found for https://no-creds-github.com/org/repo")
+		it("returns git Auth for matching basic auth secrets", func() {
+			auth, err := keychain.Resolve("https://github.com/org/repo")
+			require.NoError(t, err)
+
+			require.Equal(t, auth, &http.BasicAuth{
+				Username: "saved-username",
+				Password: "saved-password",
+			})
 		})
 
-		when("ssh usernameFromUrl is empty during credential callback", func() {
-			it("determines correct username", func() {
-				gitKeychain, err := NewMountedSecretGitKeychain(testDir, []string{}, []string{
-					"git-ssh-creds=git@my-git-server.com",
-				})
-				cred, err := gitKeychain.Resolve("ssh://git@my-git-server.com/my-org/my-repo.git", "", CredentialTypeSSHKey)
-				require.NoError(t, err)
+		it("returns git Auth for matching secrets without scheme", func() {
+			auth, err := keychain.Resolve("https://noschemegit.com/org/repo")
+			require.NoError(t, err)
 
-				require.Equal(t, &GoGitSshCredential{User: "git", PrivateKey: []byte("private key 3")}, cred)
+			require.Equal(t, auth, &http.BasicAuth{
+				Username: "noschemegit-username",
+				Password: "noschemegit-password",
 			})
+		})
+
+		it("returns anonymous Auth for no matching secret", func() {
+			auth, err := keychain.Resolve("https://no-creds-github.com/org/repo")
+			require.NoError(t, err)
+			require.Nil(t, auth)
 		})
 	})
 }

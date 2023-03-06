@@ -1,16 +1,20 @@
 package git
 
 import (
-	"github.com/BurntSushi/toml"
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"time"
 
-	// import RemoteConfig
+	"github.com/BurntSushi/toml"
+	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
 )
 
@@ -21,8 +25,11 @@ type Fetcher struct {
 
 func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	f.Logger.Printf("Cloning %q @ %q...", gitURL, gitRevision)
+	auth, err := f.Keychain.Resolve(gitURL)
+	if err != nil {
+		return err
+	}
 
-	// Initialize a repository in the directory using gogit.Init
 	repository, err := gogit.PlainInit(dir, false)
 	if err != nil {
 		return errors.Wrap(err, "initializing repo")
@@ -36,43 +43,36 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrap(err, "creating remote")
 	}
 
+	httpsTransport, err := getHttpsTransport()
+	if err != nil {
+		return err
+	}
+	client.InstallProtocol("https", httpsTransport)
+
 	err = remote.Fetch(&gogit.FetchOptions{
-		RefSpecs: []config.RefSpec{
-			config.RefSpec("refs/*:refs/*"),
-		},
-		Auth:       nil,
-		Tags:       gogit.AllTags,
-		RemoteName: defaultRemote,
+		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
+		Auth:     auth,
 	})
-	if err != nil {
-		return errors.Wrap(err, "fetching remote")
-	}
-
-	hash, err := resolveRevision(repository, gitRevision)
-	if err != nil {
-		return errors.Wrap(err, "resolving revision")
-	}
-
-	// Look up the commit using the hash
-	commit, err := repository.CommitObject(*hash)
-	if err != nil {
-		return errors.Wrap(err, "looking up commit")
+	if err != nil && err != transport.ErrAuthenticationRequired {
+		return errors.Wrapf(err, "unable to fetch references for repository")
+	} else if err == transport.ErrAuthenticationRequired {
+		return errors.Wrapf(err, "invalid credentials for repository")
 	}
 
 	worktree, err := repository.Worktree()
 	if err != nil {
-		return errors.Wrap(err, "getting worktree")
+		return errors.Wrapf(err, "getting worktree for repository")
 	}
 
-	err = worktree.Checkout(&gogit.CheckoutOptions{})
+	hash, err := repository.ResolveRevision(plumbing.Revision(gitRevision))
 	if err != nil {
-		return errors.Wrap(err, "checking out blank")
+		return errors.Wrapf(err, "resolving revision")
 	}
 
-	err = worktree.Checkout(&gogit.CheckoutOptions{
-		Hash:   plumbing.NewHash(hash.String()),
-		Create: false,
-	})
+	err = worktree.Checkout(&gogit.CheckoutOptions{Hash: *hash})
+	if err != nil {
+		return errors.Wrapf(err, "checking out revision")
+	}
 
 	// Write the git revision to the metadata directory
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
@@ -89,7 +89,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 				Revision:   gitRevision,
 			},
 			Version: version{
-				Commit: commit.Hash.String(),
+				Commit: hash.String(),
 			},
 		},
 	}
@@ -101,41 +101,26 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	return nil
 }
 
-// Implement resolveRevision and return a plumbing.Hash and error
-func resolveRevision(repository *gogit.Repository, gitRevision string) (*plumbing.Hash, error) {
-	ref, err := repository.ResolveRevision(plumbing.Revision(gitRevision))
-	if err != nil {
-		return resolveCommit(gitRevision)
+func getHttpsTransport() (transport.Transport, error) {
+	if httpsProxy, exists := os.LookupEnv("HTTPS_PROXY"); exists {
+		parsedUrl, err := url.Parse(httpsProxy)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing HTTPS_PROXY url")
+		}
+		proxyClient := &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(parsedUrl),
+			},
+			Timeout: 15 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+		return githttp.NewClient(proxyClient), nil
+	} else {
+		return githttp.DefaultClient, nil
 	}
-	return ref, nil
 }
-
-func resolveCommit(gitRevision string) (*plumbing.Hash, error) {
-	// Use plumbing.NewHash to create a new hash
-	hash := plumbing.NewHash(gitRevision)
-	// if hash is empty
-	if hash == plumbing.ZeroHash {
-		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid hash
-	}
-	return &hash, nil
-}
-
-//func resolveRevision(repository *git2go.Repository, gitRevision string) (*git2go.Oid, error) {
-//	ref, err := repository.References.Dwim(gitRevision)
-//	if err != nil {
-//		return resolveCommit(gitRevision)
-//	}
-//
-//	return ref.Target(), nil
-//}
-
-//func resolveCommit(gitRevision string) (*git2go.Oid, error) {
-//	oid, err := git2go.NewOid(gitRevision)
-//	if err != nil {
-//		return nil, errors.Errorf("could not find reference: %s", gitRevision) //invalid oid
-//	}
-//	return oid, nil
-//}
 
 type project struct {
 	Source source `toml:"source"`

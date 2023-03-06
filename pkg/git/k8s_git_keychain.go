@@ -4,26 +4,32 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "k8s.io/client-go/kubernetes"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/secret"
 )
 
-type k8sGitKeychainFactory struct {
+type k8sGitKeychain struct {
 	secretFetcher secret.Fetcher
 }
 
-func newK8sGitKeychainFactory(k8sClient k8sclient.Interface) *k8sGitKeychainFactory {
-	return &k8sGitKeychainFactory{secretFetcher: secret.Fetcher{Client: k8sClient}}
+var anonymousAuth transport.AuthMethod = nil
+
+func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
+	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
 }
 
-func (k *k8sGitKeychainFactory) KeychainForServiceAccount(ctx context.Context, namespace, serviceAccount string) (GitKeychain, error) {
+func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount string, git corev1alpha1.Git) (transport.AuthMethod, error) {
 	secrets, err := k.secretFetcher.SecretsForServiceAccount(ctx, serviceAccount, namespace)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
+	} else if k8serrors.IsNotFound(err) {
+		return anonymousAuth, nil
 	}
 
 	var creds []gitCredential
@@ -48,7 +54,7 @@ func (k *k8sGitKeychainFactory) KeychainForServiceAccount(ctx context.Context, n
 		}
 	}
 
-	return &secretGitKeychain{creds: creds}, nil
+	return (&secretGitKeychain{creds: creds}).Resolve(git.URL)
 }
 
 func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {
@@ -76,17 +82,10 @@ var matchingDomains = []string{
 }
 
 func gitUrlMatch(urlMatch, annotatedUrl string) bool {
-	//fmt.Printf("gitUrlMatch: len(matchingDomains)->%d\n", len(matchingDomains))
 	for _, format := range matchingDomains {
-		//fmt.Printf("gitUrlMatch: urlMatch->%s, annotatedUrl->%s, format->%s\n", urlMatch, annotatedUrl, format)
-		//fmt.Printf("gitUrlMatch: checking match for formatted urlMatch. format->%s, urlMatch->%s, annotatedUrl->%s, Sprintf(format, urlMatch)->%s\n", format, urlMatch, annotatedUrl, fmt.Sprintf(format, urlMatch))
 		if fmt.Sprintf(format, urlMatch) == annotatedUrl {
-			// found match for formatted urlMatch
-			//fmt.Printf("gitUrlMatch: found match for formatted urlMatch. format->%s, urlMatch->%s, annotatedUrl->%s, Sprintf(format, urlMatch)->%s\n", format, urlMatch, annotatedUrl, fmt.Sprintf(format, urlMatch))
 			return true
 		}
 	}
-	// no match found for formatted urlMatch
-	//fmt.Printf("gitUrlMatch: no match found for formatted urlMatch. urlMatch->%s, annotatedUrl->%s\n", urlMatch, annotatedUrl)
 	return false
 }

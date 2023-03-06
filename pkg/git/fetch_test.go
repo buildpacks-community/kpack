@@ -2,22 +2,16 @@ package git
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/go-git/go-billy/v5/osfs"
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/cache"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/storage/filesystem"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"testing"
 
+	"github.com/BurntSushi/toml"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGitCheckout(t *testing.T) {
@@ -36,14 +30,16 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it.Before(func() {
 			var err error
-			testDir, err = ioutil.TempDir("", "test-git")
+			testDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
 
-			metadataDir, err = ioutil.TempDir("", "test-git")
+			metadataDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
+			os.Unsetenv("HTTPS_PROXY")
 		})
 
 		it.After(func() {
+			os.Unsetenv("HTTPS_PROXY")
 			require.NoError(t, os.RemoveAll(testDir))
 			require.NoError(t, os.RemoveAll(metadataDir))
 		})
@@ -53,63 +49,85 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				err := fetcher.Fetch(testDir, gitUrl, revision, metadataDir)
 				require.NoError(t, err)
 
-				fs := osfs.New(testDir)
-				storage := filesystem.NewStorage(fs, cache.NewObjectLRUDefault())
-				repository, err := gogit.Init(storage, fs)
-				fmt.Println(outputBuffer.String())
-				require.Contains(t, outputBuffer.String(), "Successfully cloned")
-				branches, err := repository.Branches()
+				repository, err := gogit.PlainOpen(testDir)
 				require.NoError(t, err)
-				branches.ForEach(func(branch *plumbing.Reference) error {
-					fmt.Println("Branch name: ")
-					fmt.Println(branch.Name())
-					return nil
-				})
+				require.Contains(t, outputBuffer.String(), "Successfully cloned")
+
+				p := path.Join(metadataDir, "project-metadata.toml")
+				require.FileExists(t, p)
 
 				var projectMetadata project
-				p := path.Join(metadataDir, "project-metadata.toml")
-				md, err := toml.DecodeFile(p, &projectMetadata)
-				for k := range md.Keys() {
-					fmt.Println(k)
-				}
-
+				_, err = toml.DecodeFile(p, &projectMetadata)
 				require.NoError(t, err)
 				require.Equal(t, "git", projectMetadata.Source.Type)
 				require.Equal(t, gitUrl, projectMetadata.Source.Metadata.Repository)
 				require.Equal(t, revision, projectMetadata.Source.Metadata.Revision)
 
-				refs, err := repository.References()
-				refs.ForEach(func(r *plumbing.Reference) error {
-					fmt.Println(r.Name())
-					return nil
-				})
-
+				hash, err := repository.ResolveRevision("HEAD")
 				require.NoError(t, err)
-				//require.Equal(t, ref.Hash(), projectMetadata.Source.Version.Commit)
+				require.Equal(t, hash.String(), projectMetadata.Source.Version.Commit)
 			}
 		}
 
 		it("fetches remote HEAD", testFetch("https://github.com/git-fixtures/basic", "master"))
+
+		it("fetches a branch", testFetch("https://github.com/git-fixtures/basic", "branch"))
+
+		it("fetches a tag", testFetch("https://github.com/git-fixtures/tags", "lightweight-tag"))
+
+		it("fetches a revision", testFetch("https://github.com/git-fixtures/basic", "b029517f6300c2da0f4b651b8642506cd6aaf45d"))
+
+		it("returns error on non-existent ref", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", metadataDir)
+			require.EqualError(t, err, "resolving revision: reference not found")
+		})
+
+		it("preserves symbolic links", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/symlinks", "master", metadataDir)
+			require.NoError(t, err)
+			fileInfo, err := os.Lstat(path.Join(testDir, "bar"))
+			isSymlink := fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink
+			require.True(t, isSymlink, "bar is expected to be a symbolic link")
+		})
+
+		it("preserves executable permission", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/pivotal/kpack", "main", metadataDir)
+			require.NoError(t, err)
+
+			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "apply.sh"))
+			isExecutable := isExecutableByAll(fileInfo.Mode())
+			require.True(t, isExecutable, "apply.sh is expected to be executable by owner, group, and other")
+
+			fileInfo, err = os.Lstat(path.Join(testDir, "hack", "tools.go"))
+			isExecutable = isExecutableByAny(fileInfo.Mode())
+			require.False(t, isExecutable, "tools.go is expected to not be executable")
+		})
+
+		it("returns invalid credentials to fetch error on authentication required", func() {
+			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", metadataDir)
+			require.ErrorContains(t, err, "unable to fetch references for repository")
+		})
+
+		it("uses the http proxy env vars", func() {
+			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
+			defer os.Unsetenv("HTTPS_PROXY")
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "no such host")
+		})
 	})
 }
 
-type fakeGitKeychain struct {
+func isExecutableByAny(mode os.FileMode) bool {
+	return mode&0111 != 0
 }
 
-type goGitFakeCredential struct {
-	GoGitCredential
+func isExecutableByAll(mode os.FileMode) bool {
+	return mode&0111 == 0111
 }
 
-type fakeAuthMethod struct {
-	transport.AuthMethod
-}
+type fakeGitKeychain struct{}
 
-func (c *goGitFakeCredential) Cred() (transport.AuthMethod, error) {
-	// return fake transport.AuthMethod
-	return &fakeAuthMethod{}, nil
-}
-
-func (f fakeGitKeychain) Resolve(url string, usernameFromUrl string, allowedTypes CredentialType) (GoGitCredential, error) {
-	return &goGitFakeCredential{}, nil
-	//return nil, errors.New("no auth available")
+func (f fakeGitKeychain) Resolve(gitUrl string) (transport.AuthMethod, error) {
+	return nil, nil
 }
