@@ -800,8 +800,9 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionUnknown,
+												Message: "SourceResolver image-name-source is not ready",
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
@@ -2310,20 +2311,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
-											},
-											{
-												Type:   buildapi.ConditionBuilderReady,
-												Status: corev1.ConditionTrue,
-											},
-											{
-												Type:   buildapi.ConditionSourceResolverReady,
-												Status: corev1.ConditionUnknown,
-											},
-										},
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-1",
 									LatestImage:    "some/image@sha256:build-1",
@@ -2671,8 +2659,9 @@ func limit(limit int64) *int64 {
 func conditionReadyUnknown() corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
-			Type:   corev1alpha1.ConditionReady,
-			Status: corev1.ConditionUnknown,
+			Type:    corev1alpha1.ConditionReady,
+			Status:  corev1.ConditionUnknown,
+			Message: "SourceResolver image-name-source is not ready",
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
