@@ -18,3 +18,5 @@ jobs:
         with:
           project-url: https://github.com/orgs/pivotal/projects/18
           github-token: ${{ secrets.KPACK_BOT_PAT }}
+          labeled: dependencies
+          label-operator: NOT
