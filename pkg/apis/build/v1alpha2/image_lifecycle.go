@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	BuilderNotFound        = "BuilderNotFound"
-	BuilderNotReady        = "BuilderNotReady"
-	SourceResolverNotReady = "SourceResolverNotReady"
+	BuilderNotFound = "BuilderNotFound"
+	BuilderNotReady = "BuilderNotReady"
 )
 
 func (im *Image) BuilderNotFound() corev1alpha1.Conditions {

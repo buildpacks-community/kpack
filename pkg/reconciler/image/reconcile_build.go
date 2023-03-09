@@ -84,7 +84,6 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 			builderCondition(builder),
-			sourceResolverCondition(sourceResolver),
 		}
 	}
 
@@ -96,7 +95,6 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
-		sourceResolverCondition(sourceResolver),
 	}
 
 }
@@ -142,41 +140,6 @@ func builderError(builder buildapi.BuilderResource) string {
 	return errorMessage
 }
 
-func sourceResolverCondition(sourceResolver *buildapi.SourceResolver) corev1alpha1.Condition {
-	switch unknownStatusIfNil(sourceResolver.Status.GetCondition(corev1alpha1.ConditionReady)) {
-	case corev1.ConditionFalse:
-		return corev1alpha1.Condition{
-			Type:               buildapi.ConditionSourceResolverReady,
-			Status:             corev1.ConditionFalse,
-			Reason:             buildapi.SourceResolverNotReady,
-			Message:            sourceResolverError(sourceResolver),
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-		}
-	case corev1.ConditionTrue:
-		return corev1alpha1.Condition{
-			Type:               buildapi.ConditionSourceResolverReady,
-			Status:             corev1.ConditionTrue,
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-		}
-	default:
-		return corev1alpha1.Condition{
-			Type:               buildapi.ConditionSourceResolverReady,
-			Status:             corev1.ConditionUnknown,
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-		}
-	}
-}
-
-func sourceResolverError(sourceResolver *buildapi.SourceResolver) string {
-	errorMessage := fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
-
-	if message := emptyMessageIfNil(sourceResolver.Status.GetCondition(corev1alpha1.ConditionReady)); message != "" {
-		errorMessage = fmt.Sprintf("%s: %s", errorMessage, message)
-	}
-
-	return errorMessage
-}
-
 func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
@@ -187,11 +150,6 @@ func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
 		},
 		{
 			Type:               buildapi.ConditionBuilderReady,
-			Status:             corev1.ConditionTrue,
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-		},
-		{
-			Type:               buildapi.ConditionSourceResolverReady,
 			Status:             corev1.ConditionTrue,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
