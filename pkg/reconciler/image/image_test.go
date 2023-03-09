@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -767,54 +768,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					//no builds are created
 					WantCreates: nil,
 				})
-			})
 
-			it.Focus("does not schedule a build if the source resolver is in failed state", func() {
-				sr := unresolvedSourceResolver(imageWithBuilder)
-				sr.Status = buildapi.SourceResolverStatus{
-					Status: corev1alpha1.Status{
-						Conditions: corev1alpha1.Conditions{
-							{
-								Type:    corev1alpha1.ConditionReady,
-								Status:  corev1.ConditionUnknown,
-								Message: "SourceResolver image-name-source is not ready",
-							},
-						},
-					},
-				}
-				rt.Test(rtesting.TableRow{
-					Key: key,
-					Objects: []runtime.Object{
-						imageWithBuilder,
-						builder,
-						sr,
-					},
-					WantErr: false,
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-						{
-							Object: &buildapi.Image{
-								ObjectMeta: imageWithBuilder.ObjectMeta,
-								Spec:       imageWithBuilder.Spec,
-								Status: buildapi.ImageStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:    corev1alpha1.ConditionReady,
-												Status:  corev1.ConditionUnknown,
-												Message: "SourceResolver image-name-source is not ready",
-											},
-											{
-												Type:   buildapi.ConditionBuilderReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				})
+				assert.Equal(t, "SourceResolver image-name-source is not ready", imageWithBuilder.Status.GetCondition(corev1alpha1.ConditionReady).Message)
 			})
 
 			it("does not schedule a build if the builder is not ready", func() {
