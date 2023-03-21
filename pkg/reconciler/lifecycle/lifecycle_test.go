@@ -27,7 +27,7 @@ func TestLifecycleReconciler(t *testing.T) {
 func testLifecycleReconciler(t *testing.T, when spec.G, it spec.S) {
 
 	var (
-		fakeTracker        = testhelpers.FakeTracker{}
+		fakeTracker        = &testhelpers.FakeTracker{}
 		lifecycleImageRef  = "gcr.io/lifecycle@sha256:some-sha"
 		serviceAccountName = "lifecycle-sa"
 		namespace          = "kpack"

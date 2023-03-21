@@ -22,7 +22,7 @@ func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
 			Name: "store-name",
 		},
 		Spec: ClusterStoreSpec{
-			Sources: []corev1alpha1.StoreImage{
+			Sources: []corev1alpha1.ImageSource{
 				{
 					Image: "some-registry.io/store-image-1@sha256:78c1b9419976227e05be9d243b7fa583bea44a5258e52018b2af4cdfe23d148d",
 				},
@@ -53,7 +53,7 @@ func testClusterStoreValidation(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("sources should contain a valid image", func() {
-			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, corev1alpha1.StoreImage{Image: "invalid image"})
+			clusterStore.Spec.Sources = append(clusterStore.Spec.Sources, corev1alpha1.ImageSource{Image: "invalid image"})
 			assertValidationError(clusterStore, apis.ErrInvalidArrayValue(clusterStore.Spec.Sources[3], "sources", 3).ViaField("spec"))
 		})
 	})

@@ -24,7 +24,7 @@ type k8sSecretKeychainFactory struct {
 	volumeKeychain authn.Keychain
 }
 
-func NewSecretKeychainFactory(client k8sclient.Interface) (*k8sSecretKeychainFactory, error) {
+func NewSecretKeychainFactory(client k8sclient.Interface) (registry.KeychainFactory, error) {
 	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
 	if err != nil {
 		return nil, err

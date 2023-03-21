@@ -19,12 +19,12 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 ### Documentation & Getting Started
 
 - [Install kpack](docs/install.md)
-- Get started with [the tutorial](docs/tutorial.md) 
+- Get started with [the tutorial](docs/tutorial.md)
 - Check out the documentation on kpack concepts:
     - [Stacks](docs/stack.md)
-    - [Stores](docs/store.md)
     - [Images](docs/image.md)
     - [Secrets](docs/secrets.md)
+    - [Buildpacks and Stores](docs/buildpacks.md)
     - [Builders](docs/builders.md)
     - [Builds](docs/build.md)
     - [Service Bindings](docs/legacy-cnb-servicebindings.md)
@@ -32,7 +32,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 - Interact with kpack using [kpack CLI](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp.md)
 
 - Tailing logs with the kpack [log utility](docs/logs.md)
- 
+
 - Documentation on [Local Development](docs/local.md)
 
 ### kpack Working Group

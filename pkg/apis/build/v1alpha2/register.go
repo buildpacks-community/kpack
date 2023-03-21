@@ -48,6 +48,7 @@ var (
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Build{},
+		&Buildpack{},
 		&BuildList{},
 		&Image{},
 		&ImageList{},
@@ -58,6 +59,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterStore{},
 		&ClusterStoreList{},
 		&ClusterBuilder{},
+		&ClusterBuildpack{},
 		&ClusterBuilderList{},
 		&Builder{},
 		&BuilderList{},

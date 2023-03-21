@@ -36,8 +36,16 @@ func (c *FakeKpackV1alpha2) Builders(namespace string) v1alpha2.BuilderInterface
 	return &FakeBuilders{c, namespace}
 }
 
+func (c *FakeKpackV1alpha2) Buildpacks(namespace string) v1alpha2.BuildpackInterface {
+	return &FakeBuildpacks{c, namespace}
+}
+
 func (c *FakeKpackV1alpha2) ClusterBuilders() v1alpha2.ClusterBuilderInterface {
 	return &FakeClusterBuilders{c}
+}
+
+func (c *FakeKpackV1alpha2) ClusterBuildpacks() v1alpha2.ClusterBuildpackInterface {
+	return &FakeClusterBuildpacks{c}
 }
 
 func (c *FakeKpackV1alpha2) ClusterStacks() v1alpha2.ClusterStackInterface {

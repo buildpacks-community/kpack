@@ -41,14 +41,15 @@ func TestCreateImage(t *testing.T) {
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
-		testNamespace      = "test"
-		dockerSecret       = "docker-secret"
-		serviceAccountName = "image-service-account"
-		builderImage       = "gcr.io/paketo-buildpacks/builder:base"
-		clusterStoreName   = "store"
-		clusterStackName   = "stack"
-		builderName        = "custom-builder"
-		clusterBuilderName = "custom-cluster-builder"
+		testNamespace        = "test"
+		dockerSecret         = "docker-secret"
+		serviceAccountName   = "image-service-account"
+		clusterStoreName     = "store"
+		buildpackName        = "buildpack"
+		clusterBuildpackName = "cluster-buildpack"
+		clusterStackName     = "stack"
+		builderName          = "custom-builder"
+		clusterBuilderName   = "custom-cluster-builder"
 	)
 
 	var (
@@ -65,6 +66,16 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		err = clients.client.KpackV1alpha2().ClusterStores().Delete(ctx, clusterStoreName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().Buildpacks(testNamespace).Delete(ctx, buildpackName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().ClusterBuildpacks().Delete(ctx, clusterBuildpackName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -125,13 +136,37 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterStoreName,
 			},
 			Spec: buildapi.ClusterStoreSpec{
-				Sources: []corev1alpha1.StoreImage{
-					{
-						Image: builderImage,
-					},
-					{
-						Image: "gcr.io/paketo-buildpacks/gradle",
-					},
+				Sources: []corev1alpha1.ImageSource{
+					{Image: "gcr.io/paketo-buildpacks/bellsoft-liberica"},
+					{Image: "gcr.io/paketo-buildpacks/gradle"},
+					{Image: "gcr.io/paketo-buildpacks/syft"},
+					{Image: "gcr.io/paketo-buildpacks/executable-jar"},
+					{Image: "gcr.io/paketo-buildpacks/dist-zip"},
+					{Image: "gcr.io/paketo-buildpacks/spring-boot"},
+				},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		_, err = clients.client.KpackV1alpha2().Buildpacks(testNamespace).Create(ctx, &buildapi.Buildpack{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: buildpackName,
+			},
+			Spec: buildapi.BuildpackSpec{
+				ImageSource: corev1alpha1.ImageSource{
+					Image: "gcr.io/paketo-buildpacks/bellsoft-liberica",
+				},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		_, err = clients.client.KpackV1alpha2().ClusterBuildpacks().Create(ctx, &buildapi.ClusterBuildpack{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterBuildpackName,
+			},
+			Spec: buildapi.ClusterBuildpackSpec{
+				ImageSource: corev1alpha1.ImageSource{
+					Image: "gcr.io/paketo-buildpacks/nodejs",
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -169,47 +204,65 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []corev1alpha1.OrderEntry{
+					Order: []buildapi.BuilderOrderEntry{
 						{
-							Group: []corev1alpha1.BuildpackRef{
+							Group: []buildapi.BuilderBuildpackRef{
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/nodejs",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/nodejs",
+										},
 									},
 								},
 							},
 						},
 						{
-							Group: []corev1alpha1.BuildpackRef{
+							Group: []buildapi.BuilderBuildpackRef{
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/bellsoft-liberica",
+									ObjectReference: corev1.ObjectReference{
+										Name: buildpackName,
+										Kind: "Buildpack",
+									},
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/bellsoft-liberica",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/gradle",
-									},
-									Optional: true,
-								},
-								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/syft",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/gradle",
+										},
+										Optional: true,
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/executable-jar",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/syft",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/dist-zip",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/executable-jar",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/spring-boot",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/dist-zip",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/spring-boot",
+										},
 									},
 								},
 							},
@@ -236,47 +289,60 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
 					},
-					Order: []corev1alpha1.OrderEntry{
+					Order: []buildapi.BuilderOrderEntry{
 						{
-							Group: []corev1alpha1.BuildpackRef{
+							Group: []buildapi.BuilderBuildpackRef{
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/nodejs",
+									ObjectReference: corev1.ObjectReference{
+										Name: clusterBuildpackName,
+										Kind: "ClusterBuildpack",
 									},
 								},
 							},
 						},
 						{
-							Group: []corev1alpha1.BuildpackRef{
+							Group: []buildapi.BuilderBuildpackRef{
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/bellsoft-liberica",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/bellsoft-liberica",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/gradle",
-									},
-									Optional: true,
-								},
-								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/syft",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/gradle",
+										},
+										Optional: true,
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/executable-jar",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/syft",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/dist-zip",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/executable-jar",
+										},
 									},
 								},
 								{
-									BuildpackInfo: corev1alpha1.BuildpackInfo{
-										Id: "paketo-buildpacks/spring-boot",
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/dist-zip",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/spring-boot",
+										},
 									},
 								},
 							},

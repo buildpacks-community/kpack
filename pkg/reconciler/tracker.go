@@ -43,6 +43,7 @@ func KeyForObject(obj Object) Key {
 }
 
 type Tracker interface {
-	Track(ref Key, obj types.NamespacedName) error
+	Track(ref Key, obj types.NamespacedName)
+	TrackKind(kind schema.GroupKind, obj types.NamespacedName)
 	OnChanged(obj interface{})
 }

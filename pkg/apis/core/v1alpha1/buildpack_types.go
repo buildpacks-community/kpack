@@ -4,16 +4,16 @@ import "fmt"
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-type StoreImage struct {
+type ImageSource struct {
 	Image string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-type StoreBuildpack struct {
+type BuildpackStatus struct {
 	BuildpackInfo `json:",inline"`
 	Buildpackage  BuildpackageInfo `json:"buildpackage,omitempty"`
-	StoreImage    StoreImage       `json:"storeImage,omitempty"`
+	StoreImage    ImageSource      `json:"storeImage,omitempty"`
 	DiffId        string           `json:"diffId,omitempty"`
 	Digest        string           `json:"digest,omitempty"`
 	Size          int64            `json:"size,omitempty"`

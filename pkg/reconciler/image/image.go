@@ -133,10 +133,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileImage(ctx context.Context, image *buildapi.Image) (*buildapi.Image, error) {
-	err := c.Tracker.Track(reconcilerKeyForBuilderKind(image), image.NamespacedName())
-	if err != nil {
-		return nil, err
-	}
+	c.Tracker.Track(reconcilerKeyForBuilderKind(image), image.NamespacedName())
 
 	builder, err := c.DuckBuilderLister.Namespace(image.Namespace).Get(image.Spec.Builder)
 	if err != nil && !k8serrors.IsNotFound(err) {
