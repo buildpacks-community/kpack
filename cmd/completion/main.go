@@ -99,16 +99,6 @@ func main() {
 		}
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "error obtaining home directory"))
-	}
-
-	err = creds.Save(filepath.Join(homeDir, ".docker", "config.json"))
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "error writing docker creds"))
-	}
-
 	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
 
 	metadataRetriever := cnb.RemoteMetadataRetriever{
@@ -140,6 +130,21 @@ func main() {
 	}
 
 	if hasCosign() || notaryV1URL != "" {
+		tempDir, err := os.MkdirTemp("", "")
+		if err != nil {
+			log.Fatal(errors.Wrapf(err, "error creating temprary directory"))
+		}
+
+		err = creds.Save(filepath.Join(tempDir, ".docker", "config.json"))
+		if err != nil {
+			log.Fatal(errors.Wrapf(err, "error writing docker creds"))
+		}
+
+		err = os.Setenv("DOCKER_CONFIG", filepath.Join(tempDir, ".docker"))
+		if err != nil {
+			log.Fatal(errors.Wrapf(err, "error setting DOCKER_CONFIG env"))
+		}
+
 		if err := signImage(report, keychain); err != nil {
 			log.Fatal(err)
 		}
