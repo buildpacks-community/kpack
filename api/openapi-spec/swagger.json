@@ -5863,6 +5863,19 @@
         }
       }
     },
+    "kpack.build.v1alpha2.BuilderOrderEntry": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.BuilderBuildpackRef"
+          },
+          "x-kubernetes-list-type": ""
+        }
+      }
+    },
     "kpack.build.v1alpha2.BuilderSpec": {
       "type": "object",
       "properties": {
