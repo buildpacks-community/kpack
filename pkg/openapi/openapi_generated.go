@@ -75,6 +75,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder":                    schema_pkg_apis_build_v1alpha2_Builder(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderBuildpackRef":        schema_pkg_apis_build_v1alpha2_BuilderBuildpackRef(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderList":                schema_pkg_apis_build_v1alpha2_BuilderList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderOrderEntry":          schema_pkg_apis_build_v1alpha2_BuilderOrderEntry(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderSpec":                schema_pkg_apis_build_v1alpha2_BuilderSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderStatus":              schema_pkg_apis_build_v1alpha2_BuilderStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Buildpack":                  schema_pkg_apis_build_v1alpha2_Buildpack(ref),
@@ -2624,6 +2625,38 @@ func schema_pkg_apis_build_v1alpha2_BuilderList(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Builder", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_BuilderOrderEntry(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"group": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderBuildpackRef"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderBuildpackRef"},
 	}
 }
 

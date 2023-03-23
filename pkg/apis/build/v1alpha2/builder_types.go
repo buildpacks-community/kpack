@@ -35,6 +35,7 @@ type BuilderSpec struct {
 	Order []BuilderOrderEntry `json:"order,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type BuilderOrderEntry struct {
 	// +listType
 	Group []BuilderBuildpackRef `json:"group,omitempty"`
