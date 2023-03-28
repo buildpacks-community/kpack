@@ -88,7 +88,8 @@ func previousDigest(keychain authn.Keychain, ref name.Reference) string {
 }
 
 func handleError(err error) error {
-	if transportErr, ok := err.(*transport.Error); ok {
+	var transportErr *transport.Error
+	if errors.As(err, &transportErr) {
 		if transportErr.StatusCode != http.StatusUnauthorized &&
 			transportErr.StatusCode != http.StatusForbidden {
 			return &reconciler.NetworkError{

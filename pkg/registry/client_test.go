@@ -104,7 +104,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 			when("network", func() {
 				it.Before(func() {
 					handler.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-						writer.WriteHeader(404)
+						writer.WriteHeader(http.StatusNotFound)
 					})
 				})
 				it("wraps it to NetworkError", func() {
