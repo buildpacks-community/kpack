@@ -21,7 +21,7 @@ require (
 	github.com/sigstore/cosign v1.13.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.2
 	github.com/theupdateframework/notary v0.6.2-0.20200804143915-84287fd8df4f
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.22.4
 	github.com/whilp/git-urls v1.0.0
