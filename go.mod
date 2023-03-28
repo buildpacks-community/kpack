@@ -3,7 +3,7 @@ module github.com/pivotal/kpack
 go 1.18
 
 require (
-	github.com/BurntSushi/toml v1.1.0
+	github.com/BurntSushi/toml v1.2.1
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20220527150729-7a271a852e31
