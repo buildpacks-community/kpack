@@ -35,11 +35,11 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 			metadataDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
-			os.Unsetenv("HTTPS_PROXY")
+
+			require.NoError(t, os.Unsetenv("HTTPS_PROXY"))
 		})
 
 		it.After(func() {
-			os.Unsetenv("HTTPS_PROXY")
 			require.NoError(t, os.RemoveAll(testDir))
 			require.NoError(t, os.RemoveAll(metadataDir))
 		})
@@ -85,9 +85,10 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		it("preserves symbolic links", func() {
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/symlinks", "master", metadataDir)
 			require.NoError(t, err)
+
 			fileInfo, err := os.Lstat(path.Join(testDir, "bar"))
-			isSymlink := fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink
-			require.True(t, isSymlink, "bar is expected to be a symbolic link")
+			require.NoError(t, err)
+			require.Equal(t, fileInfo.Mode().Type(), os.ModeSymlink)
 		})
 
 		it("preserves executable permission", func() {
@@ -95,12 +96,12 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "apply.sh"))
-			isExecutable := isExecutableByAll(fileInfo.Mode())
-			require.True(t, isExecutable, "apply.sh is expected to be executable by owner, group, and other")
+			require.NoError(t, err)
+			require.True(t, isExecutableByAll(fileInfo.Mode()))
 
 			fileInfo, err = os.Lstat(path.Join(testDir, "hack", "tools.go"))
-			isExecutable = isExecutableByAny(fileInfo.Mode())
-			require.False(t, isExecutable, "tools.go is expected to not be executable")
+			require.NoError(t, err)
+			require.False(t, isExecutableByAny(fileInfo.Mode()))
 		})
 
 		it("returns invalid credentials to fetch error on authentication required", func() {
@@ -111,6 +112,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		it("uses the http proxy env vars", func() {
 			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
 			defer os.Unsetenv("HTTPS_PROXY")
+
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), "no such host")
