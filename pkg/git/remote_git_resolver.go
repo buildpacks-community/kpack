@@ -1,53 +1,42 @@
 package git
 
 import (
-	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"strings"
-
-	git2go "github.com/libgit2/git2go/v33"
-	"github.com/pkg/errors"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	"github.com/go-git/go-git/v5/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 const defaultRemote = "origin"
 
-var discardLogger = log.New(ioutil.Discard, "", 0)
+type remoteGitResolver struct{}
 
-type remoteGitResolver struct {
-}
-
-func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	dir, err := ioutil.TempDir("", "git-resolve")
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, err
-	}
-	defer os.RemoveAll(dir)
-
-	repository, err := git2go.InitRepository(dir, false)
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "initializing repo")
-	}
-	defer repository.Free()
-
-	remote, err := repository.Remotes.CreateWithOptions(parseURL(sourceConfig.Git.URL), &git2go.RemoteCreateOptions{
-		Name:  defaultRemote,
-		Flags: git2go.RemoteCreateSkipInsteadof,
+func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
+	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: defaultRemote,
+		URLs: []string{sourceConfig.Git.URL},
 	})
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "create remote")
-	}
-	defer remote.Free()
 
-	err = remote.ConnectFetch(
-		&git2go.RemoteCallbacks{
-			CredentialsCallback:      keychainAsCredentialsCallback(keychain),
-			CertificateCheckCallback: certificateCheckCallback(),
-		},
-		&git2go.ProxyOptions{Type: git2go.ProxyTypeAuto}, nil)
+	httpsTransport, err := getHttpsTransport()
+	if err != nil {
+		return corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
+				URL:      sourceConfig.Git.URL,
+				Revision: sourceConfig.Git.Revision,
+				Type:     corev1alpha1.Unknown,
+				SubPath:  sourceConfig.SubPath,
+			},
+		}, nil
+	}
+	client.InstallProtocol("https", httpsTransport)
+
+	refs, err := remote.List(&gogit.ListOptions{
+		Auth: auth,
+	})
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{
 			Git: &corev1alpha1.ResolvedGitSource{
@@ -59,23 +48,16 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 		}, nil
 	}
 
-	references, err := remote.Ls()
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{}, errors.Wrap(err, "remote ls")
-	}
-
-	for _, ref := range references {
-		for _, format := range refRevParseRules {
-			if fmt.Sprintf(format, sourceConfig.Git.Revision) == ref.Name {
-				return corev1alpha1.ResolvedSourceConfig{
-					Git: &corev1alpha1.ResolvedGitSource{
-						URL:      sourceConfig.Git.URL,
-						Revision: ref.Id.String(),
-						Type:     sourceType(ref),
-						SubPath:  sourceConfig.SubPath,
-					},
-				}, nil
-			}
+	for _, ref := range refs {
+		if ref.Name().Short() == sourceConfig.Git.Revision {
+			return corev1alpha1.ResolvedSourceConfig{
+				Git: &corev1alpha1.ResolvedGitSource{
+					URL:      sourceConfig.Git.URL,
+					Revision: ref.Hash().String(),
+					Type:     sourceType(ref),
+					SubPath:  sourceConfig.SubPath,
+				},
+			}, nil
 		}
 	}
 
@@ -89,21 +71,13 @@ func (*remoteGitResolver) Resolve(keychain GitKeychain, sourceConfig corev1alpha
 	}, nil
 }
 
-func sourceType(reference git2go.RemoteHead) corev1alpha1.GitSourceKind {
+func sourceType(reference *plumbing.Reference) corev1alpha1.GitSourceKind {
 	switch {
-	case strings.HasPrefix(reference.Name, "refs/heads"):
+	case reference.Name().IsBranch():
 		return corev1alpha1.Branch
-	case strings.HasPrefix(reference.Name, "refs/tags"):
+	case reference.Name().IsTag():
 		return corev1alpha1.Tag
 	default:
 		return corev1alpha1.Unknown
 	}
-}
-
-var refRevParseRules = []string{
-	"refs/%s",
-	"refs/tags/%s",
-	"refs/heads/%s",
-	"refs/remotes/%s",
-	"refs/remotes/%s/HEAD",
 }

@@ -3,6 +3,7 @@ package git
 import (
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,9 +27,9 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 	when("#Resolve", func() {
 		when("source is a commit", func() {
 			it("returns type commit", func() {
-				gitResolver := &remoteGitResolver{}
+				gitResolver := remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      url,
 						Revision: nonHEADCommit,
@@ -37,22 +38,22 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      url,
 						Revision: nonHEADCommit,
 						SubPath:  "/foo/bar",
 						Type:     corev1alpha1.Commit,
 					},
-				})
+				}, resolvedGitSource)
 			})
 		})
 
 		when("source is a branch", func() {
 			it("returns branch with resolved commit", func() {
-				gitResolver := &remoteGitResolver{}
+				gitResolver := remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      url,
 						Revision: "master",
@@ -61,14 +62,14 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      url,
 						Revision: fixtureHEADMasterCommit,
 						Type:     corev1alpha1.Branch,
 						SubPath:  "/foo/bar",
 					},
-				})
+				}, resolvedGitSource)
 			})
 		})
 
@@ -76,9 +77,9 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns tag with resolved commit", func() {
 				tagsUrl := "https://github.com/git-fixtures/tags.git"
 
-				gitResolver := &remoteGitResolver{}
+				gitResolver := remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      tagsUrl,
 						Revision: tag,
@@ -87,38 +88,40 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 				})
 				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      tagsUrl,
 						Revision: tagCommit,
 						Type:     corev1alpha1.Tag,
 						SubPath:  "/foo/bar",
 					},
-				})
+				}, resolvedGitSource)
 			})
 		})
 
 		when("authentication fails", func() {
 			it("returns an unknown type", func() {
-				gitResolver := &remoteGitResolver{}
+				gitResolver := remoteGitResolver{}
 
-				resolvedGitSource, err := gitResolver.Resolve(&fakeGitKeychain{}, corev1alpha1.SourceConfig{
+				resolvedGitSource, _ := gitResolver.Resolve(&http.BasicAuth{
+					Username: "bad-username",
+					Password: "bad-password",
+				}, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      "git@localhost:org/repo",
 						Revision: tag,
 					},
 					SubPath: "/foo/bar",
 				})
-				require.NoError(t, err)
 
-				assert.Equal(t, resolvedGitSource, corev1alpha1.ResolvedSourceConfig{
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "git@localhost:org/repo",
 						Revision: tag,
 						Type:     corev1alpha1.Unknown,
 						SubPath:  "/foo/bar",
 					},
-				})
+				}, resolvedGitSource)
 			})
 		})
 	})

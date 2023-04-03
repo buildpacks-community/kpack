@@ -35,7 +35,7 @@ function compile() {
   completion_image=${IMAGE_PREFIX}completion
   lifecycle_image=${IMAGE_PREFIX}lifecycle
 
-  pack_build ${controller_image} "./cmd/controller" -e BP_GIT2GO_ENABLED=true -e BP_GIT2GO_USE_LIBSSL=true
+  pack_build ${controller_image} "./cmd/controller"
   controller_image=${resolved_image_name}
 
   pack_build ${build_waiter_image} "./cmd/build-waiter"
@@ -44,7 +44,7 @@ function compile() {
   pack_build ${webhook_image} "./cmd/webhook"
   webhook_image=${resolved_image_name}
 
-  pack_build ${build_init_image} "./cmd/build-init" -e BP_GIT2GO_ENABLED=true -e BP_GIT2GO_USE_LIBSSL=true
+  pack_build ${build_init_image} "./cmd/build-init"
   build_init_image=${resolved_image_name}
 
   pack_build ${rebase_image} "./cmd/rebase"

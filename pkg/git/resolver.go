@@ -11,23 +11,23 @@ import (
 
 type Resolver struct {
 	remoteGitResolver remoteGitResolver
-	gitKeychain       *k8sGitKeychainFactory
+	gitKeychain       *k8sGitKeychain
 }
 
 func NewResolver(k8sClient k8sclient.Interface) *Resolver {
 	return &Resolver{
 		remoteGitResolver: remoteGitResolver{},
-		gitKeychain:       newK8sGitKeychainFactory(k8sClient),
+		gitKeychain:       newK8sGitKeychain(k8sClient),
 	}
 }
 
 func (r *Resolver) Resolve(ctx context.Context, sourceResolver *buildapi.SourceResolver) (corev1alpha1.ResolvedSourceConfig, error) {
-	keychain, err := r.gitKeychain.KeychainForServiceAccount(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccountName)
+	auth, err := r.gitKeychain.Resolve(ctx, sourceResolver.Namespace, sourceResolver.Spec.ServiceAccountName, *sourceResolver.Spec.Source.Git)
 	if err != nil {
 		return corev1alpha1.ResolvedSourceConfig{}, err
 	}
 
-	return r.remoteGitResolver.Resolve(keychain, sourceResolver.Spec.Source)
+	return r.remoteGitResolver.Resolve(auth, sourceResolver.Spec.Source)
 }
 
 func (*Resolver) CanResolve(sourceResolver *buildapi.SourceResolver) bool {

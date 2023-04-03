@@ -8,17 +8,20 @@ import (
 	"encoding/pem"
 	"testing"
 
-	git2go "github.com/libgit2/git2go/v33"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
+	ssh2 "golang.org/x/crypto/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func Test(t *testing.T) {
+func TestK8sGitKeychain(t *testing.T) {
 	privateKeyBytes := gitTest{key1: generateRandomPrivateKey(t), key2: generateRandomPrivateKey(t)}
 	spec.Run(t, "Test Git Keychain", privateKeyBytes.testK8sGitKeychain)
 }
@@ -77,19 +80,6 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 			},
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret-4",
-					Namespace: testNamespace,
-					Annotations: map[string]string{
-						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
-					},
-				},
-				Type: v1.SecretTypeSSHAuth,
-				Data: map[string][]byte{
-					v1.SSHAuthPrivateKey: keys.key1,
-				},
-			},
-			&v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-5",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
@@ -117,6 +107,19 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 			},
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-4",
+					Namespace: testNamespace,
+					Annotations: map[string]string{
+						buildapi.GITSecretAnnotationPrefix: "https://gitlab.com",
+					},
+				},
+				Type: v1.SecretTypeSSHAuth,
+				Data: map[string][]byte{
+					v1.SSHAuthPrivateKey: keys.key1,
+				},
+			},
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-7",
 					Namespace: testNamespace,
 					Annotations: map[string]string{
@@ -137,68 +140,85 @@ func (keys gitTest) testK8sGitKeychain(t *testing.T, when spec.G, it spec.S) {
 				Secrets: []v1.ObjectReference{
 					{Name: "secret-1"},
 					{Name: "secret-2"},
-					{Name: "secret-3"},
 					{Name: "secret-4"},
 					{Name: "secret-5"},
+					{Name: "secret-3"},
 					{Name: "secret-6"},
 					{Name: "secret-7"},
 				},
 			})
-		keychainFactory = newK8sGitKeychainFactory(fakeClient)
+		keychain = newK8sGitKeychain(fakeClient)
 	)
 
-	when("Keychain resolves", func() {
-		var keychain GitKeychain
+	when("K8s Keychain resolves", func() {
 
-		it.Before(func() {
-			var err error
-			keychain, err = keychainFactory.KeychainForServiceAccount(context.Background(), testNamespace, serviceAccount)
-			require.NoError(t, err)
-		})
-
-		it("returns  alphabetical first git Auth for matching secrets with basic auth", func() {
-			cred, err := keychain.Resolve("https://github.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+		it("returns alphabetical first git Auth for matching secrets with basic auth", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://github.com/org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{
+			require.Equal(t, &http.BasicAuth{
 				Username: "saved-username",
 				Password: "saved-password",
-			}, cred)
-
-			git2goCred, err := cred.Cred()
-			require.NoError(t, err)
-
-			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeUserpassPlaintext)
+			}, auth)
 		})
 
 		it("returns the alphabetical first secretRef for ssh auth", func() {
-			cred, err := keychain.Resolve("https://gitlab.com/my-repo.git", "gituser", git2go.CredentialTypeSSHKey)
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@gitlab.com:org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, SSHGit2GoAuth{
-				Username:   "gituser",
-				PrivateKey: string(keys.key1),
-			}, cred)
+			publicKeys, ok := auth.(*ssh.PublicKeys)
+			require.True(t, ok)
 
-			git2goCred, err := cred.Cred()
+			require.Equal(t, "git", publicKeys.User)
+
+			expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, expectedSigner, publicKeys.Signer)
+		})
+
+		it("returns git Auth for matching secrets with ssh auth", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "git@bitbucket.com:org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, git2goCred.Type(), git2go.CredentialTypeSSHCustom)
+			publicKeys, ok := auth.(*ssh.PublicKeys)
+			require.True(t, ok)
+
+			require.Equal(t, "git", publicKeys.User)
+
+			signer, err := ssh2.ParsePrivateKey(keys.key1)
+			require.NoError(t, err)
+			require.Equal(t, signer, publicKeys.Signer)
 		})
 
 		it("returns git Auth for matching secrets without scheme", func() {
-			cred, err := keychain.Resolve("https://noschemegit.com/org/repo", "", git2go.CredentialTypeUserpassPlaintext)
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://noschemegit.com/org/repo",
+				Revision: "master",
+			})
 			require.NoError(t, err)
 
-			require.Equal(t, BasicGit2GoAuth{
+			require.Equal(t, &http.BasicAuth{
 				Username: "noschemegit-username",
 				Password: "noschemegit-password",
-			}, cred)
+			}, auth)
 		})
 
-		it("returns an error if no credentials found", func() {
-			_, err := keychain.Resolve("https://no-creds-github.com/org/repo", "git", git2go.CredentialTypeUserpassPlaintext)
-			require.EqualError(t, err, "no credentials found for https://no-creds-github.com/org/repo")
+		it("returns anonymous Auth for no matching secret", func() {
+			auth, err := keychain.Resolve(context.Background(), testNamespace, serviceAccount, v1alpha1.Git{
+				URL:      "https://no-creds-github.com/org/repo",
+				Revision: "master",
+			})
+			require.NoError(t, err)
+			require.Nil(t, auth)
 		})
 	})
 }
