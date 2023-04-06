@@ -20,8 +20,6 @@ type config struct {
 	testRegistryUsername string
 	testRegistryPassword string
 	imageTag             string
-
-	generatedImageNames []string
 }
 
 type dockerCredentials map[string]authn.AuthConfig
@@ -56,7 +54,6 @@ func loadConfig(t *testing.T) config {
 
 func (c *config) newImageTag() string {
 	genTag := c.imageTag + "-" + strconv.Itoa(rand.Int())
-	c.generatedImageNames = append(c.generatedImageNames, genTag)
 	return genTag
 }
 
