@@ -11,8 +11,6 @@ type config struct {
 	builder      string
 	testRegistry string
 	imageTag     string
-
-	generatedImageNames []string
 }
 
 func loadConfig(t *testing.T) config {
@@ -29,6 +27,5 @@ func loadConfig(t *testing.T) config {
 
 func (c *config) newImageTag() string {
 	genTag := c.imageTag + "-" + strconv.Itoa(rand.Int())
-	c.generatedImageNames = append(c.generatedImageNames, genTag)
 	return genTag
 }
