@@ -332,7 +332,7 @@ status:
   conditions:
   - lastTransitionTime: "2020-01-17T16:16:36Z"
     status: "True"
-    type: Succeeded
+    type: Ready
   latestImage: index.docker.io/sample/image@sha256:d3eb15a6fd25cb79039594294419de2328f14b443fa0546fa9e16f5214d61686
   ...
 ``` 
@@ -344,7 +344,7 @@ status:
   conditions:
   - lastTransitionTime: "2020-01-17T16:13:48Z"
     status: "False"
-    type: Succeeded
+    type: Ready
   ...
 ```
 
