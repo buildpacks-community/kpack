@@ -18,7 +18,6 @@ env:
   PUBLIC_IMAGE_DEV_REPO: gcr.io/cf-build-service-public/kpack-dev
   PUBLIC_IMAGE_REPO: gcr.io/cf-build-service-public/kpack
   PACK_VERSION: 0.29.0
-  CRANE_WINDOWS_VERSION: 0.14.0
 
 jobs:
   unit:
@@ -40,153 +39,187 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  build-images-windows:
-    runs-on: windows-2019
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Setup pack
-      run: |
-        url="https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-windows.zip"
-        curl -sSL "$url" -o pack.zip
-        unzip -o pack.zip
-
-        mkdir "${HOME}"/.pack
-        echo "experimental = true" > "${HOME}"/.pack/config.toml
-
-        ./pack version
-
-    - name: Build images
-      if: ${{ steps.cache-images-windows.outputs.cache-hit != 'true' }}
-      run: |
-        export PATH="$PATH:$(pwd)"
-
-        [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
-
-        KPACK_VERSION=$version
-        KPACK_COMMIT=$GITHUB_SHA
-
-        PACK_OPTS="--builder gcr.io/dotnet-build-gcp/go-multios/builder-windows --trust-builder"
-
-        mkdir images-windows
-
-        # usage: pack_save source tag
-        pack_save() {
-          pack build "$2" $PACK_OPTS \
-            --env BP_GO_TARGETS="$1" \
-            --env BP_GO_LDFLAGS="-X 'github.com/pivotal/kpack/cmd.Version=${KPACK_VERSION}' -X 'github.com/pivotal/kpack/cmd.Commit=${KPACK_COMMIT}'"
-          docker save $2 > "images-windows/$2.tar"
-        }
-
-        pack_save '.\cmd\completion' completion-windows
-        pack_save '.\cmd\build-init;.\cmd\network-wait-launcher' build-init-windows
-
-    - name: Upload Image Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: images-windows
-        path: images-windows/*.tar
-
-  build-images-linux:
+  controller-image:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version-file: 'go.mod'
-
-    - name: Setup pack
-      uses: buildpacks/github-actions/setup-pack@v5.0.0
-      with:
-        pack-version: ${{ env.PACK_VERSION }}
-
-    - name: Build images
-      if: ${{ steps.cache-images-linux.outputs.cache-hit != 'true' }}
-      run: |
-        [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
-
-        KPACK_VERSION=$version
-        KPACK_COMMIT=$GITHUB_SHA
-        PACK_OPTS="--network host --builder paketobuildpacks/builder-jammy-tiny"
-
-        mkdir images-linux
-
-        # usage: pack_save source tag
-        pack_save() {
-          pack build "$2" $PACK_OPTS \
-            --env BP_GO_TARGETS="$1" \
-            --env BP_GO_LDFLAGS="-X 'github.com/pivotal/kpack/cmd.Version=${KPACK_VERSION}' -X 'github.com/pivotal/kpack/cmd.Commit=${KPACK_COMMIT}'"
-          docker save $2 > "images-linux/$2.tar"
-        }
-
-        pack_save ./cmd/controller controller
-        pack_save ./cmd/webhook webhook
-        pack_save ./cmd/build-init build-init
-        pack_save ./cmd/rebase rebase
-        pack_save ./cmd/build-waiter build-waiter
-        pack_save ./cmd/completion completion
-        
-        output=$(go run ./hack/lifecycle/main.go --tag=lifecycle --publish=false 2>&1)
-        IMAGE=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
-        docker save $IMAGE > images-linux/lifecycle.tar
-
-    - name: Upload Image Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: images-linux
-        path: images-linux/*.tar
-
-  push-images:
-    runs-on: ubuntu-latest
-    needs:
-    - build-images-linux
-    - build-images-windows
-    steps:
-    - name: Setup crane
-      uses: imjasonh/setup-crane@v0.3
-
-    - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
-      with:
-        token: ${{ secrets.RELEASE_TOKEN }}
-        only: ytt, kapp
-
-    - name: Download artifacts
-      uses: actions/download-artifact@v3
-
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
         registry: gcr.io
         username: _json_key
         password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
+        bp_go_targets: "./cmd/controller"
 
-    - name: Push images
-      env:
-        gcr_token: ${{ secrets.GCR_PUBLIC_SA }}
+  webhook-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/webhook
+        bp_go_targets: "./cmd/webhook"
+
+  completion-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion
+        bp_go_targets: "./cmd/completion"
+
+  build-init-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
+        bp_go_targets: "./cmd/build-init"
+
+  build-waiter-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
+        bp_go_targets: "./cmd/build-waiter"
+
+  rebase-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/rebase
+        bp_go_targets: "./cmd/rebase"
+
+  build-init-windows-image:
+    runs-on: windows-2019
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init-windows
+        bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
+        builder: gcr.io/dotnet-build-gcp/go-multios/builder-windows
+        additional_pack_args: "--trust-builder"
+
+  completion-windows-image:
+    runs-on: windows-2019
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_PUBLIC_SA }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion-windows
+        bp_go_targets: '.\cmd\completion'
+        builder: gcr.io/dotnet-build-gcp/go-multios/builder-windows
+        additional_pack_args: "--trust-builder"
+
+  lifecycle-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: 'go.mod'
+    - name: Build
       run: |
-        mkdir image-refs
-        for image in **/*.tar; do
-          name=$(basename ${image%.tar})
-          crane push $image "${{ env.PUBLIC_IMAGE_DEV_REPO }}/${name}" --image-refs "image-refs/${name}"
-        done
-
-    - name: Upload image refs
+        output=$(go run ./hack/lifecycle/main.go --tag=${{ env.PUBLIC_IMAGE_DEV_REPO }}/lifecycle 2>&1)
+        image=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
+        mkdir images
+        echo $image > images/lifecycle
+    - name: Upload Image Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: image-refs
-        path: image-refs/*
+        name: images
+        path: images/
 
   generate-pre-release-yaml:
     runs-on: ubuntu-latest
     needs:
-    - push-images
-    - build-images-linux
-    - build-images-windows
+    - lifecycle-image
+    - controller-image
+    - webhook-image
+    - completion-image
+    - rebase-image
+    - build-init-image
+    - build-waiter-image
+    - build-init-windows-image
+    - completion-windows-image
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -205,7 +238,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v3
       with:
-        name: image-refs
+        name: images
 
     - name: Build release yaml
       run: |        
@@ -231,9 +264,15 @@ jobs:
   e2e:
     needs:
       - generate-pre-release-yaml
-      - push-images
-      - build-images-linux
-      - build-images-windows
+      - controller-image
+      - webhook-image
+      - completion-image
+      - rebase-image
+      - build-init-image
+      - build-waiter-image
+      - build-init-windows-image
+      - completion-windows-image
+      - lifecycle-image
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -371,9 +410,15 @@ jobs:
       - unit
       - e2e
       - generate-pre-release-yaml
-      - push-images
-      - build-images-linux
-      - build-images-windows
+      - controller-image
+      - webhook-image
+      - completion-image
+      - rebase-image
+      - build-init-image
+      - build-waiter-image
+      - build-init-windows-image
+      - completion-windows-image
+      - lifecycle-image
     if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
     runs-on: ubuntu-latest
     steps:
@@ -419,7 +464,7 @@ jobs:
         gcr_token: ${{ secrets.GCR_PUBLIC_SA }}
       run: |
         mkdir final-image-refs
-        for image in image-refs/*; do
+        for image in images/*; do
           dev_image=$(cat $image)
           digest=$(echo $dev_image| cut -d "@" -f 2)
           
