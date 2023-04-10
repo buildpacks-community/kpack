@@ -55,7 +55,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	case corev1.ConditionFalse:
 		return buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: noScheduledBuild(result.ConditionStatus, builder, latestBuild),
+				Conditions: noScheduledBuild(result.ConditionStatus, builder, latestBuild, sourceResolver),
 			},
 			LatestBuildRef:             latestBuild.BuildRef(),
 			LatestBuildReason:          latestBuild.BuildReason(),
@@ -70,12 +70,17 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	}
 }
 
-func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.BuilderResource, build *buildapi.Build) corev1alpha1.Conditions {
+func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.BuilderResource, build *buildapi.Build, sourceResolver *buildapi.SourceResolver) corev1alpha1.Conditions {
 	if buildNeeded == corev1.ConditionUnknown {
+		message := ""
+		if !sourceResolver.Ready() {
+			message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
+		}
 		return corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionReady,
 				Status:             corev1.ConditionUnknown,
+				Message:            message,
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 			builderCondition(builder),

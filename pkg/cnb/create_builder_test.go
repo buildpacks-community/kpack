@@ -2,6 +2,7 @@ package cnb
 
 import (
 	"archive/tar"
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
-	"github.com/pkg/errors"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +21,7 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -55,12 +56,13 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	var (
 		registryClient = registryfakes.NewFakeClient()
 
-		keychain = authn.NewMultiKeychain(authn.DefaultKeychain)
+		keychainFactory = &registryfakes.FakeKeychainFactory{}
+		keychain        = authn.NewMultiKeychain(authn.DefaultKeychain)
+		secretRef       = registry.SecretRef{}
 
-		buildpackRepository = &fakeBuildpackRepository{buildpacks: map[string][]buildpackLayer{}}
-		newBuildpackRepo    = func(store *buildapi.ClusterStore) BuildpackRepository {
-			return buildpackRepository
-		}
+		ctx = context.Background()
+
+		fetcher = &fakeFetcher{buildpacks: map[string][]buildpackLayer{}, observedGeneration: 10}
 
 		linuxLifecycle = &fakeLayer{
 			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
@@ -88,17 +90,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			digest: "sha256:3bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
 			diffID: "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
 			size:   100,
-		}
-
-		store = &buildapi.ClusterStore{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "sample-store",
-			},
-			Status: buildapi.ClusterStoreStatus{
-				Status: corev1alpha1.Status{
-					ObservedGeneration: 10,
-				},
-			},
 		}
 
 		stack = &buildapi.ClusterStack{
@@ -145,21 +136,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				Name: "some-buildpackRepository",
 				Kind: "ClusterStore",
 			},
-			Order: []corev1alpha1.OrderEntry{
+			Order: []buildapi.BuilderOrderEntry{
 				{
-					Group: []corev1alpha1.BuildpackRef{
+					Group: []buildapi.BuilderBuildpackRef{
 						{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.1",
-								Version: "v1",
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.1",
+									Version: "v1",
+								},
 							},
 						},
 						{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.2",
-								Version: "v2",
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.2",
+									Version: "v2",
+								},
+								Optional: true,
 							},
-							Optional: true,
 						},
 					},
 				},
@@ -169,15 +164,35 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		lifecycleProvider = &fakeLifecycleProvider{}
 
 		subject = RemoteBuilderCreator{
-			RegistryClient:         registryClient,
-			KpackVersion:           "v1.2.3 (git sha: abcdefg123456)",
-			NewBuildpackRepository: newBuildpackRepo,
-			LifecycleProvider:      lifecycleProvider,
+			RegistryClient:    registryClient,
+			KpackVersion:      "v1.2.3 (git sha: abcdefg123456)",
+			KeychainFactory:   keychainFactory,
+			LifecycleProvider: lifecycleProvider,
+		}
+
+		addBuildpack = func(t *testing.T, id, version, homepage, api string, stacks []corev1alpha1.BuildpackStack) {
+			fetcher.AddBuildpack(t, id, version, []buildpackLayer{{
+				v1Layer: buildpack1Layer,
+				BuildpackInfo: DescriptiveBuildpackInfo{
+					BuildpackInfo: corev1alpha1.BuildpackInfo{
+						Id:      id,
+						Version: version,
+					},
+					Homepage: homepage,
+				},
+				BuildpackLayerInfo: BuildpackLayerInfo{
+					API:         api,
+					LayerDiffID: buildpack1Layer.diffID,
+					Stacks:      stacks,
+				},
+			}})
 		}
 	)
 
-	buildpackRepository.AddBP("io.buildpack.1", "v1", []buildpackLayer{
-		{
+	it.Before(func() {
+		keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
+
+		buildpack1 := buildpackLayer{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
@@ -196,33 +211,9 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-		},
-	})
+		}
 
-	buildpackRepository.AddBP("io.buildpack.2", "v2", []buildpackLayer{
-		{
-			v1Layer: buildpack3Layer,
-			BuildpackInfo: DescriptiveBuildpackInfo{
-				BuildpackInfo: corev1alpha1.BuildpackInfo{
-					Id:      "io.buildpack.3",
-					Version: "v3",
-				},
-				Homepage: "buildpack.3.com",
-			},
-			BuildpackLayerInfo: BuildpackLayerInfo{
-				API:         "0.3",
-				LayerDiffID: buildpack3Layer.diffID,
-				Stacks: []corev1alpha1.BuildpackStack{
-					{
-						ID: stackID,
-					},
-					{
-						ID: "io.some.other.stack",
-					},
-				},
-			},
-		},
-		{
+		buildpack2 := buildpackLayer{
 			v1Layer: buildpack2Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
 				BuildpackInfo: corev1alpha1.BuildpackInfo{
@@ -248,7 +239,32 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-		},
+		}
+		buildpack3 := buildpackLayer{
+			v1Layer: buildpack3Layer,
+			BuildpackInfo: DescriptiveBuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.3",
+					Version: "v3",
+				},
+				Homepage: "buildpack.3.com",
+			},
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				API:         "0.3",
+				LayerDiffID: buildpack3Layer.diffID,
+				Stacks: []corev1alpha1.BuildpackStack{
+					{
+						ID: stackID,
+					},
+					{
+						ID: "io.some.other.stack",
+					},
+				},
+			},
+		}
+
+		fetcher.AddBuildpack(t, "io.buildpack.1", "v1", []buildpackLayer{buildpack1})
+		fetcher.AddBuildpack(t, "io.buildpack.2", "v2", []buildpackLayer{buildpack3, buildpack2})
 	})
 
 	registryClient.AddSaveKeychain("custom/example", keychain)
@@ -298,7 +314,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+			builderRecord, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 3)
@@ -560,11 +576,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+			original, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				other, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
@@ -574,83 +590,51 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 		when("validating buildpacks", func() {
 			it("errors with unsupported stack", func() {
-				buildpackRepository.AddBP("io.buildpack.unsupported.stack", "v4", []buildpackLayer{
-					{
-						v1Layer: buildpack1Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
-							BuildpackInfo: corev1alpha1.BuildpackInfo{
-								Id:      "io.buildpack.unsupported.stack",
-								Version: "v4",
-							},
-							Homepage: "buildpack.4.com",
+				addBuildpack(t, "io.buildpack.unsupported.stack", "v4", "buildpack.4.com", "0.2",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID: "io.buildpacks.stacks.unsupported",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.2",
-							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID: "io.buildpacks.stacks.unsupported",
-								},
-							},
-						},
-					},
-				})
+					})
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{
 					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
+						Group: []buildapi.BuilderBuildpackRef{{
+							BuildpackRef: corev1alpha1.BuildpackRef{
 								BuildpackInfo: corev1alpha1.BuildpackInfo{
 									Id:      "io.buildpack.unsupported.stack",
 									Version: "v4",
 								},
 							},
-						},
+						}},
 					},
 				}
 
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
 			it("errors with unsupported mixin", func() {
-				buildpackRepository.AddBP("io.buildpack.unsupported.mixin", "v4", []buildpackLayer{
-					{
-						v1Layer: buildpack1Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
+				addBuildpack(t, "io.buildpack.unsupported.mixin", "v4", "buildpack.1.com", "0.2",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID:     stackID,
+							Mixins: []string{mixin, "something-missing-mixin", "something-missing-mixin2"},
+						},
+					})
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.mixin",
 								Version: "v4",
 							},
-							Homepage: "buildpack.1.com",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.2",
-							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID:     stackID,
-									Mixins: []string{mixin, "something-missing-mixin", "something-missing-mixin2"},
-								},
-							},
-						},
-					},
-				})
+					}},
+				}}
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.unsupported.mixin",
-									Version: "v4",
-								},
-							},
-						},
-					},
-				}
-
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
@@ -675,124 +659,75 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				buildpackRepository.AddBP("io.buildpack.relaxed.mixin", "v4", []buildpackLayer{
-					{
-						v1Layer: buildpack1Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
+				addBuildpack(t, "io.buildpack.relaxed.mixin", "v4", "buildpack.1.com", "0.2",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID:     stackID,
+							Mixins: []string{mixin, "build:common-mixin", "run:common-mixin", "another-common-mixin"},
+						},
+					},
+				)
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.relaxed.mixin",
 								Version: "v4",
 							},
-							Homepage: "buildpack.1.com",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.2",
-							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID:     stackID,
-									Mixins: []string{mixin, "build:common-mixin", "run:common-mixin", "another-common-mixin"},
-								},
-							},
-						},
-					},
-				})
+					}},
+				}}
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.relaxed.mixin",
-									Version: "v4",
-								},
-							},
-						},
-					},
-				}
-
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Nil(t, err)
 			})
 
 			it("ignores relaxed mixin contract with an older platform api", func() {
-				buildpackRepository.AddBP("io.buildpack.relaxed.old.mixin", "v4", []buildpackLayer{
-					{
-						v1Layer: buildpack1Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
+				addBuildpack(t, "io.buildpack.relaxed.old.mixin", "v4", "buildpack.1.com", "0.3",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID:     stackID,
+							Mixins: []string{mixin, "build:common-mixin", "run:common-mixin", "another-common-mixin"},
+						},
+					},
+				)
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.relaxed.old.mixin",
 								Version: "v4",
 							},
-							Homepage: "buildpack.1.com",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.3",
-							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID:     stackID,
-									Mixins: []string{mixin, "build:common-mixin", "run:common-mixin", "another-common-mixin"},
-								},
-							},
-						},
-					},
-				})
+					}},
+				}}
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.relaxed.old.mixin",
-									Version: "v4",
-								},
-							},
-						},
-					},
-				}
-
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
 			})
 
 			it("errors with unsupported buildpack version", func() {
-				buildpackRepository.AddBP("io.buildpack.unsupported.buildpack.api", "v4", []buildpackLayer{
-					{
-						v1Layer: buildpack1Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
+				addBuildpack(t, "io.buildpack.unsupported.buildpack.api", "v4", "buildpack.4.com", "0.1",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID: stackID,
+						},
+					})
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "io.buildpack.unsupported.buildpack.api",
 								Version: "v4",
 							},
-							Homepage: "buildpack.4.com",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.1",
-							LayerDiffID: buildpack1Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID: stackID,
-								},
-							},
-						},
-					},
-				})
+					}},
+				}}
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "io.buildpack.unsupported.buildpack.api",
-									Version: "v4",
-								},
-							},
-						},
-					},
-				}
-
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 
@@ -817,42 +752,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				buildpackRepository.AddBP("anystack.buildpack", "v1", []buildpackLayer{
-					{
-						v1Layer: buildpack3Layer,
-						BuildpackInfo: DescriptiveBuildpackInfo{
+				addBuildpack(t, "anystack.buildpack", "v1", "buildpacks.com", "0.5",
+					[]corev1alpha1.BuildpackStack{
+						{
+							ID: "*",
+						},
+					})
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{{
+					Group: []buildapi.BuilderBuildpackRef{{
+						BuildpackRef: corev1alpha1.BuildpackRef{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{
 								Id:      "anystack.buildpack",
 								Version: "v1",
 							},
-							Homepage: "buildpacks.com",
 						},
-						BuildpackLayerInfo: BuildpackLayerInfo{
-							API:         "0.5",
-							LayerDiffID: buildpack3Layer.diffID,
-							Stacks: []corev1alpha1.BuildpackStack{
-								{
-									ID: "*",
-								},
-							},
-						},
-					},
-				})
+					}},
+				}}
 
-				clusterBuilderSpec.Order = []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "anystack.buildpack",
-									Version: "v1",
-								},
-							},
-						},
-					},
-				}
-
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 			})
 		})
@@ -879,7 +797,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(keychain, store, stack, clusterBuilderSpec)
+				_, err := subject.CreateBuilder(ctx, keychain, fetcher, stack, clusterBuilderSpec)
 				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.999, expecting one of: 0.3, 0.4, 0.5, 0.6, 0.7, 0.8")
 			})
 		})
@@ -895,22 +813,6 @@ func (p *fakeLifecycleProvider) LayerForOS(os string) (v1.Layer, LifecycleMetada
 	return p.layers[os], p.metadata, nil
 }
 
-type fakeBuildpackRepository struct {
-	buildpacks map[string][]buildpackLayer
-}
-
-func (f *fakeBuildpackRepository) FindByIdAndVersion(id, version string) (RemoteBuildpackInfo, error) {
-	layers, ok := f.buildpacks[fmt.Sprintf("%s@%s", id, version)]
-	if !ok {
-		return RemoteBuildpackInfo{}, errors.New("buildpack not found")
-	}
-
-	return RemoteBuildpackInfo{
-		BuildpackInfo: buildpackInfoInLayers(layers, id, version),
-		Layers:        layers,
-	}, nil
-}
-
 func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string) DescriptiveBuildpackInfo {
 	for _, b := range buildpackLayers {
 		if b.BuildpackInfo.Id == id && b.BuildpackInfo.Version == version {
@@ -918,10 +820,6 @@ func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string)
 		}
 	}
 	panic("unexpected missing buildpack info")
-}
-
-func (f *fakeBuildpackRepository) AddBP(id, version string, layers []buildpackLayer) {
-	f.buildpacks[fmt.Sprintf("%s@%s", id, version)] = layers
 }
 
 type content struct {
@@ -1018,4 +916,22 @@ type layerIteratorTester int
 func (i *layerIteratorTester) testNextLayer(name string, test func(index int)) {
 	test(int(*i))
 	*i++
+}
+
+func layerToRemoteBuildpack(bpLayer buildpackLayer, layer *fakeLayer, secretRef registry.SecretRef) K8sRemoteBuildpack {
+	return K8sRemoteBuildpack{
+		Buildpack: corev1alpha1.BuildpackStatus{
+			BuildpackInfo: corev1alpha1.BuildpackInfo{
+				Id:      bpLayer.BuildpackInfo.Id,
+				Version: bpLayer.BuildpackInfo.Version,
+			},
+			DiffId:   layer.diffID,
+			Digest:   layer.digest,
+			Size:     layer.size,
+			Homepage: bpLayer.BuildpackInfo.Homepage,
+			API:      bpLayer.BuildpackLayerInfo.API,
+			Stacks:   bpLayer.BuildpackLayerInfo.Stacks,
+		},
+		SecretRef: secretRef,
+	}
 }

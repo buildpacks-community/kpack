@@ -1,6 +1,7 @@
-package clusterBuilder_test
+package clusterbuilder_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -18,8 +19,9 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/cnb"
 	kreconciler "github.com/pivotal/kpack/pkg/reconciler"
-	clusterBuilder "github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
@@ -41,21 +43,22 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	var (
 		builderCreator  = &testhelpers.FakeBuilderCreator{}
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		fakeTracker     = testhelpers.FakeTracker{}
+		fakeTracker     = &testhelpers.FakeTracker{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
-			r := &clusterBuilder.Reconciler{
-				Client:               fakeClient,
-				ClusterBuilderLister: listers.GetClusterBuilderLister(),
-				BuilderCreator:       builderCreator,
-				KeychainFactory:      keychainFactory,
-				Tracker:              fakeTracker,
-				ClusterStoreLister:   listers.GetClusterStoreLister(),
-				ClusterStackLister:   listers.GetClusterStackLister(),
+			r := &clusterbuilder.Reconciler{
+				Client:                 fakeClient,
+				ClusterBuilderLister:   listers.GetClusterBuilderLister(),
+				BuilderCreator:         builderCreator,
+				KeychainFactory:        keychainFactory,
+				Tracker:                fakeTracker,
+				ClusterStoreLister:     listers.GetClusterStoreLister(),
+				ClusterBuildpackLister: listers.GetClusterBuildpackLister(),
+				ClusterStackLister:     listers.GetClusterStackLister(),
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -93,6 +96,16 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	clusterBuildpack := &buildapi.ClusterBuildpack{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "buildpack.id.4",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterBuildpack",
+			APIVersion: "kpack.io/v1alpha2",
+		},
+	}
+
 	builder := &buildapi.ClusterBuilder{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       builderName,
@@ -113,22 +126,27 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					Kind: "ClusterStore",
 					Name: "some-store",
 				},
-				Order: []corev1alpha1.OrderEntry{
+				Order: []buildapi.BuilderOrderEntry{
 					{
-						Group: []corev1alpha1.BuildpackRef{
+						Group: []buildapi.BuilderBuildpackRef{
 							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "buildpack.id.1",
-									Version: "1.0.0",
+								BuildpackRef: corev1alpha1.BuildpackRef{
+
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id:      "buildpack.id.1",
+										Version: "1.0.0",
+									},
+									Optional: false,
 								},
-								Optional: false,
 							},
 							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{
-									Id:      "buildpack.id.2",
-									Version: "2.0.0",
+								BuildpackRef: corev1alpha1.BuildpackRef{
+									BuildpackInfo: corev1alpha1.BuildpackInfo{
+										Id:      "buildpack.id.2",
+										Version: "2.0.0",
+									},
+									Optional: false,
 								},
-								Optional: false,
 							},
 						},
 					},
@@ -206,12 +224,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 
+			expectedFetcher := cnb.NewRemoteBuildpackFetcher(keychainFactory, clusterStore, nil, []*buildapi.ClusterBuildpack{clusterBuildpack})
+
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
 					clusterStack,
 					clusterStore,
 					builder,
+					clusterBuildpack,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -222,8 +243,9 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
+				Context:      context.Background(),
 				Keychain:     &registryfakes.FakeKeychain{},
-				ClusterStore: clusterStore,
+				Fetcher:      expectedFetcher,
 				ClusterStack: clusterStack,
 				BuilderSpec:  builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
@@ -276,6 +298,9 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				kreconciler.KeyForObject(clusterStore), expectedBuilder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+
+			require.True(t, fakeTracker.IsTrackingKind(
+				kreconciler.KeyForObject(clusterBuildpack).GroupKind, builder.NamespacedName()))
 		})
 
 		it("does not update the status with no status change", func() {
@@ -418,9 +443,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			// still track resources
 			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(clusterStore),
-				builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(notReadyClusterStack),
 				builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
@@ -459,9 +481,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 
 			// still track resources
 			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(clusterStore),
-				builder.NamespacedName()))
-			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack),
 				builder.NamespacedName()))
 			require.Len(t, builderCreator.CreateBuilderCalls, 0)
@@ -499,9 +518,6 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			// still track resources
-			require.True(t, fakeTracker.IsTracking(
-				kreconciler.KeyForObject(clusterStore),
-				builder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack),
 				builder.NamespacedName()))

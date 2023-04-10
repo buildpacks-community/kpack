@@ -74,8 +74,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Builds().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("builders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Builders().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("buildpacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Buildpacks().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterbuilders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterBuilders().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("clusterbuildpacks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterBuildpacks().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterstacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterStacks().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterstores"):

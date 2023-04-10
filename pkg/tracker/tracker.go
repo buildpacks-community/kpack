@@ -26,11 +26,14 @@ import (
 	"time"
 
 	"github.com/pivotal/kpack/pkg/reconciler"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 func New(callback func(types.NamespacedName), lease time.Duration) *Tracker {
 	return &Tracker{
+		objects:       make(map[string]set),
+		kinds:         make(map[string]set),
 		leaseDuration: lease,
 		cb:            callback,
 	}
@@ -38,9 +41,13 @@ func New(callback func(types.NamespacedName), lease time.Duration) *Tracker {
 
 type Tracker struct {
 	m sync.Mutex
-	// mapping maps from an object reference to the set of
+	// objects maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[string]set
+	objects map[string]set
+
+	// kinds maps from group version kind to the set of
+	// keys for objects watching it.
+	kinds map[string]set
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -53,26 +60,36 @@ type Tracker struct {
 type set map[types.NamespacedName]time.Time
 
 // Track implements Interface.
-func (i *Tracker) Track(ref reconciler.Key, obj types.NamespacedName) error {
+func (i *Tracker) Track(ref reconciler.Key, obj types.NamespacedName) {
 	i.m.Lock()
 	defer i.m.Unlock()
-	if i.mapping == nil {
-		i.mapping = make(map[string]set)
-	}
 
-	l, ok := i.mapping[ref.String()]
+	l, ok := i.objects[ref.String()]
 	if !ok {
 		l = set{}
 	}
 	// Overwrite the key with a new expiration.
 	l[obj] = time.Now().Add(i.leaseDuration)
 
-	i.mapping[ref.String()] = l
-	return nil
+	i.objects[ref.String()] = l
 }
 
 func isExpired(expiry time.Time) bool {
 	return time.Now().After(expiry)
+}
+
+func (i *Tracker) TrackKind(kind schema.GroupKind, obj types.NamespacedName) {
+	i.m.Lock()
+	defer i.m.Unlock()
+
+	l, ok := i.objects[kind.String()]
+	if !ok {
+		l = set{}
+	}
+	// Overwrite the key with a new expiration.
+	l[obj] = time.Now().Add(i.leaseDuration)
+
+	i.kinds[kind.String()] = l
 }
 
 // OnChanged implements Interface.
@@ -88,7 +105,12 @@ func (i *Tracker) OnChanged(obj interface{}) {
 	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[key.String()]
+	i.notify(i.objects, key.String())
+	i.notify(i.kinds, key.GroupKind.String())
+}
+
+func (i *Tracker) notify(mapping map[string]set, key string) {
+	s, ok := mapping[key]
 	if !ok {
 		// TODO(mattmoor): We should consider logging here.
 		return
@@ -104,6 +126,6 @@ func (i *Tracker) OnChanged(obj interface{}) {
 	}
 
 	if len(s) == 0 {
-		delete(i.mapping, key.String())
+		delete(mapping, key)
 	}
 }

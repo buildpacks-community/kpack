@@ -84,7 +84,7 @@ func testAccessChecker(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			err := VerifyReadAccess(testKeychain{}, tagName)
-			assert.EqualError(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 404 Not Found", server.URL))
+			assert.ErrorContains(t, err, fmt.Sprintf("GET %s/v2/: unexpected status code 404 Not Found", server.URL))
 		})
 	})
 }

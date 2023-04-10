@@ -21,8 +21,12 @@ rules:
   - images/finalizers
   - builders
   - builders/status
+  - buildpacks
+  - buildpacks/status
   - clusterbuilders
   - clusterbuilders/status
+  - clusterbuildpacks
+  - clusterbuildpacks/status
   - clusterstores
   - clusterstores/status
   - clusterstacks

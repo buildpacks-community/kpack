@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/logging/logkey"
@@ -31,10 +32,8 @@ const (
 	ReconcilerName = "Builders"
 )
 
-type NewBuildpackRepository func(clusterStore *buildapi.ClusterStore) cnb.BuildpackRepository
-
 type BuilderCreator interface {
-	CreateBuilder(keychain authn.Keychain, clusterStore *buildapi.ClusterStore, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
+	CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
 }
 
 func NewController(
@@ -44,15 +43,19 @@ func NewController(
 	builderCreator BuilderCreator,
 	keychainFactory registry.KeychainFactory,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
+	buildpackInformer buildinformers.BuildpackInformer,
+	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
-		Client:             opt.Client,
-		BuilderLister:      builderInformer.Lister(),
-		BuilderCreator:     builderCreator,
-		KeychainFactory:    keychainFactory,
-		ClusterStoreLister: clusterStoreInformer.Lister(),
-		ClusterStackLister: clusterStackInformer.Lister(),
+		Client:                 opt.Client,
+		BuilderLister:          builderInformer.Lister(),
+		BuilderCreator:         builderCreator,
+		KeychainFactory:        keychainFactory,
+		ClusterStoreLister:     clusterStoreInformer.Lister(),
+		BuildpackLister:        buildpackInformer.Lister(),
+		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
+		ClusterStackLister:     clusterStackInformer.Lister(),
 	}
 
 	logger := opt.Logger.With(
@@ -79,6 +82,16 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
+	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.BuildpackKind)),
+	))
+	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
+	))
 
 	return impl, func() {
 		impl.GlobalResync(builderInformer.Informer())
@@ -86,13 +99,15 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client             versioned.Interface
-	BuilderLister      buildlisters.BuilderLister
-	BuilderCreator     BuilderCreator
-	KeychainFactory    registry.KeychainFactory
-	Tracker            reconciler.Tracker
-	ClusterStoreLister buildlisters.ClusterStoreLister
-	ClusterStackLister buildlisters.ClusterStackLister
+	Client                 versioned.Interface
+	BuilderLister          buildlisters.BuilderLister
+	BuilderCreator         BuilderCreator
+	KeychainFactory        registry.KeychainFactory
+	Tracker                reconciler.Tracker
+	ClusterStoreLister     buildlisters.ClusterStoreLister
+	BuildpackLister        buildlisters.BuildpackLister
+	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
+	ClusterStackLister     buildlisters.ClusterStackLister
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -126,35 +141,55 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Builder) (buildapi.BuilderRecord, error) {
-	err := c.Tracker.Track(reconciler.Key{
-		NamespacedName: types.NamespacedName{
-			Name:      builder.Spec.Store.Name,
-			Namespace: v1.NamespaceAll,
-		},
-		GroupKind: schema.GroupKind{
-			Group: "kpack.io",
-			Kind:  buildapi.ClusterStoreKind,
-		},
-	}, builder.NamespacedName())
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	err = c.Tracker.Track(reconciler.Key{
+	c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
 			Name:      builder.Spec.Stack.Name,
-			Namespace: v1.NamespaceAll,
+			Namespace: metav1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
 			Group: "kpack.io",
 			Kind:  buildapi.ClusterStackKind,
 		},
 	}, builder.NamespacedName())
+
+	var (
+		clusterStore *buildapi.ClusterStore
+		err          error
+	)
+	if builder.Spec.Store.Name != "" {
+		c.Tracker.Track(reconciler.Key{
+			NamespacedName: types.NamespacedName{
+				Name:      builder.Spec.Store.Name,
+				Namespace: metav1.NamespaceAll,
+			},
+			GroupKind: schema.GroupKind{
+				Group: "kpack.io",
+				Kind:  buildapi.ClusterStoreKind,
+			},
+		}, builder.NamespacedName())
+
+		clusterStore, err = c.ClusterStoreLister.Get(builder.Spec.Store.Name)
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
+	c.Tracker.TrackKind(schema.GroupKind{
+		Group: "kpack.io",
+		Kind:  buildapi.BuildpackKind,
+	}, builder.NamespacedName())
+
+	c.Tracker.TrackKind(schema.GroupKind{
+		Group: "kpack.io",
+		Kind:  buildapi.ClusterBuildpackKind,
+	}, builder.NamespacedName())
+
+	buildpacks, err := c.BuildpackLister.Buildpacks(builder.Namespace).List(labels.Everything())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
 
-	clusterStore, err := c.ClusterStoreLister.Get(builder.Spec.Store.Name)
+	clusterBuildpacks, err := c.ClusterBuildpackLister.List(labels.Everything())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -176,7 +211,14 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, err
 	}
 
-	return c.BuilderCreator.CreateBuilder(keychain, clusterStore, clusterStack, builder.Spec.BuilderSpec)
+	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
+
+	buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, keychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	return buildRecord, nil
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder) error {
@@ -191,6 +233,6 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha2().Builders(desired.Namespace).UpdateStatus(ctx, desired, v1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().Builders(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }

@@ -7,6 +7,7 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func (b *Builder) ConvertTo(_ context.Context, to apis.Convertible) error {
@@ -39,16 +40,44 @@ func (bs *NamespacedBuilderSpec) convertTo(to *v1alpha1.NamespacedBuilderSpec) {
 	to.Tag = bs.Tag
 	to.Stack = bs.Stack
 	to.Store = bs.Store
-	to.Order = bs.Order
 	to.ServiceAccount = bs.ServiceAccount()
+
+	for _, builderOrderEntry := range bs.Order {
+		var coreOrderEntry corev1alpha1.OrderEntry
+		for _, ref := range builderOrderEntry.Group {
+			if ref.Id != "" {
+				coreOrderEntry.Group = append(coreOrderEntry.Group,
+					corev1alpha1.BuildpackRef{
+						BuildpackInfo: corev1alpha1.BuildpackInfo{Id: ref.Id, Version: ref.Version},
+						Optional:      ref.Optional,
+					},
+				)
+			}
+		}
+		to.Order = append(to.Order, coreOrderEntry)
+	}
 }
 
 func (bs *NamespacedBuilderSpec) convertFrom(from *v1alpha1.NamespacedBuilderSpec) {
 	bs.Tag = from.Tag
 	bs.Stack = from.Stack
 	bs.Store = from.Store
-	bs.Order = from.Order
 	bs.ServiceAccountName = from.ServiceAccount
+
+	for _, coreOrderEntry := range from.Order {
+		var builderOrderEntry BuilderOrderEntry
+		for _, ref := range coreOrderEntry.Group {
+			builderOrderEntry.Group = append(builderOrderEntry.Group,
+				BuilderBuildpackRef{
+					BuildpackRef: corev1alpha1.BuildpackRef{
+						BuildpackInfo: corev1alpha1.BuildpackInfo{Id: ref.Id, Version: ref.Version},
+						Optional:      ref.Optional,
+					},
+				},
+			)
+		}
+		bs.Order = append(bs.Order, builderOrderEntry)
+	}
 }
 
 func (bst *BuilderStatus) convertFrom(from *v1alpha1.BuilderStatus) {

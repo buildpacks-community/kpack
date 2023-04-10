@@ -28,8 +28,12 @@ type Interface interface {
 	Builds() BuildInformer
 	// Builders returns a BuilderInformer.
 	Builders() BuilderInformer
+	// Buildpacks returns a BuildpackInformer.
+	Buildpacks() BuildpackInformer
 	// ClusterBuilders returns a ClusterBuilderInformer.
 	ClusterBuilders() ClusterBuilderInformer
+	// ClusterBuildpacks returns a ClusterBuildpackInformer.
+	ClusterBuildpacks() ClusterBuildpackInformer
 	// ClusterStacks returns a ClusterStackInformer.
 	ClusterStacks() ClusterStackInformer
 	// ClusterStores returns a ClusterStoreInformer.
@@ -61,9 +65,19 @@ func (v *version) Builders() BuilderInformer {
 	return &builderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// Buildpacks returns a BuildpackInformer.
+func (v *version) Buildpacks() BuildpackInformer {
+	return &buildpackInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // ClusterBuilders returns a ClusterBuilderInformer.
 func (v *version) ClusterBuilders() ClusterBuilderInformer {
 	return &clusterBuilderInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterBuildpacks returns a ClusterBuildpackInformer.
+func (v *version) ClusterBuildpacks() ClusterBuildpackInformer {
+	return &clusterBuildpackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterStacks returns a ClusterStackInformer.

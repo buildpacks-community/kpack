@@ -32,7 +32,20 @@ type BuilderSpec struct {
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
 	Store corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
-	Order []corev1alpha1.OrderEntry `json:"order,omitempty"`
+	Order []BuilderOrderEntry `json:"order,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type BuilderOrderEntry struct {
+	// +listType
+	Group []BuilderBuildpackRef `json:"group,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type BuilderBuildpackRef struct {
+	corev1alpha1.BuildpackRef `json:",inline"`
+	corev1.ObjectReference    `json:",inline"`
+	Image                     string `json:"image,omitempty"`
 }
 
 // +k8s:openapi-gen=true

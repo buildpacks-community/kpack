@@ -2,16 +2,14 @@ package git
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	git2go "github.com/libgit2/git2go/v33"
-	"github.com/pkg/errors"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 )
@@ -32,11 +30,13 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it.Before(func() {
 			var err error
-			testDir, err = ioutil.TempDir("", "test-git")
+			testDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
 
-			metadataDir, err = ioutil.TempDir("", "test-git")
+			metadataDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
+
+			require.NoError(t, os.Unsetenv("HTTPS_PROXY"))
 		})
 
 		it.After(func() {
@@ -49,33 +49,23 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				err := fetcher.Fetch(testDir, gitUrl, revision, metadataDir)
 				require.NoError(t, err)
 
-				repository, err := git2go.InitRepository(testDir, false)
+				repository, err := gogit.PlainOpen(testDir)
 				require.NoError(t, err)
-				defer repository.Free()
+				require.Contains(t, outputBuffer.String(), "Successfully cloned")
 
-				empty, err := repository.IsEmpty()
-				require.NoError(t, err)
-				require.False(t, empty)
-
-				state := repository.State()
-				require.Equal(t, state, git2go.RepositoryStateNone)
-
-				require.Contains(t, outputBuffer.String(), fmt.Sprintf("Successfully cloned \"%s\" @ \"%s\"", gitUrl, revision))
-
-				require.FileExists(t, path.Join(metadataDir, "project-metadata.toml"))
+				p := path.Join(metadataDir, "project-metadata.toml")
+				require.FileExists(t, p)
 
 				var projectMetadata project
-				_, err = toml.DecodeFile(path.Join(metadataDir, "project-metadata.toml"), &projectMetadata)
+				_, err = toml.DecodeFile(p, &projectMetadata)
 				require.NoError(t, err)
-
 				require.Equal(t, "git", projectMetadata.Source.Type)
 				require.Equal(t, gitUrl, projectMetadata.Source.Metadata.Repository)
 				require.Equal(t, revision, projectMetadata.Source.Metadata.Revision)
 
-				head, err := repository.Head()
+				hash, err := repository.ResolveRevision("HEAD")
 				require.NoError(t, err)
-				defer head.Free()
-				require.Equal(t, head.Target().String(), projectMetadata.Source.Version.Commit)
+				require.Equal(t, hash.String(), projectMetadata.Source.Version.Commit)
 			}
 		}
 
@@ -89,26 +79,57 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns error on non-existent ref", func() {
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", metadataDir)
-			require.EqualError(t, err, "could not find reference: doesnotexist")
+			require.EqualError(t, err, "resolving revision: reference not found")
 		})
 
-		it("returns error from remote fetch when authentication required", func() {
+		it("preserves symbolic links", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/symlinks", "master", metadataDir)
+			require.NoError(t, err)
+
+			fileInfo, err := os.Lstat(path.Join(testDir, "bar"))
+			require.NoError(t, err)
+			require.Equal(t, fileInfo.Mode().Type(), os.ModeSymlink)
+		})
+
+		it("preserves executable permission", func() {
+			err := fetcher.Fetch(testDir, "https://github.com/pivotal/kpack", "main", metadataDir)
+			require.NoError(t, err)
+
+			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "apply.sh"))
+			require.NoError(t, err)
+			require.True(t, isExecutableByAll(fileInfo.Mode()))
+
+			fileInfo, err = os.Lstat(path.Join(testDir, "hack", "tools.go"))
+			require.NoError(t, err)
+			require.False(t, isExecutableByAny(fileInfo.Mode()))
+		})
+
+		it("returns invalid credentials to fetch error on authentication required", func() {
 			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", metadataDir)
-			require.EqualError(t, err, "fetching remote: no auth available")
+			require.ErrorContains(t, err, "unable to fetch references for repository")
 		})
 
 		it("uses the http proxy env vars", func() {
 			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
 			defer os.Unsetenv("HTTPS_PROXY")
+
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "fetching remote: failed to resolve address for invalid-proxy")
+			require.Contains(t, err.Error(), "no such host")
 		})
 	})
 }
 
+func isExecutableByAny(mode os.FileMode) bool {
+	return mode&0111 != 0
+}
+
+func isExecutableByAll(mode os.FileMode) bool {
+	return mode&0111 == 0111
+}
+
 type fakeGitKeychain struct{}
 
-func (f fakeGitKeychain) Resolve(url string, usernameFromUrl string, allowedTypes git2go.CredentialType) (Git2GoCredential, error) {
-	return nil, errors.New("no auth available")
+func (f fakeGitKeychain) Resolve(gitUrl string) (transport.AuthMethod, error) {
+	return nil, nil
 }

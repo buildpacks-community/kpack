@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sclevine/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -45,7 +46,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		someValueToPassThrough       = "to-pass-through"
 		originalGeneration     int64 = 1
 	)
-	fakeTracker := testhelpers.FakeTracker{}
+	fakeTracker := &testhelpers.FakeTracker{}
 
 	rt := testhelpers.ReconcilerTester(t,
 		func(t *testing.T, row *rtesting.TableRow) (reconciler controller.Reconciler, lists rtesting.ActionRecorderList, list rtesting.EventList) {
@@ -764,7 +765,11 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 						unresolvedSourceResolver(imageWithBuilder),
 					},
 					WantErr: false,
+					//no builds are created
+					WantCreates: nil,
 				})
+
+				assert.Equal(t, "SourceResolver image-name-source is not ready", imageWithBuilder.Status.GetCondition(corev1alpha1.ConditionReady).Message)
 			})
 
 			it("does not schedule a build if the builder is not ready", func() {
@@ -2247,16 +2252,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								Status: buildapi.ImageStatus{
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
-											},
-											{
-												Type:   buildapi.ConditionBuilderReady,
-												Status: corev1.ConditionTrue,
-											},
-										},
+										Conditions:         conditionReadyUnknown(),
 									},
 									LatestBuildRef: "image-name-build-1",
 									LatestImage:    "some/image@sha256:build-1",
@@ -2596,8 +2592,9 @@ func limit(limit int64) *int64 {
 func conditionReadyUnknown() corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
-			Type:   corev1alpha1.ConditionReady,
-			Status: corev1.ConditionUnknown,
+			Type:    corev1alpha1.ConditionReady,
+			Status:  corev1.ConditionUnknown,
+			Message: "SourceResolver image-name-source is not ready",
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,

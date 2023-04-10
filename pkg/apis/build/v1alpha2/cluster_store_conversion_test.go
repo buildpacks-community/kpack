@@ -24,7 +24,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 				Annotations: map[string]string{"some-key": "some-value"},
 			},
 			Spec: ClusterStoreSpec{
-				Sources: []corev1alpha1.StoreImage{{"some-image"}, {"another-image"}},
+				Sources: []corev1alpha1.ImageSource{{"some-image"}, {"another-image"}},
 				ServiceAccountRef: &corev1.ObjectReference{
 					Namespace: "some-namespace",
 					Name:      "some-service-account",
@@ -32,7 +32,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 			},
 			Status: ClusterStoreStatus{
 				Status: corev1alpha1.Status{},
-				Buildpacks: []corev1alpha1.StoreBuildpack{{
+				Buildpacks: []corev1alpha1.BuildpackStatus{{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      "cool-buildpack-id",
 						Version: "1.23",
@@ -42,7 +42,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 						Version:  "4.56",
 						Homepage: "wow-what-a-site.com",
 					},
-					StoreImage: corev1alpha1.StoreImage{
+					StoreImage: corev1alpha1.ImageSource{
 						Image: "some-image",
 					},
 					DiffId:   "12345",
@@ -65,11 +65,11 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			Spec: v1alpha1.ClusterStoreSpec{
-				Sources: []corev1alpha1.StoreImage{{"some-image"}, {"another-image"}},
+				Sources: []corev1alpha1.ImageSource{{"some-image"}, {"another-image"}},
 			},
 			Status: v1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{},
-				Buildpacks: []corev1alpha1.StoreBuildpack{{
+				Buildpacks: []corev1alpha1.BuildpackStatus{{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      "cool-buildpack-id",
 						Version: "1.23",
@@ -79,7 +79,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 						Version:  "4.56",
 						Homepage: "wow-what-a-site.com",
 					},
-					StoreImage: corev1alpha1.StoreImage{
+					StoreImage: corev1alpha1.ImageSource{
 						Image: "some-image",
 					},
 					DiffId:   "12345",

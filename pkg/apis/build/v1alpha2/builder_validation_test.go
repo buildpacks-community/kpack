@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +33,40 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 					Kind: "ClusterStore",
 					Name: "some-registry.io/store",
 				},
-				Order: nil, // No order validation
+				Order: []BuilderOrderEntry{{
+					Group: []BuilderBuildpackRef{
+						{
+							BuildpackRef: v1alpha1.BuildpackRef{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
+									Id:      "some-buildpack",
+									Version: "v1",
+								},
+								Optional: true,
+							},
+						},
+						// {
+						// 	Image: "some-registry.io/buildpack",
+						// },
+						{
+							ObjectReference: corev1.ObjectReference{
+								Name: "some-buildpack",
+								Kind: "Buildpack",
+							},
+						},
+						{
+							ObjectReference: corev1.ObjectReference{
+								Name: "some-clusterbuildpack",
+								Kind: "ClusterBuildpack",
+							},
+							BuildpackRef: v1alpha1.BuildpackRef{
+								BuildpackInfo: v1alpha1.BuildpackInfo{
+									Id:      "some-buildpack",
+									Version: "v1",
+								},
+							},
+						},
+					},
+				}},
 			},
 			ServiceAccountName: "some-service-account",
 		},
@@ -103,14 +137,82 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 			assertValidationError(builder, apis.ErrInvalidValue("FakeStack", "kind").ViaField("spec", "stack"))
 		})
 
-		it("missing store name", func() {
-			builder.Spec.Store.Name = ""
-			assertValidationError(builder, apis.ErrMissingField("name").ViaField("spec", "store"))
-		})
-
 		it("invalid store kind", func() {
 			builder.Spec.Store.Kind = "FakeStore"
-			assertValidationError(builder, apis.ErrInvalidValue("FakeStore", "kind").ViaField("spec", "store"))
+			assertValidationError(builder, apis.ErrInvalidValue("FakeStore", "kind", "must be one of ClusterStore").ViaField("spec", "store"))
+		})
+
+		when("order", func() {
+			assertValidationError = func(builder *Builder, expectedError *apis.FieldError) {
+				t.Helper()
+				err := builder.Validate(context.TODO())
+				assert.EqualError(t, err,
+					expectedError.
+						ViaIndex(0).ViaField("group").
+						ViaIndex(0).ViaField("spec", "order").Error(),
+				)
+			}
+
+			it("invalid object kind", func() {
+				builder.Spec.Order = []BuilderOrderEntry{{
+					Group: []BuilderBuildpackRef{{
+						ObjectReference: corev1.ObjectReference{
+							Name: "some-buildpack",
+							Kind: "FakeBuildpack",
+						},
+					}},
+				}}
+
+				assertValidationError(builder, apis.ErrInvalidValue("FakeBuildpack", "kind", "must be one of Buildpack, ClusterBuildpack"))
+			})
+
+			it("invalid when image is used", func() {
+				builder.Spec.Order = []BuilderOrderEntry{{
+					Group: []BuilderBuildpackRef{{
+						Image: "some-registry.io/buildpack",
+					}},
+				}}
+
+				assertValidationError(builder, apis.ErrDisallowedFields("image reference currently not supported"))
+			})
+
+			// it("invalid image", func() {
+			// 	builder.Spec.Order = []BuilderOrderEntry{{
+			// 		Group: []BuilderBuildpackRef{{
+			// 			Image: "some-image@1234",
+			// 		}},
+			// 	}}
+
+			// 	assertValidationError(builder, apis.ErrInvalidValue("some-image@1234", "image"))
+			// })
+
+			// it("invalid when both image and id are defined", func() {
+			// 	builder.Spec.Order = []BuilderOrderEntry{{
+			// 		Group: []BuilderBuildpackRef{{
+			// 			Image: "foo",
+			// 			BuildpackRef: v1alpha1.BuildpackRef{
+			// 				BuildpackInfo: v1alpha1.BuildpackInfo{Id: "some-buildpack"},
+			// 			},
+			// 		}},
+			// 	}}
+			// 	assertValidationError(builder, apis.ErrDisallowedFields("id"))
+			// })
+
+			it("valid when both id and object are defined", func() {
+				builder.Spec.Order = []BuilderOrderEntry{{Group: []BuilderBuildpackRef{{
+					BuildpackRef: v1alpha1.BuildpackRef{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
+							Id:      "some-buildpack",
+							Version: "v1",
+						},
+					},
+					ObjectReference: corev1.ObjectReference{
+						Name: "some-buildpack",
+						Kind: "Buildpack",
+					},
+				}}}}
+				assert.Nil(t, builder.Validate(context.TODO()))
+			})
 		})
 	})
 }
