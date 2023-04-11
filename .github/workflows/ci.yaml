@@ -47,9 +47,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -65,9 +65,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -83,9 +83,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -101,9 +101,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -119,9 +119,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -137,9 +137,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -155,9 +155,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -175,9 +175,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -445,9 +445,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v2.1.0
       with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUBLIC_SA }}
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Parse branch name
       run: |
@@ -460,8 +460,6 @@ jobs:
         echo "KPACK_VERSION=${version}" >> $GITHUB_ENV
 
     - name: Promote images
-      env:
-        gcr_token: ${{ secrets.GCR_PUBLIC_SA }}
       run: |
         mkdir final-image-refs
         for image in images/*; do
