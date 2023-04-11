@@ -15,9 +15,9 @@ defaults:
     shell: bash
 
 env:
-  PUBLIC_IMAGE_DEV_REPO: gcr.io/cf-build-service-public/kpack-dev
-  PUBLIC_IMAGE_REPO: gcr.io/cf-build-service-public/kpack
-  PACK_VERSION: 0.29.0
+  PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
+  PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
+  PACK_VERSION: ${{ vars.PACK_VERSION }}
 
 jobs:
   unit:
