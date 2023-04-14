@@ -7,7 +7,6 @@ on:
     - release/**
   pull_request:
     branches:
-    - main
     - release/**
 
 defaults:
@@ -25,6 +24,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Set up Go
       uses: actions/setup-go@v3
@@ -35,9 +36,7 @@ jobs:
       run: make unit-ci
 
     - name: Report coverage
-      run: bash <(curl -s https://codecov.io/bash)
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      uses: codecov/codecov-action@v3.1.2
 
   controller-image:
     runs-on: ubuntu-latest
