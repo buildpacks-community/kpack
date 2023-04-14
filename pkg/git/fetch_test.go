@@ -115,7 +115,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "no such host")
+			require.Contains(t, err.Error(), "proxyconnect tcp: dial tcp")
 		})
 	})
 }

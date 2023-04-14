@@ -33,7 +33,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 
 - Tailing logs with the kpack [log utility](docs/logs.md)
 
-- Documentation on [Local Development](docs/local.md)
+- Documentation on [Local Development](DEVELOPMENT.md)
 
 ### kpack Working Group
 
