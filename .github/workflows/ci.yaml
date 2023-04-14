@@ -36,9 +36,7 @@ jobs:
       run: make unit-ci
 
     - name: Report coverage
-      run: bash <(curl -s https://codecov.io/bash)
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      uses: codecov/codecov-action@v3.1.2
 
   controller-image:
     runs-on: ubuntu-latest
