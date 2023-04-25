@@ -62,7 +62,7 @@ func main() {
 
 func rebase(tags []string, logger *log.Logger) error {
 	if len(tags) < 1 {
-		return cmd.FailCode(cmd.CodeInvalidArgs, "must provide one or more image tags")
+		return cmd.FailCode(cmd.CodeForInvalidArgs, "must provide one or more image tags")
 	}
 
 	logger.Println("Loading cluster credential helpers")
@@ -74,7 +74,7 @@ func rebase(tags []string, logger *log.Logger) error {
 	logLoadingSecrets(logger, basicDockerCredentials)
 	creds, err := dockercreds.ParseBasicAuthSecrets(buildSecretsDir, basicDockerCredentials)
 	if err != nil {
-		return cmd.FailErrCode(err, cmd.CodeInvalidArgs)
+		return cmd.FailErrCode(err, cmd.CodeForInvalidArgs)
 	}
 
 	for _, c := range combine(dockerCfgCredentials, dockerConfigCredentials, imagePullSecrets) {
@@ -119,7 +119,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		Logger:      cmd.DefaultLogger,
 		PlatformAPI: api.MustParse("0.9"),
 	}
-	report, err := rebaser.Rebase(appImage, newBaseImage, tags[1:])
+	report, err := rebaser.Rebase(appImage, newBaseImage, appImage.Name(), tags[1:])
 	if err != nil {
 		return err
 	}
