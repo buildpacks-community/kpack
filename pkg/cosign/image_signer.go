@@ -8,13 +8,11 @@ import (
 
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/pkg/errors"
-	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
 )
 
 type SignFunc func(
-	ro *options.RootOptions, ko options.KeyOpts, regOpts options.RegistryOptions, annotations map[string]interface{},
-	imgs []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-	payloadPath string, force bool, recursive bool, attachment string, noTlogUpload bool,
+	ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 ) error
 
 type ImageSigner struct {
@@ -86,22 +84,27 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 		}
 		defer os.Unsetenv(cosignDockerMediaTypesEnv)
 	}
+
+	var cosignAnnotations []string
+	for key, value := range annotations {
+		cosignAnnotations = append(cosignAnnotations, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	signOptions := options.SignOptions{
+		Registry: options.RegistryOptions{KubernetesKeychain: true},
+		AnnotationOptions: options.AnnotationOptions{
+			Annotations: cosignAnnotations,
+		},
+		Upload:     true,
+		Recursive:  false,
+		TlogUpload: false,
+	}
+
 	if err := s.signFunc(
 		ro,
 		ko,
-		options.RegistryOptions{KubernetesKeychain: true},
-		annotations,
-		[]string{refImage},
-		"",
-		"",
-		true,
-		"",
-		"",
-		"",
-		false,
-		false,
-		"",
-		true); err != nil {
+		signOptions,
+		[]string{refImage}); err != nil {
 		return errors.Errorf("unable to sign image with %s: %v", cosignKeyFile, err)
 	}
 

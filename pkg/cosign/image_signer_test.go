@@ -23,13 +23,13 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
-	"github.com/sigstore/cosign/cmd/cosign/cli/download"
-	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
-	verifypkg "github.com/sigstore/cosign/cmd/cosign/cli/verify"
-	sigstoreCosign "github.com/sigstore/cosign/pkg/cosign"
-	ociremote "github.com/sigstore/cosign/pkg/oci/remote"
-	"github.com/sigstore/cosign/pkg/signature"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/download"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
+	verifypkg "github.com/sigstore/cosign/v2/cmd/cosign/cli/verify"
+	sigstoreCosign "github.com/sigstore/cosign/v2/pkg/cosign"
+	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
+	"github.com/sigstore/cosign/v2/pkg/signature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -98,12 +98,10 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				password2Count := 0
 
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
-					assert.Equal(t, []string{expectedImageName}, imageRef)
+					assert.Equal(t, []string{expectedImageName}, imgs)
 
 					// Test key location
 					assert.Contains(t, ko.KeyRef, "cosign.key")
@@ -124,24 +122,13 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					}
 					assert.Equal(t, passwordFileContent, password)
 
-					assert.Nil(t, annotations)
+					assert.Empty(t, signOpts.AnnotationOptions.Annotations)
 					cliSignCmdCallCount++
 					return sign.SignCmd(
 						ro,
 						ko,
-						registryOptions,
-						annotations,
-						imageRef,
-						certPath,
-						certChainPath,
-						upload,
-						outputSignature,
-						outputCertificate,
-						payloadPath,
-						force,
-						recursive,
-						attachment,
-						noTlogUpload)
+						signOpts,
+						imgs)
 				}
 
 				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
@@ -173,32 +160,19 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
-					assert.Equal(t, []string{expectedImageName}, imageRef)
+					assert.Equal(t, []string{expectedImageName}, imgs)
 					assert.Contains(t, ko.KeyRef, "cosign.key")
 					assert.Contains(t, ko.KeyRef, secretLocation)
-					assert.Equal(t, expectedAnnotation, annotations)
+					assert.Equal(t, []string{"annotationKey1=value1"}, signOpts.AnnotationOptions.Annotations)
 					cliSignCmdCallCount++
 					return sign.SignCmd(
 						ro,
 						ko,
-						options.RegistryOptions{},
-						annotations,
-						imageRef,
-						certPath,
-						certChainPath,
-						upload,
-						outputSignature,
-						outputCertificate,
-						payloadPath,
-						force,
-						recursive,
-						attachment,
-						noTlogUpload,
+						signOpts,
+						imgs,
 					)
 				}
 
@@ -233,27 +207,14 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmdCallCount := 0
 
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					cliSignCmdCallCount++
 					return sign.SignCmd(
 						ro,
 						ko,
-						options.RegistryOptions{},
-						annotations,
-						imageRef,
-						certPath,
-						certChainPath,
-						upload,
-						outputSignature,
-						outputCertificate,
-						payloadPath,
-						force,
-						recursive,
-						attachment,
-						noTlogUpload,
+						signOpts,
+						imgs,
 					)
 				}
 
@@ -272,27 +233,14 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				cliSignCmdCallCount := 0
 
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					cliSignCmdCallCount++
 					return sign.SignCmd(
 						ro,
 						ko,
-						options.RegistryOptions{},
-						annotations,
-						imageRef,
-						certPath,
-						certChainPath,
-						upload,
-						outputSignature,
-						outputCertificate,
-						payloadPath,
-						force,
-						recursive,
-						attachment,
-						noTlogUpload,
+						signOpts,
+						imgs,
 					)
 				}
 
@@ -316,9 +264,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assert.Empty(t, len(os.Getenv(cosignRepositoryEnv)))
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-2") {
@@ -331,19 +277,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return sign.SignCmd(
 						ro,
 						ko,
-						options.RegistryOptions{},
-						annotations,
-						imageRef,
-						certPath,
-						certChainPath,
-						upload,
-						outputSignature,
-						outputCertificate,
-						payloadPath,
-						force,
-						recursive,
-						attachment,
-						noTlogUpload,
+						signOpts,
+						imgs,
 					)
 				}
 
@@ -380,9 +315,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-1") {
@@ -413,9 +346,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assertUnset(t, cosignDockerMediaTypesEnv)
 				assertUnset(t, cosignRepositoryEnv)
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
@@ -451,9 +382,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					cliSignCmdCallCount++
@@ -472,9 +401,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					cliSignCmdCallCount++
 					return nil
@@ -492,9 +419,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
-					ro *options.RootOptions, ko options.KeyOpts, registryOptions options.RegistryOptions, annotations map[string]interface{},
-					imageRef []string, certPath string, certChainPath string, upload bool, outputSignature, outputCertificate string,
-					payloadPath string, force, recursive bool, attachment string, noTlogUpload bool,
+					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					cliSignCmdCallCount++
 					return nil
@@ -537,22 +462,17 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				return []byte(password), nil
 			}
 			ko := options.KeyOpts{KeyRef: privKeyPath, PassFunc: passFunc}
+			signOptions := options.SignOptions{
+				Registry:   options.RegistryOptions{},
+				Upload:     true,
+				Recursive:  false,
+				TlogUpload: false,
+			}
 			err = sign.SignCmd(
 				ro,
 				ko,
-				options.RegistryOptions{},
-				nil,
+				signOptions,
 				[]string{imgName},
-				"",
-				"",
-				true,
-				"",
-				"",
-				"",
-				false,
-				false,
-				"",
-				true,
 			)
 			assert.Nil(t, err)
 
@@ -686,6 +606,7 @@ func verify(keyRef, imageRef string, annotations map[string]interface{}) error {
 		Annotations:   signature.AnnotationsMap{Annotations: annotations},
 		CheckClaims:   true,
 		HashAlgorithm: crypto.SHA256,
+		IgnoreTlog:    true,
 	}
 
 	args := []string{imageRef}

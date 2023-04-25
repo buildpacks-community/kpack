@@ -15,8 +15,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
-	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
 
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
