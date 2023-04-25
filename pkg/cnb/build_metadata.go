@@ -111,7 +111,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (builtImage, error
 
 type builtImage struct {
 	identifier        string
-	buildpackMetadata []lifecyclebuildpack.GroupBuildpack
+	buildpackMetadata []lifecyclebuildpack.GroupElement
 	stack             builtImageStack
 }
 
