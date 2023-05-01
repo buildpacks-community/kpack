@@ -556,12 +556,12 @@ func pushRandomImage(t *testing.T, imageRef string) func() {
 	err = remote.Write(ref, img, regClientOpts...)
 	assert.Nil(t, err)
 
-	remoteImage, err := remote.Get(ref, regClientOpts...)
+	_, err = remote.Get(ref, regClientOpts...)
 	assert.Nil(t, err)
 
 	cleanup := func() {
 		_ = remote.Delete(ref, regClientOpts...)
-		ref, _ := ociremote.SignatureTag(remoteImage.Ref, ociremote.WithRemoteOptions(regClientOpts...))
+		ref, _ := ociremote.SignatureTag(ref, ociremote.WithRemoteOptions(regClientOpts...))
 		_ = remote.Delete(ref, regClientOpts...)
 	}
 
