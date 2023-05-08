@@ -268,8 +268,8 @@ github.com/buildkite/agent/v3 v3.45.0 h1:LEHtJSE0q2ZGsBb5yvhVr53+pRHCHLrENT4WR4n
 github.com/buildkite/agent/v3 v3.45.0/go.mod h1:4FtZnYmUU6dWENBCsVzXsJN3GHD3yDC2GgR8c9X780g=
 github.com/buildpacks/imgutil v0.0.0-20230412223147-81015c668834 h1:V3xhD9kbougG1QgtpA60UK6JnBPW7gX17zZ2ekXwUpo=
 github.com/buildpacks/imgutil v0.0.0-20230412223147-81015c668834/go.mod h1:hgxVR7UpPvT5gATbRGM582oy048sUocDg6R6PMWAxow=
-github.com/buildpacks/lifecycle v0.16.1 h1:Mv4gmq4wILpLYpDWx52o/nOWSjlcPp7taA4eBqznfBU=
-github.com/buildpacks/lifecycle v0.16.1/go.mod h1:bKq16qBt8V9ci8h1/GCdAiKEHbFH/Z6fxsKux8jvkLs=
+github.com/buildpacks/lifecycle v0.16.3 h1:l2V2Z/yMTHDSDiTSfEcWoFt/egdF0LZRHTBwW78VJrA=
+github.com/buildpacks/lifecycle v0.16.3/go.mod h1:HvL+3CsH8s1Qx4HzWV62JSV8fdeixsFGnasZWlYe3VI=
 github.com/bwesterb/go-ristretto v1.2.0/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/bytecodealliance/wasmtime-go/v3 v3.0.2 h1:3uZCA/BLTIu+DqCfguByNMJa2HVHpXvjfy0Dy7g6fuA=
 github.com/cenkalti/backoff/v3 v3.2.2 h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=
