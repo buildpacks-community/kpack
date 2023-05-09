@@ -24,5 +24,5 @@ func (s *ClusterBuildpackSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	return validate.Image(s.Image).ViaField()
+	return validate.Image(s.Image)
 }
