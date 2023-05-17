@@ -69,9 +69,14 @@ func NewController(
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
 	clusterBuilderInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
+	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
+	))
+
 	clusterStoreInformer.Informer().AddEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
