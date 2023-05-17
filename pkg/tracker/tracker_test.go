@@ -170,6 +170,34 @@ func testTracker(t *testing.T, when spec.G, it spec.S) {
 
 				require.Equal(t, wasCalledWith, types.NamespacedName{})
 			})
+
+			it("supports multiple reconcilers tracking the same kind", func() {
+				calledWith := []types.NamespacedName{}
+				track := tracker.New(func(key types.NamespacedName) {
+					calledWith = append(calledWith, key)
+				}, 5*time.Minute)
+
+				builder := &buildapi.Builder{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "some-name",
+					},
+					TypeMeta: v1.TypeMeta{
+						Kind:       "Builder",
+						APIVersion: "kpack.io/v1alpha2",
+					},
+				}
+
+				secondReconciler := types.NamespacedName{Name: "second reconciler", Namespace: "some namespace"}
+
+				track.TrackKind(groupKind, reconcilerName)
+				track.TrackKind(groupKind, secondReconciler)
+
+				track.OnChanged(builder)
+
+				require.Len(t, calledWith, 2)
+				require.Contains(t, calledWith, reconcilerName)
+				require.Contains(t, calledWith, secondReconciler)
+			})
 		})
 
 		when("tracking expires", func() {
