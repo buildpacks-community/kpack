@@ -25,9 +25,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pivotal/kpack/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
 func New(callback func(types.NamespacedName), lease time.Duration) *Tracker {
@@ -82,7 +83,7 @@ func (i *Tracker) TrackKind(kind schema.GroupKind, obj types.NamespacedName) {
 	i.m.Lock()
 	defer i.m.Unlock()
 
-	l, ok := i.objects[kind.String()]
+	l, ok := i.kinds[kind.String()]
 	if !ok {
 		l = set{}
 	}
