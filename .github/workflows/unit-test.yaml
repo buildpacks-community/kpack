@@ -16,4 +16,4 @@ jobs:
     - name: Run tests
       uses: ./.github/actions/run-tests
     - name: Report coverage
-      uses: codecov/codecov-action@v3.1.3
+      uses: codecov/codecov-action@v3.1.4
