@@ -796,8 +796,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  buildapi.BuilderNotReady,
+												Message: "Builder builder-name is not ready: something went wrong",
 											},
 											{
 												Type:    buildapi.ConditionBuilderReady,
@@ -2106,6 +2108,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   buildapi.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
+												Reason: buildapi.BuilderReady,
 											},
 										},
 									},
@@ -2168,10 +2171,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:   corev1alpha1.ConditionSucceeded,
 											Status: corev1.ConditionTrue,
+											Reason: image.UpToDateReason,
 										},
 										{
 											Type:   buildapi.ConditionBuilderReady,
 											Status: corev1.ConditionTrue,
+											Reason: buildapi.BuilderReady,
 										},
 									},
 								},
@@ -2210,10 +2215,12 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   corev1alpha1.ConditionReady,
 												Status: corev1.ConditionTrue,
+												Reason: image.UpToDateReason,
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
+												Reason: buildapi.BuilderReady,
 											},
 										},
 									},
@@ -2265,7 +2272,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			it("reports unknown when last build was successful and builder is not ready", func() {
+			it("reports false when last build was successful and builder is not ready", func() {
 				imageWithBuilder.Status.BuildCounter = 1
 				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
 				imageWithBuilder.Status.LatestImage = "some/image@some-old-sha"
@@ -2291,8 +2298,10 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   corev1alpha1.ConditionReady,
-												Status: corev1.ConditionUnknown,
+												Type:    corev1alpha1.ConditionReady,
+												Status:  corev1.ConditionFalse,
+												Reason:  buildapi.BuilderNotReady,
+												Message: "Builder builder-name is not ready",
 											},
 											{
 												Type:    buildapi.ConditionBuilderReady,
@@ -2377,11 +2386,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:    corev1alpha1.ConditionReady,
 												Status:  corev1.ConditionFalse,
+												Reason:  image.BuildFailedReason,
 												Message: failureMessage,
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
 												Status: corev1.ConditionTrue,
+												Reason: buildapi.BuilderReady,
 											},
 										},
 									},
@@ -2594,11 +2605,13 @@ func conditionReadyUnknown() corev1alpha1.Conditions {
 		{
 			Type:    corev1alpha1.ConditionReady,
 			Status:  corev1.ConditionUnknown,
+			Reason:  image.ResolverNotReadyReason,
 			Message: "SourceResolver image-name-source is not ready",
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
+			Reason: buildapi.BuilderReady,
 		},
 	}
 }
@@ -2608,11 +2621,13 @@ func conditionBuildExecuting(buildName string) corev1alpha1.Conditions {
 		{
 			Type:    corev1alpha1.ConditionReady,
 			Status:  corev1.ConditionUnknown,
+			Reason:  image.BuildRunningReason,
 			Message: fmt.Sprintf("%s is executing", buildName),
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
+			Reason: buildapi.BuilderReady,
 		},
 	}
 }
@@ -2622,10 +2637,12 @@ func conditionReady() corev1alpha1.Conditions {
 		{
 			Type:   corev1alpha1.ConditionReady,
 			Status: corev1.ConditionTrue,
+			Reason: image.UpToDateReason,
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
+			Reason: buildapi.BuilderReady,
 		},
 	}
 }
@@ -2635,10 +2652,12 @@ func conditionNotReady() corev1alpha1.Conditions {
 		{
 			Type:   corev1alpha1.ConditionReady,
 			Status: corev1.ConditionFalse,
+			Reason: image.BuildFailedReason,
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
 			Status: corev1.ConditionTrue,
+			Reason: buildapi.BuilderReady,
 		},
 	}
 }
