@@ -60,7 +60,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	case corev1.ConditionFalse:
 		return buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: noScheduledBuild(result, builder, latestBuild, sourceResolver),
+				Conditions: noScheduledBuild(result.ConditionStatus, builder, latestBuild, sourceResolver),
 			},
 			LatestBuildRef:             latestBuild.BuildRef(),
 			LatestBuildReason:          latestBuild.BuildReason(),
@@ -75,7 +75,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 	}
 }
 
-func noScheduledBuild(buildNeeded buildRequiredResult, builder buildapi.BuilderResource, build *buildapi.Build, sourceResolver *buildapi.SourceResolver) corev1alpha1.Conditions {
+func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.BuilderResource, build *buildapi.Build, sourceResolver *buildapi.SourceResolver) corev1alpha1.Conditions {
 	if !builder.Ready() {
 		return corev1alpha1.Conditions{
 			{
@@ -88,7 +88,7 @@ func noScheduledBuild(buildNeeded buildRequiredResult, builder buildapi.BuilderR
 			builderCondition(builder),
 		}
 	}
-	if buildNeeded.ConditionStatus == corev1.ConditionUnknown {
+	if buildNeeded == corev1.ConditionUnknown {
 		message := "Build status unknown"
 		if !sourceResolver.Ready() {
 			message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
@@ -199,13 +199,14 @@ func buildCounter(build *buildapi.Build) (int64, error) {
 }
 
 func buildRunningCondition(build *buildapi.Build, builder buildapi.BuilderResource) corev1alpha1.Conditions {
+	message := defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded),
+		fmt.Sprintf("%s is executing", build.Name))
 	return corev1alpha1.Conditions{
 		{
-			Type:   corev1alpha1.ConditionReady,
-			Status: corev1.ConditionUnknown,
-			Reason: BuildRunningReason,
-			Message: defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded),
-				fmt.Sprintf("%s is executing", build.Name)),
+			Type:               corev1alpha1.ConditionReady,
+			Status:             corev1.ConditionUnknown,
+			Reason:             BuildRunningReason,
+			Message:            message,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
