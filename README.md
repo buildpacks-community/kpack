@@ -20,6 +20,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 
 - [Install kpack](docs/install.md)
 - Get started with [the tutorial](docs/tutorial.md)
+- Are you familiar with pack? check our [comparison section](docs/kpack-vs-pack.md)
 - Check out the documentation on kpack concepts:
     - [Stacks](docs/stack.md)
     - [Images](docs/image.md)

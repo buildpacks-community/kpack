@@ -6,6 +6,8 @@ Corresponding `kp` cli command docs [here](https://github.com/vmware-tanzu/kpack
 
 Unlike with the [Image resource](image.md), using Builds directly allows granular control of when builds execute. Each build resource is immutable and corresponds to a single build execution. You will need to create a new build for every build execution as builds will not rebuild on source code and buildpack updates. Additionally, you will need to manually specify the source, and the cache volume. 
 
+A Build resource is comparable to `pack build`. Are you familiar with pack? if so, you can check the [comparison section](kpack-vs-pack.md) 
+
 ### Configuration
 
 ```yaml
