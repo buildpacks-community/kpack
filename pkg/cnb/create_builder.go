@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -26,13 +27,8 @@ type RemoteBuilderCreator struct {
 	KeychainFactory   registry.KeychainFactory
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(
-	ctx context.Context,
-	builderKeychain authn.Keychain,
-	fetcher RemoteBuildpackFetcher,
-	clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec,
-) (buildapi.BuilderRecord, error) {
-	buildImage, _, err := r.RegistryClient.Fetch(builderKeychain, clusterStack.Status.BuildImage.LatestImage)
+func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
+	buildImage, _, err := r.RegistryClient.Fetch(stackKeychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

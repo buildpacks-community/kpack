@@ -19,20 +19,22 @@ type FakeBuilderCreator struct {
 }
 
 type CreateBuilderArgs struct {
-	Context      context.Context
-	Keychain     authn.Keychain
-	Fetcher      cnb.RemoteBuildpackFetcher
-	ClusterStack *buildapi.ClusterStack
-	BuilderSpec  buildapi.BuilderSpec
+	Context         context.Context
+	BuilderKeychain authn.Keychain
+	StackKeychain   authn.Keychain
+	Fetcher         cnb.RemoteBuildpackFetcher
+	ClusterStack    *buildapi.ClusterStack
+	BuilderSpec     buildapi.BuilderSpec
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, builder buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
-		Context:      ctx,
-		Keychain:     keychain,
-		Fetcher:      fetcher,
-		ClusterStack: clusterStack,
-		BuilderSpec:  builder,
+		Context:         ctx,
+		BuilderKeychain: builderKeychain,
+		StackKeychain:   stackKeychain,
+		Fetcher:         fetcher,
+		ClusterStack:    clusterStack,
+		BuilderSpec:     spec,
 	})
 
 	return f.Record, f.CreateErr
