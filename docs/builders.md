@@ -98,9 +98,7 @@ spec:
     - name: sample-cluster-buildpack
       kind: ClusterBuildpack
       id: paketo-buildpacks/nodejs
-    - name: sample-cluster-store
-      kind: ClusterStore
-      id: paketo-buildpacks/nodejs
+    - id: paketo-buildpacks/nodejs # can obtain buildpacks from a Store/ClusterStore
       version: 1.2.3
 ```
 
