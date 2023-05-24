@@ -85,6 +85,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			Kind:       "ClusterStack",
 			APIVersion: "kpack.io/v1alpha2",
 		},
+		Spec: buildapi.ClusterStackSpec{
+			ServiceAccountRef: &corev1.ObjectReference{
+				Name:      "some-service-account",
+				Namespace: testNamespace,
+			},
+		},
 		Status: buildapi.ClusterStackStatus{
 			Status: corev1alpha1.Status{
 				ObservedGeneration: 0,
@@ -247,11 +253,12 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			assert.Equal(t, []testhelpers.CreateBuilderArgs{{
-				Context:      context.Background(),
-				Keychain:     &registryfakes.FakeKeychain{},
-				Fetcher:      expectedFetcher,
-				ClusterStack: clusterStack,
-				BuilderSpec:  builder.Spec.BuilderSpec,
+				Context:         context.Background(),
+				BuilderKeychain: &registryfakes.FakeKeychain{},
+				StackKeychain:   &registryfakes.FakeKeychain{},
+				Fetcher:         expectedFetcher,
+				ClusterStack:    clusterStack,
+				BuilderSpec:     builder.Spec.BuilderSpec,
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
