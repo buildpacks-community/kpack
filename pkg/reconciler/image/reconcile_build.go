@@ -13,7 +13,12 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-const BuildRunningReason = "BuildRunning"
+const (
+	BuildRunningReason     = "BuildRunning"
+	ResolverNotReadyReason = "ResolverNotReady"
+	BuildFailedReason      = "BuildFailed"
+	UpToDateReason         = "UpToDate"
+)
 
 func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, latestBuild *buildapi.Build, sourceResolver *buildapi.SourceResolver, builder buildapi.BuilderResource, buildCacheName string) (buildapi.ImageStatus, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
@@ -71,8 +76,20 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 }
 
 func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.BuilderResource, build *buildapi.Build, sourceResolver *buildapi.SourceResolver) corev1alpha1.Conditions {
+	if !builder.Ready() {
+		return corev1alpha1.Conditions{
+			{
+				Type:               corev1alpha1.ConditionReady,
+				Status:             corev1.ConditionFalse,
+				Reason:             buildapi.BuilderNotReady,
+				Message:            builderError(builder),
+				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+			},
+			builderCondition(builder),
+		}
+	}
 	if buildNeeded == corev1.ConditionUnknown {
-		message := ""
+		message := "Build status unknown"
 		if !sourceResolver.Ready() {
 			message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
 		}
@@ -80,6 +97,7 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 			{
 				Type:               corev1alpha1.ConditionReady,
 				Status:             corev1.ConditionUnknown,
+				Reason:             ResolverNotReadyReason,
 				Message:            message,
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
@@ -87,11 +105,20 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 		}
 	}
 
+	buildReason := UpToDateReason
+	buildMessage := "Last build succeeded"
+
+	if !build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue() {
+		buildReason = BuildFailedReason
+		buildMessage = "Last build did not succeed"
+	}
+
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,
 			Status:             unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
-			Message:            emptyMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			Reason:             buildReason,
+			Message:            defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), buildMessage),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
@@ -106,9 +133,12 @@ func unknownStatusIfNil(condition *corev1alpha1.Condition) corev1.ConditionStatu
 	return condition.Status
 }
 
-func emptyMessageIfNil(condition *corev1alpha1.Condition) string {
+// Copies the message from the specified condition, or fills in a default message if nil.
+// We should always have a message for non-successful conditions, as that conveys
+// information to the user about what is expected.
+func defaultMessageIfNil(condition *corev1alpha1.Condition, defaultMessage string) string {
 	if condition == nil {
-		return ""
+		return defaultMessage
 	}
 	return condition.Message
 }
@@ -126,6 +156,7 @@ func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 	return corev1alpha1.Condition{
 		Type:               buildapi.ConditionBuilderReady,
 		Status:             corev1.ConditionTrue,
+		Reason:             buildapi.BuilderReady,
 		LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 	}
 }
@@ -145,12 +176,14 @@ func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
 		{
 			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionUnknown,
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+			Reason:             BuildRunningReason,
 			Message:            fmt.Sprintf("%s is executing", build.Name),
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		{
 			Type:               buildapi.ConditionBuilderReady,
 			Status:             corev1.ConditionTrue,
+			Reason:             buildapi.BuilderReady,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 	}
@@ -166,12 +199,14 @@ func buildCounter(build *buildapi.Build) (int64, error) {
 }
 
 func buildRunningCondition(build *buildapi.Build, builder buildapi.BuilderResource) corev1alpha1.Conditions {
+	message := defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded),
+		fmt.Sprintf("%s is executing", build.Name))
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionUnknown,
 			Reason:             BuildRunningReason,
-			Message:            emptyMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
+			Message:            message,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		builderCondition(builder),
