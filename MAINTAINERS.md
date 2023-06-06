@@ -4,7 +4,6 @@ The current Maintainers Group for the kpack Project consists of:
 |---------------|----------|------------------|
 | Tom Kennedy   | VMware   |                  |
 | Matthew McNew | VMware   |                  |
-| Daniel Chen   | VMware   |                  |
 
 <!-- This list must be kept in sync with the [CNCF Project Maintainers list](https://github.com/cncf/foundation/blob/master/project-maintainers.csv) -->
 

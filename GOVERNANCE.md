@@ -66,22 +66,20 @@ To become a Maintainer you need to demonstrate the following:
 
 * commitment to the project:
     * participate in discussions, contributions, code and documentation reviews
-      for [TODO: Time Period] or more,
-    * perform reviews for [TODO:Number] non-trivial pull requests,
-    * contribute [TODO:Number] non-trivial pull requests and have them merged,
+      for **1 year** or more,
+    * perform reviews for **10** non-trivial pull requests,
+    * contribute **5** non-trivial pull requests and have them merged,
 * ability to write quality code and/or documentation,
 * ability to collaborate with the team,
 * understanding of how the team works (policies, processes for testing and code review, etc),
 * understanding of the project's code base and coding and documentation style.
   <!-- add any additional Maintainer requirements here -->
 
-A new Maintainer must be proposed by an existing maintainer by sending a message to the
-[developer mailing list](TODO: List Link). A simple majority vote of existing Maintainers
+A new Maintainer must be proposed by an existing maintainer during kpack working group meetings. A simple majority vote of existing Maintainers
 approves the application.  Maintainers nominations will be evaluated without prejudice
 to employer or demographics.
 
-Maintainers who are selected will be granted the necessary GitHub rights,
-and invited to the [private maintainer mailing list](TODO).
+Maintainers who are selected will be granted the necessary GitHub rights.
 
 ### Removing a Maintainer
 
@@ -112,22 +110,10 @@ Maintainer on receipt of a security issue or CoC report.  All current Maintainer
 must be invited to such closed meetings, except for any Maintainer who is
 accused of a CoC violation.
 
-## CNCF Resources
-
-Any Maintainer may suggest a request for CNCF resources, either in the
-[mailing list](TODO: link to developer/maintainer mailing list), or during a
-meeting.  A simple majority of Maintainers approves the request.  The Maintainers
-may also choose to delegate working with the CNCF to non-Maintainer community
-members, who will then be added to the [CNCF's Maintainer List](https://github.com/cncf/foundation/blob/main/project-maintainers.csv)
-for that purpose.
-
 ## Code of Conduct
 
-[Code of Conduct](./code-of-conduct.md)
-violations by community members will be discussed and resolved
-on the [private Maintainer mailing list](TODO).  If a Maintainer is directly involved
-in the report, the Maintainers will instead designate two Maintainers to work
-with the CNCF Code of Conduct Committee in resolving it.
+[Code of Conduct](CODE_OF_CONDUCT.md)
+violations by community members will be discussed and resolved in private by the Maintainers
 
 ## Security Response Team
 
@@ -138,16 +124,11 @@ contributors to handle it.  The Maintainers will review who is assigned to this
 at least once a year.
 
 The Security Response Team is responsible for handling all reports of security
-holes and breaches according to the [security policy](TODO:Link to security.md).
+holes and breaches according to the [security policy](SECURITY.md).
 
 ## Voting
 
-While most business in kpack is conducted by "[lazy consensus](https://community.apache.org/committers/lazyConsensus.html)",
-periodically the Maintainers may need to vote on specific actions or changes.
-A vote can be taken on [the developer mailing list](TODO) or
-[the private Maintainer mailing list](TODO) for security or conduct matters.  
-Votes may also be taken at [the developer meeting](TODO).  Any Maintainer may
-demand a vote be taken.
+While most business in kpack is conducted by "[lazy consensus](https://community.apache.org/committers/lazyConsensus.html)".
 
 Most votes require a simple majority of all Maintainers to succeed, except where
 otherwise noted.  Two-thirds majority votes mean at least two-thirds of all
