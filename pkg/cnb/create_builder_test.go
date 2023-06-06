@@ -157,6 +157,14 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 								Optional: true,
 							},
 						},
+						{
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.4",
+									Version: "v4",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -263,9 +271,32 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		}
+		buildpackWithDuplicatLayer := buildpackLayer{
+			v1Layer: buildpack3Layer,
+			BuildpackInfo: DescriptiveBuildpackInfo{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
+					Id:      "io.buildpack.4",
+					Version: "v4",
+				},
+				Homepage: "buildpack.4.com",
+			},
+			BuildpackLayerInfo: BuildpackLayerInfo{
+				API:         "0.3",
+				LayerDiffID: buildpack3Layer.diffID,
+				Stacks: []corev1alpha1.BuildpackStack{
+					{
+						ID: stackID,
+					},
+					{
+						ID: "io.some.other.stack",
+					},
+				},
+			},
+		}
 
 		fetcher.AddBuildpack(t, "io.buildpack.1", "v1", []buildpackLayer{buildpack1})
 		fetcher.AddBuildpack(t, "io.buildpack.2", "v2", []buildpackLayer{buildpack3, buildpack2})
+		fetcher.AddBuildpack(t, "io.buildpack.4", "v4", []buildpackLayer{buildpackWithDuplicatLayer})
 	})
 
 	registryClient.AddSaveKeychain("custom/example", builderKeychain)
@@ -318,10 +349,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
 			require.NoError(t, err)
 
-			assert.Len(t, builderRecord.Buildpacks, 3)
+			assert.Len(t, builderRecord.Buildpacks, 4)
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
+			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.4", Version: "v4", Homepage: "buildpack.4.com"})
 			assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
@@ -337,6 +369,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						{
 							BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
 							Optional:      true,
+						},
+						{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.4", Version: "v4"},
+							Optional:      false,
 						},
 					},
 				},
@@ -466,6 +502,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
     id = "io.buildpack.2"
     version = "v2"
     optional = true
+
+  [[order.group]]
+    id = "io.buildpack.4"
+    version = "v4"
 `}})
 
 			})
@@ -473,7 +513,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
 			assert.NoError(t, err)
 			assert.JSONEq(t, //language=json
-				`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true}]}]`, buildpackOrder)
+				`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
 
 			buildpackMetadata, err := imagehelpers.GetStringLabel(savedImage, buildpackMetadataLabel)
 			assert.NoError(t, err)
@@ -508,6 +548,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
     "version": "v1.2.3 (git sha: abcdefg123456)"
   },
   "buildpacks": [
+	{
+      "id": "io.buildpack.4",
+      "version": "v4",
+	  "homepage": "buildpack.4.com"
+    },
     {
       "id": "io.buildpack.3",
       "version": "v3",
@@ -560,6 +605,20 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
   },
   "io.buildpack.3": {
     "v3": {
+      "api": "0.3",
+      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.some-stack"
+        },
+        {
+          "id": "io.some.other.stack"
+        }
+      ]
+    }
+  },
+  "io.buildpack.4": {
+    "v4": {
       "api": "0.3",
       "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
       "stacks": [
