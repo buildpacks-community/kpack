@@ -126,7 +126,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	}
 
 	image, err := mutate.AppendLayers(bb.baseImage,
-		layers(
+		deduplicateLayers(layers(
 			[]v1.Layer{
 				defaultLayer,
 				bb.lifecycleLayer,
@@ -136,7 +136,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 				stackLayer,
 				orderLayer,
 			},
-		)...)
+		))...)
 	if err != nil {
 		return nil, err
 	}
@@ -387,4 +387,24 @@ func layers(layers ...[]v1.Layer) []v1.Layer {
 		appendedLayers = append(appendedLayers, l...)
 	}
 	return appendedLayers
+}
+
+func deduplicateLayers(layers []v1.Layer) []v1.Layer {
+	layerMap := map[v1.Hash]struct{}{}
+	res := make([]v1.Layer, 0)
+
+	for _, l := range layers {
+		diffId, err := l.DiffID()
+		if err != nil {
+			res = append(res, l)
+			continue
+		}
+
+		if _, ok := layerMap[diffId]; !ok {
+			res = append(res, l)
+			layerMap[diffId] = struct{}{}
+		}
+	}
+
+	return res
 }
