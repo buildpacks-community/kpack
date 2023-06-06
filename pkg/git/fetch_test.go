@@ -15,7 +15,7 @@ import (
 )
 
 func TestGitCheckout(t *testing.T) {
-	spec.Run(t, "Test Describe Image", testGitCheckout)
+	spec.Run(t, "Test Git Checkout", testGitCheckout)
 }
 
 func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
@@ -35,8 +35,6 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 			metadataDir, err = os.MkdirTemp("", "test-git")
 			require.NoError(t, err)
-
-			require.NoError(t, os.Unsetenv("HTTPS_PROXY"))
 		})
 
 		it.After(func() {
@@ -107,15 +105,6 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		it("returns invalid credentials to fetch error on authentication required", func() {
 			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", metadataDir)
 			require.ErrorContains(t, err, "unable to fetch references for repository")
-		})
-
-		it("uses the http proxy env vars", func() {
-			require.NoError(t, os.Setenv("HTTPS_PROXY", "http://invalid-proxy"))
-			defer os.Unsetenv("HTTPS_PROXY")
-
-			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "master", metadataDir)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "proxyconnect tcp: dial tcp")
 		})
 	})
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -20,19 +19,6 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},
 	})
-
-	httpsTransport, err := getHttpsTransport()
-	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{
-			Git: &corev1alpha1.ResolvedGitSource{
-				URL:      sourceConfig.Git.URL,
-				Revision: sourceConfig.Git.Revision,
-				Type:     corev1alpha1.Unknown,
-				SubPath:  sourceConfig.SubPath,
-			},
-		}, nil
-	}
-	client.InstallProtocol("https", httpsTransport)
 
 	refs, err := remote.List(&gogit.ListOptions{
 		Auth: auth,
