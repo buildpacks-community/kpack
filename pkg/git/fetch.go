@@ -2,19 +2,14 @@ package git
 
 import (
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"path"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/client"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
 )
 
@@ -43,12 +38,6 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrap(err, "creating remote")
 	}
 
-	httpsTransport, err := getHttpsTransport()
-	if err != nil {
-		return err
-	}
-	client.InstallProtocol("https", httpsTransport)
-
 	err = remote.Fetch(&gogit.FetchOptions{
 		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 		Auth:     auth,
@@ -74,7 +63,6 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "checking out revision")
 	}
 
-	// Write the git revision to the metadata directory
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
@@ -99,27 +87,6 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 
 	f.Logger.Printf("Successfully cloned %q @ %q in path %q", gitURL, gitRevision, dir)
 	return nil
-}
-
-func getHttpsTransport() (transport.Transport, error) {
-	if httpsProxy, exists := os.LookupEnv("HTTPS_PROXY"); exists {
-		parsedUrl, err := url.Parse(httpsProxy)
-		if err != nil {
-			return nil, errors.Wrap(err, "parsing HTTPS_PROXY url")
-		}
-		proxyClient := &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(parsedUrl),
-			},
-			Timeout: 15 * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}
-		return githttp.NewClient(proxyClient), nil
-	} else {
-		return githttp.DefaultClient, nil
-	}
 }
 
 type project struct {
