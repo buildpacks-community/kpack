@@ -96,11 +96,11 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
     metadata:
       name: base
     spec:
-      id: "io.buildpacks.stacks.bionic"
+      id: "io.buildpacks.stacks.jammy"
       buildImage:
-        image: "paketobuildpacks/build:base-cnb"
+        image: "paketobuildpacks/build-jammy-base"
       runImage:
-        image: "paketobuildpacks/run:base-cnb"
+        image: "paketobuildpacks/run-jammy-base"
     ```
 
     Apply this stack to the cluster 
