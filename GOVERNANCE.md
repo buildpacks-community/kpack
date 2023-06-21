@@ -65,7 +65,7 @@ is the governing body for the project.
 To become a Maintainer you need to demonstrate the following:
 
 * commitment to the project:
-    * participate in discussions, contributions, code and documentation reviews
+    * participate in discussions (e.g., working group), contributions, code and documentation reviews
       for **1 year** or more,
     * perform reviews for **10** non-trivial pull requests,
     * contribute **5** non-trivial pull requests and have them merged,
