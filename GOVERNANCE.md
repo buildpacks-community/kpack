@@ -43,7 +43,7 @@ The kpack and its leadership embrace the following values:
 ## Maintainers
 
 kpack Maintainers have write access to the [kpack GitHub repository](https://github.com/pivotal/kpack).
-They can merge their own patches or patches from others. The current maintainers
+They can merge their own patches (with review from others), or patches from others. The current maintainers
 can be found in [MAINTAINERS.md](./MAINTAINERS.md).  Maintainers collectively manage the project's
 resources and contributors.
 
