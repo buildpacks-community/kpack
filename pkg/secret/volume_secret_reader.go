@@ -3,6 +3,7 @@ package secret
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,8 +36,15 @@ func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 		return SSH{}, err
 	}
 
+	var knownHosts []string = nil
+	knownHostsPath := filepath.Join(secretPath, SSHAuthKnownHostsKey)
+	if _, err := os.Stat(knownHostsPath); !os.IsNotExist(err) {
+		knownHosts = []string{knownHostsPath}
+	}
+
 	return SSH{
-		PrivateKey: string(privateKey),
+		PrivateKey:     string(privateKey),
+		KnownHostsFile: knownHosts,
 	}, nil
 }
 

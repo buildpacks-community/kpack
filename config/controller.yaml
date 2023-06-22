@@ -98,6 +98,8 @@ spec:
           value: "false"
         - name: INJECTED_SIDECAR_SUPPORT
           value: "false"
+        - name: INSECURE_SSH_TRUST_UNKNOWN_HOSTS
+          value: "true"
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: CONFIG_OBSERVABILITY_NAME

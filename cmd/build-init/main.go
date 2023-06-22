@@ -52,6 +52,8 @@ var (
 	dockerCfgCredentials    flaghelpers.CredentialsFlags
 	dockerConfigCredentials flaghelpers.CredentialsFlags
 	imagePullSecrets        flaghelpers.CredentialsFlags
+
+	sshTrustUnknownHosts = flag.Bool("insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "Trust unknown hosts when using SSH authentication")
 )
 
 func init() {

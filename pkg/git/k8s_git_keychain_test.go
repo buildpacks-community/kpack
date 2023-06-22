@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -231,4 +233,12 @@ func generateRandomPrivateKey(t *testing.T) []byte {
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 	return pem.EncodeToMemory(pemBlock)
+}
+
+func generateSSHKeyscan(t *testing.T, hostname string, privateKey []byte) []byte {
+	key, err := ssh2.ParsePrivateKey(privateKey)
+	require.NoError(t, err)
+
+	base64EncodedKey := base64.StdEncoding.EncodeToString(key.PublicKey().Marshal())
+	return []byte(fmt.Sprintf("%v %v %v", hostname, key.PublicKey().Type(), base64EncodedKey))
 }

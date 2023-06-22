@@ -10,6 +10,7 @@ import (
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/pkg/errors"
 	giturls "github.com/whilp/git-urls"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/pivotal/kpack/pkg/secret"
 )
@@ -29,9 +30,10 @@ type secretGitKeychain struct {
 }
 
 type gitSshAuthCred struct {
-	fetchSecret func() (secret.SSH, error)
-	Domain      string
-	SecretName  string
+	fetchSecret          func() (secret.SSH, error)
+	Domain               string
+	SecretName           string
+	sshTrustUnknownHosts bool
 }
 
 func (g gitSshAuthCred) auth() (transport.AuthMethod, error) {
@@ -43,6 +45,16 @@ func (g gitSshAuthCred) auth() (transport.AuthMethod, error) {
 	keys, err := gitssh.NewPublicKeys("git", []byte(sshSecret.PrivateKey), "")
 	if err != nil {
 		return nil, err
+	}
+
+	if g.sshTrustUnknownHosts {
+		keys.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	} else {
+		knownHosts, err := gitssh.NewKnownHostsCallback(sshSecret.KnownHostsFile...)
+		if err != nil {
+			return nil, err
+		}
+		keys.HostKeyCallback = knownHosts
 	}
 
 	return keys, nil
@@ -82,7 +94,7 @@ func (c gitBasicAuthCred) name() string {
 	return c.SecretName
 }
 
-func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSecrets []string) (*secretGitKeychain, error) {
+func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSecrets []string, sshTrustUnknownHosts bool) (*secretGitKeychain, error) {
 	var creds []gitCredential
 
 	for _, s := range basicAuthSecrets {
@@ -111,6 +123,7 @@ func NewMountedSecretGitKeychain(volumeName string, basicAuthSecrets, sshAuthSec
 			fetchSecret: func() (secret.SSH, error) {
 				return secret.ReadSshSecret(volumeName, splitSecret[0])
 			},
+			sshTrustUnknownHosts: sshTrustUnknownHosts,
 		})
 	}
 

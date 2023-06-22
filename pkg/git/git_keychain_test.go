@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/pivotal/kpack/pkg/secret"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 	ssh2 "golang.org/x/crypto/ssh"
@@ -16,6 +17,19 @@ import (
 func TestGitKeychain(t *testing.T) {
 	privateKeyBytes := gitTest{key1: generateRandomPrivateKey(t), key2: generateRandomPrivateKey(t)}
 	spec.Run(t, "Test Git Keychain", privateKeyBytes.testGitKeychain)
+}
+
+type fakeAddr struct {
+	network string
+	addr    string
+}
+
+func (a fakeAddr) Network() string {
+	return a.network
+}
+
+func (a fakeAddr) String() string {
+	return a.addr
 }
 
 func writeSecrets(testDir string, secrets map[string]map[string][]byte) error {
@@ -54,7 +68,8 @@ func (keys gitTest) testGitKeychain(t *testing.T, when spec.G, it spec.S) {
 				corev1.BasicAuthPasswordKey: []byte("saved-password"),
 			},
 			"bitbucket-creds": {
-				corev1.SSHAuthPrivateKey: keys.key1,
+				corev1.SSHAuthPrivateKey:    keys.key1,
+				secret.SSHAuthKnownHostsKey: generateSSHKeyscan(t, "bitbucket.com", keys.key1),
 			},
 			"basic-bitbucket-creds": {
 				corev1.BasicAuthUsernameKey: []byte("saved-username"),
@@ -67,21 +82,26 @@ func (keys gitTest) testGitKeychain(t *testing.T, when spec.G, it spec.S) {
 				corev1.BasicAuthUsernameKey: []byte("noschemegit-username"),
 				corev1.BasicAuthPasswordKey: []byte("noschemegit-password"),
 			},
-			"git-ssh-creds": {
-				corev1.SSHAuthPrivateKey: []byte("private key 3"),
+			"untrusted-host-creds": {
+				corev1.SSHAuthPrivateKey: keys.key1,
 			},
 		}
 
 		require.NoError(t, writeSecrets(testDir, secrets))
 
-		keychain, err = NewMountedSecretGitKeychain(testDir, []string{
-			"github-creds=https://github.com",
-			"additional-github-creds=https://github.com",
-			"basic-bitbucket-creds=https://bitbucket.com",
-			"noscheme-creds=noschemegit.com"}, []string{
-			"zzz-ssh-bitbucket-creds=https://bitbucket.com",
-			"bitbucket-creds=https://bitbucket.com",
-		})
+		keychain, err = NewMountedSecretGitKeychain(testDir,
+			[]string{
+				"github-creds=https://github.com",
+				"additional-github-creds=https://github.com",
+				"basic-bitbucket-creds=https://bitbucket.com",
+				"noscheme-creds=noschemegit.com",
+			},
+			[]string{
+				"zzz-ssh-bitbucket-creds=https://bitbucket.com",
+				"bitbucket-creds=https://bitbucket.com",
+			},
+			false,
+		)
 		require.NoError(t, err)
 	})
 
@@ -102,37 +122,101 @@ func (keys gitTest) testGitKeychain(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("there are ssh and basic auth secret types", func() {
-			it("returns ssh secret if the target is an ssh target", func() {
-				auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
-				require.NoError(t, err)
+		when("there are ssh auth secret types", func() {
+			when("unknown hosts are not trusted", func() {
+				it.Before(func() {
+					var err error
+					keychain, err = NewMountedSecretGitKeychain(testDir, []string{},
+						[]string{"bitbucket-creds=https://bitbucket.com"},
+						false,
+					)
+					require.NoError(t, err)
+				})
 
-				publicKeys, ok := auth.(*ssh.PublicKeys)
-				require.True(t, ok)
+				it("returns ssh secret if the target is an ssh target", func() {
+					auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
+					require.NoError(t, err)
 
-				require.Equal(t, "git", publicKeys.User)
+					publicKeys, ok := auth.(*ssh.PublicKeys)
+					require.True(t, ok)
 
-				expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
-				require.NoError(t, err)
-				require.Equal(t, expectedSigner, publicKeys.Signer)
+					require.Equal(t, "git", publicKeys.User)
+
+					expectedSigner, err := ssh2.ParsePrivateKey(keys.key1)
+					require.NoError(t, err)
+					require.Equal(t, expectedSigner, publicKeys.Signer)
+				})
+
+				it("returns ssh cred for requested ssh credentials", func() {
+					auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
+					require.NoError(t, err)
+
+					publicKeys, ok := auth.(*ssh.PublicKeys)
+					require.True(t, ok)
+
+					privateKey, err := ssh2.ParsePrivateKey(keys.key1)
+					require.NoError(t, err)
+
+					require.Equal(t, "git", publicKeys.User)
+					require.Equal(t, privateKey, publicKeys.Signer)
+				})
+
+				it("uses the known_hosts from the secret", func() {
+					auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
+					require.NoError(t, err)
+
+					publicKeys, ok := auth.(*ssh.PublicKeys)
+					require.True(t, ok)
+
+					require.Equal(t, "git", publicKeys.User)
+
+					privateKey, err := ssh2.ParsePrivateKey(keys.key1)
+					require.NoError(t, err)
+
+					hostKey := privateKey.PublicKey()
+
+					err = publicKeys.HostKeyCallback("bitbucket.com:22", fakeAddr{"tcp", "127.0.0.1:22"}, hostKey)
+					require.NoError(t, err)
+
+					err = publicKeys.HostKeyCallback("some.other.server.com:22", fakeAddr{"tcp", "127.0.0.1:22"}, hostKey)
+					require.Error(t, err)
+				})
 			})
 
-			it("returns ssh cred for requested ssh credentials", func() {
-				auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
-				require.NoError(t, err)
+			when("unknown hosts are trusted", func() {
+				it.Before(func() {
+					var err error
+					keychain, err = NewMountedSecretGitKeychain(testDir, []string{},
+						[]string{"untrusted-host-creds=https://bitbucket.com"},
+						true,
+					)
+					require.NoError(t, err)
+				})
 
-				_, ok := auth.(*ssh.PublicKeys)
-				require.True(t, ok)
+				it("does not require the known_hosts field", func() {
+					auth, err := keychain.Resolve("git@bitbucket.com:org/repo")
+					require.NoError(t, err)
 
-				signer, err := ssh2.ParsePrivateKey(keys.key1)
-				require.NoError(t, err)
+					publicKeys, ok := auth.(*ssh.PublicKeys)
+					require.True(t, ok)
 
-				require.Equal(t, &ssh.PublicKeys{
-					User:   "git",
-					Signer: signer,
-				}, auth)
+					require.Equal(t, "git", publicKeys.User)
+
+					privateKey, err := ssh2.ParsePrivateKey(keys.key1)
+					require.NoError(t, err)
+
+					hostKey := privateKey.PublicKey()
+
+					err = publicKeys.HostKeyCallback("bitbucket.com:22", fakeAddr{"tcp", "127.0.0.1:22"}, hostKey)
+					require.NoError(t, err)
+
+					err = publicKeys.HostKeyCallback("some.other.server.com:22", fakeAddr{"tcp", "127.0.0.1:22"}, hostKey)
+					require.NoError(t, err)
+				})
 			})
+		})
 
+		when("there are basic auth secret types", func() {
 			it("returns basic auth secret if the target is an https target", func() {
 				auth, err := keychain.Resolve("https://bitbucket.com/org/repo")
 				require.NoError(t, err)
