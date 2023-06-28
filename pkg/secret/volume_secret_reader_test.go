@@ -61,8 +61,8 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, auth, secret.SSH{
-				PrivateKey:     "foobar",
-				KnownHostsFile: []string{path.Join(testDir, "creds", "known_hosts")},
+				PrivateKey: "foobar",
+				KnownHosts: "ssh-keyscan",
 			})
 		})
 	})

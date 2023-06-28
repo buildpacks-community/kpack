@@ -10,6 +10,6 @@ type BasicAuth struct {
 }
 
 type SSH struct {
-	PrivateKey     string
-	KnownHostsFile []string
+	PrivateKey string
+	KnownHosts string
 }

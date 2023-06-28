@@ -202,7 +202,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 	case *gitURL != "":
 		logLoadingSecrets(logger, basicGitCredentials, sshGitCredentials)
 
-		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, basicGitCredentials, sshGitCredentials)
+		gitKeychain, err := git.NewMountedSecretGitKeychain(buildSecretsDir, basicGitCredentials, sshGitCredentials, *sshTrustUnknownHosts)
 		if err != nil {
 			return err
 		}

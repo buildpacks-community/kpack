@@ -174,7 +174,7 @@ func main() {
 		SSHTrustUnknownHost:       *sshTrustUnknownHosts,
 	}
 
-	gitResolver := git.NewResolver(k8sClient)
+	gitResolver := git.NewResolver(k8sClient, *sshTrustUnknownHosts)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 

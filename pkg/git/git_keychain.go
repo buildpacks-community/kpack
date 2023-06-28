@@ -2,6 +2,7 @@ package git
 
 import (
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 
@@ -49,8 +50,16 @@ func (g gitSshAuthCred) auth() (transport.AuthMethod, error) {
 
 	if g.sshTrustUnknownHosts {
 		keys.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-	} else {
-		knownHosts, err := gitssh.NewKnownHostsCallback(sshSecret.KnownHostsFile...)
+	} else if sshSecret.KnownHosts != "" {
+		hostsFile, err := os.CreateTemp("", "")
+		if err != nil {
+			return nil, err
+		}
+		defer os.Remove(hostsFile.Name())
+
+		// the file is loaded when this callback is generated, so it's fine to remove the file right after
+		hostsFile.WriteString(sshSecret.KnownHosts)
+		knownHosts, err := gitssh.NewKnownHostsCallback(hostsFile.Name())
 		if err != nil {
 			return nil, err
 		}

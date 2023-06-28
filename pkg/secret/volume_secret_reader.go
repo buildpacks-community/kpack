@@ -36,15 +36,18 @@ func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 		return SSH{}, err
 	}
 
-	var knownHosts []string = nil
+	var knownHosts []byte = nil
 	knownHostsPath := filepath.Join(secretPath, SSHAuthKnownHostsKey)
 	if _, err := os.Stat(knownHostsPath); !os.IsNotExist(err) {
-		knownHosts = []string{knownHostsPath}
+		knownHosts, err = ioutil.ReadFile(knownHostsPath)
+		if err != nil {
+			return SSH{}, err
+		}
 	}
 
 	return SSH{
-		PrivateKey:     string(privateKey),
-		KnownHostsFile: knownHosts,
+		PrivateKey: string(privateKey),
+		KnownHosts: string(knownHosts),
 	}, nil
 }
 
