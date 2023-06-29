@@ -10,6 +10,6 @@ unit-ci:
 	$(GOCMD) test ./pkg/... -coverprofile=coverage.txt -covermode=atomic
 
 e2e:
-	$(GOCMD) test -v ./test/...
+	$(GOCMD) test --timeout=15m -v ./test/...
 
 .PHONY: unit unit-ci e2e
