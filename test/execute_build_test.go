@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"knative.dev/pkg/apis"
@@ -43,6 +45,8 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
 		testNamespace        = "test"
 		dockerSecret         = "docker-secret"
+		gitBasicSecret       = "git-basic-secret"
+		gitSSHSecret         = "git-ssh-secret"
 		serviceAccountName   = "image-service-account"
 		clusterStoreName     = "store"
 		buildpackName        = "buildpack"
@@ -57,7 +61,66 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		clients     *clients
 		ctx         = context.Background()
 		builtImages map[string]struct{}
+
+		cacheSize = resource.MustParse("1Gi")
+
+		expectedResources = corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("1G"),
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("128M"),
+			},
+		}
+
+		builderConfigs = map[string]corev1.ObjectReference{
+			"custom-builder": {
+				Kind: buildapi.BuilderKind,
+				Name: builderName,
+			},
+			"custom-cluster-builder": {
+				Kind: buildapi.ClusterBuilderKind,
+				Name: clusterBuilderName,
+			},
+		}
 	)
+
+	testImage := func(name string, source corev1alpha1.SourceConfig) {
+		for builderType := range builderConfigs {
+			imageName := fmt.Sprintf("%s-%s", name, builderType)
+			builder := builderConfigs[builderType]
+
+			t.Run(imageName, func(t *testing.T) {
+				t.Parallel()
+
+				imageTag := cfg.newImageTag()
+				image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: imageName,
+					},
+					Spec: buildapi.ImageSpec{
+						Tag:                imageTag,
+						Builder:            builder,
+						ServiceAccountName: serviceAccountName,
+						Source:             source,
+						Cache: &buildapi.ImageCacheConfig{
+							Volume: &buildapi.ImagePersistentVolumeCache{
+								Size: &cacheSize,
+							},
+						},
+						ImageTaggingStrategy: corev1alpha1.None,
+						Build: &buildapi.ImageBuild{
+							Resources: expectedResources,
+						},
+					},
+				}, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				builtImages[validateImageCreate(t, clients, image, expectedResources)] = struct{}{}
+				validateRebase(t, ctx, clients, image.Name, testNamespace)
+			})
+		}
+	}
 
 	it.Before(func() {
 		cfg = loadConfig(t)
@@ -145,6 +208,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					{Image: "gcr.io/paketo-buildpacks/executable-jar"},
 					{Image: "gcr.io/paketo-buildpacks/dist-zip"},
 					{Image: "gcr.io/paketo-buildpacks/spring-boot"},
+					{Image: "gcr.io/paketo-buildpacks/go"},
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -179,12 +243,12 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: clusterStackName,
 			},
 			Spec: buildapi.ClusterStackSpec{
-				Id: "io.buildpacks.stacks.bionic",
+				Id: "io.buildpacks.stacks.jammy",
 				BuildImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/build:base-cnb",
+					Image: "gcr.io/paketo-buildpacks/build-jammy-base",
 				},
 				RunImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/run:base-cnb",
+					Image: "gcr.io/paketo-buildpacks/run-jammy-base",
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -207,6 +271,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						Kind: "ClusterStore",
 					},
 					Order: []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/go",
+										},
+									},
+								},
+							},
+						},
 						{
 							Group: []buildapi.BuilderBuildpackRef{
 								{
@@ -295,6 +370,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						{
 							Group: []buildapi.BuilderBuildpackRef{
 								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/go",
+										},
+									},
+								},
+							},
+						},
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
 									ObjectReference: corev1.ObjectReference{
 										Name: clusterBuildpackName,
 										Kind: "ClusterBuildpack",
@@ -362,86 +448,78 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		waitUntilReady(t, ctx, clients, builder, clusterBuilder)
 	})
 
-	it("builds and rebases git, blob, and registry based images", func() {
-
-		cacheSize := resource.MustParse("1Gi")
-
-		expectedResources := corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1G"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("128M"),
-			},
-		}
-
+	it("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
 		imageSources := map[string]corev1alpha1.SourceConfig{
-			"test-git-image": {
+			"git-image": {
 				Git: &corev1alpha1.Git{
 					URL:      "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs",
 					Revision: "master",
 				},
 			},
-			"test-blob-image": {
+			"blob-image": {
 				Blob: &corev1alpha1.Blob{
 					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 				},
 			},
-			"test-registry-image": {
+			"registry-image": {
 				Registry: &corev1alpha1.Registry{
 					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 				},
 			},
 		}
 
-		builderConfigs := map[string]corev1.ObjectReference{
-			"custom-builder": {
-				Kind: buildapi.BuilderKind,
-				Name: builderName,
-			},
-			"custom-cluster-builder": {
-				Kind: buildapi.ClusterBuilderKind,
-				Name: clusterBuilderName,
-			},
+		for imageType, imageSource := range imageSources {
+			testImage(imageType, imageSource)
+		}
+	})
+
+	it("builds and rebases git sources from authenticated sources", func() {
+		sa := &corev1.ServiceAccount{
+			Secrets: []corev1.ObjectReference{},
 		}
 
-		for imageType := range imageSources {
-			for builderType := range builderConfigs {
+		basicSecret, basicAuthRepo := cfg.makeGitBasicAuthSecret(gitBasicSecret, testNamespace)
+		if basicSecret != nil {
+			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, basicSecret, metav1.CreateOptions{})
+			require.NoError(t, err)
 
-				imageName := fmt.Sprintf("%s-%s", imageType, builderType)
-				source := imageSources[imageType]
-				builder := builderConfigs[builderType]
+			sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
+				Name: basicSecret.Name,
+			})
+		}
 
-				t.Run(imageName, func(t *testing.T) {
-					t.Parallel()
+		sshSecret, sshAuthRepo := cfg.makeGitSSHAuthSecret(gitSSHSecret, testNamespace)
+		if sshSecret != nil {
+			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, sshSecret, metav1.CreateOptions{})
+			require.NoError(t, err)
 
-					imageTag := cfg.newImageTag()
-					image, err := clients.client.KpackV1alpha2().Images(testNamespace).Create(ctx, &buildapi.Image{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: imageName,
-						},
-						Spec: buildapi.ImageSpec{
-							Tag:                imageTag,
-							Builder:            builder,
-							ServiceAccountName: serviceAccountName,
-							Source:             source,
-							Cache: &buildapi.ImageCacheConfig{
-								Volume: &buildapi.ImagePersistentVolumeCache{
-									Size: &cacheSize,
-								},
-							},
-							ImageTaggingStrategy: corev1alpha1.None,
-							Build: &buildapi.ImageBuild{
-								Resources: expectedResources,
-							},
-						},
-					}, metav1.CreateOptions{})
-					require.NoError(t, err)
+			sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
+				Name: sshSecret.Name,
+			})
+		}
 
-					builtImages[validateImageCreate(t, clients, image, expectedResources)] = struct{}{}
-					validateRebase(t, ctx, clients, image.Name, testNamespace)
-				})
-			}
+		patch, err := json.Marshal(sa)
+		require.NoError(t, err)
+
+		_, err = clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Patch(ctx, serviceAccountName, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+		require.NoError(t, err)
+
+		if basicSecret != nil {
+			testImage("git-basic-auth-image", corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
+					URL:      basicAuthRepo,
+					Revision: "main",
+				},
+			})
+		}
+
+		if sshSecret != nil {
+			testImage("git-ssh-auth-image", corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
+					URL:      sshAuthRepo,
+					Revision: "main",
+				},
+			})
 		}
 	})
 

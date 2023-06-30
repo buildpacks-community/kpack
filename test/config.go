@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,6 +21,10 @@ type config struct {
 	testRegistry         string
 	testRegistryUsername string
 	testRegistryPassword string
+	gitSourcePrivateRepo string
+	gitSourceUsername    string
+	gitSourcePassword    string
+	gitSourcePrivateKey  string
 	imageTag             string
 }
 
@@ -29,26 +35,37 @@ type dockerConfigJson struct {
 }
 
 func loadConfig(t *testing.T) config {
+	gitPrivateRepo, _ := os.LookupEnv("GIT_PRIVATE_REPO")
+	gitUsername, _ := os.LookupEnv("GIT_BASIC_USERNAME")
+	gitPassword, _ := os.LookupEnv("GIT_BASIC_PASSWORD")
+	gitPrivateKey, _ := os.LookupEnv("GIT_SSH_PRIVATE_KEY")
+
 	registry, found := os.LookupEnv("IMAGE_REGISTRY")
 	if !found {
 		t.Fatal("IMAGE_REGISTRY env is needed for tests")
 	}
 
-	username, found := os.LookupEnv("IMAGE_REGISTRY_USERNAME")
+	imageUsername, found := os.LookupEnv("IMAGE_REGISTRY_USERNAME")
 	if !found {
 		t.Fatal("IMAGE_REGISTRY_USERNAME env is needed for tests")
 	}
 
-	password, found := os.LookupEnv("IMAGE_REGISTRY_PASSWORD")
+	imagePassword, found := os.LookupEnv("IMAGE_REGISTRY_PASSWORD")
 	if !found {
 		t.Fatal("IMAGE_REGISTRY_PASSWORD env is needed for tests")
 	}
 
 	return config{
 		testRegistry:         registry,
-		testRegistryUsername: username,
-		testRegistryPassword: password,
-		imageTag:             registry + "/kpack-test",
+		testRegistryUsername: imageUsername,
+		testRegistryPassword: imagePassword,
+
+		gitSourcePrivateRepo: gitPrivateRepo,
+		gitSourceUsername:    gitUsername,
+		gitSourcePassword:    gitPassword,
+		gitSourcePrivateKey:  gitPrivateKey,
+
+		imageTag: registry + "/kpack-test",
 	}
 }
 
@@ -89,4 +106,52 @@ func (c *config) makeRegistrySecret(secretName string, namespace string) (*corev
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
 	}, nil
+}
+
+func (c *config) makeGitBasicAuthSecret(secretName, namespace string) (*corev1.Secret, string) {
+	if c.gitSourceUsername == "" || c.gitSourcePassword == "" {
+		return nil, ""
+	}
+
+	// convert `github.com/org/repo` -> `https://github.com/org/repo.git`
+	repo := fmt.Sprintf("https://%v.git", c.gitSourcePrivateRepo)
+
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
+			},
+		},
+		Data: map[string][]byte{
+			corev1.BasicAuthUsernameKey: []byte(c.gitSourceUsername),
+			corev1.BasicAuthPasswordKey: []byte(c.gitSourcePassword),
+		},
+		Type: corev1.SecretTypeBasicAuth,
+	}, repo
+}
+
+func (c *config) makeGitSSHAuthSecret(secretName, namespace string) (*corev1.Secret, string) {
+	if c.gitSourcePrivateKey == "" {
+		return nil, ""
+	}
+
+	// convert `github.com/org/repo` -> `git@github.com:org/repo.git`
+	repo := fmt.Sprintf("git@%v.git", c.gitSourcePrivateRepo)
+	repo = strings.Replace(repo, "/", ":", 1)
+
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				v1alpha2.GITSecretAnnotationPrefix: "git@github.com",
+			},
+		},
+		Data: map[string][]byte{
+			corev1.SSHAuthPrivateKey: []byte(c.gitSourcePrivateKey),
+		},
+		Type: corev1.SecretTypeSSHAuth,
+	}, repo
 }

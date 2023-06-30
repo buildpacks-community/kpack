@@ -44,7 +44,7 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#readSshSecret", func() {
-		it("returns the private key from the secret", func() {
+		it("returns the private key and known hosts from the secret", func() {
 			testDir, err := ioutil.TempDir("", "secret-volume")
 			require.NoError(t, err)
 
@@ -55,12 +55,14 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "creds"), 0777))
 
 			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", corev1.SSHAuthPrivateKey), []byte("foobar"), 0600))
+			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", secret.SSHAuthKnownHostsKey), []byte("ssh-keyscan"), 0600))
 
 			auth, err := secret.ReadSshSecret(testDir, "creds")
 			require.NoError(t, err)
 
 			assert.Equal(t, auth, secret.SSH{
 				PrivateKey: "foobar",
+				KnownHosts: "ssh-keyscan",
 			})
 		})
 	})

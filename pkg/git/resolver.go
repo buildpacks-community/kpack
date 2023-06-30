@@ -14,10 +14,10 @@ type Resolver struct {
 	gitKeychain       *k8sGitKeychain
 }
 
-func NewResolver(k8sClient k8sclient.Interface) *Resolver {
+func NewResolver(k8sClient k8sclient.Interface, sshTrustUnknownHosts bool) *Resolver {
 	return &Resolver{
 		remoteGitResolver: remoteGitResolver{},
-		gitKeychain:       newK8sGitKeychain(k8sClient),
+		gitKeychain:       newK8sGitKeychain(k8sClient, sshTrustUnknownHosts),
 	}
 }
 

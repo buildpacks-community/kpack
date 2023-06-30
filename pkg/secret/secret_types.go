@@ -1,5 +1,9 @@
 package secret
 
+const (
+	SSHAuthKnownHostsKey = "known_hosts"
+)
+
 type BasicAuth struct {
 	Username string
 	Password string
@@ -7,4 +11,5 @@ type BasicAuth struct {
 
 type SSH struct {
 	PrivateKey string
+	KnownHosts string
 }

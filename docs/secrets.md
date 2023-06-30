@@ -94,6 +94,22 @@ stringData:
   ssh-privatekey: <x509-private-key>
 ```
 
+Host key checking is disabled by default, it can be enabled by setting the `INSECURE_SSH_TRUST_UNKNOWN_HOSTS` environment variable on the controller to `false`.
+
+When host key checking is enabled, you can use the optional `known_hosts` field on the ssh auth secret. If it is not specified, the build will use the `SSH_KNOWN_HOSTS` environment variable before checking `~/.ssh/known_hosts` and `/etc/ssh/ssh_known_hosts`.
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-ssh-auth
+  annotations:
+    kpack.io/git: git@github.com
+type: kubernetes.io/ssh-auth
+stringData:
+  known_hosts: <ssh-keyscan output>
+  ssh-privatekey: <x509-private-key>
+```
+
 If your github account has 2 factor auth configured, create a personal access token using [this procedure](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line).
 
 Configure your secret for github like this:

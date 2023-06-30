@@ -15,13 +15,17 @@ import (
 )
 
 type k8sGitKeychain struct {
-	secretFetcher secret.Fetcher
+	secretFetcher        secret.Fetcher
+	sshTrustUnknownHosts bool
 }
 
 var anonymousAuth transport.AuthMethod = nil
 
-func newK8sGitKeychain(k8sClient k8sclient.Interface) *k8sGitKeychain {
-	return &k8sGitKeychain{secretFetcher: secret.Fetcher{Client: k8sClient}}
+func newK8sGitKeychain(k8sClient k8sclient.Interface, sshTrustUnknownHosts bool) *k8sGitKeychain {
+	return &k8sGitKeychain{
+		secretFetcher:        secret.Fetcher{Client: k8sClient},
+		sshTrustUnknownHosts: sshTrustUnknownHosts,
+	}
 }
 
 func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount string, git corev1alpha1.Git) (transport.AuthMethod, error) {
@@ -46,9 +50,10 @@ func (k *k8sGitKeychain) Resolve(ctx context.Context, namespace, serviceAccount 
 		case v1.SecretTypeSSHAuth:
 			{
 				creds = append(creds, gitSshAuthCred{
-					Domain:      s.Annotations[buildapi.GITSecretAnnotationPrefix],
-					SecretName:  s.Name,
-					fetchSecret: fetchSshAuth(s),
+					Domain:               s.Annotations[buildapi.GITSecretAnnotationPrefix],
+					SecretName:           s.Name,
+					fetchSecret:          fetchSshAuth(s),
+					sshTrustUnknownHosts: k.sshTrustUnknownHosts,
 				})
 			}
 		}
@@ -68,7 +73,10 @@ func fetchBasicAuth(s *v1.Secret) func() (secret.BasicAuth, error) {
 
 func fetchSshAuth(s *v1.Secret) func() (secret.SSH, error) {
 	return func() (auth secret.SSH, err error) {
-		return secret.SSH{PrivateKey: string(s.Data[v1.SSHAuthPrivateKey])}, nil
+		return secret.SSH{
+			PrivateKey: string(s.Data[v1.SSHAuthPrivateKey]),
+			KnownHosts: string(s.Data[secret.SSHAuthKnownHostsKey]),
+		}, nil
 	}
 }
 

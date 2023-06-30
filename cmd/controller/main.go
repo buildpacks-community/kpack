@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -42,6 +41,7 @@ import (
 	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
+	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/git"
 	"github.com/pivotal/kpack/pkg/reconciler"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
@@ -62,15 +62,6 @@ const (
 	component             = "controller"
 )
 
-func getEnvBool(key string, defaultValue bool) bool {
-	s := os.Getenv(key)
-	v, err := strconv.ParseBool(s)
-	if err != nil {
-		return defaultValue
-	}
-	return v
-}
-
 var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
@@ -80,10 +71,11 @@ var (
 	rebaseImage               = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	completionImage           = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
 	completionWindowsImage    = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
-	enablePriorityClasses     = flag.Bool("enable-priority-classes", getEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
+	enablePriorityClasses     = flag.Bool("enable-priority-classes", flaghelpers.GetEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
 	maximumPlatformApiVersion = flag.String("maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
 	buildWaiterImage          = flag.String("build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
-	injectedSidecarSupport    = flag.Bool("injected-sidecar-support", getEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
+	injectedSidecarSupport    = flag.Bool("injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
+	sshTrustUnknownHosts      = flag.Bool("insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "if set to true, automatically trust unknown hosts when using git ssh source")
 )
 
 func main() {
@@ -179,9 +171,10 @@ func main() {
 		DynamicClient:             dynamicClient,
 		MaximumPlatformApiVersion: maxPlatformApi,
 		InjectedSidecarSupport:    *injectedSidecarSupport,
+		SSHTrustUnknownHost:       *sshTrustUnknownHosts,
 	}
 
-	gitResolver := git.NewResolver(k8sClient)
+	gitResolver := git.NewResolver(k8sClient, *sshTrustUnknownHosts)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 

@@ -11,7 +11,6 @@ import (
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -44,6 +43,7 @@ type Generator struct {
 	DynamicClient             dynamic.Interface
 	MaximumPlatformApiVersion *semver.Version
 	InjectedSidecarSupport    bool
+	SSHTrustUnknownHost       bool
 }
 
 type BuildPodable interface {
@@ -57,7 +57,7 @@ type BuildPodable interface {
 	BuildPod(buildapi.BuildPodImages, buildapi.BuildContext) (*corev1.Pod, error)
 }
 
-func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, error) {
+func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*corev1.Pod, error) {
 	bindings, err := g.fetchServiceBindings(ctx, build)
 	if err != nil {
 		return nil, err
@@ -80,6 +80,7 @@ func (g *Generator) Generate(ctx context.Context, build BuildPodable) (*v1.Pod, 
 		ImagePullSecrets:          imagePullSecrets,
 		MaximumPlatformApiVersion: g.MaximumPlatformApiVersion,
 		InjectedSidecarSupport:    g.InjectedSidecarSupport,
+		SSHTrustUnknownHost:       g.SSHTrustUnknownHost,
 	})
 }
 
@@ -143,7 +144,7 @@ func (g *Generator) fetchServiceBindings(ctx context.Context, build BuildPodable
 	return bindings, nil
 }
 
-func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build BuildPodable, s v1.ObjectReference) (duckprovisionedserviceable.ProvisionedServicable, error) {
+func (g *Generator) readProvisionedServiceDuckType(ctx context.Context, build BuildPodable, s corev1.ObjectReference) (duckprovisionedserviceable.ProvisionedServicable, error) {
 	gvr, _ := meta.UnsafeGuessKindToResource(s.GroupVersionKind())
 	unstructured, err := g.DynamicClient.Resource(gvr).Namespace(build.GetNamespace()).Get(ctx, s.Name, metav1.GetOptions{})
 	if err != nil {
@@ -168,7 +169,7 @@ func bindingUsesForbiddenSecret(forbiddenSecrets map[string]struct{}, secretRef 
 func (g *Generator) fetchServiceAccounts(ctx context.Context, build BuildPodable) ([]corev1.ServiceAccount, error) {
 	serviceAccounts, err := g.K8sClient.CoreV1().ServiceAccounts(build.GetNamespace()).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return []v1.ServiceAccount{}, err
+		return []corev1.ServiceAccount{}, err
 	}
 	return serviceAccounts.Items, nil
 }

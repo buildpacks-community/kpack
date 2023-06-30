@@ -117,6 +117,7 @@ type BuildContext struct {
 	ImagePullSecrets          []corev1.LocalObjectReference
 	MaximumPlatformApiVersion *semver.Version
 	InjectedSidecarSupport    bool
+	SSHTrustUnknownHost       bool
 }
 
 func (c BuildContext) os() string {
@@ -461,6 +462,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							corev1.EnvVar{
 								Name:  buildChangesEnvVar,
 								Value: b.BuildChanges(),
+							},
+							corev1.EnvVar{
+								Name:  "INSECURE_SSH_TRUST_UNKNOWN_HOSTS",
+								Value: strconv.FormatBool(buildContext.SSHTrustUnknownHost),
 							},
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,

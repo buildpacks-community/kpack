@@ -356,7 +356,7 @@ jobs:
         password: ${{ env.REGISTRY_PASS }}
 
     - name: Run tests
-      run: |        
+      run: |
         # make the registry container accessible by name from inside the cluster
         docker network connect kind registry.local
 
@@ -365,6 +365,11 @@ jobs:
         export IMAGE_REGISTRY=${{ env.REGISTRY_URL }}
         export IMAGE_REGISTRY_USERNAME=${{ env.REGISTRY_USER }}
         export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
+
+        export GIT_PRIVATE_REPO=${{ env.E2E_PRIVATE_REPO }}
+        export GIT_BASIC_USERNAME=${{ secrets.E2E_PRIVATE_REPO_USERNAME }}
+        export GIT_BASIC_PASSWORD=${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}
+        export GIT_SSH_PRIVATE_KEY=${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}
 
         make e2e
         kapp delete -a kpack -y
@@ -375,8 +380,8 @@ jobs:
         helm repo update
         kubectl create namespace istio-system
         helm install istio-base istio/base -n istio-system --wait
-        helm install istiod istio/istiod -n istio-system --wait    
-        
+        helm install istiod istio/istiod -n istio-system --wait
+
         cat <<EOF > overlay.yaml
         #@ load("@ytt:overlay", "overlay")
         #@overlay/match by=overlay.subset({"metadata":{"name":"kpack-controller"}, "kind": "Deployment"})
@@ -394,7 +399,7 @@ jobs:
                 - name: INJECTED_SIDECAR_SUPPORT
                   value: "true"
         EOF
-        
+
         ytt -f prerelease.yaml -f overlay.yaml | kapp deploy -a kpack -y -f-
 
         export IMAGE_REGISTRY=${{ env.REGISTRY_URL }}
