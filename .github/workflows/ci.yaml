@@ -367,9 +367,9 @@ jobs:
         export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
 
         export GIT_PRIVATE_REPO=${{ env.E2E_PRIVATE_REPO }}
-        export GIT_BASIC_USERNAME=${{ secrets.E2E_PRIVATE_REPO_USERNAME }}
-        export GIT_BASIC_PASSWORD=${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}
-        export GIT_SSH_PRIVATE_KEY=${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}
+        export GIT_BASIC_USERNAME="${{ secrets.E2E_PRIVATE_REPO_USERNAME }}"
+        export GIT_BASIC_PASSWORD="${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}"
+        export GIT_SSH_PRIVATE_KEY="${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}"
 
         make e2e
         kapp delete -a kpack -y
