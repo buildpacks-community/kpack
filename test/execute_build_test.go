@@ -638,7 +638,6 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
 		eventually(t, func() bool {
-
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 			require.NoError(t, err)
 

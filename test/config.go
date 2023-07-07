@@ -114,14 +114,15 @@ func (c *config) makeGitBasicAuthSecret(secretName, namespace string) (*corev1.S
 	}
 
 	// convert `github.com/org/repo` -> `https://github.com/org/repo.git`
-	repo := fmt.Sprintf("https://%v.git", c.gitSourcePrivateRepo)
+	repo := fmt.Sprintf("https://%v", c.gitSourcePrivateRepo)
+	host := strings.Split(c.gitSourcePrivateRepo, "/")[0]
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				v1alpha2.GITSecretAnnotationPrefix: "https://github.com",
+				v1alpha2.GITSecretAnnotationPrefix: fmt.Sprintf("https://%v", host),
 			},
 		},
 		Data: map[string][]byte{
@@ -138,15 +139,16 @@ func (c *config) makeGitSSHAuthSecret(secretName, namespace string) (*corev1.Sec
 	}
 
 	// convert `github.com/org/repo` -> `git@github.com:org/repo.git`
-	repo := fmt.Sprintf("git@%v.git", c.gitSourcePrivateRepo)
+	repo := fmt.Sprintf("git@%v", c.gitSourcePrivateRepo)
 	repo = strings.Replace(repo, "/", ":", 1)
+	host := strings.Split(c.gitSourcePrivateRepo, "/")[0]
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				v1alpha2.GITSecretAnnotationPrefix: "git@github.com",
+				v1alpha2.GITSecretAnnotationPrefix: fmt.Sprintf("git@%v", host),
 			},
 		},
 		Data: map[string][]byte{
