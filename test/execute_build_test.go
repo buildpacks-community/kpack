@@ -123,6 +123,13 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it.Before(func() {
+		// register a cleanup function that dumps crds only if the test fails
+		t.Cleanup(func() {
+			if t.Failed() {
+				dumpK8s(t, ctx, clients, testNamespace)
+			}
+		})
+
 		cfg = loadConfig(t)
 		builtImages = map[string]struct{}{}
 
@@ -638,7 +645,6 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
 		eventually(t, func() bool {
-
 			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 			require.NoError(t, err)
 
