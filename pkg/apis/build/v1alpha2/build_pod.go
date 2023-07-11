@@ -1154,10 +1154,10 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 }
 
 var (
-	lowestSupportedPlatformVersion = semver.MustParse("0.3")
+	lowestSupportedPlatformVersion = semver.MustParse("0.7")
 
-	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7"), semver.MustParse("0.6"), semver.MustParse("0.5"), semver.MustParse("0.4")}
-	supportedPlatformAPIVersions                         = append(supportedPlatformAPIVersionsWithWindowsAndReportToml, semver.MustParse("0.3"))
+	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.11"), semver.MustParse("0.10"), semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
+	supportedPlatformAPIVersions                         = supportedPlatformAPIVersionsWithWindowsAndReportToml
 )
 
 func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
