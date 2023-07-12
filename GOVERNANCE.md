@@ -60,44 +60,6 @@ the project succeed.
 The collective team of all Maintainers is known as the Maintainer Council, which
 is the governing body for the project.
 
-### Becoming a Maintainer
-
-To become a Maintainer you need to demonstrate the following:
-
-* commitment to the project:
-    * participate in discussions (e.g., working group), contributions, code and documentation reviews
-      for **1 year** or more,
-    * perform reviews for **10** non-trivial pull requests,
-    * contribute **5** non-trivial pull requests and have them merged,
-* ability to write quality code and/or documentation,
-* ability to collaborate with the team,
-* understanding of how the team works (policies, processes for testing and code review, etc),
-* understanding of the project's code base and coding and documentation style.
-  <!-- add any additional Maintainer requirements here -->
-
-A new Maintainer must be proposed by an existing maintainer during kpack working group meetings. A simple majority vote of existing Maintainers
-approves the application.  Maintainers nominations will be evaluated without prejudice
-to employer or demographics.
-
-Maintainers who are selected will be granted the necessary GitHub rights.
-
-### Removing a Maintainer
-
-Maintainers may resign at any time if they feel that they will not be able to
-continue fulfilling their project duties.
-
-Maintainers may also be removed after being inactive, failure to fulfill their
-Maintainer responsibilities, violating the Code of Conduct, or other reasons.
-Inactivity is defined as a period of very low or no activity in the project
-for a year or more, with no definite schedule to return to full Maintainer
-activity.
-
-A Maintainer may be removed at any time by a 2/3 vote of the remaining maintainers.
-
-Depending on the reason for removal, a Maintainer may be converted to Emeritus
-status.  Emeritus Maintainers will still be consulted on some project matters,
-and can be rapidly returned to Maintainer status if their availability changes.
-
 ## Meetings
 
 Time zones permitting, Maintainers are expected to participate in the public
