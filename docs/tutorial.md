@@ -170,7 +170,7 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
       source:
         git:
           url: https://github.com/spring-projects/spring-petclinic
-          revision: 82cb521d636b282340378d80a6307a08e3d4a4c4
+          revision: 3be289517d320a47bb8f359acc1d1daf0829ed0b
     ```
 
    - Replace `<DOCKER-IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--docker-server` flag when creating a Secret in step #1. Something like: your-name/app or gcr.io/your-project/app
