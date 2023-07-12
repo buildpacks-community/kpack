@@ -242,7 +242,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		MountPath: sourceMount.MountPath,
 		SubPath:   b.Spec.Source.SubPath, // empty string is a nop
 	}
-	platformAPILessThan07 := platformAPI.LessThan(semver.MustParse("0.7"))
 	var genericCacheArgs []string
 	var analyzerCacheArgs []string = nil
 	var exporterCacheArgs []string
@@ -251,9 +250,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	if b.Spec.NeedVolumeCache() && buildContext.os() != "windows" {
 		genericCacheArgs = []string{"-cache-dir=/cache"}
 		cacheVolumes = []corev1.VolumeMount{cacheMount}
-		if platformAPILessThan07 {
-			analyzerCacheArgs = genericCacheArgs
-		}
 		exporterCacheArgs = genericCacheArgs
 	} else if b.Spec.NeedRegistryCache() {
 		useCacheFromLastBuild := b.Spec.LastBuild != nil && b.Spec.LastBuild.Cache.Image != ""
@@ -274,24 +270,13 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		Args: args(
 			[]string{"-layers=/layers", "-analyzed=/layers/analyzed.toml"},
 			func() []string {
-				if !platformAPILessThan07 {
-					return []string{"-run-image=" + runImage}
-				}
 				return []string{}
 			}(),
 			analyzerCacheArgs,
 			func() []string {
-				if platformAPILessThan07 {
-					return []string{
-						"-group=/layers/group.toml",
-					}
-				}
 				return []string{}
 			}(),
 			func() []string {
-				if platformAPILessThan07 {
-					return []string{}
-				}
 				tags := []string{}
 				if len(b.Spec.Tags) > 1 {
 					for _, tag := range b.Spec.Tags[1:] {
@@ -302,9 +287,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			}(),
 			func() []string {
 				if b.Spec.LastBuild != nil && b.Spec.LastBuild.Image != "" {
-					if platformAPILessThan07 {
-						return []string{b.Spec.LastBuild.Image}
-					}
 					return []string{"-previous-image=" + b.Spec.LastBuild.Image, b.Tag()}
 				}
 				return []string{b.Tag()}
@@ -316,9 +298,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			workspaceVolume,
 			homeMount,
 		}, func() []corev1.VolumeMount {
-			if platformAPILessThan07 {
-				return cacheVolumes
-			}
 			return []corev1.VolumeMount{}
 		}()),
 		Env: []corev1.EnvVar{
@@ -486,29 +465,17 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 				step(
 					func() corev1.Container {
-						if platformAPILessThan07 {
-							return detectContainer
-						}
 						return analyzeContainer
 					}(),
 					func() []stepModifier {
-						if platformAPILessThan07 {
-							return detectContainerMods
-						}
 						return analyzerContainerMods
 					}()...,
 				)
 				step(
 					func() corev1.Container {
-						if platformAPILessThan07 {
-							return analyzeContainer
-						}
 						return detectContainer
 					}(),
 					func() []stepModifier {
-						if platformAPILessThan07 {
-							return analyzerContainerMods
-						}
 						return detectContainerMods
 					}()...,
 				)
@@ -523,9 +490,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							"-group=/layers/group.toml",
 							"-layers=/layers",
 						}, genericCacheArgs, func() []string {
-							if platformAPILessThan07 {
-								return []string{}
-							}
 							return []string{"-analyzed=/layers/analyzed.toml"}
 						}()),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
@@ -604,9 +568,6 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 
 							}(),
 							func() []string {
-								if platformAPILessThan07 {
-									return []string{"-run-image=" + runImage}
-								}
 								return []string{}
 							}(),
 							b.Spec.Tags),
@@ -1156,15 +1117,11 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 var (
 	lowestSupportedPlatformVersion = semver.MustParse("0.7")
 
-	supportedPlatformAPIVersionsWithWindowsAndReportToml = []*semver.Version{semver.MustParse("0.11"), semver.MustParse("0.10"), semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
-	supportedPlatformAPIVersions                         = supportedPlatformAPIVersionsWithWindowsAndReportToml
+	supportedPlatformAPIVersions = []*semver.Version{semver.MustParse("0.11"), semver.MustParse("0.10"), semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
 )
 
 func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
 	for _, supportedVersion := range func() []*semver.Version {
-		if b.NotaryV1Config() != nil || bc.BuildPodBuilderConfig.OS == "windows" {
-			return supportedPlatformAPIVersionsWithWindowsAndReportToml
-		}
 		return supportedPlatformAPIVersions
 	}() {
 		if bc.MaximumPlatformApiVersion != nil && bc.MaximumPlatformApiVersion.LessThan(supportedVersion) {

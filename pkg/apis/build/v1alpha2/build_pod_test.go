@@ -238,28 +238,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			RunImage:     "builderregistry.io/run",
 			Uid:          2000,
 			Gid:          3000,
-			PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"},
-			OS:           "linux",
-		},
-		Secrets:  secrets,
-		Bindings: serviceBindings,
-		ImagePullSecrets: []corev1.LocalObjectReference{
-			{
-				Name: "image-pull-1",
-			},
-			{
-				Name: "image-pull-2",
-			},
-		},
-	}
-
-	oldBuildContext := buildapi.BuildContext{
-		BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
-			StackID:      "com.builder.stack.io",
-			RunImage:     "builderregistry.io/run",
-			Uid:          2000,
-			Gid:          3000,
-			PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6"},
+			PlatformAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
 			OS:           "linux",
 		},
 		Secrets:  secrets,
@@ -396,7 +375,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				RunImage:     "builderregistry.io/run",
 				Uid:          2000,
 				Gid:          3000,
-				PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"},
+				PlatformAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
 				OS:           "linux",
 			}.Uid, *pod.Spec.SecurityContext.RunAsUser)
 			assert.Equal(t, buildapi.BuildPodBuilderConfig{
@@ -404,7 +383,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				RunImage:     "builderregistry.io/run",
 				Uid:          2000,
 				Gid:          3000,
-				PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"},
+				PlatformAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
 				OS:           "linux",
 			}.Gid, *pod.Spec.SecurityContext.RunAsGroup)
 			assert.Equal(t, buildapi.BuildPodBuilderConfig{
@@ -412,7 +391,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				RunImage:     "builderregistry.io/run",
 				Uid:          2000,
 				Gid:          3000,
-				PlatformAPIs: []string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"},
+				PlatformAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
 				OS:           "linux",
 			}.Gid, *pod.Spec.SecurityContext.FSGroup)
 		})
@@ -430,25 +409,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"prepare",
 				"analyze",
 				"detect",
-				"restore",
-				"build",
-				"export",
-			}, names)
-		})
-
-		it("creates init containers with all the build steps with older apis", func() {
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			var names []string
-			for _, container := range pod.Spec.InitContainers {
-				names = append(names, container.Name)
-			}
-
-			assert.Equal(t, []string{
-				"prepare",
-				"detect",
-				"analyze",
 				"restore",
 				"build",
 				"export",
@@ -513,47 +473,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		it("configures the services for older apis", func() {
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Contains(t,
-				pod.Spec.Volumes,
-				corev1.Volume{
-					Name: "service-binding-secret-database",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: "database",
-						},
-					},
-				},
-				corev1.Volume{
-					Name: "service-binding-secret-apm",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: "apm",
-						},
-					},
-				},
-			)
-
-			for _, containerIdx := range []int{1 /* detect */, 4 /* build */} {
-				assert.Contains(t,
-					pod.Spec.InitContainers[containerIdx].VolumeMounts,
-					corev1.VolumeMount{
-						Name:      "service-binding-secret-database",
-						MountPath: "/platform/bindings/database",
-						ReadOnly:  true,
-					},
-					corev1.VolumeMount{
-						Name:      "service-binding-secret-apm",
-						MountPath: "/platform/bindings/apm",
-						ReadOnly:  true,
-					},
-				)
-			}
-		})
-
 		it("configures the v1alpha1bindings", func() {
 			buildContext.Bindings = v1alpha1ServiceBindings
 			pod, err := build.BuildPod(config, buildContext)
@@ -582,50 +501,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			for _, containerIdx := range []int{2 /* detect */, 4 /* build */} {
-				assert.Contains(t,
-					pod.Spec.InitContainers[containerIdx].VolumeMounts,
-					corev1.VolumeMount{
-						Name:      "binding-metadata-some-v1alpha1-binding",
-						MountPath: "/platform/bindings/some-v1alpha1-binding/metadata",
-						ReadOnly:  true,
-					},
-					corev1.VolumeMount{
-						Name:      "binding-secret-some-v1alpha1-binding",
-						MountPath: "/platform/bindings/some-v1alpha1-binding/secret",
-						ReadOnly:  true,
-					},
-				)
-			}
-		})
-
-		it("configures the v1alpha1bindings for older apis", func() {
-			oldBuildContext.Bindings = v1alpha1ServiceBindings
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Contains(t,
-				pod.Spec.Volumes,
-				corev1.Volume{
-					Name: "binding-metadata-some-v1alpha1-binding",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: "some-configmap",
-							},
-						},
-					},
-				},
-				corev1.Volume{
-					Name: "binding-secret-some-v1alpha1-binding",
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: "some-secret",
-						},
-					},
-				},
-			)
-
-			for _, containerIdx := range []int{1 /* detect */, 4 /* build */} {
 				assert.Contains(t,
 					pod.Spec.InitContainers[containerIdx].VolumeMounts,
 					corev1.VolumeMount{
@@ -841,7 +716,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "detect")
-			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -852,29 +727,13 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}, names(pod.Spec.InitContainers[2].VolumeMounts))
 		})
 
-		it("configures detect step with the older platform api", func() {
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, pod.Spec.InitContainers[1].Name, "detect")
-			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
-			assert.Equal(t, pod.Spec.InitContainers[1].Image, builderImage)
-			assert.Equal(t, []string{
-				"layers-dir",
-				"platform-dir",
-				"workspace-dir",
-				"service-binding-secret-database",
-				"service-binding-secret-apm",
-			}, names(pod.Spec.InitContainers[1].VolumeMounts))
-		})
-
 		it("configures detect step with cnb bindings", func() {
 			buildContext.Bindings = v1alpha1ServiceBindings
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[2].Name, "detect")
-			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -890,7 +749,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[1].Name, "analyze")
-			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[1].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Equal(t, pod.Spec.InitContainers[1].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -903,32 +762,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 			assert.Equal(t, append(append([]string{
 				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml",
-				"-run-image=builderregistry.io/run"},
+				"-analyzed=/layers/analyzed.toml"},
 				tags...),
 				"-previous-image="+build.Spec.LastBuild.Image, build.Tag()), pod.Spec.InitContainers[1].Args)
-		})
-
-		it("configures analyze step with the older api", func() {
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
-			assert.Contains(t, pod.Spec.InitContainers[2].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
-			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
-			assert.Equal(t, []string{
-				"layers-dir",
-				"workspace-dir",
-				"home-dir",
-				"cache-dir",
-			}, names(pod.Spec.InitContainers[2].VolumeMounts))
-			assert.Equal(t, []string{
-				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml",
-				"-cache-dir=/cache",
-				"-group=/layers/group.toml",
-				build.Spec.LastBuild.Image,
-			}, pod.Spec.InitContainers[2].Args)
 		})
 
 		it("configures analyze step with the current tag if no previous build", func() {
@@ -950,32 +786,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			}
 			assert.Equal(t, append(append([]string{
 				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml",
-				"-run-image=builderregistry.io/run"},
+				"-analyzed=/layers/analyzed.toml"},
 				tags...),
 				build.Tag()), pod.Spec.InitContainers[1].Args)
-		})
-
-		it("configures analyze step with the current tag if no previous build for the older api", func() {
-			build.Spec.LastBuild = nil
-
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, pod.Spec.InitContainers[2].Name, "analyze")
-			assert.Equal(t, pod.Spec.InitContainers[2].Image, builderImage)
-			assert.Equal(t, []string{
-				"layers-dir",
-				"workspace-dir",
-				"home-dir",
-				"cache-dir",
-			}, names(pod.Spec.InitContainers[2].VolumeMounts))
-			assert.Equal(t, []string{
-				"-layers=/layers",
-				"-analyzed=/layers/analyzed.toml",
-				"-cache-dir=/cache",
-				"-group=/layers/group.toml",
-				build.Tag()}, pod.Spec.InitContainers[2].Args)
 		})
 
 		it("configures analyze step with the current tag if previous build is corrupted", func() {
@@ -992,7 +805,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
-			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "HOME", Value: "/builder/home"})
 			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
 			assert.Equal(t, []string{
@@ -1009,33 +822,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				pod.Spec.InitContainers[3].Args)
 		})
 
-		it("configures restore step with the older api", func() {
-			pod, err := build.BuildPod(config, oldBuildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, pod.Spec.InitContainers[3].Name, "restore")
-			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.6"})
-			assert.Contains(t, pod.Spec.InitContainers[3].Env, corev1.EnvVar{Name: "HOME", Value: "/builder/home"})
-			assert.Equal(t, pod.Spec.InitContainers[3].Image, builderImage)
-			assert.Equal(t, []string{
-				"layers-dir",
-				"home-dir",
-				"cache-dir",
-			}, names(pod.Spec.InitContainers[3].VolumeMounts))
-
-			assert.Equal(t, []string{
-				"-group=/layers/group.toml",
-				"-layers=/layers",
-				"-cache-dir=/cache"},
-				pod.Spec.InitContainers[3].Args)
-		})
-
 		it("configures build step", func() {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "build")
-			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Equal(t, pod.Spec.InitContainers[4].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -1052,7 +844,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 
 			assert.Equal(t, pod.Spec.InitContainers[4].Name, "build")
-			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[4].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.Equal(t, pod.Spec.InitContainers[4].Image, builderImage)
 			assert.Equal(t, []string{
 				"layers-dir",
@@ -1069,7 +861,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
-			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			_, ok := fetchEnvVar(pod.Spec.InitContainers[5].Env, "SOURCE_DATE_EPOCH")
 			assert.Equal(t, true, ok)
 			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_RUN_IMAGE", Value: "builderregistry.io/run"})
@@ -1100,7 +892,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			assert.Equal(t, pod.Spec.InitContainers[5].Name, "export")
 			assert.Equal(t, pod.Spec.InitContainers[5].Image, builderImage)
-			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.8"})
+			assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.11"})
 			assert.ElementsMatch(t, names(pod.Spec.InitContainers[5].VolumeMounts), []string{
 				"layers-dir",
 				"workspace-dir",
@@ -1377,29 +1169,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, pod.Spec.ImagePullSecrets, 1)
 			assert.Equal(t, corev1.LocalObjectReference{Name: "builder-pull-secret"}, pod.Spec.ImagePullSecrets[0])
-		})
-
-		when("only 0.3 platform api is supported", func() {
-			buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
-
-			it("exports without a report and without default process type", func() {
-				pod, err := build.BuildPod(config, buildContext)
-				require.NoError(t, err)
-
-				assert.Contains(t, pod.Spec.InitContainers[5].Env, corev1.EnvVar{Name: "CNB_PLATFORM_API", Value: "0.3"})
-				assert.Equal(t, []string{
-					"-layers=/layers",
-					"-app=/workspace",
-					"-group=/layers/group.toml",
-					"-analyzed=/layers/analyzed.toml",
-					"-project-metadata=/layers/project-metadata.toml",
-					"-cache-dir=/cache",
-					"-run-image=builderregistry.io/run",
-					build.Tag(),
-					"someimage/name:tag2",
-					"someimage/name:tag3",
-				}, pod.Spec.InitContainers[5].Args)
-			})
 		})
 
 		when("no supported platform apis are available", func() {
@@ -2291,7 +2060,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 		when("builder is windows", func() {
 			buildContext.BuildPodBuilderConfig.OS = "windows"
-			oldBuildContext.BuildPodBuilderConfig.OS = "windows"
 
 			it("errs if platformApi does not support windows", func() {
 				buildContext.BuildPodBuilderConfig.PlatformAPIs = []string{"0.3", "0.2"}
@@ -2418,7 +2186,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"--",
 					"/cnb/lifecycle/analyzer",
 					"-layers=/layers",
-					"-analyzed=/layers/analyzed.toml", "-run-image=builderregistry.io/run"}, tags...),
+					"-analyzed=/layers/analyzed.toml"}, tags...),
 					"-previous-image=someimage/name@sha256:previous", "someimage/name"), analyzeContainer.Args)
 			})
 
@@ -2456,42 +2224,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-group=/layers/group.toml",
 					"-layers=/layers",
 					"-analyzed=/layers/analyzed.toml"},
-					restoreContainer.Args)
-			})
-
-			it("configures restore step with older api", func() {
-				pod, err := build.BuildPod(config, oldBuildContext)
-				require.NoError(t, err)
-
-				restoreContainer := pod.Spec.InitContainers[3]
-				assert.Equal(t, "restore", restoreContainer.Name)
-				assert.Subset(t, pod.Spec.Volumes, []corev1.Volume{
-					{
-						Name: "network-wait-launcher-dir",
-						VolumeSource: corev1.VolumeSource{
-							EmptyDir: &corev1.EmptyDirVolumeSource{},
-						},
-					},
-				})
-				assert.Subset(t, restoreContainer.VolumeMounts, []corev1.VolumeMount{
-					{
-						Name:      "network-wait-launcher-dir",
-						MountPath: "/networkWait",
-					},
-				})
-				assert.Subset(t, restoreContainer.Env, []corev1.EnvVar{
-					{
-						Name:  "USERPROFILE",
-						Value: "/builder/home",
-					},
-				})
-				assert.Equal(t, []string{"/networkWait/network-wait-launcher"}, restoreContainer.Command)
-				assert.Equal(t, []string{
-					dnsProbeHost,
-					"--",
-					"/cnb/lifecycle/restorer",
-					"-group=/layers/group.toml",
-					"-layers=/layers"},
 					restoreContainer.Args)
 			})
 
