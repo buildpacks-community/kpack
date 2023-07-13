@@ -1,4 +1,5 @@
 #@data/values-schema
+#@overlay/match-child-defaults missing_ok=True
 ---
 controller_image: gcr.io/controller
 webhook_image: gcr.io/webhook
