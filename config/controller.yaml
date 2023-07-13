@@ -7,7 +7,7 @@ metadata:
   name:  build-init-image
   namespace: kpack
 data:
-  image: #@ data.values.build_init_image
+  image: #@ data.values.build_init.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,7 +15,7 @@ metadata:
   name:  build-init-windows-image
   namespace: kpack
 data:
-  image: #@ data.values.build_init_windows_image
+  image: #@ data.values.build_init_windows.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -23,7 +23,7 @@ metadata:
   name:  build-waiter-image
   namespace: kpack
 data:
-  image: #@ data.values.build_waiter_image
+  image: #@ data.values.build_waiter.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -31,7 +31,7 @@ metadata:
   name:  rebase-image
   namespace: kpack
 data:
-  image: #@ data.values.rebase_image
+  image: #@ data.values.rebase.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -39,7 +39,7 @@ metadata:
   name:  lifecycle-image
   namespace: kpack
 data:
-  image: #@ data.values.lifecycle_image
+  image: #@ data.values.lifecycle.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -47,7 +47,7 @@ metadata:
   name:  completion-image
   namespace: kpack
 data:
-  image: #@ data.values.completion_image
+  image: #@ data.values.completion.image
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -55,7 +55,7 @@ metadata:
   name:  completion-windows-image
   namespace: kpack
 data:
-  image: #@ data.values.completion_windows_image
+  image: #@ data.values.completion_windows.image
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -92,7 +92,7 @@ spec:
           capabilities:
             drop:
               - ALL
-        image: #@ data.values.controller_image
+        image: #@ data.values.controller.image
         env:
         - name: ENABLE_PRIORITY_CLASSES
           value: "false"
