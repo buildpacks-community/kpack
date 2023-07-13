@@ -41,7 +41,7 @@ runs:
     if: ${{ runner.os == 'linux' }}
     shell: bash
     run: |
-      [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
 
       KPACK_VERSION=$version
       KPACK_COMMIT=$GITHUB_SHA
@@ -65,7 +65,7 @@ runs:
     if: ${{ runner.os == 'windows' }}
     shell: bash
     run: |
-      [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
 
       KPACK_VERSION=$version
       KPACK_COMMIT=$GITHUB_SHA
