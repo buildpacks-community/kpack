@@ -5,9 +5,8 @@ on:
     branches:
     - main
     - release/**
-  pull_request:
-    branches:
-    - release/**
+    tags:
+    - v[0-9]+.[0-9]+.[0-9]+-?**
 
 defaults:
   run:
@@ -428,7 +427,7 @@ jobs:
       - build-init-windows-image
       - completion-windows-image
       - lifecycle-image
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+    if: ${{ startsWith(github.ref, 'refs/tag/v') }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -458,10 +457,10 @@ jobs:
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Parse branch name
+    - name: Parse tag name
       run: |
         echo "GITHUB_REF=${GITHUB_REF}"
-        [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]}
+        [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} 
         if [[ -z "${version}" ]]; then
           echo "ERROR: kpack version not detected."
           exit 1
