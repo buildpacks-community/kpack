@@ -503,7 +503,7 @@ jobs:
           -v completion_image=$(cat final-image-refs/completion) \
           -v completion_windows_image=$(cat final-image-refs/completion-windows) \
           -v lifecycle_image=$(cat final-image-refs/lifecycle) \
-          -v version=${{ env.KPACK_VERSION }} > $file
+          -v kpack_version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release

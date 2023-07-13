@@ -71,7 +71,7 @@ spec:
     metadata:
       labels:
         app: kpack-controller
-        version: #@ data.values.version
+        version: #@ data.values.kpack_version
     spec:
       securityContext:
         runAsNonRoot: true

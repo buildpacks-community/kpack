@@ -52,7 +52,7 @@ spec:
       labels:
         app: kpack-webhook
         role: webhook
-        version: #@ data.values.version
+        version: #@ data.values.kpack_version
     spec:
       securityContext:
         runAsNonRoot: true

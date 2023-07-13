@@ -1,4 +1,4 @@
-#@data/values
+#@data/values-schema
 ---
 controller_image: gcr.io/controller
 webhook_image: gcr.io/webhook
@@ -9,4 +9,4 @@ rebase_image: gcr.io/rebase
 completion_image: gcr.io/completion
 completion_windows_image: gcr.io/cf-build-service-public/kpack/completion-windows
 lifecycle_image: gcr.io/lifecycle
-version: dev
+kpack_version: dev
