@@ -572,6 +572,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   corev1alpha1.ConditionSucceeded,
 												Status: corev1.ConditionTrue,
+												Reason: build.ReasonCompleted,
 											},
 										},
 									},
@@ -752,6 +753,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 												{
 													Type:   corev1alpha1.ConditionSucceeded,
 													Status: corev1.ConditionTrue,
+													Reason: build.ReasonCompleted,
 												},
 											},
 										},
@@ -901,8 +903,10 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
 											{
-												Type:   corev1alpha1.ConditionSucceeded,
-												Status: corev1.ConditionFalse,
+												Type:    corev1alpha1.ConditionSucceeded,
+												Status:  corev1.ConditionFalse,
+												Reason:  string(corev1.PodFailed),
+												Message: "prepare failed: Errors",
 											},
 										},
 									},
@@ -972,6 +976,83 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					WantErr: false,
+				})
+			})
+
+			when("the failed container's status does not include a message", func() {
+				it("sets the build's status condition message to the pod's status message", func() {
+					pod, err := podGenerator.Generate(ctx, bld)
+					require.NoError(t, err)
+					pod.Status.Phase = corev1.PodFailed
+					pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
+						{
+							Name: "prepare",
+							State: corev1.ContainerState{
+								Terminated: &corev1.ContainerStateTerminated{
+									ExitCode:    1,
+									Reason:      "Terminated",
+									ContainerID: "container.ID",
+								},
+							},
+						},
+						{
+							Name: "analyze",
+							State: corev1.ContainerState{
+								Waiting: &corev1.ContainerStateWaiting{
+									Reason:  "Waiting",
+									Message: "My Turn",
+								},
+							},
+						},
+					}
+					pod.Status.Message = "Something bad happened"
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							bld,
+							pod,
+						},
+						WantErr: false,
+						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+							{
+								Object: &buildapi.Build{
+									ObjectMeta: bld.ObjectMeta,
+									Spec:       bld.Spec,
+									Status: buildapi.BuildStatus{
+										Status: corev1alpha1.Status{
+											ObservedGeneration: originalGeneration,
+											Conditions: corev1alpha1.Conditions{
+												{
+													Type:    corev1alpha1.ConditionSucceeded,
+													Status:  corev1.ConditionFalse,
+													Reason:  string(corev1.PodFailed),
+													Message: "Something bad happened",
+												},
+											},
+										},
+										PodName: "build-name-build-pod",
+										StepStates: []corev1.ContainerState{
+											{
+												Terminated: &corev1.ContainerStateTerminated{
+													ExitCode:    1,
+													Reason:      "Terminated",
+													ContainerID: "container.ID",
+												},
+											},
+											{
+												Waiting: &corev1.ContainerStateWaiting{
+													Reason:  "Waiting",
+													Message: "My Turn",
+												},
+											},
+										},
+										StepsCompleted: []string{},
+									},
+								},
+							},
+						},
+					})
 				})
 			})
 		})
@@ -1130,7 +1211,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("marks build as successful if completion completes even if pod fails", func() {
-
 				compressedBuildMetadata, err := os.ReadFile(filepath.Join("testdata", "metadata"))
 				require.NoError(t, err)
 
@@ -1184,40 +1264,36 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				build := &buildapi.Build{
-					ObjectMeta: bld.ObjectMeta,
-					Spec:       bld.Spec,
-					Status: buildapi.BuildStatus{
-						Status: corev1alpha1.Status{
-							ObservedGeneration: originalGeneration,
-							Conditions: corev1alpha1.Conditions{
-								{
-									Type:   corev1alpha1.ConditionSucceeded,
-									Status: corev1.ConditionUnknown,
-								},
-							},
-						},
-						PodName: "build-name-build-pod",
-						StepStates: []corev1.ContainerState{
+				bld.Status = buildapi.BuildStatus{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: originalGeneration,
+						Conditions: corev1alpha1.Conditions{
 							{
-								Terminated: &corev1.ContainerStateTerminated{
-									ExitCode:    0,
-									Reason:      "Terminated",
-									Message:     string(compressedBuildMetadata),
-									ContainerID: "container.ID",
-								},
+								Type:   corev1alpha1.ConditionSucceeded,
+								Status: corev1.ConditionUnknown,
 							},
 						},
-						StepsCompleted: []string{
-							"completion",
+					},
+					PodName: "build-name-build-pod",
+					StepStates: []corev1.ContainerState{
+						{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     string(compressedBuildMetadata),
+								ContainerID: "container.ID",
+							},
 						},
+					},
+					StepsCompleted: []string{
+						"completion",
 					},
 				}
 
 				rt.Test(rtesting.TableRow{
 					Key: key,
 					Objects: []runtime.Object{
-						build,
+						bld,
 						pod,
 					},
 					WantErr: false,
@@ -1233,6 +1309,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											{
 												Type:   corev1alpha1.ConditionSucceeded,
 												Status: corev1.ConditionTrue,
+												Reason: build.ReasonCompleted,
 											},
 										},
 									},
