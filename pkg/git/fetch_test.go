@@ -106,6 +106,16 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 			err := fetcher.Fetch(testDir, "git@bitbucket.com:org/repo", "main", metadataDir)
 			require.ErrorContains(t, err, "unable to fetch references for repository")
 		})
+
+        it("initializes submodules", func() {
+            err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/submodule", "master", metadataDir)
+            require.NoError(t, err)
+
+            _, err = os.Lstat(path.Join(testDir, "basic", ".gitignore"))
+			require.NoError(t, err)
+
+
+        })
 	})
 }
 

@@ -71,6 +71,23 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "checking out revision")
 	}
 
+	submodules, err := worktree.Submodules()
+	if err != nil {
+		return errors.Wrapf(err, "getting submodules")
+	}
+
+	for _, submodule := range submodules {
+		f.Logger.Printf("Updating submodule %v", submodule.Config().URL)
+		submoduleAuth, err := f.Keychain.Resolve(submodule.Config().URL)
+		if err != nil {
+			return err
+		}
+		err = submodule.Update(&gogit.SubmoduleUpdateOptions{Auth: submoduleAuth, Init: true, RecurseSubmodules: gogit.DefaultSubmoduleRecursionDepth })
+		if err != nil {
+			return errors.Wrapf(err, "updating submodules")
+		}
+	}
+
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
 		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for git repository: %s", metadataDir, gitURL)
