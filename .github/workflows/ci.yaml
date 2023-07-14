@@ -427,7 +427,7 @@ jobs:
       - build-init-windows-image
       - completion-windows-image
       - lifecycle-image
-    if: ${{ startsWith(github.ref, 'refs/tag/v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
