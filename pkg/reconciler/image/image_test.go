@@ -2387,7 +2387,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    corev1alpha1.ConditionReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  image.BuildFailedReason,
-												Message: failureMessage,
+												Message: fmt.Sprintf("Build %s failed: %s", failedBuild.Name, failureMessage),
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
@@ -2409,7 +2409,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("deletes a failed build if more than the limit", func() {
 					imageWithBuilder.Spec.FailedBuildHistoryLimit = limit(4)
 					imageWithBuilder.Status.LatestBuildRef = "image-name-build-5"
-					imageWithBuilder.Status.Conditions = conditionNotReady()
+					imageWithBuilder.Status.Conditions = conditionNotReady(imageWithBuilder.Status.LatestBuildRef)
 					imageWithBuilder.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(imageWithBuilder)
 
@@ -2647,12 +2647,13 @@ func conditionReady() corev1alpha1.Conditions {
 	}
 }
 
-func conditionNotReady() corev1alpha1.Conditions {
+func conditionNotReady(failedBuild string) corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
-			Type:   corev1alpha1.ConditionReady,
-			Status: corev1.ConditionFalse,
-			Reason: image.BuildFailedReason,
+			Type:    corev1alpha1.ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  image.BuildFailedReason,
+			Message: fmt.Sprintf("Build %s failed: ", failedBuild),
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,

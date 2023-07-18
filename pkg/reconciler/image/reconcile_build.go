@@ -16,6 +16,7 @@ import (
 const (
 	BuildRunningReason     = "BuildRunning"
 	ResolverNotReadyReason = "ResolverNotReady"
+	UnknownStateReason     = "UnknownState"
 	BuildFailedReason      = "BuildFailed"
 	UpToDateReason         = "UpToDate"
 )
@@ -76,53 +77,36 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 }
 
 func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.BuilderResource, build *buildapi.Build, sourceResolver *buildapi.SourceResolver) corev1alpha1.Conditions {
-	if !builder.Ready() {
-		return corev1alpha1.Conditions{
-			{
-				Type:               corev1alpha1.ConditionReady,
-				Status:             corev1.ConditionFalse,
-				Reason:             buildapi.BuilderNotReady,
-				Message:            builderError(builder),
-				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-			},
-			builderCondition(builder),
-		}
-	}
-	if buildNeeded == corev1.ConditionUnknown {
-		message := "Build status unknown"
-		if !sourceResolver.Ready() {
-			message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
-		}
-		return corev1alpha1.Conditions{
-			{
-				Type:               corev1alpha1.ConditionReady,
-				Status:             corev1.ConditionUnknown,
-				Reason:             ResolverNotReadyReason,
-				Message:            message,
-				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-			},
-			builderCondition(builder),
-		}
+	ready := corev1alpha1.Condition{
+		Type:               corev1alpha1.ConditionReady,
+		Status:             corev1.ConditionUnknown,
+		LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 	}
 
-	buildReason := UpToDateReason
-	buildMessage := "Last build succeeded"
-
-	if !build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue() {
-		buildReason = BuildFailedReason
-		buildMessage = "Last build did not succeed"
+	switch {
+	case !builder.Ready():
+		ready.Status = corev1.ConditionFalse
+		ready.Reason = buildapi.BuilderNotReady
+		ready.Message = builderError(builder)
+	case buildNeeded == corev1.ConditionUnknown && !sourceResolver.Ready():
+		ready.Status = corev1.ConditionUnknown
+		ready.Reason = ResolverNotReadyReason
+		ready.Message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
+	case buildNeeded == corev1.ConditionUnknown && sourceResolver.Ready():
+		ready.Status = corev1.ConditionUnknown
+		ready.Reason = UnknownStateReason
+		ready.Message = "Build status unknown"
+	case build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue():
+		ready.Status = corev1.ConditionTrue
+		ready.Reason = UpToDateReason
+		ready.Message = defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), "Last build succeeded")
+	default:
+		ready.Status = unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded))
+		ready.Reason = BuildFailedReason
+		ready.Message = fmt.Sprintf("Build %s failed: %s", build.Name, defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), "unknown error"))
 	}
 
-	return corev1alpha1.Conditions{
-		{
-			Type:               corev1alpha1.ConditionReady,
-			Status:             unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded)),
-			Reason:             buildReason,
-			Message:            defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), buildMessage),
-			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
-		},
-		builderCondition(builder),
-	}
+	return corev1alpha1.Conditions{ready, builderCondition(builder)}
 
 }
 
