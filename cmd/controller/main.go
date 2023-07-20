@@ -10,6 +10,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/pivotal/kpack/pkg/secret"
+
+	"github.com/pivotal/kpack/pkg/cosign"
+	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
+	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
+
 	"github.com/Masterminds/semver/v3"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -194,18 +200,21 @@ func main() {
 		KpackVersion:      cmd.Identifer,
 		LifecycleProvider: lifecycleProvider,
 		KeychainFactory:   keychainFactory,
+		ImageSigner:       cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
 	}
 
 	podProgressLogger := &buildchange.ProgressLogger{
 		K8sClient: k8sClient,
 	}
 
+	secretFetcher := &secret.Fetcher{Client: k8sClient}
+
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer)
+	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer)
+	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)

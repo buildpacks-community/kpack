@@ -3,8 +3,8 @@ package cosign
 import (
 	"bufio"
 	"context"
-	"crypto"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http/httptest"
 	"net/url"
@@ -14,24 +14,35 @@ import (
 	"strings"
 	"testing"
 
+	cosigntesting "github.com/pivotal/kpack/pkg/cosign/testing"
+	cosignutil "github.com/pivotal/kpack/pkg/cosign/util"
+
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	registry2 "github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/download"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
-	verifypkg "github.com/sigstore/cosign/v2/cmd/cosign/cli/verify"
 	sigstoreCosign "github.com/sigstore/cosign/v2/pkg/cosign"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
-	"github.com/sigstore/cosign/v2/pkg/signature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var fetchSignatureFunc = func(_ name.Reference, options ...ociremote.Option) (name.Tag, error) {
+	tag, _ := name.NewTag("test", nil)
+	return tag, nil
+}
 
 func TestImageSigner(t *testing.T) {
 	spec.Run(t, "Test Cosign Image Signer Main", testImageSigner)
@@ -43,20 +54,22 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		report            files.Report
 		reader            *os.File
 		writer            *os.File
-		expectedImageName string
 		imageDigest       string
+		hash              v1.Hash
 		stopRegistry      func()
 		imageCleanup      func()
 		repo              string
+		expectedImageName string
 	)
 
 	it.Before(func() {
 		_, reader, writer = mockLogger(t)
-		repo, stopRegistry = reg(t)
+		repo, stopRegistry = fakeRegistry(t)
 
 		expectedImageName = path.Join(repo, "test-cosign-image")
 
-		imageDigest, imageCleanup = pushRandomImage(t, expectedImageName)
+		hash, imageCleanup = pushRandomImage(t, expectedImageName)
+		imageDigest = hash.String()
 	})
 
 	it.After(func() {
@@ -80,16 +93,16 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				// Override secretLocation for test
 				secretLocation = createCosignKeyFiles(t)
 
-				secretKey1 = path.Join(secretLocation, "secret-name-1", "cosign.key")
-				publicKey1 = path.Join(secretLocation, "secret-name-1", "cosign.pub")
-				publicKey2 = path.Join(secretLocation, "secret-name-2", "cosign.pub")
-				passwordFile1 = path.Join(secretLocation, "secret-name-1", "cosign.password")
-				passwordFile2 = path.Join(secretLocation, "secret-name-2", "cosign.password")
+				secretKey1 = path.Join(secretLocation, "secret-name-1", cosignutil.SecretDataCosignKey)
+				publicKey1 = path.Join(secretLocation, "secret-name-1", cosignutil.SecretDataCosignPublicKey)
+				publicKey2 = path.Join(secretLocation, "secret-name-2", cosignutil.SecretDataCosignPublicKey)
+				passwordFile1 = path.Join(secretLocation, "secret-name-1", cosignutil.SecretDataCosignPassword)
+				passwordFile2 = path.Join(secretLocation, "secret-name-2", cosignutil.SecretDataCosignPassword)
 
 				report = createReportToml(t, expectedImageName, imageDigest)
 
-				os.Unsetenv(cosignRepositoryEnv)
-				os.Unsetenv(cosignDockerMediaTypesEnv)
+				os.Unsetenv(cosignutil.CosignRepositoryEnv)
+				os.Unsetenv(cosignutil.CosignDockerMediaTypesEnv)
 			})
 
 			it("signs images", func() {
@@ -132,7 +145,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 						imgs)
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Nil(t, err)
 
@@ -140,10 +153,10 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, 1, password1Count)
 				assert.Equal(t, 1, password2Count)
 
-				err = verify(publicKey1, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, nil)
 				assert.Nil(t, err)
 
-				err = verify(publicKey2, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, nil)
 				assert.Nil(t, err)
 
 				err = download.SignatureCmd(context.Background(), options.RegistryOptions{}, expectedImageName)
@@ -178,28 +191,28 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					)
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, expectedAnnotation, nil, nil)
 				assert.Nil(t, err)
 
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
 				// Should error when validating annotations that dont exist
-				err = verify(publicKey1, expectedImageName, unexpectedAnnotation)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, unexpectedAnnotation)
 				assert.Error(t, err)
-				err = verify(publicKey2, expectedImageName, unexpectedAnnotation)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, unexpectedAnnotation)
 				assert.Error(t, err)
 
 				// Should not error when validating annotations that exist
-				err = verify(publicKey1, expectedImageName, expectedAnnotation)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, expectedAnnotation)
 				assert.Nil(t, err)
-				err = verify(publicKey2, expectedImageName, expectedAnnotation)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, expectedAnnotation)
 				assert.Nil(t, err)
 
 				// Should not error when not validating annotations
-				err = verify(publicKey1, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, nil)
 				assert.Nil(t, err)
-				err = verify(publicKey2, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, nil)
 				assert.Nil(t, err)
 
 				err = download.SignatureCmd(context.Background(), options.RegistryOptions{}, expectedImageName)
@@ -224,7 +237,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-0"), 0700)
 				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Error(t, err)
 				assert.Equal(t, expectedErrorMessage, err.Error())
@@ -250,7 +263,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-3"), 0700)
 				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				assert.Error(t, err)
 				assert.Equal(t, expectedErrorMessage, err.Error())
@@ -258,21 +271,21 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("sets COSIGN_REPOSITORY environment variable", func() {
-				altRepo, altStopRegistry := reg(t)
+				altRepo, altStopRegistry := fakeRegistry(t)
 				defer altStopRegistry()
 				altImageName := path.Join(altRepo, "test-cosign-image-alt")
 
 				cliSignCmdCallCount := 0
 
-				assert.Empty(t, len(os.Getenv(cosignRepositoryEnv)))
+				assert.Empty(t, len(os.Getenv(cosignutil.CosignRepositoryEnv)))
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-2") {
-						assert.Equal(t, altImageName, os.Getenv(cosignRepositoryEnv))
+						assert.Equal(t, altImageName, os.Getenv(cosignutil.CosignRepositoryEnv))
 					} else {
-						assertUnset(t, cosignRepositoryEnv)
+						assertUnset(t, cosignutil.CosignRepositoryEnv)
 					}
 
 					cliSignCmdCallCount++
@@ -288,42 +301,42 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-2": altImageName,
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, cosignRepositories, nil)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
-				assertUnset(t, cosignRepositoryEnv)
+				assertUnset(t, cosignutil.CosignRepositoryEnv)
 
-				err = verify(publicKey1, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, nil)
 				assert.Nil(t, err)
-				err = verify(publicKey2, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, nil)
 				assert.Error(t, err)
 				err = download.SignatureCmd(context.Background(), options.RegistryOptions{}, expectedImageName)
 				assert.Nil(t, err)
 
 				// Required to set COSIGN_REPOSITORY env variable to validate signature
 				// on a registry that does not contain the image
-				os.Setenv(cosignRepositoryEnv, altImageName)
-				defer os.Unsetenv(cosignRepositoryEnv)
-				err = verify(publicKey1, expectedImageName, nil)
+				os.Setenv(cosignutil.CosignRepositoryEnv, altImageName)
+				defer os.Unsetenv(cosignutil.CosignRepositoryEnv)
+				err = cosigntesting.Verify(t, publicKey1, expectedImageName, nil)
 				assert.Error(t, err)
-				err = verify(publicKey2, expectedImageName, nil)
+				err = cosigntesting.Verify(t, publicKey2, expectedImageName, nil)
 				assert.Nil(t, err)
 			})
 
 			it("sets COSIGN_DOCKER_MEDIA_TYPES environment variable", func() {
 				cliSignCmdCallCount := 0
 
-				assertUnset(t, cosignDockerMediaTypesEnv)
+				assertUnset(t, cosignutil.CosignDockerMediaTypesEnv)
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
 					if strings.Contains(ko.KeyRef, "secret-name-1") {
-						assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
+						assert.Equal(t, "1", os.Getenv(cosignutil.CosignDockerMediaTypesEnv))
 					} else {
-						assertUnset(t, cosignDockerMediaTypesEnv)
+						assertUnset(t, cosignutil.CosignDockerMediaTypesEnv)
 					}
 
 					cliSignCmdCallCount++
@@ -334,25 +347,25 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-1": "1",
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
-				assertUnset(t, cosignDockerMediaTypesEnv)
+				assertUnset(t, cosignutil.CosignDockerMediaTypesEnv)
 			})
 
 			it("sets both COSIGN_REPOSITORY and COSIGN_DOCKER_MEDIA_TYPES environment variable", func() {
 				cliSignCmdCallCount := 0
 
-				assertUnset(t, cosignDockerMediaTypesEnv)
-				assertUnset(t, cosignRepositoryEnv)
+				assertUnset(t, cosignutil.CosignDockerMediaTypesEnv)
+				assertUnset(t, cosignutil.CosignRepositoryEnv)
 				cliSignCmd := func(
 					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
-					assert.Equal(t, "1", os.Getenv(cosignDockerMediaTypesEnv))
-					assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignRepositoryEnv))
+					assert.Equal(t, "1", os.Getenv(cosignutil.CosignDockerMediaTypesEnv))
+					assert.Equal(t, "registry.example.com/fakeproject", os.Getenv(cosignutil.CosignRepositoryEnv))
 					cliSignCmdCallCount++
 					return nil
 				}
@@ -367,13 +380,13 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					"secret-name-2": "1",
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, cosignRepositories, cosignDockerMediaTypes)
 				assert.Nil(t, err)
 				assert.Equal(t, 2, cliSignCmdCallCount)
 
-				assertUnset(t, cosignDockerMediaTypesEnv)
-				assertUnset(t, cosignRepositoryEnv)
+				assertUnset(t, cosignutil.CosignDockerMediaTypesEnv)
+				assertUnset(t, cosignutil.CosignRepositoryEnv)
 			})
 		})
 
@@ -391,7 +404,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no keys found for cosign signing")
 				assert.Equal(t, 0, cliSignCmdCallCount)
@@ -409,7 +422,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no keys found for cosign signing: open /fake/location/that/doesnt/exist: no such file or directory")
 				assert.Equal(t, 0, cliSignCmdCallCount)
@@ -427,7 +440,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					return nil
 				}
 
-				signer := NewImageSigner(log.New(writer, "", 0), cliSignCmd)
+				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
 				require.Error(t, err, "no image found in report to sign")
 				assert.Equal(t, 0, cliSignCmdCallCount)
@@ -439,7 +452,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		it("signs an image", func() {
 			secretLocation := t.TempDir()
 
-			repo, stop := reg(t)
+			repo, stop := fakeRegistry(t)
 			defer stop()
 
 			imgName := path.Join(repo, "cosign-e2e")
@@ -449,12 +462,12 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			password := ""
 			keypair(t, secretLocation, "secret-name-1", password)
-			privKeyPath := path.Join(secretLocation, "secret-name-1", "cosign.key")
-			pubKeyPath := path.Join(secretLocation, "secret-name-1", "cosign.pub")
+			privKeyPath := path.Join(secretLocation, "secret-name-1", cosignutil.SecretDataCosignKey)
+			pubKeyPath := path.Join(secretLocation, "secret-name-1", cosignutil.SecretDataCosignPublicKey)
 
 			ctx := context.Background()
 			// Verify+download should fail at first
-			err := verify(pubKeyPath, imgName, nil)
+			err := cosigntesting.Verify(t, pubKeyPath, imgName, nil)
 			assert.Error(t, err)
 			err = download.SignatureCmd(ctx, options.RegistryOptions{}, imgName)
 			assert.Error(t, err)
@@ -479,10 +492,157 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, err)
 
 			// Verify+download should pass
-			err = verify(pubKeyPath, imgName, nil)
+			err = cosigntesting.Verify(t, pubKeyPath, imgName, nil)
 			assert.Nil(t, err)
 			err = download.SignatureCmd(ctx, options.RegistryOptions{}, imgName)
 			assert.Nil(t, err)
+		})
+	})
+
+	when("#SignBuilder", func() {
+		const (
+			cosignSecretName         = "cosign-creds"
+			testNamespaceName        = "test-namespace"
+			cosignServiceAccountName = "cosign-sa"
+		)
+
+		it("resolves the digest of a signature correctly", func() {
+			var (
+				signCallCount           = 0
+				fetchSignatureCallCount = 0
+			)
+
+			fakeImageSignatureTag := fmt.Sprintf("%s:%s", expectedImageName, "test.sig")
+			digest, cleanup := pushRandomImage(t, fakeImageSignatureTag)
+			defer cleanup()
+
+			fakeImageSigner := &ImageSigner{
+				signFunc: func(rootOptions *options.RootOptions, opts options.KeyOpts, signOptions options.SignOptions, i []string) error {
+					t.Helper()
+
+					signCallCount++
+					return nil
+				},
+				fetchSignatureFunc: func(reference name.Reference, option ...ociremote.Option) (name.Tag, error) {
+					t.Helper()
+
+					fetchSignatureCallCount++
+					return name.NewTag(fakeImageSignatureTag)
+				},
+			}
+
+			fakeSecret := cosigntesting.GenerateFakeKeyPair(t, cosignSecretName, testNamespaceName, "", nil)
+			cosignCreds := []*corev1.Secret{&fakeSecret}
+			cosignSA := corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cosignServiceAccountName,
+					Namespace: testNamespaceName,
+				},
+				Secrets: []corev1.ObjectReference{
+					{
+						Name: fakeSecret.Name,
+					},
+				},
+			}
+
+			secretRef := registry2.SecretRef{
+				ServiceAccount: cosignSA.Name,
+				Namespace:      cosignSA.Namespace,
+			}
+
+			keychainFactory := &registryfakes.FakeKeychainFactory{}
+			fakeKeychain := &registryfakes.FakeKeychain{}
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, fakeKeychain)
+
+			signaturePaths, err := fakeImageSigner.SignBuilder(context.Background(), expectedImageName, cosignCreds, fakeKeychain)
+			require.NoError(t, err)
+			require.NotEmpty(t, signaturePaths)
+			require.NotNil(t, signaturePaths[0])
+
+			assert.Contains(t, signaturePaths[0].TargetDigest, digest.String())
+			assert.Contains(t, signaturePaths[0].SigningSecret, fakeSecret.Namespace)
+			assert.Contains(t, signaturePaths[0].SigningSecret, fakeSecret.Name)
+
+			require.Equal(t, 1, signCallCount)
+			require.Equal(t, 1, fetchSignatureCallCount)
+		})
+
+		it("sets environment variables when needed", func() {
+			var (
+				signCallCount           = 0
+				fetchSignatureCallCount = 0
+				signaturesPath          = path.Join(repo, "signatures")
+				dockerMediaTypesValue   = "1"
+			)
+
+			fakeImageSignatureTag := fmt.Sprintf("%s:%s", signaturesPath, "test.sig")
+			digest, cleanup := pushRandomImage(t, fakeImageSignatureTag)
+			defer cleanup()
+
+			fakeImageSigner := &ImageSigner{
+				signFunc: func(rootOptions *options.RootOptions, opts options.KeyOpts, signOptions options.SignOptions, i []string) error {
+					t.Helper()
+
+					value, found := os.LookupEnv(cosignutil.CosignRepositoryEnv)
+					require.True(t, found)
+					require.NotNil(t, value)
+					assert.Equal(t, signaturesPath, value)
+
+					value, found = os.LookupEnv(cosignutil.CosignDockerMediaTypesEnv)
+					require.True(t, found)
+					require.NotNil(t, value)
+					assert.Equal(t, dockerMediaTypesValue, value)
+
+					signCallCount++
+					return nil
+				},
+				fetchSignatureFunc: func(reference name.Reference, option ...ociremote.Option) (name.Tag, error) {
+					t.Helper()
+
+					fetchSignatureCallCount++
+					return name.NewTag(fakeImageSignatureTag)
+				},
+			}
+
+			annotations := map[string]string{
+				"kpack.io/cosign.repository":         signaturesPath,
+				"kpack.io/cosign.docker-media-types": dockerMediaTypesValue,
+			}
+
+			fakeSecret := cosigntesting.GenerateFakeKeyPair(t, cosignSecretName, testNamespaceName, "", annotations)
+			cosignCreds := []*corev1.Secret{&fakeSecret}
+			cosignSA := corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cosignServiceAccountName,
+					Namespace: testNamespaceName,
+				},
+				Secrets: []corev1.ObjectReference{
+					{
+						Name: fakeSecret.Name,
+					},
+				},
+			}
+
+			secretRef := registry2.SecretRef{
+				ServiceAccount: cosignSA.Name,
+				Namespace:      cosignSA.Namespace,
+			}
+
+			keychainFactory := &registryfakes.FakeKeychainFactory{}
+			fakeKeychain := &registryfakes.FakeKeychain{}
+			keychainFactory.AddKeychainForSecretRef(t, secretRef, fakeKeychain)
+
+			signaturePaths, err := fakeImageSigner.SignBuilder(context.Background(), expectedImageName, cosignCreds, fakeKeychain)
+			require.NoError(t, err)
+			require.NotEmpty(t, signaturePaths)
+			require.NotNil(t, signaturePaths[0])
+
+			assert.Contains(t, signaturePaths[0].TargetDigest, digest.String())
+			assert.Contains(t, signaturePaths[0].SigningSecret, fakeSecret.Namespace)
+			assert.Contains(t, signaturePaths[0].SigningSecret, fakeSecret.Name)
+
+			require.Equal(t, 1, signCallCount)
+			require.Equal(t, 1, fetchSignatureCallCount)
 		})
 	})
 }
@@ -540,7 +700,7 @@ func assertUnset(t *testing.T, envName string, msg ...string) {
 	assert.Equal(t, "", value)
 }
 
-func reg(t *testing.T) (string, func()) {
+func fakeRegistry(t *testing.T) (string, func()) {
 	r := httptest.NewServer(registry.New())
 	u, err := url.Parse(r.URL)
 	assert.Nil(t, err)
@@ -548,24 +708,20 @@ func reg(t *testing.T) (string, func()) {
 	return u.Host, r.Close
 }
 
-func pushRandomImage(t *testing.T, imageRef string) (string, func()) {
+func pushRandomImage(t *testing.T, imageRef string) (v1.Hash, func()) {
 	ref, err := name.ParseReference(imageRef, name.WeakValidation)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	img, err := random.Image(512, 5)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	regClientOpts := registryClientOpts(context.Background())
 
 	err = remote.Write(ref, img, regClientOpts...)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	_, err = remote.Get(ref, regClientOpts...)
-	assert.Nil(t, err)
-
-	imgHash, err := img.Digest()
-	assert.Nil(t, err)
-	imgDigest := imgHash.String()
+	resp, err := remote.Get(ref, regClientOpts...)
+	require.NoError(t, err)
 
 	cleanup := func() {
 		_ = remote.Delete(ref, regClientOpts...)
@@ -573,7 +729,7 @@ func pushRandomImage(t *testing.T, imageRef string) (string, func()) {
 		_ = remote.Delete(ref, regClientOpts...)
 	}
 
-	return imgDigest, cleanup
+	return resp.Digest, cleanup
 }
 
 func registryClientOpts(ctx context.Context) []remote.Option {
@@ -584,6 +740,8 @@ func registryClientOpts(ctx context.Context) []remote.Option {
 }
 
 func keypair(t *testing.T, dirPath, secretName, password string) {
+	t.Helper()
+
 	passFunc := func(_ bool) ([]byte, error) {
 		return []byte(password), nil
 	}
@@ -594,30 +752,16 @@ func keypair(t *testing.T, dirPath, secretName, password string) {
 	err = os.Mkdir(filepath.Join(dirPath, secretName), 0700)
 	assert.Nil(t, err)
 
-	privKeyPath := filepath.Join(dirPath, secretName, "cosign.key")
-	err = os.WriteFile(privKeyPath, keys.PrivateBytes, 0600)
+	privKeyPath := filepath.Join(dirPath, secretName, cosignutil.SecretDataCosignKey)
+	err = ioutil.WriteFile(privKeyPath, keys.PrivateBytes, 0600)
 	assert.Nil(t, err)
 
-	pubKeyPath := filepath.Join(dirPath, secretName, "cosign.pub")
-	err = os.WriteFile(pubKeyPath, keys.PublicBytes, 0600)
+	pubKeyPath := filepath.Join(dirPath, secretName, cosignutil.SecretDataCosignPublicKey)
+	err = ioutil.WriteFile(pubKeyPath, keys.PublicBytes, 0600)
 	assert.Nil(t, err)
 
-	passwordPath := filepath.Join(dirPath, secretName, "cosign.password")
+	passwordPath := filepath.Join(dirPath, secretName, cosignutil.SecretDataCosignPassword)
 	passwordBytes, _ := passFunc(true)
 	err = os.WriteFile(passwordPath, passwordBytes, 0600)
 	assert.Nil(t, err)
-}
-
-func verify(keyRef, imageRef string, annotations map[string]interface{}) error {
-	cmd := verifypkg.VerifyCommand{
-		KeyRef:        keyRef,
-		Annotations:   signature.AnnotationsMap{Annotations: annotations},
-		CheckClaims:   true,
-		HashAlgorithm: crypto.SHA256,
-		IgnoreTlog:    true,
-	}
-
-	args := []string{imageRef}
-
-	return cmd.Exec(context.Background(), args)
 }

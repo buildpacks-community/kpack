@@ -25,9 +25,10 @@ type CreateBuilderArgs struct {
 	Fetcher         cnb.RemoteBuildpackFetcher
 	ClusterStack    *buildapi.ClusterStack
 	BuilderSpec     buildapi.BuilderSpec
+	SigningSecrets  []*corev1.Secret
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, signingSecrets []*corev1.Secret) (buildapi.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
 		Context:         ctx,
 		BuilderKeychain: builderKeychain,
@@ -35,6 +36,7 @@ func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain 
 		Fetcher:         fetcher,
 		ClusterStack:    clusterStack,
 		BuilderSpec:     spec,
+		SigningSecrets:  signingSecrets,
 	})
 
 	return f.Record, f.CreateErr
