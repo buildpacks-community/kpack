@@ -1,20 +1,526 @@
-name: CI
+name: ci
 
 on:
   push:
     branches:
     - main
-  pull_request: {}
+    - release/**
+    tags:
+    - v[0-9]+.[0-9]+.[0-9]+-?**
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
+  PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
+  PACK_VERSION: ${{ vars.PACK_VERSION }}
 
 jobs:
-
-  test:
+  unit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+
     - name: Run tests
-      uses: ./.github/actions/run-tests
+      run: make unit-ci
+
     - name: Report coverage
-      run: bash <(curl -s https://codecov.io/bash)
-      env:
-        CODECOV_TOKEN: 4e256ab5-d474-459d-8d4d-cffea6455db7
+      uses: codecov/codecov-action@v3.1.4
+
+  controller-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
+        bp_go_targets: "./cmd/controller"
+
+  webhook-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/webhook
+        bp_go_targets: "./cmd/webhook"
+
+  completion-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion
+        bp_go_targets: "./cmd/completion"
+
+  build-init-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
+        bp_go_targets: "./cmd/build-init"
+
+  build-waiter-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
+        bp_go_targets: "./cmd/build-waiter"
+
+  rebase-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/rebase
+        bp_go_targets: "./cmd/rebase"
+
+  build-init-windows-image:
+    runs-on: windows-2019
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init-windows
+        bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
+        builder: gcr.io/cf-build-service-public/kpack-windows-builder
+        additional_pack_args: "--trust-builder"
+
+  completion-windows-image:
+    runs-on: windows-2019
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion-windows
+        bp_go_targets: '.\cmd\completion'
+        builder: gcr.io/cf-build-service-public/kpack-windows-builder
+        additional_pack_args: "--trust-builder"
+
+  lifecycle-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+    - name: Build
+      run: |
+        output=$(go run ./hack/lifecycle/main.go --tag=${{ env.PUBLIC_IMAGE_DEV_REPO }}/lifecycle 2>&1)
+        image=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
+        mkdir images
+        echo $image > images/lifecycle
+    - name: Upload Image Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: images
+        path: images/
+
+  generate-pre-release-yaml:
+    runs-on: ubuntu-latest
+    needs:
+    - lifecycle-image
+    - controller-image
+    - webhook-image
+    - completion-image
+    - rebase-image
+    - build-init-image
+    - build-waiter-image
+    - build-init-windows-image
+    - completion-windows-image
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Setup carvel
+      uses: carvel-dev/setup-action@v1
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        only: ytt, kapp
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: images
+
+    - name: Build release yaml
+      run: |        
+        ytt -f config/ \
+          -v controller.image=$(cat controller) \
+          -v webhook.image=$(cat webhook) \
+          -v build_init.image=$(cat build-init) \
+          -v build_init_windows.image=$(cat build-init-windows) \
+          -v build_waiter.image=$(cat build-waiter) \
+          -v rebase.image=$(cat rebase) \
+          -v completion.image=$(cat completion) \
+          -v completion_windows.image=$(cat completion-windows) \
+          -v lifecycle.image=$(cat lifecycle) > prerelease.yaml
+
+        cat prerelease.yaml
+
+    - name: Upload Pre-Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: prerelease
+        path: prerelease.yaml
+
+  e2e:
+    needs:
+      - generate-pre-release-yaml
+      - controller-image
+      - webhook-image
+      - completion-image
+      - rebase-image
+      - build-init-image
+      - build-waiter-image
+      - build-init-windows-image
+      - completion-windows-image
+      - lifecycle-image
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.3
+
+    - name: Setup carvel
+      uses: carvel-dev/setup-action@v1
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        only: ytt, kapp
+
+    - name: Download release
+      uses: actions/download-artifact@v3
+      with:
+        name: prerelease
+
+    - name: Setup local registry
+      run: |
+        user="test"
+        pass="test"
+
+        echo "Generating users"
+        htpasswd -Bbn "$user" "$pass" >> htpasswd # authenticated user for tests
+
+        # the registry can be accessed from inside the kind cluster via it's name.
+        # however, due to a quirk with ggcr, it will force https connections UNLESS
+        # it fits certain patterns (https://github.com/google/go-containerregistry/blob/b8d1c0a1df12a3b3dd3e7f98330780fdc015ce40/pkg/name/registry.go#L75)
+        # so in order to avoid setting tls for the registry, we can name it something.local
+        # to trick ggcr into using the http scheme
+        name="registry.local"
+
+        echo "Starting registry"
+        if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
+          docker run --detach \
+            --name "$name" \
+            -v "$(pwd)/htpasswd:/auth/htpasswd" \
+            -e "REGISTRY_AUTH=htpasswd" \
+            -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+            -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
+            -e "REGISTRY_STORAGE_DELETE_ENABLED=true" \
+            --publish "5000:5000" \
+            registry:2
+        fi
+
+        echo "REGISTRY_URL=$name:5000" >> $GITHUB_ENV
+        echo "REGISTRY_USER=$user" >> $GITHUB_ENV
+        echo "REGISTRY_PASS=$pass" >> $GITHUB_ENV
+
+        # alias registry.local to localhost
+        # ip=$(docker container inspect $name --format '{{ .NetworkSettings.Networks.kind.IPAddress }}')
+        ip=127.0.0.1
+        echo "$ip registry.local" | sudo tee -a /etc/hosts
+
+        cat <<EOF > kind.yaml
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        containerdConfigPatches:
+        - |-
+          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.local:5000"]
+            endpoint = ["http://registry.local:5000"]
+        EOF
+
+    - name: Create Kind Cluster
+      uses: helm/kind-action@v1.8.0
+      with:
+        cluster_name: e2e
+        config: kind.yaml
+
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ env.REGISTRY_URL }}
+        username: ${{ env.REGISTRY_USER }}
+        password: ${{ env.REGISTRY_PASS }}
+
+    - name: Run tests
+      run: |
+        # make the registry container accessible by name from inside the cluster
+        docker network connect kind registry.local
+
+        kapp deploy -a kpack -y -f prerelease.yaml
+
+        export IMAGE_REGISTRY=${{ env.REGISTRY_URL }}
+        export IMAGE_REGISTRY_USERNAME=${{ env.REGISTRY_USER }}
+        export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
+
+        make e2e
+        kapp delete -a kpack -y
+
+    - name: Run tests with Istio
+      run: |
+        helm repo add istio https://istio-release.storage.googleapis.com/charts
+        helm repo update
+        kubectl create namespace istio-system
+        helm install istio-base istio/base -n istio-system --wait
+        helm install istiod istio/istiod -n istio-system --wait
+
+        cat <<EOF > overlay.yaml
+        #@ load("@ytt:overlay", "overlay")
+        #@overlay/match by=overlay.subset({"metadata":{"name":"kpack-controller"}, "kind": "Deployment"})
+        ---
+        spec:
+          template:
+            spec:
+              containers:
+              #@overlay/match by="name"
+              - name: controller
+                #@overlay/match-child-defaults missing_ok=True
+                env:
+                #@overlay/match by="name"
+                #@overlay/replace or_add=True
+                - name: INJECTED_SIDECAR_SUPPORT
+                  value: "true"
+        EOF
+
+        ytt -f prerelease.yaml -f overlay.yaml | kapp deploy -a kpack -y -f-
+
+        export IMAGE_REGISTRY=${{ env.REGISTRY_URL }}
+        export IMAGE_REGISTRY_USERNAME=${{ env.REGISTRY_USER }}
+        export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
+        export KPACK_TEST_NAMESPACE_LABELS="istio-injection=enabled"
+
+        make e2e
+
+  release:
+    needs:
+      - unit
+      - e2e
+      - generate-pre-release-yaml
+      - controller-image
+      - webhook-image
+      - completion-image
+      - rebase-image
+      - build-init-image
+      - build-waiter-image
+      - build-init-windows-image
+      - completion-windows-image
+      - lifecycle-image
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.3
+
+    - name: Setup carvel
+      uses: carvel-dev/setup-action@v1
+      with:
+        token: ${{ secrets.RELEASE_TOKEN }}
+        only: ytt
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Parse tag name
+      run: |
+        echo "GITHUB_REF=${GITHUB_REF}"
+        [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} 
+        if [[ -z "${version}" ]]; then
+          echo "ERROR: kpack version not detected."
+          exit 1
+        fi
+        echo "KPACK_VERSION=${version}" >> $GITHUB_ENV
+
+    - name: Promote images
+      run: |
+        mkdir final-image-refs
+        for image in images/*; do
+          dev_image=$(cat $image)
+          digest=$(echo $dev_image| cut -d "@" -f 2)
+          
+          name=$(basename $image)
+          final_repo="${{ env.PUBLIC_IMAGE_REPO }}/${name}" 
+          
+          crane copy "$dev_image" "$final_repo"
+          
+          echo "${final_repo}@${digest}" > final-image-refs/$name
+        done
+
+    - name: Upload image refs
+      uses: actions/upload-artifact@v3
+      with:
+        name: final-image-refs
+        path: final-image-refs/*
+
+    - name: Generate release yaml
+      id: release_yaml
+      run: |
+        file="release-${{ env.KPACK_VERSION }}.yaml"
+        ytt -f config/ \
+          -v controller.image=$(cat final-image-refs/controller) \
+          -v webhook.image=$(cat final-image-refs/webhook) \
+          -v build_init.image=$(cat final-image-refs/build-init) \
+          -v build_init_windows.image=$(cat final-image-refs/build-init-windows) \
+          -v build_waiter.image=$(cat final-image-refs/build-waiter) \
+          -v rebase.image=$(cat final-image-refs/rebase) \
+          -v completion.image=$(cat final-image-refs/completion) \
+          -v completion_windows.image=$(cat final-image-refs/completion-windows) \
+          -v lifecycle.image=$(cat final-image-refs/lifecycle) \
+          -v kpack_version=${{ env.KPACK_VERSION }} > $file
+        echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
+
+    - name: Upload Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: release
+        path: release-${{ env.KPACK_VERSION }}.yaml
+
+    - name: Create Draft Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: kpack v${{ env.KPACK_VERSION }}
+        tag_name: v${{ env.KPACK_VERSION }}
+        target_commitish: ${{ github.sha }}
+        token: ${{ secrets.RELEASE_TOKEN }}
+        draft: true
+        prerelease: true
+        files: release-*.yaml
+        body: |
+          ## What's Changed
+
+          ## Bug Fixes
+
+          ## Bumped Dependencies
+
+          sha256 checksum:
+          ```
+          ${{ steps.release_yaml.outputs.sha }}
+          ```
+
+          **Full Changelog**:
