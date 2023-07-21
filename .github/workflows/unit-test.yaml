@@ -1,0 +1,19 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Run tests
+      uses: ./.github/actions/run-tests
+    - name: Report coverage
+      uses: codecov/codecov-action@v3.1.4
