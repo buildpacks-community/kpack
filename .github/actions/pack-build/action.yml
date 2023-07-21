@@ -1,0 +1,91 @@
+name: 'Pack Build'
+description: 'Pack build kpack images'
+
+inputs:
+  tag:
+    description: 'location to write image'
+    required: true
+  bp_go_targets:
+    description: 'value of BP_GO_TARGETS env'
+  builder:
+    description: 'builder image'
+    required: true
+    default: 'paketobuildpacks/builder-jammy-tiny'
+  pack_version:
+    description: 'version of pack to use'
+    required: true
+  additional_pack_args:
+    description: 'additional args for pack'
+
+runs:
+  using: "composite"
+  steps:
+  - name: setup-pack-linux
+    if: ${{ runner.os == 'linux' }}
+    uses: buildpacks/github-actions/setup-pack@v5.0.0
+    with:
+      pack-version: ${{ inputs.pack_version }}
+  - name: setup-pack-windows
+    shell: bash
+    if: ${{ runner.os == 'windows' }}
+    run: |
+      url="https://github.com/buildpacks/pack/releases/download/v${{ inputs.pack_version }}/pack-v${{ inputs.pack_version }}-windows.zip"
+      curl -sSL "$url" -o pack.zip
+      unzip -o pack.zip
+
+      mkdir "${HOME}"/.pack
+      echo "experimental = true" > "${HOME}"/.pack/config.toml
+
+      ./pack version
+  - name: build
+    if: ${{ runner.os == 'linux' }}
+    shell: bash
+    run: |
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+
+      KPACK_VERSION=$version
+      KPACK_COMMIT=$GITHUB_SHA
+      mkdir report
+      
+      export PATH="$PATH:$(pwd)"
+      pack build ${{ inputs.tag }} \
+        --builder ${{ inputs.builder }} \
+        --env BP_GO_LDFLAGS="-X 'github.com/pivotal/kpack/cmd.Version=${KPACK_VERSION}' -X 'github.com/pivotal/kpack/cmd.Commit=${KPACK_COMMIT}'" \
+        --env BP_GO_TARGETS="${{ inputs.bp_go_targets }}" \
+        --report-output-dir . \
+        --cache-image ${{ inputs.tag }}-cache \
+        --publish ${{ inputs.additional_pack_args }}
+      
+      mkdir images
+      digest=$(go run .github/actions/pack-build/report.go -path ./report.toml)
+      name=$(basename ${{ inputs.tag }})
+      echo "${{ inputs.tag }}@${digest}" > images/$name
+      cat images/$name
+  - name: build
+    if: ${{ runner.os == 'windows' }}
+    shell: bash
+    run: |
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+
+      KPACK_VERSION=$version
+      KPACK_COMMIT=$GITHUB_SHA
+      mkdir report
+
+      export PATH="$PATH:$(pwd)"
+      pack build ${{ inputs.tag }} \
+        --builder ${{ inputs.builder }} \
+        --env BP_GO_LDFLAGS="-X 'github.com/pivotal/kpack/cmd.Version=${KPACK_VERSION}' -X 'github.com/pivotal/kpack/cmd.Commit=${KPACK_COMMIT}'" \
+        --env BP_GO_TARGETS="${{ inputs.bp_go_targets }}" \
+        --cache-image ${{ inputs.tag }}-cache \
+        --publish ${{ inputs.additional_pack_args }} 2>&1 | tee outfile
+
+      mkdir images
+      digest=$(cat outfile | grep "Images (sha256:" | cut -d "(" -f2 | cut -d ")" -f 1)
+      name=$(basename ${{ inputs.tag }})
+      echo "${{ inputs.tag }}@${digest}" > images/$name
+      cat images/$name
+  - name: Upload Image Artifacts
+    uses: actions/upload-artifact@v3
+    with:
+      name: images
+      path: images/
