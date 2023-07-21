@@ -879,6 +879,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"-analyzed=/layers/analyzed.toml",
 				"-project-metadata=/layers/project-metadata.toml",
 				"-cache-dir=/cache",
+				"-process-type=web",
 				"-report=/var/report/report.toml",
 				build.Tag(),
 				"someimage/name:tag2",
@@ -2295,6 +2296,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					"-group=/layers/group.toml",
 					"-analyzed=/layers/analyzed.toml",
 					"-project-metadata=/layers/project-metadata.toml",
+					"-process-type=web",
 					"-report=/var/report/report.toml",
 					"someimage/name", "someimage/name:tag2", "someimage/name:tag3"},
 					exportContainer.Args)

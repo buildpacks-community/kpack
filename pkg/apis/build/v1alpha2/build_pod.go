@@ -297,9 +297,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 			layersMount,
 			workspaceVolume,
 			homeMount,
-		}, func() []corev1.VolumeMount {
-			return []corev1.VolumeMount{}
-		}()),
+		},
+			[]corev1.VolumeMount{}),
 		Env: []corev1.EnvVar{
 			homeEnv,
 			platformApiVersionEnvVar,
@@ -463,22 +462,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					},
 					ifWindows(buildContext.os(), addNetworkWaitLauncherVolume())...,
 				)
-				step(
-					func() corev1.Container {
-						return analyzeContainer
-					}(),
-					func() []stepModifier {
-						return analyzerContainerMods
-					}()...,
-				)
-				step(
-					func() corev1.Container {
-						return detectContainer
-					}(),
-					func() []stepModifier {
-						return detectContainerMods
-					}()...,
-				)
+				step(analyzeContainer, analyzerContainerMods...)
+				step(detectContainer, detectContainerMods...)
 				step(
 					corev1.Container{
 						Name:            RestoreContainerName,
@@ -489,9 +474,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 						Args: args([]string{
 							"-group=/layers/group.toml",
 							"-layers=/layers",
-						}, genericCacheArgs, func() []string {
-							return []string{"-analyzed=/layers/analyzed.toml"}
-						}()),
+						},
+							genericCacheArgs,
+							[]string{"-analyzed=/layers/analyzed.toml"}),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersMount,
 							homeMount,
@@ -552,24 +537,12 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							exporterCacheArgs,
 							func() []string {
 								if b.DefaultProcess() == "" {
-									if platformAPI.Equal(lowestSupportedPlatformVersion) || platformAPI.GreaterThan(semver.MustParse("0.5")) {
-										return nil
-									} else {
-										return []string{fmt.Sprintf("-process-type=web")}
-									}
+									return []string{fmt.Sprintf("-process-type=web")}
 								}
 								return []string{fmt.Sprintf("-process-type=%s", b.DefaultProcess())}
 							}(),
-							func() []string {
-								if platformAPI.Equal(lowestSupportedPlatformVersion) {
-									return nil
-								}
-								return []string{fmt.Sprintf("-report=%s", ReportTOMLPath)}
-
-							}(),
-							func() []string {
-								return []string{}
-							}(),
+							[]string{fmt.Sprintf("-report=%s", ReportTOMLPath)},
+							[]string{},
 							b.Spec.Tags),
 						VolumeMounts: volumeMounts([]corev1.VolumeMount{
 							layersMount,
@@ -1115,15 +1088,11 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 }
 
 var (
-	lowestSupportedPlatformVersion = semver.MustParse("0.7")
-
 	supportedPlatformAPIVersions = []*semver.Version{semver.MustParse("0.11"), semver.MustParse("0.10"), semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
 )
 
 func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
-	for _, supportedVersion := range func() []*semver.Version {
-		return supportedPlatformAPIVersions
-	}() {
+	for _, supportedVersion := range supportedPlatformAPIVersions {
 		if bc.MaximumPlatformApiVersion != nil && bc.MaximumPlatformApiVersion.LessThan(supportedVersion) {
 			continue
 		}
