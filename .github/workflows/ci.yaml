@@ -32,7 +32,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Run tests
-      run: make unit-ci
+      uses: ./.github/actions/run-tests
 
     - name: Report coverage
       uses: codecov/codecov-action@v3.1.4
@@ -149,7 +149,7 @@ jobs:
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init-windows
         bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
         builder: gcr.io/cf-build-service-public/kpack-windows-builder
-        additional_pack_args: '--trust-builder --env BP_MSYS2_COPY_FILES=c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libgit2.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\zlib1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssl-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssh2-1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libcrypto-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libhttp_parser-2.dll'
+        additional_pack_args: '--trust-builder --env BP_MSYS2_COPY_FILES="c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libgit2.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\zlib1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssl-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssh2-1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libcrypto-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libhttp_parser-2.dll"'
 
   completion-windows-image:
     runs-on: windows-2019
