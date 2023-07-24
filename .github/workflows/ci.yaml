@@ -245,15 +245,15 @@ jobs:
     - name: Build release yaml
       run: |        
         ytt -f config/ \
-          -v controller.image=$(cat controller) \
-          -v webhook.image=$(cat webhook) \
-          -v build_init.image=$(cat build-init) \
-          -v build_init_windows.image=$(cat build-init-windows) \
-          -v build_waiter.image=$(cat build-waiter) \
-          -v rebase.image=$(cat rebase) \
-          -v completion.image=$(cat completion) \
-          -v completion_windows.image=$(cat completion-windows) \
-          -v lifecycle.image=$(cat lifecycle) > prerelease.yaml
+          -v controller_image=$(cat controller) \
+          -v webhook_image=$(cat webhook) \
+          -v build_init_image=$(cat build-init) \
+          -v build_init_windows_image=$(cat build-init-windows) \
+          -v build_waiter_image=$(cat build-waiter) \
+          -v rebase_image=$(cat rebase) \
+          -v completion_image=$(cat completion) \
+          -v completion_windows_image=$(cat completion-windows) \
+          -v lifecycle_image=$(cat lifecycle) > prerelease.yaml
 
         cat prerelease.yaml
 
@@ -487,16 +487,16 @@ jobs:
       run: |
         file="release-${{ env.KPACK_VERSION }}.yaml"
         ytt -f config/ \
-          -v controller.image=$(cat final-image-refs/controller) \
-          -v webhook.image=$(cat final-image-refs/webhook) \
-          -v build_init.image=$(cat final-image-refs/build-init) \
-          -v build_init_windows.image=$(cat final-image-refs/build-init-windows) \
-          -v build_waiter.image=$(cat final-image-refs/build-waiter) \
-          -v rebase.image=$(cat final-image-refs/rebase) \
-          -v completion.image=$(cat final-image-refs/completion) \
-          -v completion_windows.image=$(cat final-image-refs/completion-windows) \
-          -v lifecycle.image=$(cat final-image-refs/lifecycle) \
-          -v kpack_version=${{ env.KPACK_VERSION }} > $file
+          -v controller_image=$(cat final-image-refs/controller) \
+          -v webhook_image=$(cat final-image-refs/webhook) \
+          -v build_init_image=$(cat final-image-refs/build-init) \
+          -v build_init_windows_image=$(cat final-image-refs/build-init-windows) \
+          -v build_waiter_image=$(cat final-image-refs/build-waiter) \
+          -v rebase_image=$(cat final-image-refs/rebase) \
+          -v completion_image=$(cat final-image-refs/completion) \
+          -v completion_windows_image=$(cat final-image-refs/completion-windows) \
+          -v lifecycle_image=$(cat final-image-refs/lifecycle) \
+          -v version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release
