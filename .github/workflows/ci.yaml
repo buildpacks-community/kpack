@@ -32,7 +32,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Run tests
-      run: make unit-ci
+      uses: ./.github/actions/run-tests
 
     - name: Report coverage
       uses: codecov/codecov-action@v3.1.4
@@ -54,6 +54,8 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
         bp_go_targets: "./cmd/controller"
+        builder: gcr.io/cf-build-service-public/ci/kpack-builder
+        additional_pack_args: '--env BP_GIT2GO_ENABLED="true" --env BP_GIT2GO_USE_LIBSSL="true"'
 
   webhook-image:
     runs-on: ubuntu-latest
@@ -108,6 +110,26 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
         bp_go_targets: "./cmd/build-init"
+        builder: gcr.io/cf-build-service-public/ci/kpack-builder
+        additional_pack_args: '--env BP_GIT2GO_ENABLED="true" --env BP_GIT2GO_USE_LIBSSL="true"'
+
+  build-waiter-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Build
+      uses: ./.github/actions/pack-build
+      with:
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
+        bp_go_targets: "./cmd/build-waiter"
 
   rebase-image:
     runs-on: ubuntu-latest
@@ -145,7 +167,7 @@ jobs:
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init-windows
         bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
         builder: gcr.io/cf-build-service-public/kpack-windows-builder
-        additional_pack_args: "--trust-builder"
+        additional_pack_args: '--trust-builder --env BP_MSYS2_COPY_FILES="c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libgit2.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\zlib1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssl-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libssh2-1.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libcrypto-1_1-x64.dll;c:\layers\samples_msys2\msys2\msys64\mingw64\bin\libhttp_parser-2.dll"'
 
   completion-windows-image:
     runs-on: windows-2019
@@ -222,14 +244,14 @@ jobs:
     - name: Build release yaml
       run: |        
         ytt -f config/ \
-          -v controller.image=$(cat controller) \
-          -v webhook.image=$(cat webhook) \
-          -v build_init.image=$(cat build-init) \
-          -v build_init_windows.image=$(cat build-init-windows) \
-          -v rebase.image=$(cat rebase) \
-          -v completion.image=$(cat completion) \
-          -v completion_windows.image=$(cat completion-windows) \
-          -v lifecycle.image=$(cat lifecycle) > prerelease.yaml
+          -v controller_image=$(cat controller) \
+          -v webhook_image=$(cat webhook) \
+          -v build_init_image=$(cat build-init) \
+          -v build_init_windows_image=$(cat build-init-windows) \
+          -v rebase_image=$(cat rebase) \
+          -v completion_image=$(cat completion) \
+          -v completion_windows_image=$(cat completion-windows) \
+          -v lifecycle_image=$(cat lifecycle) > prerelease.yaml
 
         cat prerelease.yaml
 
@@ -426,15 +448,15 @@ jobs:
       run: |
         file="release-${{ env.KPACK_VERSION }}.yaml"
         ytt -f config/ \
-          -v controller.image=$(cat final-image-refs/controller) \
-          -v webhook.image=$(cat final-image-refs/webhook) \
-          -v build_init.image=$(cat final-image-refs/build-init) \
-          -v build_init_windows.image=$(cat final-image-refs/build-init-windows) \
-          -v rebase.image=$(cat final-image-refs/rebase) \
-          -v completion.image=$(cat final-image-refs/completion) \
-          -v completion_windows.image=$(cat final-image-refs/completion-windows) \
-          -v lifecycle.image=$(cat final-image-refs/lifecycle) \
-          -v kpack_version=${{ env.KPACK_VERSION }} > $file
+          -v controller_image=$(cat final-image-refs/controller) \
+          -v webhook_image=$(cat final-image-refs/webhook) \
+          -v build_init_image=$(cat final-image-refs/build-init) \
+          -v build_init_windows_image=$(cat final-image-refs/build-init-windows) \
+          -v rebase_image=$(cat final-image-refs/rebase) \
+          -v completion_image=$(cat final-image-refs/completion) \
+          -v completion_windows_image=$(cat final-image-refs/completion-windows) \
+          -v lifecycle_image=$(cat final-image-refs/lifecycle) \
+          -v version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release
