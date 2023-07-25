@@ -190,12 +190,20 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+    - name: Docker Login
+      uses: docker/login-action@v2.2.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version-file: 'go.mod'
     - name: Build
       run: |
+        trap 'echo -e "$output"' EXIT
+
         output=$(go run ./hack/lifecycle/main.go --tag=${{ env.PUBLIC_IMAGE_DEV_REPO }}/lifecycle 2>&1)
         image=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
         mkdir images
