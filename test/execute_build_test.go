@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -108,18 +109,35 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		basicAuth, err := auth.Authorization()
 		require.NoError(t, err)
 
+		reg := cfg.testRegistry
+		// Handle path in registry
+		if strings.ContainsRune(reg, '/') {
+			r, err := name.NewRepository(reg, name.WeakValidation)
+			require.NoError(t, err)
+			reg = r.RegistryStr()
+		}
+
+		configJson := dockerConfigJson{Auths: dockerCredentials{
+			reg: authn.AuthConfig{
+				Username: basicAuth.Username,
+				Password: basicAuth.Password,
+			},
+		}}
+		dockerCfgJson, err := json.Marshal(configJson)
+		require.NoError(t, err)
+
 		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
+				Name:      dockerSecret,
+				Namespace: testNamespace,
 				Annotations: map[string]string{
 					"kpack.io/docker": reference.Context().RegistryStr(),
 				},
 			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
+			Data: map[string][]byte{
+				corev1.DockerConfigJsonKey: dockerCfgJson,
 			},
-			Type: corev1.SecretTypeBasicAuth,
+			Type: corev1.SecretTypeDockerConfigJson,
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -128,6 +146,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: serviceAccountName,
 			},
 			Secrets: []corev1.ObjectReference{
+				{
+					Name: dockerSecret,
+				},
+			},
+			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
 					Name: dockerSecret,
 				},
