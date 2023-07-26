@@ -15,30 +15,29 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
 ### Tutorial
 
-1. Configure the kp default repository and credentials in the `kpack` namespace. These will be used to upload OCI images to
-   a default registry location with `kp`. You must also be logged in to the default registry locally.
+1. Configure the registry credentials where the cluster store and cluster stack images will be stored.`kp` supports two ways to provide registry credentials to upload OCI images
+   1. Set environment variables, see [auth](https://github.com/buildpacks-community/kpack-cli/blob/main/docs/auth.md).
+      ```bash
+      export KP_REGISTRY_HOSTNAME=<REGISTRY-HOSTNAME>
+      export KP_REGISTRY_USERNAME=<REGISTRY-USERNAME>
+      export KP_REGISTRY_PASSWORD=<REGISTRY-PASSWORD>
+      ````
+   2. or log in using `docker login`
 
-    ```bash
-    docker login <REGISTRY-HOSTNAME> -u <REGISTRY-USER>
-    kp secret create kp-default-registry-creds \
-       --registry <REGISTRY-HOSTNAME> \
-       --registry-user <REGISTRY-USER> \
-       -n kpack
-    kp config default-repository <REPOSITORY>
-    kp config default-service-account default
-    ```
+       ```bash
+       docker login <REGISTRY-HOSTNAME> -u <REGISTRY-USERNAME>
+      ```
+      >    Note: The `<REGISTRY-HOSTNAME>` must be the registry URL. For [dockerhub](https://hub.docker.com/) use `index.docker.io`, [GCR](https://cloud.google.com/container-registry/) use `gcr.io`, etc.
 
-   > Note: The `<REGISTRY-HOSTNAME>` must be the registry prefix for its corresponding registry
-   > - For [dockerhub](https://hub.docker.com/) `kp` offers a simplified way to create a dockerhub secret with a `--dockerhub` flag. The registry in the secret should be `https://index.docker.io/v1/`.
-   > - For [GCR](https://cloud.google.com/container-registry/), `kp` also offers a simplified way to create a GCR secret with a `--gcr` flag that followed by a path to a json file containing the service account password. The registry in the secret should be `gcr.io`.
+2. Configure the kp default repository where the cluster store and cluster stack images will be saved. 
+   ```bash
+   kp config default-repository <REPOSITORY>
+   ```
+   >    Note: The `<REPOSITORY>` must be a location in the registry that can be written to with the credentials from the previous step.
+   >    - For [dockerhub](https://hub.docker.com/) this should be `my-username/my-repo`.
+   >    - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io/my-project/my-repo`.
 
-   > Note: The `<REPOSITORY>` must be a location in the docker registry that can be written to with the credentials
-   > - For [dockerhub](https://hub.docker.com/) this should be `my-username/my-repo`.
-   > - For [GCR](https://cloud.google.com/container-registry/) this should be `gcr.io/my-project/my-repo`.
-
-   > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md)
-
-2. Create a cluster store
+3. Create a cluster store
 
    A store resource is a repository of [buildpacks](http://buildpacks.io/) packaged
    in [buildpackages](https://buildpacks.io/docs/buildpack-author-guide/package-a-buildpack/) that can be used by kpack
@@ -53,7 +52,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
    > Note: Buildpacks are packaged and distributed as buildpackages which are OCI images available on a docker registry. Buildpackages for other languages are available from [paketo](https://github.com/paketo-buildpacks).
 
-3. Create a cluster stack
+4. Create a cluster stack
 
    A stack resource is the specification for
    a [cloud native buildpacks stack](https://buildpacks.io/docs/concepts/components/stack/) used during build and in the
@@ -65,8 +64,15 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
     kp clusterstack save base --build-image paketobuildpacks/build:base-cnb --run-image paketobuildpacks/run:base-cnb
     ```
 
-4. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack. 
-   This secret needs to be located in the same namespace as the builder that you will create in the next step.
+5. Set the default service account. `kp` will automatically manage this service account to track secrets created `kp secret create`.
+   Here we are using the default service account that is automatically created by kubernetes in each namespace.
+    
+   ```bash
+    kp config default-service-account default
+    ```
+
+6. Create a secret with push credentials for the registry that you plan on publishing OCI images to with kpack. 
+   This secret needs to be located in the same namespace as the builder that will be created in the next step.
 
    The easiest way to do that is with `kp secret create`
 
@@ -98,13 +104,13 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
    > Note: Learn more about kpack secrets with the [kpack secret documentation](secrets.md)
 
-5. Create a Builder
+7. Create a Builder
 
    A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/)
    that includes the stack and buildpacks needed to build an OCI image from your app source code.
 
-   The Builder configuration will write to the registry with the secret configured in step one and will reference the
-   stack and store created in step three and four. The builder order will determine the order in which buildpacks are
+   The Builder configuration will write to the registry with the secret configured in the previous step and will reference the
+   stack and store created previously. The builder order will determine the order in which buildpacks are
    used in the builder.
 
     ```
@@ -119,8 +125,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
     - Replace `<IMAGE-TAG>` with a valid image tag that exists in the registry you configured with the `--registry` flag when creating a Secret in the previous step. 
       The tag should be something like: `your-name/builder` or `gcr.io/your-project/your-repo/builder`.
 
-
-6. Create a kpack image resource
+8. Create a kpack image resource
 
    An image resource is the specification for an OCI image that kpack should build and manage.
 
@@ -226,7 +231,7 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
 
    The latest built OCI image is available to be used locally via `docker pull` and in a kubernetes deployment.
 
-7. Run the built app locally
+9. Run the built app locally
 
    Download the latest built OCI image available in step #6 and run it with docker.
 
@@ -251,43 +256,43 @@ build an OCI image from source and allow kpack rebuild the OCI image with update
     :: Built with Spring Boot :: 2.2.2.RELEASE
    ``` 
 
-8. kpack rebuilds
+10. kpack rebuilds
 
-   We recommend updating the kpack image resource with a CI/CD tool when new commits are ready to be built.
+    We recommend updating the kpack image resource with a CI/CD tool when new commits are ready to be built.
    > Note: You can also provide a branch or tag as the `spec.git.revision` and kpack will poll and rebuild on updates!
 
-   We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image resource configured in step #6.
+    We can simulate an update from a CI/CD tool by updating the `spec.git.revision` on the image resource configured in step #6.
 
-   If you are using your own application please push an updated commit and use the new commit sha. If you are using
-   Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.
+    If you are using your own application please push an updated commit and use the new commit sha. If you are using
+    Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.
 
-   Edit the image resource with:
-   ```
-   kp image save tutorial-image --git-revision 4e1f87407d80cdb4a5a293de89d62034fdcbb847 -n default
-   ``` 
+    Edit the image resource with:
+    ```
+    kp image save tutorial-image --git-revision 4e1f87407d80cdb4a5a293de89d62034fdcbb847 -n default
+    ``` 
 
-   You should see kpack schedule a new build by running:
-   ```
-   kp build list tutorial-image -n default
-   ``` 
-   You should see a new build with
+    You should see kpack schedule a new build by running:
+    ```
+    kp build list tutorial-image -n default
+    ``` 
+    You should see a new build with
 
-   ```
-   BUILD    STATUS     IMAGE                                            REASON
-   1        SUCCESS    index.docker.io/your-name/app@sha256:6744b...    BUILDPACK
-   2        BUILDING                                                    CONFIG
-   ```
+    ```
+    BUILD    STATUS     IMAGE                                            REASON
+    1        SUCCESS    index.docker.io/your-name/app@sha256:6744b...    BUILDPACK
+    2        BUILDING                                                    CONFIG
+    ```
 
-   You can tail the logs for the image resource with the kp cli used in step #6.
+    You can tail the logs for the image resource with the kp cli used in step #6.
 
-   ```
-   kp build logs tutorial-image -n default
-   ```
+    ```
+    kp build logs tutorial-image -n default
+    ```
 
    > Note: This second build should be notably faster because the buildpacks are able to leverage the cache from the previous build.
 
-9. Next steps
+11. Next steps
 
-   The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated
-   buildpacks were used by the tutorial image resource, kpack will automatically create a new build to rebuild your OCI image.
-   in the registry you configured with the `--registry` flag when creating a Secret in step #1. The tag should be something like: `your-name/builder` or `gcr.io/your-project/your-repo/builder`.
+    The next time new buildpacks are added to the store, kpack will automatically rebuild the builder. If the updated
+    buildpacks were used by the tutorial image resource, kpack will automatically create a new build to rebuild your OCI image.
+    in the registry you configured with the `--registry` flag when creating a Secret in step #1. The tag should be something like: `your-name/builder` or `gcr.io/your-project/your-repo/builder`.
