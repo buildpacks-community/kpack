@@ -5,14 +5,14 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/google/go-containerregistry/pkg/authn"
 )
 
 type config struct {
 	builder      string
 	testRegistry string
 	imageTag     string
-
-	generatedImageNames []string
 }
 
 func loadConfig(t *testing.T) config {
@@ -29,6 +29,11 @@ func loadConfig(t *testing.T) config {
 
 func (c *config) newImageTag() string {
 	genTag := c.imageTag + "-" + strconv.Itoa(rand.Int())
-	c.generatedImageNames = append(c.generatedImageNames, genTag)
 	return genTag
+}
+
+type dockerCredentials map[string]authn.AuthConfig
+
+type dockerConfigJson struct {
+	Auths dockerCredentials `json:"auths"`
 }

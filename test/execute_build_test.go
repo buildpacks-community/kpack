@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,13 +53,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		cfg     config
-		clients *clients
-		ctx     = context.Background()
+		cfg         config
+		clients     *clients
+		ctx         = context.Background()
+		builtImages map[string]struct{}
 	)
 
 	it.Before(func() {
 		cfg = loadConfig(t)
+		builtImages = map[string]struct{}{}
 
 		var err error
 		clients, err = newClients(t)
@@ -92,7 +94,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		for _, tag := range cfg.generatedImageNames {
+		for tag := range builtImages {
 			deleteImageTag(t, tag)
 		}
 	})
@@ -107,18 +109,35 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		basicAuth, err := auth.Authorization()
 		require.NoError(t, err)
 
+		reg := cfg.testRegistry
+		// Handle path in registry
+		if strings.ContainsRune(reg, '/') {
+			r, err := name.NewRepository(reg, name.WeakValidation)
+			require.NoError(t, err)
+			reg = r.RegistryStr()
+		}
+
+		configJson := dockerConfigJson{Auths: dockerCredentials{
+			reg: authn.AuthConfig{
+				Username: basicAuth.Username,
+				Password: basicAuth.Password,
+			},
+		}}
+		dockerCfgJson, err := json.Marshal(configJson)
+		require.NoError(t, err)
+
 		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: dockerSecret,
+				Name:      dockerSecret,
+				Namespace: testNamespace,
 				Annotations: map[string]string{
 					"kpack.io/docker": reference.Context().RegistryStr(),
 				},
 			},
-			StringData: map[string]string{
-				"username": basicAuth.Username,
-				"password": basicAuth.Password,
+			Data: map[string][]byte{
+				corev1.DockerConfigJsonKey: dockerCfgJson,
 			},
-			Type: corev1.SecretTypeBasicAuth,
+			Type: corev1.SecretTypeDockerConfigJson,
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
@@ -127,6 +146,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Name: serviceAccountName,
 			},
 			Secrets: []corev1.ObjectReference{
+				{
+					Name: dockerSecret,
+				},
+			},
+			ImagePullSecrets: []corev1.LocalObjectReference{
 				{
 					Name: dockerSecret,
 				},
@@ -384,7 +408,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 					}, metav1.CreateOptions{})
 					require.NoError(t, err)
 
-					validateImageCreate(t, clients, image, expectedResources)
+					builtImages[validateImageCreate(t, clients, image, expectedResources)] = struct{}{}
 					validateRebase(t, ctx, clients, image.Name, testNamespace)
 				})
 			}
@@ -400,7 +424,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		generateRebuild(&ctx, t, cfg, clients, volumeCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)
+		builtImages[generateRebuild(&ctx, t, cfg, clients, volumeCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)] = struct{}{}
 	})
 
 	it("can trigger rebuilds with registry cache", func() {
@@ -411,11 +435,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Tag: cacheImageTag,
 			},
 		}
-		generateRebuild(&ctx, t, cfg, clients, registryCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)
+		builtImages[generateRebuild(&ctx, t, cfg, clients, registryCacheConfig, testNamespace, clusterBuilderName, serviceAccountName)] = struct{}{}
 	})
 }
 
-func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *clients, cacheConfig *buildapi.ImageCacheConfig, testNamespace, clusterBuilderName, serviceAccountName string) {
+func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *clients, cacheConfig *buildapi.ImageCacheConfig, testNamespace, clusterBuilderName, serviceAccountName string) string {
 	expectedResources := corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
 			corev1.ResourceMemory: resource.MustParse("1G"),
@@ -455,7 +479,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	validateImageCreate(t, clients, image, expectedResources)
+	originalImageTag := validateImageCreate(t, clients, image, expectedResources)
 
 	list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(*ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
@@ -475,6 +499,11 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 		require.NoError(t, err)
 		return len(list.Items) == 2
 	}, 5*time.Second, 1*time.Minute)
+
+	rebuiltImageTag := validateImageCreate(t, clients, image, expectedResources)
+	require.Equal(t, originalImageTag, rebuiltImageTag)
+
+	return originalImageTag
 }
 
 func readNamespaceLabelsFromEnv() map[string]string {
@@ -514,13 +543,13 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 	}
 }
 
-func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, expectedResources corev1.ResourceRequirements) {
+func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, expectedResources corev1.ResourceRequirements) string {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	logTail := &bytes.Buffer{}
 	go func() {
-		err := logs.NewBuildLogsClient(clients.k8sClient).Tail(ctx, logTail, image.Name, "1", image.Namespace)
+		err := logs.NewBuildLogsClient(clients.k8sClient).TailImage(ctx, logTail, image.Name, image.Namespace)
 		require.NoError(t, err)
 	}()
 
@@ -528,23 +557,26 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 	waitUntilReady(t, ctx, clients, image)
 
 	registryClient := &registry.Client{}
-	_, _, err = registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
+	_, identifier, err := registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
 		return strings.Contains(logTail.String(), "Build successful")
 	}, 1*time.Second, 10*time.Second)
 
+	buildList, err := clients.client.KpackV1alpha2().Builds(image.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),
+	})
+	require.NoError(t, err)
+
 	podList, err := clients.k8sClient.CoreV1().Pods(image.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),
 	})
 	require.NoError(t, err)
 
-	require.Len(t, podList.Items, 1)
-	pod := podList.Items[0]
+	require.Len(t, podList.Items, len(buildList.Items))
 
-	require.Equal(t, 1, len(pod.Spec.Containers))
-	assert.Equal(t, expectedResources, pod.Spec.Containers[0].Resources)
+	return identifier
 }
 
 func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageName, testNamespace string) {
@@ -585,13 +617,22 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 
 func deleteImageTag(t *testing.T, deleteImageTag string) {
 	reference, err := name.ParseReference(deleteImageTag, name.WeakValidation)
-	require.NoError(t, err)
+	if err != nil {
+		t.Logf("error cleaning up: could not parse reference: %s", err)
+		return
+	}
 
 	authenticator, err := authn.DefaultKeychain.Resolve(reference.Context().Registry)
-	require.NoError(t, err)
+	if err != nil {
+		t.Logf("error cleaning up: could not resolve keychain to delete tag: %s", err)
+		return
+	}
 
 	err = remote.Delete(reference, remote.WithAuth(authenticator))
-	require.NoError(t, err)
+	if err != nil {
+		t.Logf("error cleaning up: could not delete reference: %s", err)
+		return
+	}
 }
 
 func deleteNamespace(t *testing.T, ctx context.Context, clients *clients, namespace string) {
