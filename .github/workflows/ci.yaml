@@ -113,24 +113,6 @@ jobs:
         builder: gcr.io/cf-build-service-public/ci/kpack-builder
         additional_pack_args: '--env BP_GIT2GO_ENABLED="true" --env BP_GIT2GO_USE_LIBSSL="true"'
 
-  build-waiter-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Docker Login
-      uses: docker/login-action@v2.2.0
-      with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-    - name: Build
-      uses: ./.github/actions/pack-build
-      with:
-        pack_version: ${{ env.PACK_VERSION }}
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
-        bp_go_targets: "./cmd/build-waiter"
-
   rebase-image:
     runs-on: ubuntu-latest
     steps:
