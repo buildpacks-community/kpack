@@ -57,11 +57,11 @@ function compile() {
   lifecycle_image=${resolved_image_name}
 
   ytt -f config/. \
-    -v controller_image=${controller_image} \
-    -v webhook_image=${webhook_image} \
-    -v build_init_image=${build_init_image} \
-    -v build_waiter_image=${build_waiter_image} \
-    -v rebase_image=${rebase_image} \
-    -v completion_image=${completion_image} \
-    -v lifecycle_image=${lifecycle_image} > $output
+    -v controller.image=${controller_image} \
+    -v webhook.image=${webhook_image} \
+    -v build_init.image=${build_init_image} \
+    -v build_waiter.image=${build_waiter_image} \
+    -v rebase.image=${rebase_image} \
+    -v completion.image=${completion_image} \
+    -v lifecycle.image=${lifecycle_image} > $output
 }
