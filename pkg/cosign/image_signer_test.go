@@ -112,11 +112,11 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 					var passwordFileContent []byte
 					if secretKey1 == ko.KeyRef {
-						passwordFileContent, _ = ioutil.ReadFile(passwordFile1)
+						passwordFileContent, _ = os.ReadFile(passwordFile1)
 						password1Count++
 						assert.Equal(t, []byte(""), passwordFileContent)
 					} else {
-						passwordFileContent, _ = ioutil.ReadFile(passwordFile2)
+						passwordFileContent, _ = os.ReadFile(passwordFile2)
 						password2Count++
 						assert.NotEqual(t, []byte(""), passwordFileContent)
 					}

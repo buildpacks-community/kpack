@@ -2,7 +2,6 @@ package cosign
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -62,7 +61,7 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
 	ko := options.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
-		content, err := ioutil.ReadFile(cosignPasswordFile)
+		content, err := os.ReadFile(cosignPasswordFile)
 		// When password file is not available, default empty password is used
 		if err != nil {
 			return []byte(""), nil
@@ -114,7 +113,7 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 func findCosignSecrets(secretLocation string) ([]string, error) {
 	var result []string
 
-	files, err := ioutil.ReadDir(secretLocation)
+	files, err := os.ReadDir(secretLocation)
 	if err != nil {
 		return nil, err
 	}

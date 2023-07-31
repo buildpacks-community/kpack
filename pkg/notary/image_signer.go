@@ -2,9 +2,9 @@ package notary
 
 import (
 	"encoding/hex"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -126,7 +126,7 @@ func (s *ImageSigner) makeGUNAndTargets(report platform.ExportReport, keychain a
 func (s *ImageSigner) makeCryptoService(notarySecretDir string) (*cryptoservice.CryptoService, error) {
 	cryptoStore := storage.NewMemoryStore(nil)
 
-	fileInfos, err := ioutil.ReadDir(notarySecretDir)
+	fileInfos, err := os.ReadDir(notarySecretDir)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *ImageSigner) makeCryptoService(notarySecretDir string) (*cryptoservice.
 	privateKeyFound := false
 	for _, info := range fileInfos {
 		if strings.HasSuffix(info.Name(), ".key") {
-			buf, err := ioutil.ReadFile(filepath.Join(notarySecretDir, info.Name()))
+			buf, err := os.ReadFile(filepath.Join(notarySecretDir, info.Name()))
 			if err != nil {
 				return nil, err
 			}
@@ -160,7 +160,7 @@ func (s *ImageSigner) makeCryptoService(notarySecretDir string) (*cryptoservice.
 
 func k8sSecretPassRetriever(notarySecretDir string) func(_, _ string, _ bool, _ int) (passphrase string, giveup bool, err error) {
 	return func(_, _ string, _ bool, _ int) (passphrase string, giveup bool, err error) {
-		buf, err := ioutil.ReadFile(filepath.Join(notarySecretDir, "password"))
+		buf, err := os.ReadFile(filepath.Join(notarySecretDir, "password"))
 		return strings.TrimSpace(string(buf)), false, err
 	}
 }
