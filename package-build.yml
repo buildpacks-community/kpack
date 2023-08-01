@@ -1,0 +1,20 @@
+apiVersion: kctrl.carvel.dev/v1alpha1
+kind: PackageBuild
+metadata:
+  creationTimestamp: null
+  name: kpack.buildservice.tanzu.vmware.com
+spec:
+  template:
+    spec:
+      app:
+        spec:
+          deploy:
+          - kapp: {}
+          template:
+          - ytt:
+              paths:
+              - config
+          - kbld: {}
+      export:
+      - includePaths:
+        - config

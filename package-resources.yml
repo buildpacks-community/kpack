@@ -1,0 +1,52 @@
+apiVersion: data.packaging.carvel.dev/v1alpha1
+kind: Package
+metadata:
+  creationTimestamp: null
+  name: kpack.buildservice.tanzu.vmware.com.0.0.0
+spec:
+  refName: kpack.buildservice.tanzu.vmware.com
+  releasedAt: null
+  template:
+    spec:
+      deploy:
+      - kapp: {}
+      fetch:
+      - git: {}
+      template:
+      - ytt:
+          paths:
+          - config
+      - kbld: {}
+  valuesSchema:
+    openAPIv3: null
+  version: 0.0.0
+
+---
+apiVersion: data.packaging.carvel.dev/v1alpha1
+kind: PackageMetadata
+metadata:
+  creationTimestamp: null
+  name: kpack.buildservice.tanzu.vmware.com
+spec:
+  displayName: kpack
+  longDescription: kpack.buildservice.tanzu.vmware.com
+  shortDescription: kpack.buildservice.tanzu.vmware.com
+
+---
+apiVersion: packaging.carvel.dev/v1alpha1
+kind: PackageInstall
+metadata:
+  annotations:
+    kctrl.carvel.dev/local-fetch-0: .
+  creationTimestamp: null
+  name: kpack
+spec:
+  packageRef:
+    refName: kpack.buildservice.tanzu.vmware.com
+    versionSelection:
+      constraints: 0.0.0
+  serviceAccountName: kpack-sa
+status:
+  conditions: null
+  friendlyDescription: ""
+  observedGeneration: 0

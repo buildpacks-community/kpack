@@ -1,0 +1,61 @@
+  apiVersion: kbld.k14s.io/v1alpha1
+  kind: Config
+  sources:
+  - image: controller
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/controller]
+  - image: webhook
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/webhook]
+  - image: build-init
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/build-init]
+  - image: build-waiter
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/build-waiter]
+  - image: rebase
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/rebase]
+  - image: completion
+    path: .
+    pack:
+      build:
+        builder: paketobuildpacks/builder-jammy-tiny
+        rawOptions: [--env,BP_GO_TARGETS=./cmd/completion]
+  overrides:
+  - image: build-init-windows
+    newImage: build-init-windows
+    preresolved: true
+  - image: completion-windows
+    newImage: completion-windows
+    preresolved: true
+  - image: lifecycle
+    newImage: gcr.io/cf-build-service-public/kpack/lifecycle
+  destinations:
+  - image: controller
+    newImage: harbor-repo.vmware.com/lever/kpack/controller
+  - image: webhook
+    newImage: harbor-repo.vmware.com/lever/kpack/webhook
+  - image: build-init
+    newImage: harbor-repo.vmware.com/lever/kpack/build-init
+  - image: build-waiter
+    newImage: harbor-repo.vmware.com/lever/kpack/build-waiter
+  - image: rebase
+    newImage: harbor-repo.vmware.com/lever/kpack/rebase
+  - image: completion
+    newImage: harbor-repo.vmware.com/lever/kpack/completion
