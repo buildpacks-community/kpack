@@ -14,7 +14,9 @@ spec:
           - ytt:
               paths:
               - config
-          - kbld: {}
+          - kbld:
+              paths:
+              - kbld-config.yaml
       export:
       - includePaths:
         - config
