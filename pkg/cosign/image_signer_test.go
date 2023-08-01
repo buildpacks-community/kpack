@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http/httptest"
 	"net/url"
@@ -45,6 +44,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		reader            *os.File
 		writer            *os.File
 		expectedImageName string
+		imageDigest       string
 		stopRegistry      func()
 		imageCleanup      func()
 		repo              string
@@ -56,7 +56,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 		expectedImageName = path.Join(repo, "test-cosign-image")
 
-		imageCleanup = pushRandomImage(t, expectedImageName)
+		imageDigest, imageCleanup = pushRandomImage(t, expectedImageName)
 	})
 
 	it.After(func() {
@@ -86,7 +86,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 				passwordFile1 = path.Join(secretLocation, "secret-name-1", "cosign.password")
 				passwordFile2 = path.Join(secretLocation, "secret-name-2", "cosign.password")
 
-				report = createReportToml(t, expectedImageName)
+				report = createReportToml(t, expectedImageName, imageDigest)
 
 				os.Unsetenv(cosignRepositoryEnv)
 				os.Unsetenv(cosignDockerMediaTypesEnv)
@@ -101,7 +101,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
-					assert.Equal(t, []string{expectedImageName}, imgs)
+					expectedImageNameWithDigest := expectedImageName + "@" + imageDigest
+					assert.Equal(t, []string{expectedImageNameWithDigest}, imgs)
 
 					// Test key location
 					assert.Contains(t, ko.KeyRef, "cosign.key")
@@ -163,7 +164,8 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 					ro *options.RootOptions, ko options.KeyOpts, signOpts options.SignOptions, imgs []string,
 				) error {
 					t.Helper()
-					assert.Equal(t, []string{expectedImageName}, imgs)
+					expectedImageNameWithDigest := expectedImageName + "@" + imageDigest
+					assert.Equal(t, []string{expectedImageNameWithDigest}, imgs)
 					assert.Contains(t, ko.KeyRef, "cosign.key")
 					assert.Contains(t, ko.KeyRef, secretLocation)
 					assert.Equal(t, []string{"annotationKey1=value1"}, signOpts.AnnotationOptions.Annotations)
@@ -378,7 +380,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 		when("signing returns error", func() {
 			it("has no cosign secrets", func() {
 				secretLocation = t.TempDir()
-				report = createReportToml(t, expectedImageName)
+				report = createReportToml(t, expectedImageName, imageDigest)
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
@@ -397,7 +399,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			it("has invalid directory", func() {
 				secretLocation = "/fake/location/that/doesnt/exist"
-				report = createReportToml(t, expectedImageName)
+				report = createReportToml(t, expectedImageName, imageDigest)
 
 				cliSignCmdCallCount := 0
 				cliSignCmd := func(
@@ -442,7 +444,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 			imgName := path.Join(repo, "cosign-e2e")
 
-			cleanup := pushRandomImage(t, imgName)
+			_, cleanup := pushRandomImage(t, imgName)
 			defer cleanup()
 
 			password := ""
@@ -515,10 +517,12 @@ func createCosignKeyFiles(t *testing.T) string {
 	return dirPath
 }
 
-func createReportToml(t *testing.T, imageRef string) platform.ExportReport {
+func createReportToml(t *testing.T, imageRef, imageDigest string) platform.ExportReport {
 	var r platform.ExportReport
 	_, err := toml.Decode(fmt.Sprintf(`[image]
 	tags = ["%s"]`, imageRef), &r)
+	_, err = toml.Decode(fmt.Sprintf(`[image]
+	digest = "%s"`, imageDigest), &r)
 	assert.Nil(t, err)
 	return r
 }
@@ -544,7 +548,7 @@ func reg(t *testing.T) (string, func()) {
 	return u.Host, r.Close
 }
 
-func pushRandomImage(t *testing.T, imageRef string) func() {
+func pushRandomImage(t *testing.T, imageRef string) (string, func()) {
 	ref, err := name.ParseReference(imageRef, name.WeakValidation)
 	assert.Nil(t, err)
 
@@ -559,13 +563,17 @@ func pushRandomImage(t *testing.T, imageRef string) func() {
 	_, err = remote.Get(ref, regClientOpts...)
 	assert.Nil(t, err)
 
+	imgHash, err := img.Digest()
+	assert.Nil(t, err)
+	imgDigest := imgHash.String()
+
 	cleanup := func() {
 		_ = remote.Delete(ref, regClientOpts...)
 		ref, _ := ociremote.SignatureTag(ref, ociremote.WithRemoteOptions(regClientOpts...))
 		_ = remote.Delete(ref, regClientOpts...)
 	}
 
-	return cleanup
+	return imgDigest, cleanup
 }
 
 func registryClientOpts(ctx context.Context) []remote.Option {
@@ -587,16 +595,16 @@ func keypair(t *testing.T, dirPath, secretName, password string) {
 	assert.Nil(t, err)
 
 	privKeyPath := filepath.Join(dirPath, secretName, "cosign.key")
-	err = ioutil.WriteFile(privKeyPath, keys.PrivateBytes, 0600)
+	err = os.WriteFile(privKeyPath, keys.PrivateBytes, 0600)
 	assert.Nil(t, err)
 
 	pubKeyPath := filepath.Join(dirPath, secretName, "cosign.pub")
-	err = ioutil.WriteFile(pubKeyPath, keys.PublicBytes, 0600)
+	err = os.WriteFile(pubKeyPath, keys.PublicBytes, 0600)
 	assert.Nil(t, err)
 
 	passwordPath := filepath.Join(dirPath, secretName, "cosign.password")
 	passwordBytes, _ := passFunc(true)
-	err = ioutil.WriteFile(passwordPath, passwordBytes, 0600)
+	err = os.WriteFile(passwordPath, passwordBytes, 0600)
 	assert.Nil(t, err)
 }
 

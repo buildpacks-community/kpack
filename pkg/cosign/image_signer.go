@@ -46,9 +46,13 @@ func (s *ImageSigner) Sign(ro *options.RootOptions, report platform.ExportReport
 	}
 
 	refImage := report.Image.Tags[0]
+	digest := ""
+	if report.Image.Digest != "" {
+		digest = "@" + report.Image.Digest
+	}
 
 	for _, cosignSecret := range cosignSecrets {
-		if err := s.sign(ro, refImage, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
+		if err := s.sign(ro, refImage, digest, secretLocation, cosignSecret, annotations, cosignRepositories, cosignDockerMediaTypes); err != nil {
 			return err
 		}
 	}
@@ -56,7 +60,7 @@ func (s *ImageSigner) Sign(ro *options.RootOptions, report platform.ExportReport
 	return nil
 }
 
-func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) sign(ro *options.RootOptions, refImage, digest, secretLocation, cosignSecret string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignKeyFile := fmt.Sprintf("%s/%s/cosign.key", secretLocation, cosignSecret)
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
@@ -103,7 +107,7 @@ func (s *ImageSigner) sign(ro *options.RootOptions, refImage, secretLocation, co
 		ro,
 		ko,
 		signOptions,
-		[]string{refImage}); err != nil {
+		[]string{refImage + digest}); err != nil {
 		return errors.Errorf("unable to sign image with %s: %v", cosignKeyFile, err)
 	}
 
