@@ -240,6 +240,7 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 			{
 				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionTrue,
+				Reason:             ReasonCompleted,
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
@@ -249,14 +250,30 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 				{
 					Type:               corev1alpha1.ConditionSucceeded,
 					Status:             corev1.ConditionTrue,
+					Reason:             ReasonCompleted,
 					LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 				},
+			}
+		}
+		for _, c := range pod.Status.InitContainerStatuses {
+			if c.State.Terminated != nil && c.State.Terminated.ExitCode != 0 && c.State.Terminated.Message != "" {
+				return corev1alpha1.Conditions{
+					{
+						Type:               corev1alpha1.ConditionSucceeded,
+						Status:             corev1.ConditionFalse,
+						Reason:             string(corev1.PodFailed),
+						Message:            c.Name + " failed: " + c.State.Terminated.Message,
+						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+					},
+				}
 			}
 		}
 		return corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionSucceeded,
 				Status:             corev1.ConditionFalse,
+				Reason:             string(corev1.PodFailed),
+				Message:            pod.Status.Message,
 				LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 			},
 		}
