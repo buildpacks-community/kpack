@@ -22,6 +22,7 @@ import (
 	"github.com/pivotal/kpack/pkg/blob"
 	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/dir"
 	"github.com/pivotal/kpack/pkg/dockercreds"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/git"
@@ -32,6 +33,7 @@ var (
 	imageTag = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
 	runImage = flag.String("runImage", os.Getenv("RUN_IMAGE"), "The base image from which application images are built.")
 
+	dirPath         = flag.String("dir-path", os.Getenv("DIR_PATH"), "The directory where the source code is located.")
 	gitURL          = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
 	gitRevision     = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
 	blobURL         = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
@@ -217,6 +219,11 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 			Logger: logger,
 		}
 		return fetcher.Fetch(appDir, *blobURL, *stripComponents)
+	case *dirPath != "":
+		fetcher := dir.Fetcher{
+			Logger: logger,
+		}
+		return fetcher.Fetch(appDir, *dirPath)
 	case *registryImage != "":
 		registrySourcePullSecrets, err := dockercreds.ParseDockerConfigSecret(registrySourcePullSecretsDir)
 		if err != nil {
@@ -230,7 +237,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 		}
 		return fetcher.Fetch(appDir, *registryImage)
 	default:
-		return errors.New("no git url, blob url, or registry image provided")
+		return errors.New("no git url, blob url, local directory or registry image provided")
 	}
 }
 
