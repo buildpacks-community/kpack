@@ -39,7 +39,7 @@ func main() {
 	if (*build) == "" {
 		err = logs.NewBuildLogsClient(k8sClient).TailImage(context.Background(), os.Stdout, *image, *namespace)
 	} else {
-		err = logs.NewBuildLogsClient(k8sClient).Tail(context.Background(), os.Stdout, *image, *build, *namespace)
+		err = logs.NewBuildLogsClient(k8sClient).Tail(context.Background(), os.Stdout, *image, *build, *namespace, false)
 	}
 
 	if err != nil {

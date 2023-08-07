@@ -28,35 +28,35 @@ func NewBuildLogsClient(k8sClient k8sclient.Interface) *BuildLogsClient {
 	}
 }
 
-func (c *BuildLogsClient) Tail(ctx context.Context, writer io.Writer, image, build, namespace string) error {
+func (c *BuildLogsClient) Tail(ctx context.Context, writer io.Writer, image, build, namespace string, timestamp bool) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", buildapi.ImageLabel, image, buildapi.BuildNumberLabel, build),
-	}, true, true)
+	}, true, true, timestamp)
 }
 
 func (c *BuildLogsClient) TailImage(ctx context.Context, writer io.Writer, image, namespace string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s", buildapi.ImageLabel, image),
-	}, false, true)
+	}, false, true, false)
 }
 
 func (c *BuildLogsClient) GetImageLogs(ctx context.Context, writer io.Writer, image, namespace string) error {
 	return c.getPodLogs(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         false,
 		LabelSelector: fmt.Sprintf("%s=%s", buildapi.ImageLabel, image),
-	}, false)
+	}, false, false)
 }
 
 func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, namespace string, buildName string) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s", buildapi.BuildLabel, buildName),
-	}, true, true)
+	}, true, true, false)
 }
 
-func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool, follow bool) error {
+func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool, follow, timestamp bool) error {
 	readyContainers := make(chan readyContainer)
 
 	go func() {
@@ -69,7 +69,7 @@ func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namesp
 	}()
 
 	for container := range readyContainers {
-		err := c.streamLogsForContainer(ctx, writer, container, follow)
+		err := c.streamLogsForContainer(ctx, writer, container, follow, timestamp)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namesp
 	return nil
 }
 
-func (c *BuildLogsClient) getPodLogs(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, follow bool) error {
+func (c *BuildLogsClient) getPodLogs(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, follow, timestamp bool) error {
 	readyContainers, err := c.getContainers(ctx, namespace, listOptions)
 
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *BuildLogsClient) getPodLogs(ctx context.Context, writer io.Writer, name
 	}
 
 	for _, container := range readyContainers {
-		err := c.streamLogsForContainer(ctx, writer, container, follow)
+		err := c.streamLogsForContainer(ctx, writer, container, follow, timestamp)
 		if err != nil {
 			return err
 		}
@@ -188,15 +188,16 @@ func finished(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded
 }
 
-func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.Writer, readyContainer readyContainer, follow bool) error {
+func (c *BuildLogsClient) streamLogsForContainer(ctx context.Context, writer io.Writer, readyContainer readyContainer, follow, timestamp bool) error {
 	if _, alreadyProcessed := c.processed[readyContainer]; alreadyProcessed {
 		return nil
 	}
 	c.processed[readyContainer] = nil
 
 	logReadCloser, err := c.k8sClient.CoreV1().Pods(readyContainer.namespace).GetLogs(readyContainer.podName, &corev1.PodLogOptions{
-		Container: readyContainer.containerName,
-		Follow:    follow}).Stream(ctx)
+		Container:  readyContainer.containerName,
+		Follow:     follow,
+		Timestamps: timestamp}).Stream(ctx)
 	if err != nil {
 		return err
 	}
