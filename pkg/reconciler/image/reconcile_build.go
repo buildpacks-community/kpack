@@ -24,7 +24,7 @@ const (
 func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, latestBuild *buildapi.Build, sourceResolver *buildapi.SourceResolver, builder buildapi.BuilderResource, buildCacheName string) (buildapi.ImageStatus, error) {
 	currentBuildNumber, err := buildCounter(latestBuild)
 	if err != nil {
-		return buildapi.ImageStatus{}, err
+		return buildapi.ImageStatus{}, errors.Wrap(err, "error parsing the image build number")
 	}
 
 	result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
@@ -41,7 +41,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 		build := image.Build(sourceResolver, builder, latestBuild, result.ReasonsStr, result.ChangesStr, nextBuildNumber, priorityClass)
 		build, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Create(ctx, build, metav1.CreateOptions{})
 		if err != nil {
-			return buildapi.ImageStatus{}, err
+			return buildapi.ImageStatus{}, errors.WithMessage(err, fmt.Sprintf("error creating build '%s' in namespace '%s'", build.Name, build.Namespace))
 		}
 
 		return buildapi.ImageStatus{
@@ -72,7 +72,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 			BuildCacheName:             buildCacheName,
 		}, nil
 	default:
-		return buildapi.ImageStatus{}, errors.Errorf("unexpected build needed condition %s", result.ConditionStatus)
+		return buildapi.ImageStatus{}, errors.Errorf("Error: unexpected build needed condition %s", result.ConditionStatus)
 	}
 }
 
@@ -91,11 +91,11 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 	case buildNeeded == corev1.ConditionUnknown && !sourceResolver.Ready():
 		ready.Status = corev1.ConditionUnknown
 		ready.Reason = ResolverNotReadyReason
-		ready.Message = fmt.Sprintf("SourceResolver %s is not ready", sourceResolver.GetName())
+		ready.Message = fmt.Sprintf("Error: SourceResolver '%s' is not ready", sourceResolver.GetName())
 	case buildNeeded == corev1.ConditionUnknown && sourceResolver.Ready():
 		ready.Status = corev1.ConditionUnknown
 		ready.Reason = UnknownStateReason
-		ready.Message = "Build status unknown"
+		ready.Message = "Error: Build status unknown"
 	case build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue():
 		ready.Status = corev1.ConditionTrue
 		ready.Reason = UpToDateReason
@@ -103,7 +103,7 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 	default:
 		ready.Status = unknownStatusIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded))
 		ready.Reason = BuildFailedReason
-		ready.Message = fmt.Sprintf("Build %s failed: %s", build.Name, defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), "unknown error"))
+		ready.Message = fmt.Sprintf("Error: Build '%s' in namespace '%s' failed: %s", build.Name, build.Namespace, defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), "unknown error"))
 	}
 
 	return corev1alpha1.Conditions{ready, builderCondition(builder)}
@@ -146,10 +146,10 @@ func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 }
 
 func builderError(builder buildapi.BuilderResource) string {
-	errorMessage := fmt.Sprintf("Builder %s is not ready", builder.GetName())
+	errorMessage := fmt.Sprintf("Error: Builder '%s' is not ready in namespace '%s'", builder.GetName(), builder.GetNamespace())
 
 	if message := builder.ConditionReadyMessage(); message != "" {
-		errorMessage = fmt.Sprintf("%s: %s", errorMessage, message)
+		errorMessage = fmt.Sprintf("%s; Message: %s", errorMessage, message)
 	}
 
 	return errorMessage
@@ -161,7 +161,7 @@ func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
 			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionUnknown,
 			Reason:             BuildRunningReason,
-			Message:            fmt.Sprintf("%s is executing", build.Name),
+			Message:            fmt.Sprintf("Build '%s' is executing", build.Name),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 		{
@@ -184,7 +184,7 @@ func buildCounter(build *buildapi.Build) (int64, error) {
 
 func buildRunningCondition(build *buildapi.Build, builder buildapi.BuilderResource) corev1alpha1.Conditions {
 	message := defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded),
-		fmt.Sprintf("%s is executing", build.Name))
+		fmt.Sprintf("Build '%s' is executing", build.Name))
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,

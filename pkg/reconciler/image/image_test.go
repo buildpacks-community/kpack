@@ -311,7 +311,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
 											Reason:  "BuilderNotFound",
-											Message: "Unable to find builder builder-name.",
+											Message: "Error: Unable to find builder 'builder-name' in namespace ''.",
 										},
 									},
 								},
@@ -769,7 +769,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 					WantCreates: nil,
 				})
 
-				assert.Equal(t, "SourceResolver image-name-source is not ready", imageWithBuilder.Status.GetCondition(corev1alpha1.ConditionReady).Message)
+				assert.Equal(t, "Error: SourceResolver 'image-name-source' is not ready", imageWithBuilder.Status.GetCondition(corev1alpha1.ConditionReady).Message)
 			})
 
 			it("does not schedule a build if the builder is not ready", func() {
@@ -799,13 +799,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    corev1alpha1.ConditionReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
-												Message: "Builder builder-name is not ready: something went wrong",
+												Message: "Error: Builder 'builder-name' is not ready in namespace 'some-namespace'; Message: something went wrong",
 											},
 											{
 												Type:    buildapi.ConditionBuilderReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
-												Message: "Builder builder-name is not ready: something went wrong",
+												Message: "Error: Builder 'builder-name' is not ready in namespace 'some-namespace'; Message: something went wrong",
 											},
 										},
 									},
@@ -2301,13 +2301,13 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    corev1alpha1.ConditionReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
-												Message: "Builder builder-name is not ready",
+												Message: "Error: Builder 'builder-name' is not ready in namespace 'some-namespace'",
 											},
 											{
 												Type:    buildapi.ConditionBuilderReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  buildapi.BuilderNotReady,
-												Message: "Builder builder-name is not ready",
+												Message: "Error: Builder 'builder-name' is not ready in namespace 'some-namespace'",
 											},
 										},
 									},
@@ -2387,7 +2387,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    corev1alpha1.ConditionReady,
 												Status:  corev1.ConditionFalse,
 												Reason:  image.BuildFailedReason,
-												Message: fmt.Sprintf("Build %s failed: %s", failedBuild.Name, failureMessage),
+												Message: fmt.Sprintf("Error: Build '%s' in namespace '%s' failed: %s", failedBuild.Name, failedBuild.Namespace, failureMessage),
 											},
 											{
 												Type:   buildapi.ConditionBuilderReady,
@@ -2409,7 +2409,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				it("deletes a failed build if more than the limit", func() {
 					imageWithBuilder.Spec.FailedBuildHistoryLimit = limit(4)
 					imageWithBuilder.Status.LatestBuildRef = "image-name-build-5"
-					imageWithBuilder.Status.Conditions = conditionNotReady(imageWithBuilder.Status.LatestBuildRef)
+					imageWithBuilder.Status.Conditions = conditionNotReady(imageWithBuilder)
 					imageWithBuilder.Status.BuildCounter = 5
 					sourceResolver := resolvedSourceResolver(imageWithBuilder)
 
@@ -2606,7 +2606,7 @@ func conditionReadyUnknown() corev1alpha1.Conditions {
 			Type:    corev1alpha1.ConditionReady,
 			Status:  corev1.ConditionUnknown,
 			Reason:  image.ResolverNotReadyReason,
-			Message: "SourceResolver image-name-source is not ready",
+			Message: "Error: SourceResolver 'image-name-source' is not ready",
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
@@ -2622,7 +2622,7 @@ func conditionBuildExecuting(buildName string) corev1alpha1.Conditions {
 			Type:    corev1alpha1.ConditionReady,
 			Status:  corev1.ConditionUnknown,
 			Reason:  image.BuildRunningReason,
-			Message: fmt.Sprintf("%s is executing", buildName),
+			Message: fmt.Sprintf("Build '%s' is executing", buildName),
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,
@@ -2647,13 +2647,13 @@ func conditionReady() corev1alpha1.Conditions {
 	}
 }
 
-func conditionNotReady(failedBuild string) corev1alpha1.Conditions {
+func conditionNotReady(failedBuild *buildapi.Image) corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
 			Type:    corev1alpha1.ConditionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  image.BuildFailedReason,
-			Message: fmt.Sprintf("Build %s failed: ", failedBuild),
+			Message: fmt.Sprintf("Error: Build '%s' in namespace '%s' failed: ", failedBuild.Status.LatestBuildRef, failedBuild.Namespace),
 		},
 		{
 			Type:   buildapi.ConditionBuilderReady,

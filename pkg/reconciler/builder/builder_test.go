@@ -446,7 +446,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
-											Message: "stack some-stack is not ready",
+											Message: "Error: clusterstack 'some-stack' is not ready",
 										},
 									},
 								},

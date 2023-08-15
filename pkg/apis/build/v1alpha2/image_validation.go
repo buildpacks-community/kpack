@@ -72,7 +72,7 @@ func (i *Image) validateName(imageName string) *apis.FieldError {
 	msgs := validation.IsValidLabelValue(imageName)
 	if len(msgs) > 0 {
 		return &apis.FieldError{
-			Message: fmt.Sprintf("invalid image name: %s, name must be a a valid label", imageName),
+			Message: fmt.Sprintf("invalid image name: %s, name must be a valid label", imageName),
 			Paths:   []string{""},
 			Details: strings.Join(msgs, ","),
 		}
