@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -101,32 +100,8 @@ func main() {
 
 	keychain := authn.NewMultiKeychain(k8sNodeKeychain, creds)
 
-	metadataRetriever := cnb.RemoteMetadataRetriever{
-		ImageFetcher: &registry.Client{},
-	}
-
 	if len(report.Image.Tags) == 0 {
 		log.Fatal("no image found in report")
-	}
-
-	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
-
-	buildMetadata, err := metadataRetriever.GetBuildMetadata(builtImageRef, cacheTag, keychain)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data, err := cnb.CompressBuildMetadata(buildMetadata)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(terminationMsgPath), 0777); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(terminationMsgPath, data, 0666); err != nil {
-		log.Fatal(err)
 	}
 
 	if hasCosign() || notaryV1URL != "" {
@@ -148,6 +123,30 @@ func main() {
 		if err := signImage(report, keychain); err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	metadataRetriever := cnb.RemoteMetadataRetriever{
+		ImageFetcher: &registry.Client{},
+	}
+
+	builtImageRef := fmt.Sprintf("%s@%s", report.Image.Tags[0], report.Image.Digest)
+
+	buildMetadata, err := metadataRetriever.GetBuildMetadata(builtImageRef, cacheTag, keychain)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := cnb.CompressBuildMetadata(buildMetadata)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(terminationMsgPath), 0777); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.WriteFile(terminationMsgPath, data, 0666); err != nil {
+		log.Fatal(err)
 	}
 
 	logger.Println("Build successful")
