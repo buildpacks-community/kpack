@@ -200,7 +200,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 	}
 
 	if !clusterStack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
-		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
+		return buildapi.BuilderRecord{}, errors.Errorf("Error: clusterstack '%s' is not ready", clusterStack.Name)
 	}
 
 	builderKeychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{

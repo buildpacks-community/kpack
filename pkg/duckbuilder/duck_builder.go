@@ -20,6 +20,10 @@ func (b *DuckBuilder) GetName() string {
 	return b.Name
 }
 
+func (b *DuckBuilder) GetNamespace() string {
+	return b.Namespace
+}
+
 func (b *DuckBuilder) GetKind() string {
 	return b.Kind
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"knative.dev/pkg/system"
 	"sync/atomic"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -167,7 +168,7 @@ func (l *LifecycleProvider) isLifecycleLoaded() bool {
 func (l *LifecycleProvider) lifecycle() (*lifecycle, error) {
 	d, ok := l.lifecycleData.Load().(configmapRead)
 	if !ok {
-		return nil, errors.New("lifecycle image has not been loaded")
+		return nil, errors.Errorf("Error: lifecycle image has not been loaded from ConfigMap '%s' in namespace '%s'", LifecycleConfigName, system.Namespace())
 	}
 
 	return d.lifecycle, d.err

@@ -21,7 +21,7 @@ func (im *Image) BuilderNotFound() corev1alpha1.Conditions {
 			Type:               corev1alpha1.ConditionReady,
 			Status:             corev1.ConditionFalse,
 			Reason:             BuilderNotFound,
-			Message:            fmt.Sprintf("Unable to find builder %s.", im.Spec.Builder.Name),
+			Message:            fmt.Sprintf("Error: Unable to find builder '%s' in namespace '%s'.", im.Spec.Builder.Name, im.Spec.Builder.Namespace),
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
 	}

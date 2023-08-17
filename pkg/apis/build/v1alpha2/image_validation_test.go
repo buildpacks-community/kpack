@@ -282,12 +282,12 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("image name is too long", func() {
 			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
-			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a a valid label: metadata.name\nmust be no more than 63 characters"))
+			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a valid label: metadata.name\nmust be no more than 63 characters"))
 		})
 
 		it("invalid image name format", func() {
 			image.ObjectMeta.Name = "@NOT!!!VALID!!!"
-			errMsg := "invalid image name: @NOT!!!VALID!!!, name must be a a valid label: metadata.name\na valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"
+			errMsg := "invalid image name: @NOT!!!VALID!!!, name must be a valid label: metadata.name\na valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"
 
 			assertValidationError(image, ctx, errors.New(errMsg))
 		})

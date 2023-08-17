@@ -57,6 +57,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 
 	builder := &TestBuilderResource{
 		Name:         "builder-Name",
+		Namespace:    "test-ns",
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
 		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
@@ -804,6 +805,7 @@ type TestBuilderResource struct {
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
+	Namespace        string
 	Kind             string
 }
 
@@ -836,4 +838,8 @@ func (t TestBuilderResource) GetKind() string {
 
 func (t TestBuilderResource) ConditionReadyMessage() string {
 	return ""
+}
+
+func (t TestBuilderResource) GetNamespace() string {
+	return t.Namespace
 }

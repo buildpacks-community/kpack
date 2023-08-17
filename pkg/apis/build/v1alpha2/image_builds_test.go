@@ -378,6 +378,7 @@ type TestBuilderResource struct {
 	LatestImage      string
 	LatestRunImage   string
 	Name             string
+	Namespace        string
 }
 
 func (t TestBuilderResource) ConditionReadyMessage() string {
@@ -409,4 +410,8 @@ func (t TestBuilderResource) GetName() string {
 
 func (t TestBuilderResource) GetKind() string {
 	return t.Kind
+}
+
+func (t TestBuilderResource) GetNamespace() string {
+	return t.Namespace
 }
