@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -40,7 +40,7 @@ type ImageSigner struct {
 	Factory RepositoryFactory
 }
 
-func (s *ImageSigner) Sign(url, notarySecretDir string, report platform.ExportReport, keychain authn.Keychain) error {
+func (s *ImageSigner) Sign(url, notarySecretDir string, report files.Report, keychain authn.Keychain) error {
 	gun, targets, err := s.makeGUNAndTargets(report, keychain)
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func (s *ImageSigner) Sign(url, notarySecretDir string, report platform.ExportRe
 	return nil
 }
 
-func (s *ImageSigner) makeGUNAndTargets(report platform.ExportReport, keychain authn.Keychain) (data.GUN, []*client.Target, error) {
+func (s *ImageSigner) makeGUNAndTargets(report files.Report, keychain authn.Keychain) (data.GUN, []*client.Target, error) {
 	gun := data.GUN("")
 	var targets []*client.Target
 	for _, tag := range report.Image.Tags {

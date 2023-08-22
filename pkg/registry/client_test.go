@@ -66,7 +66,6 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 						return
 					}
 					writer.WriteHeader(200)
-
 					writer.Write([]byte(sampleManifest))
 				})
 
@@ -161,7 +160,7 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				handler.HandleFunc("/v2/some/image/manifests/tag", func(writer http.ResponseWriter, request *http.Request) {
-					if request.Method == "GET" {
+					if request.Method == "GET" || request.Method == "HEAD" {
 						writer.WriteHeader(404)
 						return
 					}
@@ -175,7 +174,16 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 						t.Errorf("unexpected %s to %s", request.Method, request.URL)
 						writer.WriteHeader(404)
 						return
+
 					}
+
+					//this happens after the manifest is pushed
+					if request.Method == "HEAD" {
+						writer.Header().Set("Content-Type", "application/vnd.docker.distribution.manifest.v2+json")
+						writer.Header().Set("Content-Length", "2")
+						writer.Header().Set("Docker-Content-Digest", requireNoError(t, image.Digest).String())
+					}
+
 					assert.Regexp(t, regexp.MustCompile("/v2/some/image/manifests/\\d{14}"), request.RequestURI)
 					numberOfAdditionalTagSaves++
 
@@ -201,14 +209,11 @@ func testClient(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, numberOfAdditionalTagSaves, 1)
 			})
 
-			it("does not save images if exisiting image already exisits", func() {
+			it("does not save images if existing image already exists", func() {
 				image := randomImage(t, layerCount)
 
 				handler.HandleFunc("/v2/some/image/manifests/tag", func(writer http.ResponseWriter, request *http.Request) {
-					configFile, err := image.RawManifest()
-					require.NoError(t, err)
-
-					writer.Write(configFile)
+					writer.Write(requireNoError(t, image.RawManifest))
 					writer.WriteHeader(200)
 				})
 
@@ -289,4 +294,10 @@ func assertNetworkErrorOn(t *testing.T, expected bool, fn func() error) {
 	} else {
 		require.False(t, errors.As(err, &networkError))
 	}
+}
+
+func requireNoError[O any](t *testing.T, f func() (O, error)) O {
+	out, err := f()
+	assert.NoError(t, err)
+	return out
 }
