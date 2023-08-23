@@ -5,12 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +21,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -57,6 +55,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		fakeMetadataRetriever  = &buildfakes.FakeMetadataRetriever{}
 		keychainFactory        = &registryfakes.FakeKeychainFactory{}
 		podGenerator           = &testPodGenerator{}
+		podProgressLogger      = &testPodProgressLogger{}
 		ctx                    = context.Background()
 		injectedSidecarSupport = false
 		reactors               = make([]reactor, 0)
@@ -72,6 +71,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 			eventRecorder := record.NewFakeRecorder(10)
 			actionRecorderList := rtesting.ActionRecorderList{fakeClient, k8sfakeClient}
+
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
@@ -82,6 +82,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				MetadataRetriever:      fakeMetadataRetriever,
 				PodLister:              listers.GetPodLister(),
 				PodGenerator:           podGenerator,
+				PodProgressLogger:      podProgressLogger,
 				InjectedSidecarSupport: injectedSidecarSupport,
 			}
 
@@ -539,7 +540,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				compressedBuildMetadata, err := ioutil.ReadFile(filepath.Join("testdata", "metadata"))
+				compressedBuildMetadata, err := os.ReadFile(filepath.Join("testdata", "metadata"))
 				require.NoError(t, err)
 
 				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
@@ -906,7 +907,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 												Type:    corev1alpha1.ConditionSucceeded,
 												Status:  corev1.ConditionFalse,
 												Reason:  string(corev1.PodFailed),
-												Message: "prepare failed: Errors",
+												Message: "Error:  Fake container logs",
 											},
 										},
 									},
@@ -991,6 +992,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 								Terminated: &corev1.ContainerStateTerminated{
 									ExitCode:    1,
 									Reason:      "Terminated",
+									Message:     "Container prepare terminated with error",
 									ContainerID: "container.ID",
 								},
 							},
@@ -1027,7 +1029,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 													Type:    corev1alpha1.ConditionSucceeded,
 													Status:  corev1.ConditionFalse,
 													Reason:  string(corev1.PodFailed),
-													Message: "Something bad happened",
+													Message: "Error: Something bad happened Fake container logs",
 												},
 											},
 										},
@@ -1037,6 +1039,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 												Terminated: &corev1.ContainerStateTerminated{
 													ExitCode:    1,
 													Reason:      "Terminated",
+													Message:     "Container prepare terminated with error",
 													ContainerID: "container.ID",
 												},
 											},
@@ -1390,4 +1393,15 @@ type reactor struct {
 	verb         string
 	resource     string
 	reactionFunc clientgotesting.ReactionFunc
+}
+
+type testPodProgressLogger struct {
+	returnErr error
+}
+
+func (p testPodProgressLogger) GetTerminationMessage(pod *corev1.Pod, s *corev1.ContainerStatus) (string, error) {
+	if p.returnErr != nil {
+		return "error", p.returnErr
+	}
+	return " Fake container logs", nil
 }

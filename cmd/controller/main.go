@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"log"
 	"net/http"
 	"os"
@@ -195,7 +196,11 @@ func main() {
 		KeychainFactory:   keychainFactory,
 	}
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, keychainFactory, *injectedSidecarSupport)
+	podProgressLogger := &buildchange.ProgressLogger{
+		K8sClient: k8sClient,
+	}
+
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer)
