@@ -169,7 +169,7 @@ type testHandler struct {
 	sync.Mutex
 }
 
-func (t *testHandler) OnAdd(obj interface{}) {
+func (t *testHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	t.Lock()
 	defer t.Unlock()
 	t.added = append(t.added, obj)

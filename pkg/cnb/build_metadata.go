@@ -9,6 +9,7 @@ import (
 
 	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -77,14 +78,14 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (builtImage, error
 		return builtImage{}, nil
 	}
 
-	var buildMetadata platform.BuildMetadata
+	var buildMetadata files.BuildMetadata
 	err = imagehelpers.GetLabel(appImage, platform.BuildMetadataLabel, &buildMetadata)
 	if err != nil {
 		return builtImage{}, err
 	}
 
 	var layerMetadata appLayersMetadata
-	err = imagehelpers.GetLabel(appImage, platform.LayerMetadataLabel, &layerMetadata)
+	err = imagehelpers.GetLabel(appImage, platform.LifecycleMetadataLabel, &layerMetadata)
 	if err != nil {
 		return builtImage{}, err
 	}

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/pkg/errors"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
 )
@@ -31,7 +31,7 @@ func NewImageSigner(logger *log.Logger, signFunc SignFunc) *ImageSigner {
 	}
 }
 
-func (s *ImageSigner) Sign(ro *options.RootOptions, report platform.ExportReport, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
+func (s *ImageSigner) Sign(ro *options.RootOptions, report files.Report, secretLocation string, annotations, cosignRepositories, cosignDockerMediaTypes map[string]interface{}) error {
 	cosignSecrets, err := findCosignSecrets(secretLocation)
 	if err != nil {
 		return errors.Errorf("no keys found for cosign signing: %v\n", err)
