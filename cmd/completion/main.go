@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
@@ -68,7 +68,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	var report platform.ExportReport
+	var report files.Report
 	_, err := toml.DecodeFile(reportFilePath, &report)
 	if err != nil {
 		log.Fatal(err, "error decoding report toml file")
@@ -152,7 +152,7 @@ func main() {
 	logger.Println("Build successful")
 }
 
-func signImage(report platform.ExportReport, keychain authn.Keychain) error {
+func signImage(report files.Report, keychain authn.Keychain) error {
 	if hasCosign() {
 		cosignSigner := cosign.NewImageSigner(logger, sign.SignCmd)
 
