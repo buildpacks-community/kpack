@@ -3,8 +3,17 @@ package build
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/google/go-containerregistry/pkg/authn"
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/buildchange"
+	"github.com/pivotal/kpack/pkg/buildpod"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -18,16 +27,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging/logkey"
-
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/buildpod"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
-	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -46,7 +45,11 @@ type PodGenerator interface {
 	Generate(context.Context, buildpod.BuildPodable) (*corev1.Pod, error)
 }
 
-func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, keychainFactory registry.KeychainFactory, injectedSidecarSupport bool) *controller.Impl {
+type PodProgressLogger interface {
+	GetTerminationMessage(pod *corev1.Pod, s *corev1.ContainerStatus) (string, error)
+}
+
+func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, podProgressLogger *buildchange.ProgressLogger, keychainFactory registry.KeychainFactory, injectedSidecarSupport bool) *controller.Impl {
 	c := &Reconciler{
 		Client:                 opt.Client,
 		K8sClient:              k8sClient,
@@ -54,6 +57,7 @@ func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8scli
 		Lister:                 informer.Lister(),
 		PodLister:              podInformer.Lister(),
 		PodGenerator:           podGenerator,
+		PodProgressLogger:      podProgressLogger,
 		KeychainFactory:        keychainFactory,
 		InjectedSidecarSupport: injectedSidecarSupport,
 	}
@@ -82,6 +86,7 @@ type Reconciler struct {
 	K8sClient              k8sclient.Interface
 	PodLister              v1Listers.PodLister
 	PodGenerator           PodGenerator
+	PodProgressLogger      PodProgressLogger
 	InjectedSidecarSupport bool
 }
 
@@ -172,7 +177,7 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 	build.Status.PodName = pod.Name
 	build.Status.StepStates = stepStates(pod)
 	build.Status.StepsCompleted = stepsCompleted(pod)
-	build.Status.Conditions = conditionForPod(pod, build.Status.StepsCompleted)
+	build.Status.Conditions = c.conditionForPod(pod, build.Status.StepsCompleted)
 	return nil
 }
 
@@ -233,7 +238,7 @@ func (c *Reconciler) reconcileBuildPod(ctx context.Context, build *buildapi.Buil
 	return pod, nil
 }
 
-func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Conditions {
+func (c *Reconciler) conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Conditions {
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
 		return corev1alpha1.Conditions{
@@ -255,14 +260,15 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 				},
 			}
 		}
-		for _, c := range pod.Status.InitContainerStatuses {
-			if c.State.Terminated != nil && c.State.Terminated.ExitCode != 0 && c.State.Terminated.Message != "" {
+		for _, s := range pod.Status.InitContainerStatuses {
+			if s.State.Terminated != nil && s.State.Terminated.ExitCode != 0 && s.State.Terminated.Message != "" {
+				terminationMessage, _ := c.PodProgressLogger.GetTerminationMessage(pod, &s)
 				return corev1alpha1.Conditions{
 					{
 						Type:               corev1alpha1.ConditionSucceeded,
 						Status:             corev1.ConditionFalse,
 						Reason:             string(corev1.PodFailed),
-						Message:            c.Name + " failed: " + c.State.Terminated.Message,
+						Message:            "Error: " + pod.Status.Message + terminationMessage,
 						LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 					},
 				}
@@ -305,14 +311,10 @@ func conditionForPod(pod *corev1.Pod, stepsCompleted []string) corev1alpha1.Cond
 
 func stepStates(pod *corev1.Pod) []corev1.ContainerState {
 	states := make([]corev1.ContainerState, 0, len(buildapi.BuildSteps()))
-	for _, s := range pod.Status.InitContainerStatuses {
+	for _, s := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 		if buildapi.IsBuildStep(s.Name) {
-			states = append(states, s.State)
-		}
-	}
-	for _, s := range pod.Status.ContainerStatuses {
-		if buildapi.IsBuildStep(s.Name) {
-			states = append(states, s.State)
+			state := createContainerStateForBuild(&s)
+			states = append(states, state)
 		}
 	}
 	return states
@@ -321,14 +323,14 @@ func stepStates(pod *corev1.Pod) []corev1.ContainerState {
 func stepsCompleted(pod *corev1.Pod) []string {
 	completed := make([]string, 0, len(buildapi.BuildSteps()))
 	for _, s := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
-		if buildStepCompleted(s) {
+		if buildStepCompleted(&s) {
 			completed = append(completed, s.Name)
 		}
 	}
 	return completed
 }
 
-func buildStepCompleted(s corev1.ContainerStatus) bool {
+func buildStepCompleted(s *corev1.ContainerStatus) bool {
 	return s.State.Terminated != nil && s.State.Terminated.ExitCode == 0 && buildapi.IsBuildStep(s.Name)
 }
 
@@ -384,4 +386,23 @@ func allContainersReady(pod *corev1.Pod) bool {
 	}
 
 	return ready == len(pod.Spec.Containers)
+}
+
+func createContainerStateForBuild(s *corev1.ContainerStatus) corev1.ContainerState {
+	switch {
+	case s.State.Terminated != nil:
+		if s.State.Terminated.Message == "" {
+			successStatus := "successfully"
+			if s.State.Terminated.ExitCode != 0 {
+				successStatus = "with error"
+			}
+			s.State.Terminated.Message = "Container " + s.Name + " terminated " + successStatus
+		}
+	case s.State.Waiting != nil:
+		if s.State.Waiting.Message == "" {
+			s.State.Waiting.Message = "Container " + s.Name + " waiting"
+		}
+	default:
+	}
+	return s.State
 }
