@@ -23,8 +23,8 @@ func testProgressLogger(t *testing.T, when spec.G, it spec.S) {
 		K8sClient: k8sClient,
 	}
 
-	when("Pod terminated successfully", func() {
-		it("returns the correct status for the container that terminated with an error", func() {
+	when("Pod terminated unsuccessfully", func() {
+		it("returns the status for the container that terminated with an error", func() {
 			pod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "some-name",
@@ -42,7 +42,7 @@ func testProgressLogger(t *testing.T, when spec.G, it spec.S) {
 
 			podTeminationMessage, err := pl.GetTerminationMessage(pod, containerStatus)
 			assert.NoError(t, err)
-			assert.Equal(t, " Container detect terminated with error : For more info use `kubectl logs -n test some-name -c prepare`", podTeminationMessage)
+			assert.Equal(t, " Container detect terminated with error fake logs: For more info use `kubectl logs -n test some-name -c prepare`", podTeminationMessage)
 		})
 	})
 }
