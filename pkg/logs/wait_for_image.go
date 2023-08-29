@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 	watchTools "k8s.io/client-go/tools/watch"
-
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 )
 
 type imageWaiter struct {
@@ -97,17 +97,22 @@ func imageFailure(name, statusMessage string) error {
 }
 
 func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {
-	doneChan := make(chan struct{})
-	defer func() { <-doneChan }()
+	err := w.imageBuildStarted(ctx, namespace, buildName)
+	if err != nil {
+		fmt.Fprintf(writer, "Build failed to start: %s", err)
+		return "", nil
+	} else {
+		doneChan := make(chan struct{})
+		defer func() { <-doneChan }()
 
-	go func() { // tail logs
-		defer close(doneChan)
-		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
-		if err != nil {
-			fmt.Fprintf(writer, "error tailing logs %s", err)
-		}
-	}()
-
+		go func() { // tail logs
+			defer close(doneChan)
+			err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
+			if err != nil {
+				fmt.Fprintf(writer, "error tailing logs %s", err)
+			}
+		}()
+	}
 	build, err := w.buildWatchUntil(ctx, namespace, buildName, filterErrors(buildHasResolved))
 	if err != nil {
 		return "", err
@@ -172,4 +177,17 @@ func filterErrors(condition watchTools.ConditionFunc) watchTools.ConditionFunc {
 
 		return condition(event)
 	}
+}
+
+func (w *imageWaiter) imageBuildStarted(ctx context.Context, namespace, buildName string) error {
+	build, err := w.KpackClient.KpackV1alpha1().Builds(namespace).Get(ctx, buildName, v1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded)
+	if condition.IsFalse() {
+		return errors.New(condition.Message)
+	}
+	return nil
 }

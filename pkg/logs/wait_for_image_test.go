@@ -6,6 +6,8 @@ import (
 	"io"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,9 +98,11 @@ func testWaitForImage(t *testing.T, when spec.G, it spec.S) {
 			_, err := clientset.KpackV1alpha1().Images(namespace).Create(context.TODO(), image, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			_, err = clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
+			build, err := clientset.KpackV1alpha1().Builds(namespace).Create(context.TODO(), successfulBuild, metav1.CreateOptions{})
 			require.NoError(t, err)
-
+			clientset.PrependReactor("get", "builds", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, build, nil
+			})
 			result, err := imageWaiter.Wait(context.TODO(), out, image)
 			assert.NoError(t, err)
 			assert.Equal(t, successfulBuild.Status.LatestImage, result)
