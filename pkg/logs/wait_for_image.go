@@ -99,20 +99,20 @@ func imageFailure(name, statusMessage string) error {
 func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace, buildName string) (string, error) {
 	err := w.imageBuildStarted(ctx, namespace, buildName)
 	if err != nil {
-		fmt.Fprintf(writer, "Build failed to start: %s", err)
-		return "", nil
-	} else {
-		doneChan := make(chan struct{})
-		defer func() { <-doneChan }()
-
-		go func() { // tail logs
-			defer close(doneChan)
-			err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
-			if err != nil {
-				fmt.Fprintf(writer, "error tailing logs %s", err)
-			}
-		}()
+		return "", err
 	}
+
+	doneChan := make(chan struct{})
+	defer func() { <-doneChan }()
+
+	go func() { // tail logs
+		defer close(doneChan)
+		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
+		if err != nil {
+			fmt.Fprintf(writer, "error tailing logs %s", err)
+		}
+	}()
+
 	build, err := w.buildWatchUntil(ctx, namespace, buildName, filterErrors(buildHasResolved))
 	if err != nil {
 		return "", err
@@ -187,7 +187,7 @@ func (w *imageWaiter) imageBuildStarted(ctx context.Context, namespace, buildNam
 
 	condition := build.Status.GetCondition(corev1alpha1.ConditionSucceeded)
 	if condition.IsFalse() {
-		return errors.New(condition.Message)
+		return buildFailure(condition.Message)
 	}
 	return nil
 }
