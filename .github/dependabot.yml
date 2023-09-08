@@ -5,6 +5,10 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+    - dependency-name: "k8s.io/api"
+    - dependency-name: "k8s.io/apimachinery"
+    - dependency-name: "k8s.io/client-go"
 
   # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
