@@ -9,4 +9,4 @@ We choose not to use GitHub issues for general usage questions and support, pref
 If you are reporting a bug, please help to speed up problem diagnosis by providing as much information as possible.  Ideally, that would include a small sample project that reproduces the problem..
 
 ## Slack
-The kpack community monitors [Kubernetes slack](https://kubernetes.slack.com/channels/kpack).  Before asking a question please search the history to see if the question has already been asked and answered. 
+The kpack community monitors [CNCF slack](https://cloud-native.slack.com/channels/buildpacks-kpack).  Before asking a question please search the history to see if the question has already been asked and answered.
