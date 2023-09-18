@@ -36,6 +36,7 @@ type BuilderImageMetadata struct {
 	Lifecycle   LifecycleMetadata          `json:"lifecycle"`
 	CreatedBy   CreatorMetadata            `json:"createdBy"`
 	Buildpacks  []DescriptiveBuildpackInfo `json:"buildpacks"`
+	Extensions  []DescriptiveBuildpackInfo `json:"extensions"`
 }
 
 type StackMetadata struct {

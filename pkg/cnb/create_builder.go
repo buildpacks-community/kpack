@@ -61,6 +61,20 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		builderBldr.AddGroup(buildpacks...)
 	}
 
+	for _, group := range spec.OrderExtensions {
+		extensions := make([]RemoteBuildpackRef, 0, len(group.Group))
+
+		for _, extension := range group.Group {
+			remoteExtension, err := fetcher.ResolveAndFetch(ctx, extension)
+			if err != nil {
+				return buildapi.BuilderRecord{}, err
+			}
+
+			extensions = append(extensions, remoteExtension.Optional(true))
+		}
+		builderBldr.AddExtensionsGroup(extensions...)
+	}
+
 	writeableImage, err := builderBldr.WriteableImage()
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
@@ -83,6 +97,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 			ID:       clusterStack.Status.Id,
 		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
+		Extensions:              buildpackMetadata(builderBldr.extensions()),
 		Order:                   builderBldr.order,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: fetcher.ClusterStoreObservedGeneration(),
