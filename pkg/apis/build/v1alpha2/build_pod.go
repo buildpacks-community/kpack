@@ -753,9 +753,10 @@ func (b *Build) useStackExtensions(pod *corev1.Pod) *corev1.Pod {
 		if container.Name == RestoreContainerName {
 			container.Args = append(container.Args, fmt.Sprintf("-build-image=%s", b.Spec.Builder.Image))
 		}
-
 		if container.Name == BuildContainerName {
+			rootUser := int64(0)
 			container.SecurityContext = &corev1.SecurityContext{
+				RunAsUser:                &rootUser,
 				RunAsNonRoot:             boolPointer(false),
 				AllowPrivilegeEscalation: boolPointer(true),
 				Privileged:               boolPointer(true),
