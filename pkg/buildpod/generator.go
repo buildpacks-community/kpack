@@ -27,6 +27,7 @@ import (
 
 const (
 	builderMetadataLabel = "io.buildpacks.builder.metadata"
+	extensionOrderLabel  = "io.buildpacks.buildpack.order-extensions"
 	cnbUserId            = "CNB_USER_ID"
 	cnbGroupId           = "CNB_GROUP_ID"
 )
@@ -254,13 +255,21 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 	}
 
 	return buildapi.BuildPodBuilderConfig{
-		StackID:      stackId,
-		RunImage:     metadata.Stack.RunImage.Image,
-		PlatformAPIs: append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
-		Uid:          uid,
-		Gid:          gid,
-		OS:           config.OS,
+		StackID:                stackId,
+		RunImage:               metadata.Stack.RunImage.Image,
+		PlatformAPIs:           append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
+		Uid:                    uid,
+		Gid:                    gid,
+		OS:                     config.OS,
+		StackExtensionsEnabled: hasExtensionMetadata(image),
 	}, nil
+}
+
+func hasExtensionMetadata(image ggcrv1.Image) bool {
+	_, err := imagehelpers.GetStringLabel(image, extensionOrderLabel)
+
+	// err will be not nil if the label is missing
+	return err == nil
 }
 
 func parseCNBID(image ggcrv1.Image, env string) (int64, error) {

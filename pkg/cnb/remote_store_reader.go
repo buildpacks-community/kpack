@@ -41,7 +41,7 @@ func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []core
 			layerMetadata := BuildpackLayerMetadata{}
 			err = imagehelpers.GetLabel(image, buildpackLayersLabel, &layerMetadata)
 			if err != nil {
-				if err2 := imagehelpers.GetLabel(image, "io.buildpacks.extension.layers", &layerMetadata); err2 != nil {
+				if err2 := imagehelpers.GetLabel(image, extensionLayersLabel, &layerMetadata); err2 != nil {
 					return err
 				}
 			}

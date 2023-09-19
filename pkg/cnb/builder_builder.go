@@ -175,7 +175,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	return imagehelpers.SetLabels(image, map[string]interface{}{
+	labels := map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
 		buildpackLayersLabel: buildpackLayerMetadata,
 		lifecycleApisLabel:   bb.LifecycleMetadata.APIs,
@@ -195,7 +195,14 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 			Buildpacks: buildpacks,
 			Extensions: extensions,
 		},
-	})
+	}
+
+	if len(bb.orderExtensions) > 0 {
+		labels[extensionOrderLabel] = bb.orderExtensions
+		labels[extensionLayersLabel] = extensionLayerMetadata
+	}
+
+	return imagehelpers.SetLabels(image, labels)
 }
 
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo, sortedExtensions []DescriptiveBuildpackInfo) error {

@@ -6,7 +6,9 @@ import (
 
 const (
 	buildpackOrderLabel    = "io.buildpacks.buildpack.order"
+	extensionOrderLabel    = "io.buildpacks.buildpack.order-extensions"
 	buildpackLayersLabel   = "io.buildpacks.buildpack.layers"
+	extensionLayersLabel   = "io.buildpacks.extension.layers"
 	buildpackMetadataLabel = "io.buildpacks.builder.metadata"
 	lifecycleVersionLabel  = "io.buildpacks.lifecycle.version"
 	lifecycleApisLabel     = "io.buildpacks.lifecycle.apis"

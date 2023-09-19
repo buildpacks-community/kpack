@@ -24,6 +24,7 @@ const (
 	DetectContainerName     = "detect"
 	RestoreContainerName    = "restore"
 	BuildContainerName      = "build"
+	ExtendContainerName     = "extend"
 	ExportContainerName     = "export"
 	RebaseContainerName     = "rebase"
 	CompletionContainerName = "completion"
@@ -125,12 +126,13 @@ func (c BuildContext) os() string {
 }
 
 type BuildPodBuilderConfig struct {
-	StackID      string
-	RunImage     string
-	Uid          int64
-	Gid          int64
-	PlatformAPIs []string
-	OS           string
+	StackID                string
+	RunImage               string
+	Uid                    int64
+	Gid                    int64
+	PlatformAPIs           []string
+	OS                     string
+	StackExtensionsEnabled bool
 }
 
 var (
@@ -628,6 +630,10 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		},
 	}
 
+	if buildContext.BuildPodBuilderConfig.StackExtensionsEnabled && buildContext.os() != "windows" {
+		pod = b.useStackExtensions(pod)
+	}
+
 	if buildContext.InjectedSidecarSupport && buildContext.os() != "windows" {
 		pod = b.useStandardContainers(images.BuildWaiterImage, pod)
 	}
@@ -657,6 +663,16 @@ func containerSecurityContext(config BuildPodBuilderConfig) *corev1.SecurityCont
 func podSecurityContext(config BuildPodBuilderConfig) *corev1.PodSecurityContext {
 	if config.OS == "windows" {
 		return nil
+	}
+
+	if config.StackExtensionsEnabled {
+		return &corev1.PodSecurityContext{
+			RunAsNonRoot:   boolPointer(false),
+			SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+			FSGroup:        &config.Gid,
+			RunAsUser:      &config.Uid,
+			RunAsGroup:     &config.Gid,
+		}
 	}
 
 	return &corev1.PodSecurityContext{
@@ -709,6 +725,52 @@ func setUpBuildWaiter(container corev1.Container, waitFile string) corev1.Contai
 	}
 	return container
 
+}
+
+func (b *Build) useStackExtensions(pod *corev1.Pod) *corev1.Pod {
+	lifecycleExperimentalEnvVar := corev1.EnvVar{Name: "CNB_EXPERIMENTAL_MODE", Value: "warn"}
+
+	kanikoVolume := corev1.Volume{
+		Name: "kaniko",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+
+	kanikoMount := corev1.VolumeMount{
+		Name:      "kaniko",
+		MountPath: "/kaniko",
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes, kanikoVolume)
+
+	for i := range pod.Spec.InitContainers[1:] {
+		container := pod.Spec.InitContainers[i]
+
+		container.Env = append(container.Env, lifecycleExperimentalEnvVar)
+		container.VolumeMounts = append(container.VolumeMounts, kanikoMount)
+
+		if container.Name == RestoreContainerName {
+			container.Args = append(container.Args, fmt.Sprintf("-build-image=%s", b.Spec.Builder.Image))
+		}
+
+		if container.Name == BuildContainerName {
+			container.SecurityContext = &corev1.SecurityContext{
+				RunAsNonRoot:             boolPointer(false),
+				AllowPrivilegeEscalation: boolPointer(true),
+				Privileged:               boolPointer(true),
+				SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+				Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+			}
+
+			container.Name = ExtendContainerName
+			container.Command = []string{"/cnb/lifecycle/extender"}
+		}
+
+		pod.Spec.InitContainers[i] = container
+	}
+
+	return pod
 }
 
 func (b *Build) useStandardContainers(buildWaiterImage string, pod *corev1.Pod) *corev1.Pod {
@@ -1084,7 +1146,7 @@ func (b *Build) setupCosignVolumes(secrets []corev1.Secret) ([]corev1.Volume, []
 }
 
 var (
-	supportedPlatformAPIVersions = []*semver.Version{semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
+	supportedPlatformAPIVersions = []*semver.Version{semver.MustParse("0.10"), semver.MustParse("0.9"), semver.MustParse("0.8"), semver.MustParse("0.7")}
 )
 
 func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, error) {
