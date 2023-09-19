@@ -35,8 +35,7 @@ type Interface interface {
 	KpackV1alpha2() kpackv1alpha2.KpackV1alpha2Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
 	kpackV1alpha1 *kpackv1alpha1.KpackV1alpha1Client

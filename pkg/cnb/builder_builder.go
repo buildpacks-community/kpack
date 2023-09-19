@@ -109,17 +109,15 @@ func (bb *builderBlder) AddExtensionsGroup(extensions ...RemoteBuildpackRef) {
 }
 
 func (bb *builderBlder) WriteableImage() (v1.Image, error) {
-	// Buildpacks
 	buildpacks := bb.buildpacks()
-
-	err := bb.validateBuilder(buildpacks)
-	if err != nil {
+	extensions := bb.extensions()
+	if err := bb.validateBuilder(buildpacks, extensions); err != nil {
 		return nil, err
 	}
 
+	// Buildpacks
 	buildpackLayerMetadata := BuildpackLayerMetadata{}
 	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers))
-
 	for _, key := range buildpacks {
 		layer := bb.buildpackLayers[key]
 		buildpackLayerMetadata.add(layer)
@@ -127,16 +125,8 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	}
 
 	// Extensions
-	extensions := bb.extensions()
-
-	err = bb.validateBuilder(extensions)
-	if err != nil {
-		return nil, err
-	}
-
 	extensionLayerMetadata := BuildpackLayerMetadata{}
 	extensionLayers := make([]v1.Layer, 0, len(bb.extensionLayers))
-
 	for _, key := range extensions {
 		layer := bb.extensionLayers[key]
 		extensionLayerMetadata.add(layer)
@@ -208,7 +198,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	})
 }
 
-func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
+func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo, sortedExtensions []DescriptiveBuildpackInfo) error {
 	platformApis := append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...)
 	err := validatePlatformApis(platformApis)
 	if err != nil {
@@ -218,9 +208,18 @@ func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackI
 	for _, bpInfo := range sortedBuildpacks {
 
 		bpLayerInfo := bb.buildpackLayers[bpInfo].BuildpackLayerInfo
-		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis))
+		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis), false)
 		if err != nil {
 			return errors.Wrapf(err, "validating buildpack %s", bpInfo)
+		}
+	}
+
+	for _, extensionInfo := range sortedExtensions {
+
+		extensionLayerInfo := bb.extensionLayers[extensionInfo].BuildpackLayerInfo
+		err := extensionLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis), true)
+		if err != nil {
+			return errors.Wrapf(err, "validating extension %s", extensionInfo)
 		}
 	}
 	return nil

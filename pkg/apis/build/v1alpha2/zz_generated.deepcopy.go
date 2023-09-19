@@ -461,8 +461,20 @@ func (in *BuilderRecord) DeepCopyInto(out *BuilderRecord) {
 		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
 		copy(*out, *in)
 	}
+	if in.Extensions != nil {
+		in, out := &in.Extensions, &out.Extensions
+		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
+		copy(*out, *in)
+	}
 	if in.Order != nil {
 		in, out := &in.Order, &out.Order
+		*out = make([]v1alpha1.OrderEntry, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.OrderExtensions != nil {
+		in, out := &in.OrderExtensions, &out.OrderExtensions
 		*out = make([]v1alpha1.OrderEntry, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
@@ -493,6 +505,13 @@ func (in *BuilderSpec) DeepCopyInto(out *BuilderSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.OrderExtensions != nil {
+		in, out := &in.OrderExtensions, &out.OrderExtensions
+		*out = make([]BuilderOrderEntry, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -515,8 +534,20 @@ func (in *BuilderStatus) DeepCopyInto(out *BuilderStatus) {
 		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
 		copy(*out, *in)
 	}
+	if in.BuilderExtensionsMetadata != nil {
+		in, out := &in.BuilderExtensionsMetadata, &out.BuilderExtensionsMetadata
+		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
+		copy(*out, *in)
+	}
 	if in.Order != nil {
 		in, out := &in.Order, &out.Order
+		*out = make([]v1alpha1.OrderEntry, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.OrderExtensions != nil {
+		in, out := &in.OrderExtensions, &out.OrderExtensions
 		*out = make([]v1alpha1.OrderEntry, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])

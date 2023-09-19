@@ -9,13 +9,18 @@ import (
 
 var anyStackMinimumVersion = semver.MustParse("0.5")
 
-func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins []string, relaxedMixinContract bool) error {
+func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins []string, relaxedMixinContract, isExtension bool) error {
 	if len(bl.Order) != 0 {
 		return nil //ignore meta-buildpacks
 	}
 
 	if !present(buildpackApis, bl.API) {
 		return errors.Errorf("unsupported buildpack api: %s, expecting: %s", bl.API, strings.Join(buildpackApis, ", "))
+	}
+
+	//we don't care about stacks with the extensions
+	if isExtension {
+		return nil
 	}
 
 	for _, s := range bl.Stacks {
