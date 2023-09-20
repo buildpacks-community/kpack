@@ -40,8 +40,6 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
 
 There is a weekly working group meeting to discuss all things kpack!
 
-The meeting takes place every Tuesday at 10 AM EST.
+The calendar and links are located on the [Buildpacks Community Page](https://buildpacks.io/community/)
 
-[This doc](https://docs.google.com/document/d/1I9n5pVsuos7mJPrzr5YbSPqSXymPaRbhVtcmSGEkUMc) contains the zoom link and notes, along with the recordings of previous meetings.
-
-Come join us in the [Kubernetes slack](https://kubernetes.slack.com/channels/kpack) as well!
+Come join us in the [CNCF slack](https://cloud-native.slack.com/channels/buildpacks-kpack) as well!
