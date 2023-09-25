@@ -3,7 +3,7 @@
 cd $(dirname "${BASH_SOURCE[0]}")/..
 
 if [ -z "$1" ]; then
-  echo "Usage: ./hack/apply.sh <DOCKER_REPO>"
+  echo "Usage: ./hack/apply.sh <registry namespace>"
   exit 0
 fi
 
