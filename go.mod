@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20230802154001-5c57feb120b3
-	github.com/buildpacks/lifecycle v0.17.0
+	github.com/buildpacks/lifecycle v0.17.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/google/go-cmp v0.5.9
