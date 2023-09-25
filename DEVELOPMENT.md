@@ -1,12 +1,23 @@
 ### Local Development Install
 
-#### When using public registries
+#### Create a cluster
 
 Access to a Kubernetes cluster is needed in order to install the kpack controllers.
 
+An easy way to get a cluster up and running is to use [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/).
+
+You'll also need:
+* [`go`](https://go.dev/doc/install)
+* [`pack`](https://buildpacks.io/docs/tools/pack/)
+* [`docker`](https://docs.docker.com/get-docker/)
+* [`ytt`](https://carvel.dev/ytt/docs/v0.44.0/install/)
+
+#### When using public registries
+
 ```bash
 kubectl cluster-info # ensure you have access to a cluster
-./hack/apply.sh <IMAGE/NAME> # <IMAGE/NAME> is a writable and publicly accessible location 
+docker login <registry namespace> # must be writable and publicly accessible; e.g., your Docker Hub username or gcr.io/<some-project>
+./hack/apply.sh <registry namespace>
 ```
 
 #### When using private registries
@@ -14,7 +25,7 @@ kubectl cluster-info # ensure you have access to a cluster
 Create a kubernetes secret with the registry creds
 
 ```bash
-kubectl create secret docker-registry regcreds -n kpack --docker-server=gcr.io --docker-username=_json_key --docker-password="$(cat gcp.json)"
+kubectl create secret docker-registry regcreds -n kpack --docker-server=gcr.io/<some-project> --docker-username=_json_key --docker-password="$(cat gcp.json)"
 ```
 
 Create an overlay to use those registry creds
@@ -65,64 +76,29 @@ EOF
 ### Running Unit Tests
 
 ```bash
-go test ./pkg/...
+make unit
 ```
 
 ### Running End-to-end Tests
-```bash
-go test ./test/...
-```
 
 * To run the e2e tests, kpack must be installed and running on a cluster
+* 🍿 These tests can take anywhere from 20-30 minutes depending on your setup
+
+```bash
+IMAGE_REGISTRY=gcr.io/<some-project> \
+  IMAGE_REGISTRY_USERNAME=_json_key \
+  IMAGE_REGISTRY_PASSWORD=$(cat gcp.json) \
+  make e2e
+```
+
+* The IMAGE_REGISTRY environment variable must point at a registry with local write access - e.g.
+
+```bash
+export IMAGE_REGISTRY="gcr.io/<some-project>"
+```
 
 * The KPACK_TEST_NAMESPACE_LABELS environment variable allows you to define additional labels for the test namespace, e.g.
 
 ```bash
 export KPACK_TEST_NAMESPACE_LABELS="istio-injection=disabled,purpose=test"
 ```
-
-* The IMAGE_REGISTRY environment variable must point at a registry with local write access 
-
-```bash
-IMAGE_REGISTRY=gcr.io/<some-project> go test ./test/...
-```
-
-### Libgit2 v1.3.0 Dependency and Installation
-
-Several unit tests depend upon libgit2 v1.3.0.
-
-__macOS Installation Instructions (Intel):__
-
-1. Install `cmake` and `pkg-config`
-```bash
-brew install cmake pkg-config
-```
-2. Verify no conflicting version of `libgit2` is installed
-
-```bash
-pkg-config --print-provides libgit2
-```
-
-You should expect output which reads either: `Package libgit2 was not found in the pkg-config search path` or `libgit2 = 1.3.0`. If a version of `libgit2` other than `1.3.0` is reported as installed, consider uninstalling `1.3.0` or running the unit tests in a different environment.
-
-3. Download `libgit2 v1.3.0` source code
-```bash
-mkdir libgit2-install && cd libgit2-install
-curl -L -O https://github.com/libgit2/libgit2/archive/refs/tags/v1.3.0.tar.gz
-```
-
-4. Compile and Install
-```bash
-tar -zxf libgit2-1.3.0.tar.gz
-cd libgit2-1.3.0
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_OSX_ARCHITECTURES="x86_64"
-cmake --build . --target install
-```
-
-5. Verify installation
-```bash
-pkg-config --print-provides libgit2
-```
-
-You should expect output which reads: `libgit2 = 1.3.0`
