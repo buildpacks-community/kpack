@@ -25,7 +25,7 @@ require (
 	github.com/theupdateframework/notary v0.7.0
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.22.4
 	github.com/whilp/git-urls v1.0.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.13.0
 	golang.org/x/net v0.15.0
 	golang.org/x/sync v0.3.0
@@ -100,7 +100,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.21.5 // indirect
 	github.com/aws/smithy-go v1.14.2 // indirect
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20230815210656-c8857611a995 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
