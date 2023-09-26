@@ -1,7 +1,6 @@
 package dockercreds
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,7 +25,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		testSecretsDir, err = ioutil.TempDir("", "test.pullsecrets")
+		testSecretsDir, err = os.MkdirTemp("", "test.pullsecrets")
 		require.NoError(t, err)
 	})
 
@@ -35,7 +34,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("parses .dockerconfigjson favoring auth key", func() {
-		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
   "auths": {
     "https://index.docker.io/v1/": {
       "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
@@ -61,7 +60,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("parses .dockerconfigjson setting auth key to username/password if unset", func() {
-		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
   "auths": {
     "https://index.docker.io/v1/": {
       "username": "testusername",
@@ -86,7 +85,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("parses .dockercfg favoring auth key", func() {
-		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "https://index.docker.io/v1/": {
     "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
     "username": "testusername",
@@ -110,7 +109,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("parses .dockercfg setting auth key to username/password if unset", func() {
-		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "https://index.docker.io/v1/": {
     "username": "testusername",
     "password": "testpassword"
@@ -133,7 +132,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("parses .dockercfg and .dockerconfigjson", func() {
-		err := ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
   "auths": {
     "https://index.docker.io/v1/": {
       "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
@@ -143,7 +142,7 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 		), os.ModePerm)
 		require.NoError(t, err)
 
-		err = ioutil.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
+		err = os.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "gcr.io": {
     "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
     "username": "testusername",
@@ -178,17 +177,17 @@ func testParseBasicAuthSecrets(t *testing.T, when spec.G, it spec.S) {
 		var testDir string
 		it.Before(func() {
 			var err error
-			testDir, err = ioutil.TempDir("", "docker-secret-parse-test")
+			testDir, err = os.MkdirTemp("", "docker-secret-parse-test")
 			require.NoError(t, err)
 
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "gcr-creds"), 0777))
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "dockerhub-creds"), 0777))
 
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "gcr-creds", corev1.BasicAuthUsernameKey), []byte("gcr-username"), 0600))
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "gcr-creds", corev1.BasicAuthPasswordKey), []byte("gcr-password"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "gcr-creds", corev1.BasicAuthUsernameKey), []byte("gcr-username"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "gcr-creds", corev1.BasicAuthPasswordKey), []byte("gcr-password"), 0600))
 
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "dockerhub-creds", corev1.BasicAuthUsernameKey), []byte("dockerhub-username"), 0600))
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "dockerhub-creds", corev1.BasicAuthPasswordKey), []byte("dockerhub-password"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "dockerhub-creds", corev1.BasicAuthUsernameKey), []byte("dockerhub-username"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "dockerhub-creds", corev1.BasicAuthPasswordKey), []byte("dockerhub-password"), 0600))
 
 		})
 

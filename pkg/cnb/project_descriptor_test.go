@@ -3,7 +3,6 @@ package cnb_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,9 +30,9 @@ func testProcessProjectDescriptor(t *testing.T, when spec.G, it spec.S) {
 		var err error
 		buf = new(bytes.Buffer)
 		logger = log.New(buf, "", 0)
-		appDir, err = ioutil.TempDir("", "appDir")
+		appDir, err = os.MkdirTemp("", "appDir")
 		require.NoError(t, err)
-		platformDir, err = ioutil.TempDir("", "platform")
+		platformDir, err = os.MkdirTemp("", "platform")
 		require.NoError(t, err)
 		projectToml = filepath.Join(appDir, "project.toml")
 	})
@@ -45,7 +44,7 @@ func testProcessProjectDescriptor(t *testing.T, when spec.G, it spec.S) {
 
 	when("unsupported project descriptor version", func() {
 		it.Before(func() {
-			ioutil.WriteFile(projectToml, []byte(`
+			os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.99"
 			`), 0644)
@@ -63,7 +62,7 @@ schema-version = "0.99"
 			when("using descriptor v1", func() {
 				when("the descriptor has build env vars", func() {
 					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+						os.WriteFile(projectToml, []byte(`
 [[build.env]]
 name = "keyA"
 value = "valueA"
@@ -107,38 +106,38 @@ value = "valueAnotherC"
 
 						err = os.Mkdir(filepath.Join(appDir, "secrets"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "secrets", "api_keys.json"), []byte("{}"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "secrets", "api_keys.json"), []byte("{}"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "secrets", "user_token"), []byte("token"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "secrets", "user_token"), []byte("token"), 0755)
 						assert.Nil(t, err)
 
 						err = os.Mkdir(filepath.Join(appDir, "nested"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "nested", "nested-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "nested", "nested-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "other-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "other-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "nested-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "nested-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
 						err = os.Mkdir(filepath.Join(appDir, "media"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "media", "mountain.jpg"), []byte("fake image bytes"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "media", "mountain.jpg"), []byte("fake image bytes"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "media", "person.png"), []byte("fake image bytes"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "media", "person.png"), []byte("fake image bytes"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "test.sh"), []byte("echo test"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "test.sh"), []byte("echo test"), 0755)
 						assert.Nil(t, err)
 					})
 
 					when("it has excludes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [build]
 exclude = ["*.sh", "secrets/", "media/metadata", "/other-cookie.jar" ,"/nested-cookie.jar"]					
 					`), 0644)
@@ -159,7 +158,7 @@ exclude = ["*.sh", "secrets/", "media/metadata", "/other-cookie.jar" ,"/nested-c
 
 					when("it has includes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [build]
 include = [ "*.jar", "media/mountain.jpg", "/media/person.png", ]
 					`), 0644)
@@ -181,7 +180,7 @@ include = [ "*.jar", "media/mountain.jpg", "/media/person.png", ]
 
 					when("it has both excludes and includes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [build]
 include = [ "test", ]
 exclude = ["test", ]
@@ -196,7 +195,7 @@ exclude = ["test", ]
 
 				when("the descriptor has builder", func() {
 					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+						os.WriteFile(projectToml, []byte(`
 [build]
 builder = "my-super-cool-builder"
 				`), 0644)
@@ -209,7 +208,7 @@ builder = "my-super-cool-builder"
 
 				when("the descriptor has buildpacks", func() {
 					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+						os.WriteFile(projectToml, []byte(`
 [[build.buildpacks]]
 id = "cool-buildpack"
 version = "v4.2"
@@ -229,7 +228,7 @@ uri = "check-this-out.com"
 						when("io.buildpacks.env.build format is used", func() {
 							when("format is valid", func() {
 								it.Before(func() {
-									ioutil.WriteFile(projectToml, []byte(`
+									os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env.build]]
@@ -257,7 +256,7 @@ value = "valueAnotherC"
 							when("format is invalid", func() {
 								when("'value' is invalid", func() {
 									it.Before(func() {
-										ioutil.WriteFile(projectToml, []byte(`
+										os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env.build]]
@@ -272,7 +271,7 @@ value = 1
 								})
 								when("'name' is invalid", func() {
 									it.Before(func() {
-										ioutil.WriteFile(projectToml, []byte(`
+										os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env.build]]
@@ -291,7 +290,7 @@ value = "ValueA"
 						when("io.buildpacks.env format is used", func() {
 							when("format is valid", func() {
 								it.Before(func() {
-									ioutil.WriteFile(projectToml, []byte(`
+									os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env]]
@@ -318,7 +317,7 @@ value = "valueAnotherC"`), 0644)
 							when("format is invalid", func() {
 								when("'value' is invalid", func() {
 									it.Before(func() {
-										ioutil.WriteFile(projectToml, []byte(`
+										os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env]]
@@ -333,7 +332,7 @@ value = 1
 								})
 								when("'name' is invalid", func() {
 									it.Before(func() {
-										ioutil.WriteFile(projectToml, []byte(`
+										os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env]]
@@ -352,7 +351,7 @@ value = "ValueA"
 
 					when("vars where set with new v0.2 project.toml", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.build.env]]
@@ -380,7 +379,7 @@ value = "valueAnotherC"
 
 					when("vars where set with both versions of v0.2 project.toml", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.env.build]]
@@ -419,38 +418,38 @@ value = "newValueA"
 
 						err = os.Mkdir(filepath.Join(appDir, "secrets"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "secrets", "api_keys.json"), []byte("{}"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "secrets", "api_keys.json"), []byte("{}"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "secrets", "user_token"), []byte("token"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "secrets", "user_token"), []byte("token"), 0755)
 						assert.Nil(t, err)
 
 						err = os.Mkdir(filepath.Join(appDir, "nested"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "nested", "nested-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "nested", "nested-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "other-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "other-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "nested-cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "nested-cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
 
 						err = os.Mkdir(filepath.Join(appDir, "media"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "media", "mountain.jpg"), []byte("fake image bytes"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "media", "mountain.jpg"), []byte("fake image bytes"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "media", "person.png"), []byte("fake image bytes"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "media", "person.png"), []byte("fake image bytes"), 0755)
 						assert.Nil(t, err)
 
-						err = ioutil.WriteFile(filepath.Join(appDir, "cookie.jar"), []byte("chocolate chip"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "cookie.jar"), []byte("chocolate chip"), 0755)
 						assert.Nil(t, err)
-						err = ioutil.WriteFile(filepath.Join(appDir, "test.sh"), []byte("echo test"), 0755)
+						err = os.WriteFile(filepath.Join(appDir, "test.sh"), []byte("echo test"), 0755)
 						assert.Nil(t, err)
 					})
 
 					when("it has excludes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [io.buildpacks]
@@ -473,7 +472,7 @@ exclude = ["*.sh", "secrets/", "media/metadata", "/other-cookie.jar" ,"/nested-c
 
 					when("it has includes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [io.buildpacks]
@@ -497,7 +496,7 @@ include = [ "*.jar", "media/mountain.jpg", "/media/person.png", ]
 
 					when("it has both excludes and includes", func() {
 						it.Before(func() {
-							ioutil.WriteFile(projectToml, []byte(`
+							os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [io.buildpacks]
@@ -514,7 +513,7 @@ exclude = ["test", ]
 
 				when("the descriptor has builder", func() {
 					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+						os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [io.buildpacks]
@@ -529,7 +528,7 @@ builder = "my-super-cool-builder"
 
 				when("the descriptor has buildpack groups", func() {
 					it.Before(func() {
-						ioutil.WriteFile(projectToml, []byte(`
+						os.WriteFile(projectToml, []byte(`
 [_]
 schema-version = "0.2"
 [[io.buildpacks.group]]
@@ -548,7 +547,7 @@ uri = "check-this-out.com"
 		when("the descriptor path is set", func() {
 			it.Before(func() {
 				projectToml = filepath.Join(appDir, "some-project.toml")
-				err := ioutil.WriteFile(projectToml, []byte(`
+				err := os.WriteFile(projectToml, []byte(`
 [[build.env]]
 name = "keyA"
 value = "valueA"

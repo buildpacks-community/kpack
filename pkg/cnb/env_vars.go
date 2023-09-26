@@ -1,7 +1,6 @@
 package cnb
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -17,7 +16,7 @@ func serializeEnvVars(envVars []envVariable, platformDir string) error {
 	}
 
 	for _, envVar := range envVars {
-		err = ioutil.WriteFile(path.Join(folder, envVar.Name), []byte(envVar.Value), os.ModePerm)
+		err = os.WriteFile(path.Join(folder, envVar.Name), []byte(envVar.Value), os.ModePerm)
 		if err != nil {
 			return err
 		}

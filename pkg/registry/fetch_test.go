@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -42,7 +41,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		dir, err = ioutil.TempDir("", "")
+		dir, err = os.MkdirTemp("", "")
 		require.NoError(t, err)
 	})
 
@@ -56,7 +55,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		testContentType := testCases[i+1]
 
 		it("handles unexploded file types: "+testFile, func() {
-			buf, err := ioutil.ReadFile(filepath.Join("testdata", testFile))
+			buf, err := os.ReadFile(filepath.Join("testdata", testFile))
 			require.NoError(t, err)
 
 			img := createSourceImage(t, buf, testContentType)
@@ -67,7 +66,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 			err = fetcher.Fetch(dir, repoName)
 			require.NoError(t, err)
 
-			files, err := ioutil.ReadDir(dir)
+			files, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 
@@ -75,7 +74,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, "testdir", testDir.Name())
 			require.True(t, testDir.IsDir())
 
-			files, err = ioutil.ReadDir(filepath.Join(dir, testDir.Name()))
+			files, err = os.ReadDir(filepath.Join(dir, testDir.Name()))
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 
@@ -83,7 +82,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 			require.Equal(t, "testfile", testFile.Name())
 			require.False(t, testFile.IsDir())
 
-			file, err := ioutil.ReadFile(filepath.Join(dir, testDir.Name(), testFile.Name()))
+			file, err := os.ReadFile(filepath.Join(dir, testDir.Name(), testFile.Name()))
 			require.NoError(t, err)
 			require.Equal(t, "test file contents", string(file))
 
@@ -92,7 +91,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it("handles regular source images", func() {
-		buf, err := ioutil.ReadFile(filepath.Join("testdata", "reg.tar"))
+		buf, err := os.ReadFile(filepath.Join("testdata", "reg.tar"))
 		require.NoError(t, err)
 
 		img := createSourceImage(t, buf, "")
@@ -103,7 +102,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		err = fetcher.Fetch(dir, repoName)
 		require.NoError(t, err)
 
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
@@ -111,7 +110,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, "test.txt", testFile.Name())
 		require.False(t, testFile.IsDir())
 
-		file, err := ioutil.ReadFile(filepath.Join(dir, testFile.Name()))
+		file, err := os.ReadFile(filepath.Join(dir, testFile.Name()))
 		require.NoError(t, err)
 		require.Equal(t, "test file contents\n", string(file))
 
@@ -119,7 +118,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("handles directories with improper headers", func() {
-		buf, err := ioutil.ReadFile(filepath.Join("testdata", "layer.tar"))
+		buf, err := os.ReadFile(filepath.Join("testdata", "layer.tar"))
 		require.NoError(t, err)
 
 		img := createSourceImage(t, buf, "")
@@ -131,14 +130,14 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.NoError(t, err)
 
 		// the vendor/cache directory doesnt have proper headers
-		_, err = ioutil.ReadFile(filepath.Join(dir, "/vendor/cache/diff-lcs-1.4.2.gem"))
+		_, err = os.ReadFile(filepath.Join(dir, "/vendor/cache/diff-lcs-1.4.2.gem"))
 		require.NoError(t, err)
 
 		require.Contains(t, output.String(), "Successfully pulled")
 	})
 
 	it("sets the correct file mode", func() {
-		buf, err := ioutil.ReadFile(filepath.Join("testdata", "tarexe.tar"))
+		buf, err := os.ReadFile(filepath.Join("testdata", "tarexe.tar"))
 		require.NoError(t, err)
 
 		img := createSourceImage(t, buf, "tar")
@@ -149,7 +148,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		err = fetcher.Fetch(dir, repoName)
 		require.NoError(t, err)
 
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
@@ -157,7 +156,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, "test-exe", testDir.Name())
 		require.True(t, testDir.IsDir())
 
-		files, err = ioutil.ReadDir(filepath.Join(dir, testDir.Name()))
+		files, err = os.ReadDir(filepath.Join(dir, testDir.Name()))
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
