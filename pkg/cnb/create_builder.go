@@ -47,18 +47,34 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 
 	builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
 
+	// fetch and add buildpacks
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
-		for _, buildpack := range group.Group {
-			remoteBuildpack, err := fetcher.ResolveAndFetch(ctx, buildpack)
+		for _, bp := range group.Group {
+			remoteBuildpack, err := fetcher.ResolveAndFetch(ctx, bp)
 			if err != nil {
 				return buildapi.BuilderRecord{}, err
 			}
 
-			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
+			buildpacks = append(buildpacks, remoteBuildpack.Optional(bp.Optional))
 		}
-		builderBldr.AddGroup(buildpacks...)
+		builderBldr.AddBuildpackGroup(buildpacks...)
+	}
+
+	// fetch and add extensions
+	for _, group := range spec.OrderExtensions {
+		extensions := make([]RemoteBuildpackRef, 0, len(group.Group))
+
+		for _, ext := range group.Group {
+			remoteExtension, err := fetcher.ResolveAndFetch(ctx, ext)
+			if err != nil {
+				return buildapi.BuilderRecord{}, err
+			}
+
+			extensions = append(extensions, remoteExtension.Optional(true)) // extensions are always optional
+		}
+		builderBldr.AddExtensionGroup(extensions...)
 	}
 
 	writeableImage, err := builderBldr.WriteableImage()
@@ -84,6 +100,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
 		Order:                   builderBldr.order,
+		OrderExtensions:         builderBldr.orderExtensions,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: fetcher.ClusterStoreObservedGeneration(),
 		OS:                      config.OS,

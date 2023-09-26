@@ -44,7 +44,9 @@ type builderBlder struct {
 	LifecycleMetadata LifecycleMetadata
 	stackId           string
 	order             []corev1alpha1.OrderEntry
+	orderExtensions   []corev1alpha1.OrderEntry
 	buildpackLayers   map[DescriptiveBuildpackInfo]buildpackLayer
+	extensionLayers   map[DescriptiveBuildpackInfo]buildpackLayer
 	cnbUserId         int
 	cnbGroupId        int
 	kpackVersion      string
@@ -56,6 +58,7 @@ type builderBlder struct {
 func newBuilderBldr(kpackVersion string) *builderBlder {
 	return &builderBlder{
 		buildpackLayers: map[DescriptiveBuildpackInfo]buildpackLayer{},
+		extensionLayers: map[DescriptiveBuildpackInfo]buildpackLayer{},
 		kpackVersion:    kpackVersion,
 	}
 }
@@ -81,7 +84,7 @@ func (bb *builderBlder) AddLifecycle(lifecycleLayer v1.Layer, lifecycleMetadata 
 	bb.LifecycleMetadata = lifecycleMetadata
 }
 
-func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
+func (bb *builderBlder) AddBuildpackGroup(buildpacks ...RemoteBuildpackRef) {
 	group := make([]corev1alpha1.BuildpackRef, 0, len(buildpacks))
 	for _, b := range buildpacks {
 		group = append(group, b.buildpackRef())
@@ -93,8 +96,21 @@ func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 	bb.order = append(bb.order, corev1alpha1.OrderEntry{Group: group})
 }
 
+func (bb *builderBlder) AddExtensionGroup(extensions ...RemoteBuildpackRef) {
+	group := make([]corev1alpha1.BuildpackRef, 0, len(extensions))
+	for _, b := range extensions {
+		group = append(group, b.buildpackRef())
+
+		for _, layer := range b.Layers {
+			bb.extensionLayers[layer.BuildpackInfo] = layer
+		}
+	}
+	bb.orderExtensions = append(bb.orderExtensions, corev1alpha1.OrderEntry{Group: group})
+}
+
 func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	buildpacks := bb.buildpacks()
+	extensions := bb.extensions()
 
 	err := bb.validateBuilder(buildpacks)
 	if err != nil {
@@ -103,6 +119,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 
 	buildpackLayerMetadata := BuildpackLayerMetadata{}
 	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers))
+	// TODO: extensionLayers := make([]v1.Layer, 0, len(bb.extensionLayers))
 
 	for _, key := range buildpacks {
 		layer := bb.buildpackLayers[key]
@@ -151,11 +168,12 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
+	// TODO: set extensionOrderLabel, extensionLayersLabel
 	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
 		buildpackLayersLabel: buildpackLayerMetadata,
 		lifecycleApisLabel:   bb.LifecycleMetadata.APIs,
-		buildpackMetadataLabel: BuilderImageMetadata{
+		builderMetadataLabel: BuilderImageMetadata{
 			Description: "Custom Builder built with kpack",
 			Stack: StackMetadata{
 				RunImage: RunImageMetadata{
@@ -169,10 +187,12 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 				Version: bb.kpackVersion,
 			},
 			Buildpacks: buildpacks,
+			Extensions: extensions,
 		},
 	})
 }
 
+// TODO: add extensions
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
 	platformApis := append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...)
 	err := validatePlatformApis(platformApis)
@@ -212,6 +232,10 @@ func relaxedMixinContract(builderSupportedApis []string) bool {
 
 func (bb *builderBlder) buildpacks() []DescriptiveBuildpackInfo {
 	return deterministicSortBySize(bb.buildpackLayers)
+}
+
+func (bb *builderBlder) extensions() []DescriptiveBuildpackInfo {
+	return deterministicSortBySize(bb.extensionLayers)
 }
 
 func (bb *builderBlder) stackLayer() (v1.Layer, error) {
@@ -255,7 +279,7 @@ func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 
 	orderBuf := &bytes.Buffer{}
 
-	order := make(tomlOrder, 0, len(bb.order))
+	order := make(tomlOrder, 0, len(bb.order)) // TODO: update with extensions
 	for _, o := range bb.order {
 		bps := make([]tomlBuildpack, 0, len(o.Group))
 		for _, b := range o.Group {

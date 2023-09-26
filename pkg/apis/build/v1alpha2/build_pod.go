@@ -23,6 +23,7 @@ const (
 	AnalyzeContainerName    = "analyze"
 	DetectContainerName     = "detect"
 	RestoreContainerName    = "restore"
+	ExtendContainerName     = "extend"
 	BuildContainerName      = "build"
 	ExportContainerName     = "export"
 	RebaseContainerName     = "rebase"

@@ -63,7 +63,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 		ctx = context.Background()
 
-		fetcher = &fakeFetcher{buildpacks: map[string][]buildpackLayer{}, observedGeneration: 10}
+		fetcher = &fakeFetcher{
+			buildpacks:         map[string][]buildpackLayer{},
+			extensions:         map[string][]buildpackLayer{},
+			observedGeneration: 10,
+		}
 
 		linuxLifecycle = &fakeLayer{
 			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
@@ -193,6 +197,23 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					API:         api,
 					LayerDiffID: buildpack1Layer.diffID,
 					Stacks:      stacks,
+				},
+			}})
+		}
+
+		addExtension = func(t *testing.T, id, version, homepage, api string) {
+			fetcher.AddExtension(t, id, version, []buildpackLayer{{
+				v1Layer: buildpack1Layer,
+				BuildpackInfo: DescriptiveBuildpackInfo{
+					BuildpackInfo: corev1alpha1.BuildpackInfo{
+						Id:      id,
+						Version: version,
+					},
+					Homepage: homepage,
+				},
+				BuildpackLayerInfo: BuildpackLayerInfo{
+					API:         api,
+					LayerDiffID: buildpack1Layer.diffID,
 				},
 			}})
 		}
@@ -515,7 +536,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.JSONEq(t, //language=json
 				`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
 
-			buildpackMetadata, err := imagehelpers.GetStringLabel(savedImage, buildpackMetadataLabel)
+			builderMetadata, err := imagehelpers.GetStringLabel(savedImage, builderMetadataLabel)
 			assert.NoError(t, err)
 			assert.JSONEq(t, //language=json
 				`{
@@ -569,7 +590,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	  "homepage": "buildpack.1.com"
     }
   ]
-}`, buildpackMetadata)
+}`, builderMetadata)
 
 			buildpackLayers, err := imagehelpers.GetStringLabel(savedImage, buildpackLayersLabel)
 			assert.NoError(t, err)
@@ -646,6 +667,339 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, original.Image, other.Image)
 				require.Equal(t, original.Buildpacks, other.Buildpacks)
 			}
+		})
+
+		when("provided extensions", func() {
+			var extensionRef = corev1alpha1.BuildpackRef{
+				BuildpackInfo: corev1alpha1.BuildpackInfo{
+					Id:      "some-extension-id",
+					Version: "v1",
+				},
+			}
+
+			it.Before(func() {
+				clusterBuilderSpec.OrderExtensions = []buildapi.BuilderOrderEntry{
+					{
+						Group: []buildapi.BuilderBuildpackRef{{
+							BuildpackRef: extensionRef,
+						}},
+					},
+				}
+			})
+
+			it.Focus("creates a custom builder with extensions", func() { // TODO: dedup assertions
+				addExtension(t, extensionRef.Id, extensionRef.Version, "", "0.10")
+				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
+				require.NoError(t, err)
+
+				if os == "windows" {
+					// TODO: expect some kind of useful error
+				}
+
+				assert.Len(t, builderRecord.Buildpacks, 4)
+				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
+				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
+				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
+				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.4", Version: "v4", Homepage: "buildpack.4.com"})
+				assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
+				assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
+				assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
+				assert.Equal(t, os, builderRecord.OS)
+
+				assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
+					{
+						Group: []corev1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
+								Optional:      false,
+							},
+							{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
+								Optional:      true,
+							},
+							{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.4", Version: "v4"},
+								Optional:      false,
+							},
+						},
+					},
+				})
+
+				// added in this test
+				assert.Equal(t, builderRecord.OrderExtensions, []corev1alpha1.OrderEntry{
+					{
+						Group: []corev1alpha1.BuildpackRef{
+							{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "some-extension-id", Version: "v1"},
+								Optional:      true,
+							},
+						},
+					},
+				})
+
+				assert.Len(t, registryClient.SavedImages(), 1)
+				savedImage := registryClient.SavedImages()[tag]
+
+				workingDir, err := imagehelpers.GetWorkingDir(savedImage)
+				require.NoError(t, err)
+				assert.Equal(t, "/layers", workingDir)
+
+				hash, err := savedImage.Digest()
+				require.NoError(t, err)
+				assert.Equal(t, fmt.Sprintf("%s@%s", tag, hash), builderRecord.Image)
+
+				layers, err := savedImage.Layers()
+				require.NoError(t, err)
+
+				buildpackLayerCount := 3
+				defaultDirectoryLayerCount := 1
+				stackTomlLayerCount := 1
+				orderTomlLayerCount := 1
+				assert.Len(t, layers,
+					buildImageLayers+
+						defaultDirectoryLayerCount+
+						lifecycleImageLayers+
+						stackTomlLayerCount+
+						buildpackLayerCount+
+						orderTomlLayerCount)
+
+				var layerTester = layerIteratorTester(0)
+
+				for i := 0; i < buildImageLayers; i++ {
+					layerTester.testNextLayer("Build Image Layer", func(index int) {
+						buildImgLayers, err := buildImg.Layers()
+						require.NoError(t, err)
+
+						assert.Equal(t, layers[i], buildImgLayers[i])
+					})
+				}
+
+				layerTester.testNextLayer("Default Directory Layer", func(index int) {
+					defaultDirectoryLayer := layers[index]
+
+					assertLayerContents(t, os, defaultDirectoryLayer, map[string]content{
+						"/workspace": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+							uid:      cnbUserId,
+							gid:      cnbGroupId,
+						},
+						"/layers": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+							uid:      cnbUserId,
+							gid:      cnbGroupId,
+						},
+						"/cnb": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+						},
+						"/cnb/buildpacks": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+						},
+						"/platform": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+						},
+						"/platform/env": {
+							typeflag: tar.TypeDir,
+							mode:     0755,
+						},
+					})
+				})
+
+				layerTester.testNextLayer("Lifecycle Layer", func(index int) {
+					if os == "linux" {
+						assert.Equal(t, layers[index], linuxLifecycle)
+					} else {
+						assert.Equal(t, layers[index], windowsLifecycle)
+					}
+				})
+
+				layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
+					assert.Equal(t, layers[index], buildpack3Layer)
+				})
+
+				layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
+					assert.Equal(t, layers[index], buildpack2Layer)
+				})
+
+				layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
+					assert.Equal(t, layers[index], buildpack1Layer)
+				})
+
+				layerTester.testNextLayer("stack Layer", func(index int) {
+					assertLayerContents(t, os, layers[index], map[string]content{
+						"/cnb/stack.toml": //language=toml
+						{
+							typeflag: tar.TypeReg,
+							mode:     0644,
+							fileContent: //language=toml
+							`[run-image]
+  image = "paketo-buildpacks/run:full-cnb"
+`,
+						},
+					})
+				})
+
+				layerTester.testNextLayer("order Layer", func(index int) {
+					assert.Equal(t, len(layers)-1, index)
+
+					assertLayerContents(t, os, layers[index], map[string]content{
+						"/cnb/order.toml": {
+							typeflag: tar.TypeReg,
+							mode:     0644,
+							fileContent: //language=toml
+							`[[order]]
+
+  [[order.group]]
+    id = "io.buildpack.1"
+    version = "v1"
+
+  [[order.group]]
+    id = "io.buildpack.2"
+    version = "v2"
+    optional = true
+
+  [[order.group]]
+    id = "io.buildpack.4"
+    version = "v4"
+`}})
+
+				})
+
+				buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
+				assert.NoError(t, err)
+				assert.JSONEq(t, //language=json
+					`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
+
+				// changed in this test
+				builderMetadata, err := imagehelpers.GetStringLabel(savedImage, builderMetadataLabel)
+				assert.NoError(t, err)
+				assert.JSONEq(t, //language=json
+					`{
+  "description": "Custom Builder built with kpack",
+  "stack": {
+    "runImage": {
+      "image": "paketo-buildpacks/run:full-cnb",
+      "mirrors": null
+    }
+  },
+  "lifecycle": {
+    "version": "0.5.0",
+    "api": {
+      "buildpack": "0.2",
+      "platform": "0.1"
+    },
+    "apis": {
+      "buildpack": {
+		"deprecated": ["0.2"],
+		"supported": ["0.3"]
+      },
+      "platform": {
+        "deprecated": ["0.3"],
+        "supported": ["0.4"]
+      }
+    }
+  },
+  "createdBy": {
+    "name": "kpack Builder",
+    "version": "v1.2.3 (git sha: abcdefg123456)"
+  },
+  "buildpacks": [
+	{
+      "id": "io.buildpack.4",
+      "version": "v4",
+	  "homepage": "buildpack.4.com"
+    },
+    {
+      "id": "io.buildpack.3",
+      "version": "v3",
+	  "homepage": "buildpack.3.com"
+    },
+    {
+      "id": "io.buildpack.2",
+      "version": "v2",
+	  "homepage": "buildpack.2.com"
+    },
+    {
+      "id": "io.buildpack.1",
+      "version": "v1",
+	  "homepage": "buildpack.1.com"
+    }
+  ],
+  "extensions": [
+    {
+      "id": "some-extension-id",
+      "version": "v1"
+    }
+  ]
+}`, builderMetadata)
+
+				buildpackLayers, err := imagehelpers.GetStringLabel(savedImage, buildpackLayersLabel)
+				assert.NoError(t, err)
+				assert.JSONEq(t, //language=json
+					`{
+  "io.buildpack.1": {
+    "v1": {
+      "api": "0.2",
+      "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.some-stack",
+          "mixins": ["some-mixin"]
+        }
+      ]
+    }
+  },
+  "io.buildpack.2": {
+    "v2": {
+      "api": "0.3",
+      "layerDiffID": "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "order": [
+        {
+          "group": [
+            {
+              "id": "io.buildpack.3",
+              "version": "v2"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "io.buildpack.3": {
+    "v3": {
+      "api": "0.3",
+      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.some-stack"
+        },
+        {
+          "id": "io.some.other.stack"
+        }
+      ]
+    }
+  },
+  "io.buildpack.4": {
+    "v4": {
+      "api": "0.3",
+      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
+      "stacks": [
+        {
+          "id": "io.buildpacks.stacks.some-stack"
+        },
+        {
+          "id": "io.some.other.stack"
+        }
+      ]
+    }
+  }
+}`, buildpackLayers)
+
+			})
 		})
 
 		when("validating buildpacks", func() {

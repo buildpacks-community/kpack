@@ -161,6 +161,7 @@ var buildSteps = map[string]struct{}{
 	AnalyzeContainerName:    {},
 	DetectContainerName:     {},
 	RestoreContainerName:    {},
+	ExtendContainerName:     {},
 	BuildContainerName:      {},
 	ExportContainerName:     {},
 	CompletionContainerName: {},

@@ -13,6 +13,7 @@ type BuilderRecord struct {
 	Stack                   corev1alpha1.BuildStack
 	Buildpacks              corev1alpha1.BuildpackMetadataList
 	Order                   []corev1alpha1.OrderEntry
+	OrderExtensions         []corev1alpha1.OrderEntry
 	ObservedStoreGeneration int64
 	ObservedStackGeneration int64
 	OS                      string
@@ -30,6 +31,7 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 		},
 	}
 	bs.Order = record.Order
+	// TODO: bs.OrderExtensions = record.OrderExtensions
 	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
 	bs.ObservedStackGeneration = record.ObservedStackGeneration
 	bs.OS = record.OS

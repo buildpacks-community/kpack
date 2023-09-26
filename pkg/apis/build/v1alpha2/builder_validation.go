@@ -32,6 +32,7 @@ func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 		Also(validateStack(s.Stack).ViaField("stack")).
 		Also(validateStore(s.Store).ViaField("store")).
 		Also(validateOrder(s.Order).ViaField("order"))
+	// TODO: validate order for extensions
 }
 
 func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
