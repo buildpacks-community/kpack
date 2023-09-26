@@ -2,9 +2,10 @@ package cnb
 
 import (
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	k8sv1 "k8s.io/api/core/v1"
+
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	k8sv1 "k8s.io/api/core/v1"
 )
 
 type RemoteBuildpackInfo struct {

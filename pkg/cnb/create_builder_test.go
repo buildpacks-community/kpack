@@ -200,23 +200,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				},
 			}})
 		}
-
-		addExtension = func(t *testing.T, id, version, homepage, api string) {
-			fetcher.AddExtension(t, id, version, []buildpackLayer{{
-				v1Layer: buildpack1Layer,
-				BuildpackInfo: DescriptiveBuildpackInfo{
-					BuildpackInfo: corev1alpha1.BuildpackInfo{
-						Id:      id,
-						Version: version,
-					},
-					Homepage: homepage,
-				},
-				BuildpackLayerInfo: BuildpackLayerInfo{
-					API:         api,
-					LayerDiffID: buildpack1Layer.diffID,
-				},
-			}})
-		}
 	)
 
 	it.Before(func() {
@@ -366,20 +349,22 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			}
 		})
 
-		it("creates a custom builder", func() {
-			builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
+		assertBuilderRecord := func(t *testing.T, builderRecord buildapi.BuilderRecord, registryClient *registryfakes.FakeClient) v1.Image {
+			// image
+			assert.Len(t, registryClient.SavedImages(), 1)
+			savedImage := registryClient.SavedImages()[tag]
+			hash, err := savedImage.Digest()
 			require.NoError(t, err)
-
+			assert.Equal(t, fmt.Sprintf("%s@%s", tag, hash), builderRecord.Image)
+			// stack
+			assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
+			// buildpacks
 			assert.Len(t, builderRecord.Buildpacks, 4)
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
 			assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.4", Version: "v4", Homepage: "buildpack.4.com"})
-			assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
-			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
-			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
-			assert.Equal(t, os, builderRecord.OS)
-
+			// order
 			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
 					Group: []corev1alpha1.BuildpackRef{
@@ -398,22 +383,32 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			})
+			// store generation
+			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
+			// stack generation
+			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
+			// os
+			assert.Equal(t, os, builderRecord.OS)
 
-			assert.Len(t, registryClient.SavedImages(), 1)
-			savedImage := registryClient.SavedImages()[tag]
+			return savedImage
+		}
 
+		assertLayers := func(t *testing.T, savedImage v1.Image, extension1Layer *fakeLayer) {
+			var layerTester = layerIteratorTester(0)
+
+			// working directory
 			workingDir, err := imagehelpers.GetWorkingDir(savedImage)
 			require.NoError(t, err)
 			assert.Equal(t, "/layers", workingDir)
 
-			hash, err := savedImage.Digest()
-			require.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf("%s@%s", tag, hash), builderRecord.Image)
-
+			// get layers
 			layers, err := savedImage.Layers()
 			require.NoError(t, err)
-
 			buildpackLayerCount := 3
+			extensionLayerCount := 0
+			if extension1Layer != nil {
+				extensionLayerCount = 1
+			}
 			defaultDirectoryLayerCount := 1
 			stackTomlLayerCount := 1
 			orderTomlLayerCount := 1
@@ -423,9 +418,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					lifecycleImageLayers+
 					stackTomlLayerCount+
 					buildpackLayerCount+
+					extensionLayerCount+
 					orderTomlLayerCount)
-
-			var layerTester = layerIteratorTester(0)
 
 			for i := 0; i < buildImageLayers; i++ {
 				layerTester.testNextLayer("Build Image Layer", func(index int) {
@@ -470,7 +464,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 			})
-
 			layerTester.testNextLayer("Lifecycle Layer", func(index int) {
 				if os == "linux" {
 					assert.Equal(t, layers[index], linuxLifecycle)
@@ -478,19 +471,20 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					assert.Equal(t, layers[index], windowsLifecycle)
 				}
 			})
-
 			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
 				assert.Equal(t, layers[index], buildpack3Layer)
 			})
-
 			layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
 				assert.Equal(t, layers[index], buildpack2Layer)
 			})
-
 			layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
 				assert.Equal(t, layers[index], buildpack1Layer)
 			})
-
+			if extension1Layer != nil {
+				layerTester.testNextLayer("Extension Layer", func(index int) {
+					assert.Equal(t, layers[index], extension1Layer)
+				})
+			}
 			layerTester.testNextLayer("stack Layer", func(index int) {
 				assertLayerContents(t, os, layers[index], map[string]content{
 					"/cnb/stack.toml": //language=toml
@@ -504,16 +498,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 			})
-
 			layerTester.testNextLayer("order Layer", func(index int) {
 				assert.Equal(t, len(layers)-1, index)
 
-				assertLayerContents(t, os, layers[index], map[string]content{
-					"/cnb/order.toml": {
-						typeflag: tar.TypeReg,
-						mode:     0644,
-						fileContent: //language=toml
-						`[[order]]
+				expectedOrderContent := `[[order]]
 
   [[order.group]]
     id = "io.buildpack.1"
@@ -527,19 +515,28 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
   [[order.group]]
     id = "io.buildpack.4"
     version = "v4"
-`}})
+`
+				if extension1Layer != nil {
+					expectedOrderContent += `
+[[order-extensions]]
 
+  [[order-extensions.group]]
+    id = "some-extension-id"
+    version = "v1"
+    optional = true
+`
+				}
+
+				assertLayerContents(t, os, layers[index], map[string]content{
+					"/cnb/order.toml": {
+						typeflag: tar.TypeReg,
+						mode:     0644,
+						fileContent://language=toml
+						expectedOrderContent}})
 			})
+		}
 
-			buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
-			assert.NoError(t, err)
-			assert.JSONEq(t, //language=json
-				`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
-
-			builderMetadata, err := imagehelpers.GetStringLabel(savedImage, builderMetadataLabel)
-			assert.NoError(t, err)
-			assert.JSONEq(t, //language=json
-				`{
+		expectedBuilderMetadataLabel := `{
   "description": "Custom Builder built with kpack",
   "stack": {
     "runImage": {
@@ -590,7 +587,18 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	  "homepage": "buildpack.1.com"
     }
   ]
-}`, builderMetadata)
+}`
+
+		assertLabels := func(t *testing.T, savedImage v1.Image) {
+			buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
+			assert.NoError(t, err)
+			assert.JSONEq(t, //language=json
+				`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
+
+			builderMetadata, err := imagehelpers.GetStringLabel(savedImage, builderMetadataLabel)
+			assert.NoError(t, err)
+			assert.JSONEq(t, //language=json
+				expectedBuilderMetadataLabel, builderMetadata)
 
 			buildpackLayers, err := imagehelpers.GetStringLabel(savedImage, buildpackLayersLabel)
 			assert.NoError(t, err)
@@ -653,7 +661,15 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
     }
   }
 }`, buildpackLayers)
+		}
 
+		it("creates a custom builder", func() {
+			builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
+			require.NoError(t, err)
+
+			savedImage := assertBuilderRecord(t, builderRecord, registryClient)
+			assertLayers(t, savedImage, nil)
+			assertLabels(t, savedImage)
 		})
 
 		it("creates images deterministically ", func() {
@@ -670,14 +686,37 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("provided extensions", func() {
-			var extensionRef = corev1alpha1.BuildpackRef{
-				BuildpackInfo: corev1alpha1.BuildpackInfo{
-					Id:      "some-extension-id",
-					Version: "v1",
-				},
-			}
+			var (
+				extension1Layer = &fakeLayer{
+					digest: "sha256:98ea6e4f216f2fb4b69fff9b3a44842c38686ca685f3f55dc48c5d3fb1107be4",
+					diffID: "sha256:98ea6e4f216f2fb4b69fff9b3a44842c38686ca685f3f55dc48c5d3fb1107be4",
+					size:   1,
+				}
+				addExtension = func(t *testing.T, id, version, homepage, api string) {
+					fetcher.AddExtension(t, id, version, []buildpackLayer{{
+						v1Layer: extension1Layer,
+						BuildpackInfo: DescriptiveBuildpackInfo{
+							BuildpackInfo: corev1alpha1.BuildpackInfo{
+								Id:      id,
+								Version: version,
+							},
+							Homepage: homepage,
+						},
+						BuildpackLayerInfo: BuildpackLayerInfo{
+							API:         api,
+							LayerDiffID: extension1Layer.diffID,
+						},
+					}})
+				}
+			)
 
-			it.Before(func() {
+			it("creates a custom builder with extensions", func() {
+				extensionRef := corev1alpha1.BuildpackRef{
+					BuildpackInfo: corev1alpha1.BuildpackInfo{
+						Id:      "some-extension-id",
+						Version: "v1",
+					},
+				}
 				clusterBuilderSpec.OrderExtensions = []buildapi.BuilderOrderEntry{
 					{
 						Group: []buildapi.BuilderBuildpackRef{{
@@ -685,10 +724,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 						}},
 					},
 				}
-			})
+				addExtension(t, extensionRef.Id, extensionRef.Version, "", "0.3")
 
-			it.Focus("creates a custom builder with extensions", func() { // TODO: dedup assertions
-				addExtension(t, extensionRef.Id, extensionRef.Version, "", "0.10")
 				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
 				require.NoError(t, err)
 
@@ -696,36 +733,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					// TODO: expect some kind of useful error
 				}
 
-				assert.Len(t, builderRecord.Buildpacks, 4)
-				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.1", Version: "v1", Homepage: "buildpack.1.com"})
-				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.2", Version: "v2", Homepage: "buildpack.2.com"})
-				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.3", Version: "v3", Homepage: "buildpack.3.com"})
-				assert.Contains(t, builderRecord.Buildpacks, corev1alpha1.BuildpackMetadata{Id: "io.buildpack.4", Version: "v4", Homepage: "buildpack.4.com"})
-				assert.Equal(t, corev1alpha1.BuildStack{RunImage: runImage, ID: stackID}, builderRecord.Stack)
-				assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
-				assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
-				assert.Equal(t, os, builderRecord.OS)
-
-				assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
-					{
-						Group: []corev1alpha1.BuildpackRef{
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.1", Version: "v1"},
-								Optional:      false,
-							},
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.2", Version: "v2"},
-								Optional:      true,
-							},
-							{
-								BuildpackInfo: corev1alpha1.BuildpackInfo{Id: "io.buildpack.4", Version: "v4"},
-								Optional:      false,
-							},
-						},
-					},
-				})
-
-				// added in this test
+				// builder record
+				savedImage := assertBuilderRecord(t, builderRecord, registryClient)
 				assert.Equal(t, builderRecord.OrderExtensions, []corev1alpha1.OrderEntry{
 					{
 						Group: []corev1alpha1.BuildpackRef{
@@ -737,148 +746,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				assert.Len(t, registryClient.SavedImages(), 1)
-				savedImage := registryClient.SavedImages()[tag]
+				// layers
+				assertLayers(t, savedImage, extension1Layer)
 
-				workingDir, err := imagehelpers.GetWorkingDir(savedImage)
-				require.NoError(t, err)
-				assert.Equal(t, "/layers", workingDir)
-
-				hash, err := savedImage.Digest()
-				require.NoError(t, err)
-				assert.Equal(t, fmt.Sprintf("%s@%s", tag, hash), builderRecord.Image)
-
-				layers, err := savedImage.Layers()
-				require.NoError(t, err)
-
-				buildpackLayerCount := 3
-				defaultDirectoryLayerCount := 1
-				stackTomlLayerCount := 1
-				orderTomlLayerCount := 1
-				assert.Len(t, layers,
-					buildImageLayers+
-						defaultDirectoryLayerCount+
-						lifecycleImageLayers+
-						stackTomlLayerCount+
-						buildpackLayerCount+
-						orderTomlLayerCount)
-
-				var layerTester = layerIteratorTester(0)
-
-				for i := 0; i < buildImageLayers; i++ {
-					layerTester.testNextLayer("Build Image Layer", func(index int) {
-						buildImgLayers, err := buildImg.Layers()
-						require.NoError(t, err)
-
-						assert.Equal(t, layers[i], buildImgLayers[i])
-					})
-				}
-
-				layerTester.testNextLayer("Default Directory Layer", func(index int) {
-					defaultDirectoryLayer := layers[index]
-
-					assertLayerContents(t, os, defaultDirectoryLayer, map[string]content{
-						"/workspace": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-							uid:      cnbUserId,
-							gid:      cnbGroupId,
-						},
-						"/layers": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-							uid:      cnbUserId,
-							gid:      cnbGroupId,
-						},
-						"/cnb": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-						},
-						"/cnb/buildpacks": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-						},
-						"/platform": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-						},
-						"/platform/env": {
-							typeflag: tar.TypeDir,
-							mode:     0755,
-						},
-					})
-				})
-
-				layerTester.testNextLayer("Lifecycle Layer", func(index int) {
-					if os == "linux" {
-						assert.Equal(t, layers[index], linuxLifecycle)
-					} else {
-						assert.Equal(t, layers[index], windowsLifecycle)
-					}
-				})
-
-				layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
-					assert.Equal(t, layers[index], buildpack3Layer)
-				})
-
-				layerTester.testNextLayer("Middle Buildpack Layer", func(index int) {
-					assert.Equal(t, layers[index], buildpack2Layer)
-				})
-
-				layerTester.testNextLayer("Smallest Buildpack Layer", func(index int) {
-					assert.Equal(t, layers[index], buildpack1Layer)
-				})
-
-				layerTester.testNextLayer("stack Layer", func(index int) {
-					assertLayerContents(t, os, layers[index], map[string]content{
-						"/cnb/stack.toml": //language=toml
-						{
-							typeflag: tar.TypeReg,
-							mode:     0644,
-							fileContent: //language=toml
-							`[run-image]
-  image = "paketo-buildpacks/run:full-cnb"
-`,
-						},
-					})
-				})
-
-				layerTester.testNextLayer("order Layer", func(index int) {
-					assert.Equal(t, len(layers)-1, index)
-
-					assertLayerContents(t, os, layers[index], map[string]content{
-						"/cnb/order.toml": {
-							typeflag: tar.TypeReg,
-							mode:     0644,
-							fileContent: //language=toml
-							`[[order]]
-
-  [[order.group]]
-    id = "io.buildpack.1"
-    version = "v1"
-
-  [[order.group]]
-    id = "io.buildpack.2"
-    version = "v2"
-    optional = true
-
-  [[order.group]]
-    id = "io.buildpack.4"
-    version = "v4"
-`}})
-
-				})
-
-				buildpackOrder, err := imagehelpers.GetStringLabel(savedImage, buildpackOrderLabel)
-				assert.NoError(t, err)
-				assert.JSONEq(t, //language=json
-					`[{"group":[{"id":"io.buildpack.1","version":"v1"},{"id":"io.buildpack.2","version":"v2","optional":true},{"id":"io.buildpack.4","version":"v4"}]}]`, buildpackOrder)
-
-				// changed in this test
-				builderMetadata, err := imagehelpers.GetStringLabel(savedImage, builderMetadataLabel)
-				assert.NoError(t, err)
-				assert.JSONEq(t, //language=json
-					`{
+				// labels
+				expectedBuilderMetadataLabel = `{
   "description": "Custom Builder built with kpack",
   "stack": {
     "runImage": {
@@ -935,70 +807,46 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
       "version": "v1"
     }
   ]
-}`, builderMetadata)
-
-				buildpackLayers, err := imagehelpers.GetStringLabel(savedImage, buildpackLayersLabel)
+}`
+				assertLabels(t, savedImage)
+				extensionLayers, err := imagehelpers.GetStringLabel(savedImage, extensionLayersLabel)
 				assert.NoError(t, err)
 				assert.JSONEq(t, //language=json
 					`{
-  "io.buildpack.1": {
+  "some-extension-id": {
     "v1": {
-      "api": "0.2",
-      "layerDiffID": "sha256:1bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-      "stacks": [
-        {
-          "id": "io.buildpacks.stacks.some-stack",
-          "mixins": ["some-mixin"]
-        }
-      ]
-    }
-  },
-  "io.buildpack.2": {
-    "v2": {
       "api": "0.3",
-      "layerDiffID": "sha256:2bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-      "order": [
-        {
-          "group": [
-            {
-              "id": "io.buildpack.3",
-              "version": "v2"
-            }
-          ]
-        }
-      ]
-    }
-  },
-  "io.buildpack.3": {
-    "v3": {
-      "api": "0.3",
-      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-      "stacks": [
-        {
-          "id": "io.buildpacks.stacks.some-stack"
-        },
-        {
-          "id": "io.some.other.stack"
-        }
-      ]
-    }
-  },
-  "io.buildpack.4": {
-    "v4": {
-      "api": "0.3",
-      "layerDiffID": "sha256:3bf8899667b8d1e6b124f663faca32903b470831e5e4e992644ac5c839ab3462",
-      "stacks": [
-        {
-          "id": "io.buildpacks.stacks.some-stack"
-        },
-        {
-          "id": "io.some.other.stack"
-        }
-      ]
+      "layerDiffID": "sha256:98ea6e4f216f2fb4b69fff9b3a44842c38686ca685f3f55dc48c5d3fb1107be4"
     }
   }
-}`, buildpackLayers)
+}`, extensionLayers)
+				extensionOrder, err := imagehelpers.GetStringLabel(savedImage, extensionOrderLabel)
+				assert.NoError(t, err)
+				assert.JSONEq(t, //language=json
+					`[{"group":[{"id":"some-extension-id","optional":true,"version":"v1"}]}]`, extensionOrder)
 
+			})
+
+			when("validating extensions", func() {
+				it("errors with unsupported Buildpack API version", func() {
+					extensionRef := corev1alpha1.BuildpackRef{
+						BuildpackInfo: corev1alpha1.BuildpackInfo{
+							Id:      "some-unsupported-extension-id",
+							Version: "v1",
+						},
+					}
+					clusterBuilderSpec.OrderExtensions = []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{{
+								BuildpackRef: extensionRef,
+							}},
+						},
+					}
+					addExtension(t, extensionRef.Id, extensionRef.Version, "", "0.1")
+
+					_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
+					require.EqualError(t, err, "validating extension some-unsupported-extension-id@v1: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
+				})
 			})
 		})
 
@@ -1122,7 +970,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
 			})
 
-			it("errors with unsupported buildpack version", func() {
+			it("errors with unsupported Buildpack API version", func() {
 				addBuildpack(t, "io.buildpack.unsupported.buildpack.api", "v4", "buildpack.4.com", "0.1",
 					[]corev1alpha1.BuildpackStack{
 						{

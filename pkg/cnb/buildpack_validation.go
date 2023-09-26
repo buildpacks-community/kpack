@@ -9,7 +9,7 @@ import (
 
 var anyStackMinimumVersion = semver.MustParse("0.5")
 
-func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins []string, relaxedMixinContract bool) error {
+func (bl BuildpackLayerInfo) buildpackSupports(buildpackApis []string, id string, mixins []string, relaxedMixinContract bool) error {
 	if len(bl.Order) != 0 {
 		return nil //ignore meta-buildpacks
 	}
@@ -29,6 +29,13 @@ func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins 
 		}
 	}
 	return errors.Errorf("stack %s is not supported", id)
+}
+
+func (bl BuildpackLayerInfo) extensionSupports(buildpackApis []string) error {
+	if !present(buildpackApis, bl.API) {
+		return errors.Errorf("unsupported buildpack api: %s, expecting: %s", bl.API, strings.Join(buildpackApis, ", "))
+	}
+	return nil
 }
 
 func validateRequiredMixins(providedMixins, requiredMixins []string, relaxedMixinContract bool) error {
@@ -79,6 +86,7 @@ func mixinPresent(mixins []string, mixin string, relaxedMixinContract bool) bool
 func stageRemoved(needle string) string {
 	return strings.SplitN(needle, ":", 2)[1]
 }
+
 func isAnystack(stackId string, buildpackVersion *semver.Version) bool {
 	return stackId == "*" && buildpackVersion.Compare(anyStackMinimumVersion) >= 0
 }

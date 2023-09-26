@@ -115,6 +115,7 @@ func (f *fakeFetcher) ResolveAndFetch(_ context.Context, module buildapi.Builder
 		}, nil
 	}
 
+	// TODO: buildpacks and extensions can have the same ID
 	extLayers, ok := f.extensions[fmt.Sprintf("%s@%s", module.Id, module.Version)]
 	if ok {
 		return RemoteBuildpackInfo{

@@ -98,10 +98,10 @@ func (bb *builderBlder) AddBuildpackGroup(buildpacks ...RemoteBuildpackRef) {
 
 func (bb *builderBlder) AddExtensionGroup(extensions ...RemoteBuildpackRef) {
 	group := make([]corev1alpha1.BuildpackRef, 0, len(extensions))
-	for _, b := range extensions {
-		group = append(group, b.buildpackRef())
+	for _, ext := range extensions {
+		group = append(group, ext.buildpackRef())
 
-		for _, layer := range b.Layers {
+		for _, layer := range ext.Layers {
 			bb.extensionLayers[layer.BuildpackInfo] = layer
 		}
 	}
@@ -112,19 +112,27 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	buildpacks := bb.buildpacks()
 	extensions := bb.extensions()
 
-	err := bb.validateBuilder(buildpacks)
+	err := bb.validateBuilder(buildpacks, extensions)
 	if err != nil {
 		return nil, err
 	}
 
+	// buildpack layers
 	buildpackLayerMetadata := BuildpackLayerMetadata{}
 	buildpackLayers := make([]v1.Layer, 0, len(bb.buildpackLayers))
-	// TODO: extensionLayers := make([]v1.Layer, 0, len(bb.extensionLayers))
-
 	for _, key := range buildpacks {
-		layer := bb.buildpackLayers[key]
-		buildpackLayerMetadata.add(layer)
-		buildpackLayers = append(buildpackLayers, layer.v1Layer)
+		bpLayer := bb.buildpackLayers[key]
+		buildpackLayerMetadata.add(bpLayer)
+		buildpackLayers = append(buildpackLayers, bpLayer.v1Layer)
+	}
+
+	// extension layers
+	extensionLayerMetadata := BuildpackLayerMetadata{}
+	extensionLayers := make([]v1.Layer, 0, len(bb.extensionLayers))
+	for _, key := range extensions {
+		extLayer := bb.extensionLayers[key]
+		extensionLayerMetadata.add(extLayer)
+		extensionLayers = append(extensionLayers, extLayer.v1Layer)
 	}
 
 	defaultLayer, err := bb.defaultDirsLayer()
@@ -149,6 +157,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 				bb.lifecycleLayer,
 			},
 			buildpackLayers,
+			extensionLayers,
 			[]v1.Layer{
 				stackLayer,
 				orderLayer,
@@ -168,8 +177,7 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 		return nil, err
 	}
 
-	// TODO: set extensionOrderLabel, extensionLayersLabel
-	return imagehelpers.SetLabels(image, map[string]interface{}{
+	labels := map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
 		buildpackLayersLabel: buildpackLayerMetadata,
 		lifecycleApisLabel:   bb.LifecycleMetadata.APIs,
@@ -189,23 +197,35 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 			Buildpacks: buildpacks,
 			Extensions: extensions,
 		},
-	})
+	}
+	if len(extensionLayers) > 0 {
+		labels[extensionLayersLabel] = extensionLayerMetadata
+	}
+	if len(bb.orderExtensions) > 0 {
+		labels[extensionOrderLabel] = bb.orderExtensions
+	}
+	return imagehelpers.SetLabels(image, labels)
 }
 
-// TODO: add extensions
-func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
+func (bb *builderBlder) validateBuilder(sortedBuildpacks, sortedExtensions []DescriptiveBuildpackInfo) error {
 	platformApis := append(bb.LifecycleMetadata.APIs.Platform.Deprecated, bb.LifecycleMetadata.APIs.Platform.Supported...)
 	err := validatePlatformApis(platformApis)
 	if err != nil {
 		return err
 	}
 	buildpackApis := append(bb.LifecycleMetadata.APIs.Buildpack.Deprecated, bb.LifecycleMetadata.APIs.Buildpack.Supported...)
+	// buildpacks
 	for _, bpInfo := range sortedBuildpacks {
-
 		bpLayerInfo := bb.buildpackLayers[bpInfo].BuildpackLayerInfo
-		err := bpLayerInfo.supports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis))
-		if err != nil {
+		if err := bpLayerInfo.buildpackSupports(buildpackApis, bb.stackId, bb.mixins, relaxedMixinContract(platformApis)); err != nil {
 			return errors.Wrapf(err, "validating buildpack %s", bpInfo)
+		}
+	}
+	// extensions
+	for _, extInfo := range sortedExtensions {
+		extLayerInfo := bb.extensionLayers[extInfo].BuildpackLayerInfo
+		if err := extLayerInfo.extensionSupports(buildpackApis); err != nil {
+			return errors.Wrapf(err, "validating extension %s", extInfo)
 		}
 	}
 	return nil
@@ -274,12 +294,14 @@ func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 	type tomlOrder []tomlOrderEntry
 
 	type tomlOrderFile struct {
-		Order tomlOrder `toml:"order"`
+		Order           tomlOrder `toml:"order"`
+		OrderExtensions tomlOrder `toml:"order-extensions,omitempty"`
 	}
 
 	orderBuf := &bytes.Buffer{}
 
-	order := make(tomlOrder, 0, len(bb.order)) // TODO: update with extensions
+	// buildpacks
+	order := make(tomlOrder, 0, len(bb.order))
 	for _, o := range bb.order {
 		bps := make([]tomlBuildpack, 0, len(o.Group))
 		for _, b := range o.Group {
@@ -292,7 +314,21 @@ func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 		order = append(order, tomlOrderEntry{Group: bps})
 	}
 
-	err := toml.NewEncoder(orderBuf).Encode(tomlOrderFile{order})
+	// extensions
+	orderExt := make(tomlOrder, 0, len(bb.orderExtensions))
+	for _, g := range bb.orderExtensions {
+		exts := make([]tomlBuildpack, 0, len(g.Group))
+		for _, e := range g.Group {
+			exts = append(exts, tomlBuildpack{
+				ID:       e.Id,
+				Version:  e.Version,
+				Optional: e.Optional, // TODO: check
+			})
+		}
+		orderExt = append(orderExt, tomlOrderEntry{Group: exts})
+	}
+
+	err := toml.NewEncoder(orderBuf).Encode(tomlOrderFile{order, orderExt})
 	if err != nil {
 		return nil, err
 	}
