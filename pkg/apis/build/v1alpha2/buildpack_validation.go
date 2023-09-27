@@ -3,10 +3,12 @@ package v1alpha2
 import (
 	"context"
 
-	"github.com/pivotal/kpack/pkg/apis/validate"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
+// TODO: add for extensions
 func (cb *Buildpack) SetDefaults(context.Context) {
 	if cb.Spec.ServiceAccountName == "" {
 		cb.Spec.ServiceAccountName = "default"

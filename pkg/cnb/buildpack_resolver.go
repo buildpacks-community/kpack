@@ -5,11 +5,12 @@ import (
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/registry"
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 )
 
 // BuildpackResolver will attempt to resolve a Buildpack reference to a
@@ -20,22 +21,32 @@ type BuildpackResolver interface {
 }
 
 type buildpackResolver struct {
-	clusterstore      *v1alpha2.ClusterStore
+	clusterStore      *v1alpha2.ClusterStore
 	buildpacks        []*v1alpha2.Buildpack
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack
+	extensions        []*v1alpha2.Buildpack
+	clusterExtensions []*v1alpha2.ClusterBuildpack
 }
 
-func NewBuildpackResolver(clusterStore *v1alpha2.ClusterStore, buildpacks []*v1alpha2.Buildpack, clusterBuildpacks []*v1alpha2.ClusterBuildpack) BuildpackResolver {
+func NewBuildpackResolver(
+	clusterStore *v1alpha2.ClusterStore,
+	buildpacks []*v1alpha2.Buildpack,
+	clusterBuildpacks []*v1alpha2.ClusterBuildpack,
+	extensions []*v1alpha2.Buildpack,
+	clusterExtensions []*v1alpha2.ClusterBuildpack,
+) BuildpackResolver {
 	return &buildpackResolver{
-		clusterstore:      clusterStore,
+		clusterStore:      clusterStore,
 		buildpacks:        buildpacks,
 		clusterBuildpacks: clusterBuildpacks,
+		extensions:        extensions,
+		clusterExtensions: clusterExtensions,
 	}
 }
 
 func (r *buildpackResolver) ClusterStoreObservedGeneration() int64 {
-	if r.clusterstore != nil {
-		return r.clusterstore.Status.ObservedGeneration
+	if r.clusterStore != nil {
+		return r.clusterStore.Status.ObservedGeneration
 	}
 	return 0
 }
@@ -83,7 +94,7 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 		}
 		matchingBuildpacks = append(matchingBuildpacks, cbp...)
 
-		cs, err := r.resolveFromClusterStore(ref.Id, r.clusterstore)
+		cs, err := r.resolveFromClusterStore(ref.Id, r.clusterStore)
 		if err != nil {
 			return K8sRemoteBuildpack{}, err
 		}

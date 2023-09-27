@@ -3,10 +3,11 @@ package cnb
 import (
 	"testing"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -160,7 +161,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	when("Resolve", func() {
-		when("using the clusterstore", func() {
+		when("using the clusterStore", func() {
 			var (
 				resolver BuildpackResolver
 				store    = &buildapi.ClusterStore{
@@ -182,7 +183,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, nil, nil)
+				resolver = NewBuildpackResolver(store, nil, nil, nil, nil)
 			})
 
 			it("finds it using id", func() {
@@ -275,7 +276,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, buildpacks, nil)
+				resolver = NewBuildpackResolver(nil, buildpacks, nil, nil, nil)
 			})
 
 			when("using id", func() {
@@ -439,7 +440,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks)
+				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks, nil, nil)
 			})
 
 			when("using id", func() {
@@ -611,7 +612,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, buildpacks, clusterBuildpacks)
+				resolver = NewBuildpackResolver(store, buildpacks, clusterBuildpacks, nil, nil)
 			})
 
 			it("records which objects were used", func() {

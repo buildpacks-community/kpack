@@ -26,10 +26,13 @@ type remoteBuildpackFetcher struct {
 func NewRemoteBuildpackFetcher(
 	factory registry.KeychainFactory,
 	clusterStore *buildapi.ClusterStore,
-	buildpacks []*buildapi.Buildpack, clusterBuildpacks []*buildapi.ClusterBuildpack,
+	buildpacks []*buildapi.Buildpack,
+	clusterBuildpacks []*buildapi.ClusterBuildpack,
+	extensions []*buildapi.Buildpack,
+	clusterExtensions []*buildapi.ClusterBuildpack,
 ) RemoteBuildpackFetcher {
 	return &remoteBuildpackFetcher{
-		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks),
+		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks, extensions, clusterExtensions),
 		keychainFactory:   dockercreds.NewCachedKeychainFactory(factory),
 	}
 }
