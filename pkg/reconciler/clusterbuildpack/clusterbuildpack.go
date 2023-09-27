@@ -21,7 +21,6 @@ import (
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
-// TODO: add for extensions
 const (
 	ReconcilerName = "ClusterBuildpacks"
 	Kind           = "ClusterBuildpack"

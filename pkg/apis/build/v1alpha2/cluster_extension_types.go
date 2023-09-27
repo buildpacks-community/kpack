@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	ClusterBuildpackKind   = "ClusterBuildpack"
-	ClusterBuildpackCRName = "clusterbuildpacks.kpack.io"
+	ClusterExtensionKind   = "ClusterExtension"
+	ClusterExtensionCRName = "clusterextensions.kpack.io"
 )
 
 // +genclient

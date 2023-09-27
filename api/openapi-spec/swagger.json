@@ -5887,6 +5887,13 @@
           },
           "x-kubernetes-list-type": ""
         },
+        "order-extensions": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.BuilderOrderEntry"
+          }
+        },
         "stack": {
           "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -5937,6 +5944,13 @@
           "format": "int64"
         },
         "order": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.OrderEntry"
+          }
+        },
+        "order-extensions": {
           "type": "array",
           "items": {
             "default": {},
@@ -6116,6 +6130,13 @@
           },
           "x-kubernetes-list-type": ""
         },
+        "order-extensions": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.BuilderOrderEntry"
+          }
+        },
         "serviceAccountRef": {
           "default": {},
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
@@ -6193,13 +6214,11 @@
     "kpack.build.v1alpha2.ClusterBuildpackSpec": {
       "type": "object",
       "properties": {
+        "image": {
+          "type": "string"
+        },
         "serviceAccountRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
-        },
-        "source": {
-          "default": {},
-          "x-kubernetes-list-type": "",
-          "$ref": "#/definitions/kpack.core.v1alpha1.ImageSource"
         }
       }
     },
@@ -6223,6 +6242,102 @@
           },
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "observedGeneration": {
+          "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterExtension": {
+      "type": "object",
+      "required": [
+        "spec",
+        "status"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterExtensionSpec"
+        },
+        "status": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterExtensionStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterExtensionList": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.ClusterExtension"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterExtensionSpec": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterExtensionStatus": {
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "description": "Conditions the latest available observations of a resource's current state.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
+          },
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackStatus"
+          },
+          "x-kubernetes-list-type": ""
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -6495,6 +6610,102 @@
             "$ref": "#/definitions/kpack.build.v1alpha2.CosignAnnotation"
           },
           "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.Extension": {
+      "type": "object",
+      "required": [
+        "spec",
+        "status"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ExtensionSpec"
+        },
+        "status": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ExtensionStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ExtensionList": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.Extension"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ExtensionSpec": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "serviceAccountName": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ExtensionStatus": {
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "description": "Conditions the latest available observations of a resource's current state.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
+          },
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.BuildpackStatus"
+          },
+          "x-kubernetes-list-type": ""
+        },
+        "observedGeneration": {
+          "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -6789,6 +7000,13 @@
             "$ref": "#/definitions/kpack.build.v1alpha2.BuilderOrderEntry"
           },
           "x-kubernetes-list-type": ""
+        },
+        "order-extensions": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.BuilderOrderEntry"
+          }
         },
         "serviceAccount": {
           "type": "string"
