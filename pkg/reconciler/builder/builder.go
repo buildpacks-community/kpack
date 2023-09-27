@@ -46,6 +46,8 @@ func NewController(
 	buildpackInformer buildinformers.BuildpackInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
+	extensionInformer buildinformers.ExtensionInformer,
+	clusterExtensionInformer buildinformers.ClusterExtensionInformer,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
 		Client:                 opt.Client,
@@ -56,6 +58,8 @@ func NewController(
 		BuildpackLister:        buildpackInformer.Lister(),
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
 		ClusterStackLister:     clusterStackInformer.Lister(),
+		ExtensionLister:        extensionInformer.Lister(),
+		ClusterExtensionLister: clusterExtensionInformer.Lister(),
 	}
 
 	logger := opt.Logger.With(
@@ -107,6 +111,8 @@ type Reconciler struct {
 	ClusterStoreLister     buildlisters.ClusterStoreLister
 	BuildpackLister        buildlisters.BuildpackLister
 	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
+	ExtensionLister        buildlisters.ExtensionLister
+	ClusterExtensionLister buildlisters.ClusterExtensionLister
 	ClusterStackLister     buildlisters.ClusterStackLister
 }
 
@@ -189,7 +195,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, err
 	}
 
+	extensions, err := c.ExtensionLister.Extensions(builder.Namespace).List(labels.Everything())
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
 	clusterBuildpacks, err := c.ClusterBuildpackLister.List(labels.Everything())
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	clusterExtensions, err := c.ClusterExtensionLister.List(labels.Everything())
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -222,7 +238,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		}
 	}
 
-	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
+	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks, extensions, clusterExtensions)
 
 	buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
 	if err != nil {

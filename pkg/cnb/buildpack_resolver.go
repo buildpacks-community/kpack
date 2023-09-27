@@ -24,16 +24,16 @@ type buildpackResolver struct {
 	clusterStore      *v1alpha2.ClusterStore
 	buildpacks        []*v1alpha2.Buildpack
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack
-	extensions        []*v1alpha2.Buildpack
-	clusterExtensions []*v1alpha2.ClusterBuildpack
+	extensions        []*v1alpha2.Extension
+	clusterExtensions []*v1alpha2.ClusterExtension
 }
 
 func NewBuildpackResolver(
 	clusterStore *v1alpha2.ClusterStore,
 	buildpacks []*v1alpha2.Buildpack,
 	clusterBuildpacks []*v1alpha2.ClusterBuildpack,
-	extensions []*v1alpha2.Buildpack,
-	clusterExtensions []*v1alpha2.ClusterBuildpack,
+	extensions []*v1alpha2.Extension,
+	clusterExtensions []*v1alpha2.ClusterExtension,
 ) BuildpackResolver {
 	return &buildpackResolver{
 		clusterStore:      clusterStore,

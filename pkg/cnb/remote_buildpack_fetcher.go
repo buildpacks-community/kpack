@@ -28,8 +28,8 @@ func NewRemoteBuildpackFetcher(
 	clusterStore *buildapi.ClusterStore,
 	buildpacks []*buildapi.Buildpack,
 	clusterBuildpacks []*buildapi.ClusterBuildpack,
-	extensions []*buildapi.Buildpack,
-	clusterExtensions []*buildapi.ClusterBuildpack,
+	extensions []*buildapi.Extension,
+	clusterExtensions []*buildapi.ClusterExtension,
 ) RemoteBuildpackFetcher {
 	return &remoteBuildpackFetcher{
 		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks, extensions, clusterExtensions),
