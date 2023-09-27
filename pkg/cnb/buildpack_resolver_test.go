@@ -190,7 +190,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.engine", "")
 				expectedBuildpack := engineBuildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
@@ -199,20 +199,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "8.0.0")
 				expectedBuildpack := v8Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
 
 			it("fails on invalid id", func() {
 				ref := makeRef("fake-buildpack", "")
-				_, err := resolver.resolve(ref)
+				_, err := resolver.resolveBuildpack(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 			})
 
 			it("fails on unknown version", func() {
 				ref := makeRef("io.buildpack.multi", "8.0.1")
-				_, err := resolver.resolve(ref)
+				_, err := resolver.resolveBuildpack(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 			})
 		})
@@ -284,7 +284,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -293,7 +293,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -302,14 +302,14 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 			})
@@ -319,20 +319,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeBuildpack", "", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "Buildpack", "", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "no buildpack with name 'fake-buildpack'")
 				})
 			})
@@ -342,7 +342,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -351,7 +351,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -360,26 +360,26 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.multi", "Buildpack", "io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "Buildpack", "io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 			})
@@ -448,7 +448,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -457,7 +457,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -466,20 +466,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid id", func() {
 					ref := makeRef("fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 			})
@@ -489,20 +489,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeClusterBuildpack", "", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "ClusterBuildpack", "", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "no cluster buildpack with name 'fake-buildpack'")
 				})
 			})
@@ -512,7 +512,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -521,7 +521,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -530,26 +530,26 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.multi", "ClusterBuildpack", "io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "ClusterBuildpack", "io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 			})
@@ -616,16 +616,16 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("records which objects were used", func() {
-				buildpack, err := resolver.resolve(makeRef("io.buildpack.meta", ""))
+				buildpack, err := resolver.resolveBuildpack(makeRef("io.buildpack.meta", ""))
 				assert.Nil(t, err)
 				assert.Equal(t, metaBuildpack, buildpack.Buildpack)
 
-				buildpack, err = resolver.resolve(makeRef("io.buildpack.multi", "8.0.0"))
+				buildpack, err = resolver.resolveBuildpack(makeRef("io.buildpack.multi", "8.0.0"))
 
 				assert.Nil(t, err)
 				assert.Equal(t, v8Buildpack, buildpack.Buildpack)
 
-				buildpack, err = resolver.resolve(makeRef("io.buildpack.multi", "9.0.0"))
+				buildpack, err = resolver.resolveBuildpack(makeRef("io.buildpack.multi", "9.0.0"))
 				assert.Nil(t, err)
 				assert.Equal(t, v9Buildpack, buildpack.Buildpack)
 			})
@@ -634,7 +634,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "8.0.0")
 				expectedBuildpack := v8Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
@@ -643,7 +643,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "9.0.0")
 				expectedBuildpack := v9Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})

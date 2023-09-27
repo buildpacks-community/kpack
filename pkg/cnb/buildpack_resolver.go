@@ -16,7 +16,8 @@ import (
 // BuildpackResolver will attempt to resolve a Buildpack reference to a
 // Buildpack from either the ClusterStore, Buildpacks, or ClusterBuildpacks
 type BuildpackResolver interface {
-	resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
+	resolveBuildpack(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
+	resolveExtension(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error)
 	ClusterStoreObservedGeneration() int64
 }
 
@@ -51,7 +52,7 @@ func (r *buildpackResolver) ClusterStoreObservedGeneration() int64 {
 	return 0
 }
 
-func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (r *buildpackResolver) resolveBuildpack(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	var matchingBuildpacks []K8sRemoteBuildpack
 	var err error
 	switch {
@@ -123,6 +124,83 @@ func (r *buildpackResolver) resolve(ref v1alpha2.BuilderBuildpackRef) (K8sRemote
 			return result, nil
 		}
 	}
+
+	return K8sRemoteBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", ref.Id, ref.Version)
+}
+
+// TODO: update for extensions
+func (r *buildpackResolver) resolveExtension(ref v1alpha2.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	//var matchingBuildpacks []K8sRemoteBuildpack
+	//var err error
+	//switch {
+	//case ref.Kind == v1alpha2.BuildpackKind && ref.Id != "":
+	//	bp := findBuildpack(ref.ObjectReference, r.buildpacks)
+	//	if bp == nil {
+	//		return K8sRemoteBuildpack{}, fmt.Errorf("buildpack not found: %v", ref.Name)
+	//	}
+	//
+	//	matchingBuildpacks, err = r.resolveFromBuildpack(ref.Id, []*v1alpha2.Buildpack{bp})
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//case ref.Kind == v1alpha2.ClusterBuildpackKind && ref.Id != "":
+	//	cbp := findClusterBuildpack(ref.ObjectReference, r.clusterBuildpacks)
+	//	if cbp == nil {
+	//		return K8sRemoteBuildpack{}, fmt.Errorf("cluster buildpack not found: %v", ref.Name)
+	//	}
+	//
+	//	matchingBuildpacks, err = r.resolveFromClusterBuildpack(ref.Id, []*v1alpha2.ClusterBuildpack{cbp})
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//case ref.Kind != "":
+	//	bp, err := r.resolveFromObjectReference(ref.ObjectReference)
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//	matchingBuildpacks = []K8sRemoteBuildpack{bp}
+	//case ref.Id != "":
+	//	bp, err := r.resolveFromBuildpack(ref.Id, r.buildpacks)
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//	matchingBuildpacks = append(matchingBuildpacks, bp...)
+	//
+	//	cbp, err := r.resolveFromClusterBuildpack(ref.Id, r.clusterBuildpacks)
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//	matchingBuildpacks = append(matchingBuildpacks, cbp...)
+	//
+	//	cs, err := r.resolveFromClusterStore(ref.Id, r.clusterStore)
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//	matchingBuildpacks = append(matchingBuildpacks, cs...)
+	//case ref.Image != "":
+	//	// TODO(chenbh):
+	//	return K8sRemoteBuildpack{}, fmt.Errorf("using images in builders not currently supported")
+	//default:
+	//	return K8sRemoteBuildpack{}, fmt.Errorf("invalid buildpack reference")
+	//}
+	//
+	//if len(matchingBuildpacks) == 0 {
+	//	return K8sRemoteBuildpack{}, errors.Errorf("could not find buildpack with id '%s'", ref.Id)
+	//}
+	//
+	//if ref.Version == "" {
+	//	bp, err := highestVersion(matchingBuildpacks)
+	//	if err != nil {
+	//		return K8sRemoteBuildpack{}, err
+	//	}
+	//	return bp, nil
+	//}
+	//
+	//for _, result := range matchingBuildpacks {
+	//	if result.Buildpack.Version == ref.Version {
+	//		return result, nil
+	//	}
+	//}
 
 	return K8sRemoteBuildpack{}, errors.Errorf("could not find buildpack with id '%s' and version '%s'", ref.Id, ref.Version)
 }

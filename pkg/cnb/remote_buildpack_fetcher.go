@@ -15,7 +15,8 @@ import (
 
 type RemoteBuildpackFetcher interface {
 	BuildpackResolver
-	ResolveAndFetch(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
+	ResolveAndFetchBuildpack(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
+	ResolveAndFetchExtension(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
 }
 
 type remoteBuildpackFetcher struct {
@@ -37,8 +38,17 @@ func NewRemoteBuildpackFetcher(
 	}
 }
 
-func (s *remoteBuildpackFetcher) ResolveAndFetch(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
-	remote, err := s.resolve(ref)
+func (s *remoteBuildpackFetcher) ResolveAndFetchBuildpack(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	remote, err := s.resolveBuildpack(ref)
+	if err != nil {
+		return RemoteBuildpackInfo{}, err
+	}
+
+	return s.fetch(ctx, remote)
+}
+
+func (s *remoteBuildpackFetcher) ResolveAndFetchExtension(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	remote, err := s.resolveExtension(ref)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}
@@ -93,7 +103,7 @@ func (s *remoteBuildpackFetcher) layersForOrder(ctx context.Context, order corev
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
-			buildpack, err := s.resolve(buildapi.BuilderBuildpackRef{
+			buildpack, err := s.resolveBuildpack(buildapi.BuilderBuildpackRef{
 				BuildpackRef: corev1alpha1.BuildpackRef{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      buildpackRef.Id,

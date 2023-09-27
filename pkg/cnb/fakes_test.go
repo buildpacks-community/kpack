@@ -53,10 +53,11 @@ type buildpackRefContainer struct {
 
 type fakeResolver struct {
 	buildpacks         map[string]K8sRemoteBuildpack
+	extensions         map[string]K8sRemoteBuildpack
 	observedGeneration int64
 }
 
-func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (r *fakeResolver) resolveBuildpack(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	buildpack, ok := r.buildpacks[fmt.Sprintf("%s@%s", ref.Id, ref.Version)]
 	if !ok {
 		return K8sRemoteBuildpack{}, errors.New("buildpack not found")
@@ -64,10 +65,24 @@ func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuild
 	return buildpack, nil
 }
 
+func (r *fakeResolver) resolveExtension(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	extension, ok := r.extensions[fmt.Sprintf("%s@%s", ref.Id, ref.Version)]
+	if !ok {
+		return K8sRemoteBuildpack{}, errors.New("extension not found")
+	}
+	return extension, nil
+}
+
 func (f *fakeResolver) AddBuildpack(t *testing.T, ref buildapi.BuilderBuildpackRef, buildpack K8sRemoteBuildpack) {
 	t.Helper()
 	assert.NotEqual(t, ref.Id, "", "buildpack ref missing id")
 	f.buildpacks[fmt.Sprintf("%s@%s", ref.Id, ref.Version)] = buildpack
+}
+
+func (f *fakeResolver) AddExtension(t *testing.T, ref buildapi.BuilderBuildpackRef, extension K8sRemoteBuildpack) {
+	t.Helper()
+	assert.NotEqual(t, ref.Id, "", "extension ref missing id")
+	f.extensions[fmt.Sprintf("%s@%s", ref.Id, ref.Version)] = extension
 }
 
 func (r *fakeResolver) ClusterStoreObservedGeneration() int64 {
@@ -106,7 +121,7 @@ type fakeFetcher struct {
 	observedGeneration int64
 }
 
-func (f *fakeFetcher) ResolveAndFetch(_ context.Context, module buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+func (f *fakeFetcher) ResolveAndFetchBuildpack(_ context.Context, module buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
 	bpLayers, ok := f.buildpacks[fmt.Sprintf("%s@%s", module.Id, module.Version)]
 	if ok {
 		return RemoteBuildpackInfo{
@@ -135,7 +150,7 @@ func (f *fakeFetcher) UsedObjects() []k8scorev1.ObjectReference {
 	return nil
 }
 
-func (f *fakeFetcher) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (f *fakeFetcher) resolveBuildpack(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	panic("Not implemented For Tests")
 }
 
