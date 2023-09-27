@@ -1,7 +1,6 @@
 package secret_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -21,7 +20,7 @@ func TestVolumeSecretReader(t *testing.T) {
 func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 	when("#readBasicAuthSecret", func() {
 		it("returns the username and password from the secret", func() {
-			testDir, err := ioutil.TempDir("", "secret-volume")
+			testDir, err := os.MkdirTemp("", "secret-volume")
 			require.NoError(t, err)
 
 			defer func() {
@@ -30,8 +29,8 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "creds"), 0777))
 
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "creds", corev1.BasicAuthUsernameKey), []byte("saved-username"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "creds", corev1.BasicAuthPasswordKey), []byte("saved-password"), 0600))
 
 			auth, err := secret.ReadBasicAuthSecret(testDir, "creds")
 			require.NoError(t, err)
@@ -45,7 +44,7 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 
 	when("#readSshSecret", func() {
 		it("returns the private key and known hosts from the secret", func() {
-			testDir, err := ioutil.TempDir("", "secret-volume")
+			testDir, err := os.MkdirTemp("", "secret-volume")
 			require.NoError(t, err)
 
 			defer func() {
@@ -54,8 +53,8 @@ func testVolumeSecretReader(t *testing.T, when spec.G, it spec.S) {
 
 			require.NoError(t, os.MkdirAll(path.Join(testDir, "creds"), 0777))
 
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", corev1.SSHAuthPrivateKey), []byte("foobar"), 0600))
-			require.NoError(t, ioutil.WriteFile(path.Join(testDir, "creds", secret.SSHAuthKnownHostsKey), []byte("ssh-keyscan"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "creds", corev1.SSHAuthPrivateKey), []byte("foobar"), 0600))
+			require.NoError(t, os.WriteFile(path.Join(testDir, "creds", secret.SSHAuthKnownHostsKey), []byte("ssh-keyscan"), 0600))
 
 			auth, err := secret.ReadSshSecret(testDir, "creds")
 			require.NoError(t, err)

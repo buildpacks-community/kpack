@@ -3,7 +3,6 @@ package blob_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -35,7 +34,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		dir, err = ioutil.TempDir("", "fetch_test")
+		dir, err = os.MkdirTemp("", "fetch_test")
 		require.NoError(t, err)
 	})
 
@@ -49,21 +48,21 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, testFile), 0)
 			require.NoError(t, err)
 
-			files, err := ioutil.ReadDir(dir)
+			files, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 			testDir := files[0]
 			require.Equal(t, "testdir", testDir.Name())
 			require.True(t, testDir.IsDir())
 
-			files, err = ioutil.ReadDir(filepath.Join(dir, testDir.Name()))
+			files, err = os.ReadDir(filepath.Join(dir, testDir.Name()))
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 
 			testFile := files[0]
 			require.Equal(t, "testfile", testFile.Name())
 			require.False(t, testFile.IsDir())
-			file, err := ioutil.ReadFile(filepath.Join(dir, testDir.Name(), testFile.Name()))
+			file, err := os.ReadFile(filepath.Join(dir, testDir.Name(), testFile.Name()))
 			require.NoError(t, err)
 			require.Equal(t, "test file contents", string(file))
 
@@ -78,14 +77,15 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "fat-zip.zip"), 0)
 		require.NoError(t, err)
 
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
 		testFile := files[0]
 		require.Equal(t, "some-file.txt", testFile.Name())
-
-		require.Equal(t, os.FileMode(0777).String(), testFile.Mode().String())
+		info, err := testFile.Info()
+		require.NoError(t, err)
+		require.Equal(t, os.FileMode(0777).String(), info.Mode().String())
 
 		require.Contains(t, output.String(), "Successfully downloaded")
 	})
@@ -94,7 +94,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"), 0)
 		require.NoError(t, err)
 
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
@@ -102,7 +102,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, "test-exe", testDir.Name())
 		require.True(t, testDir.IsDir())
 
-		files, err = ioutil.ReadDir(filepath.Join(dir, testDir.Name()))
+		files, err = os.ReadDir(filepath.Join(dir, testDir.Name()))
 		require.NoError(t, err)
 		require.Len(t, files, 1)
 
@@ -120,7 +120,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, archiveFile), 1)
 			require.NoError(t, err)
 
-			files, err := ioutil.ReadDir(dir)
+			files, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 

@@ -1,7 +1,7 @@
 package notary
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 
 	"github.com/pkg/errors"
@@ -17,7 +17,7 @@ type RemoteRepositoryFactory struct {
 }
 
 func (r *RemoteRepositoryFactory) GetRepository(url string, gun data.GUN, remoteStore storage.RemoteStore, cryptoService signed.CryptoService) (Repository, error) {
-	changeListDir, err := ioutil.TempDir("", "")
+	changeListDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,7 @@ package notary
 
 import (
 	"encoding/hex"
-	"io/ioutil"
+	"io"
 	"log"
 	"path/filepath"
 	"testing"
@@ -30,7 +30,7 @@ func TestImageSigner(t *testing.T) {
 
 func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
-		logger = log.New(ioutil.Discard, "", 0)
+		logger = log.New(io.Discard, "", 0)
 
 		client = registryfakes.NewFakeClient()
 

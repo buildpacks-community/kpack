@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 
 	lifecyclebuildpack "github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/platform"
@@ -176,7 +176,7 @@ func DecompressBuildMetadata(compressedMetadata string) (*BuildMetadata, error) 
 		return nil, err
 	}
 	defer zr.Close()
-	data, err := ioutil.ReadAll(zr)
+	data, err := io.ReadAll(zr)
 	if err != nil {
 		return nil, err
 	}

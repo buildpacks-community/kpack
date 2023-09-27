@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -104,7 +103,7 @@ func handleSource(img v1.Image, dir string) error {
 }
 
 func handleZip(img v1.Image, dir string) error {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func handleZip(img v1.Image, dir string) error {
 }
 
 func handleTar(img v1.Image, dir string) error {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return err
 	}
@@ -149,7 +148,7 @@ func handleTar(img v1.Image, dir string) error {
 }
 
 func handleTarGZ(img v1.Image, dir string) error {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return err
 	}
@@ -179,7 +178,7 @@ func getSourceFile(img v1.Image, dir string) (*os.File, error) {
 		return nil, err
 	}
 
-	infos, err := ioutil.ReadDir(dir)
+	infos, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

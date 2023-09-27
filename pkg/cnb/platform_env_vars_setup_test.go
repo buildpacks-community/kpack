@@ -1,7 +1,6 @@
 package cnb_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -25,7 +24,7 @@ func testPlatformEnvVarsSetup(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		testVolume, err = ioutil.TempDir("", "permission")
+		testVolume, err = os.MkdirTemp("", "permission")
 		require.NoError(t, err)
 
 		platformEnv = map[string]string{
@@ -61,7 +60,7 @@ func testPlatformEnvVarsSetup(t *testing.T, when spec.G, it spec.S) {
 
 func checkEnvVar(t *testing.T, testVolume, key, value string) {
 	require.FileExists(t, path.Join(testVolume, "env", key))
-	buf, err := ioutil.ReadFile(path.Join(testVolume, "env", key))
+	buf, err := os.ReadFile(path.Join(testVolume, "env", key))
 	require.NoError(t, err)
 	require.Equal(t, value, string(buf))
 }
