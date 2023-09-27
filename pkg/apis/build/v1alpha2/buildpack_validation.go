@@ -8,7 +8,6 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
-// TODO: add for extensions
 func (cb *Buildpack) SetDefaults(context.Context) {
 	if cb.Spec.ServiceAccountName == "" {
 		cb.Spec.ServiceAccountName = "default"

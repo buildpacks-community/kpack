@@ -27,16 +27,16 @@ import (
 )
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ImageKind):     &v1alpha2.Image{},
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuildKind):     &v1alpha2.Build{},
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuilderKind):   &v1alpha2.Builder{},
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuildpackKind): &v1alpha2.Buildpack{},
-	// TODO: v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ExtensionKind):        &v1alpha2.Extension{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ImageKind):            &v1alpha2.Image{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuildKind):            &v1alpha2.Build{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuilderKind):          &v1alpha2.Builder{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuildpackKind):        &v1alpha2.Buildpack{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ExtensionKind):        &v1alpha2.Extension{},
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterBuilderKind):   &v1alpha2.ClusterBuilder{},
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterBuildpackKind): &v1alpha2.ClusterBuildpack{},
-	// TODO: v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterExtensionKind): &v1alpha2.ClusterExtension{},
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStoreKind): &v1alpha2.ClusterStore{},
-	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStackKind): &v1alpha2.ClusterStack{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterExtensionKind): &v1alpha2.ClusterExtension{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStoreKind):     &v1alpha2.ClusterStore{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStackKind):     &v1alpha2.ClusterStack{},
 }
 
 func init() {
