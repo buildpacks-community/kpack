@@ -83,7 +83,8 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 
 		testFile := files[0]
 		require.Equal(t, "some-file.txt", testFile.Name())
-		info, _ := testFile.Info()
+		info, err := testFile.Info()
+		require.NoError(t, err)
 		require.Equal(t, os.FileMode(0777).String(), info.Mode().String())
 
 		require.Contains(t, output.String(), "Successfully downloaded")
