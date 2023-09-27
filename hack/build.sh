@@ -99,14 +99,15 @@ EOT
 }
 
 function generate_kbld_config_ko() {
-  path=$1
-  registry=$2
+  kbld_config_path=$1
+  ko_config_path=$2
+  registry=$3
 
   args=("--disable-optimizations")
   args+=($buildArgs)
   args="${args[@]}";
 
-  cat <<EOT > $path
+  cat <<EOT > $kbld_config_path
   apiVersion: kbld.k14s.io/v1alpha1
   kind: Config
   sources:
@@ -162,9 +163,20 @@ function generate_kbld_config_ko() {
     newImage: $rebase_image
   - image: completion
     newImage: $completion_image
-
-
 EOT
+
+  prefix="github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+  cat <<EOT > $ko_config_path
+  defaultBaseImage: paketobuildpacks/run-jammy-tiny
+
+  builds:
+  - id: controller
+    ldflags:
+    - -X ${prefix}.CompletionCommand=/ko-app/completion
+    - -X ${prefix}.PrepareCommand=/ko-app/build-init
+    - -X ${prefix}.RebaseCommand=/ko-app/rebase
+EOT
+
 }
 
 function compile() {
@@ -189,8 +201,9 @@ function compile() {
   echo "Generating kbld config"
   temp_dir=$(mktemp -d)
   kbld_config_path="${temp_dir}/kbld-config"
+  ko_config_path="${temp_dir}/.ko.yaml"
   if [ $type = "ko" ]; then
-    generate_kbld_config_ko $kbld_config_path $registry
+    generate_kbld_config_ko $kbld_config_path $ko_config_path $registry
   elif [ $type = "pack" ]; then
     generate_kbld_config_pack $kbld_config_path $registry
   else
@@ -199,5 +212,5 @@ function compile() {
   fi
 
   echo "Building Images"
-  ytt -f config | kbld -f $kbld_config_path -f- > $output
+ ytt -f config | KO_CONFIG_PATH="$ko_config_path" kbld -f $kbld_config_path -f- > $output
 }

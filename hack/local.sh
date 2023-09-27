@@ -9,7 +9,7 @@ function usage() {
   cat <<-USAGE
 local.sh [OPTIONS]
 
-Builds and generates a deployment yaml for kpack.
+Builds and generates a deployment yaml for kpack. This only builds linux images.
 
 Prerequisites:
 - pack or ko installed
@@ -18,7 +18,7 @@ Prerequisites:
 
 OPTIONS
   --help                          -h  prints the command usage
-  --buildType <buildType>             build system to use. valid options are pack or ko.
+  --build-type <buildType>            build system to use. valid options are pack or ko.
   --registry <registry>               registry to publish built images to (e.g. gcr.io/myproject/my-repo or my-dockerhub-username)
   --output <output>                   filepath for generated deployment yaml. defaults to a temp file
   --apply                             (boolean) apply deployment yaml to current kubectl context
@@ -39,7 +39,7 @@ function main() {
         exit 0
         ;;
 
-      --buildType)
+      --build-type)
         buildType=("${2}")
         shift 2
         ;;
