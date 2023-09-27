@@ -160,7 +160,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		}
 	)
 
-	when("Resolve", func() {
+	when("resolveBuildpack", func() {
 		when("using the clusterStore", func() {
 			var (
 				resolver BuildpackResolver
@@ -648,8 +648,324 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
 		})
+	})
 
-		// when("resolving via image", func() {
-		// })
+	when("resolveExtension", func() {
+		when("using the extension resources", func() {
+			var (
+				resolver   BuildpackResolver
+				extensions = []*buildapi.Extension{
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "io.buildpack.multi-8.0.0",
+							Namespace: testNamespace,
+						},
+						Status: buildapi.ExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v8Buildpack,
+							},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "io.buildpack.multi-9.0.0",
+							Namespace: testNamespace,
+						},
+						Status: buildapi.ExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v9Buildpack,
+							},
+						},
+					},
+				}
+			)
+
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, nil)
+			})
+
+			when("using id", func() {
+				it("finds it using id", func() {
+					ref := makeRef("io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds it using id and version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.0")
+					expected := v8Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on unknown version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '8.0.1'")
+				})
+			})
+
+			when("using object ref", func() {
+				it("finds the resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid kind", func() {
+					ref := makeObjectRef("io.buildpack.multi", "FakeExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "kind must be either Extension or ClusterExtension")
+				})
+
+				it("fails on object not found", func() {
+					ref := makeObjectRef("fake-extension", "Extension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "no extension with name 'fake-extension'")
+				})
+			})
+
+			when("using id and object ref together", func() {
+				it("finds id in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds the correct version in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "9.0.0")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on version not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "9.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '9.0.1'")
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+			})
+		})
+
+		when("using the clusterExtension resources", func() {
+			var (
+				resolver          BuildpackResolver
+				clusterExtensions = []*buildapi.ClusterExtension{
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "io.buildpack.multi-8.0.0",
+						},
+						Status: buildapi.ClusterExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v8Buildpack,
+							},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "io.buildpack.multi-9.0.0",
+						},
+						Status: buildapi.ClusterExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v9Buildpack,
+							},
+						},
+					},
+				}
+			)
+
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, nil, clusterExtensions)
+			})
+
+			when("using id", func() {
+				it("finds it using id", func() {
+					ref := makeRef("io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds it using id and version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.0")
+					expected := v8Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid id", func() {
+					ref := makeRef("fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on unknown version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '8.0.1'")
+				})
+			})
+
+			when("using object ref", func() {
+				it("finds the resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid kind", func() {
+					ref := makeObjectRef("io.buildpack.multi", "FakeExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "kind must be either Extension or ClusterExtension")
+				})
+
+				it("fails on object not found", func() {
+					ref := makeObjectRef("fake-extension", "ClusterExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "no cluster extension with name 'fake-extension'")
+				})
+			})
+
+			when("using id and object ref together", func() {
+				it("finds id in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds the correct version in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "9.0.0")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on version not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "9.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '9.0.1'")
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+			})
+		})
+
+		when("using multiple resource kinds", func() {
+			var (
+				resolver   BuildpackResolver
+				extensions = []*buildapi.Extension{
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "io.buildpack.multi-8.0.0",
+							Namespace: testNamespace,
+						},
+						Status: buildapi.ExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v8Buildpack,
+							},
+						},
+					},
+				}
+				clusterExtensions = []*buildapi.ClusterExtension{
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "io.buildpack.multi-8.0.0",
+						},
+						Status: buildapi.ClusterExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v8Buildpack,
+							},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "io.buildpack.multi-9.0.0",
+						},
+						Status: buildapi.ClusterExtensionStatus{
+							Extensions: []corev1alpha1.BuildpackStatus{
+								v9Buildpack,
+							},
+						},
+					},
+				}
+			)
+
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, clusterExtensions)
+			})
+
+			it("records which objects were used", func() {
+				actual, err := resolver.resolveExtension(makeRef("io.buildpack.multi", "8.0.0"))
+				assert.Nil(t, err)
+				assert.Equal(t, v8Buildpack, actual.Buildpack)
+
+				actual, err = resolver.resolveExtension(makeRef("io.buildpack.multi", "9.0.0"))
+				assert.Nil(t, err)
+				assert.Equal(t, v9Buildpack, actual.Buildpack)
+			})
+
+			it("resolves extensions before anything else", func() {
+				ref := makeRef("io.buildpack.multi", "8.0.0")
+				expected := v8Buildpack
+
+				actual, err := resolver.resolveExtension(ref)
+				assert.Nil(t, err)
+				assert.Equal(t, expected, actual.Buildpack)
+			})
+		})
 	})
 }
