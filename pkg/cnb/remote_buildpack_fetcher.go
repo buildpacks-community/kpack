@@ -56,7 +56,6 @@ func (s *remoteBuildpackFetcher) ResolveAndFetchExtension(ctx context.Context, r
 	return s.fetch(ctx, remote)
 }
 
-// TODO: see if this needs to be updated for extensions
 func (s *remoteBuildpackFetcher) fetch(ctx context.Context, remoteBuildpack K8sRemoteBuildpack) (RemoteBuildpackInfo, error) {
 	buildpack := remoteBuildpack.Buildpack
 	keychain, err := s.keychainFactory.KeychainForSecretRef(ctx, remoteBuildpack.SecretRef)

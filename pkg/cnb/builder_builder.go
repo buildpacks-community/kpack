@@ -322,7 +322,7 @@ func (bb *builderBlder) orderLayer() (v1.Layer, error) {
 			exts = append(exts, tomlBuildpack{
 				ID:       e.Id,
 				Version:  e.Version,
-				Optional: e.Optional, // TODO: check
+				Optional: e.Optional,
 			})
 		}
 		orderExt = append(orderExt, tomlOrderEntry{Group: exts})

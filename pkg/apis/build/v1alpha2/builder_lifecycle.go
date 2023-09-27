@@ -31,7 +31,7 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 		},
 	}
 	bs.Order = record.Order
-	// TODO: bs.OrderExtensions = record.OrderExtensions
+	bs.OrderExtensions = record.OrderExtensions
 	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
 	bs.ObservedStackGeneration = record.ObservedStackGeneration
 	bs.OS = record.OS
