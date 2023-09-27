@@ -121,25 +121,26 @@ type fakeFetcher struct {
 	observedGeneration int64
 }
 
-func (f *fakeFetcher) ResolveAndFetchBuildpack(_ context.Context, module buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
-	bpLayers, ok := f.buildpacks[fmt.Sprintf("%s@%s", module.Id, module.Version)]
+func (f *fakeFetcher) ResolveAndFetchBuildpack(_ context.Context, bp buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	bpLayers, ok := f.buildpacks[fmt.Sprintf("%s@%s", bp.Id, bp.Version)]
 	if ok {
 		return RemoteBuildpackInfo{
-			BuildpackInfo: buildpackInfoInLayers(bpLayers, module.Id, module.Version),
+			BuildpackInfo: buildpackInfoInLayers(bpLayers, bp.Id, bp.Version),
 			Layers:        bpLayers,
 		}, nil
 	}
+	return RemoteBuildpackInfo{}, errors.New("buildpack not found")
+}
 
-	// TODO: buildpacks and extensions can have the same ID
-	extLayers, ok := f.extensions[fmt.Sprintf("%s@%s", module.Id, module.Version)]
+func (f *fakeFetcher) ResolveAndFetchExtension(_ context.Context, ext buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	extLayers, ok := f.extensions[fmt.Sprintf("%s@%s", ext.Id, ext.Version)]
 	if ok {
 		return RemoteBuildpackInfo{
-			BuildpackInfo: buildpackInfoInLayers(extLayers, module.Id, module.Version),
+			BuildpackInfo: buildpackInfoInLayers(extLayers, ext.Id, ext.Version),
 			Layers:        extLayers,
 		}, nil
 	}
-
-	return RemoteBuildpackInfo{}, errors.New("module not found")
+	return RemoteBuildpackInfo{}, errors.New("extension not found")
 }
 
 func (f *fakeFetcher) ClusterStoreObservedGeneration() int64 {
@@ -151,6 +152,10 @@ func (f *fakeFetcher) UsedObjects() []k8scorev1.ObjectReference {
 }
 
 func (f *fakeFetcher) resolveBuildpack(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	panic("Not implemented For Tests")
+}
+
+func (f *fakeFetcher) resolveExtension(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	panic("Not implemented For Tests")
 }
 

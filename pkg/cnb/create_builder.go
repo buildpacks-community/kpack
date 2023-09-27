@@ -67,7 +67,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		extensions := make([]RemoteBuildpackRef, 0, len(group.Group))
 
 		for _, ext := range group.Group {
-			remoteExtension, err := fetcher.ResolveAndFetchBuildpack(ctx, ext)
+			remoteExtension, err := fetcher.ResolveAndFetchExtension(ctx, ext)
 			if err != nil {
 				return buildapi.BuilderRecord{}, err
 			}
