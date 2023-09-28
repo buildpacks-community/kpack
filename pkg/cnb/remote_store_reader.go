@@ -16,7 +16,15 @@ type RemoteBuildpackReader struct {
 	RegistryClient RegistryClient
 }
 
-func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
+func (r *RemoteBuildpackReader) ReadBuildpack(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
+	return r.readModule(keychain, storeImages, buildpackLayersLabel)
+}
+
+func (r *RemoteBuildpackReader) ReadExtension(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error) {
+	return r.readModule(keychain, storeImages, extensionLayersLabel)
+}
+
+func (r *RemoteBuildpackReader) readModule(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource, layersLabelName string) ([]corev1alpha1.BuildpackStatus, error) {
 	var g errgroup.Group
 
 	c := make(chan corev1alpha1.BuildpackStatus)
@@ -28,19 +36,18 @@ func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []core
 				return err
 			}
 
-			bpMetadata := BuildpackageMetadata{}
+			packageMetadata := BuildpackageMetadata{}
 			if ok, err := imagehelpers.HasLabel(image, buildpackageMetadataLabel); err != nil {
 				return err
 			} else if ok {
-				err := imagehelpers.GetLabel(image, buildpackageMetadataLabel, &bpMetadata)
+				err := imagehelpers.GetLabel(image, buildpackageMetadataLabel, &packageMetadata)
 				if err != nil {
 					return err
 				}
 			}
 
-			// TODO: read extensionLayersLabel
 			layerMetadata := BuildpackLayerMetadata{}
-			err = imagehelpers.GetLabel(image, buildpackLayersLabel, &layerMetadata)
+			err = imagehelpers.GetLabel(image, layersLabelName, &layerMetadata)
 			if err != nil {
 				return err
 			}
@@ -48,9 +55,9 @@ func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []core
 			for id := range layerMetadata {
 				for version, metadata := range layerMetadata[id] {
 					packageInfo := corev1alpha1.BuildpackageInfo{
-						Id:       bpMetadata.Id,
-						Version:  bpMetadata.Version,
-						Homepage: bpMetadata.Homepage,
+						Id:       packageMetadata.Id,
+						Version:  packageMetadata.Version,
+						Homepage: packageMetadata.Homepage,
 					}
 
 					info := corev1alpha1.BuildpackInfo{
@@ -101,18 +108,18 @@ func (r *RemoteBuildpackReader) Read(keychain authn.Keychain, storeImages []core
 		close(c)
 	}()
 
-	var buildpacks []corev1alpha1.BuildpackStatus
+	var statuses []corev1alpha1.BuildpackStatus
 	for b := range c {
-		buildpacks = append(buildpacks, b)
+		statuses = append(statuses, b)
 	}
 
-	sort.Slice(buildpacks, func(i, j int) bool {
-		if buildpacks[i].String() == buildpacks[j].String() {
-			return buildpacks[i].StoreImage.Image < buildpacks[j].StoreImage.Image
+	sort.Slice(statuses, func(i, j int) bool {
+		if statuses[i].String() == statuses[j].String() {
+			return statuses[i].StoreImage.Image < statuses[j].StoreImage.Image
 		}
 
-		return buildpacks[i].String() < buildpacks[j].String()
+		return statuses[i].String() < statuses[j].String()
 	})
 
-	return buildpacks, g.Wait()
+	return statuses, g.Wait()
 }
