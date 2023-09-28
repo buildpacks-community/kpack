@@ -32,9 +32,31 @@ func NewRemoteBuildpackFetcher(
 	extensions []*buildapi.Extension,
 	clusterExtensions []*buildapi.ClusterExtension,
 ) RemoteBuildpackFetcher {
+	rBuildpacks := make([]ModuleResource, len(buildpacks))
+	for i := range buildpacks {
+		rBuildpacks[i] = ModuleResource(buildpacks[i])
+	}
+	rClusterBuildpacks := make([]ModuleResource, len(clusterBuildpacks))
+	for i := range clusterBuildpacks {
+		rClusterBuildpacks[i] = ModuleResource(clusterBuildpacks[i])
+	}
+	rExtensions := make([]ModuleResource, len(extensions))
+	for i := range extensions {
+		rExtensions[i] = ModuleResource(extensions[i])
+	}
+	rClusterExtensions := make([]ModuleResource, len(clusterExtensions))
+	for i := range clusterExtensions {
+		rClusterExtensions[i] = ModuleResource(clusterExtensions[i])
+	}
 	return &remoteBuildpackFetcher{
-		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks, extensions, clusterExtensions),
-		keychainFactory:   dockercreds.NewCachedKeychainFactory(factory),
+		BuildpackResolver: NewBuildpackResolver(
+			clusterStore,
+			rBuildpacks,
+			rClusterBuildpacks,
+			rExtensions,
+			rClusterExtensions,
+		),
+		keychainFactory: dockercreds.NewCachedKeychainFactory(factory),
 	}
 }
 

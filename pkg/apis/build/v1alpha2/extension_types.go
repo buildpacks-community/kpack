@@ -51,10 +51,26 @@ type ExtensionList struct {
 	Items []Extension `json:"items"`
 }
 
-func (*Extension) GetGroupVersionKind() schema.GroupVersionKind {
+func (e *Extension) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(ExtensionKind)
 }
 
-func (c *Extension) NamespacedName() types.NamespacedName {
-	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
+func (e *Extension) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: e.Namespace, Name: e.Name}
+}
+
+func (e *Extension) ModulesStatus() []corev1alpha1.BuildpackStatus {
+	return e.Status.Extensions
+}
+
+func (e *Extension) ServiceAccountName() string {
+	return e.Spec.ServiceAccountName
+}
+
+func (e *Extension) ServiceAccountNamespace() string {
+	return e.Namespace
+}
+
+func (e *Extension) TypeMD() metav1.TypeMeta {
+	return e.TypeMeta
 }

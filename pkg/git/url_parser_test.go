@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseURL(t *testing.T) {
-	spec.Focus(t, "Test Parse Git URL", testParseURL)
+	spec.Focus(t, "Test Parse Git URL", testParseURL) // TODO: should this be .Focus?
 }
 
 func testParseURL(t *testing.T, when spec.G, it spec.S) {
