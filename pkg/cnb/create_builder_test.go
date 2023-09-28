@@ -727,10 +727,12 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				addExtension(t, extensionRef.Id, extensionRef.Version, "", "0.3")
 
 				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec)
-				require.NoError(t, err)
 
 				if os == "windows" {
-					// TODO: expect some kind of useful error
+					assert.Error(t, err, "image extensions are not supported for Windows builds")
+					return
+				} else {
+					require.NoError(t, err)
 				}
 
 				// builder record
@@ -829,6 +831,9 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			when("validating extensions", func() {
 				it("errors with unsupported Buildpack API version", func() {
+					if os == "windows" {
+						return
+					}
 					extensionRef := corev1alpha1.BuildpackRef{
 						BuildpackInfo: corev1alpha1.BuildpackInfo{
 							Id:      "some-unsupported-extension-id",

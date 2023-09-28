@@ -2,6 +2,7 @@ package cnb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -63,6 +64,9 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 	}
 
 	// fetch and add extensions
+	if builderBldr.os == "windows" && len(spec.OrderExtensions) > 0 {
+		return buildapi.BuilderRecord{}, errors.New("image extensions are not supported for Windows builds")
+	}
 	for _, group := range spec.OrderExtensions {
 		extensions := make([]RemoteBuildpackRef, 0, len(group.Group))
 
