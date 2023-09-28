@@ -18,6 +18,8 @@ func TestBuildpackResolver(t *testing.T) {
 
 func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	var (
+		resolver BuildpackResolver
+
 		testNamespace = "some-namespace"
 
 		engineBuildpack = corev1alpha1.BuildpackStatus{
@@ -161,10 +163,21 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	when("resolveBuildpack", func() {
+		when("provided image", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, nil, nil)
+			})
+
+			it("fails", func() {
+				ref := buildapi.BuilderBuildpackRef{Image: "some-image"}
+				_, err := resolver.resolveBuildpack(ref)
+				assert.EqualError(t, err, "using images in builders not currently supported")
+			})
+		})
+
 		when("using the clusterStore", func() {
 			var (
-				resolver BuildpackResolver
-				store    = &buildapi.ClusterStore{
+				store = &buildapi.ClusterStore{
 					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterStore"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "some-store",
@@ -219,7 +232,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("using the buildpack resources", func() {
 			var (
-				resolver   BuildpackResolver
 				buildpacks = []*buildapi.Buildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
@@ -387,7 +399,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("using the clusterbuildpack resources", func() {
 			var (
-				resolver          BuildpackResolver
 				clusterBuildpacks = []*buildapi.ClusterBuildpack{
 					{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
@@ -557,8 +568,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("using multiple resource kinds", func() {
 			var (
-				resolver BuildpackResolver
-				store    = &buildapi.ClusterStore{
+				store = &buildapi.ClusterStore{
 					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterStore"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "some-store",
@@ -651,37 +661,73 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("resolveExtension", func() {
-		when("using the extension resources", func() {
-			var (
-				resolver   BuildpackResolver
-				extensions = []*buildapi.Extension{
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "io.buildpack.multi-8.0.0",
-							Namespace: testNamespace,
-						},
-						Status: buildapi.ExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v8Buildpack,
-							},
+		var (
+			resolver   BuildpackResolver
+			extensions = []*buildapi.Extension{
+				{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "io.buildpack.multi-8.0.0",
+						Namespace: testNamespace,
+					},
+					Status: buildapi.ExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v8Buildpack,
 						},
 					},
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "io.buildpack.multi-9.0.0",
-							Namespace: testNamespace,
-						},
-						Status: buildapi.ExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v9Buildpack,
-							},
+				},
+				{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "io.buildpack.multi-9.0.0",
+						Namespace: testNamespace,
+					},
+					Status: buildapi.ExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v9Buildpack,
 						},
 					},
-				}
-			)
+				},
+			}
+			clusterExtensions = []*buildapi.ClusterExtension{
+				{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "io.buildpack.multi-8.0.0",
+					},
+					Status: buildapi.ClusterExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v8Buildpack,
+						},
+					},
+				},
+				{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "io.buildpack.multi-9.0.0",
+					},
+					Status: buildapi.ClusterExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v9Buildpack,
+						},
+					},
+				},
+			}
+		)
 
+		when("provided image", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, clusterExtensions)
+			})
+
+			it("fails", func() {
+				ref := buildapi.BuilderBuildpackRef{Image: "some-image"}
+				_, err := resolver.resolveExtension(ref)
+				assert.EqualError(t, err, "using images in builders not currently supported")
+			})
+		})
+
+		when("using the extension resources", func() {
 			it.Before(func() {
 				resolver = NewBuildpackResolver(nil, nil, nil, extensions, nil)
 			})
@@ -775,34 +821,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("using the clusterExtension resources", func() {
-			var (
-				resolver          BuildpackResolver
-				clusterExtensions = []*buildapi.ClusterExtension{
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "io.buildpack.multi-8.0.0",
-						},
-						Status: buildapi.ClusterExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v8Buildpack,
-							},
-						},
-					},
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "io.buildpack.multi-9.0.0",
-						},
-						Status: buildapi.ClusterExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v9Buildpack,
-							},
-						},
-					},
-				}
-			)
-
 			it.Before(func() {
 				resolver = NewBuildpackResolver(nil, nil, nil, nil, clusterExtensions)
 			})
@@ -902,48 +920,6 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("using multiple resource kinds", func() {
-			var (
-				resolver   BuildpackResolver
-				extensions = []*buildapi.Extension{
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "io.buildpack.multi-8.0.0",
-							Namespace: testNamespace,
-						},
-						Status: buildapi.ExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v8Buildpack,
-							},
-						},
-					},
-				}
-				clusterExtensions = []*buildapi.ClusterExtension{
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "io.buildpack.multi-8.0.0",
-						},
-						Status: buildapi.ClusterExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v8Buildpack,
-							},
-						},
-					},
-					{
-						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "io.buildpack.multi-9.0.0",
-						},
-						Status: buildapi.ClusterExtensionStatus{
-							Extensions: []corev1alpha1.BuildpackStatus{
-								v9Buildpack,
-							},
-						},
-					},
-				}
-			)
-
 			it.Before(func() {
 				resolver = NewBuildpackResolver(nil, nil, nil, extensions, clusterExtensions)
 			})
