@@ -145,7 +145,6 @@ func (r *buildpackResolver) resolveModule(
 				matching = append(matching, found...)
 			}
 		case ref.Image != "":
-			// TODO: add test
 			return K8sRemoteBuildpack{}, fmt.Errorf("using images in builders not currently supported")
 		default:
 			return K8sRemoteBuildpack{}, fmt.Errorf("invalid reference")
