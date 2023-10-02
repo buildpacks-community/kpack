@@ -5,9 +5,8 @@ on:
     branches:
     - main
     - release/**
-  pull_request:
-    branches:
-    - release/**
+    tags:
+    - v[0-9]+.[0-9]+.[0-9]+-?**
 
 defaults:
   run:
@@ -23,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -42,9 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -60,9 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -78,9 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -96,9 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -114,9 +113,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -132,9 +131,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -150,9 +149,9 @@ jobs:
     runs-on: windows-2019
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -170,9 +169,9 @@ jobs:
     runs-on: windows-2019
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -190,13 +189,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+    - name: Docker Login
+      uses: docker/login-action@v3.0.0
+      with:
+        registry: ${{ secrets.REGISTRY_HOST }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version-file: 'go.mod'
     - name: Build
       run: |
+        trap 'echo -e "$output"' EXIT
+
         output=$(go run ./hack/lifecycle/main.go --tag=${{ env.PUBLIC_IMAGE_DEV_REPO }}/lifecycle 2>&1)
         image=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
         mkdir images
@@ -221,7 +228,7 @@ jobs:
     - completion-windows-image
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -229,7 +236,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt, kapp
@@ -240,7 +247,7 @@ jobs:
         name: images
 
     - name: Build release yaml
-      run: |        
+      run: |
         ytt -f config/ \
           -v controller_image=$(cat controller) \
           -v webhook_image=$(cat webhook) \
@@ -275,7 +282,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -286,7 +293,7 @@ jobs:
       uses: imjasonh/setup-crane@v0.3
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt, kapp
@@ -343,13 +350,13 @@ jobs:
         EOF
 
     - name: Create Kind Cluster
-      uses: helm/kind-action@v1.7.0
+      uses: helm/kind-action@v1.8.0
       with:
         cluster_name: e2e
         config: kind.yaml
 
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ env.REGISTRY_URL }}
         username: ${{ env.REGISTRY_USER }}
@@ -428,11 +435,11 @@ jobs:
       - build-init-windows-image
       - completion-windows-image
       - lifecycle-image
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -443,7 +450,7 @@ jobs:
       uses: imjasonh/setup-crane@v0.3
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt
@@ -452,16 +459,16 @@ jobs:
       uses: actions/download-artifact@v3
 
     - name: Docker Login
-      uses: docker/login-action@v2.2.0
+      uses: docker/login-action@v3.0.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Parse branch name
+    - name: Parse tag name
       run: |
         echo "GITHUB_REF=${GITHUB_REF}"
-        [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]}
+        [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]}
         if [[ -z "${version}" ]]; then
           echo "ERROR: kpack version not detected."
           exit 1
@@ -474,12 +481,12 @@ jobs:
         for image in images/*; do
           dev_image=$(cat $image)
           digest=$(echo $dev_image| cut -d "@" -f 2)
-          
+
           name=$(basename $image)
-          final_repo="${{ env.PUBLIC_IMAGE_REPO }}/${name}" 
-          
+          final_repo="${{ env.PUBLIC_IMAGE_REPO }}/${name}"
+
           crane copy "$dev_image" "$final_repo"
-          
+
           echo "${final_repo}@${digest}" > final-image-refs/$name
         done
 
@@ -503,7 +510,7 @@ jobs:
           -v completion_image=$(cat final-image-refs/completion) \
           -v completion_windows_image=$(cat final-image-refs/completion-windows) \
           -v lifecycle_image=$(cat final-image-refs/lifecycle) \
-          -v version=${{ env.KPACK_VERSION }} > $file
+          -v kpack_version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release
