@@ -69,6 +69,17 @@ const (
 	PlatformEnvVarPrefix = "PLATFORM_ENV_"
 )
 
+var (
+	PrepareCommand    = "/cnb/process/build-init"
+	AnalyzeCommand   = "/cnb/lifecycle/analyzer"
+	DetectCommand   = "/cnb/lifecycle/detector"
+	RestoreCommand   = "/cnb/lifecycle/restorer"
+	BuildCommand    = "/cnb/lifecycle/builder"
+	ExportCommand   = "/cnb/lifecycle/exporter"
+	CompletionCommand = "/cnb/process/completion"
+	RebaseCommand     = "/cnb/process/rebase"
+)
+
 type ServiceBinding interface {
 	ServiceName() string
 }
@@ -265,7 +276,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	analyzeContainer := corev1.Container{
 		Name:      AnalyzeContainerName,
 		Image:     b.Spec.Builder.Image,
-		Command:   []string{"/cnb/lifecycle/analyzer"},
+		Command:   []string{AnalyzeCommand},
 		Resources: b.Spec.Resources,
 		Args: args(
 			[]string{
@@ -312,7 +323,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 	detectContainer := corev1.Container{
 		Name:      DetectContainerName,
 		Image:     b.Spec.Builder.Image,
-		Command:   []string{"/cnb/lifecycle/detector"},
+		Command:   []string{DetectCommand},
 		Resources: b.Spec.Resources,
 		Args: []string{
 			"-app=/workspace",
@@ -361,7 +372,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:    CompletionContainerName,
 						Image:   images.completion(buildContext.os()),
-						Command: []string{"/cnb/process/completion"},
+						Command: []string{CompletionCommand},
 						Env: []corev1.EnvVar{
 							homeEnv,
 							{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
@@ -396,7 +407,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:            PrepareContainerName,
 						Image:           images.buildInit(buildContext.os()),
-						Command:         []string{"/cnb/process/build-init"},
+						Command:         []string{PrepareCommand},
 						Args:            append(secretArgs, imagePullArgs...),
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
@@ -465,7 +476,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:            RestoreContainerName,
 						Image:           b.Spec.Builder.Image,
-						Command:         []string{"/cnb/lifecycle/restorer"},
+						Command:         []string{RestoreCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: args([]string{
@@ -494,7 +505,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:            BuildContainerName,
 						Image:           b.Spec.Builder.Image,
-						Command:         []string{"/cnb/lifecycle/builder"},
+						Command:         []string{BuildCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: []string{
@@ -520,7 +531,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 					corev1.Container{
 						Name:            ExportContainerName,
 						Image:           b.Spec.Builder.Image,
-						Command:         []string{"/cnb/lifecycle/exporter"},
+						Command:         []string{ExportCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 						Args: args(
@@ -883,7 +894,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 				{
 					Name:    CompletionContainerName,
 					Image:   images.completion(buildContext.os()),
-					Command: []string{"/cnb/process/completion"},
+					Command: []string{CompletionCommand},
 					Env: []corev1.EnvVar{
 						{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
 						{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
@@ -910,7 +921,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 				{
 					Name:            RebaseContainerName,
 					Image:           images.RebaseImage,
-					Command:         []string{"/cnb/process/rebase"},
+					Command:         []string{RebaseCommand},
 					Resources:       b.Spec.Resources,
 					SecurityContext: containerSecurityContext(buildContext.BuildPodBuilderConfig),
 					Args: args(a(

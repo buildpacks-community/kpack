@@ -16,8 +16,7 @@ You'll also need:
 
 ```bash
 kubectl cluster-info # ensure you have access to a cluster
-docker login <registry namespace> # must be writable and publicly accessible; e.g., your Docker Hub username or gcr.io/<some-project>
-./hack/apply.sh <registry namespace>
+./hack/local.sh --help #this will provide all options for building/deploying kpack
 ```
 
 #### When using private registries
@@ -85,7 +84,7 @@ make unit
 * 🍿 These tests can take anywhere from 20-30 minutes depending on your setup
 
 ```bash
-IMAGE_REGISTRY=gcr.io/<some-project> \
+  IMAGE_REGISTRY=gcr.io/<some-project> \
   IMAGE_REGISTRY_USERNAME=_json_key \
   IMAGE_REGISTRY_PASSWORD=$(cat gcp.json) \
   make e2e
