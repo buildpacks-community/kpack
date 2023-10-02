@@ -3,6 +3,8 @@ package builder
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -33,7 +35,11 @@ const (
 )
 
 type BuilderCreator interface {
-	CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error)
+	CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, serviceAccountSecrets []*corev1.Secret) (buildapi.BuilderRecord, error)
+}
+
+type Fetcher interface {
+	SecretsForServiceAccount(context.Context, string, string) ([]*corev1.Secret, error)
 }
 
 func NewController(
@@ -46,6 +52,7 @@ func NewController(
 	buildpackInformer buildinformers.BuildpackInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
+	secretFetcher Fetcher,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
 		Client:                 opt.Client,
@@ -56,6 +63,7 @@ func NewController(
 		BuildpackLister:        buildpackInformer.Lister(),
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
 		ClusterStackLister:     clusterStackInformer.Lister(),
+		SecretFetcher:          secretFetcher,
 	}
 
 	logger := opt.Logger.With(
@@ -108,6 +116,7 @@ type Reconciler struct {
 	BuildpackLister        buildlisters.BuildpackLister
 	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
 	ClusterStackLister     buildlisters.ClusterStackLister
+	SecretFetcher          Fetcher
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -224,7 +233,12 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 
 	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
 
-	buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, clusterStack, builder.Spec.BuilderSpec)
+	serviceAccountSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, builder.Spec.ServiceAccount(), builder.Namespace)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, clusterStack, builder.Spec.BuilderSpec, serviceAccountSecrets)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

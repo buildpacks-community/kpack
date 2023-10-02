@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pivotal/kpack/pkg/cosign"
+	corev1 "k8s.io/api/core/v1"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -25,10 +27,12 @@ type RemoteBuilderCreator struct {
 	LifecycleProvider LifecycleProvider
 	KpackVersion      string
 	KeychainFactory   registry.KeychainFactory
+	ImageSigner       cosign.BuilderSigner
 }
 
-func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec) (buildapi.BuilderRecord, error) {
+func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, serviceAccountSecrets []*corev1.Secret) (buildapi.BuilderRecord, error) {
 	buildImage, _, err := r.RegistryClient.Fetch(stackKeychain, clusterStack.Status.BuildImage.LatestImage)
+
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -76,6 +80,17 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		return buildapi.BuilderRecord{}, err
 	}
 
+	var (
+		signaturePaths = make([]buildapi.CosignSignature, 0)
+	)
+
+	if len(serviceAccountSecrets) > 0 {
+		signaturePaths, err = r.ImageSigner.SignBuilder(ctx, identifier, serviceAccountSecrets, builderKeychain)
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
 	builder := buildapi.BuilderRecord{
 		Image: identifier,
 		Stack: corev1alpha1.BuildStack{
@@ -87,6 +102,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: fetcher.ClusterStoreObservedGeneration(),
 		OS:                      config.OS,
+		SignaturePaths:          signaturePaths,
 	}
 
 	return builder, nil
