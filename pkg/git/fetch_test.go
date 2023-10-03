@@ -93,7 +93,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 			err := fetcher.Fetch(testDir, "https://github.com/pivotal/kpack", "main", metadataDir)
 			require.NoError(t, err)
 
-			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "apply.sh"))
+			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "local.sh"))
 			require.NoError(t, err)
 			require.True(t, isExecutableByAll(fileInfo.Mode()))
 
