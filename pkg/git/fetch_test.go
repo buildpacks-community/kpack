@@ -90,10 +90,10 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("preserves executable permission", func() {
-			err := fetcher.Fetch(testDir, "https://github.com/pivotal/kpack", "main", metadataDir)
+			err := fetcher.Fetch(testDir, "https://github.com/pivotal/kpack", "b8c0d491135595cc00ab78f6214bef8a7a20afd8", metadataDir)
 			require.NoError(t, err)
 
-			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "apply.sh"))
+			fileInfo, err := os.Lstat(path.Join(testDir, "hack", "local.sh"))
 			require.NoError(t, err)
 			require.True(t, isExecutableByAll(fileInfo.Mode()))
 
