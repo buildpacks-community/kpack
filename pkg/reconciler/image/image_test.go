@@ -156,7 +156,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/builder@sha256:acf123",
-			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+			BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "buildpack.version",
 					Version: "version",
@@ -191,7 +191,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 		Status: buildapi.BuilderStatus{
 			LatestImage: "some/clusterbuilder@sha256:acf123",
-			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+			BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "buildpack.version",
 					Version: "version",
@@ -1594,7 +1594,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+								BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "new-version",
@@ -1764,7 +1764,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: updatedBuilderRunImage,
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+								BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "version",

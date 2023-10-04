@@ -524,8 +524,8 @@ func (in *BuilderSpec) DeepCopy() *BuilderSpec {
 func (in *BuilderStatus) DeepCopyInto(out *BuilderStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
-	if in.BuilderMetadata != nil {
-		in, out := &in.BuilderMetadata, &out.BuilderMetadata
+	if in.BuilderMetadataBuildpacks != nil {
+		in, out := &in.BuilderMetadataBuildpacks, &out.BuilderMetadataBuildpacks
 		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
 		copy(*out, *in)
 	}

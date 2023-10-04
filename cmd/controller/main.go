@@ -50,8 +50,10 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/buildpack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuildpack"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterextension"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
+	"github.com/pivotal/kpack/pkg/reconciler/extension"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
@@ -207,8 +209,10 @@ func main() {
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, extensionInformer, clusterExtensionInformer)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
+	extensionController := extension.NewController(ctx, options, keychainFactory, extensionInformer, remoteStoreReader)
 	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterExtensionInformer)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
+	clusterExtensionController := clusterextension.NewController(ctx, options, keychainFactory, clusterExtensionInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
 	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
@@ -243,8 +247,10 @@ func main() {
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),
 		run(buildpackController, routinesPerController),
+		run(extensionController, routinesPerController),
 		run(clusterBuilderController, routinesPerController),
 		run(clusterBuildpackController, routinesPerController),
+		run(clusterExtensionController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
 		run(lifecycleController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),

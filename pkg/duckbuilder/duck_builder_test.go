@@ -38,7 +38,7 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+			BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 				{
 					Id:      "test.builder",
 					Version: "test.version",

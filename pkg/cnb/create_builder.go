@@ -103,6 +103,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 			ID:       clusterStack.Status.Id,
 		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
+		Extensions:              buildpackMetadata(builderBldr.extensions()),
 		Order:                   builderBldr.order,
 		OrderExtensions:         builderBldr.orderExtensions,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,

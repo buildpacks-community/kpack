@@ -12,6 +12,7 @@ type BuilderRecord struct {
 	Image                   string
 	Stack                   corev1alpha1.BuildStack
 	Buildpacks              corev1alpha1.BuildpackMetadataList
+	Extensions              corev1alpha1.BuildpackMetadataList
 	Order                   []corev1alpha1.OrderEntry
 	OrderExtensions         []corev1alpha1.OrderEntry
 	ObservedStoreGeneration int64
@@ -21,7 +22,8 @@ type BuilderRecord struct {
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.Stack = record.Stack
-	bs.BuilderMetadata = record.Buildpacks
+	bs.BuilderMetadataBuildpacks = record.Buildpacks
+	bs.BuilderMetadataExtensions = record.Extensions
 	bs.LatestImage = record.Image
 	bs.Conditions = corev1alpha1.Conditions{
 		{

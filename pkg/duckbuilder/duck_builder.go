@@ -44,8 +44,9 @@ func (b *DuckBuilder) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 	}
 }
 
+// TODO: add for extensions?
 func (b *DuckBuilder) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
-	return b.Status.BuilderMetadata
+	return b.Status.BuilderMetadataBuildpacks
 }
 
 func (b *DuckBuilder) RunImage() string {

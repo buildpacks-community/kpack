@@ -40,7 +40,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: buildapi.NamespacedBuilderSpec{},
 			Status: buildapi.BuilderStatus{
-				BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+				BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",
@@ -57,7 +57,7 @@ func testDuckBuilderInformer(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: buildapi.ClusterBuilderSpec{},
 			Status: buildapi.BuilderStatus{
-				BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+				BuilderMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 					{
 						Id:      "another-buildpack",
 						Version: "another-version",

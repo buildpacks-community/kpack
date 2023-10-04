@@ -221,7 +221,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []corev1alpha1.BuildpackMetadata{
+					BuilderMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 						{
 							Id:      "buildpack.id.1",
 							Version: "1.0.0",
@@ -301,7 +301,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					BuilderMetadata: []corev1alpha1.BuildpackMetadata{},
+					BuilderMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{},
 					Stack: corev1alpha1.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
@@ -356,7 +356,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				BuilderMetadata: []corev1alpha1.BuildpackMetadata{
+				BuilderMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 					{
 						Id:      "buildpack.id.1",
 						Version: "1.0.0",

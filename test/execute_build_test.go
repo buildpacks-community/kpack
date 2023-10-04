@@ -11,8 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
@@ -43,17 +45,21 @@ func TestCreateImage(t *testing.T) {
 
 func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 	const (
-		testNamespace        = "test"
-		dockerSecret         = "docker-secret"
-		gitBasicSecret       = "git-basic-secret"
-		gitSSHSecret         = "git-ssh-secret"
-		serviceAccountName   = "image-service-account"
-		clusterStoreName     = "store"
-		buildpackName        = "buildpack"
-		clusterBuildpackName = "cluster-buildpack"
-		clusterStackName     = "stack"
-		builderName          = "custom-builder"
-		clusterBuilderName   = "custom-cluster-builder"
+		testNamespace                    = "test"
+		dockerSecret                     = "docker-secret"
+		gitBasicSecret                   = "git-basic-secret"
+		gitSSHSecret                     = "git-ssh-secret"
+		serviceAccountName               = "image-service-account"
+		clusterStoreName                 = "store"
+		buildpackName                    = "buildpack"
+		extensionName                    = "extension"
+		clusterBuildpackName             = "cluster-buildpack"
+		clusterExtensionName             = "cluster-extension"
+		clusterStackName                 = "stack"
+		builderName                      = "custom-builder"
+		builderWithExtensionsName        = "custom-builder-with-extensions"
+		clusterBuilderName               = "custom-cluster-builder"
+		clusterBuilderWithExtensionsName = "custom-cluster-builder-with-extensions"
 	)
 
 	var (
@@ -78,9 +84,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				Kind: buildapi.BuilderKind,
 				Name: builderName,
 			},
+			"custom-builder-with-extensions": {
+				Kind: buildapi.BuilderKind,
+				Name: builderWithExtensionsName,
+			},
 			"custom-cluster-builder": {
 				Kind: buildapi.ClusterBuilderKind,
 				Name: clusterBuilderName,
+			},
+			"custom-cluster-builder-with-extensions": {
+				Kind: buildapi.ClusterBuilderKind,
+				Name: clusterBuilderWithExtensionsName,
 			},
 		}
 	)
@@ -89,6 +103,10 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		for builderType := range builderConfigs {
 			imageName := fmt.Sprintf("%s-%s", name, builderType)
 			builder := builderConfigs[builderType]
+			var builderHasExtensions bool
+			if strings.Contains(builder.Name, "extensions") { // TODO: this is a bit hacky, maybe we can improve it
+				builderHasExtensions = true
+			}
 
 			t.Run(imageName, func(t *testing.T) {
 				t.Parallel()
@@ -116,7 +134,20 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				}, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				builtImages[validateImageCreate(t, clients, image, expectedResources)] = struct{}{}
+				expectImage := func(t *testing.T, image v1.Image) {}
+				if builderHasExtensions {
+					expectImage = func(t *testing.T, image v1.Image) {
+						cfg, err := image.ConfigFile()
+						require.NoError(t, err)
+						lifecycleMDLabel, ok := cfg.Config.Labels["io.buildpacks.lifecycle.metadata"]
+						require.True(t, ok)
+						var lifecycleMD files.LayersMetadata
+						require.NoError(t, json.Unmarshal([]byte(lifecycleMDLabel), &lifecycleMD))
+						require.Equal(t, "gcr.io/paketo-buildpacks/run-jammy-tiny", lifecycleMD.Stack.RunImage.Image)
+					}
+				}
+
+				builtImages[validateImageCreate(t, clients, image, expectedResources, expectImage)] = struct{}{}
 				validateRebase(t, ctx, clients, image.Name, testNamespace)
 			})
 		}
@@ -147,7 +178,17 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			require.NoError(t, err)
 		}
 
+		err = clients.client.KpackV1alpha2().Extensions(testNamespace).Delete(ctx, extensionName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
 		err = clients.client.KpackV1alpha2().ClusterBuildpacks().Delete(ctx, clusterBuildpackName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().ClusterExtensions().Delete(ctx, clusterExtensionName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -158,6 +199,11 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		err = clients.client.KpackV1alpha2().ClusterBuilders().Delete(ctx, clusterBuilderName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().ClusterBuilders().Delete(ctx, clusterBuilderWithExtensionsName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -233,6 +279,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
+		_, err = clients.client.KpackV1alpha2().Extensions(testNamespace).Create(ctx, &buildapi.Extension{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: extensionName,
+			},
+			Spec: buildapi.ExtensionSpec{
+				ImageSource: corev1alpha1.ImageSource{
+					Image: "natalieparellano/sample-extension", // FIXME
+				},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
 		_, err = clients.client.KpackV1alpha2().ClusterBuildpacks().Create(ctx, &buildapi.ClusterBuildpack{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuildpackName,
@@ -240,6 +298,18 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 			Spec: buildapi.ClusterBuildpackSpec{
 				ImageSource: corev1alpha1.ImageSource{
 					Image: "gcr.io/paketo-buildpacks/nodejs",
+				},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		_, err = clients.client.KpackV1alpha2().ClusterExtensions().Create(ctx, &buildapi.ClusterExtension{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterExtensionName,
+			},
+			Spec: buildapi.ClusterExtensionSpec{
+				ImageSource: corev1alpha1.ImageSource{
+					Image: "natalieparellano/sample-extension", // FIXME
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -358,6 +428,116 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
+		builderWithExtensions, err := clients.client.KpackV1alpha2().Builders(testNamespace).Create(ctx, &buildapi.Builder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      builderWithExtensionsName,
+				Namespace: testNamespace,
+			},
+			Spec: buildapi.NamespacedBuilderSpec{
+				BuilderSpec: buildapi.BuilderSpec{
+					Tag: cfg.newImageTag(),
+					Stack: corev1.ObjectReference{
+						Name: clusterStackName,
+						Kind: "ClusterStack",
+					},
+					Store: corev1.ObjectReference{
+						Name: clusterStoreName,
+						Kind: "ClusterStore",
+					},
+					Order: []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/go",
+										},
+									},
+								},
+							},
+						},
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/nodejs",
+										},
+									},
+								},
+							},
+						},
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									ObjectReference: corev1.ObjectReference{
+										Name: buildpackName,
+										Kind: "Buildpack",
+									},
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/bellsoft-liberica",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/gradle",
+										},
+										Optional: true,
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/syft",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/executable-jar",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/dist-zip",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/spring-boot",
+										},
+									},
+								},
+							},
+						},
+					},
+					OrderExtensions: []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "samples/curl", // FIXME
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ServiceAccountName: serviceAccountName,
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
 		clusterBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterBuilderName,
@@ -452,10 +632,117 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, builder, clusterBuilder)
+		clusterBuilderWithExtensions, err := clients.client.KpackV1alpha2().ClusterBuilders().Create(ctx, &buildapi.ClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterBuilderWithExtensionsName,
+			},
+			Spec: buildapi.ClusterBuilderSpec{
+				BuilderSpec: buildapi.BuilderSpec{
+					Tag: cfg.newImageTag(),
+					Stack: corev1.ObjectReference{
+						Name: clusterStackName,
+						Kind: "ClusterStack",
+					},
+					Store: corev1.ObjectReference{
+						Name: clusterStoreName,
+						Kind: "ClusterStore",
+					},
+					Order: []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/go",
+										},
+									},
+								},
+							},
+						},
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									ObjectReference: corev1.ObjectReference{
+										Name: clusterBuildpackName,
+										Kind: "ClusterBuildpack",
+									},
+								},
+							},
+						},
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/bellsoft-liberica",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/gradle",
+										},
+										Optional: true,
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/syft",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/executable-jar",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/dist-zip",
+										},
+									},
+								},
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "paketo-buildpacks/spring-boot",
+										},
+									},
+								},
+							},
+						},
+					},
+					OrderExtensions: []buildapi.BuilderOrderEntry{
+						{
+							Group: []buildapi.BuilderBuildpackRef{
+								{
+									BuildpackRef: corev1alpha1.BuildpackRef{
+										BuildpackInfo: corev1alpha1.BuildpackInfo{
+											Id: "samples/curl", // FIXME
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ServiceAccountRef: corev1.ObjectReference{
+					Namespace: testNamespace,
+					Name:      serviceAccountName,
+				},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		waitUntilReady(t, ctx, clients, builder, clusterBuilder, builderWithExtensions, clusterBuilderWithExtensions)
 	})
 
-	it("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
+	it.Focus("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
 		imageSources := map[string]corev1alpha1.SourceConfig{
 			"git-image": {
 				Git: &corev1alpha1.Git{
@@ -594,7 +881,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	originalImageTag := validateImageCreate(t, clients, image, expectedResources)
+	originalImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {})
 
 	list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(*ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
@@ -615,7 +902,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 		return len(list.Items) == 2
 	}, 5*time.Second, 1*time.Minute)
 
-	rebuiltImageTag := validateImageCreate(t, clients, image, expectedResources)
+	rebuiltImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {})
 	require.Equal(t, originalImageTag, rebuiltImageTag)
 
 	return originalImageTag
@@ -657,7 +944,13 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 	}
 }
 
-func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, expectedResources corev1.ResourceRequirements) string {
+func validateImageCreate(
+	t *testing.T,
+	clients *clients,
+	image *buildapi.Image,
+	expectedResources corev1.ResourceRequirements, // TODO: this seems to no longer be used?
+	expectImage func(*testing.T, v1.Image),
+) string {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -671,12 +964,15 @@ func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, 
 	waitUntilReady(t, ctx, clients, image)
 
 	registryClient := &registry.Client{}
-	_, identifier, err := registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
+	builtImage, identifier, err := registryClient.Fetch(authn.DefaultKeychain, image.Spec.Tag)
 	require.NoError(t, err)
 
 	eventually(t, func() bool {
 		return strings.Contains(logTail.String(), "Build successful")
 	}, 1*time.Second, 10*time.Second)
+
+	// TODO: expect extend build image with kaniko
+	expectImage(t, builtImage)
 
 	buildList, err := clients.client.KpackV1alpha2().Builds(image.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),

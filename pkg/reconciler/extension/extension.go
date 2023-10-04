@@ -1,4 +1,4 @@
-package buildpack
+package extension
 
 import (
 	"context"
@@ -22,30 +22,30 @@ import (
 )
 
 const (
-	ReconcilerName = "Buildpacks"
-	Kind           = "Buildpack"
+	ReconcilerName = "Extensions"
 )
 
 //go:generate counterfeiter . StoreReader
 type StoreReader interface {
-	ReadBuildpack(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error)
+	ReadExtension(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error)
 }
 
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
 	keychainFactory registry.KeychainFactory,
-	buildpackInformer buildinformers.BuildpackInformer,
-	storeReader StoreReader) *controller.Impl {
+	informer buildinformers.ExtensionInformer,
+	storeReader StoreReader,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:          opt.Client,
-		BuildpackLister: buildpackInformer.Lister(),
+		Lister:          informer.Lister(),
 		StoreReader:     storeReader,
 		KeychainFactory: keychainFactory,
 	}
 
 	logger := opt.Logger.With(
-		zap.String(logkey.Kind, buildapi.BuildpackCRName),
+		zap.String(logkey.Kind, buildapi.ExtensionCRName),
 	)
 
 	impl := controller.NewContext(
@@ -55,35 +55,35 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	informer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 	return impl
 }
 
 type Reconciler struct {
 	Client          versioned.Interface
 	StoreReader     StoreReader
-	BuildpackLister buildlisters.BuildpackLister
+	Lister          buildlisters.ExtensionLister
 	KeychainFactory registry.KeychainFactory
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
-	namespace, buildpackName, err := cache.SplitMetaNamespaceKey(key)
+	namespace, moduleName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return err
 	}
 
-	buildpack, err := c.BuildpackLister.Buildpacks(namespace).Get(buildpackName)
+	module, err := c.Lister.Extensions(namespace).Get(moduleName)
 	if k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	buildpack = buildpack.DeepCopy()
+	module = module.DeepCopy()
 
-	buildpack, err = c.reconcileBuildpackStatus(ctx, buildpack)
+	module, err = c.reconcileExtensionStatus(ctx, module)
 
-	updateErr := c.updateBuildpackStatus(ctx, buildpack)
+	updateErr := c.updateModuleStatus(ctx, module)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -94,10 +94,10 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) updateBuildpackStatus(ctx context.Context, desired *buildapi.Buildpack) error {
+func (c *Reconciler) updateModuleStatus(ctx context.Context, desired *buildapi.Extension) error {
 	desired.Status.ObservedGeneration = desired.Generation
 
-	original, err := c.BuildpackLister.Buildpacks(desired.Namespace).Get(desired.Name)
+	original, err := c.Lister.Extensions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return err
 	}
@@ -106,39 +106,39 @@ func (c *Reconciler) updateBuildpackStatus(ctx context.Context, desired *buildap
 		return nil
 	}
 
-	_, err = c.Client.KpackV1alpha2().Buildpacks(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
+	_, err = c.Client.KpackV1alpha2().Extensions(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
 }
 
-func (c *Reconciler) reconcileBuildpackStatus(ctx context.Context, buildpack *buildapi.Buildpack) (*buildapi.Buildpack, error) {
+func (c *Reconciler) reconcileExtensionStatus(ctx context.Context, module *buildapi.Extension) (*buildapi.Extension, error) {
 	secretRef := registry.SecretRef{}
 
-	if buildpack.Spec.ServiceAccountName != "" {
+	if module.Spec.ServiceAccountName != "" {
 		secretRef = registry.SecretRef{
-			ServiceAccount: buildpack.Spec.ServiceAccountName,
-			Namespace:      buildpack.Namespace,
+			ServiceAccount: module.Spec.ServiceAccountName,
+			Namespace:      module.Namespace,
 		}
 	}
 
 	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
-		buildpack.Status = buildapi.BuildpackStatus{
-			Status: corev1alpha1.CreateStatusWithReadyCondition(buildpack.Generation, err),
+		module.Status = buildapi.ExtensionStatus{
+			Status: corev1alpha1.CreateStatusWithReadyCondition(module.Generation, err),
 		}
-		return buildpack, err
+		return module, err
 	}
 
-	buildpacks, err := c.StoreReader.ReadBuildpack(keychain, []corev1alpha1.ImageSource{buildpack.Spec.ImageSource})
+	modules, err := c.StoreReader.ReadExtension(keychain, []corev1alpha1.ImageSource{module.Spec.ImageSource})
 	if err != nil {
-		buildpack.Status = buildapi.BuildpackStatus{
-			Status: corev1alpha1.CreateStatusWithReadyCondition(buildpack.Generation, err),
+		module.Status = buildapi.ExtensionStatus{
+			Status: corev1alpha1.CreateStatusWithReadyCondition(module.Generation, err),
 		}
-		return buildpack, err
+		return module, err
 	}
 
-	buildpack.Status = buildapi.BuildpackStatus{
-		Buildpacks: buildpacks,
-		Status:     corev1alpha1.CreateStatusWithReadyCondition(buildpack.Generation, nil),
+	module.Status = buildapi.ExtensionStatus{
+		Extensions: modules,
+		Status:     corev1alpha1.CreateStatusWithReadyCondition(module.Generation, nil),
 	}
-	return buildpack, nil
+	return module, nil
 }
