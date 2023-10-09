@@ -7,6 +7,9 @@ on:
     - release/**
     tags:
     - v[0-9]+.[0-9]+.[0-9]+-?**
+  pull_request:
+    branches:
+     - release/**
 
 defaults:
   run:
