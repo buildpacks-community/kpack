@@ -1,7 +1,6 @@
 package dockercreds
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,7 +21,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		testPullSecretsDir, err = ioutil.TempDir("", "test.append")
+		testPullSecretsDir, err = os.MkdirTemp("", "test.append")
 		require.NoError(t, err)
 	})
 
@@ -52,7 +51,7 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 			err := creds.Save(filepath.Join(testPullSecretsDir, "config.json"))
 			require.NoError(t, err)
 
-			configJsonBytes, err := ioutil.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
+			configJsonBytes, err := os.ReadFile(filepath.Join(testPullSecretsDir, "config.json"))
 			require.NoError(t, err)
 
 			assert.JSONEq(t, expectedConfigJsonContents, string(configJsonBytes))

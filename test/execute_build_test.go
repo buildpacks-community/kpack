@@ -37,13 +37,14 @@ import (
 	"github.com/pivotal/kpack/pkg/registry"
 )
 
-func TestCreateImage(t *testing.T) {
+func TestKpackE2E(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 
 	spec.Run(t, "CreateImage", testCreateImage)
+	spec.Run(t, "SignBuilder", testSignBuilder)
 }
 
-func testCreateImage(t *testing.T, when spec.G, it spec.S) {
+func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 	const (
 		testNamespace                    = "test"
 		dockerSecret                     = "docker-secret"
@@ -945,6 +946,26 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 			require.NoError(t, err)
 
 			return kResource.Status.GetCondition(apis.ConditionReady).IsTrue()
+		}, 1*time.Second, 8*time.Minute)
+	}
+}
+
+func waitUntilFailed(t *testing.T, ctx context.Context, clients *clients, expectedMessage string, objects ...kmeta.OwnerRefable) {
+	for _, ob := range objects {
+		namespace := ob.GetObjectMeta().GetNamespace()
+		name := ob.GetObjectMeta().GetName()
+		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
+
+		eventually(t, func() bool {
+			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+			require.NoError(t, err)
+
+			kResource := &duckv1.KResource{}
+			err = duck.FromUnstructured(unstructured, kResource)
+			require.NoError(t, err)
+
+			condition := kResource.Status.GetCondition(apis.ConditionReady)
+			return condition.IsFalse() && "" != condition.Message && strings.Contains(condition.Message, expectedMessage)
 		}, 1*time.Second, 8*time.Minute)
 	}
 }

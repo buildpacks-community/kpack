@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sigstore/cosign/v2/pkg/oci/remote"
+
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -154,7 +156,7 @@ func main() {
 
 func signImage(report files.Report, keychain authn.Keychain) error {
 	if hasCosign() {
-		cosignSigner := cosign.NewImageSigner(logger, sign.SignCmd)
+		cosignSigner := cosign.NewImageSigner(sign.SignCmd, remote.SignatureTag)
 
 		annotations, err := mapKeyValueArgs(cosignAnnotations)
 		if err != nil {

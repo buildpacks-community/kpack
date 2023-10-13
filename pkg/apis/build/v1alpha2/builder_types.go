@@ -57,6 +57,12 @@ type NamespacedBuilderSpec struct {
 }
 
 // +k8s:openapi-gen=true
+type CosignSignature struct {
+	SigningSecret string `json:"signingSecret"`
+	TargetDigest  string `json:"targetDigest"`
+}
+
+// +k8s:openapi-gen=true
 type BuilderStatus struct {
 	corev1alpha1.Status       `json:",inline"`
 	BuilderMetadataBuildpacks corev1alpha1.BuildpackMetadataList `json:"builderMetadata,omitempty"`
@@ -68,6 +74,7 @@ type BuilderStatus struct {
 	ObservedStackGeneration   int64                              `json:"observedStackGeneration,omitempty"`
 	ObservedStoreGeneration   int64                              `json:"observedStoreGeneration,omitempty"`
 	OS                        string                             `json:"os,omitempty"`
+	SignaturePaths            []CosignSignature                  `json:"signaturePaths,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -1,7 +1,6 @@
 package dockercreds_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +31,7 @@ func testVolumeSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 		)
 		it.Before(func() {
 			var err error
-			folderDir, err = ioutil.TempDir("", "secret-volume")
+			folderDir, err = os.MkdirTemp("", "secret-volume")
 			require.NoError(t, err)
 			resource = fakeDockerResource{registryString: "registry.io"}
 		})
@@ -42,7 +41,7 @@ func testVolumeSecretKeychain(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("retrieves the configuration from file", func() {
-			require.NoError(t, ioutil.WriteFile(filepath.Join(folderDir, ".dockerconfigjson"), []byte(`
+			require.NoError(t, os.WriteFile(filepath.Join(folderDir, ".dockerconfigjson"), []byte(`
 {
 	"auths": {
 		"registry.io": {

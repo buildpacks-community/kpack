@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -134,7 +133,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		return err
 	}
 
-	return ioutil.WriteFile(*reportFilePath, buf.Bytes(), 0777)
+	return os.WriteFile(*reportFilePath, buf.Bytes(), 0777)
 }
 
 func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {

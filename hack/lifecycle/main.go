@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -193,7 +192,7 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 				return nil, err
 			}
 
-			buf, err := ioutil.ReadAll(tr)
+			buf, err := io.ReadAll(tr)
 			if err != nil {
 				return nil, err
 			}
@@ -210,7 +209,7 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 }
 
 func lifecycleReader(url string) (io.ReadCloser, error) {
-	dir, err := ioutil.TempDir("", "lifecycle")
+	dir, err := os.MkdirTemp("", "lifecycle")
 	if err != nil {
 		return nil, err
 	}

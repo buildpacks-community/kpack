@@ -2,7 +2,6 @@ package secret
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -11,13 +10,13 @@ import (
 
 func ReadBasicAuthSecret(secretVolume, secretName string) (BasicAuth, error) {
 	secretPath := volumeName(secretVolume, secretName)
-	ub, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.BasicAuthUsernameKey))
+	ub, err := os.ReadFile(filepath.Join(secretPath, corev1.BasicAuthUsernameKey))
 	if err != nil {
 		return BasicAuth{}, err
 	}
 	username := string(ub)
 
-	pb, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.BasicAuthPasswordKey))
+	pb, err := os.ReadFile(filepath.Join(secretPath, corev1.BasicAuthPasswordKey))
 	if err != nil {
 		return BasicAuth{}, err
 	}
@@ -31,7 +30,7 @@ func ReadBasicAuthSecret(secretVolume, secretName string) (BasicAuth, error) {
 
 func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 	secretPath := volumeName(secretVolume, secretName)
-	privateKey, err := ioutil.ReadFile(filepath.Join(secretPath, corev1.SSHAuthPrivateKey))
+	privateKey, err := os.ReadFile(filepath.Join(secretPath, corev1.SSHAuthPrivateKey))
 	if err != nil {
 		return SSH{}, err
 	}
@@ -39,7 +38,7 @@ func ReadSshSecret(secretVolume, secretName string) (SSH, error) {
 	var knownHosts []byte = nil
 	knownHostsPath := filepath.Join(secretPath, SSHAuthKnownHostsKey)
 	if _, err := os.Stat(knownHostsPath); !os.IsNotExist(err) {
-		knownHosts, err = ioutil.ReadFile(knownHostsPath)
+		knownHosts, err = os.ReadFile(knownHostsPath)
 		if err != nil {
 			return SSH{}, err
 		}

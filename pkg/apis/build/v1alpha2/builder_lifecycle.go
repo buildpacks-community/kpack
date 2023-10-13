@@ -18,6 +18,7 @@ type BuilderRecord struct {
 	ObservedStoreGeneration int64
 	ObservedStackGeneration int64
 	OS                      string
+	SignaturePaths          []CosignSignature
 }
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
@@ -37,10 +38,11 @@ func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.ObservedStoreGeneration = record.ObservedStoreGeneration
 	bs.ObservedStackGeneration = record.ObservedStackGeneration
 	bs.OS = record.OS
+	bs.SignaturePaths = record.SignaturePaths
 }
 
-func (cb *BuilderStatus) ErrorCreate(err error) {
-	cb.Status = corev1alpha1.Status{
+func (bs *BuilderStatus) ErrorCreate(err error) {
+	bs.Status = corev1alpha1.Status{
 		Conditions: corev1alpha1.Conditions{
 			{
 				Type:               corev1alpha1.ConditionReady,

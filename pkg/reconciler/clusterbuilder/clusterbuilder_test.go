@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/pivotal/kpack/pkg/secret/secretfakes"
+
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,9 +43,12 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		builderCreator  = &testhelpers.FakeBuilderCreator{}
-		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		fakeTracker     = &testhelpers.FakeTracker{}
+		builderCreator    = &testhelpers.FakeBuilderCreator{}
+		keychainFactory   = &registryfakes.FakeKeychainFactory{}
+		fakeTracker       = &testhelpers.FakeTracker{}
+		fakeSecretFetcher = &secretfakes.FakeFetchSecret{
+			FakeSecrets: []*corev1.Secret{},
+		}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -60,9 +65,29 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ClusterBuildpackLister: listers.GetClusterBuildpackLister(),
 				ClusterExtensionLister: listers.GetClusterExtensionLister(),
 				ClusterStackLister:     listers.GetClusterStackLister(),
+				SecretFetcher:          fakeSecretFetcher,
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
+
+	signingSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-secret-name",
+			Namespace: "some-sa-namespace",
+		},
+	}
+
+	serviceAccount := corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-sa-name",
+			Namespace: signingSecret.Namespace,
+		},
+		Secrets: []corev1.ObjectReference{
+			{
+				Name: signingSecret.Name,
+			},
+		},
+	}
 
 	clusterStore := &buildapi.ClusterStore{
 		ObjectMeta: metav1.ObjectMeta{
@@ -258,6 +283,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					builder,
 					clusterBuildpack,
 					clusterExtension,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{
@@ -274,6 +301,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Fetcher:         expectedFetcher,
 				ClusterStack:    clusterStack,
 				BuilderSpec:     builder.Spec.BuilderSpec,
+				SigningSecrets:  []*corev1.Secret{},
 			}}, builderCreator.CreateBuilderCalls)
 		})
 
@@ -316,6 +344,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					expectedBuilder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -375,6 +405,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: false,
 			})
@@ -407,6 +439,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 					clusterStack,
 					clusterStore,
 					builder,
+					&signingSecret,
+					&serviceAccount,
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{

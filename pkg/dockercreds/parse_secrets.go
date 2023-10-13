@@ -2,7 +2,6 @@ package dockercreds
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,7 +58,7 @@ func parseDockerCfg(path string) (DockerCreds, error) {
 	if !cfgExists {
 		return creds, nil
 	}
-	cfgFile, err := ioutil.ReadFile(path)
+	cfgFile, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func parseDockerConfigJson(path string) (DockerCreds, error) {
 		return config.Auths, nil
 	}
 
-	configJsonFile, err := ioutil.ReadFile(path)
+	configJsonFile, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
