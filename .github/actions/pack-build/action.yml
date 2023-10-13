@@ -41,12 +41,12 @@ runs:
     if: ${{ runner.os == 'linux' }}
     shell: bash
     run: |
-      [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
 
       KPACK_VERSION=$version
       KPACK_COMMIT=$GITHUB_SHA
       mkdir report
-      
+
       export PATH="$PATH:$(pwd)"
       pack build ${{ inputs.tag }} \
         --builder ${{ inputs.builder }} \
@@ -55,7 +55,7 @@ runs:
         --report-output-dir . \
         --cache-image ${{ inputs.tag }}-cache \
         --publish ${{ inputs.additional_pack_args }}
-      
+
       mkdir images
       digest=$(go run .github/actions/pack-build/report.go -path ./report.toml)
       name=$(basename ${{ inputs.tag }})
@@ -65,7 +65,7 @@ runs:
     if: ${{ runner.os == 'windows' }}
     shell: bash
     run: |
-      [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
 
       KPACK_VERSION=$version
       KPACK_COMMIT=$GITHUB_SHA
