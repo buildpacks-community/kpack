@@ -2520,15 +2520,22 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Equal(t, []string{"/cnb/lifecycle/extender"}, pod.Spec.InitContainers[4].Command)
 
 				for _, container := range pod.Spec.InitContainers {
+					// every phase should be unprivileged
+					actualPrivileged := container.SecurityContext.Privileged
+					assert.Equal(t, false, *actualPrivileged)
+					// extend phase should run as root
 					actualRunAsNonRoot := container.SecurityContext.RunAsNonRoot
 					actualRunAsUser := container.SecurityContext.RunAsUser
+					actualRunAsGroup := container.SecurityContext.RunAsGroup
 					switch container.Name {
 					case buildapi.ExtendContainerName:
 						assert.Equal(t, false, *actualRunAsNonRoot)
 						assert.Equal(t, int64(0), *actualRunAsUser)
+						assert.Equal(t, int64(0), *actualRunAsGroup)
 					default:
 						assert.Equal(t, true, *actualRunAsNonRoot)
-						assert.NotEqual(t, nil, actualRunAsUser) // in real life this would be the user from the builder
+						assert.NotEqual(t, nil, actualRunAsUser)  // in real life this would be the uid from the builder
+						assert.NotEqual(t, nil, actualRunAsGroup) // in real life this would be the gid from the builder
 					}
 				}
 			})

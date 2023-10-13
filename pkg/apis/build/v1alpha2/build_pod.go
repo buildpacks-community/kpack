@@ -645,6 +645,10 @@ func boolPointer(b bool) *bool {
 	return &b
 }
 
+func intPointer(i int64) *int64 {
+	return &i
+}
+
 func containerSecurityContext(config BuildPodBuilderConfig) *corev1.SecurityContext {
 	if config.OS == "windows" {
 		return nil
@@ -739,17 +743,16 @@ func (b *Build) useImageExtensions(pod *corev1.Pod) {
 			container.VolumeMounts = append(container.VolumeMounts, kanikoMount)
 			container.Args = append(container.Args, fmt.Sprintf("-build-image=%s", b.Spec.Builder.Image))
 		case BuildContainerName:
-			runAsNonRoot := false
-			rootUser := int64(0)
 			container.Name = ExtendContainerName
 			container.Command = []string{"/cnb/lifecycle/extender"}
 			container.VolumeMounts = append(container.VolumeMounts, kanikoMount)
-			container.SecurityContext.RunAsNonRoot = &runAsNonRoot
-			container.SecurityContext.RunAsUser = &rootUser
+			container.SecurityContext.RunAsUser = intPointer(0)
+			container.SecurityContext.RunAsGroup = intPointer(0)
+			container.SecurityContext.RunAsNonRoot = boolPointer(false)
+			container.SecurityContext.Capabilities = &corev1.Capabilities{Add: []corev1.Capability{"SETGID", "SETUID"}} // TODO: check if this is needed if not using kind
 		}
 		pod.Spec.InitContainers[idx] = container
 	}
-
 }
 
 func (b *Build) useStandardContainers(buildWaiterImage string, pod *corev1.Pod) *corev1.Pod {

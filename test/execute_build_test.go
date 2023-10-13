@@ -135,6 +135,7 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 				require.NoError(t, err)
 
 				expectImage := func(t *testing.T, image v1.Image) {}
+				expectLogs := func(t *testing.T, logs string) {}
 				if builderHasExtensions {
 					expectImage = func(t *testing.T, image v1.Image) {
 						cfg, err := image.ConfigFile()
@@ -143,11 +144,15 @@ func testCreateImage(t *testing.T, when spec.G, it spec.S) {
 						require.True(t, ok)
 						var lifecycleMD files.LayersMetadata
 						require.NoError(t, json.Unmarshal([]byte(lifecycleMDLabel), &lifecycleMD))
-						require.Equal(t, "gcr.io/paketo-buildpacks/run-jammy-tiny", lifecycleMD.Stack.RunImage.Image)
+						runImageReference := lifecycleMD.RunImage.Reference
+						require.Contains(t, runImageReference, "gcr.io/paketo-buildpacks/run-jammy-tiny")
+					}
+					expectLogs = func(t *testing.T, logs string) {
+						require.Contains(t, logs, "Setting up curl")
 					}
 				}
 
-				builtImages[validateImageCreate(t, clients, image, expectedResources, expectImage)] = struct{}{}
+				builtImages[validateImageCreate(t, clients, image, expectedResources, expectImage, expectLogs)] = struct{}{}
 				validateRebase(t, ctx, clients, image.Name, testNamespace)
 			})
 		}
@@ -881,7 +886,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	originalImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {})
+	originalImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {}, func(t *testing.T, logs string) {})
 
 	list, err := clients.client.KpackV1alpha2().Builds(testNamespace).List(*ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", imageName),
@@ -902,7 +907,7 @@ func generateRebuild(ctx *context.Context, t *testing.T, cfg config, clients *cl
 		return len(list.Items) == 2
 	}, 5*time.Second, 1*time.Minute)
 
-	rebuiltImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {})
+	rebuiltImageTag := validateImageCreate(t, clients, image, expectedResources, func(t *testing.T, image v1.Image) {}, func(t *testing.T, logs string) {})
 	require.Equal(t, originalImageTag, rebuiltImageTag)
 
 	return originalImageTag
@@ -928,11 +933,11 @@ func readNamespaceLabelsFromEnv() map[string]string {
 func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects ...kmeta.OwnerRefable) {
 	for _, ob := range objects {
 		namespace := ob.GetObjectMeta().GetNamespace()
-		name := ob.GetObjectMeta().GetName()
+		imageName := ob.GetObjectMeta().GetName()
 		gvr, _ := meta.UnsafeGuessKindToResource(ob.GetGroupVersionKind())
 
 		eventually(t, func() bool {
-			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+			unstructured, err := clients.dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, imageName, metav1.GetOptions{})
 			require.NoError(t, err)
 
 			kResource := &duckv1.KResource{}
@@ -944,13 +949,7 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 	}
 }
 
-func validateImageCreate(
-	t *testing.T,
-	clients *clients,
-	image *buildapi.Image,
-	expectedResources corev1.ResourceRequirements, // TODO: this seems to no longer be used?
-	expectImage func(*testing.T, v1.Image),
-) string {
+func validateImageCreate(t *testing.T, clients *clients, image *buildapi.Image, expectedResources corev1.ResourceRequirements, expectImage func(*testing.T, v1.Image), expectLogs func(*testing.T, string)) string {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -971,8 +970,8 @@ func validateImageCreate(
 		return strings.Contains(logTail.String(), "Build successful")
 	}, 1*time.Second, 10*time.Second)
 
-	// TODO: expect extend build image with kaniko
 	expectImage(t, builtImage)
+	expectLogs(t, logTail.String())
 
 	buildList, err := clients.client.KpackV1alpha2().Builds(image.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("image.kpack.io/image=%s", image.Name),
