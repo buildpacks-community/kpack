@@ -144,7 +144,7 @@ func buildpackMetadataFromBuiltImage(image builtImage) corev1alpha1.BuildpackMet
 
 func extensionMetadataFromBuiltImage(image builtImage) corev1alpha1.BuildpackMetadataList {
 	ret := make([]corev1alpha1.BuildpackMetadata, 0, len(image.buildpackMetadata))
-	for _, m := range image.buildpackMetadata {
+	for _, m := range image.extensionMetadata {
 		ret = append(ret, corev1alpha1.BuildpackMetadata{
 			Id:       m.ID,
 			Version:  m.Version,
