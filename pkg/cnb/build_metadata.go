@@ -21,6 +21,7 @@ import (
 
 type BuildMetadata struct {
 	BuildpackMetadata corev1alpha1.BuildpackMetadataList `json:"buildpackMetadata"`
+	ExtensionMetadata corev1alpha1.BuildpackMetadataList `json:"extensionMetadata"`
 	LatestCacheImage  string                             `json:"latestCacheImage"`
 	LatestImage       string                             `json:"latestImage"`
 	StackID           string                             `json:"stackID"`
@@ -43,7 +44,8 @@ func (r *RemoteMetadataRetriever) GetBuildMetadata(builtImageRef, cacheTag strin
 	cacheImageRef, _ := r.getCacheImage(cacheTag, keychain) // if getting cache fails, use empty cache
 
 	return &BuildMetadata{
-		BuildpackMetadata: buildMetadataFromBuiltImage(buildImg),
+		BuildpackMetadata: buildpackMetadataFromBuiltImage(buildImg),
+		ExtensionMetadata: extensionMetadataFromBuiltImage(buildImg),
 		LatestImage:       buildImg.identifier,
 		LatestCacheImage:  cacheImageRef,
 		StackRunImage:     buildImg.stack.RunImage,
@@ -103,6 +105,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (builtImage, error
 	return builtImage{
 		identifier:        appImageId,
 		buildpackMetadata: buildMetadata.Buildpacks,
+		extensionMetadata: buildMetadata.Extensions,
 		stack: builtImageStack{
 			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
 			ID:       stackId,
@@ -113,6 +116,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (builtImage, error
 type builtImage struct {
 	identifier        string
 	buildpackMetadata []lifecyclebuildpack.GroupElement
+	extensionMetadata []lifecyclebuildpack.GroupElement
 	stack             builtImageStack
 }
 
@@ -126,16 +130,28 @@ type RunImageAppMetadata struct {
 	Reference string `json:"reference" toml:"reference"`
 }
 
-func buildMetadataFromBuiltImage(image builtImage) corev1alpha1.BuildpackMetadataList {
-	bpMetadata := make([]corev1alpha1.BuildpackMetadata, 0, len(image.buildpackMetadata))
-	for _, metadata := range image.buildpackMetadata {
-		bpMetadata = append(bpMetadata, corev1alpha1.BuildpackMetadata{
-			Id:       metadata.ID,
-			Version:  metadata.Version,
-			Homepage: metadata.Homepage,
+func buildpackMetadataFromBuiltImage(image builtImage) corev1alpha1.BuildpackMetadataList {
+	ret := make([]corev1alpha1.BuildpackMetadata, 0, len(image.buildpackMetadata))
+	for _, m := range image.buildpackMetadata {
+		ret = append(ret, corev1alpha1.BuildpackMetadata{
+			Id:       m.ID,
+			Version:  m.Version,
+			Homepage: m.Homepage,
 		})
 	}
-	return bpMetadata
+	return ret
+}
+
+func extensionMetadataFromBuiltImage(image builtImage) corev1alpha1.BuildpackMetadataList {
+	ret := make([]corev1alpha1.BuildpackMetadata, 0, len(image.buildpackMetadata))
+	for _, m := range image.buildpackMetadata {
+		ret = append(ret, corev1alpha1.BuildpackMetadata{
+			Id:       m.ID,
+			Version:  m.Version,
+			Homepage: m.Homepage,
+		})
+	}
+	return ret
 }
 
 func CompressBuildMetadata(metadata *BuildMetadata) ([]byte, error) {

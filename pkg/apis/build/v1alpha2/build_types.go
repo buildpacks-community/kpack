@@ -129,12 +129,13 @@ type BuildStack struct {
 
 // +k8s:openapi-gen=true
 type BuildStatus struct {
-	corev1alpha1.Status `json:",inline"`
-	BuildMetadata       corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack               corev1alpha1.BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                             `json:"latestImage,omitempty"`
-	LatestCacheImage    string                             `json:"latestCacheImage,omitempty"`
-	PodName             string                             `json:"podName,omitempty"`
+	corev1alpha1.Status     `json:",inline"`
+	BuildMetadataBuildpacks corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	BuildMetadataExtensions corev1alpha1.BuildpackMetadataList `json:"buildMetadataExtensions,omitempty"`
+	Stack                   corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage             string                             `json:"latestImage,omitempty"`
+	LatestCacheImage        string                             `json:"latestCacheImage,omitempty"`
+	PodName                 string                             `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType

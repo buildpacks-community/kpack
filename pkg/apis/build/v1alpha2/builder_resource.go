@@ -8,6 +8,7 @@ type BuilderResource interface {
 	BuildBuilderSpec() corev1alpha1.BuildBuilderSpec
 	Ready() bool
 	BuildpackMetadata() corev1alpha1.BuildpackMetadataList
+	ExtensionMetadata() corev1alpha1.BuildpackMetadataList
 	RunImage() string
 	GetKind() string
 	ConditionReadyMessage() string

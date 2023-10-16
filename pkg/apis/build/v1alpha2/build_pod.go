@@ -72,11 +72,11 @@ const (
 
 var (
 	PrepareCommand    = "/cnb/process/build-init"
-	AnalyzeCommand   = "/cnb/lifecycle/analyzer"
-	DetectCommand   = "/cnb/lifecycle/detector"
-	RestoreCommand   = "/cnb/lifecycle/restorer"
-	BuildCommand    = "/cnb/lifecycle/builder"
-	ExportCommand   = "/cnb/lifecycle/exporter"
+	AnalyzeCommand    = "/cnb/lifecycle/analyzer"
+	DetectCommand     = "/cnb/lifecycle/detector"
+	RestoreCommand    = "/cnb/lifecycle/restorer"
+	BuildCommand      = "/cnb/lifecycle/builder"
+	ExportCommand     = "/cnb/lifecycle/exporter"
 	CompletionCommand = "/cnb/process/completion"
 	RebaseCommand     = "/cnb/process/rebase"
 )
@@ -760,7 +760,7 @@ func (b *Build) useImageExtensions(pod *corev1.Pod) {
 			container.SecurityContext.RunAsUser = intPointer(0)
 			container.SecurityContext.RunAsGroup = intPointer(0)
 			container.SecurityContext.RunAsNonRoot = boolPointer(false)
-			container.SecurityContext.Capabilities = &corev1.Capabilities{Add: []corev1.Capability{"SETGID", "SETUID"}} // TODO: check if this is needed if not using kind
+			container.SecurityContext.Capabilities = &corev1.Capabilities{Add: []corev1.Capability{"SETGID", "SETUID"}}
 		}
 		pod.Spec.InitContainers[idx] = container
 	}

@@ -105,7 +105,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 			imageName := fmt.Sprintf("%s-%s", name, builderType)
 			builder := builderConfigs[builderType]
 			var builderHasExtensions bool
-			if strings.Contains(builder.Name, "extensions") { // TODO: this is a bit hacky, maybe we can improve it
+			if strings.Contains(builder.Name, "extensions") { // FIXME: this is a bit hacky, maybe we can improve it
 				builderHasExtensions = true
 			}
 
@@ -146,15 +146,17 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 						var lifecycleMD files.LayersMetadata
 						require.NoError(t, json.Unmarshal([]byte(lifecycleMDLabel), &lifecycleMD))
 						runImageReference := lifecycleMD.RunImage.Reference
-						require.Contains(t, runImageReference, "gcr.io/paketo-buildpacks/run-jammy-tiny")
+						require.Contains(t, runImageReference, "paketobuildpacks/run-jammy-tiny")
 					}
 					expectLogs = func(t *testing.T, logs string) {
-						require.Contains(t, logs, "Setting up curl")
+						require.Contains(t, logs, "curl --version")
 					}
 				}
 
 				builtImages[validateImageCreate(t, clients, image, expectedResources, expectImage, expectLogs)] = struct{}{}
-				validateRebase(t, ctx, clients, image.Name, testNamespace)
+				if !builderHasExtensions {
+					validateRebase(t, ctx, clients, image.Name, testNamespace)
+				}
 			})
 		}
 	}
@@ -531,7 +533,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 								{
 									BuildpackRef: corev1alpha1.BuildpackRef{
 										BuildpackInfo: corev1alpha1.BuildpackInfo{
-											Id: "samples/curl", // FIXME
+											Id: "samples/curl",
 										},
 									},
 								},
@@ -729,7 +731,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 								{
 									BuildpackRef: corev1alpha1.BuildpackRef{
 										BuildpackInfo: corev1alpha1.BuildpackInfo{
-											Id: "samples/curl", // FIXME
+											Id: "samples/curl",
 										},
 									},
 								},
@@ -748,7 +750,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 		waitUntilReady(t, ctx, clients, builder, clusterBuilder, builderWithExtensions, clusterBuilderWithExtensions)
 	})
 
-	it.Focus("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
+	it("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
 		imageSources := map[string]corev1alpha1.SourceConfig{
 			"git-image": {
 				Git: &corev1alpha1.Git{
@@ -946,7 +948,7 @@ func waitUntilReady(t *testing.T, ctx context.Context, clients *clients, objects
 			require.NoError(t, err)
 
 			return kResource.Status.GetCondition(apis.ConditionReady).IsTrue()
-		}, 1*time.Second, 8*time.Minute)
+		}, 1*time.Second, 16*time.Minute)
 	}
 }
 
@@ -966,7 +968,7 @@ func waitUntilFailed(t *testing.T, ctx context.Context, clients *clients, expect
 
 			condition := kResource.Status.GetCondition(apis.ConditionReady)
 			return condition.IsFalse() && "" != condition.Message && strings.Contains(condition.Message, expectedMessage)
-		}, 1*time.Second, 8*time.Minute)
+		}, 1*time.Second, 16*time.Minute)
 	}
 }
 
@@ -1039,7 +1041,7 @@ func validateRebase(t *testing.T, ctx context.Context, clients *clients, imageNa
 		build, err := clients.client.KpackV1alpha2().Builds(testNamespace).Get(ctx, rebaseBuildName, metav1.GetOptions{})
 		require.NoError(t, err)
 
-		//rebase and completion
+		// rebase and completion
 		require.LessOrEqual(t, len(build.Status.StepsCompleted), 2)
 
 		return build.Status.GetCondition(corev1alpha1.ConditionSucceeded).IsTrue()

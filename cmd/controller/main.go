@@ -9,13 +9,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pivotal/kpack/pkg/secret"
-
+	"github.com/Masterminds/semver/v3"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
-
-	"github.com/pivotal/kpack/pkg/cosign"
-
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +42,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/config"
+	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -64,6 +61,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 const (

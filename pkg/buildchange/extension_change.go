@@ -9,21 +9,21 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func NewBuildpackChange(oldInfos, newInfos []corev1alpha1.BuildpackInfo) Change {
-	return buildpackChange{
+func NewExtensionChange(oldInfos, newInfos []corev1alpha1.BuildpackInfo) Change {
+	return extensionChange{
 		old: oldInfos,
 		new: newInfos,
 	}
 }
 
-type buildpackChange struct {
+type extensionChange struct {
 	old []corev1alpha1.BuildpackInfo
 	new []corev1alpha1.BuildpackInfo
 }
 
-func (b buildpackChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonBuildpack }
+func (b extensionChange) Reason() buildapi.BuildReason { return buildapi.BuildReasonExtension }
 
-func (b buildpackChange) IsBuildRequired() (bool, error) {
+func (b extensionChange) IsBuildRequired() (bool, error) {
 	sort.Slice(b.old, func(i, j int) bool {
 		return b.old[i].Id < b.old[j].Id
 	})
@@ -33,8 +33,8 @@ func (b buildpackChange) IsBuildRequired() (bool, error) {
 	return !cmp.Equal(b.old, b.new), nil
 }
 
-func (b buildpackChange) Old() interface{} { return b.old }
+func (b extensionChange) Old() interface{} { return b.old }
 
-func (b buildpackChange) New() interface{} { return b.new }
+func (b extensionChange) New() interface{} { return b.new }
 
-func (b buildpackChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityLow }
+func (b extensionChange) Priority() buildapi.BuildPriority { return buildapi.BuildPriorityLow }

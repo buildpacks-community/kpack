@@ -80,7 +80,7 @@ func (bs *BuildSpec) convertFrom(from *v1alpha1.BuildSpec) {
 
 func (bs *BuildStatus) convertFrom(from *v1alpha1.BuildStatus) {
 	bs.Status = from.Status
-	bs.BuildMetadata = from.BuildMetadata
+	bs.BuildMetadataBuildpacks = from.BuildMetadata
 	bs.Stack = from.Stack
 	bs.LatestImage = from.LatestImage
 	bs.PodName = from.PodName
@@ -90,7 +90,7 @@ func (bs *BuildStatus) convertFrom(from *v1alpha1.BuildStatus) {
 
 func (bs *BuildStatus) convertTo(to *v1alpha1.BuildStatus) {
 	to.Status = bs.Status
-	to.BuildMetadata = bs.BuildMetadata
+	to.BuildMetadata = bs.BuildMetadataBuildpacks
 	to.Stack = bs.Stack
 	to.LatestImage = bs.LatestImage
 	to.PodName = bs.PodName

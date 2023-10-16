@@ -1642,7 +1642,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuildMetadata: corev1alpha1.BuildpackMetadataList{
+								BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "old-version",
@@ -1812,7 +1812,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "gcr.io/test-project/install/run@sha256:42841631725942db48b7ba8b788b97374a2ada34c84ee02ca5e02ef3d4b0dfca",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								BuildMetadata: corev1alpha1.BuildpackMetadataList{
+								BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
 										Version: "version",

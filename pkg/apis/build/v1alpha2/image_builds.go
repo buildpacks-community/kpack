@@ -28,6 +28,7 @@ const (
 	BuildReasonConfig    = "CONFIG"
 	BuildReasonCommit    = "COMMIT"
 	BuildReasonBuildpack = "BUILDPACK"
+	BuildReasonExtension = "EXTENSION"
 	BuildReasonStack     = "STACK"
 	BuildReasonTrigger   = "TRIGGER"
 )

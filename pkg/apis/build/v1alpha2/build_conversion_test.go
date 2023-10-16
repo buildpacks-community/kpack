@@ -68,7 +68,7 @@ func testBuildConversion(t *testing.T, when spec.G, it spec.S) {
 					ObservedGeneration: 0,
 					Conditions:         nil,
 				},
-				BuildMetadata: corev1alpha1.BuildpackMetadataList{},
+				BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{},
 				Stack: corev1alpha1.BuildStack{
 					RunImage: "some-run",
 					ID:       "some-id",

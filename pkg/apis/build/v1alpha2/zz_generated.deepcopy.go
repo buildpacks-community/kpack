@@ -313,8 +313,8 @@ func (in *BuildStack) DeepCopy() *BuildStack {
 func (in *BuildStatus) DeepCopyInto(out *BuildStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
-	if in.BuildMetadata != nil {
-		in, out := &in.BuildMetadata, &out.BuildMetadata
+	if in.BuildMetadataBuildpacks != nil {
+		in, out := &in.BuildMetadataBuildpacks, &out.BuildMetadataBuildpacks
 		*out = make(v1alpha1.BuildpackMetadataList, len(*in))
 		copy(*out, *in)
 	}
