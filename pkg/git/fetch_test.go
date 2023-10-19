@@ -108,6 +108,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 		})
 
         it("initializes submodules", func() {
+            fetcher.InitializeSubmodules = true 
             err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/submodule", "master", metadataDir)
             require.NoError(t, err)
 
