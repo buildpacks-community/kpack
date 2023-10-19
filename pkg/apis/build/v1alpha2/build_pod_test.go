@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cuelang.org/go/pkg/strconv"
 	"github.com/Masterminds/semver/v3"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -275,6 +276,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Git: &corev1alpha1.Git{
 						URL:      "giturl.com/git.git",
 						Revision: "gitrev1234",
+                        InitializeSubmodules: true,
 					},
 				},
 				Cache: &buildapi.BuildCacheConfig{
@@ -654,6 +656,11 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					Value: build.Spec.Source.Git.Revision,
 				},
 			)
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
+				corev1.EnvVar{
+					Name:  "GIT_INITIALIZE_SUBMODULES",
+					Value: strconv.FormatBool(build.Spec.Source.Git.InitializeSubmodules),
+				})
 		})
 
 		it("configures prepare with the blob source", func() {
