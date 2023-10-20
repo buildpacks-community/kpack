@@ -17,11 +17,12 @@ func TestRemoteGitResolver(t *testing.T) {
 
 func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 	const (
-		url                     = "https://github.com/git-fixtures/basic.git"
-		nonHEADCommit           = "a755256fc0a57241b92167eb748b333449a3d7e9"
-		fixtureHEADMasterCommit = "6ecf0ef2c2dffb796033e5a02219af86ec6584e5"
-		tag                     = "commit-tag"
-		tagCommit               = "ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"
+		url                              = "https://github.com/git-fixtures/basic.git"
+		nonHEADCommit                    = "a755256fc0a57241b92167eb748b333449a3d7e9"
+		fixtureHEADMasterCommit          = "6ecf0ef2c2dffb796033e5a02219af86ec6584e5"
+		fixtureHEADMasterEffectiveCommit = "918c48b83bd081e863dbe1b80f8998f058cd8294"
+		tag                              = "commit-tag"
+		tagCommit                        = "ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"
 	)
 
 	when("#Resolve", func() {
@@ -49,7 +50,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("source is a branch", func() {
+		when("source is a branch with latest commit", func() {
 			it("returns branch with resolved commit", func() {
 				gitResolver := remoteGitResolver{}
 
@@ -58,7 +59,6 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      url,
 						Revision: "master",
 					},
-					SubPath: "/foo/bar",
 				})
 				require.NoError(t, err)
 
@@ -67,7 +67,30 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      url,
 						Revision: fixtureHEADMasterCommit,
 						Type:     corev1alpha1.Branch,
-						SubPath:  "/foo/bar",
+					},
+				}, resolvedGitSource)
+			})
+		})
+
+		when("source is a branch with older subpath", func() {
+			it("returns branch with resolved commit", func() {
+				gitResolver := remoteGitResolver{}
+
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
+						URL:      url,
+						Revision: "master",
+					},
+					SubPath: "go/",
+				})
+				require.NoError(t, err)
+
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
+						URL:      url,
+						Revision: fixtureHEADMasterEffectiveCommit,
+						Type:     corev1alpha1.Branch,
+						SubPath:  "go/",
 					},
 				}, resolvedGitSource)
 			})

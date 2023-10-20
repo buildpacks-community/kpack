@@ -2,29 +2,26 @@ package git
 
 import (
 	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
-
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"regexp"
+	"strings"
 )
-
-const defaultRemote = "origin"
 
 type remoteGitResolver struct{}
 
 func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		Name: defaultRemote,
-		URLs: []string{sourceConfig.Git.URL},
-	})
+	var resolvedConfig corev1alpha1.ResolvedSourceConfig
 
-	refs, err := remote.List(&gogit.ListOptions{
+	r, err := gogit.Clone(memory.NewStorage(), nil, &gogit.CloneOptions{
+		URL:  sourceConfig.Git.URL,
 		Auth: auth,
 	})
+
 	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{
+		resolvedConfig = corev1alpha1.ResolvedSourceConfig{
 			Git: &corev1alpha1.ResolvedGitSource{
 				URL:                  sourceConfig.Git.URL,
 				Revision:             sourceConfig.Git.Revision,
@@ -32,32 +29,68 @@ func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1
 				SubPath:              sourceConfig.SubPath,
 				InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 			},
-		}, nil
-	}
-
-	for _, ref := range refs {
-		if ref.Name().Short() == sourceConfig.Git.Revision {
-			return corev1alpha1.ResolvedSourceConfig{
-				Git: &corev1alpha1.ResolvedGitSource{
-					URL:                  sourceConfig.Git.URL,
-					Revision:             ref.Hash().String(),
-					Type:                 sourceType(ref),
-					SubPath:              sourceConfig.SubPath,
-					InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
-				},
-			}, nil
 		}
 	}
 
-	return corev1alpha1.ResolvedSourceConfig{
-		Git: &corev1alpha1.ResolvedGitSource{
-			URL:                  sourceConfig.Git.URL,
-			Revision:             sourceConfig.Git.Revision,
-			Type:                 corev1alpha1.Commit,
-			SubPath:              sourceConfig.SubPath,
-			InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
+	rIter, _ := r.References()
+
+	rIter.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Name().Short() == sourceConfig.Git.Revision {
+			refSourceType := sourceType(ref)
+			effectiveCommit := ""
+
+			if refSourceType == corev1alpha1.Branch {
+				effectiveCommit, err = getLogs(r, sourceConfig.SubPath)
+			} else {
+				effectiveCommit = ref.Hash().String()
+			}
+
+			if err != nil {
+				return nil
+			}
+
+			resolvedConfig = corev1alpha1.ResolvedSourceConfig{
+				Git: &corev1alpha1.ResolvedGitSource{
+					URL:      sourceConfig.Git.URL,
+					Revision: effectiveCommit,
+					Type:     refSourceType,
+					SubPath:  sourceConfig.SubPath,
+				},
+			}
+		}
+		return nil
+	})
+
+	if resolvedConfig.ResolvedSource() == nil {
+		resolvedConfig = corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
+				URL:      sourceConfig.Git.URL,
+				Revision: sourceConfig.Git.Revision,
+				Type:     corev1alpha1.Commit,
+				SubPath:  sourceConfig.SubPath,
+			},
+		}
+	}
+
+	return resolvedConfig, err
+}
+
+func getLogs(r *gogit.Repository, subPath string) (string, error) {
+	logOutput, err := r.Log(&gogit.LogOptions{
+		PathFilter: func(s string) bool {
+			if strings.Contains(s, subPath) {
+				return true
+			} else {
+				return false
+			}
 		},
-	}, nil
+	})
+
+	latestCommit, err := logOutput.Next()
+	regex, _ := regexp.Compile("[a-f0-9]{40}")
+	effectiveCommit := regex.FindString(latestCommit.String())
+
+	return effectiveCommit, err
 }
 
 func sourceType(reference *plumbing.Reference) corev1alpha1.GitSourceKind {
