@@ -284,8 +284,8 @@ github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251 h1:k6UDF1uPY
 github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251/go.mod h1:gbPR1gPu9dB96mucYIR7T3B7p/78hRVSOuzIWLHK2Y4=
 github.com/buildpacks/imgutil v0.0.0-20230802154001-5c57feb120b3 h1:9eEu535RJ4PzL3wfaHMD6w9nXifI/CnRZis57vMo/es=
 github.com/buildpacks/imgutil v0.0.0-20230802154001-5c57feb120b3/go.mod h1:mBG5M3GJW5nknCEOOqtmMHyPYnSpw/5GEiciuYU/COw=
-github.com/buildpacks/lifecycle v0.17.1 h1:sCNj83TH1YE8Z3+CKHoFx/HK+llCVF1RlQUbj3xdNBQ=
-github.com/buildpacks/lifecycle v0.17.1/go.mod h1:WFzcNp1WG4bwgHuXtKxMg4tdU3AguL44ZlP3knANeVs=
+github.com/buildpacks/lifecycle v0.17.2 h1:CfJYWHIC5v996idgjDamYHBTk+G+c1Qt7Yk80MlbWpw=
+github.com/buildpacks/lifecycle v0.17.2/go.mod h1:h8MrqltqMM+HQnn2F2JOQaKWmeybZ54qvlNV3pAiAqw=
 github.com/bwesterb/go-ristretto v1.2.3/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/bytecodealliance/wasmtime-go/v3 v3.0.2 h1:3uZCA/BLTIu+DqCfguByNMJa2HVHpXvjfy0Dy7g6fuA=
 github.com/cenkalti/backoff/v3 v3.2.2 h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=
