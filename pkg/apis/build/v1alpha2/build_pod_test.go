@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"cuelang.org/go/pkg/strconv"
 	"github.com/Masterminds/semver/v3"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -659,7 +658,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t, pod.Spec.InitContainers[0].Env,
 				corev1.EnvVar{
 					Name:  "GIT_INITIALIZE_SUBMODULES",
-					Value: strconv.FormatBool(build.Spec.Source.Git.InitializeSubmodules),
+					Value: fmt.Sprintf("%v", build.Spec.Source.Git.InitializeSubmodules),
 				})
 		})
 
