@@ -50,6 +50,7 @@ func NewController(
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
+	clusterExtensionInformer buildinformers.ClusterExtensionInformer,
 	secretFetcher Fetcher,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
@@ -60,6 +61,7 @@ func NewController(
 		ClusterStoreLister:     clusterStoreInformer.Lister(),
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
 		ClusterStackLister:     clusterStackInformer.Lister(),
+		ClusterExtensionLister: clusterExtensionInformer.Lister(),
 		SecretFetcher:          secretFetcher,
 	}
 
@@ -107,6 +109,7 @@ type Reconciler struct {
 	Tracker                reconciler.Tracker
 	ClusterStoreLister     buildlisters.ClusterStoreLister
 	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
+	ClusterExtensionLister buildlisters.ClusterExtensionLister
 	ClusterStackLister     buildlisters.ClusterStackLister
 	SecretFetcher          Fetcher
 }
@@ -186,6 +189,11 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, err
 	}
 
+	clusterExtensions, err := c.ClusterExtensionLister.List(labels.Everything())
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
 	clusterStack, err := c.ClusterStackLister.Get(builder.Spec.Stack.Name)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
@@ -214,7 +222,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		}
 	}
 
-	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
+	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks, nil, clusterExtensions)
 
 	serviceAccountSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, builder.Spec.ServiceAccountRef.Name, builder.Spec.ServiceAccountRef.Namespace)
 	if err != nil {

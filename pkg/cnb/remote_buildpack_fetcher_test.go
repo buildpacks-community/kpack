@@ -23,9 +23,12 @@ func testRemoteBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 	var (
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		keychain        = authn.NewMultiKeychain(authn.DefaultKeychain)
-		resolver        = &fakeResolver{buildpacks: map[string]K8sRemoteBuildpack{}}
-		secretRef       = registry.SecretRef{}
-		ctx             = context.Background()
+		resolver        = &fakeResolver{
+			buildpacks: map[string]K8sRemoteBuildpack{},
+			extensions: map[string]K8sRemoteBuildpack{},
+		}
+		secretRef = registry.SecretRef{}
+		ctx       = context.Background()
 	)
 
 	when("Fetch", func() {

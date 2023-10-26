@@ -3,17 +3,8 @@ package build
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/google/go-containerregistry/pkg/authn"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/buildchange"
-	"github.com/pivotal/kpack/pkg/buildpod"
-	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
-	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
-	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
-	"github.com/pivotal/kpack/pkg/cnb"
-	"github.com/pivotal/kpack/pkg/reconciler"
-	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +18,17 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging/logkey"
+
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/buildchange"
+	"github.com/pivotal/kpack/pkg/buildpod"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
+	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
+	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/reconciler"
+	"github.com/pivotal/kpack/pkg/registry"
 )
 
 const (
@@ -167,7 +169,8 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 				return errors.Wrap(err, "failed to get build metadata from build pod")
 			}
 		}
-		build.Status.BuildMetadata = buildMetadata.BuildpackMetadata
+		build.Status.BuildMetadataBuildpacks = buildMetadata.BuildpackMetadata
+		build.Status.BuildMetadataExtensions = buildMetadata.ExtensionMetadata
 		build.Status.LatestImage = buildMetadata.LatestImage
 		build.Status.LatestCacheImage = buildMetadata.LatestCacheImage
 		build.Status.Stack.RunImage = buildMetadata.StackRunImage

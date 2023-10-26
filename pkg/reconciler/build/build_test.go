@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,10 +26,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -578,7 +579,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									PodName: "build-name-build-pod",
-									BuildMetadata: corev1alpha1.BuildpackMetadataList{
+									BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 										{
 											Id:       "some-id",
 											Version:  "some-version",
@@ -647,7 +648,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 								},
-								BuildMetadata: corev1alpha1.BuildpackMetadataList{{
+								BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{{
 									Id:      "io.buildpack.previouslyfetched",
 									Version: "1.1",
 								}},
@@ -759,7 +760,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 										PodName: "build-name-build-pod",
-										BuildMetadata: corev1alpha1.BuildpackMetadataList{{
+										BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{{
 											Id:       "io.buildpack.executed",
 											Version:  "1.1",
 											Homepage: "mysupercoolsite.com",
@@ -818,7 +819,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											},
 										},
 									},
-									BuildMetadata: corev1alpha1.BuildpackMetadataList{{
+									BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{{
 										Id:      "io.buildpack.previouslyfetched",
 										Version: "1.1",
 									}},
@@ -1317,7 +1318,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 									},
 									PodName: "build-name-build-pod",
-									BuildMetadata: corev1alpha1.BuildpackMetadataList{
+									BuildMetadataBuildpacks: corev1alpha1.BuildpackMetadataList{
 										{
 											Id:       "some-id",
 											Version:  "some-version",

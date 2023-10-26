@@ -80,10 +80,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterBuilders().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterbuildpacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterBuildpacks().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("clusterextensions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterExtensions().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterstacks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterStacks().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterstores"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().ClusterStores().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("extensions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Extensions().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("images"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kpack().V1alpha2().Images().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("sourceresolvers"):

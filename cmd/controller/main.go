@@ -4,19 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/pivotal/kpack/pkg/buildchange"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/pivotal/kpack/pkg/secret"
-
-	"github.com/pivotal/kpack/pkg/cosign"
+	"github.com/Masterminds/semver/v3"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
-
-	"github.com/Masterminds/semver/v3"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,11 +36,13 @@ import (
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/config"
+	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -56,12 +53,15 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/buildpack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuildpack"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterextension"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
+	"github.com/pivotal/kpack/pkg/reconciler/extension"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
 	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 const (
@@ -122,8 +122,10 @@ func main() {
 	sourceResolverInformer := informerFactory.Kpack().V1alpha2().SourceResolvers()
 	builderInformer := informerFactory.Kpack().V1alpha2().Builders()
 	buildpackInformer := informerFactory.Kpack().V1alpha2().Buildpacks()
+	extensionInformer := informerFactory.Kpack().V1alpha2().Extensions()
 	clusterBuilderInformer := informerFactory.Kpack().V1alpha2().ClusterBuilders()
 	clusterBuildpackInformer := informerFactory.Kpack().V1alpha2().ClusterBuildpacks()
+	clusterExtensionInformer := informerFactory.Kpack().V1alpha2().ClusterExtensions()
 	clusterStoreInformer := informerFactory.Kpack().V1alpha2().ClusterStores()
 	clusterStackInformer := informerFactory.Kpack().V1alpha2().ClusterStacks()
 
@@ -212,10 +214,12 @@ func main() {
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, *injectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, extensionInformer, clusterExtensionInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	extensionController := extension.NewController(ctx, options, keychainFactory, extensionInformer, remoteStoreReader)
+	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterExtensionInformer, secretFetcher)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
+	clusterExtensionController := clusterextension.NewController(ctx, options, keychainFactory, clusterExtensionInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
 	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
@@ -250,8 +254,10 @@ func main() {
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),
 		run(buildpackController, routinesPerController),
+		run(extensionController, routinesPerController),
 		run(clusterBuilderController, routinesPerController),
 		run(clusterBuildpackController, routinesPerController),
+		run(clusterExtensionController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
 		run(lifecycleController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),

@@ -23,10 +23,14 @@ rules:
   - builders/status
   - buildpacks
   - buildpacks/status
+  - extensions
+  - extensions/status
   - clusterbuilders
   - clusterbuilders/status
   - clusterbuildpacks
   - clusterbuildpacks/status
+  - clusterextensions
+  - clusterextensions/status
   - clusterstores
   - clusterstores/status
   - clusterstacks

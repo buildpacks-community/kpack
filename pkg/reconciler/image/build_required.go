@@ -45,6 +45,7 @@ func isBuildRequired(img *buildapi.Image,
 		Process(commitChange(lastBuild, srcResolver)).
 		Process(configChange(img, lastBuild, srcResolver)).
 		Process(buildpackChange(lastBuild, builder)).
+		Process(extensionChange(lastBuild, builder)).
 		Process(stackChange(lastBuild, builder)).
 		Summarize()
 	if err != nil {
@@ -109,21 +110,43 @@ func buildpackChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource
 		return nil
 	}
 
-	var old []corev1alpha1.BuildpackInfo
-	var new []corev1alpha1.BuildpackInfo
+	var oldInfo []corev1alpha1.BuildpackInfo
+	var newInfo []corev1alpha1.BuildpackInfo
 
-	builderBuildpacks := builder.BuildpackMetadata()
-	for _, lastBuildBp := range lastBuild.Status.BuildMetadata {
-		if !builderBuildpacks.Include(lastBuildBp) {
-			old = append(old, corev1alpha1.BuildpackInfo{Id: lastBuildBp.Id, Version: lastBuildBp.Version})
+	fromBuilder := builder.BuildpackMetadata()
+	for _, fromLastBuild := range lastBuild.Status.BuildMetadataBuildpacks {
+		if !fromBuilder.Include(fromLastBuild) {
+			oldInfo = append(oldInfo, corev1alpha1.BuildpackInfo{Id: fromLastBuild.Id, Version: fromLastBuild.Version})
 		}
 	}
 
-	return buildchange.NewBuildpackChange(old, new)
+	return buildchange.NewBuildpackChange(oldInfo, newInfo)
+}
+
+func extensionChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) buildchange.Change {
+	if lastBuild == nil || !lastBuild.IsSuccess() {
+		return nil
+	}
+
+	var oldInfo []corev1alpha1.BuildpackInfo
+	var newInfo []corev1alpha1.BuildpackInfo
+
+	fromBuilder := builder.ExtensionMetadata()
+	for _, fromLastBuild := range lastBuild.Status.BuildMetadataExtensions {
+		if !fromBuilder.Include(fromLastBuild) {
+			oldInfo = append(oldInfo, corev1alpha1.BuildpackInfo{Id: fromLastBuild.Id, Version: fromLastBuild.Version})
+		}
+	}
+
+	return buildchange.NewExtensionChange(oldInfo, newInfo)
 }
 
 func stackChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) buildchange.Change {
 	if lastBuild == nil || !lastBuild.IsSuccess() {
+		return nil
+	}
+
+	if len(builder.ExtensionMetadata()) > 0 {
 		return nil
 	}
 

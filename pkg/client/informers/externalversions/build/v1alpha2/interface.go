@@ -34,10 +34,14 @@ type Interface interface {
 	ClusterBuilders() ClusterBuilderInformer
 	// ClusterBuildpacks returns a ClusterBuildpackInformer.
 	ClusterBuildpacks() ClusterBuildpackInformer
+	// ClusterExtensions returns a ClusterExtensionInformer.
+	ClusterExtensions() ClusterExtensionInformer
 	// ClusterStacks returns a ClusterStackInformer.
 	ClusterStacks() ClusterStackInformer
 	// ClusterStores returns a ClusterStoreInformer.
 	ClusterStores() ClusterStoreInformer
+	// Extensions returns a ExtensionInformer.
+	Extensions() ExtensionInformer
 	// Images returns a ImageInformer.
 	Images() ImageInformer
 	// SourceResolvers returns a SourceResolverInformer.
@@ -80,6 +84,11 @@ func (v *version) ClusterBuildpacks() ClusterBuildpackInformer {
 	return &clusterBuildpackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// ClusterExtensions returns a ClusterExtensionInformer.
+func (v *version) ClusterExtensions() ClusterExtensionInformer {
+	return &clusterExtensionInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // ClusterStacks returns a ClusterStackInformer.
 func (v *version) ClusterStacks() ClusterStackInformer {
 	return &clusterStackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
@@ -88,6 +97,11 @@ func (v *version) ClusterStacks() ClusterStackInformer {
 // ClusterStores returns a ClusterStoreInformer.
 func (v *version) ClusterStores() ClusterStoreInformer {
 	return &clusterStoreInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// Extensions returns a ExtensionInformer.
+func (v *version) Extensions() ExtensionInformer {
+	return &extensionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Images returns a ImageInformer.

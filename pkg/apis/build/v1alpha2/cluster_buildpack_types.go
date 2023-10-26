@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
@@ -52,6 +53,32 @@ type ClusterBuildpackList struct {
 	Items []ClusterBuildpack `json:"items"`
 }
 
-func (*ClusterBuildpack) GetGroupVersionKind() schema.GroupVersionKind {
+func (b *ClusterBuildpack) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(ClusterBuildpackKind)
+}
+
+func (b *ClusterBuildpack) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+}
+
+func (b *ClusterBuildpack) ModulesStatus() []corev1alpha1.BuildpackStatus {
+	return b.Status.Buildpacks
+}
+
+func (b *ClusterBuildpack) ServiceAccountName() string {
+	if b.Spec.ServiceAccountRef == nil {
+		return ""
+	}
+	return b.Spec.ServiceAccountRef.Name
+}
+
+func (b *ClusterBuildpack) ServiceAccountNamespace() string {
+	if b.Spec.ServiceAccountRef == nil {
+		return ""
+	}
+	return b.Spec.ServiceAccountRef.Namespace
+}
+
+func (b *ClusterBuildpack) TypeMD() metav1.TypeMeta {
+	return b.TypeMeta
 }

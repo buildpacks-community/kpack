@@ -31,7 +31,8 @@ func (s *BuilderSpec) Validate(ctx context.Context) *apis.FieldError {
 	return validate.Tag(s.Tag).
 		Also(validateStack(s.Stack).ViaField("stack")).
 		Also(validateStore(s.Store).ViaField("store")).
-		Also(validateOrder(s.Order).ViaField("order"))
+		Also(validateOrder(s.Order).ViaField("order")).
+		Also(validateOrderExtensions(s.OrderExtensions).ViaField("order-extensions"))
 }
 
 func (s *NamespacedBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -67,10 +68,26 @@ func validateOrder(order []BuilderOrderEntry) *apis.FieldError {
 	return errs
 }
 
+func validateOrderExtensions(orderExt []BuilderOrderEntry) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, s := range orderExt {
+		errs = errs.Also(validateExtensionGroup(s).ViaIndex(i))
+	}
+	return errs
+}
+
 func validateGroup(group BuilderOrderEntry) *apis.FieldError {
 	var errs *apis.FieldError
 	for i, s := range group.Group {
 		errs = errs.Also(validateBuildpackRef(s).ViaIndex(i).ViaField("group"))
+	}
+	return errs
+}
+
+func validateExtensionGroup(group BuilderOrderEntry) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, s := range group.Group {
+		errs = errs.Also(validateExtensionRef(s).ViaIndex(i).ViaField("group"))
 	}
 	return errs
 }
@@ -80,13 +97,24 @@ func validateBuildpackRef(ref BuilderBuildpackRef) *apis.FieldError {
 	if ref.Name != "" || ref.Kind != "" {
 		errs = errs.Also(validateObjectRef(ref.ObjectReference, []string{BuildpackKind, ClusterBuildpackKind}))
 	}
+	errs = errs.Also(validateImage(ref))
+	return errs
+}
 
+func validateExtensionRef(ref BuilderBuildpackRef) *apis.FieldError {
+	var errs *apis.FieldError
+	if ref.Name != "" || ref.Kind != "" {
+		errs = errs.Also(validateObjectRef(ref.ObjectReference, []string{ExtensionKind, ClusterExtensionKind}))
+	}
+	errs = errs.Also(validateImage(ref))
+	return errs
+}
+
+func validateImage(ref BuilderBuildpackRef) *apis.FieldError {
+	var errs *apis.FieldError
 	switch {
 	case ref.Image != "":
 		errs = errs.Also(apis.ErrDisallowedFields("image reference currently not supported"))
-		// errs = errs.Also(validate.Image(ref.Image)).
-		// 	Also(apis.CheckDisallowedFields(ref.BuildpackInfo, v1alpha1.BuildpackInfo{})).
-		// 	Also(apis.CheckDisallowedFields(ref.ObjectReference, v1.ObjectReference{}))
 	case ref.Id != "" || ref.Name != "" || ref.Kind != "":
 		if ref.Image != "" {
 			errs = errs.Also(apis.ErrDisallowedFields("image"))

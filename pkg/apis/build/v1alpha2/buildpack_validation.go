@@ -3,8 +3,9 @@ package v1alpha2
 import (
 	"context"
 
-	"github.com/pivotal/kpack/pkg/apis/validate"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/validate"
 )
 
 func (cb *Buildpack) SetDefaults(context.Context) {

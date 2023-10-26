@@ -5,11 +5,13 @@ import (
 )
 
 const (
-	buildpackOrderLabel    = "io.buildpacks.buildpack.order"
-	buildpackLayersLabel   = "io.buildpacks.buildpack.layers"
-	buildpackMetadataLabel = "io.buildpacks.builder.metadata"
-	lifecycleVersionLabel  = "io.buildpacks.lifecycle.version"
-	lifecycleApisLabel     = "io.buildpacks.lifecycle.apis"
+	builderMetadataLabel  = "io.buildpacks.builder.metadata"
+	buildpackLayersLabel  = "io.buildpacks.buildpack.layers"
+	buildpackOrderLabel   = "io.buildpacks.buildpack.order"
+	extensionLayersLabel  = "io.buildpacks.extension.layers"
+	extensionOrderLabel   = "io.buildpacks.buildpack.order-extensions"
+	lifecycleApisLabel    = "io.buildpacks.lifecycle.apis"
+	lifecycleVersionLabel = "io.buildpacks.lifecycle.version"
 )
 
 type BuildpackLayerInfo struct {
@@ -36,6 +38,7 @@ type BuilderImageMetadata struct {
 	Lifecycle   LifecycleMetadata          `json:"lifecycle"`
 	CreatedBy   CreatorMetadata            `json:"createdBy"`
 	Buildpacks  []DescriptiveBuildpackInfo `json:"buildpacks"`
+	Extensions  []DescriptiveBuildpackInfo `json:"extensions,omitempty"`
 }
 
 type StackMetadata struct {

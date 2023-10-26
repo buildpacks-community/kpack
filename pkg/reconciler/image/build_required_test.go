@@ -60,7 +60,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		Namespace:    "test-ns",
 		LatestImage:  "some/builder@sha256:builder-digest",
 		BuilderReady: true,
-		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
+		BuilderMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -85,7 +85,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []corev1alpha1.BuildpackMetadata{
+			BuildMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
 			Stack: corev1alpha1.BuildStack{
@@ -308,27 +308,28 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("Builder Metadata changes", func() {
-			it("false if builder has additional unused buildpacks", func() {
-				builder.BuilderMetadata = []corev1alpha1.BuildpackMetadata{
-					{Id: "buildpack.matches", Version: "1"},
-					{Id: "buildpack.unused", Version: "unused"},
-				}
+			when("buildpacks", func() {
+				it("false if builder has additional unused buildpacks", func() {
+					builder.BuilderMetadataBuildpacks = []corev1alpha1.BuildpackMetadata{
+						{Id: "buildpack.matches", Version: "1"},
+						{Id: "buildpack.unused", Version: "unused"},
+					}
 
-				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
-				assert.NoError(t, err)
-				assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
-				assert.Equal(t, "", result.PriorityClass)
-				assert.Equal(t, "", result.ReasonsStr)
-				assert.Equal(t, "", result.ChangesStr)
-			})
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
+					assert.Equal(t, "", result.PriorityClass)
+					assert.Equal(t, "", result.ReasonsStr)
+					assert.Equal(t, "", result.ChangesStr)
+				})
 
-			it("true if builder metadata has different buildpack version from used buildpack version", func() {
-				builder.BuilderMetadata = []corev1alpha1.BuildpackMetadata{
-					{Id: "buildpack.matches", Version: "NEW_VERSION"},
-					{Id: "buildpack.different", Version: "different"},
-				}
+				it("true if builder metadata has different buildpack version from used buildpack version", func() {
+					builder.BuilderMetadataBuildpacks = []corev1alpha1.BuildpackMetadata{
+						{Id: "buildpack.matches", Version: "NEW_VERSION"},
+						{Id: "buildpack.different", Version: "different"},
+					}
 
-				expectedChanges := testhelpers.CompactJSON(`
+					expectedChanges := testhelpers.CompactJSON(`
 [
   {
     "reason": "BUILDPACK",
@@ -342,21 +343,21 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
   }
 ]`)
 
-				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
-				assert.NoError(t, err)
-				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
-				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
-				assert.Equal(t, expectedChanges, result.ChangesStr)
-			})
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+					assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
+					assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
+					assert.Equal(t, expectedChanges, result.ChangesStr)
+				})
 
-			it("true if builder does not have all most recent used buildpacks", func() {
-				builder.BuilderMetadata = []corev1alpha1.BuildpackMetadata{
-					{Id: "buildpack.only.new.buildpacks", Version: "1"},
-					{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
-				}
+				it("true if builder does not have all most recent used buildpacks", func() {
+					builder.BuilderMetadataBuildpacks = []corev1alpha1.BuildpackMetadata{
+						{Id: "buildpack.only.new.buildpacks", Version: "1"},
+						{Id: "buildpack.only.new.or.unused.buildpacks", Version: "1"},
+					}
 
-				expectedChanges := testhelpers.CompactJSON(`
+					expectedChanges := testhelpers.CompactJSON(`
 [
   {
     "reason": "BUILDPACK",
@@ -370,18 +371,100 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
   }
 ]`)
 
-				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
-				assert.NoError(t, err)
-				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
-				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
-				assert.Equal(t, expectedChanges, result.ChangesStr)
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+					assert.Equal(t, buildapi.BuildReasonBuildpack, result.ReasonsStr)
+					assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
+					assert.Equal(t, expectedChanges, result.ChangesStr)
+				})
 			})
 
-			it("true if builder has a different run image", func() {
-				builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+			when("extensions", func() {
+				it.Before(func() {
+					latestBuild.Status.BuildMetadataExtensions = []corev1alpha1.BuildpackMetadata{
+						{Id: "extension.matches", Version: "1"},
+					}
+				})
 
-				expectedChanges := testhelpers.CompactJSON(`
+				it("false if builder has additional unused extensions", func() {
+					builder.BuilderMetadataExtensions = []corev1alpha1.BuildpackMetadata{
+						{Id: "extension.matches", Version: "1"},
+						{Id: "extension.unused", Version: "unused"},
+					}
+
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionFalse, result.ConditionStatus)
+					assert.Equal(t, "", result.PriorityClass)
+					assert.Equal(t, "", result.ReasonsStr)
+					assert.Equal(t, "", result.ChangesStr)
+				})
+
+				it("true if builder metadata has different extension version from used extension version", func() {
+					builder.BuilderMetadataExtensions = []corev1alpha1.BuildpackMetadata{
+						{Id: "extension.matches", Version: "NEW_VERSION"},
+						{Id: "extension.different", Version: "different"},
+					}
+
+					expectedChanges := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "EXTENSION",
+    "old": [
+      {
+        "id": "extension.matches",
+        "version": "1"
+      }
+    ],
+    "new": null
+  }
+]`)
+
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+					assert.Equal(t, buildapi.BuildReasonExtension, result.ReasonsStr)
+					assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
+					assert.Equal(t, expectedChanges, result.ChangesStr)
+				})
+
+				it("true if builder does not have all most recent used extensions", func() {
+					builder.BuilderMetadataExtensions = []corev1alpha1.BuildpackMetadata{
+						{Id: "extension.only.new.extensions", Version: "1"},
+						{Id: "extension.only.new.or.unused.extensions", Version: "1"},
+					}
+
+					expectedChanges := testhelpers.CompactJSON(`
+[
+  {
+    "reason": "EXTENSION",
+    "old": [
+      {
+        "id": "extension.matches",
+        "version": "1"
+      }
+    ],
+    "new": null
+  }
+]`)
+
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+					assert.Equal(t, buildapi.BuildReasonExtension, result.ReasonsStr)
+					assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
+					assert.Equal(t, expectedChanges, result.ChangesStr)
+				})
+			})
+
+			when("builder has a different run image", func() {
+				it.Before(func() {
+					builder.LatestRunImage = "some.registry.io/run-image@sha256:a1aa3da2a80a775df55e880b094a1a8de19b919435ad0c71c29a0983d64e65db"
+				})
+
+				it("true", func() {
+					expectedChanges := testhelpers.CompactJSON(`
 [
   {
     "reason": "STACK",
@@ -390,12 +473,28 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
   }
 ]`)
 
-				result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
-				assert.NoError(t, err)
-				assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
-				assert.Equal(t, buildapi.BuildReasonStack, result.ReasonsStr)
-				assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
-				assert.Equal(t, expectedChanges, result.ChangesStr)
+					result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+					assert.NoError(t, err)
+					assert.Equal(t, corev1.ConditionTrue, result.ConditionStatus)
+					assert.Equal(t, buildapi.BuildReasonStack, result.ReasonsStr)
+					assert.Equal(t, buildapi.BuildPriorityClassLow, result.PriorityClass)
+					assert.Equal(t, expectedChanges, result.ChangesStr)
+				})
+
+				when("there are extensions", func() {
+					it.Before(func() {
+						builder.BuilderMetadataExtensions = []corev1alpha1.BuildpackMetadata{
+							{Id: "some-extension-id", Version: "some-extension-version"},
+						}
+					})
+					it("false", func() {
+						expectedChanges := testhelpers.CompactJSON(``)
+
+						result, err := isBuildRequired(image, latestBuild, sourceResolver, builder)
+						assert.NoError(t, err)
+						assert.Equal(t, expectedChanges, result.ChangesStr)
+					})
+				})
 			})
 		})
 
@@ -799,14 +898,15 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 }
 
 type TestBuilderResource struct {
-	BuilderReady     bool
-	BuilderMetadata  []corev1alpha1.BuildpackMetadata
-	ImagePullSecrets []corev1.LocalObjectReference
-	LatestImage      string
-	LatestRunImage   string
-	Name             string
-	Namespace        string
-	Kind             string
+	BuilderReady              bool
+	BuilderMetadataBuildpacks []corev1alpha1.BuildpackMetadata
+	BuilderMetadataExtensions []corev1alpha1.BuildpackMetadata
+	ImagePullSecrets          []corev1.LocalObjectReference
+	LatestImage               string
+	LatestRunImage            string
+	Name                      string
+	Namespace                 string
+	Kind                      string
 }
 
 func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
@@ -821,7 +921,11 @@ func (t TestBuilderResource) Ready() bool {
 }
 
 func (t TestBuilderResource) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
-	return t.BuilderMetadata
+	return t.BuilderMetadataBuildpacks
+}
+
+func (t TestBuilderResource) ExtensionMetadata() corev1alpha1.BuildpackMetadataList {
+	return t.BuilderMetadataExtensions
 }
 
 func (t TestBuilderResource) RunImage() string {

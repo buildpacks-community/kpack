@@ -28,7 +28,7 @@ type FakeStoreReader struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStoreReader) Read(arg1 authn.Keychain, arg2 []v1alpha1.ImageSource) ([]v1alpha1.BuildpackStatus, error) {
+func (fake *FakeStoreReader) ReadBuildpack(arg1 authn.Keychain, arg2 []v1alpha1.ImageSource) ([]v1alpha1.BuildpackStatus, error) {
 	var arg2Copy []v1alpha1.ImageSource
 	if arg2 != nil {
 		arg2Copy = make([]v1alpha1.ImageSource, len(arg2))

@@ -28,9 +28,13 @@ type ClusterBuilderExpansion interface{}
 
 type ClusterBuildpackExpansion interface{}
 
+type ClusterExtensionExpansion interface{}
+
 type ClusterStackExpansion interface{}
 
 type ClusterStoreExpansion interface{}
+
+type ExtensionExpansion interface{}
 
 type ImageExpansion interface{}
 

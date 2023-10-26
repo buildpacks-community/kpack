@@ -8,11 +8,12 @@ import (
 
 	registryv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	k8scorev1 "k8s.io/api/core/v1"
+
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 type fakeLayer struct {
@@ -52,10 +53,11 @@ type buildpackRefContainer struct {
 
 type fakeResolver struct {
 	buildpacks         map[string]K8sRemoteBuildpack
+	extensions         map[string]K8sRemoteBuildpack
 	observedGeneration int64
 }
 
-func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (r *fakeResolver) resolveBuildpack(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	buildpack, ok := r.buildpacks[fmt.Sprintf("%s@%s", ref.Id, ref.Version)]
 	if !ok {
 		return K8sRemoteBuildpack{}, errors.New("buildpack not found")
@@ -63,10 +65,24 @@ func (r *fakeResolver) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuild
 	return buildpack, nil
 }
 
+func (r *fakeResolver) resolveExtension(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	extension, ok := r.extensions[fmt.Sprintf("%s@%s", ref.Id, ref.Version)]
+	if !ok {
+		return K8sRemoteBuildpack{}, errors.New("extension not found")
+	}
+	return extension, nil
+}
+
 func (f *fakeResolver) AddBuildpack(t *testing.T, ref buildapi.BuilderBuildpackRef, buildpack K8sRemoteBuildpack) {
 	t.Helper()
 	assert.NotEqual(t, ref.Id, "", "buildpack ref missing id")
 	f.buildpacks[fmt.Sprintf("%s@%s", ref.Id, ref.Version)] = buildpack
+}
+
+func (f *fakeResolver) AddExtension(t *testing.T, ref buildapi.BuilderBuildpackRef, extension K8sRemoteBuildpack) {
+	t.Helper()
+	assert.NotEqual(t, ref.Id, "", "extension ref missing id")
+	f.extensions[fmt.Sprintf("%s@%s", ref.Id, ref.Version)] = extension
 }
 
 func (r *fakeResolver) ClusterStoreObservedGeneration() int64 {
@@ -101,19 +117,30 @@ func makeObjectRef(name, kind, id, version string) buildapi.BuilderBuildpackRef 
 
 type fakeFetcher struct {
 	buildpacks         map[string][]buildpackLayer
+	extensions         map[string][]buildpackLayer
 	observedGeneration int64
 }
 
-func (f *fakeFetcher) ResolveAndFetch(_ context.Context, buildpack buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
-	layers, ok := f.buildpacks[fmt.Sprintf("%s@%s", buildpack.Id, buildpack.Version)]
-	if !ok {
-		return RemoteBuildpackInfo{}, errors.New("buildpack not found")
+func (f *fakeFetcher) ResolveAndFetchBuildpack(_ context.Context, bp buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	bpLayers, ok := f.buildpacks[fmt.Sprintf("%s@%s", bp.Id, bp.Version)]
+	if ok {
+		return RemoteBuildpackInfo{
+			BuildpackInfo: buildpackInfoInLayers(bpLayers, bp.Id, bp.Version),
+			Layers:        bpLayers,
+		}, nil
 	}
+	return RemoteBuildpackInfo{}, errors.New("buildpack not found")
+}
 
-	return RemoteBuildpackInfo{
-		BuildpackInfo: buildpackInfoInLayers(layers, buildpack.Id, buildpack.Version),
-		Layers:        layers,
-	}, nil
+func (f *fakeFetcher) ResolveAndFetchExtension(_ context.Context, ext buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	extLayers, ok := f.extensions[fmt.Sprintf("%s@%s", ext.Id, ext.Version)]
+	if ok {
+		return RemoteBuildpackInfo{
+			BuildpackInfo: buildpackInfoInLayers(extLayers, ext.Id, ext.Version),
+			Layers:        extLayers,
+		}, nil
+	}
+	return RemoteBuildpackInfo{}, errors.New("extension not found")
 }
 
 func (f *fakeFetcher) ClusterStoreObservedGeneration() int64 {
@@ -124,11 +151,20 @@ func (f *fakeFetcher) UsedObjects() []k8scorev1.ObjectReference {
 	return nil
 }
 
-func (f *fakeFetcher) resolve(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+func (f *fakeFetcher) resolveBuildpack(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
+	panic("Not implemented For Tests")
+}
+
+func (f *fakeFetcher) resolveExtension(ref buildapi.BuilderBuildpackRef) (K8sRemoteBuildpack, error) {
 	panic("Not implemented For Tests")
 }
 
 func (f *fakeFetcher) AddBuildpack(t *testing.T, id, version string, layers []buildpackLayer) {
 	t.Helper()
 	f.buildpacks[fmt.Sprintf("%s@%s", id, version)] = layers
+}
+
+func (f *fakeFetcher) AddExtension(t *testing.T, id, version string, layers []buildpackLayer) {
+	t.Helper()
+	f.extensions[fmt.Sprintf("%s@%s", id, version)] = layers
 }

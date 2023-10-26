@@ -51,10 +51,26 @@ type BuildpackList struct {
 	Items []Buildpack `json:"items"`
 }
 
-func (*Buildpack) GetGroupVersionKind() schema.GroupVersionKind {
+func (b *Buildpack) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind(BuildpackKind)
 }
 
-func (c *Buildpack) NamespacedName() types.NamespacedName {
-	return types.NamespacedName{Namespace: c.Namespace, Name: c.Name}
+func (b *Buildpack) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: b.Namespace, Name: b.Name}
+}
+
+func (b *Buildpack) ModulesStatus() []corev1alpha1.BuildpackStatus {
+	return b.Status.Buildpacks
+}
+
+func (b *Buildpack) ServiceAccountName() string {
+	return b.Spec.ServiceAccountName
+}
+
+func (b *Buildpack) ServiceAccountNamespace() string {
+	return b.Namespace
+}
+
+func (b *Buildpack) TypeMD() metav1.TypeMeta {
+	return b.TypeMeta
 }

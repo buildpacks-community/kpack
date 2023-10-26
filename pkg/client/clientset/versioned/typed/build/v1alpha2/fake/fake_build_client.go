@@ -48,12 +48,20 @@ func (c *FakeKpackV1alpha2) ClusterBuildpacks() v1alpha2.ClusterBuildpackInterfa
 	return &FakeClusterBuildpacks{c}
 }
 
+func (c *FakeKpackV1alpha2) ClusterExtensions() v1alpha2.ClusterExtensionInterface {
+	return &FakeClusterExtensions{c}
+}
+
 func (c *FakeKpackV1alpha2) ClusterStacks() v1alpha2.ClusterStackInterface {
 	return &FakeClusterStacks{c}
 }
 
 func (c *FakeKpackV1alpha2) ClusterStores() v1alpha2.ClusterStoreInterface {
 	return &FakeClusterStores{c}
+}
+
+func (c *FakeKpackV1alpha2) Extensions(namespace string) v1alpha2.ExtensionInterface {
+	return &FakeExtensions{c, namespace}
 }
 
 func (c *FakeKpackV1alpha2) Images(namespace string) v1alpha2.ImageInterface {

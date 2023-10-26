@@ -60,7 +60,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		LatestImage:  "some/builder@sha256:builder-digest",
 		Kind:         BuilderKind,
 		BuilderReady: true,
-		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
+		BuilderMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
 		LatestRunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
@@ -84,7 +84,7 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
-			BuildMetadata: []corev1alpha1.BuildpackMetadata{
+			BuildMetadataBuildpacks: []corev1alpha1.BuildpackMetadata{
 				{Id: "buildpack.matches", Version: "1"},
 			},
 			Stack: corev1alpha1.BuildStack{
@@ -371,14 +371,15 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 }
 
 type TestBuilderResource struct {
-	BuilderReady     bool
-	BuilderMetadata  []corev1alpha1.BuildpackMetadata
-	ImagePullSecrets []corev1.LocalObjectReference
-	Kind             string
-	LatestImage      string
-	LatestRunImage   string
-	Name             string
-	Namespace        string
+	BuilderReady              bool
+	BuilderMetadataBuildpacks []corev1alpha1.BuildpackMetadata
+	BuilderMetadataExtensions []corev1alpha1.BuildpackMetadata
+	ImagePullSecrets          []corev1.LocalObjectReference
+	Kind                      string
+	LatestImage               string
+	LatestRunImage            string
+	Name                      string
+	Namespace                 string
 }
 
 func (t TestBuilderResource) ConditionReadyMessage() string {
@@ -397,7 +398,11 @@ func (t TestBuilderResource) Ready() bool {
 }
 
 func (t TestBuilderResource) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
-	return t.BuilderMetadata
+	return t.BuilderMetadataBuildpacks
+}
+
+func (t TestBuilderResource) ExtensionMetadata() corev1alpha1.BuildpackMetadataList {
+	return t.BuilderMetadataExtensions
 }
 
 func (t TestBuilderResource) RunImage() string {

@@ -2,10 +2,12 @@ package buildpod
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -27,6 +29,7 @@ import (
 
 const (
 	builderMetadataLabel = "io.buildpacks.builder.metadata"
+	extensionOrderLabel  = "io.buildpacks.buildpack.order-extensions"
 	cnbUserId            = "CNB_USER_ID"
 	cnbGroupId           = "CNB_GROUP_ID"
 )
@@ -254,13 +257,26 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 	}
 
 	return buildapi.BuildPodBuilderConfig{
-		StackID:      stackId,
-		RunImage:     metadata.Stack.RunImage.Image,
-		PlatformAPIs: append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
-		Uid:          uid,
-		Gid:          gid,
-		OS:           config.OS,
+		StackID:       stackId,
+		RunImage:      metadata.Stack.RunImage.Image,
+		PlatformAPIs:  append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
+		Uid:           uid,
+		Gid:           gid,
+		OS:            config.OS,
+		HasExtensions: hasExtensions(image),
 	}, nil
+}
+
+func hasExtensions(image ggcrv1.Image) bool {
+	orderExtLabel, err := imagehelpers.GetStringLabel(image, extensionOrderLabel)
+	if err != nil {
+		return false
+	}
+	var orderExt []buildpack.GroupElement
+	if err := json.Unmarshal([]byte(orderExtLabel), &orderExt); err != nil {
+		return false
+	}
+	return len(orderExt) > 0
 }
 
 func parseCNBID(image ggcrv1.Image, env string) (int64, error) {

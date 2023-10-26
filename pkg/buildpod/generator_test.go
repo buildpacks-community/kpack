@@ -51,10 +51,11 @@ func TestGenerator(t *testing.T) {
 func testGenerator(t *testing.T, when spec.G, it spec.S) {
 	when("Generate", func() {
 		const (
-			serviceAccountName  = "serviceAccountName"
-			namespace           = "some-namespace"
-			windowsBuilderImage = "builder/windows"
-			linuxBuilderImage   = "builder/linux"
+			serviceAccountName              = "serviceAccountName"
+			namespace                       = "some-namespace"
+			windowsBuilderImage             = "builder/windows"
+			linuxBuilderImage               = "builder/linux"
+			linuxBuilderImageWithExtensions = "builder/linux-with-extensions"
 		)
 
 		var (
@@ -192,8 +193,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
-			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
-			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)
+			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux", false), keychain)
+			imageFetcher.AddImage(linuxBuilderImageWithExtensions, createImage(t, "linux", true), keychain)
+			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows", false), keychain)
 		})
 
 		it("invokes the BuildPod with the builder and env config", func() {
@@ -236,6 +238,51 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			}}, build.buildPodCalls)
+		})
+
+		when("order contains extensions", func() {
+			it("invokes the BuildPod with the builder and env config", func() {
+				var build = &testBuildPodable{
+					serviceAccount: serviceAccountName,
+					namespace:      namespace,
+					buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+						Image:            linuxBuilderImageWithExtensions,
+						ImagePullSecrets: builderPullSecrets,
+					},
+				}
+
+				pod, err := generator.Generate(context.TODO(), build)
+				require.NoError(t, err)
+				assert.NotNil(t, pod)
+
+				assert.Equal(t, []buildPodCall{{
+					BuildPodImages: buildPodConfig,
+					BuildContext: buildapi.BuildContext{
+						Secrets: []corev1.Secret{
+							*gitSecret,
+							*dockerSecret,
+						},
+						BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
+							StackID:       "some.stack.id",
+							RunImage:      "some-registry.io/run-image",
+							Uid:           1234,
+							Gid:           5678,
+							PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
+							OS:            "linux",
+							HasExtensions: true,
+						},
+						Bindings: []buildapi.ServiceBinding{},
+						ImagePullSecrets: []corev1.LocalObjectReference{
+							{
+								Name: "image-pull-1",
+							},
+							{
+								Name: "image-pull-2",
+							},
+						},
+					},
+				}}, build.buildPodCalls)
+			})
 		})
 
 		it("dedups duplicate secrets on the service account", func() {
@@ -602,7 +649,7 @@ func (tb *testBuildPodable) Services() buildapi.Services {
 	return tb.services
 }
 
-func createImage(t *testing.T, os string) ggcrv1.Image {
+func createImage(t *testing.T, os string, withExtensions bool) ggcrv1.Image {
 	image := randomImage(t)
 	var err error
 
@@ -653,6 +700,12 @@ func createImage(t *testing.T, os string) ggcrv1.Image {
   }
 }`)
 	require.NoError(t, err)
+
+	if withExtensions {
+		image, err = imagehelpers.SetStringLabel(image, "io.buildpacks.buildpack.order-extensions", //language=json
+			`[{"group":[{"id":"samples/curl","version":"0.0.1"}]}]`)
+		require.NoError(t, err)
+	}
 
 	image, err = imagehelpers.SetEnv(image, "CNB_USER_ID", "1234")
 	require.NoError(t, err)

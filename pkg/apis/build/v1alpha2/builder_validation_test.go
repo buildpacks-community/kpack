@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestBuilderValidation(t *testing.T) {
@@ -209,6 +210,57 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 					ObjectReference: corev1.ObjectReference{
 						Name: "some-buildpack",
 						Kind: "Buildpack",
+					},
+				}}}}
+				assert.Nil(t, builder.Validate(context.TODO()))
+			})
+		})
+
+		when("order-extensions", func() {
+			assertValidationError = func(builder *Builder, expectedError *apis.FieldError) {
+				t.Helper()
+				err := builder.Validate(context.TODO())
+				assert.EqualError(t, err,
+					expectedError.
+						ViaIndex(0).ViaField("group").
+						ViaIndex(0).ViaField("spec", "order-extensions").Error(),
+				)
+			}
+
+			it("invalid object kind", func() {
+				builder.Spec.OrderExtensions = []BuilderOrderEntry{{
+					Group: []BuilderBuildpackRef{{
+						ObjectReference: corev1.ObjectReference{
+							Name: "some-extension",
+							Kind: "FakeExtension",
+						},
+					}},
+				}}
+
+				assertValidationError(builder, apis.ErrInvalidValue("FakeExtension", "kind", "must be one of Extension, ClusterExtension"))
+			})
+
+			it("invalid when image is used", func() {
+				builder.Spec.OrderExtensions = []BuilderOrderEntry{{
+					Group: []BuilderBuildpackRef{{
+						Image: "some-registry.io/extension",
+					}},
+				}}
+
+				assertValidationError(builder, apis.ErrDisallowedFields("image reference currently not supported"))
+			})
+
+			it("valid when both id and object are defined", func() {
+				builder.Spec.OrderExtensions = []BuilderOrderEntry{{Group: []BuilderBuildpackRef{{
+					BuildpackRef: v1alpha1.BuildpackRef{
+						BuildpackInfo: v1alpha1.BuildpackInfo{
+							Id:      "some-extension",
+							Version: "v1",
+						},
+					},
+					ObjectReference: corev1.ObjectReference{
+						Name: "some-extension",
+						Kind: "Extension",
 					},
 				}}}}
 				assert.Nil(t, builder.Validate(context.TODO()))

@@ -889,6 +889,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"someimage/name:tag3",
 			}, pod.Spec.InitContainers[5].Args)
 		})
+
 		it("configures export step with non-web default process", func() {
 			build.Spec.DefaultProcess = "sys-info"
 			pod, err := build.BuildPod(config, buildContext)
@@ -2457,6 +2458,96 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						assert.Equal(t, expectedEnv, envVar)
 					}
 				}
+			})
+		})
+
+		when("builder has extensions", func() {
+			it.Before(func() {
+				buildContext.BuildPodBuilderConfig.HasExtensions = true
+			})
+
+			it("sets CNB_EXPERIMENTAL_MODE=warn in the lifecycle env", func() {
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				for _, container := range pod.Spec.InitContainers {
+					assert.Contains(t, container.Env,
+						corev1.EnvVar{
+							Name:  "CNB_EXPERIMENTAL_MODE",
+							Value: "warn",
+						},
+					)
+				}
+			})
+
+			it("provides -build-image to the restorer", func() {
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Contains(t, pod.Spec.InitContainers[3].Args, "-build-image="+builderImage)
+			})
+
+			it("adds kaniko volume to pod and mounts it during restore and extend", func() {
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Contains(t, pod.Spec.Volumes, corev1.Volume{
+					Name:         "kaniko",
+					VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+				})
+
+				for _, container := range pod.Spec.InitContainers {
+					switch container.Name {
+					case buildapi.RestoreContainerName, buildapi.ExtendContainerName:
+						assert.Contains(t, container.VolumeMounts, corev1.VolumeMount{
+							Name:      "kaniko",
+							MountPath: "/kaniko",
+						})
+					default:
+						assert.NotContains(t, container.VolumeMounts, corev1.VolumeMount{
+							Name:      "kaniko",
+							MountPath: "/kaniko",
+						})
+					}
+				}
+			})
+
+			it("runs the extender (as root) instead of the builder", func() {
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Equal(t, buildapi.ExtendContainerName, pod.Spec.InitContainers[4].Name)
+				assert.Equal(t, []string{"/cnb/lifecycle/extender"}, pod.Spec.InitContainers[4].Command)
+
+				for _, container := range pod.Spec.InitContainers {
+					// every phase should be unprivileged
+					actualPrivileged := container.SecurityContext.Privileged
+					assert.Equal(t, false, *actualPrivileged)
+					// extend phase should run as root
+					actualRunAsNonRoot := container.SecurityContext.RunAsNonRoot
+					actualRunAsUser := container.SecurityContext.RunAsUser
+					actualRunAsGroup := container.SecurityContext.RunAsGroup
+					switch container.Name {
+					case buildapi.ExtendContainerName:
+						assert.Equal(t, false, *actualRunAsNonRoot)
+						assert.Equal(t, int64(0), *actualRunAsUser)
+						assert.Equal(t, int64(0), *actualRunAsGroup)
+					default:
+						assert.Equal(t, true, *actualRunAsNonRoot)
+						assert.NotEqual(t, nil, actualRunAsUser)  // in real life this would be the uid from the builder
+						assert.NotEqual(t, nil, actualRunAsGroup) // in real life this would be the gid from the builder
+					}
+				}
+			})
+
+			it("is possible to use standard containers", func() {
+				buildContext.InjectedSidecarSupport = true
+				config.BuildWaiterImage = "some-image"
+
+				pod, err := build.BuildPod(config, buildContext)
+				require.NoError(t, err)
+
+				assert.Equal(t, buildapi.ExtendContainerName, pod.Spec.Containers[4].Name)
 			})
 		})
 

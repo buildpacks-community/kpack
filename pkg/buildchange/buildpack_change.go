@@ -9,10 +9,10 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
-func NewBuildpackChange(oldBuildpacks, newBuildpacks []corev1alpha1.BuildpackInfo) Change {
+func NewBuildpackChange(oldInfos, newInfos []corev1alpha1.BuildpackInfo) Change {
 	return buildpackChange{
-		old: oldBuildpacks,
-		new: newBuildpacks,
+		old: oldInfos,
+		new: newInfos,
 	}
 }
 

@@ -58,9 +58,9 @@ func testBuilderConversion(t *testing.T, when spec.G, it spec.S) {
 				ServiceAccountName: "some-service-account",
 			},
 			Status: BuilderStatus{
-				Status:          corev1alpha1.Status{Conditions: corev1alpha1.Conditions{{Type: "some-type"}}},
-				BuilderMetadata: nil,
-				Order:           nil,
+				Status:                    corev1alpha1.Status{Conditions: corev1alpha1.Conditions{{Type: "some-type"}}},
+				BuilderMetadataBuildpacks: nil,
+				Order:                     nil,
 				Stack: corev1alpha1.BuildStack{
 					RunImage: "",
 					ID:       "",

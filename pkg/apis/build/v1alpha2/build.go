@@ -161,6 +161,7 @@ var buildSteps = map[string]struct{}{
 	AnalyzeContainerName:    {},
 	DetectContainerName:     {},
 	RestoreContainerName:    {},
+	ExtendContainerName:     {},
 	BuildContainerName:      {},
 	ExportContainerName:     {},
 	CompletionContainerName: {},
@@ -197,16 +198,6 @@ func (b *Build) builtWithStack(runImage string) bool {
 	}
 
 	return lastBuildRunImageRef.Identifier() == builderRunImageRef.Identifier()
-}
-
-func (b *Build) builtWithBuildpacks(buildpacks corev1alpha1.BuildpackMetadataList) bool {
-	for _, bp := range b.Status.BuildMetadata {
-		if !buildpacks.Include(bp) {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (b *Build) additionalBuildNeeded() bool {

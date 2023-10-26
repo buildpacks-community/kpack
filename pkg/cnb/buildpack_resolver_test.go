@@ -3,10 +3,11 @@ package cnb
 import (
 	"testing"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
+
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,6 +18,8 @@ func TestBuildpackResolver(t *testing.T) {
 
 func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 	var (
+		resolver BuildpackResolver
+
 		testNamespace = "some-namespace"
 
 		engineBuildpack = corev1alpha1.BuildpackStatus{
@@ -159,11 +162,22 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 		}
 	)
 
-	when("Resolve", func() {
-		when("using the clusterstore", func() {
+	when("resolveBuildpack", func() {
+		when("provided image", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, nil, nil)
+			})
+
+			it("fails", func() {
+				ref := buildapi.BuilderBuildpackRef{Image: "some-image"}
+				_, err := resolver.resolveBuildpack(ref)
+				assert.EqualError(t, err, "using images in builders not currently supported")
+			})
+		})
+
+		when("using the clusterStore", func() {
 			var (
-				resolver BuildpackResolver
-				store    = &buildapi.ClusterStore{
+				store = &buildapi.ClusterStore{
 					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterStore"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "some-store",
@@ -182,14 +196,14 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, nil, nil)
+				resolver = NewBuildpackResolver(store, nil, nil, nil, nil)
 			})
 
 			it("finds it using id", func() {
 				ref := makeRef("io.buildpack.engine", "")
 				expectedBuildpack := engineBuildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
@@ -198,29 +212,28 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "8.0.0")
 				expectedBuildpack := v8Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
 
 			it("fails on invalid id", func() {
 				ref := makeRef("fake-buildpack", "")
-				_, err := resolver.resolve(ref)
+				_, err := resolver.resolveBuildpack(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 			})
 
 			it("fails on unknown version", func() {
 				ref := makeRef("io.buildpack.multi", "8.0.1")
-				_, err := resolver.resolve(ref)
+				_, err := resolver.resolveBuildpack(ref)
 				assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 			})
 		})
 
 		when("using the buildpack resources", func() {
 			var (
-				resolver   BuildpackResolver
-				buildpacks = []*buildapi.Buildpack{
-					{
+				buildpacks = []ModuleResource{
+					&buildapi.Buildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "io.buildpack.meta",
@@ -234,7 +247,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.Buildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "io.buildpack.multi-8.0.0",
@@ -246,7 +259,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.Buildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "io.buildpack.multi-9.0.0",
@@ -258,7 +271,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.Buildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "io.buildpack.multi",
@@ -275,7 +288,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, buildpacks, nil)
+				resolver = NewBuildpackResolver(nil, buildpacks, nil, nil, nil)
 			})
 
 			when("using id", func() {
@@ -283,7 +296,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -292,7 +305,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -301,14 +314,14 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 			})
@@ -318,21 +331,21 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeBuildpack", "", "")
-					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
+					_, err := resolver.resolveBuildpack(ref)
+					assert.EqualError(t, err, "kind must be one of: Buildpack, ClusterBuildpack")
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "Buildpack", "", "")
-					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "no buildpack with name 'fake-buildpack'")
+					_, err := resolver.resolveBuildpack(ref)
+					assert.EqualError(t, err, "no Buildpack with name 'fake-buildpack'")
 				})
 			})
 
@@ -341,7 +354,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -350,7 +363,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -359,26 +372,26 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.multi", "Buildpack", "io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "Buildpack", "io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "Buildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 			})
@@ -386,9 +399,8 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("using the clusterbuildpack resources", func() {
 			var (
-				resolver          BuildpackResolver
-				clusterBuildpacks = []*buildapi.ClusterBuildpack{
-					{
+				clusterBuildpacks = []ModuleResource{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.meta",
@@ -401,7 +413,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-8.0.0",
@@ -412,7 +424,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-9.0.0",
@@ -423,7 +435,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi",
@@ -439,7 +451,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks)
+				resolver = NewBuildpackResolver(nil, nil, clusterBuildpacks, nil, nil)
 			})
 
 			when("using id", func() {
@@ -447,7 +459,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -456,7 +468,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -465,20 +477,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeRef("io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid id", func() {
 					ref := makeRef("fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on unknown version", func() {
 					ref := makeRef("io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 			})
@@ -488,21 +500,21 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on invalid kind", func() {
 					ref := makeObjectRef("io.buildpack.meta", "FakeClusterBuildpack", "", "")
-					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "kind must be either Buildpack or ClusterBuildpack")
+					_, err := resolver.resolveBuildpack(ref)
+					assert.EqualError(t, err, "kind must be one of: Buildpack, ClusterBuildpack")
 				})
 
 				it("fails on object not found", func() {
 					ref := makeObjectRef("fake-buildpack", "ClusterBuildpack", "", "")
-					_, err := resolver.resolve(ref)
-					assert.EqualError(t, err, "no cluster buildpack with name 'fake-buildpack'")
+					_, err := resolver.resolveBuildpack(ref)
+					assert.EqualError(t, err, "no ClusterBuildpack with name 'fake-buildpack'")
 				})
 			})
 
@@ -511,7 +523,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "io.buildpack.meta", "")
 					expectedBuildpack := metaBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -520,7 +532,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "io.buildpack.engine", "")
 					expectedBuildpack := engineBuildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
@@ -529,26 +541,26 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 					ref := makeObjectRef("io.buildpack.multi", "ClusterBuildpack", "io.buildpack.multi", "8.0.0")
 					expectedBuildpack := v8Buildpack
 
-					buildpack, err := resolver.resolve(ref)
+					buildpack, err := resolver.resolveBuildpack(ref)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 
 				it("fails on version not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.multi", "ClusterBuildpack", "io.buildpack.multi", "8.0.1")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'io.buildpack.multi' and version '8.0.1'")
 				})
 
 				it("fails on id not found in resource", func() {
 					ref := makeObjectRef("io.buildpack.meta", "ClusterBuildpack", "fake-buildpack", "")
-					_, err := resolver.resolve(ref)
+					_, err := resolver.resolveBuildpack(ref)
 					assert.EqualError(t, err, "could not find buildpack with id 'fake-buildpack'")
 				})
 			})
@@ -556,8 +568,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("using multiple resource kinds", func() {
 			var (
-				resolver BuildpackResolver
-				store    = &buildapi.ClusterStore{
+				store = &buildapi.ClusterStore{
 					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterStore"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "some-store",
@@ -570,8 +581,8 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				buildpacks = []*buildapi.Buildpack{
-					{
+				buildpacks = []ModuleResource{
+					&buildapi.Buildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Buildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "io.buildpack.multi-8.0.0",
@@ -584,8 +595,8 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				clusterBuildpacks = []*buildapi.ClusterBuildpack{
-					{
+				clusterBuildpacks = []ModuleResource{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-8.0.0",
@@ -596,7 +607,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 							},
 						},
 					},
-					{
+					&buildapi.ClusterBuildpack{
 						TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "io.buildpack.multi-9.0.0",
@@ -611,20 +622,20 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				resolver = NewBuildpackResolver(store, buildpacks, clusterBuildpacks)
+				resolver = NewBuildpackResolver(store, buildpacks, clusterBuildpacks, nil, nil)
 			})
 
 			it("records which objects were used", func() {
-				buildpack, err := resolver.resolve(makeRef("io.buildpack.meta", ""))
+				buildpack, err := resolver.resolveBuildpack(makeRef("io.buildpack.meta", ""))
 				assert.Nil(t, err)
 				assert.Equal(t, metaBuildpack, buildpack.Buildpack)
 
-				buildpack, err = resolver.resolve(makeRef("io.buildpack.multi", "8.0.0"))
+				buildpack, err = resolver.resolveBuildpack(makeRef("io.buildpack.multi", "8.0.0"))
 
 				assert.Nil(t, err)
 				assert.Equal(t, v8Buildpack, buildpack.Buildpack)
 
-				buildpack, err = resolver.resolve(makeRef("io.buildpack.multi", "9.0.0"))
+				buildpack, err = resolver.resolveBuildpack(makeRef("io.buildpack.multi", "9.0.0"))
 				assert.Nil(t, err)
 				assert.Equal(t, v9Buildpack, buildpack.Buildpack)
 			})
@@ -633,7 +644,7 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "8.0.0")
 				expectedBuildpack := v8Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
@@ -642,13 +653,295 @@ func testBuildpackResolver(t *testing.T, when spec.G, it spec.S) {
 				ref := makeRef("io.buildpack.multi", "9.0.0")
 				expectedBuildpack := v9Buildpack
 
-				buildpack, err := resolver.resolve(ref)
+				buildpack, err := resolver.resolveBuildpack(ref)
 				assert.Nil(t, err)
 				assert.Equal(t, expectedBuildpack, buildpack.Buildpack)
 			})
 		})
+	})
 
-		// when("resolving via image", func() {
-		// })
+	when("resolveExtension", func() {
+		var (
+			resolver   BuildpackResolver
+			extensions = []ModuleResource{
+				&buildapi.Extension{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "io.buildpack.multi-8.0.0",
+						Namespace: testNamespace,
+					},
+					Status: buildapi.ExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v8Buildpack,
+						},
+					},
+				},
+				&buildapi.Extension{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "Extension"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "io.buildpack.multi-9.0.0",
+						Namespace: testNamespace,
+					},
+					Status: buildapi.ExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v9Buildpack,
+						},
+					},
+				},
+			}
+			clusterExtensions = []ModuleResource{
+				&buildapi.ClusterExtension{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "io.buildpack.multi-8.0.0",
+					},
+					Status: buildapi.ClusterExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v8Buildpack,
+						},
+					},
+				},
+				&buildapi.ClusterExtension{
+					TypeMeta: metav1.TypeMeta{APIVersion: "v1alpha2", Kind: "ClusterBuildpack"},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "io.buildpack.multi-9.0.0",
+					},
+					Status: buildapi.ClusterExtensionStatus{
+						Extensions: []corev1alpha1.BuildpackStatus{
+							v9Buildpack,
+						},
+					},
+				},
+			}
+		)
+
+		when("provided image", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, clusterExtensions)
+			})
+
+			it("fails", func() {
+				ref := buildapi.BuilderBuildpackRef{Image: "some-image"}
+				_, err := resolver.resolveExtension(ref)
+				assert.EqualError(t, err, "using images in builders not currently supported")
+			})
+		})
+
+		when("using the extension resources", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, nil)
+			})
+
+			when("using id", func() {
+				it("finds it using id", func() {
+					ref := makeRef("io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds it using id and version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.0")
+					expected := v8Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on unknown version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '8.0.1'")
+				})
+			})
+
+			when("using object ref", func() {
+				it("finds the resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid kind", func() {
+					ref := makeObjectRef("io.buildpack.multi", "FakeExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "kind must be one of: Extension, ClusterExtension")
+				})
+
+				it("fails on object not found", func() {
+					ref := makeObjectRef("fake-extension", "Extension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "no Extension with name 'fake-extension'")
+				})
+			})
+
+			when("using id and object ref together", func() {
+				it("finds id in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds the correct version in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "9.0.0")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on version not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "io.buildpack.multi", "9.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '9.0.1'")
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "Extension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+			})
+		})
+
+		when("using the clusterExtension resources", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, nil, clusterExtensions)
+			})
+
+			when("using id", func() {
+				it("finds it using id", func() {
+					ref := makeRef("io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds it using id and version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.0")
+					expected := v8Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid id", func() {
+					ref := makeRef("fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on unknown version", func() {
+					ref := makeRef("io.buildpack.multi", "8.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '8.0.1'")
+				})
+			})
+
+			when("using object ref", func() {
+				it("finds the resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on invalid kind", func() {
+					ref := makeObjectRef("io.buildpack.multi", "FakeExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "kind must be one of: Extension, ClusterExtension")
+				})
+
+				it("fails on object not found", func() {
+					ref := makeObjectRef("fake-extension", "ClusterExtension", "", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "no ClusterExtension with name 'fake-extension'")
+				})
+			})
+
+			when("using id and object ref together", func() {
+				it("finds id in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("finds the correct version in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "9.0.0")
+					expected := v9Buildpack
+
+					actual, err := resolver.resolveExtension(ref)
+					assert.Nil(t, err)
+					assert.Equal(t, expected, actual.Buildpack)
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+
+				it("fails on version not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "io.buildpack.multi", "9.0.1")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'io.buildpack.multi' and version '9.0.1'")
+				})
+
+				it("fails on id not found in resource", func() {
+					ref := makeObjectRef("io.buildpack.multi-9.0.0", "ClusterExtension", "fake-extension", "")
+					_, err := resolver.resolveExtension(ref)
+					assert.EqualError(t, err, "could not find extension with id 'fake-extension'")
+				})
+			})
+		})
+
+		when("using multiple resource kinds", func() {
+			it.Before(func() {
+				resolver = NewBuildpackResolver(nil, nil, nil, extensions, clusterExtensions)
+			})
+
+			it("records which objects were used", func() {
+				actual, err := resolver.resolveExtension(makeRef("io.buildpack.multi", "8.0.0"))
+				assert.Nil(t, err)
+				assert.Equal(t, v8Buildpack, actual.Buildpack)
+
+				actual, err = resolver.resolveExtension(makeRef("io.buildpack.multi", "9.0.0"))
+				assert.Nil(t, err)
+				assert.Equal(t, v9Buildpack, actual.Buildpack)
+			})
+
+			it("resolves extensions before anything else", func() {
+				ref := makeRef("io.buildpack.multi", "8.0.0")
+				expected := v8Buildpack
+
+				actual, err := resolver.resolveExtension(ref)
+				assert.Nil(t, err)
+				assert.Equal(t, expected, actual.Buildpack)
+			})
+		})
 	})
 }

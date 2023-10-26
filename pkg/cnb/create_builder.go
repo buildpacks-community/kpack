@@ -2,6 +2,7 @@ package cnb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -51,18 +52,37 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 
 	builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
 
+	// fetch and add buildpacks
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))
 
-		for _, buildpack := range group.Group {
-			remoteBuildpack, err := fetcher.ResolveAndFetch(ctx, buildpack)
+		for _, bp := range group.Group {
+			remoteBuildpack, err := fetcher.ResolveAndFetchBuildpack(ctx, bp)
 			if err != nil {
 				return buildapi.BuilderRecord{}, err
 			}
 
-			buildpacks = append(buildpacks, remoteBuildpack.Optional(buildpack.Optional))
+			buildpacks = append(buildpacks, remoteBuildpack.Optional(bp.Optional))
 		}
-		builderBldr.AddGroup(buildpacks...)
+		builderBldr.AddBuildpackGroup(buildpacks...)
+	}
+
+	// fetch and add extensions
+	if builderBldr.os == "windows" && len(spec.OrderExtensions) > 0 {
+		return buildapi.BuilderRecord{}, errors.New("image extensions are not supported for Windows builds")
+	}
+	for _, group := range spec.OrderExtensions {
+		extensions := make([]RemoteBuildpackRef, 0, len(group.Group))
+
+		for _, ext := range group.Group {
+			remoteExtension, err := fetcher.ResolveAndFetchExtension(ctx, ext)
+			if err != nil {
+				return buildapi.BuilderRecord{}, err
+			}
+
+			extensions = append(extensions, remoteExtension.Optional(true)) // extensions are always optional
+		}
+		builderBldr.AddExtensionGroup(extensions...)
 	}
 
 	writeableImage, err := builderBldr.WriteableImage()
@@ -98,7 +118,9 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 			ID:       clusterStack.Status.Id,
 		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
+		Extensions:              buildpackMetadata(builderBldr.extensions()),
 		Order:                   builderBldr.order,
+		OrderExtensions:         builderBldr.orderExtensions,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
 		ObservedStoreGeneration: fetcher.ClusterStoreObservedGeneration(),
 		OS:                      config.OS,

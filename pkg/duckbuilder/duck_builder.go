@@ -45,7 +45,11 @@ func (b *DuckBuilder) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 }
 
 func (b *DuckBuilder) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
-	return b.Status.BuilderMetadata
+	return b.Status.BuilderMetadataBuildpacks
+}
+
+func (b *DuckBuilder) ExtensionMetadata() corev1alpha1.BuildpackMetadataList {
+	return b.Status.BuilderMetadataExtensions
 }
 
 func (b *DuckBuilder) RunImage() string {

@@ -32,7 +32,8 @@ type BuilderSpec struct {
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
 	Store corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
-	Order []BuilderOrderEntry `json:"order,omitempty"`
+	Order           []BuilderOrderEntry `json:"order,omitempty"`
+	OrderExtensions []BuilderOrderEntry `json:"order-extensions,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -63,15 +64,17 @@ type CosignSignature struct {
 
 // +k8s:openapi-gen=true
 type BuilderStatus struct {
-	corev1alpha1.Status     `json:",inline"`
-	BuilderMetadata         corev1alpha1.BuildpackMetadataList `json:"builderMetadata,omitempty"`
-	Order                   []corev1alpha1.OrderEntry          `json:"order,omitempty"`
-	Stack                   corev1alpha1.BuildStack            `json:"stack,omitempty"`
-	LatestImage             string                             `json:"latestImage,omitempty"`
-	ObservedStackGeneration int64                              `json:"observedStackGeneration,omitempty"`
-	ObservedStoreGeneration int64                              `json:"observedStoreGeneration,omitempty"`
-	OS                      string                             `json:"os,omitempty"`
-	SignaturePaths          []CosignSignature                  `json:"signaturePaths,omitempty"`
+	corev1alpha1.Status       `json:",inline"`
+	BuilderMetadataBuildpacks corev1alpha1.BuildpackMetadataList `json:"builderMetadata,omitempty"`
+	BuilderMetadataExtensions corev1alpha1.BuildpackMetadataList `json:"builderMetadataExtensions,omitempty"`
+	Order                     []corev1alpha1.OrderEntry          `json:"order,omitempty"`
+	OrderExtensions           []corev1alpha1.OrderEntry          `json:"order-extensions,omitempty"`
+	Stack                     corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage               string                             `json:"latestImage,omitempty"`
+	ObservedStackGeneration   int64                              `json:"observedStackGeneration,omitempty"`
+	ObservedStoreGeneration   int64                              `json:"observedStoreGeneration,omitempty"`
+	OS                        string                             `json:"os,omitempty"`
+	SignaturePaths            []CosignSignature                  `json:"signaturePaths,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

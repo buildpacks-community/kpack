@@ -89,6 +89,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuildpackList":       schema_pkg_apis_build_v1alpha2_ClusterBuildpackList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuildpackSpec":       schema_pkg_apis_build_v1alpha2_ClusterBuildpackSpec(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterBuildpackStatus":     schema_pkg_apis_build_v1alpha2_ClusterBuildpackStatus(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtension":           schema_pkg_apis_build_v1alpha2_ClusterExtension(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionList":       schema_pkg_apis_build_v1alpha2_ClusterExtensionList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionSpec":       schema_pkg_apis_build_v1alpha2_ClusterExtensionSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionStatus":     schema_pkg_apis_build_v1alpha2_ClusterExtensionStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStack":               schema_pkg_apis_build_v1alpha2_ClusterStack(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackList":           schema_pkg_apis_build_v1alpha2_ClusterStackList(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStackSpec":           schema_pkg_apis_build_v1alpha2_ClusterStackSpec(ref),
@@ -101,6 +105,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation":           schema_pkg_apis_build_v1alpha2_CosignAnnotation(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig":               schema_pkg_apis_build_v1alpha2_CosignConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Extension":                  schema_pkg_apis_build_v1alpha2_Extension(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionList":              schema_pkg_apis_build_v1alpha2_ExtensionList(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionSpec":              schema_pkg_apis_build_v1alpha2_ExtensionSpec(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionStatus":            schema_pkg_apis_build_v1alpha2_ExtensionStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                      schema_pkg_apis_build_v1alpha2_Image(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":                 schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":               schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
@@ -2702,6 +2710,19 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"order-extensions": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderOrderEntry"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -2757,6 +2778,19 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 						},
 					},
 					"order": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"),
+									},
+								},
+							},
+						},
+					},
+					"order-extensions": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
@@ -3122,6 +3156,19 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 							},
 						},
 					},
+					"order-extensions": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderOrderEntry"),
+									},
+								},
+							},
+						},
+					},
 					"serviceAccountRef": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -3237,15 +3284,10 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuildpackSpec(ref common.ReferenceCal
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"source": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
+					"image": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageSource"),
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"serviceAccountRef": {
@@ -3257,7 +3299,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuildpackSpec(ref common.ReferenceCal
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageSource", "k8s.io/api/core/v1.ObjectReference"},
+			"k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -3295,6 +3337,185 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuildpackStatus(ref common.ReferenceC
 						},
 					},
 					"buildpacks": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStatus"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStatus", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ClusterExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionStatus"),
+						},
+					},
+				},
+				Required: []string{"spec", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtensionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ClusterExtensionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtension"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterExtension", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ClusterExtensionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"serviceAccountRef": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.ObjectReference"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ClusterExtensionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"observedGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions the latest available observations of a resource's current state.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+									},
+								},
+							},
+						},
+					},
+					"extensions": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
 								"x-kubernetes-list-type": "",
@@ -3828,6 +4049,184 @@ func schema_pkg_apis_build_v1alpha2_CosignConfig(ref common.ReferenceCallback) c
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_Extension(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionStatus"),
+						},
+					},
+				},
+				Required: []string{"spec", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionSpec", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ExtensionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ExtensionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Extension"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Extension", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ExtensionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"serviceAccountName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_ExtensionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"observedGeneration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions the latest available observations of a resource's current state.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"),
+									},
+								},
+							},
+						},
+					},
+					"extensions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStatus"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackStatus", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
 	}
 }
 
@@ -4399,6 +4798,19 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 								"x-kubernetes-list-type": "",
 							},
 						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderOrderEntry"),
+									},
+								},
+							},
+						},
+					},
+					"order-extensions": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{

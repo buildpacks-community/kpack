@@ -15,7 +15,8 @@ import (
 
 type RemoteBuildpackFetcher interface {
 	BuildpackResolver
-	ResolveAndFetch(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
+	ResolveAndFetchBuildpack(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
+	ResolveAndFetchExtension(context.Context, buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error)
 }
 
 type remoteBuildpackFetcher struct {
@@ -26,16 +27,50 @@ type remoteBuildpackFetcher struct {
 func NewRemoteBuildpackFetcher(
 	factory registry.KeychainFactory,
 	clusterStore *buildapi.ClusterStore,
-	buildpacks []*buildapi.Buildpack, clusterBuildpacks []*buildapi.ClusterBuildpack,
+	buildpacks []*buildapi.Buildpack,
+	clusterBuildpacks []*buildapi.ClusterBuildpack,
+	extensions []*buildapi.Extension,
+	clusterExtensions []*buildapi.ClusterExtension,
 ) RemoteBuildpackFetcher {
+	rBuildpacks := make([]ModuleResource, len(buildpacks))
+	for i := range buildpacks {
+		rBuildpacks[i] = ModuleResource(buildpacks[i])
+	}
+	rClusterBuildpacks := make([]ModuleResource, len(clusterBuildpacks))
+	for i := range clusterBuildpacks {
+		rClusterBuildpacks[i] = ModuleResource(clusterBuildpacks[i])
+	}
+	rExtensions := make([]ModuleResource, len(extensions))
+	for i := range extensions {
+		rExtensions[i] = ModuleResource(extensions[i])
+	}
+	rClusterExtensions := make([]ModuleResource, len(clusterExtensions))
+	for i := range clusterExtensions {
+		rClusterExtensions[i] = ModuleResource(clusterExtensions[i])
+	}
 	return &remoteBuildpackFetcher{
-		BuildpackResolver: NewBuildpackResolver(clusterStore, buildpacks, clusterBuildpacks),
-		keychainFactory:   dockercreds.NewCachedKeychainFactory(factory),
+		BuildpackResolver: NewBuildpackResolver(
+			clusterStore,
+			rBuildpacks,
+			rClusterBuildpacks,
+			rExtensions,
+			rClusterExtensions,
+		),
+		keychainFactory: dockercreds.NewCachedKeychainFactory(factory),
 	}
 }
 
-func (s *remoteBuildpackFetcher) ResolveAndFetch(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
-	remote, err := s.resolve(ref)
+func (s *remoteBuildpackFetcher) ResolveAndFetchBuildpack(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	remote, err := s.resolveBuildpack(ref)
+	if err != nil {
+		return RemoteBuildpackInfo{}, err
+	}
+
+	return s.fetch(ctx, remote)
+}
+
+func (s *remoteBuildpackFetcher) ResolveAndFetchExtension(ctx context.Context, ref buildapi.BuilderBuildpackRef) (RemoteBuildpackInfo, error) {
+	remote, err := s.resolveExtension(ref)
 	if err != nil {
 		return RemoteBuildpackInfo{}, err
 	}
@@ -89,7 +124,7 @@ func (s *remoteBuildpackFetcher) layersForOrder(ctx context.Context, order corev
 	var buildpackLayers []buildpackLayer
 	for _, orderEntry := range order {
 		for _, buildpackRef := range orderEntry.Group {
-			buildpack, err := s.resolve(buildapi.BuilderBuildpackRef{
+			buildpack, err := s.resolveBuildpack(buildapi.BuilderBuildpackRef{
 				BuildpackRef: corev1alpha1.BuildpackRef{
 					BuildpackInfo: corev1alpha1.BuildpackInfo{
 						Id:      buildpackRef.Id,

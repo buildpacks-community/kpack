@@ -90,12 +90,6 @@ make unit
   make e2e
 ```
 
-* The IMAGE_REGISTRY environment variable must point at a registry with local write access - e.g.
-
-```bash
-export IMAGE_REGISTRY="gcr.io/<some-project>"
-```
-
 * The KPACK_TEST_NAMESPACE_LABELS environment variable allows you to define additional labels for the test namespace, e.g.
 
 ```bash
