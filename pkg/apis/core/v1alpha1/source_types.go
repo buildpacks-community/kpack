@@ -34,8 +34,9 @@ type Source interface {
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type Git struct {
-	URL      string `json:"url"`
-	Revision string `json:"revision"`
+	URL                  string `json:"url"`
+	Revision             string `json:"revision"`
+	InitializeSubmodules bool   `json:"initializeSubmodules,omitempty"`
 }
 
 func (g *Git) BuildEnvVars() []corev1.EnvVar {
@@ -47,6 +48,10 @@ func (g *Git) BuildEnvVars() []corev1.EnvVar {
 		{
 			Name:  "GIT_REVISION",
 			Value: g.Revision,
+		},
+		{
+			Name:  "GIT_INITIALIZE_SUBMODULES",
+			Value: strconv.FormatBool(g.InitializeSubmodules),
 		},
 	}
 }
@@ -165,17 +170,19 @@ const (
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type ResolvedGitSource struct {
-	URL      string        `json:"url"`
-	Revision string        `json:"revision"`
-	SubPath  string        `json:"subPath,omitempty"`
-	Type     GitSourceKind `json:"type"`
+	URL                  string        `json:"url"`
+	Revision             string        `json:"revision"`
+	SubPath              string        `json:"subPath,omitempty"`
+	Type                 GitSourceKind `json:"type"`
+	InitializeSubmodules bool          `json:"initializeSubmodules,omitempty"`
 }
 
 func (gs *ResolvedGitSource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Git: &Git{
-			URL:      gs.URL,
-			Revision: gs.Revision,
+			URL:                  gs.URL,
+			Revision:             gs.Revision,
+			InitializeSubmodules: gs.InitializeSubmodules,
 		},
 		SubPath: gs.SubPath,
 	}

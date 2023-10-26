@@ -77,8 +77,9 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					ServiceAccountName: serviceAccount,
 					Source: corev1alpha1.SourceConfig{
 						Git: &corev1alpha1.Git{
-							URL:      "https://github.com/build-me",
-							Revision: "1234",
+							URL:                  "https://github.com/build-me",
+							Revision:             "1234",
+							InitializeSubmodules: true,
 						},
 					},
 				},
@@ -86,9 +87,10 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 
 			resolvedSource := corev1alpha1.ResolvedSourceConfig{
 				Git: &corev1alpha1.ResolvedGitSource{
-					URL:      "https://example.com/something",
-					Revision: "abcdef",
-					Type:     corev1alpha1.Branch,
+					URL:                  "https://example.com/something",
+					Revision:             "abcdef",
+					Type:                 corev1alpha1.Branch,
+					InitializeSubmodules: true,
 				},
 			}
 

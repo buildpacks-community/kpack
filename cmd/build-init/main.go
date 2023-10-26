@@ -32,15 +32,16 @@ var (
 	imageTag = flag.String("imageTag", os.Getenv("IMAGE_TAG"), "tag of image that will get created by the lifecycle")
 	runImage = flag.String("runImage", os.Getenv("RUN_IMAGE"), "The base image from which application images are built.")
 
-	gitURL          = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
-	gitRevision     = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
-	blobURL         = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
-	stripComponents = flag.Int("strip-components", getenvInt("BLOB_STRIP_COMPONENTS", 0), "The number of directory components to strip from the blobs content when extracting.")
-	registryImage   = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
-	hostName        = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
-	sourceSubPath   = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
-	buildChanges    = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
-	descriptorPath  = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
+	gitURL                  = flag.String("git-url", os.Getenv("GIT_URL"), "The url of the Git repository to initialize.")
+	gitRevision             = flag.String("git-revision", os.Getenv("GIT_REVISION"), "The Git revision to make the repository HEAD.")
+	gitInitializeSubmodules = flag.Bool("git-initialize-submodules", getenvBool("GIT_INITIALIZE_SUBMODULES"), "Initialize submodules during git clone")
+	blobURL                 = flag.String("blob-url", os.Getenv("BLOB_URL"), "The url of the source code blob.")
+	stripComponents         = flag.Int("strip-components", getenvInt("BLOB_STRIP_COMPONENTS", 0), "The number of directory components to strip from the blobs content when extracting.")
+	registryImage           = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
+	hostName                = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
+	sourceSubPath           = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
+	buildChanges            = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
+	descriptorPath          = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
 
 	builderImage = flag.String("builder-image", os.Getenv("BUILDER_IMAGE"), "The builder image used to build the application")
 	builderName  = flag.String("builder-name", os.Getenv("BUILDER_NAME"), "The builder name provided during creation")
@@ -207,9 +208,15 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 			return err
 		}
 
+		var initializeSubmodules bool
+		if gitInitializeSubmodules != nil {
+			initializeSubmodules = *gitInitializeSubmodules
+		}
+
 		fetcher := git.Fetcher{
-			Logger:   logger,
-			Keychain: gitKeychain,
+			Logger:               logger,
+			Keychain:             gitKeychain,
+			InitializeSubmodules: initializeSubmodules,
 		}
 		return fetcher.Fetch(appDir, *gitURL, *gitRevision, projectMetadataDir)
 	case *blobURL != "":
@@ -296,4 +303,13 @@ func getenvInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 	return atoi
+}
+
+func getenvBool(key string) bool {
+	value := os.Getenv(key)
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return false
+	}
+	return b
 }

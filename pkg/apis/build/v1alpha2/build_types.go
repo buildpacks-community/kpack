@@ -71,13 +71,13 @@ type BuildSpec struct {
 	Cosign                *CosignConfig               `json:"cosign,omitempty"`
 	DefaultProcess        string                      `json:"defaultProcess,omitempty"`
 	// +listType
-	Tolerations       []corev1.Toleration `json:"tolerations,omitempty"`
-	NodeSelector      map[string]string   `json:"nodeSelector,omitempty"`
-	Affinity          *corev1.Affinity    `json:"affinity,omitempty"`
-	RuntimeClassName  *string             `json:"runtimeClassName,omitempty"`
-	SchedulerName     string              `json:"schedulerName,omitempty"`
-	PriorityClassName string              `json:"priorityClassName,omitempty"`
-	CreationTime      string              `json:"creationTime,omitempty"`
+	Tolerations          []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector         map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity             *corev1.Affinity    `json:"affinity,omitempty"`
+	RuntimeClassName     *string             `json:"runtimeClassName,omitempty"`
+	SchedulerName        string              `json:"schedulerName,omitempty"`
+	PriorityClassName    string              `json:"priorityClassName,omitempty"`
+	CreationTime         string              `json:"creationTime,omitempty"`
 }
 
 func (bs *BuildSpec) RegistryCacheTag() string {

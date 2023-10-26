@@ -101,6 +101,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ClusterStoreStatus":         schema_pkg_apis_build_v1alpha2_ClusterStoreStatus(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation":           schema_pkg_apis_build_v1alpha2_CosignAnnotation(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignConfig":               schema_pkg_apis_build_v1alpha2_CosignConfig(ref),
+		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignSignature":            schema_pkg_apis_build_v1alpha2_CosignSignature(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.Image":                      schema_pkg_apis_build_v1alpha2_Image(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuild":                 schema_pkg_apis_build_v1alpha2_ImageBuild(ref),
 		"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ImageBuilder":               schema_pkg_apis_build_v1alpha2_ImageBuilder(ref),
@@ -2799,11 +2800,24 @@ func schema_pkg_apis_build_v1alpha2_BuilderStatus(ref common.ReferenceCallback) 
 							Format: "",
 						},
 					},
+					"signaturePaths": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignSignature"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignSignature", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.OrderEntry"},
 	}
 }
 
@@ -3237,15 +3251,10 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuildpackSpec(ref common.ReferenceCal
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"source": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "",
-							},
-						},
+					"image": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageSource"),
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"serviceAccountRef": {
@@ -3257,7 +3266,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuildpackSpec(ref common.ReferenceCal
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.ImageSource", "k8s.io/api/core/v1.ObjectReference"},
+			"k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
@@ -3828,6 +3837,33 @@ func schema_pkg_apis_build_v1alpha2_CosignConfig(ref common.ReferenceCallback) c
 		},
 		Dependencies: []string{
 			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.CosignAnnotation"},
+	}
+}
+
+func schema_pkg_apis_build_v1alpha2_CosignSignature(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"signingSecret": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"targetDigest": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"signingSecret", "targetDigest"},
+			},
+		},
 	}
 }
 
@@ -5149,6 +5185,12 @@ func schema_pkg_apis_core_v1alpha1_Git(ref common.ReferenceCallback) common.Open
 							Format:  "",
 						},
 					},
+					"initializeSubmodules": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"url", "revision"},
 			},
@@ -5378,6 +5420,12 @@ func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallbac
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
+						},
+					},
+					"initializeSubmodules": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 				},

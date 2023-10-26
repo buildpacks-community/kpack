@@ -15,8 +15,9 @@ import (
 )
 
 type Fetcher struct {
-	Logger   *log.Logger
-	Keychain GitKeychain
+	Logger               *log.Logger
+	Keychain             GitKeychain
+	InitializeSubmodules bool
 }
 
 func init() {
@@ -71,20 +72,22 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "checking out revision")
 	}
 
-	submodules, err := worktree.Submodules()
-	if err != nil {
-		return errors.Wrapf(err, "getting submodules")
-	}
-
-	for _, submodule := range submodules {
-		f.Logger.Printf("Updating submodule %v", submodule.Config().URL)
-		submoduleAuth, err := f.Keychain.Resolve(submodule.Config().URL)
+	if f.InitializeSubmodules {
+		submodules, err := worktree.Submodules()
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "getting submodules")
 		}
-		err = submodule.Update(&gogit.SubmoduleUpdateOptions{Auth: submoduleAuth, Init: true, RecurseSubmodules: gogit.DefaultSubmoduleRecursionDepth })
-		if err != nil {
-			return errors.Wrapf(err, "updating submodules")
+
+		for _, submodule := range submodules {
+			f.Logger.Printf("Updating submodule %v", submodule.Config().URL)
+			submoduleAuth, err := f.Keychain.Resolve(submodule.Config().URL)
+			if err != nil {
+				return err
+			}
+			err = submodule.Update(&gogit.SubmoduleUpdateOptions{Auth: submoduleAuth, Init: true, RecurseSubmodules: gogit.DefaultSubmoduleRecursionDepth})
+			if err != nil {
+				return errors.Wrapf(err, "updating submodules")
+			}
 		}
 	}
 

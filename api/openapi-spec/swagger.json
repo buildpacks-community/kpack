@@ -5946,6 +5946,13 @@
         "os": {
           "type": "string"
         },
+        "signaturePaths": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.CosignSignature"
+          }
+        },
         "stack": {
           "default": {},
           "$ref": "#/definitions/kpack.core.v1alpha1.BuildStack"
@@ -6193,13 +6200,11 @@
     "kpack.build.v1alpha2.ClusterBuildpackSpec": {
       "type": "object",
       "properties": {
+        "image": {
+          "type": "string"
+        },
         "serviceAccountRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
-        },
-        "source": {
-          "default": {},
-          "x-kubernetes-list-type": "",
-          "$ref": "#/definitions/kpack.core.v1alpha1.ImageSource"
         }
       }
     },
@@ -6495,6 +6500,23 @@
             "$ref": "#/definitions/kpack.build.v1alpha2.CosignAnnotation"
           },
           "x-kubernetes-list-type": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.CosignSignature": {
+      "type": "object",
+      "required": [
+        "signingSecret",
+        "targetDigest"
+      ],
+      "properties": {
+        "signingSecret": {
+          "type": "string",
+          "default": ""
+        },
+        "targetDigest": {
+          "type": "string",
+          "default": ""
         }
       }
     },
@@ -7193,6 +7215,9 @@
         "revision"
       ],
       "properties": {
+        "initializeSubmodules": {
+          "type": "boolean"
+        },
         "revision": {
           "type": "string",
           "default": ""
@@ -7310,6 +7335,9 @@
         "type"
       ],
       "properties": {
+        "initializeSubmodules": {
+          "type": "boolean"
+        },
         "revision": {
           "type": "string",
           "default": ""
