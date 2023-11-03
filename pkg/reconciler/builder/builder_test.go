@@ -245,6 +245,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 								Type:   corev1alpha1.ConditionReady,
 								Status: corev1.ConditionTrue,
 							},
+							{
+								Type:   buildapi.ConditionUpToDate,
+								Status: corev1.ConditionTrue,
+							},
 						},
 					},
 					BuilderMetadata: []corev1alpha1.BuildpackMetadata{
@@ -320,6 +324,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 								Type:   corev1alpha1.ConditionReady,
 								Status: corev1.ConditionTrue,
 							},
+							{
+								Type:   buildapi.ConditionUpToDate,
+								Status: corev1.ConditionTrue,
+							},
 						},
 					},
 					BuilderMetadata: []corev1alpha1.BuildpackMetadata{},
@@ -383,6 +391,10 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 							Type:   corev1alpha1.ConditionReady,
 							Status: corev1.ConditionTrue,
 						},
+						{
+							Type:   buildapi.ConditionUpToDate,
+							Status: corev1.ConditionTrue,
+						},
 					},
 				},
 				BuilderMetadata: []corev1alpha1.BuildpackMetadata{
@@ -436,6 +448,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.NoLatestImageReason,
+											Message: buildapi.NoLatestImageMessage,
+										},
+										{
+											Type:    buildapi.ConditionUpToDate,
+											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.ReconcileFailedReason,
 											Message: "create error",
 										},
 									},
@@ -491,6 +510,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.NoLatestImageReason,
+											Message: buildapi.NoLatestImageMessage,
+										},
+										{
+											Type:    buildapi.ConditionUpToDate,
+											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.ReconcileFailedReason,
 											Message: "Error: clusterstack 'some-stack' is not ready",
 										},
 									},
@@ -526,6 +552,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.NoLatestImageReason,
+											Message: buildapi.NoLatestImageMessage,
+										},
+										{
+											Type:    buildapi.ConditionUpToDate,
+											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.ReconcileFailedReason,
 											Message: `clusterstore.kpack.io "some-store" not found`,
 										},
 									},
@@ -561,6 +594,13 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 										{
 											Type:    corev1alpha1.ConditionReady,
 											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.NoLatestImageReason,
+											Message: buildapi.NoLatestImageMessage,
+										},
+										{
+											Type:    buildapi.ConditionUpToDate,
+											Status:  corev1.ConditionFalse,
+											Reason:  buildapi.ReconcileFailedReason,
 											Message: `clusterstack.kpack.io "some-stack" not found`,
 										},
 									},

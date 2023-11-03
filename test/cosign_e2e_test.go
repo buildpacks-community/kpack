@@ -8,14 +8,15 @@ import (
 	cosigntesting "github.com/pivotal/kpack/pkg/cosign/testing"
 	cosignutil "github.com/pivotal/kpack/pkg/cosign/util"
 
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
@@ -274,7 +275,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, builder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, builder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, builder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Get(ctx, builderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -390,7 +392,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, builder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, builder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, builder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Get(ctx, builderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -514,7 +517,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, builder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, builder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, builder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Get(ctx, builderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -641,7 +645,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilFailed(t, ctx, clients, expectedErrorMessage, builder)
+		waitUntilFailed(t, ctx, clients, buildapi.ConditionUpToDate, expectedErrorMessage, builder)
+		waitUntilFailed(t, ctx, clients, corev1alpha1.ConditionReady, buildapi.NoLatestImageMessage, builder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Get(ctx, builderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -649,7 +654,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 
 		readyConditionBuilder := updatedBuilder.Status.GetCondition(corev1alpha1.ConditionReady)
 		require.False(t, readyConditionBuilder.IsTrue())
-		require.Contains(t, readyConditionBuilder.Message, expectedErrorMessage)
+
+		upToDateConditionBuilder := updatedBuilder.Status.GetCondition(buildapi.ConditionUpToDate)
+		require.False(t, upToDateConditionBuilder.IsTrue())
+		require.Contains(t, upToDateConditionBuilder.Message, expectedErrorMessage)
 	})
 
 	it("Signs a ClusterBuilder image successfully when the key is not password-protected", func() {
@@ -751,7 +759,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, clusterBuilder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Get(ctx, clusterBuilderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -864,7 +873,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, clusterBuilder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Get(ctx, clusterBuilderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -986,7 +996,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilReady(t, ctx, clients, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, corev1alpha1.ConditionReady, clusterBuilder)
+		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, clusterBuilder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Get(ctx, clusterBuilderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -1110,7 +1121,8 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		waitUntilFailed(t, ctx, clients, expectedErrorMessage, clusterBuilder)
+		waitUntilFailed(t, ctx, clients, buildapi.ConditionUpToDate, expectedErrorMessage, clusterBuilder)
+		waitUntilFailed(t, ctx, clients, corev1alpha1.ConditionReady, buildapi.NoLatestImageMessage, clusterBuilder)
 
 		updatedBuilder, err := clients.client.KpackV1alpha2().ClusterBuilders().Get(ctx, clusterBuilderName, metav1.GetOptions{})
 		require.NoError(t, err)
@@ -1118,6 +1130,9 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 
 		readyConditionBuilder := updatedBuilder.Status.GetCondition(corev1alpha1.ConditionReady)
 		require.False(t, readyConditionBuilder.IsTrue())
-		require.Contains(t, readyConditionBuilder.Message, expectedErrorMessage)
+
+		upToDateConditionBuilder := updatedBuilder.Status.GetCondition(buildapi.ConditionUpToDate)
+		require.False(t, upToDateConditionBuilder.IsTrue())
+		require.Contains(t, upToDateConditionBuilder.Message, expectedErrorMessage)
 	})
 }

@@ -37,6 +37,11 @@ func (b *DuckBuilder) Ready() bool {
 		(b.Generation == b.Status.ObservedGeneration)
 }
 
+func (b *DuckBuilder) UpToDate() bool {
+ 	return b.Status.GetCondition(buildapi.ConditionUpToDate).IsTrue() &&
+ 		(b.Generation == b.Status.ObservedGeneration)
+}
+
 func (b *DuckBuilder) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
 	return corev1alpha1.BuildBuilderSpec{
 		Image:            b.Status.LatestImage,

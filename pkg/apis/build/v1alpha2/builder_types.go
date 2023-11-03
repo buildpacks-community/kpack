@@ -10,8 +10,12 @@ import (
 )
 
 const (
-	BuilderKind   = "Builder"
-	BuilderCRName = "builders.kpack.io"
+	BuilderKind                                      = "Builder"
+	BuilderCRName                                    = "builders.kpack.io"
+	ConditionUpToDate     corev1alpha1.ConditionType = "UpToDate"
+	NoLatestImageReason   string                     = "NoLatestImage"
+	NoLatestImageMessage  string                     = "Builder has no latestImage"
+	ReconcileFailedReason string                     = "ReconcileFailed"
 )
 
 // +genclient
