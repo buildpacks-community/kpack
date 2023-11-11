@@ -32,7 +32,7 @@ require (
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
-	k8s.io/code-generator v0.26.5
+	k8s.io/code-generator v0.28.3
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	knative.dev/pkg v0.0.0-20230821102121-81e4ee140363
 )
