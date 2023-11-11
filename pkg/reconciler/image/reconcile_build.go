@@ -19,6 +19,7 @@ const (
 	UnknownStateReason     = "UnknownState"
 	BuildFailedReason      = "BuildFailed"
 	UpToDateReason         = "UpToDate"
+	NotUpToDateMessage     = "Builder is not up to date. The latest stack and buildpacks may not be in use."
 )
 
 func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, latestBuild *buildapi.Build, sourceResolver *buildapi.SourceResolver, builder buildapi.BuilderResource, buildCacheName string) (buildapi.ImageStatus, error) {
@@ -46,7 +47,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, image *buildapi.Image, 
 
 		return buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
-				Conditions: scheduledBuildCondition(build),
+				Conditions: scheduledBuildCondition(build, builder),
 			},
 			BuildCounter:               nextBuildNumber,
 			BuildCacheName:             buildCacheName,
@@ -106,7 +107,7 @@ func noScheduledBuild(buildNeeded corev1.ConditionStatus, builder buildapi.Build
 		ready.Message = fmt.Sprintf("Error: Build '%s' in namespace '%s' failed: %s", build.Name, build.Namespace, defaultMessageIfNil(build.Status.GetCondition(corev1alpha1.ConditionSucceeded), "unknown error"))
 	}
 
-	return corev1alpha1.Conditions{ready, builderCondition(builder)}
+	return corev1alpha1.Conditions{ready, builderReadyCondition(builder), builderUpToDateCondition(builder)}
 
 }
 
@@ -127,7 +128,7 @@ func defaultMessageIfNil(condition *corev1alpha1.Condition, defaultMessage strin
 	return condition.Message
 }
 
-func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
+func builderReadyCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 	if !builder.Ready() {
 		return corev1alpha1.Condition{
 			Type:               buildapi.ConditionBuilderReady,
@@ -145,6 +146,24 @@ func builderCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
 	}
 }
 
+func builderUpToDateCondition(builder buildapi.BuilderResource) corev1alpha1.Condition {
+	if !builder.UpToDate() {
+		return corev1alpha1.Condition{
+			Type:               buildapi.ConditionBuilderUpToDate,
+			Status:             corev1.ConditionFalse,
+			Reason:             buildapi.BuilderNotUpToDate,
+			Message:            NotUpToDateMessage,
+			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+		}
+	}
+	return corev1alpha1.Condition{
+		Type:               buildapi.ConditionBuilderUpToDate,
+		Status:             corev1.ConditionTrue,
+		Reason:             buildapi.BuilderUpToDate,
+		LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
+	}
+}
+
 func builderError(builder buildapi.BuilderResource) string {
 	errorMessage := fmt.Sprintf("Error: Builder '%s' is not ready in namespace '%s'", builder.GetName(), builder.GetNamespace())
 
@@ -155,7 +174,7 @@ func builderError(builder buildapi.BuilderResource) string {
 	return errorMessage
 }
 
-func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
+func scheduledBuildCondition(build *buildapi.Build, builder buildapi.BuilderResource) corev1alpha1.Conditions {
 	return corev1alpha1.Conditions{
 		{
 			Type:               corev1alpha1.ConditionReady,
@@ -170,6 +189,7 @@ func scheduledBuildCondition(build *buildapi.Build) corev1alpha1.Conditions {
 			Reason:             buildapi.BuilderReady,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
+		builderUpToDateCondition(builder),
 	}
 }
 
@@ -193,6 +213,7 @@ func buildRunningCondition(build *buildapi.Build, builder buildapi.BuilderResour
 			Message:            message,
 			LastTransitionTime: corev1alpha1.VolatileTime{Inner: metav1.Now()},
 		},
-		builderCondition(builder),
+		builderReadyCondition(builder),
+		builderUpToDateCondition(builder),
 	}
 }

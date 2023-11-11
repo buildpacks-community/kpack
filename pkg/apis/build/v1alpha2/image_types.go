@@ -136,3 +136,4 @@ func (i *Image) NamespacedName() types.NamespacedName {
 }
 
 const ConditionBuilderReady corev1alpha1.ConditionType = "BuilderReady"
+const ConditionBuilderUpToDate corev1alpha1.ConditionType = "BuilderUpToDate"
