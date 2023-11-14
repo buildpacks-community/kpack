@@ -282,7 +282,7 @@ Keyless signing via fulcio + rekor will not be part of the initial implementatio
 
 ### Adding provenance generation and signing to build process
 
-Upon a successful completion of the build pod, the build reconciler should look through all the secrets attached to the
+Upon a successful completion of the build pod, the controller should look through all the secrets attached to the
 Build's ServiceAccount, as well as the secrets attached to the kpack-controller's ServiceAccount. Every key that has the
 `type: kubernetes.io/ssh-auth` [built-in secret type][built-in-secret-types], or has the `cosign.key`, `cosign.pub`
 fields will be used as signing keys.
@@ -321,8 +321,9 @@ Pros:
   ugly)
 
 Cons:
-- Writing to registry will block reconcilation of other builds
-- Failing to sign or push attestation can only be surfaced on the build status, not in the logs
+- Writing to registry will block reconcilation of other builds (this could be alleviated by introducing a dedicated
+  signing/attesting controller)
+- Failing to sign or push attestation can only be surfaced on the build status, not the build logs
 
 
 #### Attestation in build pod
@@ -334,9 +335,7 @@ Pros:
 
 Cons:
 - Much harder to support a cluster-wider signing secret (since the private key might need to be shared across
-  namespaces)
-- Theoretically a cluster with injected sidecars can intercept and change the config (and hence attestation) of the
-  build pod
+  namespaces).
 
 ## Prior Art
 
@@ -360,6 +359,15 @@ process and the system itself.
 - Currently there's no tools on the market that can actually verify generic key-based attestations.
   [slsa-verifier][slsa-verifier] uses keyless signing and ony supports GitHub Actions and Google Cloud Build,
   `cosign` does key based verification, but only with its own key type.
+- Should there be a mechanism to opt out of attestation at the Build, Image, or even Namespace level?
+  - Does this mean that if an Image's service account contains a cosign secret, then both image signing and build
+    attestation will be generated?
+- How to integrate SBoMs into the attestation? The proposed plan is to generate a URI that can then be recorded in the
+  `runDetails.byproducts` field.
+    - But the SBoM is stored in a layer instead of an image, and there's no CLI that can extract a single layer from an
+      image using just the diffId (other than `pack sbom download`).
+    - The CNB spec splits the SBoM into component (buildpack) pieces, which doesn't create the best user experience.
+      Should we try to combine all of them into a single (or 3 since there's at most 3 formats) SBoM?
 
 [cluster-wide-cosign-rfc]: https://github.com/samj1912/kpack/blob/cluster-signing/rfcs/0000-cluster-signing.md#key-generation-and-storage
 [slsa-verifier]: https://github.com/slsa-framework/slsa-verifier
