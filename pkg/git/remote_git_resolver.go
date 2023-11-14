@@ -14,6 +14,8 @@ import (
 
 const defaultRemote = "origin"
 
+var regex = regexp.MustCompile("[a-f0-9]{40}")
+
 type remoteGitResolver struct{}
 
 func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
@@ -123,7 +125,7 @@ func resolveSourceWithSubpath(auth transport.AuthMethod, sourceConfig corev1alph
 func latestCommitForSubpath(r *gogit.Repository, subPath string) (string, error) {
 	logOutput, err := r.Log(&gogit.LogOptions{
 		PathFilter: func(s string) bool {
-			if strings.Contains(s, subPath) {
+			if strings.HasPrefix(s, subPath) {
 				return true
 			} else {
 				return false
@@ -132,7 +134,6 @@ func latestCommitForSubpath(r *gogit.Repository, subPath string) (string, error)
 	})
 
 	latestCommit, err := logOutput.Next()
-	regex, _ := regexp.Compile("[a-f0-9]{40}")
 	effectiveCommit := regex.FindString(latestCommit.String())
 
 	return effectiveCommit, err
