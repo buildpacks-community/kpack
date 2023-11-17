@@ -37,6 +37,9 @@ spec:
     - name: Ready
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: UpToDate
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"UpToDate\")].status"
   names:
     kind: ClusterBuilder
     listKind: ClusterBuilderList

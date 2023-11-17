@@ -7,6 +7,7 @@ type BuilderResource interface {
 	GetNamespace() string
 	BuildBuilderSpec() corev1alpha1.BuildBuilderSpec
 	Ready() bool
+	UpToDate() bool
 	BuildpackMetadata() corev1alpha1.BuildpackMetadataList
 	RunImage() string
 	GetKind() string

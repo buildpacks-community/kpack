@@ -36,6 +36,10 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 						Type:   corev1alpha1.ConditionReady,
 						Status: corev1.ConditionTrue,
 					},
+					{
+						Type:   buildapi.ConditionUpToDate,
+						Status: corev1.ConditionTrue,
+					},
 				},
 			},
 			BuilderMetadata: corev1alpha1.BuildpackMetadataList{
@@ -81,6 +85,35 @@ func testDuckBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
+	when("UpToDate", func() {
+
+		it("ready when UpToDate condition is true", func() {
+			require.True(t, duckBuilder.UpToDate())
+		})
+
+		it("not ready without conditions", func() {
+			duckBuilder.Status.Conditions = nil
+
+			require.False(t, duckBuilder.UpToDate())
+		})
+
+		it("not ready when not ready", func() {
+			duckBuilder.Status.Conditions = corev1alpha1.Conditions{
+				{
+					Type:   buildapi.ConditionUpToDate,
+					Status: corev1.ConditionFalse,
+				},
+			}
+
+			require.False(t, duckBuilder.UpToDate())
+		})
+
+		it("not UpToDate when generation does not match observed generation", func() {
+			duckBuilder.Generation = duckBuilder.Status.ObservedGeneration + 1
+
+			require.False(t, duckBuilder.UpToDate())
+		})
+	})
 	it("BuildBuilderSpec provides latest image and pull secrets", func() {
 		require.Equal(t, corev1alpha1.BuildBuilderSpec{
 			Image: "some/builder@sha256:12345678",
