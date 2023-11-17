@@ -203,7 +203,7 @@ Example:
         },
         {
           "name": "Secrets",
-          "content": "[{\"name\":\"my-registry-creds\",\"resourceVersion\":\"53\"},{\"name\":\"my-git-creds\"}]"
+          "content": "[{\"name\":\"my-registry-creds\",\"resourceVersion\":\"53\"},{\"name\":\"my-git-creds\",\"resourceVersion\":\"123\"}]"
         },
       ]
     },
