@@ -71,11 +71,11 @@ const (
 
 var (
 	PrepareCommand    = "/cnb/process/build-init"
-	AnalyzeCommand   = "/cnb/lifecycle/analyzer"
-	DetectCommand   = "/cnb/lifecycle/detector"
-	RestoreCommand   = "/cnb/lifecycle/restorer"
-	BuildCommand    = "/cnb/lifecycle/builder"
-	ExportCommand   = "/cnb/lifecycle/exporter"
+	AnalyzeCommand    = "/cnb/lifecycle/analyzer"
+	DetectCommand     = "/cnb/lifecycle/detector"
+	RestoreCommand    = "/cnb/lifecycle/restorer"
+	BuildCommand      = "/cnb/lifecycle/builder"
+	ExportCommand     = "/cnb/lifecycle/exporter"
 	CompletionCommand = "/cnb/process/completion"
 	RebaseCommand     = "/cnb/process/rebase"
 )
