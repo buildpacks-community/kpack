@@ -20,6 +20,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+  - name: Set up Go
+    uses: actions/setup-go@v4
+    with:
+      go-version-file: 'go.mod'
   - name: setup-pack-linux
     if: ${{ runner.os == 'linux' }}
     uses: buildpacks/github-actions/setup-pack@v5.0.0
@@ -46,7 +50,7 @@ runs:
       KPACK_VERSION=$version
       KPACK_COMMIT=$GITHUB_SHA
       mkdir report
-      
+
       export PATH="$PATH:$(pwd)"
       pack build ${{ inputs.tag }} \
         --builder ${{ inputs.builder }} \
@@ -55,7 +59,7 @@ runs:
         --report-output-dir . \
         --cache-image ${{ inputs.tag }}-cache \
         --publish ${{ inputs.additional_pack_args }}
-      
+
       mkdir images
       digest=$(go run .github/actions/pack-build/report.go -path ./report.toml)
       name=$(basename ${{ inputs.tag }})
