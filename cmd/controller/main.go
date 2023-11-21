@@ -4,19 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/pivotal/kpack/pkg/buildchange"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/pivotal/kpack/pkg/secret"
-
-	"github.com/pivotal/kpack/pkg/cosign"
+	"github.com/Masterminds/semver/v3"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/sign"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
-
-	"github.com/Masterminds/semver/v3"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,13 +34,14 @@ import (
 
 	"github.com/pivotal/kpack/cmd"
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
-	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/blob"
+	"github.com/pivotal/kpack/pkg/buildchange"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/config"
+	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
@@ -62,6 +58,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 const (
@@ -70,22 +67,30 @@ const (
 )
 
 var (
+	images       config.Images
+	cfg          config.Config
+	featureFlags config.FeatureFlags
+)
+
+var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-
-	buildInitImage            = flag.String("build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	buildInitWindowsImage     = flag.String("build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
-	rebaseImage               = flag.String("rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
-	completionImage           = flag.String("completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
-	completionWindowsImage    = flag.String("completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
-	enablePriorityClasses     = flag.Bool("enable-priority-classes", flaghelpers.GetEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
-	maximumPlatformApiVersion = flag.String("maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
-	buildWaiterImage          = flag.String("build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
-	injectedSidecarSupport    = flag.Bool("injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
-	sshTrustUnknownHosts      = flag.Bool("insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "if set to true, automatically trust unknown hosts when using git ssh source")
 )
 
 func main() {
+	flag.StringVar(&images.BuildInitImage, "build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
+	flag.StringVar(&images.BuildInitWindowsImage, "build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
+	flag.StringVar(&images.RebaseImage, "rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
+	flag.StringVar(&images.CompletionImage, "completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
+	flag.StringVar(&images.CompletionWindowsImage, "completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
+	flag.StringVar(&images.BuildWaiterImage, "build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
+
+	flag.BoolVar(&cfg.EnablePriorityClasses, "enable-priority-classes", flaghelpers.GetEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
+	flag.StringVar(&cfg.MaximumPlatformApiVersion, "maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
+	flag.BoolVar(&cfg.SshTrustUnknownHosts, "insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "if set to true, automatically trust unknown hosts when using git ssh source")
+
+	flag.BoolVar(&featureFlags.InjectedSidecarSupport, "injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
+
 	flag.Parse()
 
 	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
@@ -164,24 +169,17 @@ func main() {
 	}
 
 	buildpodGenerator := &buildpod.Generator{
-		BuildPodConfig: buildapi.BuildPodImages{
-			BuildInitImage:         *buildInitImage,
-			BuildWaiterImage:       *buildWaiterImage,
-			CompletionImage:        *completionImage,
-			RebaseImage:            *rebaseImage,
-			BuildInitWindowsImage:  *buildInitWindowsImage,
-			CompletionWindowsImage: *completionWindowsImage,
-		},
+		BuildPodConfig:            images.ToBuildPodImages(),
 		K8sClient:                 k8sClient,
 		KeychainFactory:           keychainFactory,
 		ImageFetcher:              &registry.Client{},
 		DynamicClient:             dynamicClient,
 		MaximumPlatformApiVersion: maxPlatformApi,
-		InjectedSidecarSupport:    *injectedSidecarSupport,
-		SSHTrustUnknownHost:       *sshTrustUnknownHosts,
+		InjectedSidecarSupport:    featureFlags.InjectedSidecarSupport,
+		SSHTrustUnknownHost:       cfg.SshTrustUnknownHosts,
 	}
 
-	gitResolver := git.NewResolver(k8sClient, *sshTrustUnknownHosts)
+	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
@@ -209,8 +207,8 @@ func main() {
 
 	secretFetcher := &secret.Fetcher{Client: k8sClient}
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, *injectedSidecarSupport)
-	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, *enablePriorityClasses)
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, featureFlags.InjectedSidecarSupport)
+	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
@@ -322,8 +320,8 @@ func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInform
 }
 
 func parseMaxPlatformApiVersion() (*semver.Version, error) {
-	if *maximumPlatformApiVersion != "" {
-		return semver.NewVersion(*maximumPlatformApiVersion)
+	if cfg.MaximumPlatformApiVersion != "" {
+		return semver.NewVersion(cfg.MaximumPlatformApiVersion)
 	}
 
 	return nil, nil
