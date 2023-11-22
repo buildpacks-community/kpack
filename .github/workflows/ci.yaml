@@ -489,6 +489,7 @@ jobs:
           final_repo="${{ env.PUBLIC_IMAGE_REPO }}/${name}" 
           
           crane copy "$dev_image" "$final_repo"
+          crane tag "${final_repo}@${digest}" ${{ env.KPACK_VERSION }}
           
           echo "${final_repo}@${digest}" > final-image-refs/$name
         done
