@@ -239,7 +239,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt, kapp
@@ -296,7 +296,7 @@ jobs:
       uses: imjasonh/setup-crane@v0.3
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt, kapp
@@ -453,7 +453,7 @@ jobs:
       uses: imjasonh/setup-crane@v0.3
 
     - name: Setup carvel
-      uses: carvel-dev/setup-action@v1
+      uses: carvel-dev/setup-action@v2
       with:
         token: ${{ secrets.RELEASE_TOKEN }}
         only: ytt
