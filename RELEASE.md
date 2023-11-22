@@ -20,6 +20,8 @@ To produce a major/minor release from `main` a maintainer will:
         - **release notes**
         - **asset checksums**
     - The release notes should be edited and cleaned
+- Add the new release branch as a `target-branch` to the [dependabot config][dependabot-config] so that dependency bump PRs can be opened against it
+    - Evaluate if support can be dropped for old release branches and remove them from the config
 
 ## Releasing a new Patch Version
 
@@ -45,3 +47,4 @@ To produce a patch release from an existing `release` branch a maintainer will:
 
 [release]: https://github.com/pivotal/kpack/releases
 [github-release]: https://github.com/pivotal/kpack/blob/main/.github/workflows/ci.yaml
+[dependabot-config]: ./.github/dependabot.yml
