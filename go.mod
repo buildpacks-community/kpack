@@ -9,7 +9,7 @@ require (
 	github.com/buildpacks/imgutil v0.0.0-20220527150729-7a271a852e31
 	github.com/buildpacks/lifecycle v0.14.1
 	github.com/ghodss/yaml v1.0.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.12.1
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20220413173345-f1b065c6cb3d
 	github.com/libgit2/git2go/v33 v33.0.4
