@@ -1,6 +1,7 @@
 package git
 
 import (
+	"path"
 	"regexp"
 	"strings"
 
@@ -21,6 +22,10 @@ type remoteGitResolver struct{}
 func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
 	var resolvedConfig corev1alpha1.ResolvedSourceConfig
 	var err error
+
+	if sourceConfig.SubPath == "." {
+		sourceConfig.SubPath = ""
+	}
 
 	if sourceConfig.SubPath != "" {
 		resolvedConfig, err = resolveSourceWithSubpath(auth, sourceConfig)
@@ -97,7 +102,7 @@ func resolveSourceWithSubpath(auth transport.AuthMethod, sourceConfig corev1alph
 			effectiveCommit := ""
 
 			if refSourceType == corev1alpha1.Branch {
-				effectiveCommit, err = latestCommitForSubpath(r, sourceConfig.SubPath)
+				effectiveCommit, err = latestCommitForSubpath(r, path.Clean(sourceConfig.SubPath))
 			} else {
 				effectiveCommit = ref.Hash().String()
 			}

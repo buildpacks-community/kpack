@@ -72,6 +72,29 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("source is a branch with latest commit and a . subpath", func() {
+			it("returns branch with resolved commit", func() {
+				gitResolver := remoteGitResolver{}
+
+				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
+					Git: &corev1alpha1.Git{
+						URL:      url,
+						Revision: "master",
+					},
+					SubPath: ".",
+				})
+				require.NoError(t, err)
+
+				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
+					Git: &corev1alpha1.ResolvedGitSource{
+						URL:      url,
+						Revision: fixtureHEADMasterCommit,
+						Type:     corev1alpha1.Branch,
+					},
+				}, resolvedGitSource)
+			})
+		})
+
 		when("source is a branch with older subpath", func() {
 			it("returns branch with resolved commit", func() {
 				gitResolver := remoteGitResolver{}
