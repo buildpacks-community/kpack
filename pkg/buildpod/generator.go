@@ -35,10 +35,14 @@ type ImageFetcher interface {
 	Fetch(keychain authn.Keychain, repoName string) (ggcrv1.Image, string, error)
 }
 
+type KeychainFactoryProvider interface {
+	KeychainFactory() (registry.KeychainFactory, error)
+}
+
 type Generator struct {
 	BuildPodConfig            buildapi.BuildPodImages
 	K8sClient                 k8sclient.Interface
-	KeychainFactory           registry.KeychainFactory
+	KeychainFactoryProvider   KeychainFactoryProvider
 	ImageFetcher              ImageFetcher
 	DynamicClient             dynamic.Interface
 	MaximumPlatformApiVersion *semver.Version
@@ -213,7 +217,8 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 }
 
 func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) (buildapi.BuildPodBuilderConfig, error) {
-	keychain, err := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychainFactory, _ := g.KeychainFactoryProvider.KeychainFactory()
+	keychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		Namespace:        build.GetNamespace(),
 		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
 		ServiceAccount:   build.ServiceAccount(),

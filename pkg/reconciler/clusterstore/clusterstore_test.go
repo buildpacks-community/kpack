@@ -2,6 +2,7 @@ package clusterstore_test
 
 import (
 	"fmt"
+	"github.com/pivotal/kpack/pkg/config/configfakes"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -36,8 +37,9 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 		initialGeneration int64 = 1
 	)
 	var (
-		fakeStoreReader     = &clusterstorefakes.FakeStoreReader{}
-		fakeKeyChainFactory = &registryfakes.FakeKeychainFactory{}
+		fakeStoreReader             = &clusterstorefakes.FakeStoreReader{}
+		fakeKeyChainFactory         = &registryfakes.FakeKeychainFactory{}
+		fakeKeychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -47,10 +49,10 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 
 			r := &clusterstore.Reconciler{
-				Client:             fakeClient,
-				StoreReader:        fakeStoreReader,
-				ClusterStoreLister: listers.GetClusterStoreLister(),
-				KeychainFactory:    fakeKeyChainFactory,
+				Client:                  fakeClient,
+				StoreReader:             fakeStoreReader,
+				ClusterStoreLister:      listers.GetClusterStoreLister(),
+				KeychainFactoryProvider: fakeKeychainFactoryProvider,
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -104,6 +106,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: storeKey,
@@ -149,6 +152,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 			expectedKeyChain := &registryfakes.FakeKeychain{Name: "secret"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, secretRef, expectedKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: storeKey,
@@ -189,6 +193,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			store.Status = buildapi.ClusterStoreStatus{
 				Status: corev1alpha1.Status{
@@ -217,6 +222,7 @@ func testClusterStoreReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: storeKey,

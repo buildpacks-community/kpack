@@ -3,6 +3,7 @@ package clusterbuilder_test
 import (
 	"context"
 	"errors"
+	"github.com/pivotal/kpack/pkg/config/configfakes"
 	"testing"
 
 	"github.com/pivotal/kpack/pkg/secret/secretfakes"
@@ -43,10 +44,11 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		builderCreator    = &testhelpers.FakeBuilderCreator{}
-		keychainFactory   = &registryfakes.FakeKeychainFactory{}
-		fakeTracker       = &testhelpers.FakeTracker{}
-		fakeSecretFetcher = &secretfakes.FakeFetchSecret{
+		builderCreator          = &testhelpers.FakeBuilderCreator{}
+		keychainFactory         = &registryfakes.FakeKeychainFactory{}
+		keychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
+		fakeTracker             = &testhelpers.FakeTracker{}
+		fakeSecretFetcher       = &secretfakes.FakeFetchSecret{
 			FakeSecrets: []*corev1.Secret{},
 		}
 	)
@@ -56,15 +58,15 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 			r := &clusterbuilder.Reconciler{
-				Client:                 fakeClient,
-				ClusterBuilderLister:   listers.GetClusterBuilderLister(),
-				BuilderCreator:         builderCreator,
-				KeychainFactory:        keychainFactory,
-				Tracker:                fakeTracker,
-				ClusterStoreLister:     listers.GetClusterStoreLister(),
-				ClusterBuildpackLister: listers.GetClusterBuildpackLister(),
-				ClusterStackLister:     listers.GetClusterStackLister(),
-				SecretFetcher:          fakeSecretFetcher,
+				Client:                  fakeClient,
+				ClusterBuilderLister:    listers.GetClusterBuilderLister(),
+				BuilderCreator:          builderCreator,
+				KeychainFactoryProvider: keychainFactoryProvider,
+				Tracker:                 fakeTracker,
+				ClusterStoreLister:      listers.GetClusterStoreLister(),
+				ClusterBuildpackLister:  listers.GetClusterBuildpackLister(),
+				ClusterStackLister:      listers.GetClusterStackLister(),
+				SecretFetcher:           fakeSecretFetcher,
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -197,6 +199,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		it.Before(func() {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, &registryfakes.FakeKeychain{})
+			keychainFactoryProvider.AddKeychainFactory(keychainFactory)
 		})
 
 		it("saves metadata to the status", func() {

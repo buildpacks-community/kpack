@@ -10,7 +10,6 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry"
 )
 
 type RegistryClient interface {
@@ -26,7 +25,6 @@ type RemoteBuilderCreator struct {
 	RegistryClient    RegistryClient
 	LifecycleProvider LifecycleProvider
 	KpackVersion      string
-	KeychainFactory   registry.KeychainFactory
 	ImageSigner       cosign.BuilderSigner
 }
 

@@ -31,17 +31,21 @@ type ClusterStackReader interface {
 	Read(keychain authn.Keychain, clusterStackSpec buildapi.ClusterStackSpec) (buildapi.ResolvedClusterStack, error)
 }
 
+type KeychainFactoryProvider interface {
+	KeychainFactory() (registry.KeychainFactory, error)
+}
+
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
-	keychainFactory registry.KeychainFactory,
+	keychainFactoryProvider KeychainFactoryProvider,
 	clusterStackInformer buildinformers.ClusterStackInformer,
 	clusterStackReader ClusterStackReader) *controller.Impl {
 	c := &Reconciler{
-		Client:             opt.Client,
-		ClusterStackLister: clusterStackInformer.Lister(),
-		ClusterStackReader: clusterStackReader,
-		KeychainFactory:    keychainFactory,
+		Client:                  opt.Client,
+		ClusterStackLister:      clusterStackInformer.Lister(),
+		ClusterStackReader:      clusterStackReader,
+		KeychainFactoryProvider: keychainFactoryProvider,
 	}
 
 	logger := opt.Logger.With(
@@ -60,10 +64,10 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client             versioned.Interface
-	ClusterStackLister buildlisters.ClusterStackLister
-	ClusterStackReader ClusterStackReader
-	KeychainFactory    registry.KeychainFactory
+	Client                  versioned.Interface
+	ClusterStackLister      buildlisters.ClusterStackLister
+	ClusterStackReader      ClusterStackReader
+	KeychainFactoryProvider KeychainFactoryProvider
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -104,7 +108,8 @@ func (c *Reconciler) reconcileClusterStackStatus(ctx context.Context, clusterSta
 		}
 	}
 
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
+	keychainFactory, _ := c.KeychainFactoryProvider.KeychainFactory()
+	keychain, err := keychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterStack.Status = buildapi.ClusterStackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterStack.Generation, err),

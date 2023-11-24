@@ -32,6 +32,7 @@ import (
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/pivotal/kpack/cmd"
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
 	"github.com/pivotal/kpack/pkg/blob"
@@ -42,7 +43,6 @@ import (
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/cosign"
-	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
 	"github.com/pivotal/kpack/pkg/duckbuilder"
 	"github.com/pivotal/kpack/pkg/flaghelpers"
 	"github.com/pivotal/kpack/pkg/git"
@@ -140,7 +140,49 @@ func main() {
 	k8sInformerFactory := informers.NewSharedInformerFactory(k8sClient, options.ResyncPeriod)
 	pvcInformer := k8sInformerFactory.Core().V1().PersistentVolumeClaims()
 	podInformer := k8sInformerFactory.Core().V1().Pods()
-	keychainFactory, err := k8sdockercreds.NewSecretKeychainFactory(k8sClient)
+	keychainFactoryProvider := config.NewKeychainFactoryProvider(k8sClient)
+
+	//////////////////////////////////
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+
+	// Start listening for events.
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				log.Println("event:", event)
+				if event.Has(fsnotify.Write) {
+					keychainFactoryProvider.UpdateKeychainFactory()
+					log.Println("modified file:", event.Name)
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	// Add a path.
+	err = watcher.Add("/var/kpack/credentials")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Block main goroutine forever.
+	<-make(chan struct{})
+
+	///////////////////////////////////////////////////////
+
 	if err != nil {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
@@ -171,7 +213,7 @@ func main() {
 	buildpodGenerator := &buildpod.Generator{
 		BuildPodConfig:            images.ToBuildPodImages(),
 		K8sClient:                 k8sClient,
-		KeychainFactory:           keychainFactory,
+		KeychainFactoryProvider:   keychainFactoryProvider,
 		ImageFetcher:              &registry.Client{},
 		DynamicClient:             dynamicClient,
 		MaximumPlatformApiVersion: maxPlatformApi,
@@ -191,13 +233,12 @@ func main() {
 		RegistryClient: &registry.Client{},
 	}
 
-	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
+	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactoryProvider)
 
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient:    &registry.Client{},
 		KpackVersion:      cmd.Identifer,
 		LifecycleProvider: lifecycleProvider,
-		KeychainFactory:   keychainFactory,
 		ImageSigner:       cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
 	}
 
@@ -207,15 +248,15 @@ func main() {
 
 	secretFetcher := &secret.Fetcher{Client: k8sClient}
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, featureFlags.InjectedSidecarSupport)
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactoryProvider, featureFlags.InjectedSidecarSupport)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
-	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
-	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
-	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
-	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
+	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactoryProvider, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	buildpackController := buildpack.NewController(ctx, options, keychainFactoryProvider, buildpackInformer, remoteStoreReader)
+	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactoryProvider, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactoryProvider, clusterBuildpackInformer, remoteStoreReader)
+	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactoryProvider, clusterStoreInformer, remoteStoreReader)
+	clusterStackController := clusterstack.NewController(ctx, options, keychainFactoryProvider, clusterStackInformer, remoteStackReader)
 	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
 
 	lifecycleProvider.AddEventHandler(builderResync)

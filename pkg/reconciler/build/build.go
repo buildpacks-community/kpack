@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -49,17 +50,21 @@ type PodProgressLogger interface {
 	GetTerminationMessage(pod *corev1.Pod, s *corev1.ContainerStatus) (string, error)
 }
 
-func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, podProgressLogger *buildchange.ProgressLogger, keychainFactory registry.KeychainFactory, injectedSidecarSupport bool) *controller.Impl {
+type KeychainFactoryProvider interface {
+	KeychainFactory() (registry.KeychainFactory, error)
+}
+
+func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface, informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer, metadataRetriever MetadataRetriever, podGenerator PodGenerator, podProgressLogger *buildchange.ProgressLogger, keychainFactoryProvider KeychainFactoryProvider, injectedSidecarSupport bool) *controller.Impl {
 	c := &Reconciler{
-		Client:                 opt.Client,
-		K8sClient:              k8sClient,
-		MetadataRetriever:      metadataRetriever,
-		Lister:                 informer.Lister(),
-		PodLister:              podInformer.Lister(),
-		PodGenerator:           podGenerator,
-		PodProgressLogger:      podProgressLogger,
-		KeychainFactory:        keychainFactory,
-		InjectedSidecarSupport: injectedSidecarSupport,
+		Client:                  opt.Client,
+		K8sClient:               k8sClient,
+		MetadataRetriever:       metadataRetriever,
+		Lister:                  informer.Lister(),
+		PodLister:               podInformer.Lister(),
+		PodGenerator:            podGenerator,
+		PodProgressLogger:       podProgressLogger,
+		KeychainFactoryProvider: keychainFactoryProvider,
+		InjectedSidecarSupport:  injectedSidecarSupport,
 	}
 
 	logger := opt.Logger.With(
@@ -79,15 +84,15 @@ func NewController(ctx context.Context, opt reconciler.Options, k8sClient k8scli
 }
 
 type Reconciler struct {
-	Client                 versioned.Interface
-	KeychainFactory        registry.KeychainFactory
-	Lister                 buildlisters.BuildLister
-	MetadataRetriever      MetadataRetriever
-	K8sClient              k8sclient.Interface
-	PodLister              v1Listers.PodLister
-	PodGenerator           PodGenerator
-	PodProgressLogger      PodProgressLogger
-	InjectedSidecarSupport bool
+	Client                  versioned.Interface
+	KeychainFactoryProvider KeychainFactoryProvider
+	Lister                  buildlisters.BuildLister
+	MetadataRetriever       MetadataRetriever
+	K8sClient               k8sclient.Interface
+	PodLister               v1Listers.PodLister
+	PodGenerator            PodGenerator
+	PodProgressLogger       PodProgressLogger
+	InjectedSidecarSupport  bool
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -148,7 +153,8 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 				cacheTag = build.Spec.Cache.Registry.Tag
 			}
 
-			keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			keychainFactory, _ := c.KeychainFactoryProvider.KeychainFactory()
+			keychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 				ServiceAccount: build.Spec.ServiceAccountName,
 				Namespace:      build.Namespace,
 			})

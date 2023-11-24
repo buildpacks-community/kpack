@@ -41,26 +41,30 @@ type Fetcher interface {
 	SecretsForServiceAccount(context.Context, string, string) ([]*corev1.Secret, error)
 }
 
+type KeychainFactoryProvider interface {
+	KeychainFactory() (registry.KeychainFactory, error)
+}
+
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
 	clusterBuilderInformer buildinformers.ClusterBuilderInformer,
 	builderCreator BuilderCreator,
-	keychainFactory registry.KeychainFactory,
+	keychainFactoryProvider KeychainFactoryProvider,
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
 	secretFetcher Fetcher,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
-		Client:                 opt.Client,
-		ClusterBuilderLister:   clusterBuilderInformer.Lister(),
-		BuilderCreator:         builderCreator,
-		KeychainFactory:        keychainFactory,
-		ClusterStoreLister:     clusterStoreInformer.Lister(),
-		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
-		ClusterStackLister:     clusterStackInformer.Lister(),
-		SecretFetcher:          secretFetcher,
+		Client:                  opt.Client,
+		ClusterBuilderLister:    clusterBuilderInformer.Lister(),
+		BuilderCreator:          builderCreator,
+		KeychainFactoryProvider: keychainFactoryProvider,
+		ClusterStoreLister:      clusterStoreInformer.Lister(),
+		ClusterBuildpackLister:  clusterBuildpackInformer.Lister(),
+		ClusterStackLister:      clusterStackInformer.Lister(),
+		SecretFetcher:           secretFetcher,
 	}
 
 	logger := opt.Logger.With(
@@ -100,15 +104,15 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client                 versioned.Interface
-	ClusterBuilderLister   buildlisters.ClusterBuilderLister
-	BuilderCreator         BuilderCreator
-	KeychainFactory        registry.KeychainFactory
-	Tracker                reconciler.Tracker
-	ClusterStoreLister     buildlisters.ClusterStoreLister
-	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
-	ClusterStackLister     buildlisters.ClusterStackLister
-	SecretFetcher          Fetcher
+	Client                  versioned.Interface
+	ClusterBuilderLister    buildlisters.ClusterBuilderLister
+	BuilderCreator          BuilderCreator
+	KeychainFactoryProvider KeychainFactoryProvider
+	Tracker                 reconciler.Tracker
+	ClusterStoreLister      buildlisters.ClusterStoreLister
+	ClusterBuildpackLister  buildlisters.ClusterBuildpackLister
+	ClusterStackLister      buildlisters.ClusterStackLister
+	SecretFetcher           Fetcher
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -195,7 +199,8 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
-	builderKeychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychainFactory, _ := c.KeychainFactoryProvider.KeychainFactory()
+	builderKeychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
 		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
 	})
@@ -205,7 +210,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 
 	stackKeychain := builderKeychain
 	if clusterStack.Spec.ServiceAccountRef != nil {
-		stackKeychain, err = c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		stackKeychain, err = keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
 		})
@@ -214,7 +219,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		}
 	}
 
-	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
+	fetcher := cnb.NewRemoteBuildpackFetcher(keychainFactory, clusterStore, nil, clusterBuildpacks)
 
 	serviceAccountSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, builder.Spec.ServiceAccountRef.Name, builder.Spec.ServiceAccountRef.Namespace)
 	if err != nil {

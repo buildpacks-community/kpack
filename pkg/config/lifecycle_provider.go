@@ -2,8 +2,9 @@ package config
 
 import (
 	"context"
-	"knative.dev/pkg/system"
 	"sync/atomic"
+
+	"knative.dev/pkg/system"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -28,16 +29,16 @@ type RegistryClient interface {
 }
 
 type LifecycleProvider struct {
-	registryClient  RegistryClient
-	keychainFactory registry.KeychainFactory
-	lifecycleData   atomic.Value
-	handlers        []func()
+	registryClient          RegistryClient
+	keychainFactoryProvider KeychainFactoryProvider
+	lifecycleData           atomic.Value
+	handlers                []func()
 }
 
-func NewLifecycleProvider(client RegistryClient, keychainFactory registry.KeychainFactory) *LifecycleProvider {
+func NewLifecycleProvider(client RegistryClient, keychainFactoryProvider KeychainFactoryProvider) *LifecycleProvider {
 	return &LifecycleProvider{
-		registryClient:  client,
-		keychainFactory: keychainFactory,
+		registryClient:          client,
+		keychainFactoryProvider: keychainFactoryProvider,
 	}
 }
 
@@ -83,7 +84,8 @@ func (l *LifecycleProvider) read(ctx context.Context, cm *corev1.ConfigMap) (*li
 		return nil, errors.Errorf("%s config invalid", LifecycleConfigName)
 	}
 
-	keychain, err := l.keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+	keychainFactory, _ := l.keychainFactoryProvider.KeychainFactory()
+	keychain, err := keychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: cm.Data[serviceAccountNameKey],
 		Namespace:      cm.Data[serviceAccountNamespaceKey],
 	})

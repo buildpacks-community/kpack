@@ -31,17 +31,21 @@ type StoreReader interface {
 	Read(keychain authn.Keychain, storeImages []corev1alpha1.ImageSource) ([]corev1alpha1.BuildpackStatus, error)
 }
 
+type KeychainFactoryProvider interface {
+	KeychainFactory() (registry.KeychainFactory, error)
+}
+
 func NewController(
 	ctx context.Context,
 	opt reconciler.Options,
-	keychainFactory registry.KeychainFactory,
+	keychainFactoryProvider KeychainFactoryProvider,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	storeReader StoreReader) *controller.Impl {
 	c := &Reconciler{
-		Client:                 opt.Client,
-		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
-		StoreReader:            storeReader,
-		KeychainFactory:        keychainFactory,
+		Client:                  opt.Client,
+		ClusterBuildpackLister:  clusterBuildpackInformer.Lister(),
+		StoreReader:             storeReader,
+		KeychainFactoryProvider: keychainFactoryProvider,
 	}
 
 	logger := opt.Logger.With(
@@ -60,10 +64,10 @@ func NewController(
 }
 
 type Reconciler struct {
-	Client                 versioned.Interface
-	StoreReader            StoreReader
-	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
-	KeychainFactory        registry.KeychainFactory
+	Client                  versioned.Interface
+	StoreReader             StoreReader
+	ClusterBuildpackLister  buildlisters.ClusterBuildpackLister
+	KeychainFactoryProvider KeychainFactoryProvider
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -120,7 +124,8 @@ func (c *Reconciler) reoncileClusterBuildpackStatus(ctx context.Context, cluster
 		}
 	}
 
-	keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, secretRef)
+	keychainFactory, _ := c.KeychainFactoryProvider.KeychainFactory()
+	keychain, err := keychainFactory.KeychainForSecretRef(ctx, secretRef)
 	if err != nil {
 		clusterBuildpack.Status = buildapi.ClusterBuildpackStatus{
 			Status: corev1alpha1.CreateStatusWithReadyCondition(clusterBuildpack.Generation, err),

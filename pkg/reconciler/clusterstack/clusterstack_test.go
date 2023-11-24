@@ -2,6 +2,7 @@ package clusterstack_test
 
 import (
 	"errors"
+	"github.com/pivotal/kpack/pkg/config/configfakes"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -38,7 +39,8 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeKeyChainFactory = &registryfakes.FakeKeychainFactory{}
+		fakeKeyChainFactory         = &registryfakes.FakeKeychainFactory{}
+		fakeKeychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
 	)
 
 	fakeClusterStackReader := &clusterstackfakes.FakeClusterStackReader{}
@@ -64,10 +66,10 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			listers := testhelpers.NewListers(row.Objects)
 			fakeClient := fake.NewSimpleClientset(listers.BuildServiceObjects()...)
 			r := &clusterstack.Reconciler{
-				Client:             fakeClient,
-				ClusterStackLister: listers.GetClusterStackLister(),
-				ClusterStackReader: fakeClusterStackReader,
-				KeychainFactory:    fakeKeyChainFactory,
+				Client:                  fakeClient,
+				ClusterStackLister:      listers.GetClusterStackLister(),
+				ClusterStackReader:      fakeClusterStackReader,
+				KeychainFactoryProvider: fakeKeychainFactoryProvider,
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
 		})
@@ -89,6 +91,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -139,6 +142,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			testClusterStack.Status = buildapi.ClusterStackStatus{
 				Status: corev1alpha1.Status{
@@ -166,6 +170,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			emptySecretRef := registry.SecretRef{}
 			defaultKeyChain := &registryfakes.FakeKeychain{Name: "default"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, emptySecretRef, defaultKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,
@@ -206,6 +211,7 @@ func testClusterStackReconciler(t *testing.T, when spec.G, it spec.S) {
 			}
 			expectedKeyChain := &registryfakes.FakeKeychain{Name: "secret"}
 			fakeKeyChainFactory.AddKeychainForSecretRef(t, secretRef, expectedKeyChain)
+			fakeKeychainFactoryProvider.AddKeychainFactory(fakeKeyChainFactory)
 
 			rt.Test(rtesting.TableRow{
 				Key: clusterStackKey,

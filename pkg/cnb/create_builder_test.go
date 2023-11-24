@@ -175,7 +175,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		subject = RemoteBuilderCreator{
 			RegistryClient:    registryClient,
 			KpackVersion:      "v1.2.3 (git sha: abcdefg123456)",
-			KeychainFactory:   keychainFactory,
 			LifecycleProvider: lifecycleProvider,
 			ImageSigner: &fakeBuilderSigner{
 				signBuilder: func(ctx context.Context, s string, secrets []*corev1.Secret, keychain authn.Keychain) ([]buildapi.CosignSignature, error) {

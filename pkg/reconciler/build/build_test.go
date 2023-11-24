@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/config/configfakes"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,10 +27,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -52,13 +54,14 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	var (
-		fakeMetadataRetriever  = &buildfakes.FakeMetadataRetriever{}
-		keychainFactory        = &registryfakes.FakeKeychainFactory{}
-		podGenerator           = &testPodGenerator{}
-		podProgressLogger      = &testPodProgressLogger{}
-		ctx                    = context.Background()
-		injectedSidecarSupport = false
-		reactors               = make([]reactor, 0)
+		fakeMetadataRetriever   = &buildfakes.FakeMetadataRetriever{}
+		keychainFactory         = &registryfakes.FakeKeychainFactory{}
+		keychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
+		podGenerator            = &testPodGenerator{}
+		podProgressLogger       = &testPodProgressLogger{}
+		ctx                     = context.Background()
+		injectedSidecarSupport  = false
+		reactors                = make([]reactor, 0)
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -75,15 +78,15 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
-				K8sClient:              k8sfakeClient,
-				Client:                 fakeClient,
-				KeychainFactory:        keychainFactory,
-				Lister:                 listers.GetBuildLister(),
-				MetadataRetriever:      fakeMetadataRetriever,
-				PodLister:              listers.GetPodLister(),
-				PodGenerator:           podGenerator,
-				PodProgressLogger:      podProgressLogger,
-				InjectedSidecarSupport: injectedSidecarSupport,
+				K8sClient:               k8sfakeClient,
+				Client:                  fakeClient,
+				KeychainFactoryProvider: keychainFactoryProvider,
+				Lister:                  listers.GetBuildLister(),
+				MetadataRetriever:       fakeMetadataRetriever,
+				PodLister:               listers.GetPodLister(),
+				PodGenerator:            podGenerator,
+				PodProgressLogger:       podProgressLogger,
+				InjectedSidecarSupport:  injectedSidecarSupport,
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -691,6 +694,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					}
 					appImageKeychain := &registryfakes.FakeKeychain{}
 					keychainFactory.AddKeychainForSecretRef(t, appImageSecretRef, appImageKeychain)
+					keychainFactoryProvider.AddKeychainFactory(keychainFactory)
+
 					buildMetadata := &cnb.BuildMetadata{
 						BuildpackMetadata: corev1alpha1.BuildpackMetadataList{{
 							Id:       "io.buildpack.executed",

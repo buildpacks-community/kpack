@@ -3,6 +3,7 @@ package buildpod_test
 import (
 	"context"
 	"fmt"
+	"github.com/pivotal/kpack/pkg/config/configfakes"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
@@ -58,8 +59,9 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		var (
-			keychainFactory = &registryfakes.FakeKeychainFactory{}
-			imageFetcher    = registryfakes.NewFakeClient()
+			keychainFactory         = &registryfakes.FakeKeychainFactory{}
+			keychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
+			imageFetcher            = registryfakes.NewFakeClient()
 		)
 
 		gitSecret := &corev1.Secret{
@@ -182,15 +184,16 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme, ps)
 
 		generator := &buildpod.Generator{
-			BuildPodConfig:  buildPodConfig,
-			K8sClient:       fakeK8sClient,
-			KeychainFactory: keychainFactory,
-			ImageFetcher:    imageFetcher,
-			DynamicClient:   fakeDynamicClient,
+			BuildPodConfig:          buildPodConfig,
+			K8sClient:               fakeK8sClient,
+			KeychainFactoryProvider: keychainFactoryProvider,
+			ImageFetcher:            imageFetcher,
+			DynamicClient:           fakeDynamicClient,
 		}
 
 		it.Before(func() {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
+			keychainFactoryProvider.AddKeychainFactory(keychainFactory)
 
 			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
 			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)

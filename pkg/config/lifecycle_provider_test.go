@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/pivotal/kpack/pkg/config/configfakes"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -44,15 +45,16 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		}
-		client          = registryfakes.NewFakeClient()
-		keychain        = authn.NewMultiKeychain(authn.DefaultKeychain)
-		lifecycleImgRef = "some-image"
-		lifecycleImg    v1.Image
-		linuxLayer      v1.Layer
-		windowsLayer    v1.Layer
-		callBack        *fakeCallback
-		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		p               *LifecycleProvider
+		client                  = registryfakes.NewFakeClient()
+		keychain                = authn.NewMultiKeychain(authn.DefaultKeychain)
+		lifecycleImgRef         = "some-image"
+		lifecycleImg            v1.Image
+		linuxLayer              v1.Layer
+		windowsLayer            v1.Layer
+		callBack                *fakeCallback
+		keychainFactory         = &registryfakes.FakeKeychainFactory{}
+		keychainFactoryProvider = &configfakes.FakeKeychainFactoryProvider{}
+		p                       *LifecycleProvider
 	)
 
 	it.Before(func() {
@@ -61,10 +63,12 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		lifecycleImg = generateLifecycleImage(t, lifecycleMetadata, linuxLayer, windowsLayer)
 
 		keychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{Namespace: "some-service-account-namespace", ServiceAccount: "some-service-account"}, keychain)
+		keychainFactoryProvider.AddKeychainFactory(keychainFactory)
+
 		client.AddImage(lifecycleImgRef, lifecycleImg, keychain)
 		client.AddImage("some-other-lifecycle-image", generateLifecycleImage(t, lifecycleMetadata, testLayer(t), testLayer(t)), keychain)
 
-		p = NewLifecycleProvider(client, keychainFactory)
+		p = NewLifecycleProvider(client, keychainFactoryProvider)
 		callBack = &fakeCallback{}
 		p.AddEventHandler(callBack.callBack)
 	})
