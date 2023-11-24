@@ -25,21 +25,18 @@ type k8sSecretKeychainFactory struct {
 }
 
 func NewSecretKeychainFactory(client k8sclient.Interface) (registry.KeychainFactory, error) {
-	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
-	if err != nil {
-		return nil, err
-	}
-
-	return &k8sSecretKeychainFactory{client: client, volumeKeychain: volumeKeychain}, nil
+	return &k8sSecretKeychainFactory{client: client}, nil
 }
 
 func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
+	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
+
 	if !ref.IsNamespaced() {
 		k8sKeychain, err := k8schain.NewNoClient(context.Background())
 		if err != nil {
 			return nil, err
 		}
-		return authn.NewMultiKeychain(f.volumeKeychain, k8sKeychain, azureFileKeychain), nil // k8s keychain with no secrets
+		return authn.NewMultiKeychain(volumeKeychain, k8sKeychain, azureFileKeychain), nil // k8s keychain with no secrets
 	}
 
 	serviceAccountKeychain, err := keychainFromServiceAccount(ctx, ref, &secret.Fetcher{Client: f.client})
@@ -56,7 +53,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		return nil, err
 	}
 
-	return authn.NewMultiKeychain(serviceAccountKeychain, f.volumeKeychain, k8sKeychain, azureFileKeychain), nil
+	return authn.NewMultiKeychain(serviceAccountKeychain, volumeKeychain, k8sKeychain, azureFileKeychain), nil
 }
 
 func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
