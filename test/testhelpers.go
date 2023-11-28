@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/pivotal/kpack/pkg/logs"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func eventually(t *testing.T, fun func() bool, interval time.Duration, duration time.Duration) {

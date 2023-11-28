@@ -8,7 +8,6 @@ require (
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20230802154001-5c57feb120b3
 	github.com/buildpacks/lifecycle v0.17.2
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.10.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.16.1
@@ -35,6 +34,7 @@ require (
 	k8s.io/code-generator v0.26.5
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	knative.dev/pkg v0.0.0-20230821102121-81e4ee140363
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
@@ -326,5 +326,4 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/release-utils v0.7.6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )

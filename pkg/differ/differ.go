@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/aryann/difflib"
-	"github.com/ghodss/yaml"
 	"github.com/mgutz/ansi"
+	"sigs.k8s.io/yaml"
 )
 
 type Differ struct {
