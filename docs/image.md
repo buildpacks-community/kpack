@@ -90,7 +90,7 @@ The `source` field is a composition of a source code location and a `subpath`. I
         - `url`: The git repository url. Both https and ssh formats are supported; with ssh format requiring a [ssh secret](secrets.md#git-secrets).
         - `revision`: The git revision to use. This value may be a commit sha, branch name, or tag.
         - `initializeSubmodules`: Initialize submodules inside repo, recurses up to a max depth of 10 submodules.
-    - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
+    - `subPath`: A subdirectory within the source folder where application code resides. New builds will only be created if a change was made in this directory. Can be ignored if the source code resides at the `root` level.
 
 * Blob
 
