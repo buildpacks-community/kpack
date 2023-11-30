@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -36,12 +37,16 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 			Client:   client,
 			Keychain: keychain,
 		}
-		dir string
+		dir         string
+		metadataDir string
 	)
 
 	it.Before(func() {
 		var err error
 		dir, err = os.MkdirTemp("", "")
+		require.NoError(t, err)
+
+		metadataDir, err = os.MkdirTemp("", "test-git")
 		require.NoError(t, err)
 	})
 
@@ -63,7 +68,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 			repoName := fmt.Sprintf("registry.example/some-image-%d", time.Now().Second())
 			client.AddImage(repoName, img, keychain)
 
-			err = fetcher.Fetch(dir, repoName)
+			err = fetcher.Fetch(dir, repoName, metadataDir)
 			require.NoError(t, err)
 
 			files, err := os.ReadDir(dir)
@@ -99,7 +104,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		repoName := fmt.Sprintf("registry.example/some-image-%d", time.Now().Second())
 		client.AddImage(repoName, img, keychain)
 
-		err = fetcher.Fetch(dir, repoName)
+		err = fetcher.Fetch(dir, repoName, metadataDir)
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(dir)
@@ -126,7 +131,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		repoName := "registry.example/test-exe"
 		client.AddImage(repoName, img, keychain)
 
-		err = fetcher.Fetch(dir, repoName)
+		err = fetcher.Fetch(dir, repoName, metadataDir)
 		require.NoError(t, err)
 
 		// the vendor/cache directory doesnt have proper headers
@@ -145,7 +150,7 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		repoName := "registry.example/test-exe"
 		client.AddImage(repoName, img, keychain)
 
-		err = fetcher.Fetch(dir, repoName)
+		err = fetcher.Fetch(dir, repoName, metadataDir)
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(dir)
@@ -169,11 +174,37 @@ func testRegistrySourceFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, 0755, int(info.Mode()))
 	})
 
+	it("records project-metadata.toml", func() {
+		buf, err := os.ReadFile(filepath.Join("testdata", "reg.tar"))
+		require.NoError(t, err)
+
+		img := createSourceImage(t, buf, "")
+
+		repoName := "registry.example/some-image"
+		client.AddImage(repoName, img, keychain)
+
+		err = fetcher.Fetch(dir, repoName, metadataDir)
+		require.NoError(t, err)
+
+		p := path.Join(metadataDir, "project-metadata.toml")
+		contents, err := os.ReadFile(p)
+		require.NoError(t, err)
+
+		expectedFile := `[source]
+  type = "image"
+  [source.metadata]
+    image = "registry.example/some-image"
+  [source.version]
+    digest = "sha256:0a2b3075a370ed209cc262ca189b56f0e09fee17dc69ab99a479f07168818374"
+`
+		require.Equal(t, expectedFile, string(contents))
+	})
+
 	it("errors when the registry is inaccessible", func() {
 		registryError := errors.New("some registry error")
 		client.SetFetchError(registryError)
 
-		err := fetcher.Fetch(dir, "registry.example/error")
+		err := fetcher.Fetch(dir, "registry.example/error", metadataDir)
 		require.Equal(t, err, registryError)
 	})
 }

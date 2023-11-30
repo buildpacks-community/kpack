@@ -3,8 +3,11 @@ package registry
 import (
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
@@ -34,13 +37,16 @@ type Fetcher struct {
 	Keychain authn.Keychain
 }
 
-func (f *Fetcher) Fetch(dir, registryImage string) error {
+func (f *Fetcher) Fetch(dir, registryImage string, metadataDir string) error {
 	f.Logger.Printf("Pulling %s...", registryImage)
 
-	img, _, err := f.Client.Fetch(f.Keychain, registryImage)
+	img, identifer, err := f.Client.Fetch(f.Keychain, registryImage)
 	if err != nil {
 		return err
 	}
+
+	parts := strings.SplitN(identifer, "@", 2)
+	ref, digest := parts[0], parts[1]
 
 	cType, err := getContentType(img)
 	if err != nil {
@@ -59,8 +65,29 @@ func (f *Fetcher) Fetch(dir, registryImage string) error {
 		handler = handleSource
 	}
 
-	if err := handler(img, dir); err != nil {
+	if err = handler(img, dir); err != nil {
 		return err
+	}
+
+	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
+	if err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for image: %s", metadataDir, registryImage)
+	}
+	defer projectMetadataFile.Close()
+
+	projectMd := project{
+		Source: source{
+			Type: "image",
+			Metadata: metadata{
+				Image: ref,
+			},
+			Version: version{
+				Digest: digest,
+			},
+		},
+	}
+	if err := toml.NewEncoder(projectMetadataFile).Encode(projectMd); err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for image: %s", metadataDir, registryImage)
 	}
 
 	f.Logger.Printf("Successfully pulled %s in path %q", registryImage, dir)
@@ -198,4 +225,22 @@ func fetchLayer(layer v1.Layer, dir string) error {
 	defer reader.Close()
 
 	return archive.ExtractTar(reader, dir, 0)
+}
+
+type project struct {
+	Source source `toml:"source"`
+}
+
+type source struct {
+	Type     string   `toml:"type"`
+	Metadata metadata `toml:"metadata"`
+	Version  version  `toml:"version"`
+}
+
+type metadata struct {
+	Image string `toml:"image"`
+}
+
+type version struct {
+	Digest string `toml:"digest"`
 }
