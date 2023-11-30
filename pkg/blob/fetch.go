@@ -1,12 +1,17 @@
 package blob
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 
+	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/archive"
@@ -18,7 +23,7 @@ type Fetcher struct {
 	Logger *log.Logger
 }
 
-func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int) error {
+func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadataDir string) error {
 	u, err := url.Parse(blobURL)
 	if err != nil {
 		return err
@@ -36,9 +41,15 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int) error {
 		return err
 	}
 
+	checksum, err := sha256sum(file)
+	if err != nil {
+		return err
+	}
+
 	switch mediaType {
 	case "application/zip":
-		info, err := file.Stat()
+		var info fs.FileInfo
+		info, err = file.Stat()
 		if err != nil {
 			return err
 		}
@@ -55,6 +66,27 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
+	if err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
+	}
+	defer projectMetadataFile.Close()
+
+	projectMd := project{
+		Source: source{
+			Type: "blob",
+			Metadata: metadata{
+				Url: blobURL,
+			},
+			Version: version{
+				SHA256: checksum,
+			},
+		},
+	}
+	if err := toml.NewEncoder(projectMetadataFile).Encode(projectMd); err != nil {
+		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
 	}
 
 	f.Logger.Printf("Successfully downloaded %s%s in path %q", u.Host, u.Path, dir)
@@ -104,4 +136,37 @@ func classifyFile(reader io.ReadSeeker) (string, error) {
 	}
 
 	return http.DetectContentType(buf), nil
+}
+
+func sha256sum(reader io.ReadSeeker) (string, error) {
+	hash := sha256.New()
+	_, err := io.Copy(hash, reader)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = reader.Seek(0, 0)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+type project struct {
+	Source source `toml:"source"`
+}
+
+type source struct {
+	Type     string   `toml:"type"`
+	Metadata metadata `toml:"metadata"`
+	Version  version  `toml:"version"`
+}
+
+type metadata struct {
+	Url string `toml:"url"`
+}
+
+type version struct {
+	SHA256 string `toml:"sha256sum"`
 }
