@@ -10,7 +10,7 @@ require (
 	github.com/buildpacks/lifecycle v0.17.2
 	github.com/go-git/go-git/v5 v5.10.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-containerregistry v0.16.1
+	github.com/google/go-containerregistry v0.17.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20230822174451-190ad0e4d556
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
