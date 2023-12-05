@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	ggcrfake "github.com/google/go-containerregistry/pkg/v1/fake"
 	slsav1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
@@ -34,21 +36,14 @@ func pprint(obj interface{}) error {
 }
 
 func testSlsa(t *testing.T, when spec.G, it spec.S) {
-	var (
-		attester *Attester
-
-		build *buildv1alpha2.Build
-		pod   *corev1.Pod
-	)
-
-	build = &buildv1alpha2.Build{
+	build := &buildv1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-build-1",
 			Namespace: "default",
 		},
 		Spec: buildv1alpha2.BuildSpec{
 			Builder: corev1alpha1.BuildBuilderSpec{
-				Image: "some-registry.io/some-builder@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73",
+				Image: "some-registry.io/builder-image@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73",
 			},
 			Cache: &buildv1alpha2.BuildCacheConfig{
 				Volume: &buildv1alpha2.BuildPersistentVolumeCache{
@@ -56,7 +51,7 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			RunImage: buildv1alpha2.BuildSpecImage{
-				Image: "index.docker.io/paketobuildpacks/run-jammy-base@sha256:e817bca35911221677b678bf8bf29a18c17ce867b29bd9d0b0c3342c063854e5",
+				Image: "some-registry.io/run-image@sha256:e817bca35911221677b678bf8bf29a18c17ce867b29bd9d0b0c3342c063854e5",
 			},
 			ServiceAccountName: "default",
 			Source: corev1alpha1.SourceConfig{
@@ -75,7 +70,7 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	pod = &corev1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-build-1-build-pod",
 		},
@@ -111,10 +106,37 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
-	attester = &Attester{
+	builderImage := ggcrfake.FakeImage{}
+	builderImage.ConfigFileReturns(&ggcrv1.ConfigFile{
+		Config: ggcrv1.Config{
+			Labels: map[string]string{
+				"io.buildpacks.buildpack.order": `[{"group":[{"id":"paketo-buildpacks/java-native-image","version":"8.23.0"}]},{"group":[{"id":"paketo-buildpacks/java","version":"10.4.0"}]},{"group":[{"id":"paketo-buildpacks/go","version":"4.6.1"}]},{"group":[{"id":"paketo-buildpacks/procfile","version":"5.6.7"}]}]`,
+				"io.buildpacks.stack.id":        "io.buildpacks.stacks.jammy.tiny",
+			},
+		},
+	}, nil)
+
+	appImage := ggcrfake.FakeImage{}
+	appImage.ConfigFileReturns(&ggcrv1.ConfigFile{
+		Config: ggcrv1.Config{
+			Labels: map[string]string{
+				"io.buildpacks.project.metadata": `{"source":{"type":"git","version":{"commit":"some-commitsh"},"metadata":{"repository":"https://some-git.repo","revision":"some-branch"}}}`,
+			},
+		},
+	}, nil)
+
+	r := NewImageReader(&fakeFetcher{
+		images: map[string]ggcrv1.Image{
+			"some-registry.io/builder-image@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73": &builderImage,
+			"some-registry.io/some/repo@sha256:27227f3eaf20afcd527f31bcaaa1a10d14f30c2a99b313c86b981906c54c07b9":     &appImage,
+		},
+	})
+
+	attester := &Attester{
 		Version: "v0.0.0",
 
 		LifecycleProvider: &fakeLifecycleProvider{},
+		ImageReader:       r,
 
 		Images: config.Images{
 			BuildInitImage: "build-init-image", BuildInitWindowsImage: "build-init-windows-image",
@@ -150,7 +172,7 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
           "some-registry.io/some/repo:b1.20231108.210915"
         ],
         "builder": {
-          "image": "some-registry.io/some-builder@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73"
+          "image": "some-registry.io/builder-image@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73"
         },
         "serviceAccountName": "default",
         "source": {
@@ -165,12 +187,12 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
           }
         },
         "runImage": {
-          "image": "index.docker.io/paketobuildpacks/run-jammy-base@sha256:e817bca35911221677b678bf8bf29a18c17ce867b29bd9d0b0c3342c063854e5"
+          "image": "some-registry.io/run-image@sha256:e817bca35911221677b678bf8bf29a18c17ce867b29bd9d0b0c3342c063854e5"
         },
         "resources": {}
       },
       "internalParameters": {
-        "builderImage": "some-registry.io/some-builder@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73",
+        "builderImage": "some-registry.io/builder-image@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73",
         "enablePriorityClasses": false,
         "maximumPlatformApiVersion": "",
         "sshTrustUnknownHosts": true,
@@ -181,7 +203,27 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
         "completionWindowsImage": "completion-windows-image",
         "rebaseImage": "rebase-image",
         "injectedSidecarSupport": false
-      }
+      },
+      "resolvedDependencies": [
+        {
+          "uri": "https://some-git.repo",
+          "digest": {
+            "sha1": "some-commitsh"
+          },
+          "name": "source"
+        },
+        {
+          "uri": "some-registry.io/builder-image",
+          "digest": {
+            "sha256": "de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73"
+          },
+          "name": "builder-image",
+          "annotations": {
+            "io.buildpacks.buildpack.order": "[{\"group\":[{\"id\":\"paketo-buildpacks/java-native-image\",\"version\":\"8.23.0\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/java\",\"version\":\"10.4.0\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/go\",\"version\":\"4.6.1\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/procfile\",\"version\":\"5.6.7\"}]}]",
+            "io.buildpacks.stack.id": "io.buildpacks.stacks.jammy.tiny"
+          }
+        }
+      ]
     },
     "runDetails": {
       "builder": {

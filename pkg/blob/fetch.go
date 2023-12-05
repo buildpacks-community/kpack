@@ -74,13 +74,13 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	}
 	defer projectMetadataFile.Close()
 
-	projectMd := project{
-		Source: source{
+	projectMd := Project{
+		Source: Source{
 			Type: "blob",
-			Metadata: metadata{
+			Metadata: Metadata{
 				Url: blobURL,
 			},
-			Version: version{
+			Version: Version{
 				SHA256: checksum,
 			},
 		},
@@ -153,20 +153,20 @@ func sha256sum(reader io.ReadSeeker) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-type project struct {
-	Source source `toml:"source"`
+type Project struct {
+	Source Source `toml:"source"`
 }
 
-type source struct {
+type Source struct {
 	Type     string   `toml:"type"`
-	Metadata metadata `toml:"metadata"`
-	Version  version  `toml:"version"`
+	Metadata Metadata `toml:"metadata"`
+	Version  Version  `toml:"version"`
 }
 
-type metadata struct {
+type Metadata struct {
 	Url string `toml:"url"`
 }
 
-type version struct {
+type Version struct {
 	SHA256 string `toml:"sha256sum"`
 }

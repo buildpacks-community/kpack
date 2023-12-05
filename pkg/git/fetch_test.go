@@ -56,7 +56,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 				p := path.Join(metadataDir, "project-metadata.toml")
 				require.FileExists(t, p)
 
-				var projectMetadata project
+				var projectMetadata Project
 				_, err = toml.DecodeFile(p, &projectMetadata)
 				require.NoError(t, err)
 				require.Equal(t, "git", projectMetadata.Source.Type)

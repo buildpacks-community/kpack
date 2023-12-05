@@ -75,13 +75,13 @@ func (f *Fetcher) Fetch(dir, registryImage string, metadataDir string) error {
 	}
 	defer projectMetadataFile.Close()
 
-	projectMd := project{
-		Source: source{
+	projectMd := Project{
+		Source: Source{
 			Type: "image",
-			Metadata: metadata{
+			Metadata: Metadata{
 				Image: ref,
 			},
-			Version: version{
+			Version: Version{
 				Digest: digest,
 			},
 		},
@@ -227,20 +227,20 @@ func fetchLayer(layer v1.Layer, dir string) error {
 	return archive.ExtractTar(reader, dir, 0)
 }
 
-type project struct {
-	Source source `toml:"source"`
+type Project struct {
+	Source Source `toml:"source"`
 }
 
-type source struct {
+type Source struct {
 	Type     string   `toml:"type"`
-	Metadata metadata `toml:"metadata"`
-	Version  version  `toml:"version"`
+	Metadata Metadata `toml:"metadata"`
+	Version  Version  `toml:"version"`
 }
 
-type metadata struct {
+type Metadata struct {
 	Image string `toml:"image"`
 }
 
-type version struct {
+type Version struct {
 	Digest string `toml:"digest"`
 }

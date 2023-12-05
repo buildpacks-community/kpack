@@ -3,7 +3,6 @@ package slsa
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -27,9 +26,14 @@ type LifecycleProvider interface {
 	Metadata() (cnb.LifecycleMetadata, error)
 }
 
+type ImageReader interface {
+	Read(keychain authn.Keychain, repoName string) (string, string, map[string]string, error)
+}
+
 type Attester struct {
 	Version string
 
+	ImageReader       ImageReader
 	LifecycleProvider LifecycleProvider
 
 	Images   config.Images
@@ -38,8 +42,20 @@ type Attester struct {
 }
 
 func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod, builderImageKeychain, appImageKeychain authn.Keychain, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
-	image := strings.Split(build.Status.LatestImage, "@")[0]
-	digest := strings.Split(build.Status.LatestImage, ":")[1]
+	builderRepo, builderSha, builderLabels, err := a.ImageReader.Read(builderImageKeychain, build.Spec.Builder.Image)
+	if err != nil {
+		return intoto.Statement{}, fmt.Errorf("reading builder image: %v", err)
+	}
+
+	appRepo, appSha, appLabels, err := a.ImageReader.Read(appImageKeychain, build.Status.LatestImage)
+	if err != nil {
+		return intoto.Statement{}, fmt.Errorf("reading app image: %v", err)
+	}
+
+	source, sourceDigest, err := extractSourceFromLabel(appLabels)
+	if err != nil {
+		return intoto.Statement{}, fmt.Errorf("extracting source from label: %v", err)
+	}
 
 	start, stop, err := getStartStopTime(pod)
 	if err != nil {
@@ -66,6 +82,21 @@ func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod
 			BuildType:          getBuildType(a.Version),
 			ExternalParameters: build.Spec,
 			InternalParameters: a.internalParamsFor(build),
+			ResolvedDependencies: []slsav1.ResourceDescriptor{
+				{
+					Name:   "source",
+					URI:    source,
+					Digest: sourceDigest,
+				},
+				{
+					Name: "builder-image",
+					URI:  builderRepo,
+					Digest: slsacommon.DigestSet{
+						"sha256": builderSha,
+					},
+					Annotations: convertMap(builderLabels),
+				},
+			},
 		},
 		RunDetails: slsav1.ProvenanceRunDetails{
 			Builder: slsav1.Builder{
@@ -91,9 +122,9 @@ func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod
 			PredicateType: slsav1.PredicateSLSAProvenance,
 			Subject: []intoto.Subject{
 				{
-					Name: image,
+					Name: appRepo,
 					Digest: slsacommon.DigestSet{
-						"sha256": digest,
+						"sha256": appSha,
 					},
 				},
 			},
