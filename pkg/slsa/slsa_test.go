@@ -2,7 +2,6 @@ package slsa
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -21,21 +20,11 @@ import (
 	"github.com/pivotal/kpack/pkg/config"
 )
 
-func TestImageSigner(t *testing.T) {
-	spec.Run(t, "Test SLSA generation", testSlsa)
+func TestAttester(t *testing.T) {
+	spec.Run(t, "Test SLSA generation", testAttester)
 }
 
-func pprint(obj interface{}) error {
-	b, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(b))
-	return nil
-}
-
-func testSlsa(t *testing.T, when spec.G, it spec.S) {
+func testAttester(t *testing.T, when spec.G, it spec.S) {
 	build := &buildv1alpha2.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-build-1",
@@ -149,7 +138,7 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it("", func() {
-		stmt, err := attester.GenerateStatement(build, pod, authn.DefaultKeychain, authn.DefaultKeychain)
+		stmt, err := attester.GenerateStatement(build, pod, authn.DefaultKeychain, UnsignedBuildID)
 		require.NoError(t, err)
 
 		expected := `{
@@ -227,7 +216,7 @@ func testSlsa(t *testing.T, when spec.G, it spec.S) {
     },
     "runDetails": {
       "builder": {
-        "id": "",
+        "id": "https://kpack.io/unsigned-build",
         "version": {
           "kpack": "v0.0.0",
           "lifecycle": "1.2.3"

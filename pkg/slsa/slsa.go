@@ -17,9 +17,11 @@ import (
 	"github.com/pivotal/kpack/pkg/config"
 )
 
+type BuilderID string
+
 const (
-	SignedBuildID   = "https://kpack.io/signed-build"
-	UnsignedBuildID = "https://kpack.io/unsigned-build"
+	SignedBuildID   BuilderID = "https://kpack.io/signed-build"
+	UnsignedBuildID BuilderID = "https://kpack.io/unsigned-build"
 )
 
 type LifecycleProvider interface {
@@ -41,13 +43,13 @@ type Attester struct {
 	Config   config.Config
 }
 
-func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod, builderImageKeychain, appImageKeychain authn.Keychain, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
-	builderRepo, builderSha, builderLabels, err := a.ImageReader.Read(builderImageKeychain, build.Spec.Builder.Image)
+func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderId BuilderID, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
+	builderRepo, builderSha, builderLabels, err := a.ImageReader.Read(builderAndAppKeychain, build.Spec.Builder.Image)
 	if err != nil {
 		return intoto.Statement{}, fmt.Errorf("reading builder image: %v", err)
 	}
 
-	appRepo, appSha, appLabels, err := a.ImageReader.Read(appImageKeychain, build.Status.LatestImage)
+	appRepo, appSha, appLabels, err := a.ImageReader.Read(builderAndAppKeychain, build.Status.LatestImage)
 	if err != nil {
 		return intoto.Statement{}, fmt.Errorf("reading app image: %v", err)
 	}
@@ -100,7 +102,7 @@ func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod
 		},
 		RunDetails: slsav1.ProvenanceRunDetails{
 			Builder: slsav1.Builder{
-				ID: "",
+				ID: string(builderId),
 				Version: map[string]string{
 					"kpack":     a.Version,
 					"lifecycle": lifecycle.Version,
