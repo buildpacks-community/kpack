@@ -94,6 +94,10 @@ func (bb *builderBlder) AddGroup(buildpacks ...RemoteBuildpackRef) {
 	bb.order = append(bb.order, corev1alpha1.OrderEntry{Group: group})
 }
 
+func (bb *builderBlder) AddAdditionalLabels(additionalLabels map[string]string) {
+	bb.additionalLabels = additionalLabels
+}
+
 func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	buildpacks := bb.buildpacks()
 
@@ -153,6 +157,9 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	}
 
 	image, err = imagehelpers.SetStringLabels(image, bb.additionalLabels)
+	if err != nil {
+		return nil, err
+	}
 
 	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:  bb.order,

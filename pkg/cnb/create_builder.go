@@ -61,7 +61,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(ctx context.Context, builderKeychai
 		builderBldr.AddGroup(buildpacks...)
 	}
 
-	builderBldr.additionalLabels = spec.AdditionalLabels
+	builderBldr.AddAdditionalLabels(spec.AdditionalLabels)
 
 	writeableImage, err := builderBldr.WriteableImage()
 	if err != nil {
