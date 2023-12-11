@@ -168,6 +168,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 			},
+			AdditionalLabels: map[string]string{
+				"os":         "special",
+				"importance": "high",
+			},
 		}
 
 		lifecycleProvider = &fakeLifecycleProvider{}
@@ -633,6 +637,13 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
   }
 }`, buildpackLayers)
 
+			// Assure the loose coupling of the number of labels that should be there
+			assert.Equal(t, len(clusterBuilderSpec.AdditionalLabels), 2)
+			for key, value := range clusterBuilderSpec.AdditionalLabels {
+				additionalLabel, err := imagehelpers.GetStringLabel(savedImage, key)
+				assert.NoError(t, err)
+				assert.Equal(t, value, additionalLabel)
+			}
 		})
 
 		it("creates images deterministically ", func() {

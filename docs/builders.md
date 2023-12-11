@@ -50,6 +50,8 @@ spec:
       kind: ClusterBuildpack
       id: paketo-buildpacks/nodejs
       version: 1.2.3
+  additionalLabels:
+    custom-label: custom-value
 ```
 
 * `tag`: The tag to save the builder image. You must have access via the referenced service account.
@@ -60,6 +62,7 @@ spec:
 * `store`: If using ClusterStore, then the reference to the ClusterStore. See the [Resolving Buildpack IDs](#resolving-buildpack-ids) section below.
   * `name`: The name of the ClusterStore resource in kubernetes.
   * `kind`: The type as defined in kubernetes. This will always be ClusterStore.
+* `additionalLabels`: The custom labels that are desired to be on the Builder/ClusterBuilder images.
 
 ### <a id='cluster-builders'></a>Cluster Builders
 
