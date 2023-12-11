@@ -51,6 +51,7 @@ type builderBlder struct {
 	runImage          string
 	mixins            []string
 	os                string
+	additionalLabels  map[string]string
 }
 
 func newBuilderBldr(kpackVersion string) *builderBlder {
@@ -150,6 +151,8 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	image, err = imagehelpers.SetStringLabels(image, bb.additionalLabels)
 
 	return imagehelpers.SetLabels(image, map[string]interface{}{
 		buildpackOrderLabel:  bb.order,
