@@ -57,8 +57,8 @@ Build metadata and information is stored using the [SLSA provenance schema][slsa
     - All the controller flags: `enablePriorityClasses`, `maximumPlatformApiVersion`, `injectedSidecarSupport`,
       and `insecureSshTrustUnknownHosts`
   - `resolvedDependencies`:
-    - The source URI and the sha
-    - The builder image, its digest, and the `"id": "version"` of all the buildpacks as annotations
+    - The source URI and the sha extracted from the `io.buildpacks.project.metadata` image label
+    - The builder image as uri, its digest as digest set, and all of its image labels as annotations
 - `runDetails`:
   - `builder`:
     - `id`: Either `https://kpack.io/signed-build` or `https://kpack.io/unsigned-build` depending on if a signing secret
@@ -140,43 +140,22 @@ Example:
           "sha256": "78d74bd1c27f633341045f1c5f7f33209f6af0a5dc5700fdfd71200b5b5a0b9a"
         },
         "annotations": {
-          "paketo-buildpacks/go-build": "2.1.0",
-          "paketo-buildpacks/go-mod-vendor": "1.0.25",
-          "paketo-buildpacks/node-engine": "3.0.1",
-          "paketo-buildpacks/go-dist": "2.4.2",
-          "paketo-buildpacks/yarn": "1.2.0",
-          "paketo-buildpacks/liberty": "3.8.9",
-          "paketo-buildpacks/bellsoft-liberica": "10.4.2",
-          "paketo-buildpacks/spring-boot": "5.27.5",
-          "paketo-buildpacks/google-stackdriver": "8.0.3",
-          "paketo-buildpacks/ca-certificates": "3.6.6",
-          "paketo-buildpacks/ca-certificates": "3.6.5",
-          "paketo-buildpacks/apache-tomee": "1.7.7",
-          "paketo-buildpacks/apache-tomcat": "7.13.15",
-          "paketo-buildpacks/azure-application-insights": "5.17.1",
-          "paketo-buildpacks/procfile": "5.6.7",
-          "paketo-buildpacks/procfile": "5.6.6",
-          "paketo-buildpacks/java-memory-assistant": "1.4.8",
-          "paketo-buildpacks/datadog": "4.3.0",
-          "paketo-buildpacks/encrypt-at-rest": "4.5.9",
-          "paketo-buildpacks/maven": "6.15.11",
-          "paketo-buildpacks/gradle": "7.6.1",
-          "paketo-buildpacks/sbt": "6.12.9",
-          "paketo-buildpacks/clojure-tools": "2.8.12",
-          "paketo-buildpacks/leiningen": "4.6.8",
-          "paketo-buildpacks/watchexec": "2.8.6",
-          "paketo-buildpacks/watchexec": "2.8.5",
-          "paketo-buildpacks/syft": "1.39.0",
-          "paketo-buildpacks/jattach": "1.4.8",
-          "paketo-buildpacks/executable-jar": "6.8.2",
-          "paketo-buildpacks/git": "1.0.7",
-          "paketo-buildpacks/dist-zip": "5.6.7",
-          "paketo-buildpacks/environment-variables": "4.5.6",
-          "paketo-buildpacks/environment-variables": "4.5.5",
-          "paketo-buildpacks/image-labels": "4.5.5",
-          "paketo-buildpacks/image-labels": "4.5.4",
-          "paketo-buildpacks/java": "10.3.1",
-          "paketo-buildpacks/go": "4.6.0"
+            "io.buildpacks.builder.metadata": ...
+            "io.buildpacks.buildpack.layers": ...
+            "io.buildpacks.buildpack.order": "[{\"group\":[{\"id\":\"paketo-buildpacks/java-native-image\",\"version\":\"8.24.0\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/java\",\"version\":\"10.5.0\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/go\",\"version\":\"4.6.1\"}]},{\"group\":[{\"id\":\"paketo-buildpacks/procfile\",\"version\":\"5.6.7\"}]}]",
+            "io.buildpacks.buildpack.order-extensions": "null",
+            "io.buildpacks.extension.layers": "{}",
+            "io.buildpacks.stack.description": "ubuntu:jammy with compilers and shell utilities",
+            "io.buildpacks.stack.distro.name": "ubuntu",
+            "io.buildpacks.stack.distro.version": "22.04",
+            "io.buildpacks.stack.homepage": "https://github.com/paketo-buildpacks/jammy-tiny-stack",
+            "io.buildpacks.stack.id": "io.buildpacks.stacks.jammy.tiny",
+            "io.buildpacks.stack.maintainer": "Paketo Buildpacks",
+            "io.buildpacks.stack.metadata": "{}",
+            "io.buildpacks.stack.mixins": "null",
+            "io.buildpacks.stack.released": "2023-12-11T14:37:26Z",
+            "org.opencontainers.image.ref.name": "ubuntu",
+            "org.opencontainers.image.version": "22.04"
         }
       }
     ]
@@ -244,7 +223,7 @@ The statement is stored in a [DSSE envelope][dsse-envelope], the signatures fiel
   "payload": <base64 encoded statement base previous step>
   "signatures": [
     {
-      "keyid": "default/my-cosign-secret",
+      "keyid": "my-cosign-secret",
       "sig": "MEUCIQD/aWTUPVTRhWoGv1jYAvrnmYRJQmHVdy4NrmmLIxUaaAIgSumlFxSX9FG/wfbpYUAQJtE1/vzfVtRXmlr2LwpU670="
     }
   ]
@@ -273,8 +252,10 @@ will have its corresponding attestation saved to
 
 At minimum, the implementation should support the following key types:
 - [cosign key][cosign-key-format]. This is to ensure interop with `cosign verify-attestation`.
-- ECDSA private keys. This is due to it being the recommended SLSA suite.
-- RSA private keys. This is due to it being an extreamly popular key type.
+- A private key stored in PKCS#8 format of the following types:
+    - ECDSA
+    - RSA
+    - ED25519
 
 Keyless signing via fulcio + rekor will not be part of the initial implementation but may be considered in the future.
 
@@ -284,17 +265,15 @@ Keyless signing via fulcio + rekor will not be part of the initial implementatio
 
 Upon a successful completion of the build pod, the controller should look through all the secrets attached to the
 Build's ServiceAccount, as well as the secrets attached to the kpack-controller's ServiceAccount. Every key that has the
-`type: kubernetes.io/ssh-auth` [built-in secret type][built-in-secret-types], or has the `cosign.key`, `cosign.pub`
-fields will be used as signing keys.
+`kpack.io/slsa: ""` annotation will be considered for signing. For RSA/ECDSA/ED25519 keys the type must be
+`kubernetes.io/ssh-auth`, and for cosign keys the secret must have the fields `cosign.key` and `cosign.pub`.
 
 Once the provenance has been stamped out according to the template above, these keys will be used to sign the DSSE
 envelope. The signatures may be in any arbitrary order, each signature should have the `keyid` set to the
-`<namespace>/<secret-name>` that was used.
+`<secret-name>` that was used.
 
 Any attestation errors (signing errors, push errors, registry errors, etc) should be surfaced to the Build status via a
 new condition.
-
-[built-in-secret-types]: https://kubernetes.io/docs/concepts/configuration/secret/#secret-types
 
 ### Documentation needed
 
