@@ -11,6 +11,9 @@ import (
 
 type Fetcher struct {
 	Client k8sclient.Interface
+
+	SystemNamespace          string
+	SystemServiceAccountName string
 }
 
 func (f *Fetcher) SecretsForServiceAccount(ctx context.Context, serviceAccount, namespace string) ([]*corev1.Secret, error) {
@@ -33,4 +36,8 @@ func (f *Fetcher) secretsFromServiceAccount(ctx context.Context, account *corev1
 		secrets = append(secrets, secret)
 	}
 	return secrets, nil
+}
+
+func (f *Fetcher) SecretsForSystemServiceAccount(ctx context.Context) ([]*corev1.Secret, error) {
+	return f.SecretsForServiceAccount(ctx, f.SystemServiceAccountName, f.SystemNamespace)
 }

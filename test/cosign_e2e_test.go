@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	cosigntesting "github.com/pivotal/kpack/pkg/cosign/testing"
-	cosignutil "github.com/pivotal/kpack/pkg/cosign/util"
+	"github.com/pivotal/kpack/pkg/secret"
 
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
@@ -542,7 +542,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		const expectedErrorMessage = "unable to sign"
 
 		cosignCredSecret := cosigntesting.GenerateFakeKeyPair(t, cosignSecretName, testNamespace, CosignKeyPassword, nil)
-		cosignCredSecret.Data[cosignutil.SecretDataCosignPassword] = []byte(invalidPassword)
+		cosignCredSecret.Data[secret.CosignSecretPassword] = []byte(invalidPassword)
 
 		_, err := clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &cosignCredSecret, metav1.CreateOptions{})
 		require.NoError(t, err)
@@ -1020,7 +1020,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		const expectedErrorMessage = "unable to sign"
 
 		cosignCredSecret := cosigntesting.GenerateFakeKeyPair(t, cosignSecretName, testNamespace, cosignKeyPassword, nil)
-		cosignCredSecret.Data[cosignutil.SecretDataCosignPassword] = []byte(invalidPassword)
+		cosignCredSecret.Data[secret.CosignSecretPassword] = []byte(invalidPassword)
 
 		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &cosignCredSecret, metav1.CreateOptions{})
 		require.NoError(t, err)
