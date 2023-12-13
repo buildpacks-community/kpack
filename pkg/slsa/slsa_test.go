@@ -54,9 +54,10 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 				"some-registry.io/some/repo:b1.20231108.210915",
 			},
 		},
-		Status: buildv1alpha2.BuildStatus{
-			LatestImage: "some-registry.io/some/repo@sha256:27227f3eaf20afcd527f31bcaaa1a10d14f30c2a99b313c86b981906c54c07b9",
-		},
+	}
+
+	buildMetadata := &cnb.BuildMetadata{
+		LatestImage: "some-registry.io/some/repo@sha256:27227f3eaf20afcd527f31bcaaa1a10d14f30c2a99b313c86b981906c54c07b9",
 	}
 
 	pod := &corev1.Pod{
@@ -138,7 +139,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it("", func() {
-		stmt, err := attester.GenerateStatement(build, pod, authn.DefaultKeychain, UnsignedBuildID)
+		stmt, err := attester.GenerateStatement(build, buildMetadata, pod, authn.DefaultKeychain, UnsignedBuildID)
 		require.NoError(t, err)
 
 		expected := `{
@@ -216,7 +217,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
     },
     "runDetails": {
       "builder": {
-        "id": "https://kpack.io/unsigned-build",
+        "id": "https://kpack.io/slsa/unsigned-build",
         "version": {
           "kpack": "v0.0.0",
           "lifecycle": "1.2.3"

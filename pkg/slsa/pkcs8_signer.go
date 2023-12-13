@@ -11,8 +11,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 // NewPKCS8Signer can parse either a RSA, ECDSA, or ED25519 private key in PEM
@@ -21,7 +19,7 @@ import (
 //
 // For RSA, this uses RSASSA-PKCS1-V1_5-SIGN with SHA256 as the hash function
 // For ECDSA, this uses rand.Reader as the source for k
-func NewPKCS8Signer(key []byte, id string) (dsse.Signer, error) {
+func NewPKCS8Signer(key []byte, id string) (Signer, error) {
 	p, _ := pem.Decode([]byte(key))
 	if p == nil {
 		return nil, fmt.Errorf("failed to decode pem block for '%v'", id)
@@ -54,9 +52,9 @@ func NewPKCS8Signer(key []byte, id string) (dsse.Signer, error) {
 	}
 }
 
-var _ dsse.Signer = (*rsaSigner)(nil)
-var _ dsse.Signer = (*ecdsaSigner)(nil)
-var _ dsse.Signer = (*ed25519Signer)(nil)
+var _ Signer = (*rsaSigner)(nil)
+var _ Signer = (*ecdsaSigner)(nil)
+var _ Signer = (*ed25519Signer)(nil)
 
 type rsaSigner struct {
 	key   *rsa.PrivateKey

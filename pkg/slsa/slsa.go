@@ -20,8 +20,8 @@ import (
 type BuilderID string
 
 const (
-	SignedBuildID   BuilderID = "https://kpack.io/signed-build"
-	UnsignedBuildID BuilderID = "https://kpack.io/unsigned-build"
+	SignedBuildID   BuilderID = "https://kpack.io/slsa/signed-build"
+	UnsignedBuildID BuilderID = "https://kpack.io/slsa/unsigned-build"
 )
 
 type LifecycleProvider interface {
@@ -43,13 +43,13 @@ type Attester struct {
 	Config   config.Config
 }
 
-func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderId BuilderID, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
+func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderId BuilderID, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
 	builderRepo, builderSha, builderLabels, err := a.ImageReader.Read(builderAndAppKeychain, build.Spec.Builder.Image)
 	if err != nil {
 		return intoto.Statement{}, fmt.Errorf("reading builder image: %v", err)
 	}
 
-	appRepo, appSha, appLabels, err := a.ImageReader.Read(builderAndAppKeychain, build.Status.LatestImage)
+	appRepo, appSha, appLabels, err := a.ImageReader.Read(builderAndAppKeychain, buildMetadata.LatestImage)
 	if err != nil {
 		return intoto.Statement{}, fmt.Errorf("reading app image: %v", err)
 	}

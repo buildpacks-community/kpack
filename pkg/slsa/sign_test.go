@@ -22,7 +22,6 @@ import (
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsav1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	"github.com/sclevine/spec"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/attest"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/verify"
@@ -37,6 +36,7 @@ func TestSigner(t *testing.T) {
 func testSigner(t *testing.T, when spec.G, it spec.S) {
 	var (
 		statement intoto.Statement
+		attester  = Attester{}
 
 		ctx       = context.Background()
 		timestamp = time.Date(2023, time.January, 1, 1, 0, 0, 0, time.UTC)
@@ -92,7 +92,7 @@ func testSigner(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		it("outputs the correct format when no signer is present", func() {
-			bytes, err := sign(ctx, statement)
+			bytes, err := attester.Sign(ctx, statement)
 			require.NoError(t, err)
 
 			expected := formatPayload("")
@@ -117,7 +117,7 @@ UeeHdmNHLNWThZtIpyC9Hrq1m8/F97sVa37x7c/O
 				keyid: "some-rsa-key",
 			}
 
-			bytes, err := sign(ctx, statement, signer)
+			bytes, err := attester.Sign(ctx, statement, signer)
 			require.NoError(t, err)
 
 			// Note: the golang stdlib RSA PKCS1v15 signing is deterministic, so we get to enjoy
@@ -142,7 +142,7 @@ P4amRng1j+1PnrdDixxQJtmAZT1lJZdXvQ==
 				// nondeterministic. so we force a static prng to make it work for our tests
 				randFn: &constReader{c: byte(0)}}
 
-			bytes, err := sign(ctx, statement, signer)
+			bytes, err := attester.Sign(ctx, statement, signer)
 			require.NoError(t, err)
 
 			expected := formatPayload(`{"keyid":"some-ecdsa-key","sig":"MEUCIQDoTf2UoK9Naq9Q3aba8Nz8+E4DUdyIS1/NgMWScY7CxgIgAi4KdJvLR07iNhyhrawgYa04fFiJwPbi537fuytR5M4="}`)
@@ -161,7 +161,7 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 				keyid: "some-ed25519-key",
 			}
 
-			bytes, err := sign(ctx, statement, signer)
+			bytes, err := attester.Sign(ctx, statement, signer)
 			require.NoError(t, err)
 
 			expected := formatPayload(`{"keyid":"some-ed25519-key","sig":"f4Ch73gK9ZBrM1uD+ifTffZ2sQfiQcBRQpUOBa0TCFN5/nIGnce7VXxB8t8fL1aD7OGCIxeovSKsrbt54dNZCA=="}`)
@@ -182,7 +182,7 @@ uxVrfvHtz84=
 -----END PRIVATE KEY-----`), "some-rsa-key")
 				require.NoError(t, err)
 
-				bytes, err := sign(ctx, statement, signer)
+				bytes, err := attester.Sign(ctx, statement, signer)
 				require.NoError(t, err)
 
 				expected := formatPayload(`{"keyid":"some-rsa-key","sig":"ogSegxffKMUXj5Se3d1f0+qgswxEUhDEGi49LqbXKzZfBnXtKMktw9mT7iKWgXuYe1mIuioPUq7tHzjYfUAUSw=="}`)
@@ -198,7 +198,7 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 -----END PRIVATE KEY-----`), "some-ed25519-key")
 				require.NoError(t, err)
 
-				bytes, err := sign(ctx, statement, signer)
+				bytes, err := attester.Sign(ctx, statement, signer)
 				require.NoError(t, err)
 
 				expected := formatPayload(`{"keyid":"some-ed25519-key","sig":"f4Ch73gK9ZBrM1uD+ifTffZ2sQfiQcBRQpUOBa0TCFN5/nIGnce7VXxB8t8fL1aD7OGCIxeovSKsrbt54dNZCA=="}`)
@@ -273,7 +273,9 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 
 			// attest image via our implementation
 			signer := loadCosignSigner(t, privKeyFile)
-			img2, _, err := SignAndPush(ctx, digest, statement, nil, signer)
+			payload, err := attester.Sign(ctx, statement, signer)
+			require.NoError(t, err)
+			img2, _, err := attester.Write(ctx, digest, payload, nil)
 			require.NoError(t, err)
 
 			// assert attestation images are the same
@@ -290,7 +292,9 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 		it("is verifiable by cosign", func() {
 			// sign image via our implementation
 			signer := loadCosignSigner(t, privKeyFile)
-			_, _, err := SignAndPush(ctx, digest, statement, nil, signer)
+			payload, err := attester.Sign(ctx, statement, signer)
+			require.NoError(t, err)
+			_, _, err = attester.Write(ctx, digest, payload, nil)
 			require.NoError(t, err)
 
 			// attest image via cosign
@@ -332,7 +336,7 @@ func generateCosignKey(t *testing.T) (string, string) {
 	return privKey.Name(), pubKey.Name()
 }
 
-func loadCosignSigner(t *testing.T, keyFile string) dsse.Signer {
+func loadCosignSigner(t *testing.T, keyFile string) Signer {
 	t.Helper()
 	b, err := os.ReadFile(keyFile)
 	require.NoError(t, err)
