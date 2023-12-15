@@ -98,6 +98,8 @@ spec:
           value: "false"
         - name: INJECTED_SIDECAR_SUPPORT
           value: "false"
+        - name: EXPERIMENTAL_GENERATE_SLSA_ATTESTATION
+          value: "false"
         - name: INSECURE_SSH_TRUST_UNKNOWN_HOSTS
           value: "true"
         - name: CONFIG_LOGGING_NAME
@@ -110,6 +112,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: SYSTEM_SERVICE_ACCOUNT
+          value: controller
         - name: BUILD_INIT_IMAGE
           valueFrom:
             configMapKeyRef:

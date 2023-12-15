@@ -183,6 +183,8 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
       },
       "internalParameters": {
         "builderImage": "some-registry.io/builder-image@sha256:de9964b5f501a77b8cf549659f81e29dbac4f8df7f1890ddc2b568dbed428b73",
+        "systemNamespace": "",
+        "systemServiceAccount": "",
         "enablePriorityClasses": false,
         "maximumPlatformApiVersion": "",
         "sshTrustUnknownHosts": true,
@@ -192,7 +194,8 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
         "completionImage": "completion-image",
         "completionWindowsImage": "completion-windows-image",
         "rebaseImage": "rebase-image",
-        "injectedSidecarSupport": false
+        "injectedSidecarSupport": false,
+        "generateSlsaAttestation": false
       },
       "resolvedDependencies": [
         {

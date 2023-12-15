@@ -3,13 +3,17 @@ package config
 import "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 
 type Config struct {
+	SystemNamespace      string `json:"systemNamespace"`
+	SystemServiceAccount string `json:"systemServiceAccount"`
+
 	EnablePriorityClasses     bool   `json:"enablePriorityClasses"`
 	MaximumPlatformApiVersion string `json:"maximumPlatformApiVersion"`
 	SshTrustUnknownHosts      bool   `json:"sshTrustUnknownHosts"`
 }
 
 type FeatureFlags struct {
-	InjectedSidecarSupport bool `json:"injectedSidecarSupport"`
+	InjectedSidecarSupport  bool `json:"injectedSidecarSupport"`
+	GenerateSlsaAttestation bool `json:"generateSlsaAttestation"`
 }
 
 type Images struct {

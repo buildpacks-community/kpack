@@ -59,6 +59,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
+	"github.com/pivotal/kpack/pkg/slsa"
 )
 
 const (
@@ -85,11 +86,14 @@ func main() {
 	flag.StringVar(&images.CompletionWindowsImage, "completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
 	flag.StringVar(&images.BuildWaiterImage, "build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
 
+	flag.StringVar(&cfg.SystemNamespace, "system-namespace", os.Getenv("SYSTEM_NAMESPACE"), "Namespace for the the controller, this will be used to lookup secrets for image signing and attestation.")
+	flag.StringVar(&cfg.SystemServiceAccount, "system-service-account", os.Getenv("SYSTEM_SERVICE_ACCOUNT"), "Service account for the the controller, this will be used to lookup secrets for image signing and attestation.")
 	flag.BoolVar(&cfg.EnablePriorityClasses, "enable-priority-classes", flaghelpers.GetEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
 	flag.StringVar(&cfg.MaximumPlatformApiVersion, "maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
 	flag.BoolVar(&cfg.SshTrustUnknownHosts, "insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "if set to true, automatically trust unknown hosts when using git ssh source")
 
 	flag.BoolVar(&featureFlags.InjectedSidecarSupport, "injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
+	flag.BoolVar(&featureFlags.GenerateSlsaAttestation, "experimental-generate-slsa-attestation", flaghelpers.GetEnvBool("EXPERIMENTAL_GENERATE_SLSA_ATTESTATION", false), "if set to true, SLSA attestations will be generated for each build")
 
 	flag.Parse()
 
@@ -205,9 +209,24 @@ func main() {
 		K8sClient: k8sClient,
 	}
 
-	secretFetcher := &secret.Fetcher{Client: k8sClient}
+	slsaAttester := slsa.Attester{
+		Version: cmd.Identifer,
 
-	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, featureFlags.InjectedSidecarSupport)
+		LifecycleProvider: lifecycleProvider,
+		ImageReader:       slsa.NewImageReader(&registry.Client{}),
+
+		Images:   images,
+		Features: featureFlags,
+		Config:   cfg,
+	}
+
+	secretFetcher := &secret.Fetcher{
+		Client:                   k8sClient,
+		SystemNamespace:          cfg.SystemNamespace,
+		SystemServiceAccountName: cfg.SystemServiceAccount,
+	}
+
+	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
 	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)

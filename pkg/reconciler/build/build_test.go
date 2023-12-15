@@ -2,10 +2,20 @@ package build_test
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"testing"
+	"time"
+
+	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/sclevine/spec"
+	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -21,21 +31,19 @@ import (
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
 	rtesting "knative.dev/pkg/reconciler/testing"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/cnb"
+	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/build/buildfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
+	"github.com/pivotal/kpack/pkg/slsa"
 )
 
 func TestBuildReconciler(t *testing.T) {
@@ -49,16 +57,20 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		key                      = "some-namespace/build-name"
 		serviceAccountName       = "someserviceaccount"
 		originalGeneration int64 = 1
+		// {"buildpackMetadata":[{"id":"some-id","version":"some-version","homepage":"some-homepage"},{"id":"some-other-id","version":"some-other-version"}],"latestImage":"some-latest-image","latestCacheImage":"some-cache-image","stackRunImage":"some-run-image","stackID":"some-stack-id"}
+		compressedBuildMetadata = `H4sIAMLug2IAA32QsQ7CIBCG9z4FYW5fwFWXDi6uxuGEixBbaArt0vTdPSAQGqPLhfv+j7vA1jDGn4se5ATifUUPEjzwE7tTwNgWKylaEuPOjtjRsc14xdlpa0qW+yIoohO8sBgFRGNvf66xXuH8d1kyMk3zqD7CBT6AR+f7sd6dWKcjrKwzCIVHVQRUm87T/9wWc9TmxXxJ/aXEsQ9vaPbmAxPQpvpqAQAA`
 	)
 
 	var (
-		fakeMetadataRetriever  = &buildfakes.FakeMetadataRetriever{}
-		keychainFactory        = &registryfakes.FakeKeychainFactory{}
-		podGenerator           = &testPodGenerator{}
-		podProgressLogger      = &testPodProgressLogger{}
-		ctx                    = context.Background()
-		injectedSidecarSupport = false
-		reactors               = make([]reactor, 0)
+		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
+		fakeAttester          = &buildfakes.FakeSLSAAttester{}
+		fakeSecretFetcher     = &buildfakes.FakeSecretFetcher{}
+		keychainFactory       = &registryfakes.FakeKeychainFactory{}
+		podGenerator          = &testPodGenerator{}
+		podProgressLogger     = &testPodProgressLogger{}
+		ctx                   = context.Background()
+		featureFlags          = config.FeatureFlags{}
+		reactors              = make([]reactor, 0)
 	)
 
 	rt := testhelpers.ReconcilerTester(t,
@@ -75,15 +87,17 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			eventList := rtesting.EventList{Recorder: eventRecorder}
 
 			r := &build.Reconciler{
-				K8sClient:              k8sfakeClient,
-				Client:                 fakeClient,
-				KeychainFactory:        keychainFactory,
-				Lister:                 listers.GetBuildLister(),
-				MetadataRetriever:      fakeMetadataRetriever,
-				PodLister:              listers.GetPodLister(),
-				PodGenerator:           podGenerator,
-				PodProgressLogger:      podProgressLogger,
-				InjectedSidecarSupport: injectedSidecarSupport,
+				K8sClient:         k8sfakeClient,
+				Client:            fakeClient,
+				KeychainFactory:   keychainFactory,
+				Lister:            listers.GetBuildLister(),
+				MetadataRetriever: fakeMetadataRetriever,
+				PodLister:         listers.GetPodLister(),
+				PodGenerator:      podGenerator,
+				PodProgressLogger: podProgressLogger,
+				Attester:          fakeAttester,
+				SecretFetcher:     fakeSecretFetcher,
+				FeatureFlags:      featureFlags,
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -540,15 +554,12 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				}
-				compressedBuildMetadata, err := os.ReadFile(filepath.Join("testdata", "metadata"))
-				require.NoError(t, err)
-
 				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
 					{
 						Name: "completion",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
-								Message: string(compressedBuildMetadata),
+								Message: compressedBuildMetadata,
 							},
 						},
 					},
@@ -614,7 +625,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 										},
 										{
 											Terminated: &corev1.ContainerStateTerminated{
-												Message: string(compressedBuildMetadata),
+												Message: compressedBuildMetadata,
 											},
 										},
 									},
@@ -1107,8 +1118,9 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 		})
+
 		when("pod needs cleanup", func() {
-			injectedSidecarSupport = true
+			featureFlags.InjectedSidecarSupport = true
 			var startTime = time.Now()
 
 			it("updates activeDeadlineSeconds when a build terminates", func() {
@@ -1214,9 +1226,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("marks build as successful if completion completes even if pod fails", func() {
-				compressedBuildMetadata, err := os.ReadFile(filepath.Join("testdata", "metadata"))
-				require.NoError(t, err)
-
 				deadline := int64(1)
 				pod := &corev1.Pod{
 					TypeMeta: metav1.TypeMeta{},
@@ -1245,7 +1254,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 									Terminated: &corev1.ContainerStateTerminated{
 										ExitCode:    0,
 										Reason:      "Terminated",
-										Message:     string(compressedBuildMetadata),
+										Message:     compressedBuildMetadata,
 										ContainerID: "container.ID",
 									},
 								},
@@ -1283,7 +1292,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode:    0,
 								Reason:      "Terminated",
-								Message:     string(compressedBuildMetadata),
+								Message:     compressedBuildMetadata,
 								ContainerID: "container.ID",
 							},
 						},
@@ -1339,7 +1348,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 											Terminated: &corev1.ContainerStateTerminated{
 												ExitCode:    0,
 												Reason:      "Terminated",
-												Message:     string(compressedBuildMetadata),
+												Message:     compressedBuildMetadata,
 												ContainerID: "container.ID",
 											},
 										},
@@ -1353,6 +1362,317 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 			})
+		})
+
+		when("attestation is enabled", func() {
+			var (
+				startTime = time.Now()
+				endTime   = startTime.Add(5 * time.Minute)
+
+				makeSecret = func(t *testing.T, alg string) *corev1.Secret {
+					t.Helper()
+					data := make(map[string][]byte)
+					switch alg {
+					case "cosign":
+						cosignKey, err := cosign.GenerateKeyPair(func(bool) ([]byte, error) { return nil, nil })
+						require.NoError(t, err)
+						data["cosign.password"] = []byte("")
+						data["cosign.key"] = cosignKey.PrivateBytes
+					case "ed25519":
+						_, priv, err := ed25519.GenerateKey(rand.Reader)
+						require.NoError(t, err)
+						key, err := x509.MarshalPKCS8PrivateKey(priv)
+						require.NoError(t, err)
+						data["ssh-privatekey"] = pem.EncodeToMemory(&pem.Block{
+							Type:  "PRIVATE KEY",
+							Bytes: key,
+						})
+
+					case "rsa":
+						fallthrough
+					default:
+						priv, err := rsa.GenerateKey(rand.Reader, 1024)
+						require.NoError(t, err)
+						key, err := x509.MarshalPKCS8PrivateKey(priv)
+						require.NoError(t, err)
+						data["ssh-privatekey"] = pem.EncodeToMemory(&pem.Block{
+							Type:  "PRIVATE KEY",
+							Bytes: key,
+						})
+
+					}
+
+					return &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:            fmt.Sprintf("%v-secret", alg),
+							Namespace:       bld.GetNamespace(),
+							ResourceVersion: "4",
+							Annotations: map[string]string{
+								"kpack.io/slsa": "",
+							},
+						},
+						Data: data,
+					}
+				}
+
+				pod = &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            bld.GetName() + "-build-pod",
+						Namespace:       bld.GetNamespace(),
+						ResourceVersion: "1",
+					},
+					Spec: corev1.PodSpec{
+						InitContainers: []corev1.Container{
+							{Name: "prepare", Image: "prepare-image"},
+						},
+						Containers: []corev1.Container{
+							{Name: "completion", Image: "completion-image"},
+						},
+						NodeName: "some-node",
+					},
+					Status: corev1.PodStatus{
+						InitContainerStatuses: []corev1.ContainerStatus{
+							{
+								Name: "prepare",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										ExitCode:    0,
+										Reason:      "Terminated",
+										Message:     "Message",
+										ContainerID: "container.ID",
+										StartedAt:   metav1.NewTime(startTime),
+										FinishedAt:  metav1.NewTime(endTime),
+									},
+								},
+							},
+						},
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								Name: "completion",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										ExitCode:    0,
+										Reason:      "Terminated",
+										Message:     compressedBuildMetadata,
+										ContainerID: "container.ID",
+										StartedAt:   metav1.NewTime(startTime),
+										FinishedAt:  metav1.NewTime(endTime),
+									},
+								},
+							},
+						},
+						Phase: corev1.PodSucceeded,
+					},
+				}
+				ns = &corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            bld.GetNamespace(),
+						ResourceVersion: "2",
+					},
+				}
+
+				rsaSecret     *corev1.Secret
+				ed25519Secret *corev1.Secret
+				cosignSecret  *corev1.Secret
+
+				sa = &corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            bld.ServiceAccount(),
+						Namespace:       bld.GetNamespace(),
+						ResourceVersion: "5",
+					},
+				}
+
+				expectedStatus = buildapi.BuildStatus{
+					Status: corev1alpha1.Status{
+						ObservedGeneration: originalGeneration,
+						Conditions: corev1alpha1.Conditions{
+							{
+								Type:   corev1alpha1.ConditionSucceeded,
+								Status: corev1.ConditionTrue,
+								Reason: build.ReasonCompleted,
+							},
+						},
+					},
+					PodName: "build-name-build-pod",
+					BuildMetadata: corev1alpha1.BuildpackMetadataList{
+						{
+							Id:       "some-id",
+							Version:  "some-version",
+							Homepage: "some-homepage",
+						},
+						{
+							Id:      "some-other-id",
+							Version: "some-other-version",
+						},
+					},
+					LatestImage:            "some-latest-image",
+					LatestCacheImage:       "some-cache-image",
+					LatestAttestationImage: "some-attestation-image",
+					Stack: corev1alpha1.BuildStack{
+						RunImage: "some-run-image",
+						ID:       "some-stack-id",
+					},
+					StepStates: []corev1.ContainerState{
+						{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     "Message",
+								ContainerID: "container.ID",
+								StartedAt:   metav1.NewTime(startTime),
+								FinishedAt:  metav1.NewTime(endTime),
+							},
+						},
+						{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode:    0,
+								Reason:      "Terminated",
+								Message:     compressedBuildMetadata,
+								ContainerID: "container.ID",
+								StartedAt:   metav1.NewTime(startTime),
+								FinishedAt:  metav1.NewTime(endTime),
+							},
+						},
+					},
+					StepsCompleted: []string{
+						"prepare",
+						"completion",
+					},
+				}
+			)
+
+			featureFlags.GenerateSlsaAttestation = true
+			bld.ResourceVersion = "0"
+
+			it.Before(func() {
+				fakeAttester.GenerateStatementReturns(in_toto.Statement{}, nil)
+				fakeAttester.WriteReturns(nil, "some-attestation-image", nil)
+				fakeSecretFetcher.SecretsForServiceAccountReturns([]*corev1.Secret{}, nil)
+				fakeSecretFetcher.SecretsForSystemServiceAccountReturns([]*corev1.Secret{}, nil)
+
+				appImageSecretRef := registry.SecretRef{
+					ServiceAccount:   bld.ServiceAccount(),
+					Namespace:        bld.Namespace,
+					ImagePullSecrets: bld.BuilderSpec().ImagePullSecrets,
+				}
+				appImageKeychain := &registryfakes.FakeKeychain{}
+				keychainFactory.AddKeychainForSecretRef(t, appImageSecretRef, appImageKeychain)
+
+				rsaSecret = makeSecret(t, "rsa")
+				ed25519Secret = makeSecret(t, "ed25519")
+				cosignSecret = makeSecret(t, "cosign")
+			})
+
+			it("generates unsigned attestation when there's no secrets", func() {
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						ns, sa, rsaSecret, ed25519Secret, cosignSecret,
+						bld,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status:     expectedStatus,
+							},
+						},
+					},
+				})
+
+				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
+				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/unsigned-build"), id)
+				require.Len(t, deps, 4)
+
+				require.Equal(t, 1, fakeAttester.SignCallCount())
+				_, _, signer := fakeAttester.SignArgsForCall(0)
+				require.Len(t, signer, 0)
+
+				require.Equal(t, 1, fakeAttester.WriteCallCount())
+				_, img, _, _ := fakeAttester.WriteArgsForCall(0)
+				require.Equal(t, img, "some-latest-image")
+			})
+
+			it("generates signed attestation when there's secrets in builder service account", func() {
+				fakeSecretFetcher.SecretsForServiceAccountReturns([]*corev1.Secret{
+					rsaSecret,
+				}, nil)
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						ns, sa, rsaSecret, ed25519Secret, cosignSecret,
+						bld,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status:     expectedStatus,
+							},
+						},
+					},
+				})
+
+				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
+				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/signed-build"), id)
+				require.Len(t, deps, 5)
+
+				require.Equal(t, 1, fakeAttester.SignCallCount())
+				_, _, signer := fakeAttester.SignArgsForCall(0)
+				require.Len(t, signer, 1)
+
+				require.Equal(t, 1, fakeAttester.WriteCallCount())
+				_, img, _, _ := fakeAttester.WriteArgsForCall(0)
+				require.Equal(t, img, "some-latest-image")
+			})
+			it("generates signed attestation when there's secrets in system service account", func() {
+				fakeSecretFetcher.SecretsForSystemServiceAccountReturns([]*corev1.Secret{
+					cosignSecret, ed25519Secret,
+				}, nil)
+
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						ns, sa, rsaSecret, ed25519Secret, cosignSecret,
+						bld,
+						pod,
+					},
+					WantErr: false,
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Build{
+								ObjectMeta: bld.ObjectMeta,
+								Spec:       bld.Spec,
+								Status:     expectedStatus,
+							},
+						},
+					},
+				})
+
+				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
+				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/signed-build"), id)
+				require.Len(t, deps, 5)
+
+				require.Equal(t, 1, fakeAttester.SignCallCount())
+				_, _, signer := fakeAttester.SignArgsForCall(0)
+				require.Len(t, signer, 2)
+
+				require.Equal(t, 1, fakeAttester.WriteCallCount())
+				_, img, _, _ := fakeAttester.WriteArgsForCall(0)
+				require.Equal(t, img, "some-latest-image")
+			})
+
 		})
 	})
 }
