@@ -245,7 +245,7 @@ jobs:
         only: ytt, kapp
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: images
 
@@ -302,7 +302,7 @@ jobs:
         only: ytt, kapp
 
     - name: Download release
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: prerelease
 
@@ -459,7 +459,7 @@ jobs:
         only: ytt
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Docker Login
       uses: docker/login-action@v3.0.0
