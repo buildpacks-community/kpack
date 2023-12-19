@@ -49,11 +49,11 @@ func (c *BuildLogsClient) GetImageLogs(ctx context.Context, writer io.Writer, im
 	}, false, false)
 }
 
-func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, namespace string, buildName string) error {
+func (c *BuildLogsClient) TailBuildName(ctx context.Context, writer io.Writer, namespace string, buildName string, timestamp bool) error {
 	return c.tailPods(ctx, writer, namespace, metav1.ListOptions{
 		Watch:         true,
 		LabelSelector: fmt.Sprintf("%s=%s", buildapi.BuildLabel, buildName),
-	}, true, true, false)
+	}, true, true, timestamp)
 }
 
 func (c *BuildLogsClient) tailPods(ctx context.Context, writer io.Writer, namespace string, listOptions metav1.ListOptions, exitPodComplete bool, follow, timestamp bool) error {
