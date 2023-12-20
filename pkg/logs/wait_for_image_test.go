@@ -304,7 +304,7 @@ type fakeLogTailer struct {
 	args []interface{}
 }
 
-func (f *fakeLogTailer) TailBuildName(ctx context.Context, writer io.Writer, buildName, namespace string) error {
-	f.args = []interface{}{writer, buildName, namespace}
+func (f *fakeLogTailer) TailBuildName(ctx context.Context, writer io.Writer, buildName, namespace string, timestamp bool) error {
+	f.args = []interface{}{writer, buildName, namespace, timestamp}
 	return nil
 }

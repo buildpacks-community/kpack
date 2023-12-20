@@ -22,7 +22,7 @@ type imageWaiter struct {
 }
 
 type ImageLogTailer interface {
-	TailBuildName(ctx context.Context, writer io.Writer, buildName, namespace string) error
+	TailBuildName(ctx context.Context, writer io.Writer, buildName, namespace string, timestamp bool) error
 }
 
 func NewImageWaiter(kpackClient versioned.Interface, logTailer ImageLogTailer) *imageWaiter {
@@ -107,7 +107,7 @@ func (w *imageWaiter) waitBuild(ctx context.Context, writer io.Writer, namespace
 
 	go func() { // tail logs
 		defer close(doneChan)
-		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName)
+		err := w.logTailer.TailBuildName(ctx, writer, namespace, buildName, false)
 		if err != nil {
 			fmt.Fprintf(writer, "error tailing logs %s", err)
 		}
