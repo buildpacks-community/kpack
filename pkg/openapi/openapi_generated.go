@@ -2703,6 +2703,21 @@ func schema_pkg_apis_build_v1alpha2_BuilderSpec(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"additionalLabels": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -3131,6 +3146,21 @@ func schema_pkg_apis_build_v1alpha2_ClusterBuilderSpec(ref common.ReferenceCallb
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
 										Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.BuilderOrderEntry"),
+									},
+								},
+							},
+						},
+					},
+					"additionalLabels": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -4447,6 +4477,21 @@ func schema_pkg_apis_build_v1alpha2_NamespacedBuilderSpec(ref common.ReferenceCa
 							},
 						},
 					},
+					"additionalLabels": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 					"serviceAccountName": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -5138,7 +5183,6 @@ func schema_pkg_apis_core_v1alpha1_Condition(ref common.ReferenceCallback) commo
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-							Default:     map[string]interface{}{},
 							Type: []string{"string"}, Format: "",
 						},
 					},
@@ -5598,8 +5642,7 @@ func schema_pkg_apis_core_v1alpha1_VolatileTime(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"inner": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 				},
