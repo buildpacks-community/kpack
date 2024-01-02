@@ -81,7 +81,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	clusterBuildpack = clusterBuildpack.DeepCopy()
 
-	clusterBuildpack, err = c.reoncileClusterBuildpackStatus(ctx, clusterBuildpack)
+	clusterBuildpack, err = c.reconcileClusterBuildpackStatus(ctx, clusterBuildpack)
 
 	updateErr := c.updateClusterBuildpackStatus(ctx, clusterBuildpack)
 	if updateErr != nil {
@@ -110,7 +110,7 @@ func (c *Reconciler) updateClusterBuildpackStatus(ctx context.Context, desired *
 	return err
 }
 
-func (c *Reconciler) reoncileClusterBuildpackStatus(ctx context.Context, clusterBuildpack *buildapi.ClusterBuildpack) (*buildapi.ClusterBuildpack, error) {
+func (c *Reconciler) reconcileClusterBuildpackStatus(ctx context.Context, clusterBuildpack *buildapi.ClusterBuildpack) (*buildapi.ClusterBuildpack, error) {
 	secretRef := registry.SecretRef{}
 
 	if clusterBuildpack.Spec.ServiceAccountRef != nil {
