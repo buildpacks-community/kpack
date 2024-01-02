@@ -212,7 +212,7 @@ jobs:
         mkdir images
         echo $image > images/lifecycle
     - name: Upload Image Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: images
         path: images/
@@ -265,7 +265,7 @@ jobs:
         cat prerelease.yaml
 
     - name: Upload Pre-Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: prerelease
         path: prerelease.yaml
@@ -495,7 +495,7 @@ jobs:
         done
 
     - name: Upload image refs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: final-image-refs
         path: final-image-refs/*
@@ -518,7 +518,7 @@ jobs:
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
     - name: Upload Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release
         path: release-${{ env.KPACK_VERSION }}.yaml
