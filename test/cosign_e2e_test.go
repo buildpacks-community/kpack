@@ -19,17 +19,21 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
+func TestSignBuilder(t *testing.T) {
+	spec.Run(t, "SignBuilder", testSignBuilder)
+}
+
 func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 	const (
-		testNamespace        = "test"
+		testNamespace        = "test-cosign"
 		dockerSecret         = "docker-secret"
 		serviceAccountName   = "image-service-account"
-		clusterStoreName     = "store"
+		clusterStoreName     = "store-cosign"
 		buildpackName        = "buildpack"
-		clusterBuildpackName = "cluster-buildpack"
-		clusterStackName     = "stack"
+		clusterBuildpackName = "cluster-buildpack-cosign"
+		clusterStackName     = "stack-cosign"
 		builderName          = "custom-signed-builder"
-		clusterBuilderName   = "custom-signed-cluster-builder"
+		clusterBuilderName   = "custom-signed-cluster-builder-cosign"
 		cosignSecretName     = "cosign-creds"
 		secretRefFormat      = "k8s://%s/%s"
 	)
@@ -1022,7 +1026,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		cosignCredSecret := cosigntesting.GenerateFakeKeyPair(t, cosignSecretName, testNamespace, cosignKeyPassword, nil)
 		cosignCredSecret.Data[secret.CosignSecretPassword] = []byte(invalidPassword)
 
-		_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &cosignCredSecret, metav1.CreateOptions{})
+		_, err := clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, &cosignCredSecret, metav1.CreateOptions{})
 		require.NoError(t, err)
 
 		serviceAccount, err := clients.k8sClient.CoreV1().ServiceAccounts(testNamespace).Get(ctx, serviceAccountName, metav1.GetOptions{})

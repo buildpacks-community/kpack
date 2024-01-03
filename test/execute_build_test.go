@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -36,10 +35,7 @@ import (
 )
 
 func TestKpackE2E(t *testing.T) {
-	rand.Seed(time.Now().Unix())
-
 	spec.Run(t, "CreateImage", testCreateImage)
-	spec.Run(t, "SignBuilder", testSignBuilder)
 }
 
 func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
@@ -489,7 +485,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 
 		basicSecret, basicAuthRepo := cfg.makeGitBasicAuthSecret(gitBasicSecret, testNamespace)
 		if basicSecret != nil {
-			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, basicSecret, metav1.CreateOptions{})
+			_, err := clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, basicSecret, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
@@ -499,7 +495,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 
 		sshSecret, sshAuthRepo := cfg.makeGitSSHAuthSecret(gitSSHSecret, testNamespace)
 		if sshSecret != nil {
-			_, err = clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, sshSecret, metav1.CreateOptions{})
+			_, err := clients.k8sClient.CoreV1().Secrets(testNamespace).Create(ctx, sshSecret, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			sa.Secrets = append(sa.Secrets, corev1.ObjectReference{
@@ -674,7 +670,7 @@ func waitUntilFailed(t *testing.T, ctx context.Context, clients *clients, condit
 			require.NoError(t, err)
 
 			condition := kResource.Status.GetCondition(apis.ConditionType(condition))
-			return condition.IsFalse() && "" != condition.Message && strings.Contains(condition.Message, expectedMessage)
+			return condition.IsFalse() && condition.Message != "" && strings.Contains(condition.Message, expectedMessage)
 		}, 1*time.Second, 8*time.Minute)
 	}
 }
