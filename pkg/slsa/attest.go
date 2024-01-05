@@ -10,7 +10,6 @@ import (
 	slsacommon "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	slsav1 "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pivotal/kpack/pkg/cnb"
@@ -22,6 +21,7 @@ type BuilderID string
 const (
 	SignedBuildID   BuilderID = "https://kpack.io/slsa/signed-build"
 	UnsignedBuildID BuilderID = "https://kpack.io/slsa/unsigned-build"
+	MediaTypeJSON             = "application/json"
 )
 
 type LifecycleProvider interface {
@@ -43,37 +43,34 @@ type Attester struct {
 	Config   config.Config
 }
 
-func (a *Attester) GenerateStatement(build *buildv1alpha2.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderId BuilderID, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
+func (a *Attester) AttestBuild(build *buildv1alpha2.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderId BuilderID, depFns ...BuilderDependencyFn) (intoto.Statement, error) {
 	builderRepo, builderSha, builderLabels, err := a.ImageReader.Read(builderAndAppKeychain, build.Spec.Builder.Image)
 	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("reading builder image: %v", err)
+		return intoto.Statement{}, fmt.Errorf("failed to read builder image: %v", err)
 	}
 
 	appRepo, appSha, appLabels, err := a.ImageReader.Read(builderAndAppKeychain, buildMetadata.LatestImage)
 	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("reading app image: %v", err)
+		return intoto.Statement{}, fmt.Errorf("failed to read app image: %v", err)
 	}
 
 	source, sourceDigest, err := extractSourceFromLabel(appLabels)
 	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("extracting source from label: %v", err)
+		return intoto.Statement{}, fmt.Errorf("failed to extract source from label: %v", err)
 	}
 
-	start, stop, err := getStartStopTime(pod)
-	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("parsing start/stop time: %v", err)
-	}
+	start, stop := getStartStopTime(pod)
 
 	lifecycle, err := a.LifecycleProvider.Metadata()
 	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("reading lifecycle metadata: %v", err)
+		return intoto.Statement{}, fmt.Errorf("failed to read lifecycle metadata: %v", err)
 	}
 
 	builderDeps := make([]slsav1.ResourceDescriptor, 0)
 	for i, fn := range depFns {
 		dep, err := fn()
 		if err != nil {
-			return intoto.Statement{}, fmt.Errorf("fetching builder dependency #%v: %v", i, err)
+			return intoto.Statement{}, fmt.Errorf("failed to fetch builder dependency #%v: %v", i, err)
 		}
 
 		builderDeps = append(builderDeps, dep)
@@ -161,7 +158,7 @@ func getBuildType(version string) string {
 	return fmt.Sprintf("https://github.com/buildpacks-community/kpack/blob/v%v/docs/slsa.md", version)
 }
 
-func getStartStopTime(pod *corev1.Pod) (*time.Time, *time.Time, error) {
+func getStartStopTime(pod *corev1.Pod) (*time.Time, *time.Time) {
 	var (
 		start *time.Time
 		stop  *time.Time
@@ -171,25 +168,17 @@ func getStartStopTime(pod *corev1.Pod) (*time.Time, *time.Time, error) {
 		if c.Name == buildv1alpha2.PrepareContainerName {
 			if c.State.Terminated != nil && c.State.Terminated.ExitCode == 0 {
 				start = &c.State.Terminated.StartedAt.Time
-			} else {
-				return nil, nil, fmt.Errorf("prepare not finished yet")
 			}
 		}
 
 		if c.Name == buildv1alpha2.CompletionContainerName {
 			if c.State.Terminated != nil && c.State.Terminated.ExitCode == 0 {
 				stop = &c.State.Terminated.FinishedAt.Time
-			} else {
-				return nil, nil, fmt.Errorf("completion not finished yet")
 			}
 		}
 	}
 
-	if start == nil || stop == nil {
-		return nil, nil, fmt.Errorf("failed to extract time")
-	}
-
-	return start, stop, nil
+	return start, stop
 }
 
 func convertMap(orig map[string]string) map[string]interface{} {
@@ -208,14 +197,13 @@ type versionedObject struct {
 }
 
 type K8sObject interface {
-	GetObjectKind() schema.ObjectKind
 	GetName() string
 	GetResourceVersion() string
 }
 
 // WithVersionedObject converts a kubernetes object to a SLSA ResourceDescriptor, where the name is
 // the Kind, and the content is the json serialzed Name and ResourceVersion of the object.
-func WithVersionedObject(obj K8sObject) BuilderDependencyFn {
+func WithVersionedObject(kind string, obj K8sObject) BuilderDependencyFn {
 	return func() (slsav1.ResourceDescriptor, error) {
 		versioned := versionedObject{
 			Name:            obj.GetName(),
@@ -223,29 +211,23 @@ func WithVersionedObject(obj K8sObject) BuilderDependencyFn {
 		}
 		bytes, err := json.Marshal(versioned)
 		if err != nil {
-			return slsav1.ResourceDescriptor{}, fmt.Errorf("marshalling json: %v", err)
+			return slsav1.ResourceDescriptor{}, fmt.Errorf("failed to marshal json: %v", err)
 		}
 
 		return slsav1.ResourceDescriptor{
-			Name:    obj.GetObjectKind().GroupVersionKind().Kind,
-			Content: bytes,
+			Name:      kind,
+			Content:   bytes,
+			MediaType: MediaTypeJSON,
 		}, nil
 	}
 }
 
 // WithVersionedObjects is the same as WithVersionedObject but handles a slice of objects. These
 // objects must have the same GVK
-func WithVersionedObjects(objs []K8sObject) BuilderDependencyFn {
+func WithVersionedObjects(kind string, objs []K8sObject) BuilderDependencyFn {
 	return func() (slsav1.ResourceDescriptor, error) {
-		kind := ""
 		versioned := make([]versionedObject, len(objs))
 		for i, obj := range objs {
-			if kind == "" {
-				kind = obj.GetObjectKind().GroupVersionKind().Kind
-			} else if kind != obj.GetObjectKind().GroupVersionKind().Kind {
-				return slsav1.ResourceDescriptor{}, fmt.Errorf("objects have different kinds")
-			}
-
 			versioned[i] = versionedObject{
 				Name:            obj.GetName(),
 				ResourceVersion: obj.GetResourceVersion(),
@@ -253,12 +235,13 @@ func WithVersionedObjects(objs []K8sObject) BuilderDependencyFn {
 		}
 		bytes, err := json.Marshal(versioned)
 		if err != nil {
-			return slsav1.ResourceDescriptor{}, fmt.Errorf("marshalling json: %v", err)
+			return slsav1.ResourceDescriptor{}, fmt.Errorf("failed to marshal json: %v", err)
 		}
 
 		return slsav1.ResourceDescriptor{
-			Name:    kind,
-			Content: bytes,
+			Name:      kind,
+			Content:   bytes,
+			MediaType: MediaTypeJSON,
 		}, nil
 	}
 }

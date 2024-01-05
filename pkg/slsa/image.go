@@ -32,17 +32,17 @@ func NewImageReader(fetcher ImageFetcher) *reader {
 func (r *reader) Read(keychain authn.Keychain, repoName string) (string, string, map[string]string, error) {
 	img, id, err := r.fetcher.Fetch(keychain, repoName)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("fetching image: %v", err)
+		return "", "", nil, fmt.Errorf("failed to fetch image: %v", err)
 	}
 
 	ref, err := name.NewDigest(id)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("parsing digest: %v", err)
+		return "", "", nil, fmt.Errorf("failed to parse digest: %v", err)
 	}
 
 	configFile, err := img.ConfigFile()
 	if err != nil {
-		return "", "", nil, fmt.Errorf("getting image config: %v", err)
+		return "", "", nil, fmt.Errorf("failed to get image config: %v", err)
 	}
 
 	sha, found := strings.CutPrefix(ref.DigestStr(), "sha256:")
@@ -62,7 +62,7 @@ func extractSourceFromLabel(labels map[string]string) (string, slsacommon.Digest
 	var p project
 	err := json.Unmarshal([]byte(metadata), &p)
 	if err != nil {
-		return "", nil, fmt.Errorf("unmarshalling json: %v", err)
+		return "", nil, fmt.Errorf("failed to unmarshal json: %v", err)
 	}
 
 	switch p.Source.Type {

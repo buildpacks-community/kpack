@@ -17,9 +17,9 @@ import (
 )
 
 type FakeSLSAAttester struct {
-	GenerateStatementStub        func(*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, ...slsa.BuilderDependencyFn) (in_toto.Statement, error)
-	generateStatementMutex       sync.RWMutex
-	generateStatementArgsForCall []struct {
+	AttestBuildStub        func(*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, ...slsa.BuilderDependencyFn) (in_toto.Statement, error)
+	attestBuildMutex       sync.RWMutex
+	attestBuildArgsForCall []struct {
 		arg1 *v1alpha2.Build
 		arg2 *cnb.BuildMetadata
 		arg3 *v1.Pod
@@ -27,11 +27,11 @@ type FakeSLSAAttester struct {
 		arg5 slsa.BuilderID
 		arg6 []slsa.BuilderDependencyFn
 	}
-	generateStatementReturns struct {
+	attestBuildReturns struct {
 		result1 in_toto.Statement
 		result2 error
 	}
-	generateStatementReturnsOnCall map[int]struct {
+	attestBuildReturnsOnCall map[int]struct {
 		result1 in_toto.Statement
 		result2 error
 	}
@@ -72,10 +72,10 @@ type FakeSLSAAttester struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSLSAAttester) GenerateStatement(arg1 *v1alpha2.Build, arg2 *cnb.BuildMetadata, arg3 *v1.Pod, arg4 authn.Keychain, arg5 slsa.BuilderID, arg6 ...slsa.BuilderDependencyFn) (in_toto.Statement, error) {
-	fake.generateStatementMutex.Lock()
-	ret, specificReturn := fake.generateStatementReturnsOnCall[len(fake.generateStatementArgsForCall)]
-	fake.generateStatementArgsForCall = append(fake.generateStatementArgsForCall, struct {
+func (fake *FakeSLSAAttester) AttestBuild(arg1 *v1alpha2.Build, arg2 *cnb.BuildMetadata, arg3 *v1.Pod, arg4 authn.Keychain, arg5 slsa.BuilderID, arg6 ...slsa.BuilderDependencyFn) (in_toto.Statement, error) {
+	fake.attestBuildMutex.Lock()
+	ret, specificReturn := fake.attestBuildReturnsOnCall[len(fake.attestBuildArgsForCall)]
+	fake.attestBuildArgsForCall = append(fake.attestBuildArgsForCall, struct {
 		arg1 *v1alpha2.Build
 		arg2 *cnb.BuildMetadata
 		arg3 *v1.Pod
@@ -83,10 +83,10 @@ func (fake *FakeSLSAAttester) GenerateStatement(arg1 *v1alpha2.Build, arg2 *cnb.
 		arg5 slsa.BuilderID
 		arg6 []slsa.BuilderDependencyFn
 	}{arg1, arg2, arg3, arg4, arg5, arg6})
-	stub := fake.GenerateStatementStub
-	fakeReturns := fake.generateStatementReturns
-	fake.recordInvocation("GenerateStatement", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
-	fake.generateStatementMutex.Unlock()
+	stub := fake.AttestBuildStub
+	fakeReturns := fake.attestBuildReturns
+	fake.recordInvocation("AttestBuild", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
+	fake.attestBuildMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2, arg3, arg4, arg5, arg6...)
 	}
@@ -96,46 +96,46 @@ func (fake *FakeSLSAAttester) GenerateStatement(arg1 *v1alpha2.Build, arg2 *cnb.
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeSLSAAttester) GenerateStatementCallCount() int {
-	fake.generateStatementMutex.RLock()
-	defer fake.generateStatementMutex.RUnlock()
-	return len(fake.generateStatementArgsForCall)
+func (fake *FakeSLSAAttester) AttestBuildCallCount() int {
+	fake.attestBuildMutex.RLock()
+	defer fake.attestBuildMutex.RUnlock()
+	return len(fake.attestBuildArgsForCall)
 }
 
-func (fake *FakeSLSAAttester) GenerateStatementCalls(stub func(*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, ...slsa.BuilderDependencyFn) (in_toto.Statement, error)) {
-	fake.generateStatementMutex.Lock()
-	defer fake.generateStatementMutex.Unlock()
-	fake.GenerateStatementStub = stub
+func (fake *FakeSLSAAttester) AttestBuildCalls(stub func(*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, ...slsa.BuilderDependencyFn) (in_toto.Statement, error)) {
+	fake.attestBuildMutex.Lock()
+	defer fake.attestBuildMutex.Unlock()
+	fake.AttestBuildStub = stub
 }
 
-func (fake *FakeSLSAAttester) GenerateStatementArgsForCall(i int) (*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, []slsa.BuilderDependencyFn) {
-	fake.generateStatementMutex.RLock()
-	defer fake.generateStatementMutex.RUnlock()
-	argsForCall := fake.generateStatementArgsForCall[i]
+func (fake *FakeSLSAAttester) AttestBuildArgsForCall(i int) (*v1alpha2.Build, *cnb.BuildMetadata, *v1.Pod, authn.Keychain, slsa.BuilderID, []slsa.BuilderDependencyFn) {
+	fake.attestBuildMutex.RLock()
+	defer fake.attestBuildMutex.RUnlock()
+	argsForCall := fake.attestBuildArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
-func (fake *FakeSLSAAttester) GenerateStatementReturns(result1 in_toto.Statement, result2 error) {
-	fake.generateStatementMutex.Lock()
-	defer fake.generateStatementMutex.Unlock()
-	fake.GenerateStatementStub = nil
-	fake.generateStatementReturns = struct {
+func (fake *FakeSLSAAttester) AttestBuildReturns(result1 in_toto.Statement, result2 error) {
+	fake.attestBuildMutex.Lock()
+	defer fake.attestBuildMutex.Unlock()
+	fake.AttestBuildStub = nil
+	fake.attestBuildReturns = struct {
 		result1 in_toto.Statement
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeSLSAAttester) GenerateStatementReturnsOnCall(i int, result1 in_toto.Statement, result2 error) {
-	fake.generateStatementMutex.Lock()
-	defer fake.generateStatementMutex.Unlock()
-	fake.GenerateStatementStub = nil
-	if fake.generateStatementReturnsOnCall == nil {
-		fake.generateStatementReturnsOnCall = make(map[int]struct {
+func (fake *FakeSLSAAttester) AttestBuildReturnsOnCall(i int, result1 in_toto.Statement, result2 error) {
+	fake.attestBuildMutex.Lock()
+	defer fake.attestBuildMutex.Unlock()
+	fake.AttestBuildStub = nil
+	if fake.attestBuildReturnsOnCall == nil {
+		fake.attestBuildReturnsOnCall = make(map[int]struct {
 			result1 in_toto.Statement
 			result2 error
 		})
 	}
-	fake.generateStatementReturnsOnCall[i] = struct {
+	fake.attestBuildReturnsOnCall[i] = struct {
 		result1 in_toto.Statement
 		result2 error
 	}{result1, result2}
@@ -285,8 +285,8 @@ func (fake *FakeSLSAAttester) WriteReturnsOnCall(i int, result1 v1a.Image, resul
 func (fake *FakeSLSAAttester) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.generateStatementMutex.RLock()
-	defer fake.generateStatementMutex.RUnlock()
+	fake.attestBuildMutex.RLock()
+	defer fake.attestBuildMutex.RUnlock()
 	fake.signMutex.RLock()
 	defer fake.signMutex.RUnlock()
 	fake.writeMutex.RLock()

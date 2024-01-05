@@ -30,7 +30,7 @@ const (
 func (*Attester) Sign(ctx context.Context, stmt intoto.Statement, signers ...Signer) ([]byte, error) {
 	payload, err := json.Marshal(stmt)
 	if err != nil {
-		return nil, fmt.Errorf("marshalling statement: %v", err)
+		return nil, fmt.Errorf("failed to marshal statement: %v", err)
 	}
 	pae := dsse.PAE(IntotoPayloadType, payload)
 
@@ -38,12 +38,12 @@ func (*Attester) Sign(ctx context.Context, stmt intoto.Statement, signers ...Sig
 	for i, signer := range signers {
 		keyId, err := signer.KeyID()
 		if err != nil {
-			return nil, fmt.Errorf("retrieving keyid: %v", err)
+			return nil, fmt.Errorf("failed to retreive keyid: %v", err)
 		}
 
 		sig, err := signer.Sign(ctx, pae)
 		if err != nil {
-			return nil, fmt.Errorf("signing payload using '%v': %v", keyId, err)
+			return nil, fmt.Errorf("failed to sign payload using '%v': %v", keyId, err)
 		}
 
 		sigs[i] = dsse.Signature{
@@ -60,7 +60,7 @@ func (*Attester) Sign(ctx context.Context, stmt intoto.Statement, signers ...Sig
 
 	b, err := json.Marshal(envelope)
 	if err != nil {
-		return nil, fmt.Errorf("marshalling envelope: %v", err)
+		return nil, fmt.Errorf("failed to marshal envelope: %v", err)
 	}
 
 	return b, nil
@@ -76,22 +76,22 @@ func (*Attester) Write(ctx context.Context, digestStr string, payload []byte, ke
 
 	attestation, err := cosignstatic.NewAttestation(payload, opts...)
 	if err != nil {
-		return nil, "", fmt.Errorf(":%v", err)
+		return nil, "", fmt.Errorf("failed to create attestation: %v", err)
 	}
 
 	ref, err := name.ParseReference(digestStr)
 	if err != nil {
-		return nil, "", fmt.Errorf(":%v", err)
+		return nil, "", fmt.Errorf("failed to parse reference: %v", err)
 	}
 
 	attestationTag, err := cosignremote.AttestationTag(ref)
 	if err != nil {
-		return nil, "", fmt.Errorf(":%v", err)
+		return nil, "", fmt.Errorf("failed to get attestation tag:%v", err)
 	}
 
 	annots, err := attestation.Annotations()
 	if err != nil {
-		return nil, "", fmt.Errorf("getting attestation annotations: %v", err)
+		return nil, "", fmt.Errorf("failed to get attestation annotations: %v", err)
 	}
 
 	// Overwrite any existing attestations with a new one. The only time this is
@@ -115,12 +115,12 @@ func (*Attester) Write(ctx context.Context, digestStr string, payload []byte, ke
 
 	err = remote.Write(attestationTag, img, remoteOpts...)
 	if err != nil {
-		return nil, "", fmt.Errorf(":%v", err)
+		return nil, "", fmt.Errorf("failed to write attestation: %v", err)
 	}
 
 	signatureDigest, err := img.Digest()
 	if err != nil {
-		return nil, "", fmt.Errorf(":%v", err)
+		return nil, "", fmt.Errorf("failed to retrieve digest: %v", err)
 	}
 
 	return img, fmt.Sprintf("%v@%v", attestationTag.Context().Name(), signatureDigest.String()), nil

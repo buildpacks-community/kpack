@@ -139,7 +139,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	it("", func() {
-		stmt, err := attester.GenerateStatement(build, buildMetadata, pod, authn.DefaultKeychain, UnsignedBuildID)
+		stmt, err := attester.AttestBuild(build, buildMetadata, pod, authn.DefaultKeychain, UnsignedBuildID)
 		require.NoError(t, err)
 
 		expected := `{
@@ -243,8 +243,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 
 	when("using the builder dependency fn", func() {
 		it("records single object", func() {
-			fn := WithVersionedObject(&corev1.Namespace{
-				TypeMeta: metav1.TypeMeta{Kind: "Namespace"},
+			fn := WithVersionedObject("Namespace", &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            "some-namespace",
 					ResourceVersion: "5",
@@ -256,31 +255,29 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 
 			require.Equal(t,
 				slsav1.ResourceDescriptor{
-					Name:    "Namespace",
-					Content: []byte(`{"name":"some-namespace","resourceVersion":"5"}`),
+					Name:      "Namespace",
+					Content:   []byte(`{"name":"some-namespace","resourceVersion":"5"}`),
+					MediaType: "application/json",
 				},
 				actual,
 			)
 		})
 
 		it("records multiple objects", func() {
-			fn := WithVersionedObjects([]K8sObject{
+			fn := WithVersionedObjects("Secret", []K8sObject{
 				&corev1.Secret{
-					TypeMeta: metav1.TypeMeta{Kind: "Secret"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "some-secret-1",
 						ResourceVersion: "4",
 					},
 				},
 				&corev1.Secret{
-					TypeMeta: metav1.TypeMeta{Kind: "Secret"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "some-secret-2",
 						ResourceVersion: "10",
 					},
 				},
 				&corev1.Secret{
-					TypeMeta: metav1.TypeMeta{Kind: "Secret"},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "some-secret-3",
 						ResourceVersion: "1041",
@@ -293,8 +290,9 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 
 			require.Equal(t,
 				slsav1.ResourceDescriptor{
-					Name:    "Secret",
-					Content: []byte(`[{"name":"some-secret-1","resourceVersion":"4"},{"name":"some-secret-2","resourceVersion":"10"},{"name":"some-secret-3","resourceVersion":"1041"}]`),
+					Name:      "Secret",
+					Content:   []byte(`[{"name":"some-secret-1","resourceVersion":"4"},{"name":"some-secret-2","resourceVersion":"10"},{"name":"some-secret-3","resourceVersion":"1041"}]`),
+					MediaType: "application/json",
 				},
 				actual,
 			)

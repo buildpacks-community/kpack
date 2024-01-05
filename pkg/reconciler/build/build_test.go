@@ -1546,7 +1546,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			bld.ResourceVersion = "0"
 
 			it.Before(func() {
-				fakeAttester.GenerateStatementReturns(in_toto.Statement{}, nil)
+				fakeAttester.AttestBuildReturns(in_toto.Statement{}, nil)
 				fakeAttester.WriteReturns(nil, "some-attestation-image", nil)
 				fakeSecretFetcher.SecretsForServiceAccountReturns([]*corev1.Secret{}, nil)
 				fakeSecretFetcher.SecretsForSystemServiceAccountReturns([]*corev1.Secret{}, nil)
@@ -1584,8 +1584,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
-				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, 1, fakeAttester.AttestBuildCallCount())
+				_, _, _, _, id, deps := fakeAttester.AttestBuildArgsForCall(0)
 				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/unsigned-build"), id)
 				require.Len(t, deps, 4)
 
@@ -1622,8 +1622,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
-				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, 1, fakeAttester.AttestBuildCallCount())
+				_, _, _, _, id, deps := fakeAttester.AttestBuildArgsForCall(0)
 				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/signed-build"), id)
 				require.Len(t, deps, 5)
 
@@ -1659,8 +1659,8 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 					},
 				})
 
-				require.Equal(t, 1, fakeAttester.GenerateStatementCallCount())
-				_, _, _, _, id, deps := fakeAttester.GenerateStatementArgsForCall(0)
+				require.Equal(t, 1, fakeAttester.AttestBuildCallCount())
+				_, _, _, _, id, deps := fakeAttester.AttestBuildArgsForCall(0)
 				require.Equal(t, slsa.BuilderID("https://kpack.io/slsa/signed-build"), id)
 				require.Len(t, deps, 5)
 

@@ -145,7 +145,7 @@ P4amRng1j+1PnrdDixxQJtmAZT1lJZdXvQ==
 			bytes, err := attester.Sign(ctx, statement, signer)
 			require.NoError(t, err)
 
-			expected := formatPayload(`{"keyid":"some-ecdsa-key","sig":"MEUCIQDoTf2UoK9Naq9Q3aba8Nz8+E4DUdyIS1/NgMWScY7CxgIgAi4KdJvLR07iNhyhrawgYa04fFiJwPbi537fuytR5M4="}`)
+			expected := formatPayload(`{"keyid":"some-ecdsa-key","sig":"MEUCIQClEWFrDoq/PelVgvqm2Tp5FEg62fYmi1bIYkTmctOQaAIgfXNOZBQxd+hXGsgKQsP/UyFCXInenAgJUUWuHgHu2LE="}`)
 			require.Equal(t, expected, string(bytes))
 		})
 

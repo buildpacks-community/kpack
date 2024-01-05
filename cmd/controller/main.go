@@ -210,7 +210,7 @@ func main() {
 	}
 
 	slsaAttester := slsa.Attester{
-		Version: cmd.Identifer,
+		Version: cmd.Version,
 
 		LifecycleProvider: lifecycleProvider,
 		ImageReader:       slsa.NewImageReader(&registry.Client{}),

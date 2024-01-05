@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -59,7 +58,7 @@ type PodProgressLogger interface {
 
 //go:generate counterfeiter . SLSAAttester
 type SLSAAttester interface {
-	GenerateStatement(build *buildapi.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderID slsa.BuilderID, depFns ...slsa.BuilderDependencyFn) (intoto.Statement, error)
+	AttestBuild(build *buildapi.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod, builderAndAppKeychain authn.Keychain, builderID slsa.BuilderID, depFns ...slsa.BuilderDependencyFn) (intoto.Statement, error)
 	Sign(ctx context.Context, stmt intoto.Statement, signers ...slsa.Signer) ([]byte, error)
 	Write(ctx context.Context, digestStr string, payload []byte, keychain authn.Keychain) (ggcrv1.Image, string, error)
 }
@@ -206,7 +205,7 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 		if c.FeatureFlags.GenerateSlsaAttestation {
 			attestDigest, err = c.attestBuild(ctx, build, buildMetadata, pod)
 			if err != nil {
-				return fmt.Errorf("attesting build: %v", err)
+				return fmt.Errorf("failed to attest build: %v", err)
 			}
 		}
 
@@ -399,7 +398,7 @@ func (c *Reconciler) buildMetadataFromBuildPod(pod *corev1.Pod) (*cnb.BuildMetad
 			return cnb.DecompressBuildMetadata(status.State.Terminated.Message)
 		}
 	}
-	return nil, errors.New(buildapi.CompletionContainerName + " container not found")
+	return nil, fmt.Errorf("%v container not found", buildapi.CompletionContainerName)
 }
 
 func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, buildMetadata *cnb.BuildMetadata, pod *corev1.Pod) (string, error) {
@@ -414,18 +413,18 @@ func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, bui
 
 	controllerSecrets, err := c.SecretFetcher.SecretsForSystemServiceAccount(ctx)
 	if err != nil {
-		return "", fmt.Errorf("getting controller secrets: %v", err)
+		return "", fmt.Errorf("failed to get controller secrets: %v", err)
 	}
 
 	buildSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, build.ServiceAccount(), build.Namespace)
 	if err != nil {
-		return "", fmt.Errorf("getting service account secrets: %v", err)
+		return "", fmt.Errorf("failed to get service account secrets: %v", err)
 	}
 
 	secrets := append(controllerSecrets, buildSecrets...)
 	signingKeys, err := secret.FilterAndExtractSLSASecrets(secrets)
 	if err != nil {
-		return "", fmt.Errorf("parsing slsa secrets: %v", err)
+		return "", fmt.Errorf("failed to parse slsa secrets: %v", err)
 	}
 
 	signers := make([]slsa.Signer, len(signingKeys))
@@ -438,7 +437,7 @@ func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, bui
 			s, err = slsa.NewPKCS8Signer(key.Key, key.SecretName)
 		}
 		if err != nil {
-			return "", fmt.Errorf("creating signer: %v", err)
+			return "", fmt.Errorf("failed to create signer: %v", err)
 		}
 		signers[i] = s
 	}
@@ -450,22 +449,22 @@ func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, bui
 
 	deps, err := c.attestBuildDeps(ctx, build, pod, secrets)
 	if err != nil {
-		return "", fmt.Errorf("gathering build deps: %v", err)
+		return "", fmt.Errorf("failed to gather build deps: %v", err)
 	}
 
-	statement, err := c.Attester.GenerateStatement(build, buildMetadata, pod, keychain, buildId, deps...)
+	statement, err := c.Attester.AttestBuild(build, buildMetadata, pod, keychain, buildId, deps...)
 	if err != nil {
-		return "", fmt.Errorf("generating statement: %v", err)
+		return "", fmt.Errorf("failed to generate statement: %v", err)
 	}
 
 	payload, err := c.Attester.Sign(ctx, statement, signers...)
 	if err != nil {
-		return "", fmt.Errorf("signing statement: %v", err)
+		return "", fmt.Errorf("failed to sign statement: %v", err)
 	}
 
 	_, digest, err := c.Attester.Write(ctx, buildMetadata.LatestImage, payload, keychain)
 	if err != nil {
-		return "", fmt.Errorf("writting attestation: %v", err)
+		return "", fmt.Errorf("failed to write attestation: %v", err)
 	}
 
 	return digest, nil
@@ -483,10 +482,10 @@ func (c *Reconciler) attestBuildDeps(ctx context.Context, build *buildapi.Build,
 	}
 
 	deps := []slsa.BuilderDependencyFn{
-		slsa.WithVersionedObject(ns),
-		slsa.WithVersionedObject(build),
-		slsa.WithVersionedObject(pod),
-		slsa.WithVersionedObject(sa),
+		slsa.WithVersionedObject("Namespace", ns),
+		slsa.WithVersionedObject("Build", build),
+		slsa.WithVersionedObject("Pod", pod),
+		slsa.WithVersionedObject("ServiceAccount", sa),
 	}
 
 	attestSecrets := make([]slsa.K8sObject, len(secrets))
@@ -495,7 +494,7 @@ func (c *Reconciler) attestBuildDeps(ctx context.Context, build *buildapi.Build,
 	}
 
 	if len(attestSecrets) != 0 {
-		deps = append(deps, slsa.WithVersionedObjects(attestSecrets))
+		deps = append(deps, slsa.WithVersionedObjects("Secrets", attestSecrets))
 	}
 
 	return deps, nil

@@ -70,7 +70,7 @@ func (s *rsaSigner) Sign(ctx context.Context, data []byte) ([]byte, error) {
 	hasher := hf.New()
 	_, err := hasher.Write(data)
 	if err != nil {
-		return nil, fmt.Errorf("hashing data: %v", err)
+		return nil, fmt.Errorf("failed to hash data: %v", err)
 	}
 
 	return rsa.SignPKCS1v15(nil, s.key, crypto.SHA256, hasher.Sum(nil))
@@ -87,7 +87,14 @@ func (s *ecdsaSigner) KeyID() (string, error) {
 }
 
 func (s *ecdsaSigner) Sign(ctx context.Context, data []byte) ([]byte, error) {
-	return ecdsa.SignASN1(s.randFn, s.key, data)
+	hf := crypto.SHA256
+	hasher := hf.New()
+	_, err := hasher.Write(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash data: %v", err)
+	}
+
+	return ecdsa.SignASN1(s.randFn, s.key, hasher.Sum(nil))
 }
 
 type ed25519Signer struct {
