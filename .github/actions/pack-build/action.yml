@@ -89,7 +89,7 @@ runs:
       echo "${{ inputs.tag }}@${digest}" > images/$name
       cat images/$name
   - name: Upload Image Artifacts
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@v4
     with:
       name: images
       path: images/
