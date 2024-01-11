@@ -57,6 +57,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
         bp_go_targets: "./cmd/controller"
+        artifact_name: controller-image
 
   webhook-image:
     runs-on: ubuntu-latest
@@ -75,6 +76,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/webhook
         bp_go_targets: "./cmd/webhook"
+        artifact_name: webhook-image
 
   completion-image:
     runs-on: ubuntu-latest
@@ -93,6 +95,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion
         bp_go_targets: "./cmd/completion"
+        artifact_name: completion-image
 
   build-init-image:
     runs-on: ubuntu-latest
@@ -111,6 +114,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
         bp_go_targets: "./cmd/build-init"
+        artifact_name: build-init-image
 
   build-waiter-image:
     runs-on: ubuntu-latest
@@ -129,6 +133,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
         bp_go_targets: "./cmd/build-waiter"
+        artifact_name: build-waiter-image
 
   rebase-image:
     runs-on: ubuntu-latest
@@ -147,6 +152,7 @@ jobs:
         pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/rebase
         bp_go_targets: "./cmd/rebase"
+        artifact_name: rebase-image
 
   build-init-windows-image:
     runs-on: windows-2019
@@ -167,6 +173,7 @@ jobs:
         bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
         builder: gcr.io/cf-build-service-public/kpack-windows-builder
         additional_pack_args: "--trust-builder"
+        artifact_name: build-init-windows-image
 
   completion-windows-image:
     runs-on: windows-2019
@@ -187,6 +194,7 @@ jobs:
         bp_go_targets: '.\cmd\completion'
         builder: gcr.io/cf-build-service-public/kpack-windows-builder
         additional_pack_args: "--trust-builder"
+        artifact_name: completion-windows-image
 
   lifecycle-image:
     runs-on: ubuntu-latest
@@ -247,7 +255,9 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: images
+        pattern: '*-image'
+        path: images
+        merge-multiple: true
 
     - name: Build release yaml
       run: |        
