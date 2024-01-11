@@ -380,7 +380,25 @@ jobs:
         # make the registry container accessible by name from inside the cluster
         docker network connect kind registry.local
 
-        kapp deploy -a kpack -y -f prerelease.yaml
+        cat <<EOF > overlay.yaml
+        #@ load("@ytt:overlay", "overlay")
+        #@overlay/match by=overlay.subset({"metadata":{"name":"kpack-controller"}, "kind": "Deployment"})
+        ---
+        spec:
+          template:
+            spec:
+              containers:
+              #@overlay/match by="name"
+              - name: controller
+                #@overlay/match-child-defaults missing_ok=True
+                env:
+                #@overlay/match by="name"
+                #@overlay/replace or_add=True
+                - name: EXPERIMENTAL_GENERATE_SLSA_ATTESTATION
+                  value: "true"
+        EOF
+
+        ytt -f prerelease.yaml -f overlay.yaml | kapp deploy -a kpack -y -f-
 
         export IMAGE_REGISTRY=${{ env.REGISTRY_URL }}
         export IMAGE_REGISTRY_USERNAME=${{ env.REGISTRY_USER }}
