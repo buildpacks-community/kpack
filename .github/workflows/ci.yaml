@@ -222,7 +222,7 @@ jobs:
     - name: Upload Image Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: images
+        name: lifecycle-image
         path: images/
 
   generate-pre-release-yaml:
@@ -260,17 +260,17 @@ jobs:
         merge-multiple: true
 
     - name: Build release yaml
-      run: |        
+      run: |
         ytt -f config/ \
-          -v controller.image=$(cat controller) \
-          -v webhook.image=$(cat webhook) \
-          -v build_init.image=$(cat build-init) \
-          -v build_init_windows.image=$(cat build-init-windows) \
-          -v build_waiter.image=$(cat build-waiter) \
-          -v rebase.image=$(cat rebase) \
-          -v completion.image=$(cat completion) \
-          -v completion_windows.image=$(cat completion-windows) \
-          -v lifecycle.image=$(cat lifecycle) > prerelease.yaml
+          -v controller.image=$(cat images/controller) \
+          -v webhook.image=$(cat images/webhook) \
+          -v build_init.image=$(cat images/build-init) \
+          -v build_init_windows.image=$(cat images/build-init-windows) \
+          -v build_waiter.image=$(cat images/build-waiter) \
+          -v rebase.image=$(cat images/rebase) \
+          -v completion.image=$(cat images/completion) \
+          -v completion_windows.image=$(cat images/completion-windows) \
+          -v lifecycle.image=$(cat images/lifecycle) > prerelease.yaml
 
         cat prerelease.yaml
 
