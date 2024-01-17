@@ -36,7 +36,8 @@ type BuilderSpec struct {
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
 	Store corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
-	Order []BuilderOrderEntry `json:"order,omitempty"`
+	Order            []BuilderOrderEntry `json:"order,omitempty"`
+	AdditionalLabels map[string]string   `json:"additionalLabels,omitempty"`
 }
 
 // +k8s:openapi-gen=true
