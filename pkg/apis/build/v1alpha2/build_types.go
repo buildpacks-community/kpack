@@ -71,13 +71,13 @@ type BuildSpec struct {
 	Cosign                *CosignConfig               `json:"cosign,omitempty"`
 	DefaultProcess        string                      `json:"defaultProcess,omitempty"`
 	// +listType
-	Tolerations          []corev1.Toleration `json:"tolerations,omitempty"`
-	NodeSelector         map[string]string   `json:"nodeSelector,omitempty"`
-	Affinity             *corev1.Affinity    `json:"affinity,omitempty"`
-	RuntimeClassName     *string             `json:"runtimeClassName,omitempty"`
-	SchedulerName        string              `json:"schedulerName,omitempty"`
-	PriorityClassName    string              `json:"priorityClassName,omitempty"`
-	CreationTime         string              `json:"creationTime,omitempty"`
+	Tolerations       []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector      map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity          *corev1.Affinity    `json:"affinity,omitempty"`
+	RuntimeClassName  *string             `json:"runtimeClassName,omitempty"`
+	SchedulerName     string              `json:"schedulerName,omitempty"`
+	PriorityClassName string              `json:"priorityClassName,omitempty"`
+	CreationTime      string              `json:"creationTime,omitempty"`
 }
 
 func (bs *BuildSpec) RegistryCacheTag() string {
@@ -129,12 +129,13 @@ type BuildStack struct {
 
 // +k8s:openapi-gen=true
 type BuildStatus struct {
-	corev1alpha1.Status `json:",inline"`
-	BuildMetadata       corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
-	Stack               corev1alpha1.BuildStack            `json:"stack,omitempty"`
-	LatestImage         string                             `json:"latestImage,omitempty"`
-	LatestCacheImage    string                             `json:"latestCacheImage,omitempty"`
-	PodName             string                             `json:"podName,omitempty"`
+	corev1alpha1.Status    `json:",inline"`
+	BuildMetadata          corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
+	Stack                  corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	LatestImage            string                             `json:"latestImage,omitempty"`
+	LatestCacheImage       string                             `json:"latestCacheImage,omitempty"`
+	LatestAttestationImage string                             `json:"latestAttestationImage,omitempty"`
+	PodName                string                             `json:"podName,omitempty"`
 	// +listType
 	StepStates []corev1.ContainerState `json:"stepStates,omitempty"`
 	// +listType

@@ -6,18 +6,21 @@ import (
 	"os"
 
 	"github.com/buildpacks/lifecycle/platform/files"
-	"io/ioutil"
-
-	cosignutil "github.com/pivotal/kpack/pkg/cosign/util"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	"github.com/pkg/errors"
 	cosignoptions "github.com/sigstore/cosign/v2/cmd/cosign/cli/options"
 	cosignremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/secret"
+)
+
+const (
+	CosignRepositoryEnv       = "COSIGN_REPOSITORY"
+	CosignDockerMediaTypesEnv = "COSIGN_DOCKER_MEDIA_TYPES"
 )
 
 type SignFunc func(*cosignoptions.RootOptions, cosignoptions.KeyOpts, cosignoptions.SignOptions, []string) error
@@ -74,7 +77,7 @@ func (s *ImageSigner) sign(ro *cosignoptions.RootOptions, refImage, digest, secr
 	cosignPasswordFile := fmt.Sprintf("%s/%s/cosign.password", secretLocation, cosignSecret)
 
 	ko := cosignoptions.KeyOpts{KeyRef: cosignKeyFile, PassFunc: func(bool) ([]byte, error) {
-		content, err := ioutil.ReadFile(cosignPasswordFile)
+		content, err := os.ReadFile(cosignPasswordFile)
 		// When password file is not available, default empty password is used
 		if err != nil {
 			return []byte(""), nil
@@ -84,17 +87,17 @@ func (s *ImageSigner) sign(ro *cosignoptions.RootOptions, refImage, digest, secr
 	}}
 
 	if cosignRepository, ok := cosignRepositories[cosignSecret]; ok {
-		if err := os.Setenv(cosignutil.CosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
-			return errors.Errorf("failed setting %s env variable: %v", cosignutil.CosignRepositoryEnv, err)
+		if err := os.Setenv(CosignRepositoryEnv, fmt.Sprintf("%s", cosignRepository)); err != nil {
+			return errors.Errorf("failed setting %s env variable: %v", CosignRepositoryEnv, err)
 		}
-		defer os.Unsetenv(cosignutil.CosignRepositoryEnv)
+		defer os.Unsetenv(CosignRepositoryEnv)
 	}
 
 	if cosignDockerMediaType, ok := cosignDockerMediaTypes[cosignSecret]; ok {
-		if err := os.Setenv(cosignutil.CosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
+		if err := os.Setenv(CosignDockerMediaTypesEnv, fmt.Sprintf("%s", cosignDockerMediaType)); err != nil {
 			return errors.Errorf("failed setting COSIGN_DOCKER_MEDIA_TYPES env variable: %v", err)
 		}
-		defer os.Unsetenv(cosignutil.CosignDockerMediaTypesEnv)
+		defer os.Unsetenv(CosignDockerMediaTypesEnv)
 	}
 
 	var cosignAnnotations []string
@@ -130,14 +133,14 @@ func (s *ImageSigner) SignBuilder(
 	builderKeychain authn.Keychain,
 ) ([]v1alpha2.CosignSignature, error) {
 	signaturePaths := make([]v1alpha2.CosignSignature, 0)
-	cosignSecrets := filterCosignSecrets(serviceAccountSecrets)
+	cosignSecrets := secret.FilterCosignSigningSecrets(serviceAccountSecrets)
 
 	for _, cosignSecret := range cosignSecrets {
 		keyRef := fmt.Sprintf("k8s://%s/%s", cosignSecret.Namespace, cosignSecret.Name)
 		keyOpts := cosignoptions.KeyOpts{
 			KeyRef: keyRef,
 			PassFunc: func(bool) ([]byte, error) {
-				if password, ok := cosignSecret.Data[cosignutil.SecretDataCosignPassword]; ok {
+				if password, ok := cosignSecret.Data[secret.CosignSecretPassword]; ok {
 					return password, nil
 				}
 
@@ -145,15 +148,15 @@ func (s *ImageSigner) SignBuilder(
 			},
 		}
 
-		if cosignRepository, ok := cosignSecret.Annotations[cosignutil.RepositoryAnnotationPrefix]; ok {
-			if err := os.Setenv(cosignutil.CosignRepositoryEnv, cosignRepository); err != nil {
-				return nil, fmt.Errorf("failed setting %s env variable: %w", cosignutil.CosignRepositoryEnv, err)
+		if cosignRepository, ok := cosignSecret.Annotations[secret.CosignRepositoryAnnotation]; ok {
+			if err := os.Setenv(CosignRepositoryEnv, cosignRepository); err != nil {
+				return nil, fmt.Errorf("failed setting %s env variable: %w", CosignRepositoryEnv, err)
 			}
 		}
 
-		if cosignDockerMediaType, ok := cosignSecret.Annotations[cosignutil.DockerMediaTypesAnnotationPrefix]; ok {
-			if err := os.Setenv(cosignutil.CosignDockerMediaTypesEnv, cosignDockerMediaType); err != nil {
-				return nil, fmt.Errorf("failed setting %s env variable: %w", cosignutil.CosignDockerMediaTypesEnv, err)
+		if cosignDockerMediaType, ok := cosignSecret.Annotations[secret.CosignDockerMediaTypesAnnotation]; ok {
+			if err := os.Setenv(CosignDockerMediaTypesEnv, cosignDockerMediaType); err != nil {
+				return nil, fmt.Errorf("failed setting %s env variable: %w", CosignDockerMediaTypesEnv, err)
 			}
 		}
 
@@ -210,38 +213,22 @@ func (s *ImageSigner) SignBuilder(
 			},
 		)
 
-		if _, found := os.LookupEnv(cosignutil.CosignDockerMediaTypesEnv); found {
-			err = os.Unsetenv(cosignutil.CosignDockerMediaTypesEnv)
+		if _, found := os.LookupEnv(CosignDockerMediaTypesEnv); found {
+			err = os.Unsetenv(CosignDockerMediaTypesEnv)
 			if err != nil {
-				return nil, fmt.Errorf("failed to cleanup environment variable %s: %w", cosignutil.CosignDockerMediaTypesEnv, err)
+				return nil, fmt.Errorf("failed to cleanup environment variable %s: %w", CosignDockerMediaTypesEnv, err)
 			}
 		}
 
-		if _, found := os.LookupEnv(cosignutil.CosignRepositoryEnv); found {
-			err = os.Unsetenv(cosignutil.CosignRepositoryEnv)
+		if _, found := os.LookupEnv(CosignRepositoryEnv); found {
+			err = os.Unsetenv(CosignRepositoryEnv)
 			if err != nil {
-				return nil, fmt.Errorf("failed to cleanup environment variable %s: %w", cosignutil.CosignRepositoryEnv, err)
+				return nil, fmt.Errorf("failed to cleanup environment variable %s: %w", CosignRepositoryEnv, err)
 			}
 		}
 	}
 
 	return signaturePaths, nil
-}
-
-func filterCosignSecrets(serviceAccountSecrets []*corev1.Secret) []*corev1.Secret {
-	cosignSecrets := make([]*corev1.Secret, 0)
-
-	for _, cosignSecret := range serviceAccountSecrets {
-		_, passwordOk := cosignSecret.Data[cosignutil.SecretDataCosignPassword]
-		_, keyOk := cosignSecret.Data[cosignutil.SecretDataCosignKey]
-
-		if passwordOk && keyOk {
-			cosignSecrets = append(cosignSecrets, cosignSecret)
-		}
-	}
-
-	// successful
-	return cosignSecrets
 }
 
 func findCosignSecrets(secretLocation string) ([]string, error) {

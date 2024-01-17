@@ -97,14 +97,14 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	}
 	defer projectMetadataFile.Close()
 
-	projectMd := project{
-		Source: source{
+	projectMd := Project{
+		Source: Source{
 			Type: "git",
-			Metadata: metadata{
+			Metadata: Metadata{
 				Repository: gitURL,
 				Revision:   gitRevision,
 			},
-			Version: version{
+			Version: Version{
 				Commit: hash.String(),
 			},
 		},
@@ -117,21 +117,21 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	return nil
 }
 
-type project struct {
-	Source source `toml:"source"`
+type Project struct {
+	Source Source `toml:"source"`
 }
 
-type source struct {
+type Source struct {
 	Type     string   `toml:"type"`
-	Metadata metadata `toml:"metadata"`
-	Version  version  `toml:"version"`
+	Metadata Metadata `toml:"metadata"`
+	Version  Version  `toml:"version"`
 }
 
-type metadata struct {
+type Metadata struct {
 	Repository string `toml:"repository"`
 	Revision   string `toml:"revision"`
 }
 
-type version struct {
+type Version struct {
 	Commit string `toml:"commit"`
 }

@@ -180,6 +180,12 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 			_, _, err := p.LayerForOS("kpack-invalid-test-os")
 			require.EqualError(t, err, "unrecognized os kpack-invalid-test-os")
 		})
+
+		it("can return the metadata by itself", func() {
+			readMetadata, err := p.Metadata()
+			require.NoError(t, err)
+			require.Equal(t, readMetadata, lifecycleMetadata)
+		})
 	})
 }
 

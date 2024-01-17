@@ -2,13 +2,13 @@ package config
 
 import (
 	"context"
-	"knative.dev/pkg/system"
 	"sync/atomic"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/system"
 
 	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/registry"
@@ -39,6 +39,14 @@ func NewLifecycleProvider(client RegistryClient, keychainFactory registry.Keycha
 		registryClient:  client,
 		keychainFactory: keychainFactory,
 	}
+}
+
+func (l *LifecycleProvider) Metadata() (cnb.LifecycleMetadata, error) {
+	lifecycle, err := l.lifecycle()
+	if err != nil {
+		return cnb.LifecycleMetadata{}, err
+	}
+	return lifecycle.metadata, nil
 }
 
 func (l *LifecycleProvider) LayerForOS(os string) (v1.Layer, cnb.LifecycleMetadata, error) {

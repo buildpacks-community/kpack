@@ -5,14 +5,14 @@ import (
 	"crypto"
 	"testing"
 
-	cosignutil "github.com/pivotal/kpack/pkg/cosign/util"
-
 	cosignVerify "github.com/sigstore/cosign/v2/cmd/cosign/cli/verify"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/signature"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pivotal/kpack/pkg/secret"
 )
 
 func GenerateFakeKeyPair(t *testing.T, secretName string, secretNamespace string, password string, annotations map[string]string) corev1.Secret {
@@ -26,9 +26,9 @@ func GenerateFakeKeyPair(t *testing.T, secretName string, secretNamespace string
 	require.NoError(t, err)
 
 	data := map[string][]byte{
-		cosignutil.SecretDataCosignPublicKey: keys.PublicBytes,
-		cosignutil.SecretDataCosignKey:       keys.PrivateBytes,
-		cosignutil.SecretDataCosignPassword:  []byte(password),
+		secret.CosignSecretPublicKey:  keys.PublicBytes,
+		secret.CosignSecretPrivateKey: keys.PrivateBytes,
+		secret.CosignSecretPassword:   []byte(password),
 	}
 
 	secret := corev1.Secret{

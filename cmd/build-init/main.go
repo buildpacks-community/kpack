@@ -72,7 +72,7 @@ const (
 	platformDir                  = "/platform"
 	buildSecretsDir              = "/var/build-secrets"
 	registrySourcePullSecretsDir = "/registrySourcePullSecrets"
-	projectMetadataDir           = "/projectMetadata"
+	projectMetadataDir           = "/projectMetadata" // place to write project-metadata.toml which gets exported to image label by the lifecycle
 	networkWaitLauncherDir       = "/networkWait"
 	networkWaitLauncherBinary    = "network-wait-launcher.exe"
 )
@@ -223,7 +223,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 		fetcher := blob.Fetcher{
 			Logger: logger,
 		}
-		return fetcher.Fetch(appDir, *blobURL, *stripComponents)
+		return fetcher.Fetch(appDir, *blobURL, *stripComponents, projectMetadataDir)
 	case *registryImage != "":
 		registrySourcePullSecrets, err := dockercreds.ParseDockerConfigSecret(registrySourcePullSecretsDir)
 		if err != nil {
@@ -235,7 +235,7 @@ func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 			Client:   &registry.Client{},
 			Keychain: authn.NewMultiKeychain(registrySourcePullSecrets, keychain),
 		}
-		return fetcher.Fetch(appDir, *registryImage)
+		return fetcher.Fetch(appDir, *registryImage, projectMetadataDir)
 	default:
 		return errors.New("no git url, blob url, or registry image provided")
 	}

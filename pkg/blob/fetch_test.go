@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"syscall"
 	"testing"
@@ -29,12 +30,16 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		fetcher = &blob.Fetcher{
 			Logger: log.New(output, "", 0),
 		}
-		dir string
+		dir         string
+		metadataDir string
 	)
 
 	it.Before(func() {
 		var err error
 		dir, err = os.MkdirTemp("", "fetch_test")
+		require.NoError(t, err)
+
+		metadataDir, err = os.MkdirTemp("", "fetch_test")
 		require.NoError(t, err)
 	})
 
@@ -45,7 +50,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 	for _, f := range []string{"test.zip", "test.tar", "test.tar.gz"} {
 		testFile := f
 		it("unpacks "+testFile, func() {
-			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, testFile), 0)
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, testFile), 0, metadataDir)
 			require.NoError(t, err)
 
 			files, err := os.ReadDir(dir)
@@ -74,7 +79,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		// Set no umask to test file mode
 		oldMask := syscall.Umask(0)
 		defer syscall.Umask(oldMask)
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "fat-zip.zip"), 0)
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "fat-zip.zip"), 0, metadataDir)
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(dir)
@@ -91,7 +96,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	it("sets the correct file mode", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"), 0)
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test-exe.tar"), 0, metadataDir)
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(dir)
@@ -115,9 +120,27 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		require.Equal(t, 0755, int(info.Mode()))
 	})
 
+	it("records project-metadata.toml", func() {
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.tar"), 0, metadataDir)
+		require.NoError(t, err)
+
+		p := path.Join(metadataDir, "project-metadata.toml")
+		contents, err := os.ReadFile(p)
+		require.NoError(t, err)
+
+		expectedFile := fmt.Sprintf(`[source]
+  type = "blob"
+  [source.metadata]
+    url = "%v/test.tar"
+  [source.version]
+    sha256sum = "e54f870c2d76e5a1e577b9ff6c8c56f42b539fff83cf86cccf6b16ce6e177a4e"
+`, server.URL)
+
+		require.Equal(t, expectedFile, string(contents))
+	})
 	for _, archiveFile := range []string{"parent.tar", "parent.tar.gz", "parent.zip"} {
 		it("strips parent components from "+archiveFile, func() {
-			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, archiveFile), 1)
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, archiveFile), 1, metadataDir)
 			require.NoError(t, err)
 
 			files, err := os.ReadDir(dir)
@@ -132,17 +155,17 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 
 	it("errors when url is inaccessible", func() {
 		url := fmt.Sprintf("%s/%s", server.URL, "invalid.zip")
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"), 0)
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"), 0, metadataDir)
 		require.EqualError(t, err, fmt.Sprintf("failed to get blob %s", url))
 	})
 
 	it("errors when the blob file type is unexpected", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.txt"), 0)
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.txt"), 0, metadataDir)
 		require.EqualError(t, err, "unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 	})
 
 	it("errors when the blob content type is unexpected", func() {
-		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.html"), 0)
+		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.html"), 0, metadataDir)
 		require.EqualError(t, err, "unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 	})
 }

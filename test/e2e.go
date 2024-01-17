@@ -23,11 +23,11 @@ var (
 	k8sClient     *kubernetes.Clientset
 	dynamicClient dynamic.Interface
 	clusterConfig *rest.Config
-	err           error
 )
 
 func newClients(t *testing.T) (*clients, error) {
 	setup.Do(func() {
+		var err error
 		kubeconfig := flag.String("kubeconfig", getKubeConfig(), "Path to a kubeconfig. Only required if out-of-cluster.")
 		masterURL := flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 

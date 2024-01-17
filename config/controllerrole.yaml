@@ -46,6 +46,7 @@ rules:
   resources:
   - secrets
   - pods/log
+  - namespaces
   verbs:
   - get
 - apiGroups:
