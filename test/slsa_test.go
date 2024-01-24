@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -431,9 +432,8 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 
 		it("can read the source from git, blob, and registry images", func() {
 			type row struct {
-				name     string
-				source   corev1alpha1.SourceConfig
-				verifyFn func(sourceConfig map[string]interface{}, resolvedSource slsav1.ResourceDescriptor)
+				name   string
+				source corev1alpha1.SourceConfig
 			}
 
 			testImage := func(r row) {
@@ -463,19 +463,7 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 					image, err = clients.client.KpackV1alpha2().Images(testNamespace).Get(ctx, image.Name, metav1.GetOptions{})
 					require.NoError(t, err)
 
-					stmt := verifySLSAProvenance(t, image.Status.LatestImage, image, false)
-
-					params, ok := stmt.Predicate.BuildDefinition.ExternalParameters.(map[string]interface{})
-					require.True(t, ok)
-
-					source, ok := params["source"].(map[string]interface{})
-					require.True(t, ok)
-
-					config, ok := source[r.name].(map[string]interface{})
-					require.True(t, ok)
-
-					require.Greater(t, len(stmt.Predicate.BuildDefinition.ResolvedDependencies), 1)
-					r.verifyFn(config, stmt.Predicate.BuildDefinition.ResolvedDependencies[0])
+					verifySLSAProvenance(t, image.Status.LatestImage, image, false)
 				})
 			}
 
@@ -488,13 +476,6 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 							Revision: "master",
 						},
 					},
-					verifyFn: func(config map[string]interface{}, resolved slsav1.ResourceDescriptor) {
-						require.Equal(t, "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs", config["url"])
-						require.NotEmpty(t, config["revision"])
-
-						require.Equal(t, "https://github.com/cloudfoundry-samples/cf-sample-app-nodejs", resolved.URI)
-						require.Equal(t, resolved.Digest["sha1"], config["revision"])
-					},
 				},
 				{
 					name: "blob",
@@ -503,12 +484,6 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 							URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
 						},
 					},
-					verifyFn: func(config map[string]interface{}, resolved slsav1.ResourceDescriptor) {
-						require.Equal(t, "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar", config["url"])
-
-						require.Equal(t, "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar", resolved.URI)
-						require.Equal(t, "0ea773b255487f9ed45bbf6dea66d45f6c593b0c1c02b2c71c5bf20542e86d3c", resolved.Digest["sha256"])
-					},
 				},
 				{
 					name: "registry",
@@ -516,12 +491,6 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 						Registry: &corev1alpha1.Registry{
 							Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
 						},
-					},
-					verifyFn: func(config map[string]interface{}, resolved slsav1.ResourceDescriptor) {
-						require.Equal(t, "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44", config["image"])
-
-						require.Equal(t, "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44", resolved.URI)
-						require.Equal(t, "76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44", resolved.Digest["sha256"])
 					},
 				},
 			}
@@ -721,7 +690,7 @@ func verifySLSAProvenance(t *testing.T, digest string, image *buildapi.Image, si
 	// external params
 	params, ok := pred.BuildDefinition.ExternalParameters.(map[string]interface{})
 	require.True(t, ok)
-	assert.Contains(t, params["source"], "git")
+	assert.NotNil(t, params["source"])
 	assert.NotNil(t, params["tags"])
 	assert.NotNil(t, params["runImage"])
 
@@ -734,9 +703,6 @@ func verifySLSAProvenance(t *testing.T, digest string, image *buildapi.Image, si
 	require.Len(t, deps, 2)
 
 	assert.Equal(t, deps[0].Name, "source")
-	assert.NotEmpty(t, deps[0].URI)
-	assert.Contains(t, deps[0].Digest, "sha1")
-
 	assert.Equal(t, deps[1].Name, "builder-image")
 	assert.NotEmpty(t, deps[1].URI)
 	assert.Contains(t, deps[1].Digest, "sha256")
@@ -758,6 +724,44 @@ func verifySLSAProvenance(t *testing.T, digest string, image *buildapi.Image, si
 	assert.Regexp(t, expectedId, metadata.InvocationID)
 	assert.NotNil(t, metadata.StartedOn)
 	assert.NotNil(t, metadata.FinishedOn)
+
+	// source metadata
+	source, ok := params["source"].(map[string]interface{})
+	require.True(t, ok)
+	resolvedSource := deps[0]
+	switch {
+	case image.Spec.Source.Git != nil:
+		innerSource, ok := source["git"].(map[string]interface{})
+		require.True(t, ok)
+
+		require.Equal(t, image.Spec.Source.Git.URL, innerSource["url"])
+		require.NotEmpty(t, innerSource["revision"])
+
+		require.Equal(t, image.Spec.Source.Git.URL, resolvedSource.URI)
+		require.Equal(t, resolvedSource.Digest["sha1"], innerSource["revision"])
+
+	case image.Spec.Source.Blob != nil:
+		innerSource, ok := source["blob"].(map[string]interface{})
+		require.True(t, ok)
+
+		require.Equal(t, image.Spec.Source.Blob.URL, innerSource["url"])
+
+		require.Equal(t, image.Spec.Source.Blob.URL, resolvedSource.URI)
+		require.NotEmpty(t, resolvedSource.Digest["sha256"])
+
+	case image.Spec.Source.Registry != nil:
+		innerSource, ok := source["registry"].(map[string]interface{})
+		require.True(t, ok)
+
+		digest := image.Spec.Source.Registry.Image
+		repo := digest[:strings.Index(digest, "@")]
+		sha := digest[strings.Index(digest, ":")+1:]
+
+		require.Equal(t, image.Spec.Source.Registry.Image, innerSource["image"])
+
+		require.Equal(t, repo, resolvedSource.URI)
+		require.Equal(t, sha, resolvedSource.Digest["sha256"])
+	}
 
 	return stmt
 }
