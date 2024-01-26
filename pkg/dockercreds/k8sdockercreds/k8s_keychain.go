@@ -3,6 +3,7 @@ package k8sdockercreds
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
@@ -25,18 +26,21 @@ type k8sSecretKeychainFactory struct {
 }
 
 func NewSecretKeychainFactory(client k8sclient.Interface) (registry.KeychainFactory, error) {
-	return &k8sSecretKeychainFactory{client: client}, nil
+	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
+	if err != nil {
+		return nil, err
+	}
+
+	return &k8sSecretKeychainFactory{client: client, volumeKeychain: volumeKeychain}, nil
 }
 
 func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref registry.SecretRef) (authn.Keychain, error) {
-	volumeKeychain, err := dockercreds.NewVolumeSecretKeychain()
-
 	if !ref.IsNamespaced() {
 		k8sKeychain, err := k8schain.NewNoClient(context.Background())
 		if err != nil {
 			return nil, err
 		}
-		return authn.NewMultiKeychain(volumeKeychain, k8sKeychain, azureFileKeychain), nil // k8s keychain with no secrets
+		return authn.NewMultiKeychain(f.volumeKeychain, k8sKeychain, azureFileKeychain), nil // k8s keychain with no secrets
 	}
 
 	serviceAccountKeychain, err := keychainFromServiceAccount(ctx, ref, &secret.Fetcher{Client: f.client})
@@ -53,7 +57,7 @@ func (f *k8sSecretKeychainFactory) KeychainForSecretRef(ctx context.Context, ref
 		return nil, err
 	}
 
-	return authn.NewMultiKeychain(serviceAccountKeychain, volumeKeychain, k8sKeychain, azureFileKeychain), nil
+	return authn.NewMultiKeychain(serviceAccountKeychain, f.volumeKeychain, k8sKeychain, azureFileKeychain), nil
 }
 
 func toStringPullSecrets(secrets []corev1.LocalObjectReference) []string {
@@ -79,38 +83,51 @@ func keychainFromServiceAccount(ctx context.Context, secretRef registry.SecretRe
 		case corev1.SecretTypeBasicAuth:
 			var err error
 			if registry, ok := s.Annotations[buildapi.DOCKERSecretAnnotationPrefix]; ok {
+				credMap := map[string]authn.AuthConfig{registry: {
+					Username: string(s.Data[corev1.BasicAuthUsernameKey]),
+					Password: string(s.Data[corev1.BasicAuthPasswordKey]),
+				}}
 				dockerCreds, err = dockerCreds.Append(dockercreds.DockerCreds{
-					registry: authn.AuthConfig{
-						Username: string(s.Data[corev1.BasicAuthUsernameKey]),
-						Password: string(s.Data[corev1.BasicAuthPasswordKey]),
-					},
+					credMap,
+					time.Now(),
+					"",
 				})
 				if err != nil {
 					return nil, err
 				}
 			}
 		case corev1.SecretTypeDockerConfigJson:
-			dockerConfig := struct {
-				Auths dockercreds.DockerCreds `json:"auths"`
+			dockerAuth := struct {
+				Auths dockercreds.DockerAuthConfig `json:"auths"`
 			}{}
 
-			err := json.Unmarshal(s.Data[corev1.DockerConfigJsonKey], &dockerConfig)
+			err := json.Unmarshal(s.Data[corev1.DockerConfigJsonKey], &dockerAuth)
 			if err != nil {
 				return nil, err
 			}
 
-			dockerCreds, err = dockerCreds.Append(dockerConfig.Auths)
+			dockerConfig := dockercreds.DockerCreds{dockerAuth.Auths,
+				time.Now(),
+				"",
+			}
+
+			dockerCreds, err = dockerCreds.Append(dockerConfig)
 			if err != nil {
 				return nil, err
 			}
 		case corev1.SecretTypeDockercfg:
-			var dockerCfg dockercreds.DockerCreds
+			var dockerAuth dockercreds.DockerAuthConfig
 
-			err := json.Unmarshal(s.Data[corev1.DockerConfigKey], &dockerCfg)
+			err := json.Unmarshal(s.Data[corev1.DockerConfigKey], &dockerAuth)
 			if err != nil {
 				return nil, err
 			}
-			dockerCreds, err = dockerCreds.Append(dockerCfg)
+
+			dockerConfig := dockercreds.DockerCreds{dockerAuth,
+				time.Now(),
+				"",
+			}
+			dockerCreds, err = dockerCreds.Append(dockerConfig)
 			if err != nil {
 				return nil, err
 			}
