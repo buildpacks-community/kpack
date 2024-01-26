@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -41,9 +42,10 @@ import (
 )
 
 func TestSlsa(t *testing.T) {
-	t.Cleanup(func() {
-		fmt.Println("TestSlsa cleanup")
-	})
+	if testSlsa, _ := os.LookupEnv("E2E_SLSA"); testSlsa != "true" {
+		t.Skip("E2E_SLSA not set, skipping")
+	}
+
 	spec.Run(t, "SLSA", testSlsaBuild)
 }
 

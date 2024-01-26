@@ -409,7 +409,7 @@ jobs:
         export GIT_BASIC_PASSWORD="${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}"
         export GIT_SSH_PRIVATE_KEY="${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}"
 
-        make e2e
+        E2E_SLSA="true" make e2e
         kapp delete -a kpack -y
 
     - name: Run tests with Istio
