@@ -5879,6 +5879,13 @@
     "kpack.build.v1alpha2.BuilderSpec": {
       "type": "object",
       "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "default": ""
+          }
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6108,6 +6115,13 @@
     "kpack.build.v1alpha2.ClusterBuilderSpec": {
       "type": "object",
       "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "default": ""
+          }
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6782,6 +6796,13 @@
     "kpack.build.v1alpha2.NamespacedBuilderSpec": {
       "type": "object",
       "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "default": ""
+          }
+        },
         "order": {
           "type": "array",
           "items": {
@@ -7159,8 +7180,7 @@
       "properties": {
         "lastTransitionTime": {
           "description": "LastTransitionTime is the last time the condition transitioned from one status to another. We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic differences (all other things held constant).",
-          "type": "string",
-          "default": {}
+          "type": "string"
         },
         "message": {
           "description": "A human readable message indicating details about the transition.",
@@ -7412,7 +7432,6 @@
       ],
       "properties": {
         "inner": {
-          "default": {},
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
