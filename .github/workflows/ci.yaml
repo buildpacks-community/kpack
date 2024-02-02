@@ -488,6 +488,10 @@ jobs:
 
     - name: Download artifacts
       uses: actions/download-artifact@v4
+      with:
+        pattern: '*-image'
+        path: images
+        merge-multiple: true
 
     - name: Docker Login
       uses: docker/login-action@v3.0.0
