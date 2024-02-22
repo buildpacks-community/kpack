@@ -2,7 +2,10 @@ package builder
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	corev1 "k8s.io/api/core/v1"
 
 	"go.uber.org/zap"
@@ -35,7 +38,16 @@ const (
 )
 
 type BuilderCreator interface {
-	CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, keychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, serviceAccountSecrets []*corev1.Secret) (buildapi.BuilderRecord, error)
+	CreateBuilder(
+		ctx context.Context,
+		builderKeychain authn.Keychain,
+		keychain authn.Keychain,
+		fetcher cnb.RemoteBuildpackFetcher,
+		clusterStack *buildapi.ClusterStack,
+		spec buildapi.BuilderSpec,
+		serviceAccountSecrets []*corev1.Secret,
+		resolvedBuilderRef string,
+	) (buildapi.BuilderRecord, error)
 }
 
 type Fetcher interface {
@@ -238,7 +250,21 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, err
 	}
 
-	buildRecord, err := c.BuilderCreator.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, clusterStack, builder.Spec.BuilderSpec, serviceAccountSecrets)
+	resolvedBuilderRef, err := resolveBuilderRef(builder)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	buildRecord, err := c.BuilderCreator.CreateBuilder(
+		ctx,
+		builderKeychain,
+		stackKeychain,
+		fetcher,
+		clusterStack,
+		builder.Spec.BuilderSpec,
+		serviceAccountSecrets,
+		resolvedBuilderRef,
+	)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -260,4 +286,20 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.Builder
 
 	_, err = c.Client.KpackV1alpha2().Builders(desired.Namespace).UpdateStatus(ctx, desired, metav1.UpdateOptions{})
 	return err
+}
+
+func resolveBuilderRef(builder *buildapi.Builder) (string, error) {
+	parsedRef, err := name.ParseReference(builder.Spec.Tag)
+	if err != nil {
+		return "", err
+	}
+
+	// this happens if there is no tag
+	if parsedRef.Identifier() == "latest" {
+		return parsedRef.
+			Context().
+			Tag(fmt.Sprintf("%s-%s-%s", strings.ToLower(buildapi.BuilderKind), builder.Namespace, builder.Name)).Name(), nil
+	}
+
+	return parsedRef.Name(), nil
 }
