@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,6 +28,8 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 )
 
+const defaultWebhookPort = 8443
+
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ImageKind):            &v1alpha2.Image{},
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.BuildKind):            &v1alpha2.Build{},
@@ -42,9 +46,14 @@ func init() {
 }
 
 func main() {
+	webhookPort := defaultWebhookPort
+	webhookPortEnv := os.Getenv("WEBHOOK_PORT")
+	if parsedWebhookPort, err := strconv.Atoi(webhookPortEnv); err == nil {
+		webhookPort = parsedWebhookPort
+	}
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
 		ServiceName: "kpack-webhook",
-		Port:        8443,
+		Port:        webhookPort,
 		SecretName:  "webhook-certs",
 	})
 
