@@ -19,24 +19,26 @@ type FakeBuilderCreator struct {
 }
 
 type CreateBuilderArgs struct {
-	Context         context.Context
-	BuilderKeychain authn.Keychain
-	StackKeychain   authn.Keychain
-	Fetcher         cnb.RemoteBuildpackFetcher
-	ClusterStack    *buildapi.ClusterStack
-	BuilderSpec     buildapi.BuilderSpec
-	SigningSecrets  []*corev1.Secret
+	Context            context.Context
+	BuilderKeychain    authn.Keychain
+	StackKeychain      authn.Keychain
+	Fetcher            cnb.RemoteBuildpackFetcher
+	ClusterStack       *buildapi.ClusterStack
+	BuilderSpec        buildapi.BuilderSpec
+	SigningSecrets     []*corev1.Secret
+	ResolvedBuilderTag string
 }
 
-func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, signingSecrets []*corev1.Secret) (buildapi.BuilderRecord, error) {
+func (f *FakeBuilderCreator) CreateBuilder(ctx context.Context, builderKeychain authn.Keychain, stackKeychain authn.Keychain, fetcher cnb.RemoteBuildpackFetcher, clusterStack *buildapi.ClusterStack, spec buildapi.BuilderSpec, signingSecrets []*corev1.Secret, resolvedBuilderTag string) (buildapi.BuilderRecord, error) {
 	f.CreateBuilderCalls = append(f.CreateBuilderCalls, CreateBuilderArgs{
-		Context:         ctx,
-		BuilderKeychain: builderKeychain,
-		StackKeychain:   stackKeychain,
-		Fetcher:         fetcher,
-		ClusterStack:    clusterStack,
-		BuilderSpec:     spec,
-		SigningSecrets:  signingSecrets,
+		Context:            ctx,
+		BuilderKeychain:    builderKeychain,
+		StackKeychain:      stackKeychain,
+		Fetcher:            fetcher,
+		ClusterStack:       clusterStack,
+		BuilderSpec:        spec,
+		SigningSecrets:     signingSecrets,
+		ResolvedBuilderTag: resolvedBuilderTag,
 	})
 
 	return f.Record, f.CreateErr

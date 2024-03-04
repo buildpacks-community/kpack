@@ -32,7 +32,7 @@ func (f *FakeClient) Fetch(keychain authn.Keychain, repoName string) (v1.Image, 
 		return nil, "", f.fetchError
 	}
 
-	if expectedKeychain, ok := f.readKeychains[repoName]; !ok || keychain != expectedKeychain {
+	if expectedKeychain, ok := f.readKeychains[tryParsingTag(repoName)]; !ok || keychain != expectedKeychain {
 		return nil, "", errors.New("unexpected keychain")
 	}
 
@@ -55,7 +55,7 @@ func (f *FakeClient) Fetch(keychain authn.Keychain, repoName string) (v1.Image, 
 }
 
 func (f *FakeClient) Save(keychain authn.Keychain, tag string, image v1.Image) (string, error) {
-	if expectedKeychain, ok := f.writeKeychains[tag]; !ok || keychain != expectedKeychain {
+	if expectedKeychain, ok := f.writeKeychains[tryParsingTag(tag)]; !ok || keychain != expectedKeychain {
 		return "", errors.New("unexpected keychain")
 	}
 
@@ -67,11 +67,11 @@ func (f *FakeClient) Save(keychain authn.Keychain, tag string, image v1.Image) (
 
 func (f *FakeClient) AddImage(repoName string, image v1.Image, keychain authn.Keychain) {
 	f.images[repoName] = image
-	f.readKeychains[repoName] = keychain
+	f.readKeychains[tryParsingTag(repoName)] = keychain
 }
 
 func (f *FakeClient) AddSaveKeychain(tag string, keychain authn.Keychain) {
-	f.writeKeychains[tag] = keychain
+	f.writeKeychains[tryParsingTag(tag)] = keychain
 }
 
 func (f *FakeClient) SavedImages() map[string]v1.Image {
@@ -80,4 +80,13 @@ func (f *FakeClient) SavedImages() map[string]v1.Image {
 
 func (f *FakeClient) SetFetchError(err error) {
 	f.fetchError = err
+}
+
+func tryParsingTag(tag string) string {
+	ref, err := name.ParseReference(tag)
+	if err != nil {
+		return tag
+	}
+
+	return ref.Context().Name()
 }

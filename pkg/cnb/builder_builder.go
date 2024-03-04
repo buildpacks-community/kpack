@@ -60,7 +60,6 @@ func newBuilderBldr(kpackVersion string) *builderBlder {
 		kpackVersion:    kpackVersion,
 	}
 }
-
 func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.ClusterStack) error {
 	file, err := baseImage.ConfigFile()
 	if err != nil {
@@ -70,7 +69,6 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.Clus
 	bb.os = file.OS
 	bb.baseImage = baseImage
 	bb.stackId = clusterStack.Status.Id
-	bb.runImage = clusterStack.Status.RunImage.Image
 	bb.mixins = clusterStack.Status.Mixins
 	bb.cnbUserId = clusterStack.Status.UserID
 	bb.cnbGroupId = clusterStack.Status.GroupID
@@ -181,6 +179,10 @@ func (bb *builderBlder) WriteableImage() (v1.Image, error) {
 			Buildpacks: buildpacks,
 		},
 	})
+}
+
+func (bb *builderBlder) AddRunImage(runImage string) {
+	bb.runImage = runImage
 }
 
 func (bb *builderBlder) validateBuilder(sortedBuildpacks []DescriptiveBuildpackInfo) error {
