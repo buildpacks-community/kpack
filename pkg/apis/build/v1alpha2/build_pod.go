@@ -1135,7 +1135,7 @@ func setupBindingVolumesAndMounts(bindings []ServiceBinding) ([]corev1.Volume, [
 		switch b := binding.(type) {
 		case *corev1alpha1.ServiceBinding:
 			if b.SecretRef != nil {
-				secretVolume := fmt.Sprintf("service-binding-secret-%s", b.Name)
+				secretVolume := fmt.Sprintf("binding-%s", b.Name)
 				volumes = append(volumes,
 					corev1.Volume{
 						Name: secretVolume,
