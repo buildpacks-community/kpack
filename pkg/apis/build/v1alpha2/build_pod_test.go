@@ -440,7 +440,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Contains(t,
 				pod.Spec.Volumes,
 				corev1.Volume{
-					Name: "service-binding-secret-database",
+					Name: "binding-database",
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName: "database",
@@ -448,7 +448,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					},
 				},
 				corev1.Volume{
-					Name: "service-binding-secret-apm",
+					Name: "binding-apm",
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName: "apm",
@@ -461,12 +461,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				assert.Contains(t,
 					pod.Spec.InitContainers[containerIdx].VolumeMounts,
 					corev1.VolumeMount{
-						Name:      "service-binding-secret-database",
+						Name:      "binding-database",
 						MountPath: "/platform/bindings/database",
 						ReadOnly:  true,
 					},
 					corev1.VolumeMount{
-						Name:      "service-binding-secret-apm",
+						Name:      "binding-apm",
 						MountPath: "/platform/bindings/apm",
 						ReadOnly:  true,
 					},
@@ -728,8 +728,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"layers-dir",
 				"platform-dir",
 				"workspace-dir",
-				"service-binding-secret-database",
-				"service-binding-secret-apm",
+				"binding-database",
+				"binding-apm",
 			}, names(pod.Spec.InitContainers[2].VolumeMounts))
 		})
 
@@ -843,8 +843,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				"layers-dir",
 				"platform-dir",
 				"workspace-dir",
-				"service-binding-secret-database",
-				"service-binding-secret-apm",
+				"binding-database",
+				"binding-apm",
 			}, names(pod.Spec.InitContainers[4].VolumeMounts))
 		})
 
