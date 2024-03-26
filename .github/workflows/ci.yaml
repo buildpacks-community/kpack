@@ -556,7 +556,7 @@ jobs:
         path: release-${{ env.KPACK_VERSION }}.yaml
 
     - name: Create Draft Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         name: kpack v${{ env.KPACK_VERSION }}
         tag_name: v${{ env.KPACK_VERSION }}
