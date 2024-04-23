@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -10,7 +11,10 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
@@ -30,7 +34,23 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	}
 	f.Logger.Printf("Downloading %s%s...", u.Host, u.Path)
 
-	file, err := downloadBlob(blobURL)
+	// file, err := downloadBlob(blobURL)
+
+	// TODO: Here use regex to figure out blob, I think the properties should be configured in cnbimage source.blob.xxx
+	url, container, name, err := extractBlobInfo(blobURL)
+	if err != nil {
+		return err
+	}
+	credential, err := azidentity.NewManagedIdentityCredential(nil)
+	if err != nil {
+		return err
+	}
+	client, err := azblob.NewClient(url, credential, nil)
+	if err != nil {
+		return err
+	}
+	file, err := downloadAzureBlob(*client, container, name)
+
 	if err != nil {
 		return err
 	}
@@ -92,6 +112,60 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	f.Logger.Printf("Successfully downloaded %s%s in path %q", u.Host, u.Path, dir)
 
 	return nil
+}
+
+func extractBlobInfo(blobURL string) (string, string, string, error) {
+	// Define the regex pattern
+	pattern := `^(https:\/\/[a-zA-Z0-9-]+\.blob\.core\.windows\.net)\/([^\/]+)\/(.+)$`
+
+	// Compile the regex pattern
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Find matches in the blob URL
+	matches := regex.FindStringSubmatch(blobURL)
+	if matches == nil || len(matches) != 4 {
+		return "", "", "", fmt.Errorf("unable to extract blob info from URL")
+	}
+
+	// Extract the host, container name, and blob name
+	host := matches[1]
+	containerName := matches[2]
+	blobName := matches[3]
+
+	return host, containerName, blobName, nil
+}
+
+func downloadAzureBlob(client azblob.Client, containerName string, blobName string) (*os.File, error) {
+	get, err := client.DownloadStream(context.TODO(), containerName, blobName, nil)
+	if err != nil {
+		fmt.Println("Failed to download blob:", err)
+		return nil, err
+	}
+
+	defer get.Body.Close()
+	// Create a file to write the blob content
+	file, err := os.CreateTemp("", "")
+	if err != nil {
+		fmt.Println("Failed to create file:", err)
+		return nil, err
+	}
+
+	// Copy blob content to local file
+	_, err = io.Copy(file, get.Body)
+	if err != nil {
+		fmt.Println("Failed to copy blob content to file:", err)
+		return nil, err
+	}
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
 
 func downloadBlob(blobURL string) (*os.File, error) {
