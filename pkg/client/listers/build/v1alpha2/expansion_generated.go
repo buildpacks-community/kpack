@@ -50,6 +50,10 @@ type ClusterBuilderListerExpansion interface{}
 // ClusterBuildpackLister.
 type ClusterBuildpackListerExpansion interface{}
 
+// ClusterLifecycleListerExpansion allows custom methods to be added to
+// ClusterLifecycleLister.
+type ClusterLifecycleListerExpansion interface{}
+
 // ClusterStackListerExpansion allows custom methods to be added to
 // ClusterStackLister.
 type ClusterStackListerExpansion interface{}

@@ -28,6 +28,8 @@ type ClusterBuilderExpansion interface{}
 
 type ClusterBuildpackExpansion interface{}
 
+type ClusterLifecycleExpansion interface{}
+
 type ClusterStackExpansion interface{}
 
 type ClusterStoreExpansion interface{}

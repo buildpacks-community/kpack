@@ -33,6 +33,7 @@ type KpackV1alpha2Interface interface {
 	BuildpacksGetter
 	ClusterBuildersGetter
 	ClusterBuildpacksGetter
+	ClusterLifecyclesGetter
 	ClusterStacksGetter
 	ClusterStoresGetter
 	ImagesGetter
@@ -62,6 +63,10 @@ func (c *KpackV1alpha2Client) ClusterBuilders() ClusterBuilderInterface {
 
 func (c *KpackV1alpha2Client) ClusterBuildpacks() ClusterBuildpackInterface {
 	return newClusterBuildpacks(c)
+}
+
+func (c *KpackV1alpha2Client) ClusterLifecycles() ClusterLifecycleInterface {
+	return newClusterLifecycles(c)
 }
 
 func (c *KpackV1alpha2Client) ClusterStacks() ClusterStackInterface {
