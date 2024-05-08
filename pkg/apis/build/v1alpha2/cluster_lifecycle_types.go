@@ -41,6 +41,7 @@ type ClusterLifecycleStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
+	// TODO: should the unique ID be the image digest reference?
 	// Id         string                      `json:"id,omitempty"`
 	Version       string   `json:"version,omitempty"`
 	BuildpackAPIs []string `json:"buildpackAPIs,omitempty"`
