@@ -34,7 +34,9 @@ type Builder struct {
 type BuilderSpec struct {
 	Tag   string                 `json:"tag,omitempty"`
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
-	Store corev1.ObjectReference `json:"store,omitempty"`
+	// TODO: should `json:"lifecycle,...` actually be `json:"clusterlifecycle,...`?
+	Lifecycle corev1.ObjectReference `json:"lifecycle,omitempty"`
+	Store     corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
 	Order            []BuilderOrderEntry `json:"order,omitempty"`
 	AdditionalLabels map[string]string   `json:"additionalLabels,omitempty"`
@@ -72,6 +74,7 @@ type BuilderStatus struct {
 	BuilderMetadata         corev1alpha1.BuildpackMetadataList `json:"builderMetadata,omitempty"`
 	Order                   []corev1alpha1.OrderEntry          `json:"order,omitempty"`
 	Stack                   corev1alpha1.BuildStack            `json:"stack,omitempty"`
+	Lifecycle               ResolvedClusterLifecycle           `json:"lifecycle,omitempty"`
 	LatestImage             string                             `json:"latestImage,omitempty"`
 	ObservedStackGeneration int64                              `json:"observedStackGeneration,omitempty"`
 	ObservedStoreGeneration int64                              `json:"observedStoreGeneration,omitempty"`

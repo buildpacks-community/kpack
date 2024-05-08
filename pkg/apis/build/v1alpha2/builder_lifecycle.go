@@ -11,6 +11,7 @@ import (
 type BuilderRecord struct {
 	Image                   string
 	Stack                   corev1alpha1.BuildStack
+	Lifecycle               ResolvedClusterLifecycle
 	Buildpacks              corev1alpha1.BuildpackMetadataList
 	Order                   []corev1alpha1.OrderEntry
 	ObservedStoreGeneration int64
@@ -21,6 +22,7 @@ type BuilderRecord struct {
 
 func (bs *BuilderStatus) BuilderRecord(record BuilderRecord) {
 	bs.Stack = record.Stack
+	bs.Lifecycle = record.Lifecycle
 	bs.BuilderMetadata = record.Buildpacks
 	bs.LatestImage = record.Image
 	bs.Conditions = corev1alpha1.Conditions{
