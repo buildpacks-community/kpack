@@ -62,6 +62,7 @@ func NewController(
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
+	clusterLifecycleInformer buildinformers.ClusterLifecycleInformer,
 	secretFetcher Fetcher,
 ) (*controller.Impl, func()) {
 	c := &Reconciler{
