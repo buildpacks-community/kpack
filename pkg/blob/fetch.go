@@ -12,12 +12,11 @@ import (
 	"path"
 
 	"github.com/BurntSushi/toml"
-	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/archive"
 )
 
-var unexpectedBlobTypeError = errors.New("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
+var errUnexpectedBlobType = fmt.Errorf("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 
 type Fetcher struct {
 	Logger *log.Logger
@@ -58,11 +57,11 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 		err = archive.ExtractTarGZ(file, dir, stripComponents)
 	case "application/octet-stream":
 		if !archive.IsTar(file.Name()) {
-			return unexpectedBlobTypeError
+			return errUnexpectedBlobType
 		}
 		err = archive.ExtractTar(file, dir, stripComponents)
 	default:
-		return unexpectedBlobTypeError
+		return errUnexpectedBlobType
 	}
 	if err != nil {
 		return err
@@ -70,7 +69,7 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
-		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
+		return fmt.Errorf("invalid metadata destination '%s/project-metadata.toml' for blob '%s': %v", metadataDir, blobURL, err)
 	}
 	defer projectMetadataFile.Close()
 
@@ -86,7 +85,7 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 		},
 	}
 	if err := toml.NewEncoder(projectMetadataFile).Encode(projectMd); err != nil {
-		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
+		return fmt.Errorf("invalid metadata destination '%s/project-metadata.toml' for blob '%s': %v", metadataDir, blobURL, err)
 	}
 
 	f.Logger.Printf("Successfully downloaded %s%s in path %q", u.Host, u.Path, dir)
@@ -102,7 +101,7 @@ func downloadBlob(blobURL string) (*os.File, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to get blob %s", blobURL)
+		return nil, fmt.Errorf("failed to get blob %s", blobURL)
 	}
 
 	file, err := os.CreateTemp("", "")
