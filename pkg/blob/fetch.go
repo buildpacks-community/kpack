@@ -37,6 +37,9 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 			return fmt.Errorf("failed to resolve creds: %v", err)
 		}
 
+		if headers == nil {
+			headers = make(map[string]string)
+		}
 		headers["Authorization"] = auth
 	}
 

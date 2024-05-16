@@ -140,6 +140,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
+				Name: "blob-secret",
+				Annotations: map[string]string{
+					buildapi.BlobSecretAnnotationPrefix: "blobstore.com",
+				},
+			},
+			Type: corev1.SecretTypeOpaque,
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "secret-to-ignore",
 				Annotations: map[string]string{
 					buildapi.DOCKERSecretAnnotationPrefix: "ignoreme.com",
@@ -273,9 +282,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				ServiceAccountName: serviceAccount,
 				Source: corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
-						URL:      "giturl.com/git.git",
-						Revision: "gitrev1234",
-                        InitializeSubmodules: true,
+						URL:                  "giturl.com/git.git",
+						Revision:             "gitrev1234",
+						InitializeSubmodules: true,
 					},
 				},
 				Cache: &buildapi.BuildCacheConfig{
@@ -578,6 +587,65 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				},
 			)
 
+		})
+
+		it("configures prepare with blob credentials when using secret", func() {
+			build.Spec.Source = corev1alpha1.SourceConfig{
+				Blob: &corev1alpha1.Blob{
+					URL:  "blobstore.com/source",
+					Auth: "secret",
+				},
+			}
+
+			pod, err := build.BuildPod(config, buildContext)
+			require.NoError(t, err)
+
+			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
+			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
+
+			assert.Contains(t, pod.Spec.InitContainers[0].Args, "-blob=blob-secret=blobstore.com")
+			assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts,
+				corev1.VolumeMount{
+					Name:      "secret-volume-7",
+					MountPath: "/var/build-secrets/blob-secret",
+				},
+			)
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
+				corev1.EnvVar{
+					Name:  "BLOB_AUTH",
+					Value: "true",
+				},
+			)
+		})
+
+		it("configures prepare with blob credentials when using helper", func() {
+			build.Spec.Source = corev1alpha1.SourceConfig{
+				Blob: &corev1alpha1.Blob{
+					URL:  "blobstore.com/source",
+					Auth: "helper",
+				},
+			}
+
+			pod, err := build.BuildPod(config, buildContext)
+			require.NoError(t, err)
+
+			assert.Equal(t, pod.Spec.InitContainers[0].Name, "prepare")
+			assert.Equal(t, pod.Spec.InitContainers[0].Image, config.BuildInitImage)
+
+			assert.NotContains(t, pod.Spec.InitContainers[0].Args, "-blob=blob-secret=blobstore.com")
+			assert.NotContains(t, pod.Spec.InitContainers[0].VolumeMounts,
+				corev1.VolumeMount{
+					Name:      "secret-volume-7",
+					MountPath: "/var/build-secrets/blob-secret",
+				},
+			)
+
+			assert.Contains(t, pod.Spec.InitContainers[0].Env,
+				corev1.EnvVar{
+					Name:  "BLOB_AUTH",
+					Value: "true",
+				},
+			)
 		})
 
 		it("configures prepare with the build configuration", func() {
@@ -1464,15 +1532,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						assertSecretPresent(t, pod, secretName)
 					}
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-8",
+						Name:      "secret-volume-9",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-9",
+						Name:      "secret-volume-10",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-10",
+						Name:      "secret-volume-11",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 					})
 
@@ -1674,15 +1742,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 						assertSecretPresent(t, pod, secretName)
 					}
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-8",
+						Name:      "secret-volume-9",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-9",
+						Name:      "secret-volume-10",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-						Name:      "secret-volume-10",
+						Name:      "secret-volume-11",
 						MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 					})
 					require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
@@ -1797,15 +1865,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assertSecretPresent(t, pod, secretName)
 				}
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-8",
+					Name:      "secret-volume-9",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-9",
+					Name:      "secret-volume-10",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-10",
+					Name:      "secret-volume-11",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 				})
 
@@ -1964,15 +2032,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assertSecretPresent(t, pod, secretName)
 				}
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-8",
+					Name:      "secret-volume-9",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-9",
+					Name:      "secret-volume-10",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-1",
 				})
 				require.Contains(t, pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-					Name:      "secret-volume-10",
+					Name:      "secret-volume-11",
 					MountPath: "/var/build-secrets/cosign/cosign-secret-no-password-2",
 				})
 
