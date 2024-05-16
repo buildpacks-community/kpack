@@ -19,7 +19,8 @@ import (
 var errUnexpectedBlobType = fmt.Errorf("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 
 type Fetcher struct {
-	Logger *log.Logger
+	Logger   *log.Logger
+	Keychain Keychain
 }
 
 func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadataDir string) error {
@@ -27,9 +28,21 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	if err != nil {
 		return err
 	}
+
+	var headers map[string]string
+	if f.Keychain != nil {
+		var auth string
+		auth, headers, err = f.Keychain.Resolve(blobURL)
+		if err != nil {
+			return fmt.Errorf("failed to resolve creds: %v", err)
+		}
+
+		headers["Authorization"] = auth
+	}
+
 	f.Logger.Printf("Downloading %s%s...", u.Host, u.Path)
 
-	file, err := downloadBlob(blobURL)
+	file, err := downloadBlob(blobURL, headers)
 	if err != nil {
 		return err
 	}
@@ -93,8 +106,17 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	return nil
 }
 
-func downloadBlob(blobURL string) (*os.File, error) {
-	resp, err := http.Get(blobURL)
+func downloadBlob(blobURL string, headers map[string]string) (*os.File, error) {
+	req, err := http.NewRequest(http.MethodGet, blobURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
