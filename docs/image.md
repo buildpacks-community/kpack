@@ -99,11 +99,16 @@ The `source` field is a composition of a source code location and a `subpath`. I
       blob:
         url: ""
         stripComponents: 0
+        auth: "" | "secret" | "helper"
       subPath: ""
     ```
     - `blob`: (Source Code is a blob/jar in a blobstore)
         - `url`: The URL of the source code blob. This blob needs to either be publicly accessible or have the access token in the URL
         - `stripComponents`: Optional number of directory components to strip from the blobs content when extracting.
+        - `auth`: Optional auth to use with blob source. Leave empty for no auth, "secret" for providing auth [via Secret](secrets.md#blob-secrets), or "helper" to use service account IAM (specific to each IaaS).
+             > Note: Only [Microsoft Azure](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview)
+             > and [Google Cloud Platform](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam)
+             > helpers are currently implemented, contributions are welcome to `pkg/blob/<iaas>_keychain.go`.
     - `subPath`: A subdirectory within the source folder where application code resides. Can be ignored if the source code resides at the `root` level.
 
 * Registry

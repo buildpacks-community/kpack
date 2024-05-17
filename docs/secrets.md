@@ -126,6 +126,26 @@ stringData:
   password: <generated-token>
 ```
 
+### Blob Secrets
+
+Secrets are used with a `kpack.io/blob` annotation that references a hostname for a blob location. Only one of username/password, bearer, or authorization is allowed.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blob-secret
+  annotations:
+    kpack.io/blob: my-blob-store.com
+stringData:
+  username: <username>
+  password: <password>
+
+  bearer: <oauth2 token>
+
+  authorization: <third-party-auth-header>
+```
+
 ### Service Account
 
 To use these secrets with kpack create a service account and reference the service account in image and build resources. When configuring the image resource, reference the `name` of your registry credential and the `name` of your git credential.
