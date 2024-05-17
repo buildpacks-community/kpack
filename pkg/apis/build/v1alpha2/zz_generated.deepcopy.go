@@ -498,6 +498,13 @@ func (in *BuilderSpec) DeepCopyInto(out *BuilderSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.AdditionalLabels != nil {
+		in, out := &in.AdditionalLabels, &out.AdditionalLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

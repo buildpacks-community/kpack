@@ -5721,6 +5721,9 @@
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "latestAttestationImage": {
+          "type": "string"
+        },
         "latestCacheImage": {
           "type": "string"
         },
@@ -6997,6 +7000,9 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"
