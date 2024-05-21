@@ -83,6 +83,10 @@ func (l *Listers) GetClusterStackLister() buildlisters.ClusterStackLister {
 	return buildlisters.NewClusterStackLister(l.indexerFor(&buildapi.ClusterStack{}))
 }
 
+func (l *Listers) GetClusterLifecycleLister() buildlisters.ClusterLifecycleLister {
+	return buildlisters.NewClusterLifecycleLister(l.indexerFor(&buildapi.ClusterLifecycle{}))
+}
+
 func (l *Listers) GetSourceResolverLister() buildlisters.SourceResolverLister {
 	return buildlisters.NewSourceResolverLister(l.indexerFor(&buildapi.SourceResolver{}))
 }
