@@ -1,5 +1,7 @@
 package config
 
+// TODO: pkg/config/lifecycle_provider.go can probably just be removed?
+
 import (
 	"context"
 	"sync/atomic"

@@ -24,11 +24,10 @@ type LifecycleProvider interface {
 }
 
 type RemoteBuilderCreator struct {
-	RegistryClient    RegistryClient
-	LifecycleProvider LifecycleProvider
-	KpackVersion      string
-	KeychainFactory   registry.KeychainFactory
-	ImageSigner       cosign.BuilderSigner
+	RegistryClient  RegistryClient
+	KpackVersion    string
+	KeychainFactory registry.KeychainFactory
+	ImageSigner     cosign.BuilderSigner
 }
 
 func (r *RemoteBuilderCreator) CreateBuilder(
@@ -64,12 +63,12 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		return buildapi.BuilderRecord{}, err
 	}
 
-	lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.LayerForOS(builderBldr.os)
-	if err != nil {
-		return buildapi.BuilderRecord{}, err
-	}
-
-	builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
+	// TODO: we need to get the lifecycleLayer & lifecycleMetadata from the clusterLifecycle
+	//lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.LayerForOS(builderBldr.os)
+	//if err != nil {
+	//	return buildapi.BuilderRecord{}, err
+	//}
+	//builderBldr.AddLifecycle(lifecycleLayer, lifecycleMetadata)
 
 	for _, group := range spec.Order {
 		buildpacks := make([]RemoteBuildpackRef, 0, len(group.Group))

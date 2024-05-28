@@ -55,7 +55,6 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
-	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
@@ -196,14 +195,11 @@ func main() {
 		RegistryClient: &registry.Client{},
 	}
 
-	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
-
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RegistryClient:    &registry.Client{},
-		KpackVersion:      cmd.Identifer,
-		LifecycleProvider: lifecycleProvider,
-		KeychainFactory:   keychainFactory,
-		ImageSigner:       cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
+		RegistryClient:  &registry.Client{},
+		KpackVersion:    cmd.Identifer,
+		KeychainFactory: keychainFactory,
+		ImageSigner:     cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
 	}
 
 	podProgressLogger := &buildchange.ProgressLogger{
@@ -213,8 +209,7 @@ func main() {
 	slsaAttester := slsa.Attester{
 		Version: cmd.Version,
 
-		LifecycleProvider: lifecycleProvider,
-		ImageReader:       slsa.NewImageReader(&registry.Client{}),
+		ImageReader: slsa.NewImageReader(&registry.Client{}),
 
 		Images:   images,
 		Features: featureFlags,
@@ -230,17 +225,12 @@ func main() {
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
+	builderController, _ := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
+	clusterBuilderController, _ := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
-	// TODO: should this be renamed to clusterLifecycleController? Should we create a new controller?
-	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
-
-	lifecycleProvider.AddEventHandler(builderResync)
-	lifecycleProvider.AddEventHandler(clusterBuilderResync)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -272,7 +262,6 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(clusterBuildpackController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
-		run(lifecycleController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		func(ctx context.Context) error {
 			return configMapWatcher.Start(ctx.Done())

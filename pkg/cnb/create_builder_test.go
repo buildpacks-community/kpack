@@ -196,13 +196,10 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		lifecycleProvider = &fakeLifecycleProvider{}
-
 		subject = RemoteBuilderCreator{
-			RegistryClient:    registryClient,
-			KpackVersion:      "v1.2.3 (git sha: abcdefg123456)",
-			KeychainFactory:   keychainFactory,
-			LifecycleProvider: lifecycleProvider,
+			RegistryClient:  registryClient,
+			KpackVersion:    "v1.2.3 (git sha: abcdefg123456)",
+			KeychainFactory: keychainFactory,
 			ImageSigner: &fakeBuilderSigner{
 				signBuilder: func(ctx context.Context, s string, secrets []*corev1.Secret, keychain authn.Keychain) ([]buildapi.CosignSignature, error) {
 					// no-op
@@ -353,29 +350,29 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			registryClient.AddImage(buildImage, buildImg, stackKeychain)
 
-			lifecycleProvider.metadata = LifecycleMetadata{
-				LifecycleInfo: LifecycleInfo{
-					Version: "0.5.0",
-				},
-				API: LifecycleAPI{
-					BuildpackVersion: "0.2",
-					PlatformVersion:  "0.1",
-				},
-				APIs: LifecycleAPIs{
-					Buildpack: APIVersions{
-						Deprecated: []string{"0.2"},
-						Supported:  []string{"0.3"},
-					},
-					Platform: APIVersions{
-						Deprecated: []string{"0.3"},
-						Supported:  []string{"0.4"},
-					},
-				},
-			}
-			lifecycleProvider.layers = map[string]v1.Layer{
-				"linux":   linuxLifecycle,
-				"windows": windowsLifecycle,
-			}
+			//lifecycleProvider.metadata = LifecycleMetadata{
+			//	LifecycleInfo: LifecycleInfo{
+			//		Version: "0.5.0",
+			//	},
+			//	API: LifecycleAPI{
+			//		BuildpackVersion: "0.2",
+			//		PlatformVersion:  "0.1",
+			//	},
+			//	APIs: LifecycleAPIs{
+			//		Buildpack: APIVersions{
+			//			Deprecated: []string{"0.2"},
+			//			Supported:  []string{"0.3"},
+			//		},
+			//		Platform: APIVersions{
+			//			Deprecated: []string{"0.3"},
+			//			Supported:  []string{"0.4"},
+			//		},
+			//	},
+			//}
+			//lifecycleProvider.layers = map[string]v1.Layer{
+			//	"linux":   linuxLifecycle,
+			//	"windows": windowsLifecycle,
+			//}
 		})
 
 		it("creates a custom builder with a relocated run image", func() {
@@ -744,25 +741,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("works with relaxed mixin contract", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.7",
-					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3"},
-						},
-						Platform: APIVersions{
-							Deprecated: []string{},
-							Supported:  []string{relaxedMixinMinPlatformAPI},
-						},
-					},
-				}
+				//lifecycleProvider.metadata = LifecycleMetadata{
+				//	LifecycleInfo: LifecycleInfo{
+				//		Version: "0.5.0",
+				//	},
+				//	API: LifecycleAPI{
+				//		BuildpackVersion: "0.2",
+				//		PlatformVersion:  "0.7",
+				//	},
+				//	APIs: LifecycleAPIs{
+				//		Buildpack: APIVersions{
+				//			Deprecated: []string{"0.2"},
+				//			Supported:  []string{"0.3"},
+				//		},
+				//		Platform: APIVersions{
+				//			Deprecated: []string{},
+				//			Supported:  []string{relaxedMixinMinPlatformAPI},
+				//		},
+				//	},
+				//}
 
 				addBuildpack(t, "io.buildpack.relaxed.mixin", "v4", "buildpack.1.com", "0.2",
 					[]corev1alpha1.BuildpackStack{
@@ -837,25 +834,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("supports anystack buildpacks", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.1",
-					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3", "0.4", "0.5"},
-						},
-						Platform: APIVersions{
-							Deprecated: []string{"0.3"},
-							Supported:  []string{"0.4"},
-						},
-					},
-				}
+				//lifecycleProvider.metadata = LifecycleMetadata{
+				//	LifecycleInfo: LifecycleInfo{
+				//		Version: "0.5.0",
+				//	},
+				//	API: LifecycleAPI{
+				//		BuildpackVersion: "0.2",
+				//		PlatformVersion:  "0.1",
+				//	},
+				//	APIs: LifecycleAPIs{
+				//		Buildpack: APIVersions{
+				//			Deprecated: []string{"0.2"},
+				//			Supported:  []string{"0.3", "0.4", "0.5"},
+				//		},
+				//		Platform: APIVersions{
+				//			Deprecated: []string{"0.3"},
+				//			Supported:  []string{"0.4"},
+				//		},
+				//	},
+				//}
 
 				addBuildpack(t, "anystack.buildpack", "v1", "buildpacks.com", "0.5",
 					[]corev1alpha1.BuildpackStack{
@@ -882,25 +879,25 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 		when("validating platform api", func() {
 			it("errors if no lifecycle platform api is supported", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.1",
-					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3"},
-						},
-						Platform: APIVersions{
-							Deprecated: []string{"0.1"},
-							Supported:  []string{"0.2", "0.999"},
-						},
-					},
-				}
+				//lifecycleProvider.metadata = LifecycleMetadata{
+				//	LifecycleInfo: LifecycleInfo{
+				//		Version: "0.5.0",
+				//	},
+				//	API: LifecycleAPI{
+				//		BuildpackVersion: "0.2",
+				//		PlatformVersion:  "0.1",
+				//	},
+				//	APIs: LifecycleAPIs{
+				//		Buildpack: APIVersions{
+				//			Deprecated: []string{"0.2"},
+				//			Supported:  []string{"0.3"},
+				//		},
+				//		Platform: APIVersions{
+				//			Deprecated: []string{"0.1"},
+				//			Supported:  []string{"0.2", "0.999"},
+				//		},
+				//	},
+				//}
 
 				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.999, expecting one of: 0.3, 0.4, 0.5, 0.6, 0.7, 0.8")
@@ -967,15 +964,6 @@ type fakeBuilderSigner struct {
 
 func (s *fakeBuilderSigner) SignBuilder(ctx context.Context, imageReference string, signingSecrets []*corev1.Secret, builderKeychain authn.Keychain) ([]buildapi.CosignSignature, error) {
 	return s.signBuilder(ctx, imageReference, signingSecrets, builderKeychain)
-}
-
-type fakeLifecycleProvider struct {
-	metadata LifecycleMetadata
-	layers   map[string]v1.Layer
-}
-
-func (p *fakeLifecycleProvider) LayerForOS(os string) (v1.Layer, LifecycleMetadata, error) {
-	return p.layers[os], p.metadata, nil
 }
 
 func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string) DescriptiveBuildpackInfo {
@@ -1081,24 +1069,6 @@ type layerIteratorTester int
 func (i *layerIteratorTester) testNextLayer(name string, test func(index int)) {
 	test(int(*i))
 	*i++
-}
-
-func layerToRemoteBuildpack(bpLayer buildpackLayer, layer *fakeLayer, secretRef registry.SecretRef) K8sRemoteBuildpack {
-	return K8sRemoteBuildpack{
-		Buildpack: corev1alpha1.BuildpackStatus{
-			BuildpackInfo: corev1alpha1.BuildpackInfo{
-				Id:      bpLayer.BuildpackInfo.Id,
-				Version: bpLayer.BuildpackInfo.Version,
-			},
-			DiffId:   layer.diffID,
-			Digest:   layer.digest,
-			Size:     layer.size,
-			Homepage: bpLayer.BuildpackInfo.Homepage,
-			API:      bpLayer.BuildpackLayerInfo.API,
-			Stacks:   bpLayer.BuildpackLayerInfo.Stacks,
-		},
-		SecretRef: secretRef,
-	}
 }
 
 func createRunImage(os string) v1.Image {

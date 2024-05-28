@@ -123,7 +123,7 @@ func NewController(
 	))
 
 	return impl, func() {
-		impl.GlobalResync(builderInformer.Informer())
+		impl.GlobalResync(builderInformer.Informer()) // TODO: can we remove this part?
 	}
 }
 

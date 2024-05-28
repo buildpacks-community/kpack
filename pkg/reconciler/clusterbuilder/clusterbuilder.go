@@ -116,7 +116,7 @@ func NewController(
 	//))
 
 	return impl, func() {
-		impl.GlobalResync(clusterBuilderInformer.Informer())
+		impl.GlobalResync(clusterBuilderInformer.Informer()) // TODO: can we remove this part?
 	}
 }
 
