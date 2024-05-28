@@ -105,6 +105,12 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
+	// TODO: how is this tested?
+	//clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
+	//	controller.EnsureTypeMeta(
+	//		c.Tracker.OnChanged,
+	//		buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
+	//))
 	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
