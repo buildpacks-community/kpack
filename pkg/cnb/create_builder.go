@@ -37,11 +37,11 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	stackKeychain authn.Keychain,
 	fetcher RemoteBuildpackFetcher,
 	clusterStack *buildapi.ClusterStack,
+	clusterLifecycle *buildapi.ClusterLifecycle,
 	spec buildapi.BuilderSpec,
 	serviceAccountSecrets []*corev1.Secret,
 	resolvedBuilderRef string,
 ) (buildapi.BuilderRecord, error) {
-
 	buildImage, _, err := r.RegistryClient.Fetch(stackKeychain, clusterStack.Status.BuildImage.LatestImage)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err

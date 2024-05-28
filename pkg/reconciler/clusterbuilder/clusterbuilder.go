@@ -43,6 +43,7 @@ type BuilderCreator interface {
 		stackKeychain authn.Keychain,
 		fetcher cnb.RemoteBuildpackFetcher,
 		clusterStack *buildapi.ClusterStack,
+		clusterLifecycle *buildapi.ClusterLifecycle,
 		spec buildapi.BuilderSpec,
 		serviceAccountSecrets []*corev1.Secret,
 		resolvedBuilderRef string,
@@ -245,6 +246,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		stackKeychain,
 		fetcher,
 		clusterStack,
+		nil, // TODO: fix
 		builder.Spec.BuilderSpec,
 		serviceAccountSecrets,
 		resolvedBuilderRef,
