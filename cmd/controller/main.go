@@ -196,10 +196,9 @@ func main() {
 	}
 
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RegistryClient:  &registry.Client{},
-		KpackVersion:    cmd.Identifer,
-		KeychainFactory: keychainFactory,
-		ImageSigner:     cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
+		RegistryClient: &registry.Client{},
+		KpackVersion:   cmd.Identifer,
+		ImageSigner:    cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
 	}
 
 	podProgressLogger := &buildchange.ProgressLogger{

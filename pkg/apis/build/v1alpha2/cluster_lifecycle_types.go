@@ -41,12 +41,49 @@ type ClusterLifecycleStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
-	// TODO: should the unique ID be the image digest reference?
-	// Id         string                      `json:"id,omitempty"`
-	Version       string   `json:"version,omitempty"`
-	BuildpackAPIs []string `json:"buildpackAPIs,omitempty"`
-	PlatformAPIs  []string `json:"platformAPIs,omitempty"`
+	Id            string   `json:"id,omitempty"`            // TODO: should this be LatestImage?
+	Version       string   `json:"version,omitempty"`       // TODO: remove
+	BuildpackAPIs []string `json:"buildpackAPIs,omitempty"` // TODO: remove
+	PlatformAPIs  []string `json:"platformAPIs,omitempty"`  // TODO: remove
+
+	LifecycleInfo
+
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `json:"api,omitempty"`
+	APIs LifecycleAPIs `json:"apis,omitempty"`
 }
+
+type LifecycleMetadata struct {
+}
+
+type LifecycleDescriptor struct {
+	Info LifecycleInfo `toml:"lifecycle"`
+
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `toml:"api" json:"api,omitempty"`
+	APIs LifecycleAPIs `toml:"apis" json:"apis,omitempty"`
+}
+
+type LifecycleInfo struct {
+	Version string `toml:"version" json:"version"`
+}
+
+type LifecycleAPI struct {
+	BuildpackVersion string `toml:"buildpack" json:"buildpack,omitempty"`
+	PlatformVersion  string `toml:"platform" json:"platform,omitempty"`
+}
+
+type LifecycleAPIs struct {
+	Buildpack APIVersions `toml:"buildpack" json:"buildpack"`
+	Platform  APIVersions `toml:"platform" json:"platform"`
+}
+
+type APIVersions struct {
+	Deprecated APISet `toml:"deprecated" json:"deprecated"`
+	Supported  APISet `toml:"supported" json:"supported"`
+}
+
+type APISet []string
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
