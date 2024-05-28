@@ -65,6 +65,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				ClusterStoreLister:     listers.GetClusterStoreLister(),
 				ClusterBuildpackLister: listers.GetClusterBuildpackLister(),
 				ClusterStackLister:     listers.GetClusterStackLister(),
+				ClusterLifecycleLister: listers.GetClusterLifecycleLister(),
 				SecretFetcher:          fakeSecretFetcher,
 			}
 			return &kreconciler.NetworkErrorReconciler{Reconciler: r}, rtesting.ActionRecorderList{fakeClient}, rtesting.EventList{Recorder: record.NewFakeRecorder(10)}
@@ -128,6 +129,33 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 		},
 	}
 
+	clusterLifecycle := &buildapi.ClusterLifecycle{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "some-lifecycle",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterLifecycle",
+			APIVersion: "kpack.io/v1alpha2",
+		},
+		Spec: buildapi.ClusterLifecycleSpec{
+			ServiceAccountRef: &corev1.ObjectReference{
+				Namespace: "some-sa-namespace",
+				Name:      "some-sa-name",
+			},
+		},
+		Status: buildapi.ClusterLifecycleStatus{
+			Status: corev1alpha1.Status{
+				ObservedGeneration: 0,
+				Conditions: []corev1alpha1.Condition{
+					{
+						Type:   corev1alpha1.ConditionReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
 	clusterBuildpack := &buildapi.ClusterBuildpack{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "buildpack.id.4",
@@ -152,6 +180,10 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				Stack: corev1.ObjectReference{
 					Kind: "Stack",
 					Name: "some-stack",
+				},
+				Lifecycle: corev1.ObjectReference{
+					Kind: "Lifecycle",
+					Name: "some-lifecycle",
 				},
 				Store: corev1.ObjectReference{
 					Kind: "ClusterStore",
@@ -264,6 +296,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,
@@ -285,6 +318,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				StackKeychain:      &registryfakes.FakeKeychain{},
 				Fetcher:            expectedFetcher,
 				ClusterStack:       clusterStack,
+				ClusterLifecycle:   clusterLifecycle,
 				BuilderSpec:        builder.Spec.BuilderSpec,
 				SigningSecrets:     []*corev1.Secret{},
 				ResolvedBuilderTag: expectedResolvedTag,
@@ -331,6 +365,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					expectedBuilder,
@@ -344,6 +379,8 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 				kreconciler.KeyForObject(clusterStore), expectedBuilder.NamespacedName()))
 			require.True(t, fakeTracker.IsTracking(
 				kreconciler.KeyForObject(clusterStack), builder.NamespacedName()))
+			require.True(t, fakeTracker.IsTracking(
+				kreconciler.KeyForObject(clusterLifecycle), builder.NamespacedName()))
 
 			require.True(t, fakeTracker.IsTrackingKind(
 				kreconciler.KeyForObject(clusterBuildpack).GroupKind, builder.NamespacedName()))
@@ -394,6 +431,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,
@@ -435,6 +473,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,
@@ -610,6 +649,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,
@@ -653,6 +693,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,
@@ -695,6 +736,7 @@ func testClusterBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 			rt.Test(rtesting.TableRow{
 				Key: builderKey,
 				Objects: []runtime.Object{
+					clusterLifecycle,
 					clusterStack,
 					clusterStore,
 					builder,

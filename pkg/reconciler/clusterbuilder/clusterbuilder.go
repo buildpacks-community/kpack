@@ -74,6 +74,7 @@ func NewController(
 		ClusterStoreLister:     clusterStoreInformer.Lister(),
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
 		ClusterStackLister:     clusterStackInformer.Lister(),
+		ClusterLifecycleLister: clusterLifecycleInformer.Lister(),
 		SecretFetcher:          secretFetcher,
 	}
 
@@ -122,6 +123,7 @@ type Reconciler struct {
 	ClusterStoreLister     buildlisters.ClusterStoreLister
 	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
 	ClusterStackLister     buildlisters.ClusterStackLister
+	ClusterLifecycleLister buildlisters.ClusterLifecycleLister
 	SecretFetcher          Fetcher
 }
 
@@ -168,6 +170,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		},
 	}, builder.NamespacedName())
 
+	c.Tracker.Track(reconciler.Key{
+		NamespacedName: types.NamespacedName{
+			Name:      builder.Spec.Lifecycle.Name,
+			Namespace: corev1.NamespaceAll,
+		},
+		GroupKind: schema.GroupKind{
+			Group: "kpack.io",
+			Kind:  buildapi.ClusterLifecycleKind,
+		},
+	}, builder.NamespacedName())
+
 	var (
 		clusterStore *buildapi.ClusterStore
 		err          error
@@ -209,6 +222,11 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
+	clusterLifecycle, err := c.ClusterLifecycleLister.Get(builder.Spec.Lifecycle.Name)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
 	builderKeychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
 		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
@@ -246,7 +264,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		stackKeychain,
 		fetcher,
 		clusterStack,
-		nil, // TODO: fix
+		clusterLifecycle,
 		builder.Spec.BuilderSpec,
 		serviceAccountSecrets,
 		resolvedBuilderRef,
