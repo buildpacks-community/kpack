@@ -41,7 +41,8 @@ type BuilderCreator interface {
 	CreateBuilder(
 		ctx context.Context,
 		builderKeychain authn.Keychain,
-		keychain authn.Keychain,
+		stackKeychain authn.Keychain,
+		lifecycleKeychain authn.Keychain,
 		fetcher cnb.RemoteBuildpackFetcher,
 		clusterStack *buildapi.ClusterStack,
 		clusterLifecycle *buildapi.ClusterLifecycle,
@@ -67,7 +68,7 @@ func NewController(
 	clusterStackInformer buildinformers.ClusterStackInformer,
 	clusterLifecycleInformer buildinformers.ClusterLifecycleInformer,
 	secretFetcher Fetcher,
-) (*controller.Impl, func()) {
+) *controller.Impl {
 	c := &Reconciler{
 		Client:                 opt.Client,
 		BuilderLister:          builderInformer.Lister(),
@@ -105,12 +106,11 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
-	// TODO: how is this tested?
-	//clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
-	//	controller.EnsureTypeMeta(
-	//		c.Tracker.OnChanged,
-	//		buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
-	//))
+	clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
+	))
 	buildpackInformer.Informer().AddEventHandler(controller.HandleAll(
 		controller.EnsureTypeMeta(
 			c.Tracker.OnChanged,
@@ -122,9 +122,7 @@ func NewController(
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterBuildpackKind)),
 	))
 
-	return impl, func() {
-		impl.GlobalResync(builderInformer.Informer()) // TODO: can we remove this part?
-	}
+	return impl
 }
 
 type Reconciler struct {
@@ -185,7 +183,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 
 	c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
-			Name:      builder.Spec.Lifecycle.Name, // TODO: check
+			Name:      builder.Spec.Lifecycle.Name, // TODO: confirm this is what we want
 			Namespace: metav1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
@@ -245,7 +243,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, errors.Errorf("Error: clusterstack '%s' is not ready", clusterStack.Name)
 	}
 
-	clusterLifecycle, err := c.ClusterLifecycleLister.Get(builder.Spec.Lifecycle.Name) // TODO: check
+	clusterLifecycle, err := c.ClusterLifecycleLister.Get(builder.Spec.Lifecycle.Name) // TODO: confirm this is what we want
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -269,6 +267,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		}
 	}
 
+	lifecycleKeychain := builderKeychain
+	if clusterLifecycle.Spec.ServiceAccountRef != nil {
+		lifecycleKeychain, err = c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			ServiceAccount: clusterLifecycle.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterLifecycle.Spec.ServiceAccountRef.Namespace,
+		})
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
 	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, buildpacks, clusterBuildpacks)
 
 	serviceAccountSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, builder.Spec.ServiceAccount(), builder.Namespace)
@@ -285,6 +294,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		ctx,
 		builderKeychain,
 		stackKeychain,
+		lifecycleKeychain,
 		fetcher,
 		clusterStack,
 		clusterLifecycle,

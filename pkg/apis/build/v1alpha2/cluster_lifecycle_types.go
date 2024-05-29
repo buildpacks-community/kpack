@@ -41,7 +41,7 @@ type ClusterLifecycleStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
-	Id      string `json:"id,omitempty"` // TODO: should this be LatestImage?
+	Id      string `json:"id,omitempty"` // TODO: confirm, should this be LatestImage?
 	Version string `json:"version,omitempty"`
 
 	// Deprecated: Use `LifecycleAPIs` instead

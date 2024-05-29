@@ -25,7 +25,7 @@ type BuildMetadata struct {
 	LatestImage       string                             `json:"latestImage"`
 	StackID           string                             `json:"stackID"`
 	StackRunImage     string                             `json:"stackRunImage"`
-	// TODO: lifecycle git commit is also available
+	// TODO: confirm, lifecycle git commit is also available - do we want it?
 	LifecycleVersion string `json:"lifecycleVersion"`
 }
 

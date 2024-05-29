@@ -96,7 +96,7 @@ func (a *Attester) AttestBuild(build *buildv1alpha2.Build, buildMetadata *cnb.Bu
 				ID: string(builderId),
 				Version: map[string]string{
 					"kpack":     a.Version,
-					"lifecycle": "", // TODO: we need to get the lifecycle version from the build metadata
+					"lifecycle": "1.2.3", // TODO: we need to get the lifecycle version from the build metadata
 				},
 				BuilderDependencies: builderDeps,
 			},

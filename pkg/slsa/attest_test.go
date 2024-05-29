@@ -125,8 +125,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 	attester := &Attester{
 		Version: "v0.0.0",
 
-		LifecycleProvider: &fakeLifecycleProvider{},
-		ImageReader:       r,
+		ImageReader: r,
 
 		Images: config.Images{
 			BuildInitImage: "build-init-image", BuildInitWindowsImage: "build-init-windows-image",
@@ -298,15 +297,4 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 			)
 		})
 	})
-}
-
-type fakeLifecycleProvider struct {
-}
-
-func (l *fakeLifecycleProvider) Metadata() (cnb.LifecycleMetadata, error) {
-	return cnb.LifecycleMetadata{
-		LifecycleInfo: cnb.LifecycleInfo{
-			Version: "1.2.3",
-		},
-	}, nil
 }

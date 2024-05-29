@@ -41,6 +41,7 @@ type BuilderCreator interface {
 		ctx context.Context,
 		builderKeychain authn.Keychain,
 		stackKeychain authn.Keychain,
+		lifecycleKeychain authn.Keychain,
 		fetcher cnb.RemoteBuildpackFetcher,
 		clusterStack *buildapi.ClusterStack,
 		clusterLifecycle *buildapi.ClusterLifecycle,
@@ -65,7 +66,7 @@ func NewController(
 	clusterStackInformer buildinformers.ClusterStackInformer,
 	clusterLifecycleInformer buildinformers.ClusterLifecycleInformer,
 	secretFetcher Fetcher,
-) (*controller.Impl, func()) {
+) *controller.Impl {
 	c := &Reconciler{
 		Client:                 opt.Client,
 		ClusterBuilderLister:   clusterBuilderInformer.Lister(),
@@ -108,16 +109,13 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
-	// TODO: how is this tested?
-	//clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
-	//	controller.EnsureTypeMeta(
-	//		c.Tracker.OnChanged,
-	//		buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
-	//))
+	clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
+	))
 
-	return impl, func() {
-		impl.GlobalResync(clusterBuilderInformer.Informer()) // TODO: can we remove this part?
-	}
+	return impl
 }
 
 type Reconciler struct {
@@ -252,6 +250,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		}
 	}
 
+	lifecycleKeychain := builderKeychain
+	if clusterLifecycle.Spec.ServiceAccountRef != nil {
+		lifecycleKeychain, err = c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			ServiceAccount: clusterLifecycle.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterLifecycle.Spec.ServiceAccountRef.Namespace,
+		})
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
 	fetcher := cnb.NewRemoteBuildpackFetcher(c.KeychainFactory, clusterStore, nil, clusterBuildpacks)
 
 	serviceAccountSecrets, err := c.SecretFetcher.SecretsForServiceAccount(ctx, builder.Spec.ServiceAccountRef.Name, builder.Spec.ServiceAccountRef.Namespace)
@@ -268,6 +277,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		ctx,
 		builderKeychain,
 		stackKeychain,
+		lifecycleKeychain,
 		fetcher,
 		clusterStack,
 		clusterLifecycle,

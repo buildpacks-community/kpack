@@ -34,6 +34,7 @@ func (f *FakeBuilderCreator) CreateBuilder(
 	ctx context.Context,
 	builderKeychain authn.Keychain,
 	stackKeychain authn.Keychain,
+	lifecycleKeychain authn.Keychain,
 	fetcher cnb.RemoteBuildpackFetcher,
 	clusterStack *buildapi.ClusterStack,
 	clusterLifecycle *buildapi.ClusterLifecycle,

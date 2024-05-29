@@ -29,6 +29,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	ctx context.Context,
 	builderKeychain authn.Keychain,
 	stackKeychain authn.Keychain,
+	lifecycleKeychain authn.Keychain,
 	fetcher RemoteBuildpackFetcher,
 	clusterStack *buildapi.ClusterStack,
 	clusterLifecycle *buildapi.ClusterLifecycle,
@@ -44,7 +45,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
-	lifecycleImage, _, err := r.RegistryClient.Fetch(stackKeychain, clusterLifecycle.Status.ResolvedClusterLifecycle.Id) // TODO: use lifecycle keychain
+	lifecycleImage, _, err := r.RegistryClient.Fetch(lifecycleKeychain, clusterLifecycle.Status.ResolvedClusterLifecycle.Id)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -128,7 +129,6 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 }
 
 func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcrv1.Image, os string) (lifecycleLayer ggcrv1.Layer, lifecycleMetadata LifecycleMetadata, err error) {
-	// TODO: do we really need to define LifecycleMetadata in this package?
 	lifecycleMetadata = LifecycleMetadata{
 		LifecycleInfo: LifecycleInfo{
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,

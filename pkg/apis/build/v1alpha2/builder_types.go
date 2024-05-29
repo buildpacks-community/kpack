@@ -34,7 +34,7 @@ type Builder struct {
 type BuilderSpec struct {
 	Tag   string                 `json:"tag,omitempty"`
 	Stack corev1.ObjectReference `json:"stack,omitempty"`
-	// TODO: should `json:"lifecycle,...` actually be `json:"clusterlifecycle,...`?
+	// TODO: confirm, should `json:"lifecycle,...` actually be `json:"clusterlifecycle,...`?
 	Lifecycle corev1.ObjectReference `json:"lifecycle,omitempty"`
 	Store     corev1.ObjectReference `json:"store,omitempty"`
 	// +listType
