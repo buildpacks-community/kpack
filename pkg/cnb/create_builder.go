@@ -131,7 +131,7 @@ func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcr
 	// TODO: do we really need to define LifecycleMetadata in this package?
 	lifecycleMetadata = LifecycleMetadata{
 		LifecycleInfo: LifecycleInfo{
-			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.LifecycleInfo.Version,
+			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
 		},
 		API: LifecycleAPI{
 			BuildpackVersion: clusterLifecycle.Status.ResolvedClusterLifecycle.API.BuildpackVersion,

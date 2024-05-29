@@ -128,9 +128,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					ObservedGeneration: 11,
 				},
 				ResolvedClusterLifecycle: buildapi.ResolvedClusterLifecycle{
-					Version:       "some-version",
-					BuildpackAPIs: []string{"some-buildpack-api"},
-					PlatformAPIs:  []string{"some-platform-api"},
+					Version: "some-version",
 				},
 			},
 		}
@@ -351,10 +349,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			// cluster lifecycle
 
 			clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-				Id: lifecycleImage,
-				LifecycleInfo: buildapi.LifecycleInfo{
-					Version: "0.5.0",
-				},
+				Id:      lifecycleImage,
+				Version: "0.5.0",
 				API: buildapi.LifecycleAPI{
 					BuildpackVersion: "0.2",
 					PlatformVersion:  "0.1",
@@ -764,10 +760,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			it("works with relaxed mixin contract", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id: lifecycleImage,
-					LifecycleInfo: buildapi.LifecycleInfo{
-						Version: "0.5.0",
-					},
+					Id:      lifecycleImage,
+					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.7",
@@ -858,10 +852,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			it("supports anystack buildpacks", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id: lifecycleImage,
-					LifecycleInfo: buildapi.LifecycleInfo{
-						Version: "0.5.0",
-					},
+					Id:      lifecycleImage,
+					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.1",
@@ -904,10 +896,8 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		when("validating platform api", func() {
 			it("errors if no lifecycle platform api is supported", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id: lifecycleImage,
-					LifecycleInfo: buildapi.LifecycleInfo{
-						Version: "0.5.0",
-					},
+					Id:      lifecycleImage,
+					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.1",

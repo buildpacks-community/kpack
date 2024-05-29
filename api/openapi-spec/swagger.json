@@ -5703,7 +5703,14 @@
     },
     "kpack.build.v1alpha2.BuildStatus": {
       "type": "object",
+      "required": [
+        "Lifecycle"
+      ],
       "properties": {
+        "Lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedClusterLifecycle"
+        },
         "buildMetadata": {
           "type": "array",
           "items": {
@@ -5889,6 +5896,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -5932,6 +5943,10 @@
         },
         "latestImage": {
           "type": "string"
+        },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedClusterLifecycle"
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -6132,6 +6147,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6324,12 +6343,14 @@
     "kpack.build.v1alpha2.ClusterLifecycleStatus": {
       "type": "object",
       "properties": {
-        "buildpackAPIs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "default": ""
-          }
+        "api": {
+          "description": "Deprecated: Use `LifecycleAPIs` instead",
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
+        },
+        "apis": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
         },
         "conditions": {
           "description": "Conditions the latest available observations of a resource's current state.",
@@ -6341,20 +6362,15 @@
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "id": {
+          "type": "string"
+        },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
           "type": "integer",
           "format": "int64"
         },
-        "platformAPIs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "default": ""
-          }
-        },
         "version": {
-          "description": "Id         string                      `json:\"id,omitempty\"`",
           "type": "string"
         }
       }
@@ -6934,6 +6950,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6976,22 +6996,19 @@
     "kpack.build.v1alpha2.ResolvedClusterLifecycle": {
       "type": "object",
       "properties": {
-        "buildpackAPIs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "default": ""
-          }
+        "api": {
+          "description": "Deprecated: Use `LifecycleAPIs` instead",
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
         },
-        "platformAPIs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "default": ""
-          }
+        "apis": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
+        },
+        "id": {
+          "type": "string"
         },
         "version": {
-          "description": "Id         string                      `json:\"id,omitempty\"`",
           "type": "string"
         }
       }

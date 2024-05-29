@@ -71,9 +71,7 @@ func testClusterLifecycleReconciler(t *testing.T, when spec.G, it spec.S) {
 	when("#Reconcile", func() {
 		it("saves metadata to the status", func() {
 			resolvedClusterLifecycle := buildapi.ResolvedClusterLifecycle{
-				Version:       "some-version",
-				BuildpackAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
-				PlatformAPIs:  []string{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13"},
+				Version: "some-version",
 			}
 			fakeClusterLifecycleReader.ReadReturns(resolvedClusterLifecycle, nil)
 			emptySecretRef := registry.SecretRef{}
@@ -115,9 +113,7 @@ func testClusterLifecycleReconciler(t *testing.T, when spec.G, it spec.S) {
 
 		it("does not update the status with no status change", func() {
 			resolvedClusterLifecycle := buildapi.ResolvedClusterLifecycle{
-				Version:       "some-version",
-				BuildpackAPIs: []string{"0.7", "0.8", "0.9", "0.10", "0.11"},
-				PlatformAPIs:  []string{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13"},
+				Version: "some-version",
 			}
 			fakeClusterLifecycleReader.ReadReturns(resolvedClusterLifecycle, nil)
 			emptySecretRef := registry.SecretRef{}
@@ -222,6 +218,5 @@ func testClusterLifecycleReconciler(t *testing.T, when spec.G, it spec.S) {
 			actualKeyChain, _ := fakeClusterLifecycleReader.ReadArgsForCall(0)
 			assert.Equal(t, expectedKeyChain, actualKeyChain)
 		})
-
 	})
 }

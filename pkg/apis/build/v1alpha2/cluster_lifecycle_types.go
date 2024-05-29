@@ -41,31 +41,12 @@ type ClusterLifecycleStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
-	Id            string   `json:"id,omitempty"`            // TODO: should this be LatestImage?
-	Version       string   `json:"version,omitempty"`       // TODO: remove
-	BuildpackAPIs []string `json:"buildpackAPIs,omitempty"` // TODO: remove
-	PlatformAPIs  []string `json:"platformAPIs,omitempty"`  // TODO: remove
-
-	LifecycleInfo
+	Id      string `json:"id,omitempty"` // TODO: should this be LatestImage?
+	Version string `json:"version,omitempty"`
 
 	// Deprecated: Use `LifecycleAPIs` instead
 	API  LifecycleAPI  `json:"api,omitempty"`
 	APIs LifecycleAPIs `json:"apis,omitempty"`
-}
-
-type LifecycleMetadata struct {
-}
-
-type LifecycleDescriptor struct {
-	Info LifecycleInfo `toml:"lifecycle"`
-
-	// Deprecated: Use `LifecycleAPIs` instead
-	API  LifecycleAPI  `toml:"api" json:"api,omitempty"`
-	APIs LifecycleAPIs `toml:"apis" json:"apis,omitempty"`
-}
-
-type LifecycleInfo struct {
-	Version string `toml:"version" json:"version"`
 }
 
 type LifecycleAPI struct {
