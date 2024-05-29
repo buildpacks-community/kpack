@@ -57,7 +57,8 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 	}
 
 	buildMetadata := &cnb.BuildMetadata{
-		LatestImage: "some-registry.io/some/repo@sha256:27227f3eaf20afcd527f31bcaaa1a10d14f30c2a99b313c86b981906c54c07b9",
+		LatestImage:      "some-registry.io/some/repo@sha256:27227f3eaf20afcd527f31bcaaa1a10d14f30c2a99b313c86b981906c54c07b9",
+		LifecycleVersion: "1.2.3",
 	}
 
 	pod := &corev1.Pod{
@@ -137,7 +138,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
 		Features: config.FeatureFlags{InjectedSidecarSupport: false},
 	}
 
-	it("", func() {
+	it("returns the expected, properly indented statement", func() {
 		stmt, err := attester.AttestBuild(build, buildMetadata, pod, authn.DefaultKeychain, UnsignedBuildID)
 		require.NoError(t, err)
 
