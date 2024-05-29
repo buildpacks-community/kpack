@@ -52,6 +52,7 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/buildpack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuildpack"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterlifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
@@ -195,6 +196,10 @@ func main() {
 		RegistryClient: &registry.Client{},
 	}
 
+	remoteLifecycleReader := &cnb.RemoteLifecycleReader{
+		RegistryClient: &registry.Client{},
+	}
+
 	builderCreator := &cnb.RemoteBuilderCreator{
 		RegistryClient: &registry.Client{},
 		KpackVersion:   cmd.Identifer,
@@ -230,6 +235,7 @@ func main() {
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
+	clusterLifecycleController := clusterlifecycle.NewController(ctx, options, keychainFactory, clusterLifecycleInformer, remoteLifecycleReader)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
@@ -254,6 +260,7 @@ func main() {
 	err = runGroup(
 		ctx,
 		run(clusterStackController, routinesPerController),
+		run(clusterLifecycleController, routinesPerController),
 		run(imageController, routinesPerController),
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),

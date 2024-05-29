@@ -28,7 +28,6 @@ const (
 
 //go:generate counterfeiter . ClusterLifecycleReader
 type ClusterLifecycleReader interface {
-	// TODO: add implementation
 	Read(keychain authn.Keychain, clusterLifecycleSpec buildapi.ClusterLifecycleSpec) (buildapi.ResolvedClusterLifecycle, error)
 }
 
