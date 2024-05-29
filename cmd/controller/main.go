@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +13,6 @@ import (
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -153,9 +151,6 @@ func main() {
 		k8sClient,
 		options.ResyncPeriod,
 		informers.WithNamespace(system.Namespace()),
-		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
-			options.FieldSelector = fmt.Sprintf("metadata.namespace=%s,metadata.name=%s", system.Namespace(), config.LifecycleConfigName)
-		}),
 	)
 	lifecycleConfigmapInformer := lifecycleConfigmapInformerFactory.Core().V1().ConfigMaps()
 
