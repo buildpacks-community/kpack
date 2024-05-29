@@ -705,7 +705,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			it("errors with unsupported os", func() {
 				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
-				require.EqualError(t, err, fmt.Sprintf("validating lifecycle image %s: expected OS to be %s but got %s", lifecycleImage, os, wrongOS))
+				require.EqualError(t, err, fmt.Sprintf("validating lifecycle image %s: expected platform to be %s// but got %s//", lifecycleImage, os, wrongOS))
 			})
 		})
 

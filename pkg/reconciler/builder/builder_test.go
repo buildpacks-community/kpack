@@ -367,7 +367,7 @@ func testBuilderReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					BuilderMetadata: []corev1alpha1.BuildpackMetadata{},
-					Stack: corev1alpha1.BuildStack{ // TODO: should we check lifecycle on the expected builder?
+					Stack: corev1alpha1.BuildStack{
 						RunImage: "example.com/run-image@sha256:123456",
 						ID:       "fake.stack.id",
 					},

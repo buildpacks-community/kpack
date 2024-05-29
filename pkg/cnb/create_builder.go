@@ -63,7 +63,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		return buildapi.BuilderRecord{}, err
 	}
 
-	lifecycleLayer, lifecycleMetadata, err := layerForOS(clusterLifecycle, lifecycleImage, builderBldr.os)
+	lifecycleLayer, lifecycleMetadata, err := layerForOS(clusterLifecycle, lifecycleImage, builderBldr)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -128,7 +128,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	return builder, nil
 }
 
-func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcrv1.Image, os string) (lifecycleLayer ggcrv1.Layer, lifecycleMetadata LifecycleMetadata, err error) {
+func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcrv1.Image, builderBlder *builderBlder) (lifecycleLayer ggcrv1.Layer, lifecycleMetadata LifecycleMetadata, err error) {
 	lifecycleMetadata = LifecycleMetadata{
 		LifecycleInfo: LifecycleInfo{
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
@@ -169,12 +169,15 @@ func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcr
 		if err != nil || cfg == nil {
 			return fmt.Errorf("failed to get config file: %w", err)
 		}
-		if cfg.OS != os { // TODO: check arch
+		if !platformMatches(
+			builderBlder.os, builderBlder.arch, builderBlder.archVariant,
+			cfg.OS, cfg.Architecture, cfg.Variant,
+		) {
 			return fmt.Errorf(
-				"validating lifecycle image %s: expected OS to be %s but got %s",
+				"validating lifecycle image %s: expected platform to be %s/%s/%s but got %s/%s/%s",
 				clusterLifecycle.Status.ResolvedClusterLifecycle.Id,
-				os,
-				cfg.OS,
+				builderBlder.os, builderBlder.arch, builderBlder.archVariant,
+				cfg.OS, cfg.Architecture, cfg.Variant,
 			)
 		}
 		return nil
@@ -184,6 +187,19 @@ func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcr
 	}
 
 	return lifecycleLayer, lifecycleMetadata, nil
+}
+
+func platformMatches(wantOS, wantArch, wantArchVariant string, gotOS, gotArch, gotArchVariant string) bool {
+	if wantOS != gotOS {
+		return false
+	}
+	if wantArch != "" && gotArch != "" && wantArch != gotArch {
+		return false
+	}
+	if wantArchVariant != "" && gotArchVariant != "" && wantArchVariant != gotArchVariant {
+		return false
+	}
+	return true
 }
 
 func toCNBAPISet(from buildapi.APISet) APISet {

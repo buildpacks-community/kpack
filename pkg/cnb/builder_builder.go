@@ -51,6 +51,8 @@ type builderBlder struct {
 	runImage          string
 	mixins            []string
 	os                string
+	arch              string
+	archVariant       string
 	additionalLabels  map[string]string
 }
 
@@ -67,6 +69,8 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.Clus
 	}
 
 	bb.os = file.OS
+	bb.arch = file.Architecture
+	bb.archVariant = file.Variant
 	bb.baseImage = baseImage
 	bb.stackId = clusterStack.Status.Id
 	bb.mixins = clusterStack.Status.Mixins
