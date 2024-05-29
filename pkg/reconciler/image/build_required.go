@@ -33,8 +33,8 @@ func newBuildRequiredResult(summary buildchange.ChangeSummary) buildRequiredResu
 func isBuildRequired(img *buildapi.Image,
 	lastBuild *buildapi.Build,
 	srcResolver *buildapi.SourceResolver,
-	builder buildapi.BuilderResource) (buildRequiredResult, error) {
-
+	builder buildapi.BuilderResource,
+) (buildRequiredResult, error) {
 	result := buildRequiredResult{ConditionStatus: corev1.ConditionUnknown}
 	if !srcResolver.Ready() || !builder.Ready() {
 		return result, nil
@@ -46,6 +46,7 @@ func isBuildRequired(img *buildapi.Image,
 		Process(configChange(img, lastBuild, srcResolver)).
 		Process(buildpackChange(lastBuild, builder)).
 		Process(stackChange(lastBuild, builder)).
+		Process(lifecycleChange(lastBuild, builder)).
 		Summarize()
 	if err != nil {
 		return result, err
@@ -130,4 +131,14 @@ func stackChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) bu
 	oldRunImageRefStr := lastBuild.Status.Stack.RunImage
 	newRunImageRefStr := builder.RunImage()
 	return buildchange.NewStackChange(oldRunImageRefStr, newRunImageRefStr)
+}
+
+func lifecycleChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource) buildchange.Change {
+	if lastBuild == nil || !lastBuild.IsSuccess() {
+		return nil
+	}
+
+	oldLifecycleImageRefStr := lastBuild.Status.Lifecycle.Id
+	newLifecycleImageRefStr := builder.LifecycleImage()
+	return buildchange.NewLifecycleChange(oldLifecycleImageRefStr, newLifecycleImageRefStr)
 }
