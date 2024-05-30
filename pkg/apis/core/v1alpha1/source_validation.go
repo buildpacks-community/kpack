@@ -47,6 +47,10 @@ func (b *Blob) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
+	if b.Auth != "" && b.Auth != "helper" && b.Auth != "secret" {
+		return apis.ErrInvalidValue(b.Auth, "auth", "must be one of '', 'helper', or 'secret'")
+	}
+
 	fieldError := validate.FieldNotEmpty(b.URL, "url").
 		Also(validate.StripComponents(b.StripComponents))
 

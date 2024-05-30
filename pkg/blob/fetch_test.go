@@ -168,4 +168,55 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.html"), 0, metadataDir)
 		require.EqualError(t, err, "unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 	})
+
+	when("there's auth required", func() {
+		var (
+			handler = &authHandler{http.FileServer(http.Dir("./testdata")), nil}
+			server  = httptest.NewServer(handler)
+		)
+
+		it("doesn't send headers when there's no keychain", func() {
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.zip"), 0, metadataDir)
+			require.NoError(t, err)
+
+			require.NotContains(t, handler.headers, "Authorization")
+		})
+
+		it("uses the auth and headers from the keychain", func() {
+			fetcher = &blob.Fetcher{
+				Logger:   log.New(output, "", 0),
+				Keychain: &fakeKeychain{"some-auth", map[string]string{"Some-Header": "some-value"}, nil},
+			}
+
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.zip"), 0, metadataDir)
+			require.NoError(t, err)
+			headers := handler.headers
+
+			require.Contains(t, headers, "Authorization")
+			require.Equal(t, []string{"some-auth"}, headers["Authorization"])
+
+			require.Contains(t, headers, "Some-Header")
+			require.Equal(t, []string{"some-value"}, headers["Some-Header"])
+		})
+
+		it("surfaces the error", func() {
+			fetcher = &blob.Fetcher{
+				Logger:   log.New(output, "", 0),
+				Keychain: &fakeKeychain{"", nil, fmt.Errorf("some-error")},
+			}
+
+			err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "test.zip"), 0, metadataDir)
+			require.EqualError(t, err, "failed to resolve creds: some-error")
+		})
+	})
+}
+
+type authHandler struct {
+	h       http.Handler
+	headers http.Header
+}
+
+func (a *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.headers = r.Header.Clone()
+	a.h.ServeHTTP(w, r)
 }

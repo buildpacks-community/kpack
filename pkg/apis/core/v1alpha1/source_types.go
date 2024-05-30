@@ -65,10 +65,19 @@ func (in *Git) ImagePullSecretsVolume(name string) corev1.Volume {
 	}
 }
 
+type BlobAuthKind string
+
+const (
+	BlobAuthNone   BlobAuthKind = ""
+	BlobAuthHelper BlobAuthKind = "helper"
+	BlobAuthSecret BlobAuthKind = "secret"
+)
+
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 type Blob struct {
 	URL             string `json:"url"`
+	Auth            string `json:"auth,omitempty"`
 	StripComponents int64  `json:"stripComponents,omitempty"`
 }
 
@@ -90,6 +99,10 @@ func (b *Blob) BuildEnvVars() []corev1.EnvVar {
 		{
 			Name:  "BLOB_STRIP_COMPONENTS",
 			Value: strconv.FormatInt(b.StripComponents, 10),
+		},
+		{
+			Name:  "BLOB_AUTH",
+			Value: strconv.FormatBool(b.Auth != string(BlobAuthNone)),
 		},
 	}
 }
@@ -200,6 +213,7 @@ func (gs *ResolvedGitSource) IsPollable() bool {
 // +k8s:deepcopy-gen=true
 type ResolvedBlobSource struct {
 	URL             string `json:"url"`
+	Auth            string `json:"auth,omitempty"`
 	SubPath         string `json:"subPath,omitempty"`
 	StripComponents int64  `json:"stripComponents,omitempty"`
 }
@@ -208,6 +222,7 @@ func (bs *ResolvedBlobSource) SourceConfig() SourceConfig {
 	return SourceConfig{
 		Blob: &Blob{
 			URL:             bs.URL,
+			Auth:            bs.Auth,
 			StripComponents: bs.StripComponents,
 		},
 		SubPath: bs.SubPath,

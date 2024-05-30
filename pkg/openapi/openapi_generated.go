@@ -2396,6 +2396,12 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Format: "",
 						},
 					},
+					"latestAttestationImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"podName": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -4781,6 +4787,12 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int64",
+						},
+					},
+					"auth": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
