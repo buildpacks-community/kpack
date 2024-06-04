@@ -14,7 +14,7 @@ type RemoteLifecycleReader struct {
 }
 
 func (r *RemoteLifecycleReader) Read(keychain authn.Keychain, clusterLifecycleSpec buildapi.ClusterLifecycleSpec) (buildapi.ResolvedClusterLifecycle, error) {
-	lifecycleImg, lifecycleIdentifier, err := r.RegistryClient.Fetch(keychain, clusterLifecycleSpec.Image)
+	lifecycleImg, _, err := r.RegistryClient.Fetch(keychain, clusterLifecycleSpec.Image)
 	if err != nil {
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
@@ -26,7 +26,6 @@ func (r *RemoteLifecycleReader) Read(keychain authn.Keychain, clusterLifecycleSp
 	}
 
 	return buildapi.ResolvedClusterLifecycle{
-		Id:      lifecycleIdentifier,
 		Version: lifecycleMd.LifecycleInfo.Version,
 		API: buildapi.LifecycleAPI{
 			BuildpackVersion: lifecycleMd.API.BuildpackVersion,

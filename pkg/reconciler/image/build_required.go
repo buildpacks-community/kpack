@@ -138,7 +138,7 @@ func lifecycleChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource
 		return nil
 	}
 
-	oldLifecycleImageRefStr := lastBuild.Status.Lifecycle.Id
-	newLifecycleImageRefStr := builder.LifecycleImage()
-	return buildchange.NewLifecycleChange(oldLifecycleImageRefStr, newLifecycleImageRefStr)
+	oldLifecycle := lastBuild.Status.LifecycleCommit
+	newLifecycle := builder.LifecycleCommit()
+	return buildchange.NewLifecycleChange(oldLifecycle, newLifecycle)
 }

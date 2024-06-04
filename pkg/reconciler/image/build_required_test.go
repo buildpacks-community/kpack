@@ -63,9 +63,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
-		LatestRunImage:       "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-		LatestLifecycleImage: "some.registry.io/lifecycle-image@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-		Kind:                 buildapi.BuilderKind,
+		LatestRunImage:        "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+		LatestLifecycleCommit: "some-git-commit",
+		Kind:                  buildapi.BuilderKind,
 	}
 
 	latestBuild := &buildapi.Build{
@@ -93,10 +93,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stack.bionic",
 			},
-			LatestImage: "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-			Lifecycle: buildapi.ResolvedClusterLifecycle{
-				Id: "some.registry.io/lifecycle-image@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-			},
+			LatestImage:     "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+			LifecycleCommit: "some-git-commit",
 		},
 	}
 
@@ -403,14 +401,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder has a different lifecycle image", func() {
-				builder.LatestLifecycleImage = "some.registry.io/lifecycle-image@sha256:7aa7a5359173d05b63cfd682e3c38487f3cb4f7f1d60659fe59fab1505977d4c"
+				builder.LatestLifecycleCommit = "some-new-git-commit"
 
 				expectedChanges := testhelpers.CompactJSON(`
 [
   {
     "reason": "LIFECYCLE",
-    "old": "sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-    "new": "sha256:7aa7a5359173d05b63cfd682e3c38487f3cb4f7f1d60659fe59fab1505977d4c"
+    "old": "some-git-commit",
+    "new": "some-new-git-commit"
   }
 ]`)
 
@@ -823,16 +821,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 }
 
 type TestBuilderResource struct {
-	BuilderReady         bool
-	BuilderUpToDate      bool
-	BuilderMetadata      []corev1alpha1.BuildpackMetadata
-	ImagePullSecrets     []corev1.LocalObjectReference
-	LatestImage          string
-	LatestRunImage       string
-	LatestLifecycleImage string
-	Name                 string
-	Namespace            string
-	Kind                 string
+	BuilderReady          bool
+	BuilderUpToDate       bool
+	BuilderMetadata       []corev1alpha1.BuildpackMetadata
+	ImagePullSecrets      []corev1.LocalObjectReference
+	LatestImage           string
+	LatestRunImage        string
+	LatestLifecycleCommit string
+	Name                  string
+	Namespace             string
+	Kind                  string
 }
 
 func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
@@ -858,8 +856,8 @@ func (t TestBuilderResource) RunImage() string {
 	return t.LatestRunImage
 }
 
-func (t TestBuilderResource) LifecycleImage() string {
-	return t.LatestLifecycleImage
+func (t TestBuilderResource) LifecycleCommit() string {
+	return t.LatestLifecycleCommit
 }
 
 func (t TestBuilderResource) GetName() string {

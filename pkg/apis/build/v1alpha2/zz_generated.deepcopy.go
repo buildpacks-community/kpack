@@ -365,7 +365,6 @@ func (in *BuildStatus) DeepCopyInto(out *BuildStatus) {
 		copy(*out, *in)
 	}
 	out.Stack = in.Stack
-	in.Lifecycle.DeepCopyInto(&out.Lifecycle)
 	if in.StepStates != nil {
 		in, out := &in.StepStates, &out.StepStates
 		*out = make([]v1.ContainerState, len(*in))

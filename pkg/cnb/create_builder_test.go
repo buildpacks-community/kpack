@@ -45,7 +45,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		relocatedRunImageTag = "custom/example:test-builder-run-image"
 		buildImageTag        = "paketo-buildpacks/build:full-cnb"
 		runImageTag          = "paketo-buildpacks/run:full-cnb"
-		lifecycleImage       = "index.docker.io/buildpacksio/lifecycle@sha256:6dd262f754439ce98c901214934e587fd8a00be8b2b1cdf0b62cdade3d93379b"
 		lifecycleImageTag    = "buildpacksio/lifecycle:latest"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
@@ -345,12 +344,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			lConfig.OS = os
 			lifecycleImg, err = mutate.ConfigFile(lifecycleImg, config)
 
-			registryClient.AddImage(lifecycleImage, lifecycleImg, lifecycleKeychain)
+			registryClient.AddImage(lifecycleImageTag, lifecycleImg, lifecycleKeychain)
 
 			// cluster lifecycle
 
 			clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-				Id:      lifecycleImage,
 				Version: "0.5.0",
 				API: buildapi.LifecycleAPI{
 					BuildpackVersion: "0.2",
@@ -700,12 +698,12 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				cfg.OS = wrongOS
 				lifecycleImg, err = mutate.ConfigFile(lifecycleImg, cfg)
 				require.NoError(t, err)
-				registryClient.AddImage(lifecycleImage, lifecycleImg, lifecycleKeychain)
+				registryClient.AddImage(lifecycleImageTag, lifecycleImg, lifecycleKeychain)
 			})
 
 			it("errors with unsupported os", func() {
 				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
-				require.EqualError(t, err, fmt.Sprintf("validating lifecycle image %s: expected platform to be %s// but got %s//", lifecycleImage, os, wrongOS))
+				require.EqualError(t, err, fmt.Sprintf("validating lifecycle image %s: expected platform to be %s// but got %s//", lifecycleImageTag, os, wrongOS))
 			})
 		})
 
@@ -761,7 +759,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			it("works with relaxed mixin contract", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id:      lifecycleImage,
 					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
@@ -853,7 +850,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			it("supports anystack buildpacks", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id:      lifecycleImage,
 					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
@@ -897,7 +893,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		when("validating platform api", func() {
 			it("errors if no lifecycle platform api is supported", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Id:      lifecycleImage,
 					Version: "0.5.0",
 					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",

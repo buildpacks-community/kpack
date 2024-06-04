@@ -2389,10 +2389,18 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 							Ref:     ref("github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack"),
 						},
 					},
-					"Lifecycle": {
+					"lifecycleVersion": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedClusterLifecycle"),
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"lifecycleCommit": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"latestImage": {
@@ -2457,11 +2465,11 @@ func schema_pkg_apis_build_v1alpha2_BuildStatus(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"Lifecycle"},
+				Required: []string{"lifecycleVersion", "lifecycleCommit"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.ResolvedClusterLifecycle", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
+			"github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildStack", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.BuildpackMetadata", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition", "k8s.io/api/core/v1.ContainerState"},
 	}
 }
 
@@ -3548,13 +3556,13 @@ func schema_pkg_apis_build_v1alpha2_ClusterLifecycleStatus(ref common.ReferenceC
 							},
 						},
 					},
-					"id": {
+					"version": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
-					"version": {
+					"commit": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -4766,13 +4774,13 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterLifecycle(ref common.Referenc
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"id": {
+					"version": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
-					"version": {
+					"commit": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

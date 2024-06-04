@@ -57,8 +57,8 @@ func (b *DuckBuilder) RunImage() string {
 	return b.Status.Stack.RunImage
 }
 
-func (b *DuckBuilder) LifecycleImage() string {
-	return b.Status.Lifecycle.Id
+func (b *DuckBuilder) LifecycleCommit() string {
+	return b.Status.Lifecycle.Commit
 }
 
 func (b *DuckBuilder) ConditionReadyMessage() string {

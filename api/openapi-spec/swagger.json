@@ -5704,13 +5704,10 @@
     "kpack.build.v1alpha2.BuildStatus": {
       "type": "object",
       "required": [
-        "Lifecycle"
+        "lifecycleVersion",
+        "lifecycleCommit"
       ],
       "properties": {
-        "Lifecycle": {
-          "default": {},
-          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedClusterLifecycle"
-        },
         "buildMetadata": {
           "type": "array",
           "items": {
@@ -5736,6 +5733,14 @@
         },
         "latestImage": {
           "type": "string"
+        },
+        "lifecycleCommit": {
+          "type": "string",
+          "default": ""
+        },
+        "lifecycleVersion": {
+          "type": "string",
+          "default": ""
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -6352,6 +6357,9 @@
           "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
         },
+        "commit": {
+          "type": "string"
+        },
         "conditions": {
           "description": "Conditions the latest available observations of a resource's current state.",
           "type": "array",
@@ -6361,9 +6369,6 @@
           },
           "x-kubernetes-patch-merge-key": "type",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "id": {
-          "type": "string"
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -7005,7 +7010,7 @@
           "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
         },
-        "id": {
+        "commit": {
           "type": "string"
         },
         "version": {

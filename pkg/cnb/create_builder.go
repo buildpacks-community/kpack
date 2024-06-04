@@ -45,7 +45,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
-	lifecycleImage, _, err := r.RegistryClient.Fetch(lifecycleKeychain, clusterLifecycle.Status.ResolvedClusterLifecycle.Id)
+	lifecycleImage, _, err := r.RegistryClient.Fetch(lifecycleKeychain, clusterLifecycle.Spec.Image) // TODO: should there be a "latest image" on the status?
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -117,6 +117,12 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 			RunImage: relocatedRunImage,
 			ID:       clusterStack.Status.Id,
 		},
+		Lifecycle: buildapi.ResolvedClusterLifecycle{ // TODO: test
+			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
+			Commit:  clusterLifecycle.Status.ResolvedClusterLifecycle.Commit,
+			API:     clusterLifecycle.Status.ResolvedClusterLifecycle.API,
+			APIs:    clusterLifecycle.Status.ResolvedClusterLifecycle.APIs,
+		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),
 		Order:                   builderBldr.order,
 		ObservedStackGeneration: clusterStack.Status.ObservedGeneration,
@@ -175,7 +181,7 @@ func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcr
 		) {
 			return fmt.Errorf(
 				"validating lifecycle image %s: expected platform to be %s/%s/%s but got %s/%s/%s",
-				clusterLifecycle.Status.ResolvedClusterLifecycle.Id,
+				clusterLifecycle.Spec.Image,
 				builderBlder.os, builderBlder.arch, builderBlder.archVariant,
 				cfg.OS, cfg.Architecture, cfg.Variant,
 			)

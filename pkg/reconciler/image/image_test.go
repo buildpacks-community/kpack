@@ -167,7 +167,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 				ID:       "io.buildpacks.stacks.bionic",
 			},
 			Lifecycle: buildapi.ResolvedClusterLifecycle{
-				Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+				Commit: "some-commit",
 			},
 			Status: corev1alpha1.Status{
 				Conditions: corev1alpha1.Conditions{
@@ -1467,9 +1467,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-								},
+								LifecycleCommit: "some-commit",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1630,9 +1628,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-								},
+								LifecycleCommit: "some-commit",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1746,7 +1742,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:       "io.buildpacks.stacks.bionic",
 								},
 								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+									Commit: "some-commit",
 								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
@@ -1796,9 +1792,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-								},
+								LifecycleCommit: "some-commit",
 								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -1926,7 +1920,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:       "io.buildpacks.stacks.bionic",
 								},
 								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
+									Commit: "some-commit",
 								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
@@ -1976,9 +1970,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "gcr.io/test-project/install/run@sha256:42841631725942db48b7ba8b788b97374a2ada34c84ee02ca5e02ef3d4b0dfca",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-								},
+								LifecycleCommit: "some-commit",
 								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -2097,7 +2089,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									ID:       "io.buildpacks.stacks.bionic",
 								},
 								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:7aa7a5359173d05b63cfd682e3c38487f3cb4f7f1d60659fe59fab1505977d4c", // new lifecycle digest
+									Commit: "some-new-commit",
 								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
@@ -2147,9 +2139,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee", // old lifecycle digest
-								},
+								LifecycleCommit: "some-commit",
 								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -2182,8 +2172,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 [
   {
     "reason": "LIFECYCLE",
-    "old": "sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-    "new": "sha256:7aa7a5359173d05b63cfd682e3c38487f3cb4f7f1d60659fe59fab1505977d4c"
+    "old": "some-commit",
+    "new": "some-new-commit"
   }
 ]`),
 								},
@@ -2509,9 +2499,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
-								Lifecycle: buildapi.ResolvedClusterLifecycle{
-									Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-								},
+								LifecycleCommit: "some-commit",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -2942,9 +2930,7 @@ func builds(image *buildapi.Image, sourceResolver *buildapi.SourceResolver, coun
 					RunImage: runImageRef,
 					ID:       "io.buildpacks.stacks.bionic",
 				},
-				Lifecycle: buildapi.ResolvedClusterLifecycle{
-					Id: "some/lifecycle@sha256:01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee",
-				},
+				LifecycleCommit: "some-commit",
 				Status: corev1alpha1.Status{
 					Conditions: corev1alpha1.Conditions{
 						condition,

@@ -10,7 +10,7 @@ type BuilderResource interface {
 	UpToDate() bool
 	BuildpackMetadata() corev1alpha1.BuildpackMetadataList
 	RunImage() string
-	LifecycleImage() string
+	LifecycleCommit() string
 	GetKind() string
 	ConditionReadyMessage() string
 }
