@@ -42,7 +42,6 @@ type ClusterLifecycleStatus struct {
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
 	Version string `json:"version,omitempty"`
-	Commit  string `json:"commit,omitempty"`
 
 	// Deprecated: Use `LifecycleAPIs` instead
 	API  LifecycleAPI  `json:"api,omitempty"`

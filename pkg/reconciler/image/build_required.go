@@ -138,7 +138,7 @@ func lifecycleChange(lastBuild *buildapi.Build, builder buildapi.BuilderResource
 		return nil
 	}
 
-	oldLifecycle := lastBuild.Status.LifecycleCommit
-	newLifecycle := builder.LifecycleCommit()
+	oldLifecycle := lastBuild.Status.LifecycleVersion
+	newLifecycle := builder.LifecycleVersion()
 	return buildchange.NewLifecycleChange(oldLifecycle, newLifecycle)
 }

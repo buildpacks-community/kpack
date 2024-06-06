@@ -119,7 +119,6 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		},
 		Lifecycle: buildapi.ResolvedClusterLifecycle{ // TODO: test
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
-			Commit:  clusterLifecycle.Status.ResolvedClusterLifecycle.Commit,
 			API:     clusterLifecycle.Status.ResolvedClusterLifecycle.API,
 			APIs:    clusterLifecycle.Status.ResolvedClusterLifecycle.APIs,
 		},

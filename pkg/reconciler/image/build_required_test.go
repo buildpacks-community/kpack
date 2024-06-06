@@ -63,9 +63,9 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 		BuilderMetadata: []corev1alpha1.BuildpackMetadata{
 			{Id: "buildpack.matches", Version: "1"},
 		},
-		LatestRunImage:        "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-		LatestLifecycleCommit: "some-git-commit",
-		Kind:                  buildapi.BuilderKind,
+		LatestRunImage:         "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+		LatestLifecycleVersion: "some-version",
+		Kind:                   buildapi.BuilderKind,
 	}
 
 	latestBuild := &buildapi.Build{
@@ -93,8 +93,8 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 				RunImage: "some.registry.io/run-image@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stack.bionic",
 			},
-			LatestImage:     "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
-			LifecycleCommit: "some-git-commit",
+			LatestImage:      "some.registry.io/built@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+			LifecycleVersion: "some-version",
 		},
 	}
 
@@ -401,14 +401,14 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("true if builder has a different lifecycle image", func() {
-				builder.LatestLifecycleCommit = "some-new-git-commit"
+				builder.LatestLifecycleVersion = "some-new-version"
 
 				expectedChanges := testhelpers.CompactJSON(`
 [
   {
     "reason": "LIFECYCLE",
-    "old": "some-git-commit",
-    "new": "some-new-git-commit"
+    "old": "some-version",
+    "new": "some-new-version"
   }
 ]`)
 
@@ -821,16 +821,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 }
 
 type TestBuilderResource struct {
-	BuilderReady          bool
-	BuilderUpToDate       bool
-	BuilderMetadata       []corev1alpha1.BuildpackMetadata
-	ImagePullSecrets      []corev1.LocalObjectReference
-	LatestImage           string
-	LatestRunImage        string
-	LatestLifecycleCommit string
-	Name                  string
-	Namespace             string
-	Kind                  string
+	BuilderReady           bool
+	BuilderUpToDate        bool
+	BuilderMetadata        []corev1alpha1.BuildpackMetadata
+	ImagePullSecrets       []corev1.LocalObjectReference
+	LatestImage            string
+	LatestRunImage         string
+	LatestLifecycleVersion string
+	Name                   string
+	Namespace              string
+	Kind                   string
 }
 
 func (t TestBuilderResource) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
@@ -856,8 +856,8 @@ func (t TestBuilderResource) RunImage() string {
 	return t.LatestRunImage
 }
 
-func (t TestBuilderResource) LifecycleCommit() string {
-	return t.LatestLifecycleCommit
+func (t TestBuilderResource) LifecycleVersion() string {
+	return t.LatestLifecycleVersion
 }
 
 func (t TestBuilderResource) GetName() string {
