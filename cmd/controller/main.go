@@ -28,7 +28,6 @@ import (
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 
 	"github.com/pivotal/kpack/cmd"
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
@@ -147,12 +146,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
-	lifecycleConfigmapInformerFactory := informers.NewSharedInformerFactoryWithOptions(
-		k8sClient,
-		options.ResyncPeriod,
-		informers.WithNamespace(system.Namespace()),
-	)
-	lifecycleConfigmapInformer := lifecycleConfigmapInformerFactory.Core().V1().ConfigMaps()
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		ImageFetcher: &registry.Client{},
@@ -235,7 +228,6 @@ func main() {
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
 	k8sInformerFactory.Start(stopChan)
-	lifecycleConfigmapInformerFactory.Start(stopChan)
 
 	waitForSync(stopChan,
 		buildInformer.Informer(),
@@ -243,7 +235,6 @@ func main() {
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
-		lifecycleConfigmapInformer.Informer(),
 		builderInformer.Informer(),
 		buildpackInformer.Informer(),
 		clusterBuilderInformer.Informer(),
