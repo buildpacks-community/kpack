@@ -7,7 +7,7 @@ import (
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 )
 
-const lifecycleMetadataLabel = "io.buildpacks.lifecycle.metadata"
+const lifecycleBuilderMetadataLabel = "io.buildpacks.builder.metadata"
 
 type RemoteLifecycleReader struct {
 	RegistryClient RegistryClient
@@ -19,26 +19,32 @@ func (r *RemoteLifecycleReader) Read(keychain authn.Keychain, clusterLifecycleSp
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
 
-	lifecycleMd := LifecycleMetadata{}
-	err = imagehelpers.GetLabel(lifecycleImg, lifecycleMetadataLabel, &lifecycleMd)
+	deprecatedLifecycleMD := LifecycleMetadata{}
+	err = imagehelpers.GetLabel(lifecycleImg, lifecycleBuilderMetadataLabel, &deprecatedLifecycleMD)
+	if err != nil {
+		return buildapi.ResolvedClusterLifecycle{}, err
+	}
+
+	lifecycleMD := LifecycleAPIs{}
+	err = imagehelpers.GetLabel(lifecycleImg, lifecycleApisLabel, &deprecatedLifecycleMD)
 	if err != nil {
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
 
 	return buildapi.ResolvedClusterLifecycle{
-		Version: lifecycleMd.LifecycleInfo.Version,
+		Version: deprecatedLifecycleMD.LifecycleInfo.Version,
 		API: buildapi.LifecycleAPI{
-			BuildpackVersion: lifecycleMd.API.BuildpackVersion,
-			PlatformVersion:  lifecycleMd.API.PlatformVersion,
+			BuildpackVersion: deprecatedLifecycleMD.API.BuildpackVersion,
+			PlatformVersion:  deprecatedLifecycleMD.API.PlatformVersion,
 		},
 		APIs: buildapi.LifecycleAPIs{
 			Buildpack: buildapi.APIVersions{
-				Deprecated: toBuildAPISet(lifecycleMd.APIs.Buildpack.Deprecated),
-				Supported:  toBuildAPISet(lifecycleMd.APIs.Buildpack.Supported),
+				Deprecated: toBuildAPISet(lifecycleMD.Buildpack.Deprecated),
+				Supported:  toBuildAPISet(lifecycleMD.Buildpack.Supported),
 			},
 			Platform: buildapi.APIVersions{
-				Deprecated: toBuildAPISet(lifecycleMd.APIs.Platform.Deprecated),
-				Supported:  toBuildAPISet(lifecycleMd.APIs.Platform.Supported),
+				Deprecated: toBuildAPISet(lifecycleMD.Platform.Deprecated),
+				Supported:  toBuildAPISet(lifecycleMD.Platform.Supported),
 			},
 		},
 	}, nil
