@@ -248,6 +248,10 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, err
 	}
 
+	if !clusterLifecycle.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
+		return buildapi.BuilderRecord{}, errors.Errorf("Error: clusterlifecycle '%s' is not ready", clusterLifecycle.Name)
+	}
+
 	builderKeychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: builder.Spec.ServiceAccount(),
 		Namespace:      builder.Namespace,
