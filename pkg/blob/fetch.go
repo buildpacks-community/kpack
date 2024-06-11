@@ -126,7 +126,13 @@ func downloadBlob(blobURL string, headers map[string]string) (*os.File, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get blob %s", blobURL)
+		var body []byte
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get blob %s: %d %s", blobURL, resp.StatusCode, http.StatusText(resp.StatusCode))
+		}
+
+		return nil, fmt.Errorf("failed to get blob %s: %d %s: %s", blobURL, resp.StatusCode, http.StatusText(resp.StatusCode), string(body))
 	}
 
 	file, err := os.CreateTemp("", "")
