@@ -254,10 +254,11 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 		it("generates the same image tag", func() {
 			// attest image via cosign
 			cmd := attest.AttestCommand{
-				KeyOpts:       options.KeyOpts{KeyRef: privKeyFile},
-				TlogUpload:    false,
-				PredicateType: options.PredicateSLSA1,
-				PredicatePath: predicateFile,
+				KeyOpts:        options.KeyOpts{KeyRef: privKeyFile},
+				TlogUpload:     false,
+				PredicateType:  options.PredicateSLSA1,
+				PredicatePath:  predicateFile,
+				RekorEntryType: "dsse",
 			}
 			err := cmd.Exec(ctx, digest)
 			require.NoError(t, err)
