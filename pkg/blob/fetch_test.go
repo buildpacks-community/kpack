@@ -156,7 +156,7 @@ func testBlobFetcher(t *testing.T, when spec.G, it spec.S) {
 	it("errors when url is inaccessible", func() {
 		url := fmt.Sprintf("%s/%s", server.URL, "invalid.zip")
 		err := fetcher.Fetch(dir, fmt.Sprintf("%s/%s", server.URL, "invalid.zip"), 0, metadataDir)
-		require.EqualError(t, err, fmt.Sprintf("failed to get blob %s", url))
+		require.EqualError(t, err, fmt.Sprintf("failed to get blob %s: 404 Not Found: 404 page not found\n", url))
 	})
 
 	it("errors when the blob file type is unexpected", func() {
