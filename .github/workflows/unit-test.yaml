@@ -17,4 +17,4 @@ jobs:
     - name: Run tests
       run: make unit-ci
     - name: Report coverage
-      uses: codecov/codecov-action@v4.1.0
+      uses: codecov/codecov-action@v4.5.0
