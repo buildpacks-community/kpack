@@ -303,7 +303,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup crane
-      uses: imjasonh/setup-crane@v0.3
+      uses: imjasonh/setup-crane@v0.4
 
     - name: Setup carvel
       uses: carvel-dev/setup-action@v2
@@ -478,7 +478,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup crane
-      uses: imjasonh/setup-crane@v0.3
+      uses: imjasonh/setup-crane@v0.4
 
     - name: Setup carvel
       uses: carvel-dev/setup-action@v2
