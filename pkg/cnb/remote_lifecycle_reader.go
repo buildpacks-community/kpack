@@ -19,20 +19,20 @@ func (r *RemoteLifecycleReader) Read(keychain authn.Keychain, clusterLifecycleSp
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
 
-	deprecatedLifecycleMD := LifecycleMetadata{}
+	deprecatedLifecycleMD := LifecycleDescriptor{}
 	err = imagehelpers.GetLabel(lifecycleImg, lifecycleBuilderMetadataLabel, &deprecatedLifecycleMD)
 	if err != nil {
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
 
 	lifecycleMD := LifecycleAPIs{}
-	err = imagehelpers.GetLabel(lifecycleImg, lifecycleApisLabel, &deprecatedLifecycleMD)
+	err = imagehelpers.GetLabel(lifecycleImg, lifecycleApisLabel, &lifecycleMD)
 	if err != nil {
 		return buildapi.ResolvedClusterLifecycle{}, err
 	}
 
 	return buildapi.ResolvedClusterLifecycle{
-		Version: deprecatedLifecycleMD.LifecycleInfo.Version,
+		Version: deprecatedLifecycleMD.Info.Version,
 		API: buildapi.LifecycleAPI{
 			BuildpackVersion: deprecatedLifecycleMD.API.BuildpackVersion,
 			PlatformVersion:  deprecatedLifecycleMD.API.PlatformVersion,
