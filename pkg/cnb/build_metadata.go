@@ -25,6 +25,8 @@ type BuildMetadata struct {
 	LatestImage       string                             `json:"latestImage"`
 	StackID           string                             `json:"stackID"`
 	StackRunImage     string                             `json:"stackRunImage"`
+	LifecycleVersion  string                             `json:"lifecycleVersion"`
+	LifecycleCommit   string                             `json:"lifecycleCommit"`
 }
 
 type ImageFetcher interface {
@@ -48,6 +50,7 @@ func (r *RemoteMetadataRetriever) GetBuildMetadata(builtImageRef, cacheTag strin
 		LatestCacheImage:  cacheImageRef,
 		StackRunImage:     buildImg.stack.RunImage,
 		StackID:           buildImg.stack.ID,
+		LifecycleVersion:  buildImg.lifecycle.version,
 	}, nil
 }
 
@@ -107,6 +110,7 @@ func readBuiltImage(appImage ggcrv1.Image, appImageId string) (builtImage, error
 			RunImage: baseImageRef.Context().String() + "@" + runImageRef.Identifier(),
 			ID:       stackId,
 		},
+		lifecycle: builtImageLifecycle{version: buildMetadata.Launcher.Version},
 	}, nil
 }
 
@@ -114,6 +118,11 @@ type builtImage struct {
 	identifier        string
 	buildpackMetadata []lifecyclebuildpack.GroupElement
 	stack             builtImageStack
+	lifecycle         builtImageLifecycle
+}
+
+type builtImageLifecycle struct {
+	version string
 }
 
 type appLayersMetadata struct {

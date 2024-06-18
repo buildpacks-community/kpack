@@ -48,6 +48,10 @@ func (c *FakeKpackV1alpha2) ClusterBuildpacks() v1alpha2.ClusterBuildpackInterfa
 	return &FakeClusterBuildpacks{c}
 }
 
+func (c *FakeKpackV1alpha2) ClusterLifecycles() v1alpha2.ClusterLifecycleInterface {
+	return &FakeClusterLifecycles{c}
+}
+
 func (c *FakeKpackV1alpha2) ClusterStacks() v1alpha2.ClusterStackInterface {
 	return &FakeClusterStacks{c}
 }
