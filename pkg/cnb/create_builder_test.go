@@ -380,6 +380,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
 			assert.Equal(t, os, builderRecord.OS)
+			assert.Equal(t, builderRecord.Lifecycle, buildapi.ResolvedClusterLifecycle{
+				Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
+				API:     clusterLifecycle.Status.ResolvedClusterLifecycle.API,
+				APIs:    clusterLifecycle.Status.ResolvedClusterLifecycle.APIs,
+			})
 
 			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
