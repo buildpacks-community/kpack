@@ -108,6 +108,8 @@ spec:
           value: config-observability
         - name: METRICS_DOMAIN
           value: kpack.io
+        - name: SCALING_FACTOR
+          value: '1'
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

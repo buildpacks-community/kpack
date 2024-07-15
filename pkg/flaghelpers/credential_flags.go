@@ -23,7 +23,20 @@ func (i *CredentialsFlags) Set(value string) error {
 
 func GetEnvBool(key string, defaultValue bool) bool {
 	s := os.Getenv(key)
+	if s == "" {
+		return defaultValue
+	}
 	v, err := strconv.ParseBool(s)
+	if err != nil {
+		return defaultValue
+	}
+	return v
+}
+
+
+func GetEnvInt(key string, defaultValue int) int {
+	s := os.Getenv(key)
+	v, err := strconv.Atoi(s)
 	if err != nil {
 		return defaultValue
 	}
