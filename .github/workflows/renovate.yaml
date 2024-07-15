@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.1.1
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@v40.1.6
+        uses: renovatebot/github-action@v40.2.2
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
         env:
@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.1.1
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@v40.1.6
+        uses: renovatebot/github-action@v40.2.2
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
         env:
