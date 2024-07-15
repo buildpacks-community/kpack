@@ -63,8 +63,8 @@ import (
 )
 
 const (
-	routinesPerController = 2
-	component             = "controller"
+	defaultRoutinesPerController = 2
+	component                    = "controller"
 )
 
 var (
@@ -91,6 +91,7 @@ func main() {
 	flag.BoolVar(&cfg.EnablePriorityClasses, "enable-priority-classes", flaghelpers.GetEnvBool("ENABLE_PRIORITY_CLASSES", false), "if set to true, enables different pod priority classes for normal builds and automated builds")
 	flag.StringVar(&cfg.MaximumPlatformApiVersion, "maximum-platform-api-version", os.Getenv("MAXIMUM_PLATFORM_API_VERSION"), "The maximum allowed platform api version a build can utilize")
 	flag.BoolVar(&cfg.SshTrustUnknownHosts, "insecure-ssh-trust-unknown-hosts", flaghelpers.GetEnvBool("INSECURE_SSH_TRUST_UNKNOWN_HOSTS", true), "if set to true, automatically trust unknown hosts when using git ssh source")
+	flag.IntVar(&cfg.ScalingFactor, "scaling-factor", flaghelpers.GetEnvInt("SCALING_FACTOR", 1), "The scaling factor to scale client-side rate limits by")
 
 	flag.BoolVar(&featureFlags.InjectedSidecarSupport, "injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
 	flag.BoolVar(&featureFlags.GenerateSlsaAttestation, "experimental-generate-slsa-attestation", flaghelpers.GetEnvBool("EXPERIMENTAL_GENERATE_SLSA_ATTESTATION", false), "if set to true, SLSA attestations will be generated for each build")
@@ -260,6 +261,7 @@ func main() {
 		clusterStackInformer.Informer(),
 	)
 
+	routinesPerController := defaultRoutinesPerController * cfg.ScalingFactor
 	err = runGroup(
 		ctx,
 		run(clusterStackController, routinesPerController),
@@ -311,13 +313,13 @@ func runGroup(ctx context.Context, fns ...func(ctx context.Context) error) error
 const controllerCount = 7
 
 // lifted from knative.dev/pkg/injection/sharedmain
-func genericControllerSetup(ctx context.Context, cfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server) {
+func genericControllerSetup(ctx context.Context, restCfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *http.Server) {
 	metrics.MemStatsOrDie(ctx)
 
 	// Adjust our client's rate limits based on the number of controllers we are running.
-	cfg.QPS = float32(controllerCount) * rest.DefaultQPS
-	cfg.Burst = controllerCount * rest.DefaultBurst
-	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
+	restCfg.QPS = float32(controllerCount) * rest.DefaultQPS * float32(cfg.ScalingFactor)
+	restCfg.Burst = controllerCount * rest.DefaultBurst * cfg.ScalingFactor
+	ctx, _ = injection.Default.SetupInformers(ctx, restCfg)
 
 	logger, atomicLevel := sharedmain.SetupLoggerOrDie(ctx, component)
 	ctx = logging.WithLogger(ctx, logger)

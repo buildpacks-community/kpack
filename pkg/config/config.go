@@ -9,6 +9,7 @@ type Config struct {
 	EnablePriorityClasses     bool   `json:"enablePriorityClasses"`
 	MaximumPlatformApiVersion string `json:"maximumPlatformApiVersion"`
 	SshTrustUnknownHosts      bool   `json:"sshTrustUnknownHosts"`
+	ScalingFactor             int    `json:"scalingFactor"`
 }
 
 type FeatureFlags struct {
