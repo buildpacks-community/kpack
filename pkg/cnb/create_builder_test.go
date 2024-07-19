@@ -21,7 +21,6 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
-	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/registry/imagehelpers"
 	"github.com/pivotal/kpack/pkg/registry/registryfakes"
 )
@@ -46,6 +45,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		relocatedRunImageTag = "custom/example:test-builder-run-image"
 		buildImageTag        = "paketo-buildpacks/build:full-cnb"
 		runImageTag          = "paketo-buildpacks/run:full-cnb"
+		lifecycleImageTag    = "buildpacksio/lifecycle:latest"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
 
@@ -56,28 +56,15 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	var (
 		registryClient = registryfakes.NewFakeClient()
 
-		keychainFactory = &registryfakes.FakeKeychainFactory{}
-		builderKeychain = authn.NewMultiKeychain(authn.DefaultKeychain)
-		stackKeychain   = authn.NewMultiKeychain(authn.DefaultKeychain)
-		secretRef       = registry.SecretRef{}
-		runImage        = createRunImage(os)
-		runImageDigest  = digest(runImage)
-		runImageRef     = fmt.Sprintf("%s@%s", runImageTag, runImageDigest)
-		ctx             = context.Background()
+		builderKeychain   = authn.NewMultiKeychain(authn.DefaultKeychain)
+		stackKeychain     = authn.NewMultiKeychain(authn.DefaultKeychain)
+		lifecycleKeychain = authn.NewMultiKeychain(authn.DefaultKeychain)
+		runImage          = createRunImage(os)
+		runImageDigest    = digest(runImage)
+		runImageRef       = fmt.Sprintf("%s@%s", runImageTag, runImageDigest)
+		ctx               = context.Background()
 
 		fetcher = &fakeFetcher{buildpacks: map[string][]buildpackLayer{}, observedGeneration: 10}
-
-		linuxLifecycle = &fakeLayer{
-			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
-			diffID: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
-			size:   200,
-		}
-
-		windowsLifecycle = &fakeLayer{
-			digest: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
-			diffID: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
-			size:   200,
-		}
 
 		buildpack1Layer = &fakeLayer{
 			digest: "sha256:1bd8899667b8d1e6b124f663faca32903b470831e5e4e99265c839ab34628838",
@@ -129,6 +116,23 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
+		clusterLifecycle = &buildapi.ClusterLifecycle{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sample-stack",
+			},
+			Spec: buildapi.ClusterLifecycleSpec{
+				ImageSource: corev1alpha1.ImageSource{Image: lifecycleImageTag},
+			},
+			Status: buildapi.ClusterLifecycleStatus{
+				Status: corev1alpha1.Status{
+					ObservedGeneration: 11,
+				},
+				ResolvedClusterLifecycle: buildapi.ResolvedClusterLifecycle{
+					Version: "some-version",
+				},
+			},
+		}
+
 		clusterBuilderSpec = buildapi.BuilderSpec{
 			Tag: builderTag,
 			Stack: corev1.ObjectReference{
@@ -176,13 +180,9 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
-		lifecycleProvider = &fakeLifecycleProvider{}
-
 		subject = RemoteBuilderCreator{
-			RegistryClient:    registryClient,
-			KpackVersion:      "v1.2.3 (git sha: abcdefg123456)",
-			KeychainFactory:   keychainFactory,
-			LifecycleProvider: lifecycleProvider,
+			RegistryClient: registryClient,
+			KpackVersion:   "v1.2.3 (git sha: abcdefg123456)",
 			ImageSigner: &fakeBuilderSigner{
 				signBuilder: func(ctx context.Context, s string, secrets []*corev1.Secret, keychain authn.Keychain) ([]buildapi.CosignSignature, error) {
 					// no-op
@@ -211,8 +211,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
-		keychainFactory.AddKeychainForSecretRef(t, secretRef, builderKeychain)
-
 		buildpack1 := buildpackLayer{
 			v1Layer: buildpack1Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
@@ -233,7 +231,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 		}
-
 		buildpack2 := buildpackLayer{
 			v1Layer: buildpack2Layer,
 			BuildpackInfo: DescriptiveBuildpackInfo{
@@ -316,11 +313,14 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 	when("CreateBuilder", func() {
 		var (
-			buildImg v1.Image
+			buildImg     v1.Image
+			lifecycleImg v1.Image
 		)
 
 		it.Before(func() {
 			var err error
+
+			// build image
 
 			buildImg, err = random.Image(1, int64(buildImageLayers))
 			require.NoError(t, err)
@@ -333,33 +333,42 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 
 			registryClient.AddImage(buildImage, buildImg, stackKeychain)
 
-			lifecycleProvider.metadata = LifecycleMetadata{
-				LifecycleInfo: LifecycleInfo{
-					Version: "0.5.0",
-				},
-				API: LifecycleAPI{
+			// lifecycle image
+
+			lifecycleImg, err = random.Image(1, int64(lifecycleImageLayers))
+			require.NoError(t, err)
+
+			lConfig, err := lifecycleImg.ConfigFile()
+			require.NoError(t, err)
+
+			lConfig.OS = os
+			lifecycleImg, err = mutate.ConfigFile(lifecycleImg, config)
+
+			registryClient.AddImage(lifecycleImageTag, lifecycleImg, lifecycleKeychain)
+
+			// cluster lifecycle
+
+			clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
+				Version: "0.5.0",
+				API: buildapi.LifecycleAPI{
 					BuildpackVersion: "0.2",
 					PlatformVersion:  "0.1",
 				},
-				APIs: LifecycleAPIs{
-					Buildpack: APIVersions{
+				APIs: buildapi.LifecycleAPIs{
+					Buildpack: buildapi.APIVersions{
 						Deprecated: []string{"0.2"},
 						Supported:  []string{"0.3"},
 					},
-					Platform: APIVersions{
+					Platform: buildapi.APIVersions{
 						Deprecated: []string{"0.3"},
 						Supported:  []string{"0.4"},
 					},
 				},
 			}
-			lifecycleProvider.layers = map[string]v1.Layer{
-				"linux":   linuxLifecycle,
-				"windows": windowsLifecycle,
-			}
 		})
 
 		it("creates a custom builder with a relocated run image", func() {
-			builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+			builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 			require.NoError(t, err)
 
 			assert.Len(t, builderRecord.Buildpacks, 4)
@@ -371,6 +380,11 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
 			assert.Equal(t, os, builderRecord.OS)
+			assert.Equal(t, builderRecord.Lifecycle, buildapi.ResolvedClusterLifecycle{
+				Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
+				API:     clusterLifecycle.Status.ResolvedClusterLifecycle.API,
+				APIs:    clusterLifecycle.Status.ResolvedClusterLifecycle.APIs,
+			})
 
 			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
@@ -467,13 +481,16 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				})
 			})
 
-			layerTester.testNextLayer("Lifecycle Layer", func(index int) {
-				if os == "linux" {
-					assert.Equal(t, layers[index], linuxLifecycle)
-				} else {
-					assert.Equal(t, layers[index], windowsLifecycle)
-				}
-			})
+			lifecycleImgManifest, err := lifecycleImg.Manifest()
+			require.NoError(t, err)
+			for i := 0; i < lifecycleImageLayers; i++ {
+				layerTester.testNextLayer("Lifecycle Layer", func(index int) {
+					lifecycleImgLayer, err := lifecycleImg.LayerByDigest(lifecycleImgManifest.Layers[i].Digest)
+					require.NoError(t, err)
+
+					assert.Equal(t, layers[index+i], lifecycleImgLayer)
+				})
+			}
 
 			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
 				assert.Equal(t, layers[index], buildpack3Layer)
@@ -660,17 +677,39 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("creates images deterministically ", func() {
-			original, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+			original, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 			require.NoError(t, err)
 
 			for i := 1; i <= 50; i++ {
-				other, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				other, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 
 				require.NoError(t, err)
 
 				require.Equal(t, original.Image, other.Image)
 				require.Equal(t, original.Buildpacks, other.Buildpacks)
 			}
+		})
+
+		when("validating os", func() {
+			var wrongOS string
+
+			it.Before(func() {
+				cfg, err := lifecycleImg.ConfigFile()
+				require.NoError(t, err)
+				wrongOS = "windows"
+				if os == "windows" {
+					wrongOS = "linux"
+				}
+				cfg.OS = wrongOS
+				lifecycleImg, err = mutate.ConfigFile(lifecycleImg, cfg)
+				require.NoError(t, err)
+				registryClient.AddImage(lifecycleImageTag, lifecycleImg, lifecycleKeychain)
+			})
+
+			it("errors with unsupported os", func() {
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				require.EqualError(t, err, fmt.Sprintf("validating lifecycle image %s: expected platform to be %s// but got %s//", lifecycleImageTag, os, wrongOS))
+			})
 		})
 
 		when("validating buildpacks", func() {
@@ -695,7 +734,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
@@ -719,25 +758,23 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
 			it("works with relaxed mixin contract", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
+				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
+					Version: "0.5.0",
+					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.7",
 					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
+					APIs: buildapi.LifecycleAPIs{
+						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},
 							Supported:  []string{"0.3"},
 						},
-						Platform: APIVersions{
+						Platform: buildapi.APIVersions{
 							Deprecated: []string{},
 							Supported:  []string{relaxedMixinMinPlatformAPI},
 						},
@@ -764,7 +801,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.Nil(t, err)
 			})
 
@@ -789,7 +826,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, nil, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, nil, nil, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.Error(t, err, "validating buildpack io.buildpack.relaxed.old.mixin@v4: stack missing mixin(s): build:common-mixin, run:common-mixin, another-common-mixin")
 			})
 
@@ -812,25 +849,23 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.buildpack.api@v4: unsupported buildpack api: 0.1, expecting: 0.2, 0.3")
 			})
 
 			it("supports anystack buildpacks", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
+				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
+					Version: "0.5.0",
+					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.1",
 					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
+					APIs: buildapi.LifecycleAPIs{
+						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},
 							Supported:  []string{"0.3", "0.4", "0.5"},
 						},
-						Platform: APIVersions{
+						Platform: buildapi.APIVersions{
 							Deprecated: []string{"0.3"},
 							Supported:  []string{"0.4"},
 						},
@@ -855,41 +890,39 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.NoError(t, err)
 			})
 		})
 
 		when("validating platform api", func() {
 			it("errors if no lifecycle platform api is supported", func() {
-				lifecycleProvider.metadata = LifecycleMetadata{
-					LifecycleInfo: LifecycleInfo{
-						Version: "0.5.0",
-					},
-					API: LifecycleAPI{
+				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
+					Version: "0.5.0",
+					API: buildapi.LifecycleAPI{
 						BuildpackVersion: "0.2",
 						PlatformVersion:  "0.1",
 					},
-					APIs: LifecycleAPIs{
-						Buildpack: APIVersions{
+					APIs: buildapi.LifecycleAPIs{
+						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},
 							Supported:  []string{"0.3"},
 						},
-						Platform: APIVersions{
+						Platform: buildapi.APIVersions{
 							Deprecated: []string{"0.1"},
 							Supported:  []string{"0.2", "0.999"},
 						},
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.EqualError(t, err, "unsupported platform apis in kpack lifecycle: 0.1, 0.2, 0.999, expecting one of: 0.3, 0.4, 0.5, 0.6, 0.7, 0.8")
 			})
 		})
 
 		when("signing a builder image", func() {
 			it("does not populate the signature paths when no secrets were present", func() {
-				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
 				require.NoError(t, err)
 				require.NotNil(t, builderRecord)
 				require.Empty(t, builderRecord.SignaturePaths)
@@ -909,7 +942,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{&fakeSecret}, builderTag)
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{&fakeSecret}, builderTag)
 				require.Error(t, err)
 			})
 
@@ -932,7 +965,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{&fakeSecret}, builderTag)
+				builderRecord, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{&fakeSecret}, builderTag)
 				require.NoError(t, err)
 				require.NotNil(t, builderRecord)
 				require.NotEmpty(t, builderRecord.SignaturePaths)
@@ -947,15 +980,6 @@ type fakeBuilderSigner struct {
 
 func (s *fakeBuilderSigner) SignBuilder(ctx context.Context, imageReference string, signingSecrets []*corev1.Secret, builderKeychain authn.Keychain) ([]buildapi.CosignSignature, error) {
 	return s.signBuilder(ctx, imageReference, signingSecrets, builderKeychain)
-}
-
-type fakeLifecycleProvider struct {
-	metadata LifecycleMetadata
-	layers   map[string]v1.Layer
-}
-
-func (p *fakeLifecycleProvider) LayerForOS(os string) (v1.Layer, LifecycleMetadata, error) {
-	return p.layers[os], p.metadata, nil
 }
 
 func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string) DescriptiveBuildpackInfo {
@@ -1061,24 +1085,6 @@ type layerIteratorTester int
 func (i *layerIteratorTester) testNextLayer(name string, test func(index int)) {
 	test(int(*i))
 	*i++
-}
-
-func layerToRemoteBuildpack(bpLayer buildpackLayer, layer *fakeLayer, secretRef registry.SecretRef) K8sRemoteBuildpack {
-	return K8sRemoteBuildpack{
-		Buildpack: corev1alpha1.BuildpackStatus{
-			BuildpackInfo: corev1alpha1.BuildpackInfo{
-				Id:      bpLayer.BuildpackInfo.Id,
-				Version: bpLayer.BuildpackInfo.Version,
-			},
-			DiffId:   layer.diffID,
-			Digest:   layer.digest,
-			Size:     layer.size,
-			Homepage: bpLayer.BuildpackInfo.Homepage,
-			API:      bpLayer.BuildpackLayerInfo.API,
-			Stacks:   bpLayer.BuildpackLayerInfo.Stacks,
-		},
-		SecretRef: secretRef,
-	}
 }
 
 func createRunImage(os string) v1.Image {

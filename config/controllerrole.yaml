@@ -27,6 +27,8 @@ rules:
   - clusterbuilders/status
   - clusterbuildpacks
   - clusterbuildpacks/status
+  - clusterlifecycles
+  - clusterlifecycles/status
   - clusterstores
   - clusterstores/status
   - clusterstacks
