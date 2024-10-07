@@ -38,7 +38,7 @@ jobs:
       run: make unit-ci
 
     - name: Report coverage
-      uses: codecov/codecov-action@v4.5.0
+      uses: codecov/codecov-action@v4.6.0
 
   controller-image:
     runs-on: ubuntu-latest
