@@ -50,6 +50,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 	err = remote.Fetch(&gogit.FetchOptions{
 		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 		Auth:     auth,
+		Depth:     1,
 	})
 	if err != nil && err != transport.ErrAuthenticationRequired {
 		return errors.Wrapf(err, "unable to fetch references for repository")
