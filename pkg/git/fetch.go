@@ -51,6 +51,7 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 		Auth:     auth,
 		Depth:     1,
+		Force:    true,
 	})
 	if err != nil && err != transport.ErrAuthenticationRequired {
 		return errors.Wrapf(err, "unable to fetch references for repository")
