@@ -1,6 +1,7 @@
 package git
 
 import (
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"log"
 	"os"
 	"path"
@@ -47,9 +48,23 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrap(err, "creating remote")
 	}
 
+	resolver := &remoteGitResolver{}
+	resolvedSourceConfig, err := resolver.Resolve(auth, corev1alpha1.SourceConfig{
+		Git: &corev1alpha1.Git{
+			URL:                  gitURL,
+			Revision:             gitRevision,
+			InitializeSubmodules: f.InitializeSubmodules,
+		},
+		SubPath: "",
+	})
+	if err != nil {
+		return errors.Wrap(err, "resolving source config")
+	}
+
 	err = remote.Fetch(&gogit.FetchOptions{
-		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
+		RefSpecs: []config.RefSpec{config.RefSpec(resolvedSourceConfig.Git.Revision + ":" + resolvedSourceConfig.Git.Revision)},
 		Auth:     auth,
+		Depth:    1,
 	})
 	if err != nil && err != transport.ErrAuthenticationRequired {
 		return errors.Wrapf(err, "unable to fetch references for repository")
@@ -62,12 +77,10 @@ func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
 		return errors.Wrapf(err, "getting worktree for repository")
 	}
 
-	hash, err := repository.ResolveRevision(plumbing.Revision(gitRevision))
-	if err != nil {
-		return errors.Wrapf(err, "resolving revision")
-	}
+	//resolvedSourceConfig.Git.Revision is the hash of the commit
+	hash := plumbing.NewHash(resolvedSourceConfig.Git.Revision)
 
-	err = worktree.Checkout(&gogit.CheckoutOptions{Hash: *hash})
+	err = worktree.Checkout(&gogit.CheckoutOptions{Hash: hash})
 	if err != nil {
 		return errors.Wrapf(err, "checking out revision")
 	}
