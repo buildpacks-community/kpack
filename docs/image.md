@@ -22,6 +22,7 @@ The following defines the relevant fields of the `image` resource spec in more d
 - `build`: Configuration that is passed to every image build. See [Build Configuration](#build-config) section below.
 - `defaultProcess`: The [default process type](https://buildpacks.io/docs/app-developer-guide/run-an-app/) for the built OCI image
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
+- `cascadeDelete`: If set to `true`, produced image will garbage collected from the registry upon `Build` objects deletion.
 - `cosign`: Configuration for additional cosign image signing. See [Cosign Configuration](#cosign-config) section below.
 
 ### <a id='tags-config'></a> Configuring Tags

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -41,6 +42,7 @@ const (
 	Kind            = "Build"
 	k8sOSLabel      = "kubernetes.io/os"
 	ReasonCompleted = "Completed"
+	BuildFinalizer  = "builds.kpack.io/finalizer"
 )
 
 //go:generate counterfeiter . MetadataRetriever
@@ -69,6 +71,11 @@ type SecretFetcher interface {
 	SecretsForSystemServiceAccount(context.Context) ([]*corev1.Secret, error)
 }
 
+//go:generate counterfeiter . RegistryClient
+type RegistryClient interface {
+	Delete(keychain authn.Keychain, repoName string) error
+}
+
 func NewController(
 	ctx context.Context, opt reconciler.Options, k8sClient k8sclient.Interface,
 	informer buildinformers.BuildInformer, podInformer corev1Informers.PodInformer,
@@ -78,6 +85,7 @@ func NewController(
 	attester SLSAAttester,
 	secretFetcher SecretFetcher,
 	featureFlags config.FeatureFlags,
+	registryClient RegistryClient,
 ) *controller.Impl {
 	c := &Reconciler{
 		Client:            opt.Client,
@@ -91,6 +99,7 @@ func NewController(
 		Attester:          attester,
 		SecretFetcher:     secretFetcher,
 		FeatureFlags:      featureFlags,
+		RegistryClient:    registryClient,
 	}
 
 	logger := opt.Logger.With(
@@ -121,6 +130,7 @@ type Reconciler struct {
 	Attester          SLSAAttester
 	SecretFetcher     SecretFetcher
 	FeatureFlags      config.FeatureFlags
+	RegistryClient    RegistryClient
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
@@ -133,6 +143,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if k8s_errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
+		return err
+	}
+
+	if !build.DeletionTimestamp.IsZero() {
+		return c.finalize(ctx, build)
+	}
+
+	if err := c.setFinalizer(ctx, build); err != nil {
 		return err
 	}
 
@@ -352,6 +370,64 @@ func (c *Reconciler) conditionForPod(pod *corev1.Pod, stepsCompleted []string) c
 	}
 }
 
+func (c *Reconciler) finalize(ctx context.Context, build *buildapi.Build) error {
+	if !slices.Contains(build.GetFinalizers(), BuildFinalizer) {
+		return nil
+	}
+
+	if build.Finished() {
+		keychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			ServiceAccount: build.Spec.ServiceAccountName,
+			Namespace:      build.Namespace,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := c.RegistryClient.Delete(keychain, build.Status.LatestImage); err != nil {
+			return err
+		}
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers": slices.DeleteFunc(build.GetFinalizers(), func(f string) bool {
+				return f == BuildFinalizer
+			}),
+			"resourceVersion": build.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Patch(ctx, build.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+	return err
+}
+
+func (c *Reconciler) setFinalizer(ctx context.Context, build *buildapi.Build) error {
+	if slices.Contains(build.GetFinalizers(), BuildFinalizer) || !build.CascadeDeleteImage() {
+		return nil
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      append(build.GetFinalizers(), BuildFinalizer),
+			"resourceVersion": build.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Client.KpackV1alpha2().Builds(build.Namespace).Patch(ctx, build.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+	return err
+}
+
 func stepStates(pod *corev1.Pod) []corev1.ContainerState {
 	states := make([]corev1.ContainerState, 0, len(buildapi.BuildSteps()))
 	for _, s := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
@@ -442,9 +518,9 @@ func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, bui
 		signers[i] = s
 	}
 
-	buildId := slsa.UnsignedBuildID
+	buildID := slsa.UnsignedBuildID
 	if len(signers) > 0 {
-		buildId = slsa.SignedBuildID
+		buildID = slsa.SignedBuildID
 	}
 
 	deps, err := c.attestBuildDeps(ctx, build, pod, secrets)
@@ -452,7 +528,7 @@ func (c *Reconciler) attestBuild(ctx context.Context, build *buildapi.Build, bui
 		return "", fmt.Errorf("failed to gather build deps: %v", err)
 	}
 
-	statement, err := c.Attester.AttestBuild(build, buildMetadata, pod, keychain, buildId, deps...)
+	statement, err := c.Attester.AttestBuild(build, buildMetadata, pod, keychain, buildID, deps...)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate statement: %v", err)
 	}

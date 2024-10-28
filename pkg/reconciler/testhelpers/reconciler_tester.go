@@ -31,8 +31,11 @@ func (rt SpecReconcilerTester) Test(test rtesting.TableRow) {
 
 	test.Test(rt.t, rt.factory)
 
+	defaultOpts := []cmp.Option{safeDeployDiff, cmpopts.EquateEmpty()}
+	effectiveOpts := append(defaultOpts, test.CmpOpts...)
+
 	// Validate cached objects do not get soiled after controller loops
-	if diff := cmp.Diff(originObjects, test.Objects, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(originObjects, test.Objects, effectiveOpts...); diff != "" {
 		rt.t.Errorf("Unexpected objects in test %s (-want, +got): %v", test.Name, diff)
 	}
 }

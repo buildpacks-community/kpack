@@ -10,9 +10,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
@@ -65,6 +67,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 		fakeMetadataRetriever = &buildfakes.FakeMetadataRetriever{}
 		fakeAttester          = &buildfakes.FakeSLSAAttester{}
 		fakeSecretFetcher     = &buildfakes.FakeSecretFetcher{}
+		fakeRegistryClient    = &buildfakes.FakeRegistryClient{}
 		keychainFactory       = &registryfakes.FakeKeychainFactory{}
 		podGenerator          = &testPodGenerator{}
 		podProgressLogger     = &testPodProgressLogger{}
@@ -97,6 +100,7 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				PodProgressLogger: podProgressLogger,
 				Attester:          fakeAttester,
 				SecretFetcher:     fakeSecretFetcher,
+				RegistryClient:    fakeRegistryClient,
 				FeatureFlags:      featureFlags,
 			}
 
@@ -1673,6 +1677,58 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, img, "some-latest-image")
 			})
 
+		})
+
+		when("cascadeDelete is enabled", func() {
+			bld.Spec.CascadeDelete = true
+			bld.Finalizers = append(bld.GetFinalizers(), build.BuildFinalizer)
+			bld.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
+			bld.Status.LatestImage = "foo/bar@sha256:123"
+			bld.Status.Conditions = corev1alpha1.Conditions{
+				{
+					Type:   corev1alpha1.ConditionSucceeded,
+					Status: corev1.ConditionTrue,
+					Reason: build.ReasonCompleted,
+				},
+			}
+
+			it("deletes the image from the registry", func() {
+				keychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{
+					ServiceAccount: bld.Spec.ServiceAccountName,
+					Namespace:      bld.Namespace,
+				}, nil)
+				finalizerPatch, err := json.Marshal(map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"finalizers":      []string{},
+						"resourceVersion": bld.ResourceVersion,
+					},
+				})
+				require.NoError(t, err)
+
+				rt.Test(rtesting.TableRow{
+					Key:     key,
+					WantErr: false,
+					Objects: []runtime.Object{
+						bld,
+					},
+					WantPatches: []clientgotesting.PatchActionImpl{
+						{
+							Name:      bld.Name,
+							PatchType: types.MergePatchType,
+							Patch:     finalizerPatch,
+						},
+					},
+					CmpOpts: []cmp.Option{
+						cmp.FilterPath(func(p cmp.Path) bool {
+							t.Log(p.String())
+							return strings.HasSuffix(p.String(), "ObjectMeta.Finalizers")
+						}, cmp.Ignore()),
+					},
+				})
+
+				require.Len(t, fakeRegistryClient.Invocations()["Delete"], 1)
+				require.Equal(t, fakeRegistryClient.Invocations()["Delete"][0], []interface{}{nil, bld.Status.LatestImage})
+			})
 		})
 	})
 }

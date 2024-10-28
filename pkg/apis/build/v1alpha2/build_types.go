@@ -78,6 +78,8 @@ type BuildSpec struct {
 	SchedulerName     string              `json:"schedulerName,omitempty"`
 	PriorityClassName string              `json:"priorityClassName,omitempty"`
 	CreationTime      string              `json:"creationTime,omitempty"`
+	// +optional
+	CascadeDelete bool `json:"cascadeDelete,omitempty"`
 }
 
 func (bs *BuildSpec) RegistryCacheTag() string {

@@ -31,6 +31,7 @@ spec:
     git:
       url: https://github.com/buildpack/sample-java-app.git
       revision: main
+  cascadeDelete: true
   activeDeadlineSeconds: 1800
   env:
   - name: "JAVA_BP_ENV"
@@ -72,10 +73,11 @@ spec:
 - `env`: Optional list of build time environment variables.
 - `defaultProcess`: The [default process type](https://buildpacks.io/docs/app-developer-guide/run-an-app/) for the built OCI image
 - `projectDescriptorPath`: Path to the [project descriptor file](https://buildpacks.io/docs/reference/config/project-descriptor/) relative to source root dir or `subPath` if set. If unset, kpack will look for `project.toml` at the root dir or `subPath` if set.
+- `cascadeDelete`: If set to `true`, produced image will garbage collected from the registry upon object deletion.
 - `resources`: Optional configurable resource limits on `CPU` and `memory`.
 - `tolerations`: Optional configurable pod spec tolerations
 - `nodeSelector`: Optional configurable pod spec nodeSelector
-- `affinity`: Optional configurabl pod spec affinity
+- `affinity`: Optional configurable pod spec affinity
 
 > Note: All fields on a build are immutable. Instead of updating a build, create a new one.
  

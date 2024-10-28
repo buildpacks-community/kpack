@@ -5591,6 +5591,9 @@
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.BuildCacheConfig"
         },
+        "cascadeDelete": {
+          "type": "boolean"
+        },
         "cnbBindings": {
           "type": "array",
           "items": {
@@ -6724,6 +6727,9 @@
         "cache": {
           "$ref": "#/definitions/kpack.build.v1alpha2.ImageCacheConfig"
         },
+        "cascadeDelete": {
+          "type": "boolean"
+        },
         "cosign": {
           "$ref": "#/definitions/kpack.build.v1alpha2.CosignConfig"
         },
@@ -7340,6 +7346,9 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"
