@@ -156,6 +156,10 @@ func (b *Build) DefaultProcess() string {
 	return b.Spec.DefaultProcess
 }
 
+func (b *Build) CascadeDeleteImage() bool {
+	return b.Spec.CascadeDelete
+}
+
 var buildSteps = map[string]struct{}{
 	PrepareContainerName:    {},
 	AnalyzeContainerName:    {},
