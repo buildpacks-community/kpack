@@ -8,4 +8,4 @@ Below is a list of projects that have publicly adopted kpack.
 * [Azure Spring Apps](https://azure.microsoft.com/en-us/products/spring-apps)
 * [Korifi](https://www.cloudfoundry.org/technology/korifi/)
 
-If you'd like to be added, feel free to [open a pull-request!](https://github.com/pivotal/kpack/pulls)
+If you'd like to be added, feel free to [open a pull-request!](https://github.com/buildpacks-community/kpack/pulls)
