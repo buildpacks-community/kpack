@@ -385,7 +385,7 @@ func (c *Reconciler) finalize(ctx context.Context, build *buildapi.Build) error 
 		}
 
 		if err := c.RegistryClient.Delete(keychain, build.Status.LatestImage); err != nil {
-			return err
+			//logger.Printf(errors.Wrapf(err, "Could not delete image %q", build.Status.LatestImage))
 		}
 	}
 
