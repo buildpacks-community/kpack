@@ -2281,6 +2281,12 @@ func schema_pkg_apis_build_v1alpha2_BuildSpec(ref common.ReferenceCallback) comm
 							Format: "",
 						},
 					},
+					"cascadeDelete": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"source"},
 			},
@@ -4317,6 +4323,12 @@ func schema_pkg_apis_build_v1alpha2_ImageSpec(ref common.ReferenceCallback) comm
 							},
 						},
 					},
+					"cascadeDelete": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"tag", "source"},
 			},
@@ -4783,16 +4795,16 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 							Format:  "",
 						},
 					},
-					"stripComponents": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int64",
-						},
-					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"stripComponents": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
 						},
 					},
 				},
@@ -5424,6 +5436,12 @@ func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallba
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
+						},
+					},
+					"auth": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"subPath": {

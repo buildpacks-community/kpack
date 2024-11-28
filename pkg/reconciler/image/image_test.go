@@ -75,7 +75,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-imageWithBuilder := &buildapi.Image{
+	imageWithBuilder := &buildapi.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
@@ -101,6 +101,7 @@ imageWithBuilder := &buildapi.Image{
 			SuccessBuildHistoryLimit: limit(10),
 			ImageTaggingStrategy:     corev1alpha1.None,
 			Build:                    &buildapi.ImageBuild{},
+			CascadeDelete:            true,
 		},
 		Status: buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
@@ -787,15 +788,15 @@ imageWithBuilder := &buildapi.Image{
 					Objects: []runtime.Object{
 						imageWithBuilder,
 						builderWithCondition(
-							builder, 
+							builder,
 							corev1alpha1.Condition{
 								Type:    corev1alpha1.ConditionReady,
 								Status:  corev1.ConditionFalse,
 								Message: "something went wrong",
 							},
 							corev1alpha1.Condition{
-								Type:    buildapi.ConditionUpToDate,
-								Status:  corev1.ConditionFalse,
+								Type:   buildapi.ConditionUpToDate,
+								Status: corev1.ConditionFalse,
 							},
 						),
 						resolvedSourceResolver(imageWithBuilder),
@@ -844,16 +845,16 @@ imageWithBuilder := &buildapi.Image{
 					Objects: []runtime.Object{
 						imageWithBuilder,
 						builderWithCondition(
-							builder, 
+							builder,
 							corev1alpha1.Condition{
-								Type:    corev1alpha1.ConditionReady,
-								Status:  corev1.ConditionTrue,
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
 							},
 							corev1alpha1.Condition{
 								Type:    buildapi.ConditionUpToDate,
 								Status:  corev1.ConditionFalse,
 								Message: "Builder failed to reconcile",
-								Reason: buildapi.ReconcileFailedReason,
+								Reason:  buildapi.ReconcileFailedReason,
 							},
 						),
 						sourceResolver,
@@ -899,7 +900,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -921,10 +923,10 @@ imageWithBuilder := &buildapi.Image{
 								ObjectMeta: imageWithBuilder.ObjectMeta,
 								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
-									LatestBuildRef: "image-name-build-1",
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildImageGeneration: 1,
-									BuildCounter: 1,
-									LatestBuildReason: "CONFIG",
+									BuildCounter:               1,
+									LatestBuildReason:          "CONFIG",
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -935,9 +937,9 @@ imageWithBuilder := &buildapi.Image{
 												Message: "Build 'image-name-build-1' is executing",
 											},
 											{
-												Type:    buildapi.ConditionBuilderReady,
-												Status:  corev1.ConditionTrue,
-												Reason:  buildapi.BuilderReady,
+												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+												Reason: buildapi.BuilderReady,
 											},
 											{
 												Type:    buildapi.ConditionBuilderUpToDate,
@@ -1004,7 +1006,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1097,7 +1100,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
@@ -1190,7 +1194,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1284,7 +1289,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
@@ -1380,7 +1386,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1529,7 +1536,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1658,7 +1666,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1828,7 +1837,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
@@ -1997,7 +2007,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
@@ -2145,7 +2156,8 @@ imageWithBuilder := &buildapi.Image{
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
