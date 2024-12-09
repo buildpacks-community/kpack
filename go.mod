@@ -27,7 +27,7 @@ require (
 	github.com/whilp/git-urls v1.0.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.16.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.10.0
 	k8s.io/api v0.24.8
 	k8s.io/apimachinery v0.24.8
 	k8s.io/client-go v0.24.8
