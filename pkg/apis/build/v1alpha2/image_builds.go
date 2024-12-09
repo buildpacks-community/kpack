@@ -81,6 +81,7 @@ func (im *Image) Build(sourceResolver *SourceResolver, builder BuilderResource, 
 			PriorityClassName:     priorityClass,
 			ActiveDeadlineSeconds: im.BuildTimeout(),
 			CreationTime:          im.Spec.creationTime(),
+			CascadeDelete:         im.Spec.CascadeDelete,
 		},
 	}
 }
