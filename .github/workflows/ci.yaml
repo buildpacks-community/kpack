@@ -46,7 +46,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -65,7 +65,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -84,7 +84,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -103,7 +103,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -122,7 +122,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -141,7 +141,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -160,7 +160,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -181,7 +181,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -202,7 +202,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -369,7 +369,7 @@ jobs:
         config: kind.yaml
 
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ env.REGISTRY_URL }}
         username: ${{ env.REGISTRY_USER }}
@@ -494,7 +494,7 @@ jobs:
         merge-multiple: true
 
     - name: Docker Login
-      uses: docker/login-action@v3.2.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
