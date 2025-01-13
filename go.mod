@@ -3,7 +3,7 @@ module github.com/pivotal/kpack
 go 1.23.3
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azfile v1.4.0
