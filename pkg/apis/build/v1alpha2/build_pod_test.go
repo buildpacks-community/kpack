@@ -1053,19 +1053,19 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					assert.Len(t, podWithImageCache.Spec.Volumes, len(podWithVolumeCache.Spec.Volumes)-1)
 				})
 
-				it("does not add the cache to analyze container", func() {
+				it("does add the cache to analyze container", func() {
 					podWithImageCache, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
 					analyzeContainer := podWithImageCache.Spec.InitContainers[2]
-					assert.NotContains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
+					assert.Contains(t, analyzeContainer.Args, "-cache-image=test-cache-image")
 				})
-				it("does not add the cache to restore container", func() {
+				it("does add cache to restore container", func() {
 					podWithImageCache, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
 					restoreContainer := podWithImageCache.Spec.InitContainers[3]
-					assert.NotContains(t, restoreContainer.Args, "-cache-image=test-cache-image")
+					assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image")
 				})
 				it("adds the cache to export container", func() {
 					podWithImageCache, err := build.BuildPod(config, buildContext)
