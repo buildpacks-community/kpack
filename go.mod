@@ -14,7 +14,7 @@ require (
 	github.com/buildpacks/lifecycle v0.17.7
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-containerregistry v0.20.0
+	github.com/google/go-containerregistry v0.20.2
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20230822174451-190ad0e4d556
 	github.com/in-toto/in-toto-golang v0.9.0
 	github.com/matthewmcnew/archtest v0.0.0-20191014222827-a111193b50ad
@@ -22,9 +22,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sclevine/spec v1.4.0
-	github.com/secure-systems-lab/go-securesystemslib v0.8.0
+	github.com/secure-systems-lab/go-securesystemslib v0.9.0
 	github.com/sigstore/cosign/v2 v2.2.4
-	github.com/sigstore/sigstore v1.8.3
+	github.com/sigstore/sigstore v1.8.12
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
@@ -87,21 +87,21 @@ require (
 	github.com/aliyun/credentials-go v1.3.1 // indirect
 	github.com/apex/log v1.9.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.26.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.27.9 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.9 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.4 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.27.2 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.27.18 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.18 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.24.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.21.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.20.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.28.5 // indirect
-	github.com/aws/smithy-go v1.20.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.20.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.12 // indirect
+	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20231213181459-b0fcec718dc6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
-	github.com/coreos/go-oidc/v3 v3.10.0 // indirect
+	github.com/coreos/go-oidc/v3 v3.12.0 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20231011164504-785e29786b46 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -127,7 +127,7 @@ require (
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/cli v24.0.7+incompatible // indirect
+	github.com/docker/cli v27.1.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v26.1.5+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
@@ -147,7 +147,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -199,7 +199,7 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/letsencrypt/boulder v0.0.0-20231026200631-000cd05d5491 // indirect
+	github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -292,7 +292,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.66.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
-	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
