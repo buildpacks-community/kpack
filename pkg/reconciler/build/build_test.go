@@ -258,6 +258,23 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		it("does not reconcile a build being deleted", func() {
+			bld.Status.ObservedGeneration = 1
+
+			bld.Generation = 2
+			deletionTimetamp := metav1.NewTime(time.Now())
+			bld.DeletionTimestamp = &deletionTimetamp
+
+			rt.Test(rtesting.TableRow{
+				Key: key,
+				Objects: []runtime.Object{
+					bld,
+				},
+				WantErr:           false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{},
+			})
+		})
+
 		it("does not update status if there is no update", func() {
 			buildPod, err := podGenerator.Generate(ctx, bld)
 			require.NoError(t, err)

@@ -136,6 +136,10 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return err
 	}
 
+	if build.DeletionTimestamp != nil {
+		return nil
+	}
+
 	build = build.DeepCopy()
 	build.SetDefaults(ctx)
 
