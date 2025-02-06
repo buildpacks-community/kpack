@@ -699,6 +699,26 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.stack@v4: stack io.buildpacks.stacks.some-stack is not supported")
 			})
 
+			it("works with empty stack", func() {
+				addBuildpack(t, "io.buildpack.empty.stack", "v4", "buildpack.4.com", "0.2", []corev1alpha1.BuildpackStack{})
+
+				clusterBuilderSpec.Order = []buildapi.BuilderOrderEntry{
+					{
+						Group: []buildapi.BuilderBuildpackRef{{
+							BuildpackRef: corev1alpha1.BuildpackRef{
+								BuildpackInfo: corev1alpha1.BuildpackInfo{
+									Id:      "io.buildpack.empty.stack",
+									Version: "v4",
+								},
+							},
+						}},
+					},
+				}
+
+				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				require.NoError(t, err)
+			})
+
 			it("errors with unsupported mixin", func() {
 				addBuildpack(t, "io.buildpack.unsupported.mixin", "v4", "buildpack.1.com", "0.2",
 					[]corev1alpha1.BuildpackStack{
