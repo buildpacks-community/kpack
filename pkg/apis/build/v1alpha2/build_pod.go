@@ -269,6 +269,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		useCacheFromLastBuild := b.Spec.LastBuild != nil && b.Spec.LastBuild.Cache.Image != ""
 		if useCacheFromLastBuild {
 			genericCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.LastBuild.Cache.Image)}
+		} else {
+			genericCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
 		}
 		analyzerCacheArgs = genericCacheArgs
 		exporterCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
