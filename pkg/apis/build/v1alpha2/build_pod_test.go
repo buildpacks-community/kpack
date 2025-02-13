@@ -1073,7 +1073,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 					podWithImageCache, err := build.BuildPod(config, buildContext)
 					require.NoError(t, err)
 
-					restoreContainer := podWithImageCache.Spec.InitContainers[3]
+					restoreContainer := firstContainerByName(podWithImageCache.Spec.InitContainers, "restore")
 					assert.Contains(t, restoreContainer.Args, "-cache-image=test-cache-image")
 				})
 				it("adds the cache to export container", func() {
