@@ -60,6 +60,8 @@ type ImageSpec struct {
 	DefaultProcess           string                            `json:"defaultProcess,omitempty"`
 	// +listType
 	AdditionalTags []string `json:"additionalTags,omitempty"`
+	// +optional
+	CascadeDelete bool `json:"cascadeDelete,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -72,13 +74,13 @@ type ImageBuild struct {
 	Env       []corev1.EnvVar             `json:"env,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	// +listType
-	Tolerations          []corev1.Toleration `json:"tolerations,omitempty"`
-	NodeSelector         map[string]string   `json:"nodeSelector,omitempty"`
-	Affinity             *corev1.Affinity    `json:"affinity,omitempty"`
-	RuntimeClassName     *string             `json:"runtimeClassName,omitempty"`
-	SchedulerName        string              `json:"schedulerName,omitempty"`
-	BuildTimeout         *int64              `json:"buildTimeout,omitempty"`
-	CreationTime         string              `json:"creationTime,omitempty"`
+	Tolerations      []corev1.Toleration `json:"tolerations,omitempty"`
+	NodeSelector     map[string]string   `json:"nodeSelector,omitempty"`
+	Affinity         *corev1.Affinity    `json:"affinity,omitempty"`
+	RuntimeClassName *string             `json:"runtimeClassName,omitempty"`
+	SchedulerName    string              `json:"schedulerName,omitempty"`
+	BuildTimeout     *int64              `json:"buildTimeout,omitempty"`
+	CreationTime     string              `json:"creationTime,omitempty"`
 }
 
 // +k8s:openapi-gen=true
