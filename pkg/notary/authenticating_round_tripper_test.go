@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/sclevine/spec"
@@ -22,7 +23,10 @@ func TestAuthenticatingRoundTripper(t *testing.T) {
 
 func testAuthenticatingRoundTripper(t *testing.T, when spec.G, it spec.S) {
 	var (
-		keychain = dockercreds.DockerCreds{}
+		keychain = dockercreds.DockerCreds{map[string]authn.AuthConfig{},
+			time.Now(),
+			"",
+		}
 
 		roundTripper = &notary.AuthenticatingRoundTripper{
 			Keychain:            keychain,
@@ -58,7 +62,7 @@ func testAuthenticatingRoundTripper(t *testing.T, when spec.G, it spec.S) {
 				parsedURL, err := url.Parse(ts.URL)
 				require.NoError(t, err)
 
-				keychain[parsedURL.Host] = authn.AuthConfig{
+				keychain.CredMap[parsedURL.Host] = authn.AuthConfig{
 					Username: "some-username",
 					Password: "some-password",
 				}
