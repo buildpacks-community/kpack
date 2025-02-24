@@ -252,27 +252,6 @@ imageWithBuilder := &buildapi.Image{
 			})
 		})
 
-		it("does not reconcile images being deleted", func() {
-			const observedGeneration int64 = 1
-			imageWithBuilder.Status.ObservedGeneration = observedGeneration
-
-			imageWithBuilder.Generation = 2
-			deletionTimetamp := metav1.NewTime(time.Now())
-			imageWithBuilder.DeletionTimestamp = &deletionTimetamp
-
-			rt.Test(rtesting.TableRow{
-				Key: key,
-				Objects: []runtime.Object{
-					imageWithBuilder,
-					builder,
-					clusterBuilder,
-					unresolvedSourceResolver(imageWithBuilder),
-				},
-				WantErr:           false,
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{},
-			})
-		})
-
 		it("does not update status if there is no status update", func() {
 			rt.Test(rtesting.TableRow{
 				Key: key,

@@ -121,10 +121,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return err
 	}
 
-	if image.DeletionTimestamp != nil {
-		return nil
-	}
-
 	image = image.DeepCopy()
 	image.SetDefaults(ctx)
 
