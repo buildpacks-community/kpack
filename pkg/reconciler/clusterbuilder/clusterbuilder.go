@@ -86,7 +86,10 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	clusterBuilderInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	clusterBuilderInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: reconciler.FilterDeletionTimestamp,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	})
 
 	c.Tracker = tracker.New(impl.EnqueueKey, opt.TrackerResyncPeriod())
 	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(

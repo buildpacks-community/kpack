@@ -55,7 +55,10 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	clusterStackInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	clusterStackInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: reconciler.FilterDeletionTimestamp,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	})
 	return impl
 }
 

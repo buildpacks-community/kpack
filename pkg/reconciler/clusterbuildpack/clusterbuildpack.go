@@ -36,7 +36,8 @@ func NewController(
 	opt reconciler.Options,
 	keychainFactory registry.KeychainFactory,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
-	storeReader StoreReader) *controller.Impl {
+	storeReader StoreReader,
+) *controller.Impl {
 	c := &Reconciler{
 		Client:                 opt.Client,
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
@@ -55,7 +56,10 @@ func NewController(
 		},
 		controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger},
 	)
-	clusterBuildpackInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	clusterBuildpackInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: reconciler.FilterDeletionTimestamp,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	})
 	return impl
 }
 
