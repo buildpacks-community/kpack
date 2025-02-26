@@ -74,12 +74,6 @@ function generate_kbld_config_pack() {
         builder: paketobuildpacks/builder-jammy-tiny
         rawOptions: [${completion_args// /,}]
   overrides:
-  - image: build-init-windows
-    newImage: build-init-windows
-    preresolved: true
-  - image: completion-windows
-    newImage: completion-windows
-    preresolved: true
   - image: lifecycle
     newImage: $lifecycle_image
   destinations:
@@ -142,12 +136,6 @@ function generate_kbld_config_ko() {
       build:
         rawOptions: [${args// /,}]
   overrides:
-  - image: build-init-windows
-    newImage: build-init-windows
-    preresolved: true
-  - image: completion-windows
-    newImage: completion-windows
-    preresolved: true
   - image: lifecycle
     newImage: $lifecycle_image
   destinations:

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -39,7 +38,6 @@ var (
 	blobAuth                = flag.Bool("blob-auth", getenvBool("BLOB_AUTH"), "If authentication should be used for blobs")
 	stripComponents         = flag.Int("strip-components", getenvInt("BLOB_STRIP_COMPONENTS", 0), "The number of directory components to strip from the blobs content when extracting.")
 	registryImage           = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
-	hostName                = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
 	sourceSubPath           = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
 	buildChanges            = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	descriptorPath          = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
@@ -84,11 +82,6 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", 0)
-
-	err := prepareForWindows(*hostName)
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	if err := buildchange.Log(logger, *buildChanges); err != nil {
 		logger.Println(err)
@@ -179,26 +172,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("error writing docker creds %s", err)
 	}
-}
-
-func prepareForWindows(hostname string) error {
-	if runtime.GOOS != "windows" {
-		return nil
-	}
-
-	executablePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	err = copyFile(filepath.Join(filepath.Dir(executablePath), networkWaitLauncherBinary), filepath.Join(networkWaitLauncherDir, networkWaitLauncherBinary))
-	if err != nil {
-		return err
-	}
-
-	waitForDns(hostname)
-
-	return nil
 }
 
 func fetchSource(logger *log.Logger, keychain authn.Keychain) error {

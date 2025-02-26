@@ -80,10 +80,8 @@ var (
 
 func main() {
 	flag.StringVar(&images.BuildInitImage, "build-init-image", os.Getenv("BUILD_INIT_IMAGE"), "The image used to initialize a build")
-	flag.StringVar(&images.BuildInitWindowsImage, "build-init-windows-image", os.Getenv("BUILD_INIT_WINDOWS_IMAGE"), "The image used to initialize a build on windows")
 	flag.StringVar(&images.RebaseImage, "rebase-image", os.Getenv("REBASE_IMAGE"), "The image used to perform rebases")
 	flag.StringVar(&images.CompletionImage, "completion-image", os.Getenv("COMPLETION_IMAGE"), "The image used to finish a build")
-	flag.StringVar(&images.CompletionWindowsImage, "completion-windows-image", os.Getenv("COMPLETION_WINDOWS_IMAGE"), "The image used to finish a build on windows")
 	flag.StringVar(&images.BuildWaiterImage, "build-waiter-image", os.Getenv("BUILD_WAITER_IMAGE"), "The image used to initialize a build")
 
 	flag.StringVar(&cfg.SystemNamespace, "system-namespace", os.Getenv("SYSTEM_NAMESPACE"), "Namespace for the the controller, this will be used to lookup secrets for image signing and attestation.")

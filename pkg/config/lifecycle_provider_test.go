@@ -49,7 +49,6 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 		lifecycleImgRef = "some-image"
 		lifecycleImg    v1.Image
 		linuxLayer      v1.Layer
-		windowsLayer    v1.Layer
 		callBack        *fakeCallback
 		keychainFactory = &registryfakes.FakeKeychainFactory{}
 		p               *LifecycleProvider
@@ -57,12 +56,11 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		linuxLayer = testLayer(t)
-		windowsLayer = testLayer(t)
-		lifecycleImg = generateLifecycleImage(t, lifecycleMetadata, linuxLayer, windowsLayer)
+		lifecycleImg = generateLifecycleImage(t, lifecycleMetadata, linuxLayer)
 
 		keychainFactory.AddKeychainForSecretRef(t, registry.SecretRef{Namespace: "some-service-account-namespace", ServiceAccount: "some-service-account"}, keychain)
 		client.AddImage(lifecycleImgRef, lifecycleImg, keychain)
-		client.AddImage("some-other-lifecycle-image", generateLifecycleImage(t, lifecycleMetadata, testLayer(t), testLayer(t)), keychain)
+		client.AddImage("some-other-lifecycle-image", generateLifecycleImage(t, lifecycleMetadata, testLayer(t)), keychain)
 
 		p = NewLifecycleProvider(client, keychainFactory)
 		callBack = &fakeCallback{}
@@ -111,20 +109,20 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.Equal(t, callBack.called, 1)
 
-			_, _, err := p.LayerForOS("linux")
+			_, _, err := p.Layer()
 			require.Error(t, err)
 		})
 	})
 
-	when("LayerForOS()", func() {
+	when("Layer()", func() {
 		it.Before(func() {
 			p.UpdateImage(&corev1.ConfigMap{
 				Data: map[string]string{"image": lifecycleImgRef, "serviceAccountRef.name": "some-service-account", "serviceAccountRef.namespace": "some-service-account-namespace"},
 			})
 		})
 
-		it("returns the linux layer as a lazy layer", func() {
-			layer, readMetadata, err := p.LayerForOS("linux")
+		it("returns the layer as a lazy layer", func() {
+			layer, readMetadata, err := p.Layer()
 			require.NoError(t, err)
 			require.Equal(t, readMetadata, lifecycleMetadata)
 
@@ -150,37 +148,6 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 
 		})
 
-		it("returns the windows layer as a lazy layer", func() {
-			layer, readMetadata, err := p.LayerForOS("windows")
-			require.NoError(t, err)
-			require.Equal(t, readMetadata, lifecycleMetadata)
-
-			expectedDigest, err := windowsLayer.Digest()
-			require.NoError(t, err)
-
-			expectedDiffID, err := windowsLayer.DiffID()
-			require.NoError(t, err)
-
-			expectedSize, err := windowsLayer.Size()
-			require.NoError(t, err)
-
-			expectedLayer, err := imagehelpers.NewLazyMountableLayer(imagehelpers.LazyMountableLayerArgs{
-				Digest:   expectedDigest.String(),
-				DiffId:   expectedDiffID.String(),
-				Image:    lifecycleImgRef,
-				Size:     expectedSize,
-				Keychain: keychain,
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, expectedLayer, layer)
-		})
-
-		it("returns error on invalid os", func() {
-			_, _, err := p.LayerForOS("kpack-invalid-test-os")
-			require.EqualError(t, err, "unrecognized os kpack-invalid-test-os")
-		})
-
 		it("can return the metadata by itself", func() {
 			readMetadata, err := p.Metadata()
 			require.NoError(t, err)
@@ -197,20 +164,14 @@ func (cb *fakeCallback) callBack() {
 	cb.called++
 }
 
-func generateLifecycleImage(t *testing.T, metadata cnb.LifecycleMetadata, linuxLifecycle, windowsLifecycle v1.Layer) v1.Image {
-	lifecycleImg, err := mutate.AppendLayers(empty.Image, linuxLifecycle, windowsLifecycle)
+func generateLifecycleImage(t *testing.T, metadata cnb.LifecycleMetadata, linuxLifecycle v1.Layer) v1.Image {
+	lifecycleImg, err := mutate.AppendLayers(empty.Image, linuxLifecycle)
 	require.NoError(t, err)
 
 	linuxDiffID, err := linuxLifecycle.DiffID()
 	require.NoError(t, err)
 
 	lifecycleImg, err = imagehelpers.SetStringLabel(lifecycleImg, "linux", linuxDiffID.String())
-	require.NoError(t, err)
-
-	windowsDiffId, err := windowsLifecycle.DiffID()
-	require.NoError(t, err)
-
-	lifecycleImg, err = imagehelpers.SetStringLabel(lifecycleImg, "windows", windowsDiffId.String())
 	require.NoError(t, err)
 
 	lifecycleImg, err = imagehelpers.SetLabels(lifecycleImg, map[string]interface{}{

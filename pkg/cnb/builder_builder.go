@@ -10,7 +10,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver/v3"
-	"github.com/buildpacks/imgutil/layer"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -357,11 +356,7 @@ func (bb *builderBlder) rootOwnedDir(path string) *tar.Header {
 }
 
 func (bb *builderBlder) layerWriter(fileWriter io.Writer) layerWriter {
-	if bb.os == "windows" {
-		return layer.NewWindowsWriter(fileWriter)
-	}
 	return tar.NewWriter(fileWriter)
-
 }
 
 type layerWriter interface {

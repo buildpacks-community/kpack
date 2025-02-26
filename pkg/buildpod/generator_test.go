@@ -51,10 +51,9 @@ func TestGenerator(t *testing.T) {
 func testGenerator(t *testing.T, when spec.G, it spec.S) {
 	when("Generate", func() {
 		const (
-			serviceAccountName  = "serviceAccountName"
-			namespace           = "some-namespace"
-			windowsBuilderImage = "builder/windows"
-			linuxBuilderImage   = "builder/linux"
+			serviceAccountName = "serviceAccountName"
+			namespace          = "some-namespace"
+			linuxBuilderImage  = "builder/linux"
 		)
 
 		var (
@@ -193,7 +192,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
 			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
-			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)
 		})
 
 		it("invokes the BuildPod with the builder and env config", func() {

@@ -49,22 +49,14 @@ func (l *LifecycleProvider) Metadata() (cnb.LifecycleMetadata, error) {
 	return lifecycle.metadata, nil
 }
 
-func (l *LifecycleProvider) LayerForOS(os string) (v1.Layer, cnb.LifecycleMetadata, error) {
+func (l *LifecycleProvider) Layer() (v1.Layer, cnb.LifecycleMetadata, error) {
 	lifecycle, err := l.lifecycle()
 	if err != nil {
 		return nil, cnb.LifecycleMetadata{}, err
 	}
 
-	switch os {
-	case "linux":
-		layer, err := lifecycle.linux.toLazyLayer(lifecycle.keychain)
-		return layer, lifecycle.metadata, err
-	case "windows":
-		layer, err := lifecycle.windows.toLazyLayer(lifecycle.keychain)
-		return layer, lifecycle.metadata, err
-	default:
-		return nil, cnb.LifecycleMetadata{}, errors.Errorf("unrecognized os %s", os)
-	}
+	layer, err := lifecycle.linux.toLazyLayer(lifecycle.keychain)
+	return layer, lifecycle.metadata, err
 }
 
 func (l *LifecycleProvider) UpdateImage(cm *corev1.ConfigMap) error {
@@ -120,17 +112,11 @@ func (l *LifecycleProvider) read(ctx context.Context, cm *corev1.ConfigMap) (*li
 		return nil, err
 	}
 
-	windowsLayer, err := lifecycleLayerForOS(imageRef, img, "windows")
-	if err != nil {
-		return nil, err
-	}
-
 	return &lifecycle{
 		keychain: keychain,
 		digest:   digest,
 		metadata: lifecycleMd,
 		linux:    linuxLayer,
-		windows:  windowsLayer,
 	}, nil
 }
 
@@ -210,7 +196,6 @@ type lifecycle struct {
 	digest   v1.Hash
 	metadata cnb.LifecycleMetadata
 	linux    *lifecycleLayer
-	windows  *lifecycleLayer
 	keychain authn.Keychain
 }
 
