@@ -57,7 +57,10 @@ func NewController(
 		delay:        opt.SourcePollingFrequency,
 	}
 
-	sourceResolverInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	sourceResolverInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: reconciler.FilterDeletionTimestamp,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	})
 
 	return impl
 }

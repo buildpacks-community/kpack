@@ -63,7 +63,10 @@ func NewController(
 
 	impl := controller.NewContext(ctx, c, controller.ControllerOptions{WorkQueueName: ReconcilerName, Logger: logger})
 
-	imageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	imageInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: reconciler.FilterDeletionTimestamp,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	})
 
 	buildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(buildapi.SchemeGroupVersion.WithKind(Kind).GroupKind()),
