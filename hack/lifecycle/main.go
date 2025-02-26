@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"reflect"
 	"regexp"
 	"time"
 
@@ -61,7 +60,7 @@ func main() {
 
 }
 
-func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
+func lifecycleImage(linuxUrl, _ string) (v1.Image, error) {
 	image, err := random.Image(0, 0)
 	if err != nil {
 		return nil, err
@@ -70,13 +69,6 @@ func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 	linuxDescriptor, err := lifecycleDescriptor(linuxUrl)
 	if err != nil {
 		return nil, err
-	}
-	windowsDescriptor, err := lifecycleDescriptor(windowsUrl)
-	if err != nil {
-		return nil, err
-	}
-	if !reflect.DeepEqual(linuxDescriptor, windowsDescriptor) {
-		return nil, errors.New("linux and windows lifecycle descriptors do not match. Check urls.")
 	}
 
 	linuxLayer, err := lifecycleLayer(linuxUrl, "linux")
@@ -93,7 +85,7 @@ func lifecycleImage(linuxUrl, windowsUrl string) (v1.Image, error) {
 		return nil, err
 	}
 
-	windowsLayer, err := lifecycleLayer(windowsUrl, "windows")
+	windowsLayer, err := lifecycleLayer("", "windows")
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +161,17 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 
 	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
-	lr, err := lifecycleReader(url)
-	if err != nil {
-		return nil, err
+	var lr io.ReadCloser
+	if os == "windows" {
+		lr = io.NopCloser(bytes.NewReader([]byte{}))
+	} else {
+		lr, err = lifecycleReader(url)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer lr.Close()
+
 	tr := tar.NewReader(lr)
 	for {
 		header, err := tr.Next()
