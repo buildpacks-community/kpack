@@ -51,9 +51,10 @@ func TestGenerator(t *testing.T) {
 func testGenerator(t *testing.T, when spec.G, it spec.S) {
 	when("Generate", func() {
 		const (
-			serviceAccountName = "serviceAccountName"
-			namespace          = "some-namespace"
-			linuxBuilderImage  = "builder/linux"
+			serviceAccountName  = "serviceAccountName"
+			namespace           = "some-namespace"
+			linuxBuilderImage   = "builder/linux"
+			windowsBuilderImage = "builder/windows"
 		)
 
 		var (
@@ -192,6 +193,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
 			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
+			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)
+
 		})
 
 		it("invokes the BuildPod with the builder and env config", func() {
@@ -221,7 +224,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						Uid:          1234,
 						Gid:          5678,
 						PlatformAPIs: []string{"0.4", "0.5", "0.6"},
-						OS:           "linux",
 					},
 					Bindings: []buildapi.ServiceBinding{},
 					ImagePullSecrets: []corev1.LocalObjectReference{
@@ -544,6 +546,21 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			require.Len(t, build.buildPodCalls, 1)
 			assert.True(t, build.buildPodCalls[0].BuildContext.InjectedSidecarSupport)
+		})
+
+		it("errors when the builder is windowa", func() {
+
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Image:            windowsBuilderImage,
+					ImagePullSecrets: builderPullSecrets,
+				},
+			}
+
+			_, err := generator.Generate(context.TODO(), build)
+			require.EqualError(t, err, "windows builds are not supported")
 		})
 	})
 }

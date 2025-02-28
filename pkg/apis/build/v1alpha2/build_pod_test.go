@@ -254,7 +254,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Uid:          2000,
 			Gid:          3000,
 			PlatformAPIs: []string{"0.7", "0.8", "0.9"},
-			OS:           "linux",
 		},
 		Secrets:  secrets,
 		Bindings: serviceBindings,
@@ -368,18 +367,9 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
-			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux", "foo": "bar"}, pod.Spec.NodeSelector)
+			assert.Equal(t, map[string]string{"foo": "bar"}, pod.Spec.NodeSelector)
 			assert.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 			assert.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
-		})
-
-		it("handles a nil node selector", func() {
-			build.Spec.NodeSelector = nil
-
-			pod, err := build.BuildPod(config, buildContext)
-			require.NoError(t, err)
-
-			assert.Equal(t, map[string]string{"kubernetes.io/os": "linux"}, pod.Spec.NodeSelector)
 		})
 
 		it("configures the pod security context to match the builder config user and group", func() {
@@ -392,7 +382,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Uid:          2000,
 				Gid:          3000,
 				PlatformAPIs: []string{"0.7", "0.8", "0.9"},
-				OS:           "linux",
 			}.Uid, *pod.Spec.SecurityContext.RunAsUser)
 			assert.Equal(t, buildapi.BuildPodBuilderConfig{
 				StackID:      "com.builder.stack.io",
@@ -400,7 +389,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Uid:          2000,
 				Gid:          3000,
 				PlatformAPIs: []string{"0.7", "0.8", "0.9"},
-				OS:           "linux",
 			}.Gid, *pod.Spec.SecurityContext.RunAsGroup)
 			assert.Equal(t, buildapi.BuildPodBuilderConfig{
 				StackID:      "com.builder.stack.io",
@@ -408,7 +396,6 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				Uid:          2000,
 				Gid:          3000,
 				PlatformAPIs: []string{"0.7", "0.8", "0.9"},
-				OS:           "linux",
 			}.Gid, *pod.Spec.SecurityContext.FSGroup)
 		})
 
@@ -1297,8 +1284,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 				require.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
 				require.Equal(t, build.Spec.NodeSelector, map[string]string{
-					"kubernetes.io/os": "linux",
-					"foo":              "bar",
+					"foo": "bar",
 				})
 				require.Equal(t, pod.Spec.Volumes, []corev1.Volume{
 					{

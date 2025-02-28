@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"io"
 	"log"
-	"net"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
@@ -247,48 +244,6 @@ func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
 			}
 		}
 	}
-}
-
-func waitForDns(hostname string) {
-	timeoutChan := time.After(10 * time.Second)
-	tickerChan := time.NewTicker(time.Second)
-	defer tickerChan.Stop()
-
-	for {
-		select {
-		case <-timeoutChan:
-			return
-		case <-tickerChan.C:
-			if _, err := net.LookupIP(hostname); err == nil {
-				return
-			}
-		}
-	}
-}
-
-func copyFile(src, dest string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	destFile, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	if _, err = io.Copy(destFile, srcFile); err != nil {
-		return err
-	}
-
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod(dest, srcInfo.Mode())
 }
 
 func getenvInt(key string, defaultValue int) int {

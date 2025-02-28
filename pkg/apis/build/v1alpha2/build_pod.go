@@ -103,17 +103,12 @@ type BuildContext struct {
 	SSHTrustUnknownHost       bool
 }
 
-func (c BuildContext) os() string {
-	return c.BuildPodBuilderConfig.OS
-}
-
 type BuildPodBuilderConfig struct {
 	StackID      string
 	RunImage     string
 	Uid          int64
 	Gid          int64
 	PlatformAPIs []string
-	OS           string
 }
 
 var (
@@ -156,11 +151,6 @@ var (
 		MountPath: "/var/report",
 		ReadOnly:  false,
 	}
-	networkWaitLauncherMount = corev1.VolumeMount{
-		Name:      networkWaitLauncherVolumeName,
-		MountPath: "/networkWait",
-		ReadOnly:  false,
-	}
 	homeEnv = corev1.EnvVar{
 		Name:  "HOME",
 		Value: "/builder/home",
@@ -181,7 +171,6 @@ var (
 )
 
 type stepModifier func(corev1.Container) corev1.Container
-type podModifier func(*corev1.Pod) *corev1.Pod
 
 func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*corev1.Pod, error) {
 	platformAPI, err := buildContext.highestSupportedPlatformAPI(b)
@@ -541,7 +530,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 			}),
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.nodeSelector(buildContext.os()),
+			NodeSelector:       b.Spec.NodeSelector,
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
@@ -703,18 +692,6 @@ func (b *Build) useStandardContainers(buildWaiterImage string, pod *corev1.Pod) 
 	return pod
 }
 
-func userprofileHomeEnv() stepModifier {
-	return func(container corev1.Container) corev1.Container {
-		for i, env := range container.Env {
-			if env.Name == "HOME" {
-				container.Env[i].Name = "USERPROFILE"
-			}
-		}
-
-		return container
-	}
-}
-
 func (b *Build) notarySecretVolume() corev1.Volume {
 	config := b.NotaryV1Config()
 	if config == nil {
@@ -784,7 +761,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.nodeSelector("linux"),
+			NodeSelector:       b.Spec.NodeSelector,
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
@@ -1048,15 +1025,6 @@ func (bc BuildContext) highestSupportedPlatformAPI(b *Build) (*semver.Version, e
 	}
 
 	return nil, errors.Errorf("unsupported builder platform API versions: %s", strings.Join(bc.BuildPodBuilderConfig.PlatformAPIs, ","))
-}
-
-func (b Build) nodeSelector(os string) map[string]string {
-	if b.Spec.NodeSelector == nil {
-		b.Spec.NodeSelector = map[string]string{}
-	}
-
-	b.Spec.NodeSelector[k8sOSLabel] = os
-	return b.Spec.NodeSelector
 }
 
 func setupBindingVolumesAndMounts(bindings []ServiceBinding) ([]corev1.Volume, []corev1.VolumeMount, error) {
