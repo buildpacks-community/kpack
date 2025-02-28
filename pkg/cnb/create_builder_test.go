@@ -4,8 +4,6 @@ import (
 	"archive/tar"
 	"context"
 	"fmt"
-	"path"
-	"strings"
 	"testing"
 	"time"
 
@@ -27,17 +25,10 @@ import (
 )
 
 func TestCreateBuilder(t *testing.T) {
-	spec.Run(t, "Create Builder Linux", testCreateBuilder("linux"))
-	spec.Run(t, "Create Builder Windows", testCreateBuilder("windows"))
+	spec.Run(t, "Create Builder Linux", testCreateBuilder)
 }
 
-func testCreateBuilder(os string) func(*testing.T, spec.G, spec.S) {
-	return func(t *testing.T, when spec.G, it spec.S) {
-		testCreateBuilderOs(os, t, when, it)
-	}
-}
-
-func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
+func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	const (
 		stackID              = "io.buildpacks.stacks.some-stack"
 		mixin                = "some-mixin"
@@ -60,7 +51,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		builderKeychain = authn.NewMultiKeychain(authn.DefaultKeychain)
 		stackKeychain   = authn.NewMultiKeychain(authn.DefaultKeychain)
 		secretRef       = registry.SecretRef{}
-		runImage        = createRunImage(os)
+		runImage        = createRunImage()
 		runImageDigest  = digest(runImage)
 		runImageRef     = fmt.Sprintf("%s@%s", runImageTag, runImageDigest)
 		ctx             = context.Background()
@@ -70,12 +61,6 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 		linuxLifecycle = &fakeLayer{
 			digest: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
 			diffID: "sha256:5d43d12dabe6070c4a4036e700a6f88a52278c02097b5f200e0b49b3d874c954",
-			size:   200,
-		}
-
-		windowsLifecycle = &fakeLayer{
-			digest: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
-			diffID: "sha256:e40a7455f5495621a585e68523ab66ad8a0b7c791f40bf3aa97c7858003c1287",
 			size:   200,
 		}
 
@@ -328,7 +313,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			config, err := buildImg.ConfigFile()
 			require.NoError(t, err)
 
-			config.OS = os
+			config.OS = "linux"
 			buildImg, err = mutate.ConfigFile(buildImg, config)
 
 			registryClient.AddImage(buildImage, buildImg, stackKeychain)
@@ -353,8 +338,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 				},
 			}
 			lifecycleProvider.layers = map[string]v1.Layer{
-				"linux":   linuxLifecycle,
-				"windows": windowsLifecycle,
+				"linux": linuxLifecycle,
 			}
 		})
 
@@ -370,7 +354,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, corev1alpha1.BuildStack{RunImage: fmt.Sprintf("%s@%s", relocatedRunImageTag, runImageDigest), ID: stackID}, builderRecord.Stack)
 			assert.Equal(t, int64(10), builderRecord.ObservedStoreGeneration)
 			assert.Equal(t, int64(11), builderRecord.ObservedStackGeneration)
-			assert.Equal(t, os, builderRecord.OS)
+			assert.Equal(t, "linux", builderRecord.OS)
 
 			assert.Equal(t, builderRecord.Order, []corev1alpha1.OrderEntry{
 				{
@@ -435,7 +419,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			layerTester.testNextLayer("Default Directory Layer", func(index int) {
 				defaultDirectoryLayer := layers[index]
 
-				assertLayerContents(t, os, defaultDirectoryLayer, map[string]content{
+				assertLayerContents(t, defaultDirectoryLayer, map[string]content{
 					"/workspace": {
 						typeflag: tar.TypeDir,
 						mode:     0755,
@@ -468,11 +452,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			})
 
 			layerTester.testNextLayer("Lifecycle Layer", func(index int) {
-				if os == "linux" {
-					assert.Equal(t, layers[index], linuxLifecycle)
-				} else {
-					assert.Equal(t, layers[index], windowsLifecycle)
-				}
+				assert.Equal(t, layers[index], linuxLifecycle)
 			})
 
 			layerTester.testNextLayer("Largest Buildpack Layer", func(index int) {
@@ -488,7 +468,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			})
 
 			layerTester.testNextLayer("stack Layer", func(index int) {
-				assertLayerContents(t, os, layers[index], map[string]content{
+				assertLayerContents(t, layers[index], map[string]content{
 					"/cnb/stack.toml": //language=toml
 					{
 						typeflag: tar.TypeReg,
@@ -504,7 +484,7 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 			layerTester.testNextLayer("order Layer", func(index int) {
 				assert.Equal(t, len(layers)-1, index)
 
-				assertLayerContents(t, os, layers[index], map[string]content{
+				assertLayerContents(t, layers[index], map[string]content{
 					"/cnb/order.toml": {
 						typeflag: tar.TypeReg,
 						mode:     0644,
@@ -974,8 +954,8 @@ type fakeLifecycleProvider struct {
 	layers   map[string]v1.Layer
 }
 
-func (p *fakeLifecycleProvider) LayerForOS(os string) (v1.Layer, LifecycleMetadata, error) {
-	return p.layers[os], p.metadata, nil
+func (p *fakeLifecycleProvider) Layer() (v1.Layer, LifecycleMetadata, error) {
+	return p.layers["linux"], p.metadata, nil
 }
 
 func buildpackInfoInLayers(buildpackLayers []buildpackLayer, id, version string) DescriptiveBuildpackInfo {
@@ -996,10 +976,8 @@ type content struct {
 	ignoreModTime bool
 }
 
-func assertLayerContents(t *testing.T, os string, layer v1.Layer, expectedContents map[string]content) {
+func assertLayerContents(t *testing.T, layer v1.Layer, expectedContents map[string]content) {
 	t.Helper()
-	expectedContents = expectedPathsIfWindows(os, expectedContents)
-
 	uncompressed, err := layer.Uncompressed()
 	require.NoError(t, err)
 	reader := tar.NewReader(uncompressed)
@@ -1041,41 +1019,6 @@ func assertLayerContents(t *testing.T, os string, layer v1.Layer, expectedConten
 	}
 }
 
-func expectedPathsIfWindows(os string, contents map[string]content) map[string]content {
-	if os == "linux" {
-		return contents
-	}
-
-	newExpectedContents := map[string]content{}
-	newExpectedContents["Files"] = content{
-		typeflag:      tar.TypeDir,
-		ignoreModTime: true,
-	}
-	newExpectedContents["Hives"] = content{
-		typeflag:      tar.TypeDir,
-		ignoreModTime: true,
-	}
-	for headerPath, v := range contents {
-		newPath := path.Join("Files", headerPath)
-
-		var parentDir string
-		//write windows parent paths
-		//extracted from windows writer
-		for _, pathPart := range strings.Split(path.Dir(newPath), "/") {
-			parentDir = path.Join(parentDir, pathPart)
-
-			if _, present := newExpectedContents[parentDir]; !present {
-				newExpectedContents[parentDir] = content{
-					typeflag:      tar.TypeDir,
-					ignoreModTime: true,
-				}
-			}
-		}
-		newExpectedContents[newPath] = v
-	}
-	return newExpectedContents
-}
-
 type layerIteratorTester int
 
 func (i *layerIteratorTester) testNextLayer(name string, test func(index int)) {
@@ -1101,12 +1044,12 @@ func layerToRemoteBuildpack(bpLayer buildpackLayer, layer *fakeLayer, secretRef 
 	}
 }
 
-func createRunImage(os string) v1.Image {
+func createRunImage() v1.Image {
 	runImg, _ := random.Image(1, int64(5))
 
 	config, _ := runImg.ConfigFile()
 
-	config.OS = os
+	config.OS = "linux"
 	runImg, _ = mutate.ConfigFile(runImg, config)
 
 	return runImg

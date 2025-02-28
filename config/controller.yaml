@@ -12,14 +12,6 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  build-init-windows-image
-  namespace: kpack
-data:
-  image: #@ data.values.build_init_windows.image
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name:  build-waiter-image
   namespace: kpack
 data:
@@ -48,14 +40,6 @@ metadata:
   namespace: kpack
 data:
   image: #@ data.values.completion.image
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name:  completion-windows-image
-  namespace: kpack
-data:
-  image: #@ data.values.completion_windows.image
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -121,11 +105,6 @@ spec:
             configMapKeyRef:
               name: build-init-image
               key: image
-        - name: BUILD_INIT_WINDOWS_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: build-init-windows-image
-              key: image
         - name: BUILD_WAITER_IMAGE
           valueFrom:
             configMapKeyRef:
@@ -140,11 +119,6 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: completion-image
-              key: image
-        - name: COMPLETION_WINDOWS_IMAGE
-          valueFrom:
-            configMapKeyRef:
-              name: completion-windows-image
               key: image
         resources:
           requests:

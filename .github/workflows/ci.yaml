@@ -154,48 +154,6 @@ jobs:
         bp_go_targets: "./cmd/rebase"
         artifact_name: rebase-image
 
-  build-init-windows-image:
-    runs-on: windows-2019
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-    - name: Build
-      uses: ./.github/actions/pack-build
-      with:
-        pack_version: ${{ env.PACK_VERSION }}
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init-windows
-        bp_go_targets: '.\cmd\build-init;.\cmd\network-wait-launcher'
-        builder: gcr.io/cf-build-service-public/kpack-windows-builder
-        additional_pack_args: "--trust-builder"
-        artifact_name: build-init-windows-image
-
-  completion-windows-image:
-    runs-on: windows-2019
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-    - name: Build
-      uses: ./.github/actions/pack-build
-      with:
-        pack_version: ${{ env.PACK_VERSION }}
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion-windows
-        bp_go_targets: '.\cmd\completion'
-        builder: gcr.io/cf-build-service-public/kpack-windows-builder
-        additional_pack_args: "--trust-builder"
-        artifact_name: completion-windows-image
-
   lifecycle-image:
     runs-on: ubuntu-latest
     steps:
@@ -235,8 +193,6 @@ jobs:
     - rebase-image
     - build-init-image
     - build-waiter-image
-    - build-init-windows-image
-    - completion-windows-image
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -265,11 +221,9 @@ jobs:
           -v controller.image=$(cat images/controller) \
           -v webhook.image=$(cat images/webhook) \
           -v build_init.image=$(cat images/build-init) \
-          -v build_init_windows.image=$(cat images/build-init-windows) \
           -v build_waiter.image=$(cat images/build-waiter) \
           -v rebase.image=$(cat images/rebase) \
           -v completion.image=$(cat images/completion) \
-          -v completion_windows.image=$(cat images/completion-windows) \
           -v lifecycle.image=$(cat images/lifecycle) > prerelease.yaml
 
         cat prerelease.yaml
@@ -289,8 +243,6 @@ jobs:
       - rebase-image
       - build-init-image
       - build-waiter-image
-      - build-init-windows-image
-      - completion-windows-image
       - lifecycle-image
     runs-on: ubuntu-latest
     steps:
@@ -463,8 +415,6 @@ jobs:
       - rebase-image
       - build-init-image
       - build-waiter-image
-      - build-init-windows-image
-      - completion-windows-image
       - lifecycle-image
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
@@ -540,11 +490,9 @@ jobs:
           -v controller.image=$(cat final-image-refs/controller) \
           -v webhook.image=$(cat final-image-refs/webhook) \
           -v build_init.image=$(cat final-image-refs/build-init) \
-          -v build_init_windows.image=$(cat final-image-refs/build-init-windows) \
           -v build_waiter.image=$(cat final-image-refs/build-waiter) \
           -v rebase.image=$(cat final-image-refs/rebase) \
           -v completion.image=$(cat final-image-refs/completion) \
-          -v completion_windows.image=$(cat final-image-refs/completion-windows) \
           -v lifecycle.image=$(cat final-image-refs/lifecycle) \
           -v kpack_version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT

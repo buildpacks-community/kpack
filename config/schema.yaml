@@ -10,13 +10,9 @@ build_init:
   image: build-init
 build_waiter:
   image: build-waiter
-build_init_windows:
-  image: build-init-windows
 rebase:
   image: rebase
 completion:
   image: completion
-completion_windows:
-  image: completion-windows
 lifecycle:
   image: lifecycle

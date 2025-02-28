@@ -20,7 +20,7 @@ type RegistryClient interface {
 }
 
 type LifecycleProvider interface {
-	LayerForOS(os string) (ggcrv1.Layer, LifecycleMetadata, error)
+	Layer() (ggcrv1.Layer, LifecycleMetadata, error)
 }
 
 type RemoteBuilderCreator struct {
@@ -64,7 +64,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		return buildapi.BuilderRecord{}, err
 	}
 
-	lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.LayerForOS(builderBldr.os)
+	lifecycleLayer, lifecycleMetadata, err := r.LifecycleProvider.Layer()
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
