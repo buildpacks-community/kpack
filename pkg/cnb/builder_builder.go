@@ -65,6 +65,9 @@ func (bb *builderBlder) AddStack(baseImage v1.Image, clusterStack *buildapi.Clus
 		return err
 	}
 
+	if file.OS == "windows" {
+		return errors.New("windows base images are not supported")
+	}
 	bb.os = file.OS
 	bb.baseImage = baseImage
 	bb.stackId = clusterStack.Status.Id
