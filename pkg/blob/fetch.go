@@ -12,15 +12,15 @@ import (
 	"path"
 
 	"github.com/BurntSushi/toml"
-	"github.com/pkg/errors"
 
 	"github.com/pivotal/kpack/pkg/archive"
 )
 
-var unexpectedBlobTypeError = errors.New("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
+var errUnexpectedBlobType = fmt.Errorf("unexpected blob file type, must be one of .zip, .tar.gz, .tar, .jar")
 
 type Fetcher struct {
-	Logger *log.Logger
+	Logger   *log.Logger
+	Keychain Keychain
 }
 
 func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadataDir string) error {
@@ -28,9 +28,24 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	if err != nil {
 		return err
 	}
+
+	var headers map[string]string
+	if f.Keychain != nil {
+		var auth string
+		auth, headers, err = f.Keychain.Resolve(blobURL)
+		if err != nil {
+			return fmt.Errorf("failed to resolve creds: %v", err)
+		}
+
+		if headers == nil {
+			headers = make(map[string]string)
+		}
+		headers["Authorization"] = auth
+	}
+
 	f.Logger.Printf("Downloading %s%s...", u.Host, u.Path)
 
-	file, err := downloadBlob(blobURL)
+	file, err := downloadBlob(blobURL, headers)
 	if err != nil {
 		return err
 	}
@@ -58,11 +73,11 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 		err = archive.ExtractTarGZ(file, dir, stripComponents)
 	case "application/octet-stream":
 		if !archive.IsTar(file.Name()) {
-			return unexpectedBlobTypeError
+			return errUnexpectedBlobType
 		}
 		err = archive.ExtractTar(file, dir, stripComponents)
 	default:
-		return unexpectedBlobTypeError
+		return errUnexpectedBlobType
 	}
 	if err != nil {
 		return err
@@ -70,7 +85,7 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 
 	projectMetadataFile, err := os.Create(path.Join(metadataDir, "project-metadata.toml"))
 	if err != nil {
-		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
+		return fmt.Errorf("invalid metadata destination '%s/project-metadata.toml' for blob '%s': %v", metadataDir, blobURL, err)
 	}
 	defer projectMetadataFile.Close()
 
@@ -86,7 +101,7 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 		},
 	}
 	if err := toml.NewEncoder(projectMetadataFile).Encode(projectMd); err != nil {
-		return errors.Wrapf(err, "invalid metadata destination '%s/project-metadata.toml' for blob: %s", metadataDir, blobURL)
+		return fmt.Errorf("invalid metadata destination '%s/project-metadata.toml' for blob '%s': %v", metadataDir, blobURL, err)
 	}
 
 	f.Logger.Printf("Successfully downloaded %s%s in path %q", u.Host, u.Path, dir)
@@ -94,15 +109,30 @@ func (f *Fetcher) Fetch(dir string, blobURL string, stripComponents int, metadat
 	return nil
 }
 
-func downloadBlob(blobURL string) (*os.File, error) {
-	resp, err := http.Get(blobURL)
+func downloadBlob(blobURL string, headers map[string]string) (*os.File, error) {
+	req, err := http.NewRequest(http.MethodGet, blobURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to get blob %s", blobURL)
+		var body []byte
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get blob %s: %d %s", blobURL, resp.StatusCode, http.StatusText(resp.StatusCode))
+		}
+
+		return nil, fmt.Errorf("failed to get blob %s: %d %s: %s", blobURL, resp.StatusCode, http.StatusText(resp.StatusCode), string(body))
 	}
 
 	file, err := os.CreateTemp("", "")

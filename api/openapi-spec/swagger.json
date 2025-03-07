@@ -7151,6 +7151,9 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"

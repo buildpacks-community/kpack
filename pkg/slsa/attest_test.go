@@ -188,6 +188,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
         "enablePriorityClasses": false,
         "maximumPlatformApiVersion": "",
         "sshTrustUnknownHosts": true,
+        "scalingFactor": 0,
         "buildInitImage": "build-init-image",
         "buildInitWindowsImage": "build-init-windows-image",
         "buildWaiterImage": "build-waiter-image",

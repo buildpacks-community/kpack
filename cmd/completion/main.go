@@ -48,6 +48,7 @@ var (
 	cosignDockerMediaTypes  flaghelpers.CredentialsFlags
 	basicGitCredentials     flaghelpers.CredentialsFlags
 	sshGitCredentials       flaghelpers.CredentialsFlags
+	blobCredentials         flaghelpers.CredentialsFlags
 	logger                  *log.Logger
 )
 
@@ -60,6 +61,7 @@ func init() {
 	flag.Var(&dockerConfigCredentials, "dockerconfig", "Docker Config JSON credentials in the form of the path to the credential")
 	flag.Var(&basicGitCredentials, "basic-git", "Basic authentication for git of the form 'secretname=git.domain.com'")
 	flag.Var(&sshGitCredentials, "ssh-git", "SSH authentication for git of the form 'secretname=git.domain.com'")
+	flag.Var(&blobCredentials, "blob", "Authentication for blob of the form 'secretname=git.domain.com'")
 
 	flag.Var(&cosignAnnotations, "cosign-annotations", "Cosign custom signing annotations")
 	flag.Var(&cosignRepositories, "cosign-repositories", "Cosign signing repository of the form 'secretname=registry.example.com/project'")

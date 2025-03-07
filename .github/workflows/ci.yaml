@@ -38,7 +38,7 @@ jobs:
       run: make unit-ci
 
     - name: Report coverage
-      uses: codecov/codecov-action@v4.1.0
+      uses: codecov/codecov-action@v4.5.0
 
   controller-image:
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -65,7 +65,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -84,7 +84,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -103,7 +103,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -122,7 +122,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -141,7 +141,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -160,7 +160,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -181,7 +181,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -202,7 +202,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -303,7 +303,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup crane
-      uses: imjasonh/setup-crane@v0.3
+      uses: imjasonh/setup-crane@v0.4
 
     - name: Setup carvel
       uses: carvel-dev/setup-action@v2
@@ -363,13 +363,13 @@ jobs:
         EOF
 
     - name: Create Kind Cluster
-      uses: helm/kind-action@v1.8.0
+      uses: helm/kind-action@v1.12.0
       with:
         cluster_name: e2e
         config: kind.yaml
 
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ env.REGISTRY_URL }}
         username: ${{ env.REGISTRY_USER }}
@@ -478,7 +478,7 @@ jobs:
         go-version-file: 'go.mod'
 
     - name: Setup crane
-      uses: imjasonh/setup-crane@v0.3
+      uses: imjasonh/setup-crane@v0.4
 
     - name: Setup carvel
       uses: carvel-dev/setup-action@v2
@@ -494,7 +494,7 @@ jobs:
         merge-multiple: true
 
     - name: Docker Login
-      uses: docker/login-action@v3.1.0
+      uses: docker/login-action@v3.3.0
       with:
         registry: ${{ secrets.REGISTRY_HOST }}
         username: ${{ secrets.REGISTRY_USER }}

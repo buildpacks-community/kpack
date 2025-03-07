@@ -18,6 +18,11 @@ func (bl BuildpackLayerInfo) supports(buildpackApis []string, id string, mixins 
 		return errors.Errorf("unsupported buildpack api: %s, expecting: %s", bl.API, strings.Join(buildpackApis, ", "))
 	}
 
+	// as of buildpack API 0.10+ stacks are optional (and deprecated)
+	if len(bl.Stacks) == 0 {
+		return nil
+	}
+
 	for _, s := range bl.Stacks {
 		buildpackVersion, err := semver.NewVersion(bl.API)
 		if err != nil {

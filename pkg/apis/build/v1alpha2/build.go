@@ -199,16 +199,6 @@ func (b *Build) builtWithStack(runImage string) bool {
 	return lastBuildRunImageRef.Identifier() == builderRunImageRef.Identifier()
 }
 
-func (b *Build) builtWithBuildpacks(buildpacks corev1alpha1.BuildpackMetadataList) bool {
-	for _, bp := range b.Status.BuildMetadata {
-		if !buildpacks.Include(bp) {
-			return false
-		}
-	}
-
-	return true
-}
-
 func (b *Build) additionalBuildNeeded() bool {
 	_, ok := b.Annotations[BuildNeededAnnotation]
 	return ok

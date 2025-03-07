@@ -43,6 +43,7 @@ const (
 	cosignRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
 	DOCKERSecretAnnotationPrefix           = "kpack.io/docker"
 	GITSecretAnnotationPrefix              = "kpack.io/git"
+	BlobSecretAnnotationPrefix             = "kpack.io/blob"
 	IstioInject                            = "sidecar.istio.io/inject"
 	BuildReadyAnnotation                   = "build.kpack.io/ready"
 
@@ -234,7 +235,9 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		buildEnv = append(buildEnv, envVar)
 	}
 
-	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, gitAndDockerSecrets)
+	blobAuthUseSecrets := b.Spec.Source.Blob != nil && b.Spec.Source.Blob.Auth == string(corev1alpha1.BlobAuthSecret)
+
+	secretVolumes, secretVolumeMounts, secretArgs := b.setupSecretVolumesAndArgs(buildContext.Secrets, buildSecrets(blobAuthUseSecrets))
 	cosignVolumes, cosignVolumeMounts, cosignSecretArgs := b.setupCosignVolumes(buildContext.Secrets)
 	imagePullVolumes, imagePullVolumeMounts, imagePullArgs := b.setupImagePullVolumes(buildContext.ImagePullSecrets)
 
@@ -266,6 +269,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		useCacheFromLastBuild := b.Spec.LastBuild != nil && b.Spec.LastBuild.Cache.Image != ""
 		if useCacheFromLastBuild {
 			genericCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.LastBuild.Cache.Image)}
+		} else {
+			genericCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
 		}
 		analyzerCacheArgs = genericCacheArgs
 		exporterCacheArgs = []string{fmt.Sprintf("-cache-image=%s", b.Spec.Cache.Registry.Tag)}
@@ -978,8 +983,18 @@ func (b *Build) cacheVolume(os string) []corev1.Volume {
 	}}
 }
 
-func gitAndDockerSecrets(secret corev1.Secret) bool {
-	return secret.Annotations[GITSecretAnnotationPrefix] != "" || dockerSecrets(secret)
+func buildSecrets(includeBlobSecrets bool) func(corev1.Secret) bool {
+	return func(secret corev1.Secret) bool {
+		return gitSecrets(secret) || blobSecrets(includeBlobSecrets, secret) || dockerSecrets(secret)
+	}
+}
+
+func gitSecrets(secret corev1.Secret) bool {
+	return secret.Annotations[GITSecretAnnotationPrefix] != ""
+}
+
+func blobSecrets(includeBlobSecret bool, secret corev1.Secret) bool {
+	return includeBlobSecret && secret.Annotations[BlobSecretAnnotationPrefix] != ""
 }
 
 func dockerSecrets(secret corev1.Secret) bool {
@@ -1009,6 +1024,9 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 		case secret.Type == corev1.SecretTypeSSHAuth:
 			annotatedUrl := secret.Annotations[GITSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-ssh-%s=%s=%s", "git", secret.Name, annotatedUrl))
+		case secret.Annotations[BlobSecretAnnotationPrefix] != "":
+			annotatedUrl := secret.Annotations[BlobSecretAnnotationPrefix]
+			args = append(args, fmt.Sprintf("-blob=%s=%s", secret.Name, annotatedUrl))
 		default:
 			//ignoring secret
 			continue
