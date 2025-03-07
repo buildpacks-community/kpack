@@ -75,7 +75,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			return r, actionRecorderList, eventList
 		})
 
-imageWithBuilder := &buildapi.Image{
+	imageWithBuilder := &buildapi.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       imageName,
 			Namespace:  namespace,
@@ -165,6 +165,9 @@ imageWithBuilder := &buildapi.Image{
 			Stack: corev1alpha1.BuildStack{
 				RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 				ID:       "io.buildpacks.stacks.bionic",
+			},
+			Lifecycle: buildapi.ResolvedClusterLifecycle{
+				Version: "some-version",
 			},
 			Status: corev1alpha1.Status{
 				Conditions: corev1alpha1.Conditions{
@@ -787,15 +790,15 @@ imageWithBuilder := &buildapi.Image{
 					Objects: []runtime.Object{
 						imageWithBuilder,
 						builderWithCondition(
-							builder, 
+							builder,
 							corev1alpha1.Condition{
 								Type:    corev1alpha1.ConditionReady,
 								Status:  corev1.ConditionFalse,
 								Message: "something went wrong",
 							},
 							corev1alpha1.Condition{
-								Type:    buildapi.ConditionUpToDate,
-								Status:  corev1.ConditionFalse,
+								Type:   buildapi.ConditionUpToDate,
+								Status: corev1.ConditionFalse,
 							},
 						),
 						resolvedSourceResolver(imageWithBuilder),
@@ -844,16 +847,16 @@ imageWithBuilder := &buildapi.Image{
 					Objects: []runtime.Object{
 						imageWithBuilder,
 						builderWithCondition(
-							builder, 
+							builder,
 							corev1alpha1.Condition{
-								Type:    corev1alpha1.ConditionReady,
-								Status:  corev1.ConditionTrue,
+								Type:   corev1alpha1.ConditionReady,
+								Status: corev1.ConditionTrue,
 							},
 							corev1alpha1.Condition{
 								Type:    buildapi.ConditionUpToDate,
 								Status:  corev1.ConditionFalse,
 								Message: "Builder failed to reconcile",
-								Reason: buildapi.ReconcileFailedReason,
+								Reason:  buildapi.ReconcileFailedReason,
 							},
 						),
 						sourceResolver,
@@ -921,10 +924,10 @@ imageWithBuilder := &buildapi.Image{
 								ObjectMeta: imageWithBuilder.ObjectMeta,
 								Spec:       imageWithBuilder.Spec,
 								Status: buildapi.ImageStatus{
-									LatestBuildRef: "image-name-build-1",
+									LatestBuildRef:             "image-name-build-1",
 									LatestBuildImageGeneration: 1,
-									BuildCounter: 1,
-									LatestBuildReason: "CONFIG",
+									BuildCounter:               1,
+									LatestBuildReason:          "CONFIG",
 									Status: corev1alpha1.Status{
 										ObservedGeneration: originalGeneration,
 										Conditions: corev1alpha1.Conditions{
@@ -935,9 +938,9 @@ imageWithBuilder := &buildapi.Image{
 												Message: "Build 'image-name-build-1' is executing",
 											},
 											{
-												Type:    buildapi.ConditionBuilderReady,
-												Status:  corev1.ConditionTrue,
-												Reason:  buildapi.BuilderReady,
+												Type:   buildapi.ConditionBuilderReady,
+												Status: corev1.ConditionTrue,
+												Reason: buildapi.BuilderReady,
 											},
 											{
 												Type:    buildapi.ConditionBuilderUpToDate,
@@ -1464,6 +1467,7 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								LifecycleVersion: "some-version",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1624,6 +1628,7 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								LifecycleVersion: "some-version",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -1736,6 +1741,9 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								Lifecycle: buildapi.ResolvedClusterLifecycle{
+									Version: "some-version",
+								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -1784,6 +1792,7 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								LifecycleVersion: "some-version",
 								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -1910,6 +1919,9 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: updatedBuilderRunImage,
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								Lifecycle: buildapi.ResolvedClusterLifecycle{
+									Version: "some-version",
+								},
 								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -1958,6 +1970,7 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "gcr.io/test-project/install/run@sha256:42841631725942db48b7ba8b788b97374a2ada34c84ee02ca5e02ef3d4b0dfca",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								LifecycleVersion: "some-version",
 								BuildMetadata: corev1alpha1.BuildpackMetadataList{
 									{
 										Id:      "io.buildpack",
@@ -2030,6 +2043,175 @@ imageWithBuilder := &buildapi.Image{
 									LatestBuildRef:             "image-name-build-2",
 									LatestBuildImageGeneration: originalGeneration,
 									LatestBuildReason:          buildapi.BuildReasonStack,
+									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
+									BuildCounter:               2,
+								},
+							},
+						},
+					},
+				})
+			})
+
+			it("schedules a build when the builder lifecycle is updated", func() {
+				imageWithBuilder.Status.BuildCounter = 1
+				imageWithBuilder.Status.LatestBuildRef = "image-name-build-1"
+				const updatedBuilderImage = "some/builder@sha256:updated"
+
+				sourceResolver := resolvedSourceResolver(imageWithBuilder)
+				rt.Test(rtesting.TableRow{
+					Key: key,
+					Objects: []runtime.Object{
+						imageWithBuilder,
+						&buildapi.Builder{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      builderName,
+								Namespace: namespace,
+							},
+							TypeMeta: metav1.TypeMeta{
+								Kind: buildapi.BuilderKind,
+							},
+							Status: buildapi.BuilderStatus{
+								Status: corev1alpha1.Status{
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:   corev1alpha1.ConditionReady,
+											Status: corev1.ConditionTrue,
+										},
+										{
+											Type:   buildapi.ConditionUpToDate,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								LatestImage: updatedBuilderImage,
+								Stack: corev1alpha1.BuildStack{
+									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+									ID:       "io.buildpacks.stacks.bionic",
+								},
+								Lifecycle: buildapi.ResolvedClusterLifecycle{
+									Version: "some-new-version",
+								},
+								BuilderMetadata: corev1alpha1.BuildpackMetadataList{
+									{
+										Id:      "io.buildpack",
+										Version: "version",
+									},
+								},
+							},
+						},
+						sourceResolver,
+						&buildapi.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "image-name-build-1",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(imageWithBuilder),
+								},
+								Labels: map[string]string{
+									buildapi.BuildNumberLabel: "1",
+									buildapi.ImageLabel:       imageName,
+								},
+							},
+							Spec: buildapi.BuildSpec{
+								Tags: []string{imageWithBuilder.Spec.Tag},
+								Builder: corev1alpha1.BuildBuilderSpec{
+									Image: updatedBuilderImage,
+								},
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+							},
+							Status: buildapi.BuildStatus{
+								LatestImage: imageWithBuilder.Spec.Tag + "@sha256:just-built",
+								Status: corev1alpha1.Status{
+									Conditions: corev1alpha1.Conditions{
+										{
+											Type:   corev1alpha1.ConditionSucceeded,
+											Status: corev1.ConditionTrue,
+										},
+									},
+								},
+								Stack: corev1alpha1.BuildStack{
+									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
+									ID:       "io.buildpacks.stacks.bionic",
+								},
+								LifecycleVersion: "some-version",
+								BuildMetadata: corev1alpha1.BuildpackMetadataList{
+									{
+										Id:      "io.buildpack",
+										Version: "version",
+									},
+								},
+							},
+						},
+					},
+					WantErr: false,
+					WantCreates: []runtime.Object{
+						&buildapi.Build{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      imageName + "-build-2",
+								Namespace: namespace,
+								OwnerReferences: []metav1.OwnerReference{
+									*kmeta.NewControllerRef(imageWithBuilder),
+								},
+								Labels: map[string]string{
+									buildapi.BuildNumberLabel:     "2",
+									buildapi.ImageLabel:           imageName,
+									buildapi.ImageGenerationLabel: generation(imageWithBuilder),
+									someLabelKey:                  someValueToPassThrough,
+								},
+								Annotations: map[string]string{
+									buildapi.BuilderNameAnnotation: builderName,
+									buildapi.BuilderKindAnnotation: buildapi.BuilderKind,
+									buildapi.BuildReasonAnnotation: buildapi.BuildReasonLifecycle,
+									buildapi.BuildChangesAnnotation: testhelpers.CompactJSON(`
+[
+  {
+    "reason": "LIFECYCLE",
+    "old": "some-version",
+    "new": "some-new-version"
+  }
+]`),
+								},
+							},
+							Spec: buildapi.BuildSpec{
+								Tags: []string{imageWithBuilder.Spec.Tag},
+								Builder: corev1alpha1.BuildBuilderSpec{
+									Image: updatedBuilderImage,
+								},
+								ServiceAccountName: imageWithBuilder.Spec.ServiceAccountName,
+								Source: corev1alpha1.SourceConfig{
+									Git: &corev1alpha1.Git{
+										URL:      sourceResolver.Status.Source.Git.URL,
+										Revision: sourceResolver.Status.Source.Git.Revision,
+									},
+								},
+								Cache:    &buildapi.BuildCacheConfig{},
+								RunImage: builderRunImage,
+								LastBuild: &buildapi.LastBuild{
+									Image:   "some/image@sha256:just-built",
+									StackId: "io.buildpacks.stacks.bionic",
+								},
+							},
+						},
+					},
+					WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+						{
+							Object: &buildapi.Image{
+								ObjectMeta: imageWithBuilder.ObjectMeta,
+								Spec:       imageWithBuilder.Spec,
+								Status: buildapi.ImageStatus{
+									Status: corev1alpha1.Status{
+										ObservedGeneration: originalGeneration,
+										Conditions:         conditionBuildExecuting("image-name-build-2"),
+									},
+									LatestBuildRef:             "image-name-build-2",
+									LatestBuildReason:          "LIFECYCLE",
+									LatestBuildImageGeneration: originalGeneration,
 									LatestImage:                imageWithBuilder.Spec.Tag + "@sha256:just-built",
 									BuildCounter:               2,
 								},
@@ -2317,6 +2499,7 @@ imageWithBuilder := &buildapi.Image{
 									RunImage: "some/run@sha256:67e3de2af270bf09c02e9a644aeb7e87e6b3c049abe6766bf6b6c3728a83e7fb",
 									ID:       "io.buildpacks.stacks.bionic",
 								},
+								LifecycleVersion: "some-version",
 								Status: corev1alpha1.Status{
 									Conditions: corev1alpha1.Conditions{
 										{
@@ -2747,6 +2930,7 @@ func builds(image *buildapi.Image, sourceResolver *buildapi.SourceResolver, coun
 					RunImage: runImageRef,
 					ID:       "io.buildpacks.stacks.bionic",
 				},
+				LifecycleVersion: "some-version",
 				Status: corev1alpha1.Status{
 					Conditions: corev1alpha1.Conditions{
 						condition,

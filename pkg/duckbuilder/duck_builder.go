@@ -38,8 +38,8 @@ func (b *DuckBuilder) Ready() bool {
 }
 
 func (b *DuckBuilder) UpToDate() bool {
- 	return b.Status.GetCondition(buildapi.ConditionUpToDate).IsTrue() &&
- 		(b.Generation == b.Status.ObservedGeneration)
+	return b.Status.GetCondition(buildapi.ConditionUpToDate).IsTrue() &&
+		(b.Generation == b.Status.ObservedGeneration)
 }
 
 func (b *DuckBuilder) BuildBuilderSpec() corev1alpha1.BuildBuilderSpec {
@@ -55,6 +55,10 @@ func (b *DuckBuilder) BuildpackMetadata() corev1alpha1.BuildpackMetadataList {
 
 func (b *DuckBuilder) RunImage() string {
 	return b.Status.Stack.RunImage
+}
+
+func (b *DuckBuilder) LifecycleVersion() string {
+	return b.Status.Lifecycle.Version
 }
 
 func (b *DuckBuilder) ConditionReadyMessage() string {

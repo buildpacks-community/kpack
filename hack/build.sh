@@ -1,10 +1,5 @@
 #!/bin/bash
 
-function lifecycle_image_build() {
-    image=$1
-    go run hack/lifecycle/main.go --tag=${image}
-}
-
 function generate_kbld_config_pack() {
   path=$1
   registry=$2
@@ -194,9 +189,6 @@ function compile() {
   rebase_image=${IMAGE_PREFIX}rebase
   completion_image=${IMAGE_PREFIX}completion
   lifecycle_image=${IMAGE_PREFIX}lifecycle
-
-  echo "Building Lifecycle"
-  lifecycle_image_build ${lifecycle_image}
 
   echo "Generating kbld config"
   temp_dir=$(mktemp -d)

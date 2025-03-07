@@ -61,7 +61,7 @@ type LifecycleMetadata struct {
 }
 
 type LifecycleDescriptor struct {
-	Info LifecycleInfo `toml:"lifecycle"`
+	Info LifecycleInfo `toml:"lifecycle" json:"lifecycle,omitempty"`
 
 	// Deprecated: Use `LifecycleAPIs` instead
 	API  LifecycleAPI  `toml:"api" json:"api,omitempty"`
