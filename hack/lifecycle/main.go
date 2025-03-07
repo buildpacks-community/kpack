@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/imgutil/layer"
 	"github.com/google/go-containerregistry/pkg/authn"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -45,7 +44,7 @@ func main() {
 
 	image, err := lifecycleImage(
 		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", lifecycleVersion, lifecycleVersion),
-		fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", lifecycleVersion, lifecycleVersion),
+		"",
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -71,7 +70,7 @@ func lifecycleImage(linuxUrl, _ string) (v1.Image, error) {
 		return nil, err
 	}
 
-	linuxLayer, err := lifecycleLayer(linuxUrl, "linux")
+	linuxLayer, err := lifecycleLayer(linuxUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -85,22 +84,7 @@ func lifecycleImage(linuxUrl, _ string) (v1.Image, error) {
 		return nil, err
 	}
 
-	windowsLayer, err := lifecycleLayer("", "windows")
-	if err != nil {
-		return nil, err
-	}
-
-	windowsDiffID, err := windowsLayer.DiffID()
-	if err != nil {
-		return nil, err
-	}
-
-	image, err = imagehelpers.SetStringLabel(image, "windows", windowsDiffID.String())
-	if err != nil {
-		return nil, err
-	}
-
-	image, err = mutate.AppendLayers(image, linuxLayer, windowsLayer)
+	image, err = mutate.AppendLayers(image, linuxLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +129,9 @@ func lifecycleDescriptorToMetadata(descriptor cnb.LifecycleDescriptor) cnb.Lifec
 	}
 }
 
-func lifecycleLayer(url, os string) (v1.Layer, error) {
+func lifecycleLayer(url string) (v1.Layer, error) {
 	b := &bytes.Buffer{}
-	tw := newLayerWriter(b, os)
+	tw := tar.NewWriter(b)
 
 	err := tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeDir,
@@ -161,14 +145,9 @@ func lifecycleLayer(url, os string) (v1.Layer, error) {
 
 	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
-	var lr io.ReadCloser
-	if os == "windows" {
-		lr = io.NopCloser(bytes.NewReader([]byte{}))
-	} else {
-		lr, err = lifecycleReader(url)
-		if err != nil {
-			return nil, err
-		}
+	lr, err := lifecycleReader(url)
+	if err != nil {
+		return nil, err
 	}
 	defer lr.Close()
 
@@ -261,13 +240,6 @@ type ReadCloserWrapper struct {
 
 func (r *ReadCloserWrapper) Close() error {
 	return r.closer()
-}
-
-func newLayerWriter(fileWriter io.Writer, os string) layerWriter {
-	if os == "windows" {
-		return layer.NewWindowsWriter(fileWriter)
-	}
-	return tar.NewWriter(fileWriter)
 }
 
 type layerWriter interface {

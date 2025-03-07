@@ -63,10 +63,6 @@ These are the configuration that is required to replicate the kpack installation
     <td><code>buildInitImage</code>
     <td> Image used by kpack to fetch the source code
     <td> The <code>build-init-image</code> ConfigMap in the <code>kpack</code> namespace
-<tr id="buildInitWindowsImage">
-    <td><code>buildInitWindowsImage</code>
-    <td> Image used by kpack to fetch the source code on Windows clusters
-    <td> The <code>build-init-windows-image</code> Configmap in the <code>kpack</code> namespace
 <tr id="buildWaterImage">
     <td><code>buildWaterImage</code>
     <td> Image used by kpack when <code>injectedSidecarSupport</code> is enabled
@@ -75,10 +71,6 @@ These are the configuration that is required to replicate the kpack installation
     <td><code>completionImage</code>
     <td> Image used by kpack to do cosign and notary signing
     <td>The <code>completion-image</code> ConfigMapin the <code>kpack</code> namespace
-<tr id="completionImageWindows">
-    <td><code>completionImageWindows</code>
-    <td> Image used by kpack to do cosign and notary signing on Windows clusters
-    <td>The <code>completion-image-windows</code> ConfigMap in the <code>kpack</code> namespace
 <tr id="rebaseImage">
     <td><code>rebaseImage</code>
     <td> Image used by kpack to do rebasing of app images
@@ -183,10 +175,8 @@ Currently unused.
         "maximumPlatformApiVersion": "",
         "sshTrustUnknownHosts": true,
         "buildInitImage": "some.registry/build-init@sha256:cd8b6c8eecb79c0aee725ef00bac5d502df6fdfeaab8d6a2a5854f3a38445ac7",
-        "buildInitWindowsImage": "build-init-windows",
         "buildWaiterImage": "some.registry/build-waiter@sha256:bcca4f1e691da17de25feff47f91b6cc6443d9deee3234676c95294cd30995c1",
         "completionImage": "some.registry/completion@sha256:ea058f72bf3529b292751ed1d3a2ec6e0cfab1fdfc049863553181cb19682128",
-        "completionWindowsImage": "completion-windows",
         "rebaseImage": "some.registry/rebase@sha256:8e4c673c48861b583ca6b7af2f72fa3b4a9397d53929431d78bf47b0f456da4b",
         "injectedSidecarSupport": false,
         "generateSlsaAttestation": true

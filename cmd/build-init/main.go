@@ -3,16 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"io"
 	"log"
-	"net"
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
@@ -39,7 +35,6 @@ var (
 	blobAuth                = flag.Bool("blob-auth", getenvBool("BLOB_AUTH"), "If authentication should be used for blobs")
 	stripComponents         = flag.Int("strip-components", getenvInt("BLOB_STRIP_COMPONENTS", 0), "The number of directory components to strip from the blobs content when extracting.")
 	registryImage           = flag.String("registry-image", os.Getenv("REGISTRY_IMAGE"), "The registry location of the source code image.")
-	hostName                = flag.String("dns-probe-hostname", os.Getenv("DNS_PROBE_HOSTNAME"), "hostname to dns poll")
 	sourceSubPath           = flag.String("source-sub-path", os.Getenv("SOURCE_SUB_PATH"), "the subpath inside the source directory that will be the buildpack workspace")
 	buildChanges            = flag.String("build-changes", os.Getenv("BUILD_CHANGES"), "JSON string of build changes and their reason")
 	descriptorPath          = flag.String("project-descriptor-path", os.Getenv("PROJECT_DESCRIPTOR_PATH"), "path to project descriptor file")
@@ -84,11 +79,6 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", 0)
-
-	err := prepareForWindows(*hostName)
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	if err := buildchange.Log(logger, *buildChanges); err != nil {
 		logger.Println(err)
@@ -181,26 +171,6 @@ func main() {
 	}
 }
 
-func prepareForWindows(hostname string) error {
-	if runtime.GOOS != "windows" {
-		return nil
-	}
-
-	executablePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	err = copyFile(filepath.Join(filepath.Dir(executablePath), networkWaitLauncherBinary), filepath.Join(networkWaitLauncherDir, networkWaitLauncherBinary))
-	if err != nil {
-		return err
-	}
-
-	waitForDns(hostname)
-
-	return nil
-}
-
 func fetchSource(logger *log.Logger, keychain authn.Keychain) error {
 	switch {
 	case *gitURL != "":
@@ -274,48 +244,6 @@ func logLoadingSecrets(logger *log.Logger, secretsSlices ...[]string) {
 			}
 		}
 	}
-}
-
-func waitForDns(hostname string) {
-	timeoutChan := time.After(10 * time.Second)
-	tickerChan := time.NewTicker(time.Second)
-	defer tickerChan.Stop()
-
-	for {
-		select {
-		case <-timeoutChan:
-			return
-		case <-tickerChan.C:
-			if _, err := net.LookupIP(hostname); err == nil {
-				return
-			}
-		}
-	}
-}
-
-func copyFile(src, dest string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	destFile, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	if _, err = io.Copy(destFile, srcFile); err != nil {
-		return err
-	}
-
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod(dest, srcInfo.Mode())
 }
 
 func getenvInt(key string, defaultValue int) int {

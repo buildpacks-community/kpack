@@ -253,13 +253,16 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 		return buildapi.BuildPodBuilderConfig{}, err
 	}
 
+	if config.OS == "windows" {
+		return buildapi.BuildPodBuilderConfig{}, errors.New("windows builds are not supported")
+	}
+
 	return buildapi.BuildPodBuilderConfig{
 		StackID:      stackId,
 		RunImage:     metadata.Stack.RunImage.Image,
 		PlatformAPIs: append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
 		Uid:          uid,
 		Gid:          gid,
-		OS:           config.OS,
 	}, nil
 }
 
