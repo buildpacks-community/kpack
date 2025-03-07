@@ -754,7 +754,18 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					},
 				}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, fetcher, stack, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(
+					ctx,
+					builderKeychain,
+					stackKeychain,
+					lifecycleKeychain,
+					fetcher,
+					stack,
+					clusterLifecycle,
+					clusterBuilderSpec,
+					[]*corev1.Secret{},
+					builderTag,
+				)
 				require.NoError(t, err)
 			})
 
@@ -778,7 +789,18 @@ func testCreateBuilderOs(os string, t *testing.T, when spec.G, it spec.S) {
 					}},
 				}}
 
-				_, err := subject.CreateBuilder(ctx, builderKeychain, stackKeychain, lifecycleKeychain, fetcher, stack, clusterLifecycle, clusterBuilderSpec, []*corev1.Secret{}, builderTag)
+				_, err := subject.CreateBuilder(
+					ctx,
+					builderKeychain,
+					stackKeychain,
+					lifecycleKeychain,
+					fetcher,
+					stack,
+					clusterLifecycle,
+					clusterBuilderSpec,
+					[]*corev1.Secret{},
+					builderTag,
+				)
 				require.EqualError(t, err, "validating buildpack io.buildpack.unsupported.mixin@v4: stack missing mixin(s): something-missing-mixin, something-missing-mixin2")
 			})
 
