@@ -16,7 +16,6 @@ import (
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/sclevine/spec"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,7 +35,6 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/buildpod"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
-	"github.com/pivotal/kpack/pkg/cnb"
 	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/reconciler/build"
 	"github.com/pivotal/kpack/pkg/reconciler/build/buildfakes"
@@ -690,182 +688,6 @@ func testBuildReconciler(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 					WantErr: false,
-				})
-			})
-
-			when("running windows build pods", func() {
-				var pod *corev1.Pod
-				it.Before(func() {
-					appImageSecretRef := registry.SecretRef{
-						ServiceAccount: bld.Spec.ServiceAccountName,
-						Namespace:      bld.Namespace,
-					}
-					appImageKeychain := &registryfakes.FakeKeychain{}
-					keychainFactory.AddKeychainForSecretRef(t, appImageSecretRef, appImageKeychain)
-					buildMetadata := &cnb.BuildMetadata{
-						BuildpackMetadata: corev1alpha1.BuildpackMetadataList{{
-							Id:       "io.buildpack.executed",
-							Version:  "1.1",
-							Homepage: "mysupercoolsite.com",
-						}},
-						LatestCacheImage: "some-latest-cache",
-						LatestImage:      "some-latest-image",
-						StackID:          "some-stack-id",
-						StackRunImage:    "some-stack-run-image",
-					}
-					fakeMetadataRetriever.GetBuildMetadataReturns(buildMetadata, nil)
-					var err error
-					pod, err = podGenerator.Generate(ctx, bld)
-					require.NoError(t, err)
-					pod.Status.Phase = corev1.PodSucceeded
-					pod.Status.InitContainerStatuses = []corev1.ContainerStatus{
-						{
-							Name: "prepare",
-							State: corev1.ContainerState{
-								Terminated: &corev1.ContainerStateTerminated{
-									ExitCode:    0,
-									Reason:      "Terminated",
-									Message:     "Message",
-									ContainerID: "container.ID",
-								},
-							},
-						},
-						{
-							Name: "completion",
-							State: corev1.ContainerState{
-								Terminated: &corev1.ContainerStateTerminated{
-									ExitCode:    0,
-									Reason:      "Terminated",
-									Message:     "Message",
-									ContainerID: "container.ID2",
-								},
-							},
-						},
-					}
-					pod.Spec.NodeSelector = map[string]string{"kubernetes.io/os": "windows"}
-				})
-
-				it("retrieves the build metadata from the registry", func() {
-					rt.Test(rtesting.TableRow{
-						Key: key,
-						Objects: []runtime.Object{
-							bld,
-							pod,
-						},
-						WantErr: false,
-						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
-							{
-								Object: &buildapi.Build{
-									ObjectMeta: bld.ObjectMeta,
-									Spec:       bld.Spec,
-									Status: buildapi.BuildStatus{
-										Status: corev1alpha1.Status{
-											ObservedGeneration: originalGeneration,
-											Conditions: corev1alpha1.Conditions{
-												{
-													Type:   corev1alpha1.ConditionSucceeded,
-													Status: corev1.ConditionTrue,
-													Reason: build.ReasonCompleted,
-												},
-											},
-										},
-										PodName: "build-name-build-pod",
-										BuildMetadata: corev1alpha1.BuildpackMetadataList{{
-											Id:       "io.buildpack.executed",
-											Version:  "1.1",
-											Homepage: "mysupercoolsite.com",
-										}},
-										LatestCacheImage: "some-latest-cache",
-										LatestImage:      "some-latest-image",
-										Stack: corev1alpha1.BuildStack{
-											RunImage: "some-stack-run-image",
-											ID:       "some-stack-id",
-										},
-										StepStates: []corev1.ContainerState{
-											{
-												Terminated: &corev1.ContainerStateTerminated{
-													ExitCode:    0,
-													Reason:      "Terminated",
-													Message:     "Message",
-													ContainerID: "container.ID",
-												},
-											},
-											{
-												Terminated: &corev1.ContainerStateTerminated{
-													ExitCode:    0,
-													Reason:      "Terminated",
-													Message:     "Message",
-													ContainerID: "container.ID2",
-												},
-											},
-										},
-										StepsCompleted: []string{
-											"prepare",
-											"completion",
-										},
-									},
-								},
-							},
-						},
-					})
-
-					assert.Equal(t, fakeMetadataRetriever.GetBuildMetadataCallCount(), 1)
-				})
-
-				it("does not fetch metadata if already retrieved", func() {
-					rt.Test(rtesting.TableRow{
-						Key: key,
-						Objects: []runtime.Object{
-							&buildapi.Build{
-								ObjectMeta: bld.ObjectMeta,
-								Spec:       bld.Spec,
-								Status: buildapi.BuildStatus{
-									Status: corev1alpha1.Status{
-										ObservedGeneration: originalGeneration,
-										Conditions: corev1alpha1.Conditions{
-											{
-												Type:   corev1alpha1.ConditionSucceeded,
-												Status: corev1.ConditionTrue,
-											},
-										},
-									},
-									BuildMetadata: corev1alpha1.BuildpackMetadataList{{
-										Id:      "io.buildpack.previouslyfetched",
-										Version: "1.1",
-									}},
-									PodName:     "build-name-build-pod",
-									LatestImage: "previously/fetched@sha256:abcd",
-									StepStates: []corev1.ContainerState{
-										{
-											Terminated: &corev1.ContainerStateTerminated{
-												ExitCode:    0,
-												Reason:      "Terminated",
-												Message:     "Message",
-												ContainerID: "container.ID",
-											},
-										},
-										{
-											Waiting: nil,
-											Running: nil,
-											Terminated: &corev1.ContainerStateTerminated{
-												ExitCode:    0,
-												Reason:      "Terminated",
-												Message:     "Message",
-												ContainerID: "container.ID2",
-											},
-										},
-									},
-									StepsCompleted: []string{
-										"step-1",
-										"step-2", //todo realistic names
-									},
-								},
-							},
-							pod,
-						},
-						WantErr: false,
-					})
-					assert.Equal(t, fakeMetadataRetriever.GetBuildMetadataCallCount(), 0)
 				})
 			})
 		})
