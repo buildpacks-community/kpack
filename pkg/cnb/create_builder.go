@@ -142,10 +142,6 @@ func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcr
 		LifecycleInfo: LifecycleInfo{
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
 		},
-		API: LifecycleAPI{
-			BuildpackVersion: clusterLifecycle.Status.ResolvedClusterLifecycle.API.BuildpackVersion,
-			PlatformVersion:  clusterLifecycle.Status.ResolvedClusterLifecycle.API.PlatformVersion,
-		},
 		APIs: LifecycleAPIs{
 			Buildpack: APIVersions{
 				Deprecated: toCNBAPISet(clusterLifecycle.Status.ResolvedClusterLifecycle.APIs.Buildpack.Deprecated),
