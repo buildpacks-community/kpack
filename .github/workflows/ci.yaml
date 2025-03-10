@@ -154,39 +154,9 @@ jobs:
         bp_go_targets: "./cmd/rebase"
         artifact_name: rebase-image
 
-  lifecycle-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: 'go.mod'
-    - name: Build
-      run: |
-        trap 'echo -e "$output"' EXIT
-
-        output=$(go run ./hack/lifecycle/main.go --tag=${{ env.PUBLIC_IMAGE_DEV_REPO }}/lifecycle 2>&1)
-        image=$(echo "$output" | grep "saved lifecycle" | awk -F  "saved lifecycle image: " '{print $2}')
-        mkdir images
-        echo $image > images/lifecycle
-    - name: Upload Image Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: lifecycle-image
-        path: images/
-
   generate-pre-release-yaml:
     runs-on: ubuntu-latest
     needs:
-    - lifecycle-image
     - controller-image
     - webhook-image
     - completion-image
@@ -223,8 +193,7 @@ jobs:
           -v build_init.image=$(cat images/build-init) \
           -v build_waiter.image=$(cat images/build-waiter) \
           -v rebase.image=$(cat images/rebase) \
-          -v completion.image=$(cat images/completion) \
-          -v lifecycle.image=$(cat images/lifecycle) > prerelease.yaml
+          -v completion.image=$(cat images/completion) > prerelease.yaml
 
         cat prerelease.yaml
 
@@ -243,7 +212,6 @@ jobs:
       - rebase-image
       - build-init-image
       - build-waiter-image
-      - lifecycle-image
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -415,7 +383,6 @@ jobs:
       - rebase-image
       - build-init-image
       - build-waiter-image
-      - lifecycle-image
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
@@ -493,7 +460,6 @@ jobs:
           -v build_waiter.image=$(cat final-image-refs/build-waiter) \
           -v rebase.image=$(cat final-image-refs/rebase) \
           -v completion.image=$(cat final-image-refs/completion) \
-          -v lifecycle.image=$(cat final-image-refs/lifecycle) \
           -v kpack_version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 

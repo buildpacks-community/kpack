@@ -90,6 +90,15 @@ make unit
   make e2e
 ```
 
+OR
+
+```bash
+  IMAGE_REGISTRY=index.docker.io/<some-username> \
+  IMAGE_REGISTRY_USERNAME=<some-username> \
+  IMAGE_REGISTRY_PASSWORD=<some-password> \
+  make e2e
+```
+
 * The IMAGE_REGISTRY environment variable must point at a registry with local write access - e.g.
 
 ```bash

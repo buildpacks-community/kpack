@@ -29,6 +29,7 @@ const (
 	BuildReasonCommit    = "COMMIT"
 	BuildReasonBuildpack = "BUILDPACK"
 	BuildReasonStack     = "STACK"
+	BuildReasonLifecycle = "LIFECYCLE"
 	BuildReasonTrigger   = "TRIGGER"
 )
 

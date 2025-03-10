@@ -39,6 +39,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterBuildpackKind): &v1alpha2.ClusterBuildpack{},
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStoreKind):     &v1alpha2.ClusterStore{},
 	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterStackKind):     &v1alpha2.ClusterStack{},
+	v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterLifecycleKind): &v1alpha2.ClusterLifecycle{},
 }
 
 func init() {

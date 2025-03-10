@@ -196,6 +196,7 @@ func (c *Reconciler) reconcile(ctx context.Context, build *buildapi.Build) error
 		build.Status.LatestAttestationImage = attestDigest
 		build.Status.Stack.RunImage = buildMetadata.StackRunImage
 		build.Status.Stack.ID = buildMetadata.StackID
+		build.Status.LifecycleVersion = buildMetadata.LifecycleVersion
 	}
 
 	build.Status.PodName = pod.Name

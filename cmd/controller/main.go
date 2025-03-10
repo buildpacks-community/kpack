@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +13,6 @@ import (
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +28,6 @@ import (
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 
 	"github.com/pivotal/kpack/cmd"
 	_ "github.com/pivotal/kpack/internal/logrus/fatal"
@@ -52,10 +49,10 @@ import (
 	"github.com/pivotal/kpack/pkg/reconciler/buildpack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuilder"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterbuildpack"
+	"github.com/pivotal/kpack/pkg/reconciler/clusterlifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstack"
 	"github.com/pivotal/kpack/pkg/reconciler/clusterstore"
 	"github.com/pivotal/kpack/pkg/reconciler/image"
-	"github.com/pivotal/kpack/pkg/reconciler/lifecycle"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/registry"
 	"github.com/pivotal/kpack/pkg/secret"
@@ -132,6 +129,7 @@ func main() {
 	buildpackInformer := informerFactory.Kpack().V1alpha2().Buildpacks()
 	clusterBuilderInformer := informerFactory.Kpack().V1alpha2().ClusterBuilders()
 	clusterBuildpackInformer := informerFactory.Kpack().V1alpha2().ClusterBuildpacks()
+	clusterLifecycleInformer := informerFactory.Kpack().V1alpha2().ClusterLifecycles()
 	clusterStoreInformer := informerFactory.Kpack().V1alpha2().ClusterStores()
 	clusterStackInformer := informerFactory.Kpack().V1alpha2().ClusterStacks()
 
@@ -147,15 +145,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not create k8s keychain factory: %s", err)
 	}
-	lifecycleConfigmapInformerFactory := informers.NewSharedInformerFactoryWithOptions(
-		k8sClient,
-		options.ResyncPeriod,
-		informers.WithNamespace(system.Namespace()),
-		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
-			options.FieldSelector = fmt.Sprintf("metadata.namespace=%s,metadata.name=%s", system.Namespace(), config.LifecycleConfigName)
-		}),
-	)
-	lifecycleConfigmapInformer := lifecycleConfigmapInformerFactory.Core().V1().ConfigMaps()
 
 	metadataRetriever := &cnb.RemoteMetadataRetriever{
 		ImageFetcher: &registry.Client{},
@@ -194,14 +183,14 @@ func main() {
 		RegistryClient: &registry.Client{},
 	}
 
-	lifecycleProvider := config.NewLifecycleProvider(&registry.Client{}, keychainFactory)
+	remoteLifecycleReader := &cnb.RemoteLifecycleReader{
+		RegistryClient: &registry.Client{},
+	}
 
 	builderCreator := &cnb.RemoteBuilderCreator{
-		RegistryClient:    &registry.Client{},
-		KpackVersion:      cmd.Identifer,
-		LifecycleProvider: lifecycleProvider,
-		KeychainFactory:   keychainFactory,
-		ImageSigner:       cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
+		RegistryClient: &registry.Client{},
+		KpackVersion:   cmd.Identifer,
+		ImageSigner:    cosign.NewImageSigner(sign.SignCmd, ociremote.SignatureTag),
 	}
 
 	podProgressLogger := &buildchange.ProgressLogger{
@@ -211,8 +200,7 @@ func main() {
 	slsaAttester := slsa.Attester{
 		Version: cmd.Version,
 
-		LifecycleProvider: lifecycleProvider,
-		ImageReader:       slsa.NewImageReader(&registry.Client{}),
+		ImageReader: slsa.NewImageReader(&registry.Client{}),
 
 		Images:   images,
 		Features: featureFlags,
@@ -228,21 +216,17 @@ func main() {
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
 	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
-	builderController, builderResync := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	builderController := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
-	clusterBuilderController, clusterBuilderResync := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, secretFetcher)
+	clusterBuilderController := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	clusterBuildpackController := clusterbuildpack.NewController(ctx, options, keychainFactory, clusterBuildpackInformer, remoteStoreReader)
 	clusterStoreController := clusterstore.NewController(ctx, options, keychainFactory, clusterStoreInformer, remoteStoreReader)
 	clusterStackController := clusterstack.NewController(ctx, options, keychainFactory, clusterStackInformer, remoteStackReader)
-	lifecycleController := lifecycle.NewController(ctx, options, k8sClient, config.LifecycleConfigName, lifecycleConfigmapInformer, lifecycleProvider)
-
-	lifecycleProvider.AddEventHandler(builderResync)
-	lifecycleProvider.AddEventHandler(clusterBuilderResync)
+	clusterLifecycleController := clusterlifecycle.NewController(ctx, options, keychainFactory, clusterLifecycleInformer, remoteLifecycleReader)
 
 	stopChan := make(chan struct{})
 	informerFactory.Start(stopChan)
 	k8sInformerFactory.Start(stopChan)
-	lifecycleConfigmapInformerFactory.Start(stopChan)
 
 	waitForSync(stopChan,
 		buildInformer.Informer(),
@@ -250,7 +234,6 @@ func main() {
 		sourceResolverInformer.Informer(),
 		pvcInformer.Informer(),
 		podInformer.Informer(),
-		lifecycleConfigmapInformer.Informer(),
 		builderInformer.Informer(),
 		buildpackInformer.Informer(),
 		clusterBuilderInformer.Informer(),
@@ -263,6 +246,7 @@ func main() {
 	err = runGroup(
 		ctx,
 		run(clusterStackController, routinesPerController),
+		run(clusterLifecycleController, routinesPerController),
 		run(imageController, routinesPerController),
 		run(buildController, routinesPerController),
 		run(builderController, routinesPerController),
@@ -270,7 +254,6 @@ func main() {
 		run(clusterBuilderController, routinesPerController),
 		run(clusterBuildpackController, routinesPerController),
 		run(clusterStoreController, routinesPerController),
-		run(lifecycleController, routinesPerController),
 		run(sourceResolverController, 2*routinesPerController),
 		func(ctx context.Context) error {
 			return configMapWatcher.Start(ctx.Done())

@@ -29,10 +29,6 @@ func testProvider(t *testing.T, when spec.G, it spec.S) {
 			LifecycleInfo: cnb.LifecycleInfo{
 				Version: "0.5.0",
 			},
-			API: cnb.LifecycleAPI{
-				BuildpackVersion: "0.2",
-				PlatformVersion:  "0.1",
-			},
 			APIs: cnb.LifecycleAPIs{
 				Buildpack: cnb.APIVersions{
 					Deprecated: []string{"0.2"},
