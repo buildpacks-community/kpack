@@ -26,7 +26,6 @@ type BuildMetadata struct {
 	StackID           string                             `json:"stackID"`
 	StackRunImage     string                             `json:"stackRunImage"`
 	LifecycleVersion  string                             `json:"lifecycleVersion"`
-	LifecycleCommit   string                             `json:"lifecycleCommit"`
 }
 
 type ImageFetcher interface {
