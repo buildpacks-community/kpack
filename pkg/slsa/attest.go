@@ -24,10 +24,6 @@ const (
 	MediaTypeJSON             = "application/json"
 )
 
-type LifecycleProvider interface {
-	Metadata() (cnb.LifecycleMetadata, error)
-}
-
 type ImageReader interface {
 	Read(keychain authn.Keychain, repoName string) (string, string, map[string]string, error)
 }

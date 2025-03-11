@@ -19,10 +19,6 @@ type RegistryClient interface {
 	Save(keychain authn.Keychain, tag string, image ggcrv1.Image) (string, error)
 }
 
-type LifecycleProvider interface {
-	Layer() (ggcrv1.Layer, LifecycleMetadata, error)
-}
-
 type RemoteBuilderCreator struct {
 	RegistryClient RegistryClient
 	KpackVersion   string
