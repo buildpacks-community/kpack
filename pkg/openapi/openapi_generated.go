@@ -3562,19 +3562,6 @@ func schema_pkg_apis_build_v1alpha2_ClusterLifecycleStatus(ref common.ReferenceC
 							Format: "",
 						},
 					},
-					"commit": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"api": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: Use `LifecycleAPIs` instead",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPI"),
-						},
-					},
 					"apis": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -3585,7 +3572,7 @@ func schema_pkg_apis_build_v1alpha2_ClusterLifecycleStatus(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPI", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPIs", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPIs", "github.com/pivotal/kpack/pkg/apis/core/v1alpha1.Condition"},
 	}
 }
 
@@ -4780,19 +4767,6 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterLifecycle(ref common.Referenc
 							Format: "",
 						},
 					},
-					"commit": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"api": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: Use `LifecycleAPIs` instead",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPI"),
-						},
-					},
 					"apis": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -4803,7 +4777,7 @@ func schema_pkg_apis_build_v1alpha2_ResolvedClusterLifecycle(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPI", "github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPIs"},
+			"github.com/pivotal/kpack/pkg/apis/build/v1alpha2.LifecycleAPIs"},
 	}
 }
 
@@ -5052,16 +5026,16 @@ func schema_pkg_apis_core_v1alpha1_Blob(ref common.ReferenceCallback) common.Ope
 							Format:  "",
 						},
 					},
-					"stripComponents": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int64",
-						},
-					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"stripComponents": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
 						},
 					},
 				},
@@ -5693,6 +5667,12 @@ func schema_pkg_apis_core_v1alpha1_ResolvedBlobSource(ref common.ReferenceCallba
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
+						},
+					},
+					"auth": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 					"subPath": {

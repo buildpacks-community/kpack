@@ -340,10 +340,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 			clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
 				Version: "0.5.0",
-				API: buildapi.LifecycleAPI{
-					BuildpackVersion: "0.2",
-					PlatformVersion:  "0.1",
-				},
 				APIs: buildapi.LifecycleAPIs{
 					Buildpack: buildapi.APIVersions{
 						Deprecated: []string{"0.2"},
@@ -766,10 +762,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			it("works with relaxed mixin contract", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
 					Version: "0.5.0",
-					API: buildapi.LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.7",
-					},
 					APIs: buildapi.LifecycleAPIs{
 						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},
@@ -857,10 +849,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			it("supports anystack buildpacks", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
 					Version: "0.5.0",
-					API: buildapi.LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.1",
-					},
 					APIs: buildapi.LifecycleAPIs{
 						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},
@@ -900,10 +888,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			it("errors if no lifecycle platform api is supported", func() {
 				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
 					Version: "0.5.0",
-					API: buildapi.LifecycleAPI{
-						BuildpackVersion: "0.2",
-						PlatformVersion:  "0.1",
-					},
 					APIs: buildapi.LifecycleAPIs{
 						Buildpack: buildapi.APIVersions{
 							Deprecated: []string{"0.2"},

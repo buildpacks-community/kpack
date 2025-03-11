@@ -43,14 +43,7 @@ type ClusterLifecycleStatus struct {
 type ResolvedClusterLifecycle struct {
 	Version string `json:"version,omitempty"`
 
-	// Deprecated: Use `LifecycleAPIs` instead
-	API  LifecycleAPI  `json:"api,omitempty"`
 	APIs LifecycleAPIs `json:"apis,omitempty"`
-}
-
-type LifecycleAPI struct {
-	BuildpackVersion string `toml:"buildpack" json:"buildpack,omitempty"`
-	PlatformVersion  string `toml:"platform" json:"platform,omitempty"`
 }
 
 type LifecycleAPIs struct {

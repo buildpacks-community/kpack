@@ -6348,17 +6348,9 @@
     "kpack.build.v1alpha2.ClusterLifecycleStatus": {
       "type": "object",
       "properties": {
-        "api": {
-          "description": "Deprecated: Use `LifecycleAPIs` instead",
-          "default": {},
-          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
-        },
         "apis": {
           "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
-        },
-        "commit": {
-          "type": "string"
         },
         "conditions": {
           "description": "Conditions the latest available observations of a resource's current state.",
@@ -7001,17 +6993,9 @@
     "kpack.build.v1alpha2.ResolvedClusterLifecycle": {
       "type": "object",
       "properties": {
-        "api": {
-          "description": "Deprecated: Use `LifecycleAPIs` instead",
-          "default": {},
-          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
-        },
         "apis": {
           "default": {},
           "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
-        },
-        "commit": {
-          "type": "string"
         },
         "version": {
           "type": "string"
@@ -7491,6 +7475,9 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"
