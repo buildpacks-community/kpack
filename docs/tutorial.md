@@ -10,8 +10,10 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
 1. kpack cli
 
     > Get the kp cli from the [github release](https://github.com/vmware-tanzu/kpack-cli/releases)
+
      
 ###  Tutorial
+
 1. Create a secret with push credentials for the docker registry that you plan on publishing OCI images to with kpack.
 
    The easiest way to do that is with `kubectl create secret docker-registry`
@@ -109,7 +111,24 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
     kubectl apply -f stack.yaml
     ```
 
-5. Create a Builder configuration
+5. Apply a lifecycle resource
+
+   A lifecycle orchestrates buildpacks, then assembles the resulting artifacts into an OCI image.
+
+   ```yaml
+   apiVersion: kpack.io/v1alpha2
+   kind: ClusterLifecycle
+   metadata:
+     name: default-lifecycle
+   spec:
+     image: buildpacksio/lifecycle
+   ```
+
+   ```bash
+   kubectl apply -f builder.yaml
+   ```
+
+6. Create a Builder configuration
 
     A Builder is the kpack configuration for a [builder image](https://buildpacks.io/docs/concepts/components/builder/) that includes the stack and buildpacks needed to build an OCI image from your app source code.
     
@@ -145,7 +164,7 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
      kubectl apply -f builder.yaml
      ```
 
-6. Apply a kpack image resource
+7. Apply a kpack image resource
 
     An image resource is the specification for an OCI image that kpack should build and manage.
     
@@ -225,6 +244,7 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
    ```
    
    You should see the java app start up:
+
    ```
        
               |\      _,,,--,,_
@@ -251,14 +271,17 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
    If you are using your own application please push an updated commit and use the new commit sha. If you are using Spring Pet Clinic you can update the revision to: `4e1f87407d80cdb4a5a293de89d62034fdcbb847`.         
   
    Edit the image resource with:
+
    ```
    kubectl -n default edit image tutorial-image 
    ``` 
     
    You should see kpack schedule a new build by running:
+
    ```
    kubectl -n default get builds
    ``` 
+
    You should see a new build with
    
    ```
