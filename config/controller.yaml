@@ -28,14 +28,6 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  lifecycle-image
-  namespace: kpack
-data:
-  image: #@ data.values.lifecycle.image
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name:  completion-image
   namespace: kpack
 data:

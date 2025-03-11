@@ -15,4 +15,4 @@ rebase:
 completion:
   image: completion
 lifecycle:
-  image: lifecycle
+  image: buildpacksio/lifecycle

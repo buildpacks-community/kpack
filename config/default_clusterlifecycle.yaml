@@ -1,0 +1,8 @@
+#@ load("@ytt:data", "data")
+
+apiVersion: kpack.io/v1alpha2
+kind: ClusterLifecycle
+metadata:
+  name: default-lifecycle
+spec:
+  image: #@ data.values.lifecycle.image

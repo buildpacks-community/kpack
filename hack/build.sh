@@ -68,9 +68,6 @@ function generate_kbld_config_pack() {
       build:
         builder: paketobuildpacks/builder-jammy-tiny
         rawOptions: [${completion_args// /,}]
-  overrides:
-  - image: lifecycle
-    newImage: $lifecycle_image
   destinations:
   - image: controller
     newImage: $controller_image
@@ -130,9 +127,6 @@ function generate_kbld_config_ko() {
     ko:
       build:
         rawOptions: [${args// /,}]
-  overrides:
-  - image: lifecycle
-    newImage: $lifecycle_image
   destinations:
   - image: controller
     newImage: $controller_image
@@ -176,7 +170,6 @@ function compile() {
   build_waiter_image=${IMAGE_PREFIX}build-waiter
   rebase_image=${IMAGE_PREFIX}rebase
   completion_image=${IMAGE_PREFIX}completion
-  lifecycle_image=${IMAGE_PREFIX}lifecycle
 
   echo "Generating kbld config"
   temp_dir=$(mktemp -d)
