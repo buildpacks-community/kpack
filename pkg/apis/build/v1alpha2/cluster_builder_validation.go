@@ -7,6 +7,12 @@ import (
 )
 
 func (ccb *ClusterBuilder) SetDefaults(context.Context) {
+	if ccb.Spec.Lifecycle.Name == "" {
+		ccb.Spec.Lifecycle.Name = DefaultLifecycleName
+	}
+	if ccb.Spec.Lifecycle.Kind == "" {
+		ccb.Spec.Lifecycle.Kind = ClusterLifecycleKind
+	}
 }
 
 func (ccb *ClusterBuilder) Validate(ctx context.Context) *apis.FieldError {

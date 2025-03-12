@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	"github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
 
 func TestBuilderValidation(t *testing.T) {
@@ -75,6 +76,9 @@ func testBuilderValidation(t *testing.T, when spec.G, it spec.S) {
 	when("Default", func() {
 		it("does not modify already set fields", func() {
 			oldBuilder := builder.DeepCopy()
+			oldBuilder.Spec.Lifecycle.Name = DefaultLifecycleName
+			oldBuilder.Spec.Lifecycle.Kind = ClusterLifecycleKind
+
 			builder.SetDefaults(context.TODO())
 
 			assert.Equal(t, builder, oldBuilder)

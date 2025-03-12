@@ -21,6 +21,12 @@ func (cb *Builder) SetDefaults(context.Context) {
 	if cb.Spec.Store.Kind == "" {
 		cb.Spec.Store.Kind = ClusterStoreKind
 	}
+	if cb.Spec.Lifecycle.Name == "" {
+		cb.Spec.Lifecycle.Name = DefaultLifecycleName
+	}
+	if cb.Spec.Lifecycle.Kind == "" {
+		cb.Spec.Lifecycle.Kind = ClusterLifecycleKind
+	}
 }
 
 func (cb *Builder) Validate(ctx context.Context) *apis.FieldError {

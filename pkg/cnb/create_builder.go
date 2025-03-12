@@ -45,7 +45,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
-	lifecycleImage, _, err := r.RegistryClient.Fetch(lifecycleKeychain, clusterLifecycle.Spec.Image) // TODO: confirm, should there be a "latest image" on the status?
+	lifecycleImage, _, err := r.RegistryClient.Fetch(lifecycleKeychain, clusterLifecycle.Status.Image.LatestImage)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

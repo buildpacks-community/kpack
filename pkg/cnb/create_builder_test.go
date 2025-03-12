@@ -37,6 +37,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		buildImageTag        = "paketo-buildpacks/build:full-cnb"
 		runImageTag          = "paketo-buildpacks/run:full-cnb"
 		lifecycleImageTag    = "buildpacksio/lifecycle:latest"
+		lifecycleImgID       = "buildpacksio/lifecycle@sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 		buildImageLayers     = 10
 		lifecycleImageLayers = 1
 
@@ -116,9 +117,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			Status: buildapi.ClusterLifecycleStatus{
 				Status: corev1alpha1.Status{
 					ObservedGeneration: 11,
-				},
-				ResolvedClusterLifecycle: buildapi.ResolvedClusterLifecycle{
-					Version: "some-version",
 				},
 			},
 		}
@@ -334,11 +332,15 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			lConfig.OS = "linux"
 			lifecycleImg, err = mutate.ConfigFile(lifecycleImg, config)
 
-			registryClient.AddImage(lifecycleImageTag, lifecycleImg, lifecycleKeychain)
+			registryClient.AddImage(lifecycleImgID, lifecycleImg, lifecycleKeychain)
 
 			// cluster lifecycle
 
 			clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
+				Image: buildapi.ClusterLifecycleStatusImage{
+					LatestImage: lifecycleImgID,
+					Image:       lifecycleImageTag,
+				},
 				Version: "0.5.0",
 				APIs: buildapi.LifecycleAPIs{
 					Buildpack: buildapi.APIVersions{
@@ -760,17 +762,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("works with relaxed mixin contract", func() {
-				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Version: "0.5.0",
-					APIs: buildapi.LifecycleAPIs{
-						Buildpack: buildapi.APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3"},
-						},
-						Platform: buildapi.APIVersions{
-							Deprecated: []string{},
-							Supported:  []string{relaxedMixinMinPlatformAPI},
-						},
+				clusterLifecycle.Status.ResolvedClusterLifecycle.APIs = buildapi.LifecycleAPIs{
+					Buildpack: buildapi.APIVersions{
+						Deprecated: []string{"0.2"},
+						Supported:  []string{"0.3"},
+					},
+					Platform: buildapi.APIVersions{
+						Deprecated: []string{},
+						Supported:  []string{relaxedMixinMinPlatformAPI},
 					},
 				}
 
@@ -847,17 +846,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("supports anystack buildpacks", func() {
-				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Version: "0.5.0",
-					APIs: buildapi.LifecycleAPIs{
-						Buildpack: buildapi.APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3", "0.4", "0.5"},
-						},
-						Platform: buildapi.APIVersions{
-							Deprecated: []string{"0.3"},
-							Supported:  []string{"0.4"},
-						},
+				clusterLifecycle.Status.ResolvedClusterLifecycle.APIs = buildapi.LifecycleAPIs{
+					Buildpack: buildapi.APIVersions{
+						Deprecated: []string{"0.2"},
+						Supported:  []string{"0.3", "0.4", "0.5"},
+					},
+					Platform: buildapi.APIVersions{
+						Deprecated: []string{"0.3"},
+						Supported:  []string{"0.4"},
 					},
 				}
 
@@ -886,17 +882,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 
 		when("validating platform api", func() {
 			it("errors if no lifecycle platform api is supported", func() {
-				clusterLifecycle.Status.ResolvedClusterLifecycle = buildapi.ResolvedClusterLifecycle{
-					Version: "0.5.0",
-					APIs: buildapi.LifecycleAPIs{
-						Buildpack: buildapi.APIVersions{
-							Deprecated: []string{"0.2"},
-							Supported:  []string{"0.3"},
-						},
-						Platform: buildapi.APIVersions{
-							Deprecated: []string{"0.1"},
-							Supported:  []string{"0.2", "0.999"},
-						},
+				clusterLifecycle.Status.ResolvedClusterLifecycle.APIs = buildapi.LifecycleAPIs{
+					Buildpack: buildapi.APIVersions{
+						Deprecated: []string{"0.2"},
+						Supported:  []string{"0.3"},
+					},
+					Platform: buildapi.APIVersions{
+						Deprecated: []string{"0.1"},
+						Supported:  []string{"0.2", "0.999"},
 					},
 				}
 

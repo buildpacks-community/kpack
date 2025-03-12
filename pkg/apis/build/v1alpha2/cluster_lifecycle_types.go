@@ -11,6 +11,7 @@ import (
 const (
 	ClusterLifecycleKind   = "ClusterLifecycle"
 	ClusterLifecycleCRName = "clusterlifecycles.kpack.io"
+	DefaultLifecycleName   = "default-lifecycle"
 )
 
 // +genclient
@@ -41,9 +42,16 @@ type ClusterLifecycleStatus struct {
 
 // +k8s:openapi-gen=true
 type ResolvedClusterLifecycle struct {
-	Version string `json:"version,omitempty"`
+	Image   ClusterLifecycleStatusImage `json:"image,omitempty"`
+	Version string                      `json:"version,omitempty"`
 
 	APIs LifecycleAPIs `json:"apis,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type ClusterLifecycleStatusImage struct {
+	LatestImage string `json:"latestImage,omitempty"`
+	Image       string `json:"image,omitempty"`
 }
 
 type LifecycleAPIs struct {

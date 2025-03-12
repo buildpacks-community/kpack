@@ -184,9 +184,14 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		},
 	}, builder.NamespacedName())
 
+	lifecycleName := builder.Spec.Lifecycle.Name
+	if lifecycleName == "" {
+		lifecycleName = buildapi.DefaultLifecycleName
+	}
+
 	c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
-			Name:      builder.Spec.Lifecycle.Name, // TODO: confirm this is what we want
+			Name:      lifecycleName,
 			Namespace: metav1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
@@ -246,7 +251,7 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Bui
 		return buildapi.BuilderRecord{}, errors.Errorf("Error: clusterstack '%s' is not ready", clusterStack.Name)
 	}
 
-	clusterLifecycle, err := c.ClusterLifecycleLister.Get(builder.Spec.Lifecycle.Name) // TODO: confirm this is what we want
+	clusterLifecycle, err := c.ClusterLifecycleLister.Get(lifecycleName)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}

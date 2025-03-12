@@ -9,7 +9,6 @@ import (
 )
 
 func (cl *ClusterLifecycle) SetDefaults(context.Context) {
-	// TODO: confirm, should we add something here?
 }
 
 func (cl *ClusterLifecycle) Validate(ctx context.Context) *apis.FieldError {

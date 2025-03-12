@@ -134,8 +134,6 @@ type Reconciler struct {
 	SecretFetcher          Fetcher
 }
 
-const DefaultLifecycleName = "default-lifecycle"
-
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	_, builderName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -179,9 +177,14 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		},
 	}, builder.NamespacedName())
 
+	lifecycleName := builder.Spec.Lifecycle.Name
+	if lifecycleName == "" {
+		lifecycleName = buildapi.DefaultLifecycleName
+	}
+
 	c.Tracker.Track(reconciler.Key{
 		NamespacedName: types.NamespacedName{
-			Name:      builder.Spec.Lifecycle.Name,
+			Name:      lifecycleName,
 			Namespace: corev1.NamespaceAll,
 		},
 		GroupKind: schema.GroupKind{
@@ -229,11 +232,6 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 
 	if !clusterStack.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
 		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
-	}
-
-	lifecycleName := builder.Spec.Lifecycle.Name
-	if lifecycleName == "" {
-		lifecycleName = DefaultLifecycleName
 	}
 
 	clusterLifecycle, err := c.ClusterLifecycleLister.Get(lifecycleName)

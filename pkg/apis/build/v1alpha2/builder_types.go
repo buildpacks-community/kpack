@@ -32,9 +32,8 @@ type Builder struct {
 
 // +k8s:openapi-gen=true
 type BuilderSpec struct {
-	Tag   string                 `json:"tag,omitempty"`
-	Stack corev1.ObjectReference `json:"stack,omitempty"`
-	// TODO: confirm, should `json:"lifecycle,...` actually be `json:"clusterlifecycle,...`?
+	Tag       string                 `json:"tag,omitempty"`
+	Stack     corev1.ObjectReference `json:"stack,omitempty"`
 	Lifecycle corev1.ObjectReference `json:"lifecycle,omitempty"`
 	Store     corev1.ObjectReference `json:"store,omitempty"`
 	// +listType

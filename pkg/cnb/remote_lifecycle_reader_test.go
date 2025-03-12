@@ -47,13 +47,16 @@ func testRemoteLifecycleReader(t *testing.T, when spec.G, it spec.S) {
 			})
 			require.NoError(t, err)
 
-			assert.Equal(t, buildapi.ResolvedClusterLifecycle{
-				Version: "some-version",
-				APIs: buildapi.LifecycleAPIs{
+			assert.Equal(t, "gcr.io/image/lifecycle", resolvedLifecycle.Image.Image)
+			assert.Equal(t, "some-version", resolvedLifecycle.Version)
+			assert.Equal(
+				t,
+				buildapi.LifecycleAPIs{
 					Buildpack: buildapi.APIVersions{Supported: buildapi.APISet{"0.7", "0.8", "0.9", "0.10", "0.11"}},
 					Platform:  buildapi.APIVersions{Supported: buildapi.APISet{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13"}},
 				},
-			}, resolvedLifecycle)
+				resolvedLifecycle.APIs,
+			)
 		})
 	})
 }
