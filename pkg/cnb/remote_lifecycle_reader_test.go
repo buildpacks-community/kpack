@@ -51,6 +51,14 @@ func testRemoteLifecycleReader(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, "some-version", resolvedLifecycle.Version)
 			assert.Equal(
 				t,
+				buildapi.LifecycleAPI{
+					BuildpackVersion: "0.7",
+					PlatformVersion:  "0.7",
+				},
+				resolvedLifecycle.API,
+			)
+			assert.Equal(
+				t,
 				buildapi.LifecycleAPIs{
 					Buildpack: buildapi.APIVersions{Supported: buildapi.APISet{"0.7", "0.8", "0.9", "0.10", "0.11"}},
 					Platform:  buildapi.APIVersions{Supported: buildapi.APISet{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13"}},

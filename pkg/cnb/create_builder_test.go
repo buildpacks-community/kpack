@@ -545,6 +545,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
   },
   "lifecycle": {
     "version": "0.5.0",
+    "api": {
+      "buildpack": "0.2",
+      "platform": "0.1"
+    },
     "apis": {
       "buildpack": {
 		"deprecated": ["0.2"],

@@ -55,17 +55,26 @@ type CreatorMetadata struct {
 type LifecycleMetadata struct {
 	LifecycleInfo
 
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `json:"api,omitempty"`
 	APIs LifecycleAPIs `json:"apis,omitempty"`
 }
 
 type LifecycleDescriptor struct {
 	Info LifecycleInfo `toml:"lifecycle" json:"lifecycle,omitempty"`
 
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `toml:"api" json:"api,omitempty"`
 	APIs LifecycleAPIs `toml:"apis" json:"apis,omitempty"`
 }
 
 type LifecycleInfo struct {
 	Version string `toml:"version" json:"version"`
+}
+
+type LifecycleAPI struct {
+	BuildpackVersion string `toml:"buildpack" json:"buildpack,omitempty"`
+	PlatformVersion  string `toml:"platform" json:"platform,omitempty"`
 }
 
 type LifecycleAPIs struct {

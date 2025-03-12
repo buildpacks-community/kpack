@@ -37,6 +37,10 @@ func (r *RemoteLifecycleReader) Read(keychain authn.Keychain, clusterLifecycleSp
 			Image:       clusterLifecycleSpec.Image,
 		},
 		Version: deprecatedLifecycleMD.Info.Version,
+		API: buildapi.LifecycleAPI{
+			BuildpackVersion: deprecatedLifecycleMD.API.BuildpackVersion,
+			PlatformVersion:  deprecatedLifecycleMD.API.PlatformVersion,
+		},
 		APIs: buildapi.LifecycleAPIs{
 			Buildpack: buildapi.APIVersions{
 				Deprecated: toBuildAPISet(lifecycleMD.Buildpack.Deprecated),
