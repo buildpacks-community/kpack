@@ -45,6 +45,8 @@ type ResolvedClusterLifecycle struct {
 	Image   ClusterLifecycleStatusImage `json:"image,omitempty"`
 	Version string                      `json:"version,omitempty"`
 
+	// Deprecated: Use `LifecycleAPIs` instead
+	API  LifecycleAPI  `json:"api,omitempty"`
 	APIs LifecycleAPIs `json:"apis,omitempty"`
 }
 
@@ -52,6 +54,11 @@ type ResolvedClusterLifecycle struct {
 type ClusterLifecycleStatusImage struct {
 	LatestImage string `json:"latestImage,omitempty"`
 	Image       string `json:"image,omitempty"`
+}
+
+type LifecycleAPI struct {
+	BuildpackVersion string `toml:"buildpack" json:"buildpack,omitempty"`
+	PlatformVersion  string `toml:"platform" json:"platform,omitempty"`
 }
 
 type LifecycleAPIs struct {

@@ -119,6 +119,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		},
 		Lifecycle: buildapi.ResolvedClusterLifecycle{
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
+			API:     clusterLifecycle.Status.ResolvedClusterLifecycle.API,
 			APIs:    clusterLifecycle.Status.ResolvedClusterLifecycle.APIs,
 		},
 		Buildpacks:              buildpackMetadata(builderBldr.buildpacks()),

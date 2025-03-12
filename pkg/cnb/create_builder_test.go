@@ -342,6 +342,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Image:       lifecycleImageTag,
 				},
 				Version: "0.5.0",
+				API: buildapi.LifecycleAPI{
+					BuildpackVersion: "0.2",
+					PlatformVersion:  "0.1",
+				},
 				APIs: buildapi.LifecycleAPIs{
 					Buildpack: buildapi.APIVersions{
 						Deprecated: []string{"0.2"},
