@@ -60,6 +60,7 @@ type LifecycleMetadata struct {
 	APIs LifecycleAPIs `json:"apis,omitempty"`
 }
 
+// LifecycleDescriptor is used to deserialize the io.buildpacks.builder.metadata label.
 type LifecycleDescriptor struct {
 	Info LifecycleInfo `toml:"lifecycle" json:"lifecycle,omitempty"`
 

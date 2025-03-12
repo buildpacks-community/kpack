@@ -63,7 +63,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 		return buildapi.BuilderRecord{}, err
 	}
 
-	lifecycleLayer, lifecycleMetadata, err := layerForOS(clusterLifecycle, lifecycleImage, builderBldr)
+	lifecycleLayer, lifecycleMetadata, err := getLifecycleLayer(clusterLifecycle, lifecycleImage, builderBldr)
 	if err != nil {
 		return buildapi.BuilderRecord{}, err
 	}
@@ -133,7 +133,7 @@ func (r *RemoteBuilderCreator) CreateBuilder(
 	return builder, nil
 }
 
-func layerForOS(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcrv1.Image, builderBlder *builderBlder) (lifecycleLayer ggcrv1.Layer, lifecycleMetadata LifecycleMetadata, err error) {
+func getLifecycleLayer(clusterLifecycle *buildapi.ClusterLifecycle, lifecycleImage ggcrv1.Image, builderBlder *builderBlder) (lifecycleLayer ggcrv1.Layer, lifecycleMetadata LifecycleMetadata, err error) {
 	lifecycleMetadata = LifecycleMetadata{
 		LifecycleInfo: LifecycleInfo{
 			Version: clusterLifecycle.Status.ResolvedClusterLifecycle.Version,
