@@ -133,7 +133,6 @@ type BuildStatus struct {
 	BuildMetadata          corev1alpha1.BuildpackMetadataList `json:"buildMetadata,omitempty"`
 	Stack                  corev1alpha1.BuildStack            `json:"stack,omitempty"`
 	LifecycleVersion       string                             `json:"lifecycleVersion"`
-	LifecycleCommit        string                             `json:"lifecycleCommit"`
 	LatestImage            string                             `json:"latestImage,omitempty"`
 	LatestCacheImage       string                             `json:"latestCacheImage,omitempty"`
 	LatestAttestationImage string                             `json:"latestAttestationImage,omitempty"`
