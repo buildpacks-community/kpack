@@ -19,6 +19,7 @@ env:
   PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
   PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
   PACK_VERSION: ${{ vars.PACK_VERSION }}
+  LIFECYCLE_IMAGE_REF: buildpacksio/lifecycle
 
 jobs:
   unit:
@@ -154,6 +155,35 @@ jobs:
         bp_go_targets: "./cmd/rebase"
         artifact_name: rebase-image
 
+
+  lifecycle-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.4
+
+    - name: resolve-digest
+      run: |
+          digest=$(crane digest ${{ env.LIFECYCLE_IMAGE_REF }})
+          mkdir images
+          echo "${{env.LIFECYCLE_IMAGE_REF}}@${digest}" > images/lifecycle
+          cat images/lifecycle
+
+    - name: Upload Image Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lifecycle-image
+        path: images/
+
+
   generate-pre-release-yaml:
     runs-on: ubuntu-latest
     needs:
@@ -163,6 +193,7 @@ jobs:
     - rebase-image
     - build-init-image
     - build-waiter-image
+    - lifecycle-image
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -193,6 +224,7 @@ jobs:
           -v build_init.image=$(cat images/build-init) \
           -v build_waiter.image=$(cat images/build-waiter) \
           -v rebase.image=$(cat images/rebase) \
+          -v lifecycle.image=$(cat images/lifecycle) \
           -v completion.image=$(cat images/completion) > prerelease.yaml
 
         cat prerelease.yaml
@@ -383,6 +415,7 @@ jobs:
       - rebase-image
       - build-init-image
       - build-waiter-image
+      - lifecycle-image
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
@@ -460,6 +493,7 @@ jobs:
           -v build_waiter.image=$(cat final-image-refs/build-waiter) \
           -v rebase.image=$(cat final-image-refs/rebase) \
           -v completion.image=$(cat final-image-refs/completion) \
+          -v lifecycle.image=$(cat final-image-refs/lifecycle) \
           -v kpack_version=${{ env.KPACK_VERSION }} > $file
         echo "sha=$(shasum -a 256 $file)" >> $GITHUB_OUTPUT
 
