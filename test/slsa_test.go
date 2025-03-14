@@ -60,6 +60,7 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 		buildpackName            = "buildpack"
 		clusterBuildpackName     = "cluster-buildpack-slsa"
 		clusterStackName         = "stack-slsa"
+		clusterLifecycleName     = "lifecycle-slsa"
 		builderName              = "custom-builder"
 		clusterBuilderName       = "custom-cluster-builder-slsa"
 		cosignSecretName         = "cosign-creds"
@@ -96,6 +97,11 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 		}
 
 		err = clients.client.KpackV1alpha2().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().ClusterLifecycles().Delete(ctx, clusterLifecycleName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -204,6 +210,16 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
+		_, err = clients.client.KpackV1alpha2().ClusterLifecycles().Create(ctx, &buildapi.ClusterLifecycle{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterLifecycleName,
+			},
+			Spec: buildapi.ClusterLifecycleSpec{
+				ImageSource: corev1alpha1.ImageSource{Image: "buildpacksio/lifecycle"},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
 		builder, err := clients.client.KpackV1alpha2().Builders(testNamespace).Create(ctx, &buildapi.Builder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      builderName,
@@ -215,6 +231,10 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -311,6 +331,10 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,

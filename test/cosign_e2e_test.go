@@ -32,6 +32,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		buildpackName        = "buildpack"
 		clusterBuildpackName = "cluster-buildpack-cosign"
 		clusterStackName     = "stack-cosign"
+		clusterLifecycleName = "lifecycle-cosign"
 		builderName          = "custom-signed-builder"
 		clusterBuilderName   = "custom-signed-cluster-builder-cosign"
 		cosignSecretName     = "cosign-creds"
@@ -69,6 +70,11 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 		}
 
 		err = clients.client.KpackV1alpha2().ClusterStacks().Delete(ctx, clusterStackName, metav1.DeleteOptions{})
+		if !errors.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+
+		err = clients.client.KpackV1alpha2().ClusterLifecycles().Delete(ctx, clusterLifecycleName, metav1.DeleteOptions{})
 		if !errors.IsNotFound(err) {
 			require.NoError(t, err)
 		}
@@ -175,6 +181,16 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
+
+		_, err = clients.client.KpackV1alpha2().ClusterLifecycles().Create(ctx, &buildapi.ClusterLifecycle{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterLifecycleName,
+			},
+			Spec: buildapi.ClusterLifecycleSpec{
+				ImageSource: corev1alpha1.ImageSource{Image: "buildpacksio/lifecycle"},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
 	})
 
 	it("Signs a Builder image successfully when the key is not password-protected", func() {
@@ -204,6 +220,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -321,6 +341,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -446,6 +470,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -575,6 +603,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 						Name: clusterStackName,
 						Kind: "ClusterStack",
 					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
+					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
@@ -691,6 +723,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 						Name: clusterStackName,
 						Kind: "ClusterStack",
 					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
+					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
 						Kind: "ClusterStore",
@@ -804,6 +840,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -927,6 +967,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,
@@ -1052,6 +1096,10 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 					Stack: corev1.ObjectReference{
 						Name: clusterStackName,
 						Kind: "ClusterStack",
+					},
+					Lifecycle: corev1.ObjectReference{
+						Name: clusterLifecycleName,
+						Kind: "ClusterLifecycle",
 					},
 					Store: corev1.ObjectReference{
 						Name: clusterStoreName,

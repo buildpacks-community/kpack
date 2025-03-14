@@ -33,7 +33,7 @@ func (f *FakeClient) Fetch(keychain authn.Keychain, repoName string) (v1.Image, 
 	}
 
 	if expectedKeychain, ok := f.readKeychains[tryParsingTag(repoName)]; !ok || keychain != expectedKeychain {
-		return nil, "", errors.New("unexpected keychain")
+		return nil, "", errors.New(fmt.Sprintf("unexpected keychain for %s", repoName))
 	}
 
 	image, ok := f.images[repoName]

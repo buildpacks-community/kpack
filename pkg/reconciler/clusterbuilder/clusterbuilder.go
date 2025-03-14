@@ -41,8 +41,10 @@ type BuilderCreator interface {
 		ctx context.Context,
 		builderKeychain authn.Keychain,
 		stackKeychain authn.Keychain,
+		lifecycleKeychain authn.Keychain,
 		fetcher cnb.RemoteBuildpackFetcher,
 		clusterStack *buildapi.ClusterStack,
+		clusterLifecycle *buildapi.ClusterLifecycle,
 		spec buildapi.BuilderSpec,
 		serviceAccountSecrets []*corev1.Secret,
 		resolvedBuilderRef string,
@@ -62,8 +64,9 @@ func NewController(
 	clusterStoreInformer buildinformers.ClusterStoreInformer,
 	clusterBuildpackInformer buildinformers.ClusterBuildpackInformer,
 	clusterStackInformer buildinformers.ClusterStackInformer,
+	clusterLifecycleInformer buildinformers.ClusterLifecycleInformer,
 	secretFetcher Fetcher,
-) (*controller.Impl, func()) {
+) *controller.Impl {
 	c := &Reconciler{
 		Client:                 opt.Client,
 		ClusterBuilderLister:   clusterBuilderInformer.Lister(),
@@ -72,6 +75,7 @@ func NewController(
 		ClusterStoreLister:     clusterStoreInformer.Lister(),
 		ClusterBuildpackLister: clusterBuildpackInformer.Lister(),
 		ClusterStackLister:     clusterStackInformer.Lister(),
+		ClusterLifecycleLister: clusterLifecycleInformer.Lister(),
 		SecretFetcher:          secretFetcher,
 	}
 
@@ -108,10 +112,13 @@ func NewController(
 			c.Tracker.OnChanged,
 			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterStackKind)),
 	))
+	clusterLifecycleInformer.Informer().AddEventHandler(controller.HandleAll(
+		controller.EnsureTypeMeta(
+			c.Tracker.OnChanged,
+			buildapi.SchemeGroupVersion.WithKind(buildapi.ClusterLifecycleKind)),
+	))
 
-	return impl, func() {
-		impl.GlobalResync(clusterBuilderInformer.Informer())
-	}
+	return impl
 }
 
 type Reconciler struct {
@@ -123,6 +130,7 @@ type Reconciler struct {
 	ClusterStoreLister     buildlisters.ClusterStoreLister
 	ClusterBuildpackLister buildlisters.ClusterBuildpackLister
 	ClusterStackLister     buildlisters.ClusterStackLister
+	ClusterLifecycleLister buildlisters.ClusterLifecycleLister
 	SecretFetcher          Fetcher
 }
 
@@ -169,6 +177,22 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		},
 	}, builder.NamespacedName())
 
+	lifecycleName := builder.Spec.Lifecycle.Name
+	if lifecycleName == "" {
+		lifecycleName = buildapi.DefaultLifecycleName
+	}
+
+	c.Tracker.Track(reconciler.Key{
+		NamespacedName: types.NamespacedName{
+			Name:      lifecycleName,
+			Namespace: corev1.NamespaceAll,
+		},
+		GroupKind: schema.GroupKind{
+			Group: "kpack.io",
+			Kind:  buildapi.ClusterLifecycleKind,
+		},
+	}, builder.NamespacedName())
+
 	var (
 		clusterStore *buildapi.ClusterStore
 		err          error
@@ -210,6 +234,15 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		return buildapi.BuilderRecord{}, errors.Errorf("stack %s is not ready", clusterStack.Name)
 	}
 
+	clusterLifecycle, err := c.ClusterLifecycleLister.Get(lifecycleName)
+	if err != nil {
+		return buildapi.BuilderRecord{}, err
+	}
+
+	if !clusterLifecycle.Status.GetCondition(corev1alpha1.ConditionReady).IsTrue() {
+		return buildapi.BuilderRecord{}, errors.Errorf("Error: clusterlifecycle '%s' is not ready", clusterLifecycle.Name)
+	}
+
 	builderKeychain, err := c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 		ServiceAccount: builder.Spec.ServiceAccountRef.Name,
 		Namespace:      builder.Spec.ServiceAccountRef.Namespace,
@@ -223,6 +256,17 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		stackKeychain, err = c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
 			ServiceAccount: clusterStack.Spec.ServiceAccountRef.Name,
 			Namespace:      clusterStack.Spec.ServiceAccountRef.Namespace,
+		})
+		if err != nil {
+			return buildapi.BuilderRecord{}, err
+		}
+	}
+
+	lifecycleKeychain := builderKeychain
+	if clusterLifecycle.Spec.ServiceAccountRef != nil {
+		lifecycleKeychain, err = c.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			ServiceAccount: clusterLifecycle.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterLifecycle.Spec.ServiceAccountRef.Namespace,
 		})
 		if err != nil {
 			return buildapi.BuilderRecord{}, err
@@ -245,8 +289,10 @@ func (c *Reconciler) reconcileBuilder(ctx context.Context, builder *buildapi.Clu
 		ctx,
 		builderKeychain,
 		stackKeychain,
+		lifecycleKeychain,
 		fetcher,
 		clusterStack,
+		clusterLifecycle,
 		builder.Spec.BuilderSpec,
 		serviceAccountSecrets,
 		resolvedBuilderRef,

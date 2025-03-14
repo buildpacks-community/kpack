@@ -5703,6 +5703,10 @@
     },
     "kpack.build.v1alpha2.BuildStatus": {
       "type": "object",
+      "required": [
+        "lifecycleVersion",
+        "lifecycleCommit"
+      ],
       "properties": {
         "buildMetadata": {
           "type": "array",
@@ -5729,6 +5733,14 @@
         },
         "latestImage": {
           "type": "string"
+        },
+        "lifecycleCommit": {
+          "type": "string",
+          "default": ""
+        },
+        "lifecycleVersion": {
+          "type": "string",
+          "default": ""
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -5889,6 +5901,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -5932,6 +5948,10 @@
         },
         "latestImage": {
           "type": "string"
+        },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ResolvedClusterLifecycle"
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
@@ -6132,6 +6152,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6250,6 +6274,121 @@
           "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterLifecycle": {
+      "type": "object",
+      "required": [
+        "spec",
+        "status"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterLifecycleSpec"
+        },
+        "status": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterLifecycleStatus"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterLifecycleList": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.build.v1alpha2.ClusterLifecycle"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterLifecycleSpec": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "serviceAccountRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterLifecycleStatus": {
+      "type": "object",
+      "properties": {
+        "api": {
+          "description": "Deprecated: Use `LifecycleAPIs` instead",
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
+        },
+        "apis": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
+        },
+        "conditions": {
+          "description": "Conditions the latest available observations of a resource's current state.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kpack.core.v1alpha1.Condition"
+          },
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "image": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterLifecycleStatusImage"
+        },
+        "observedGeneration": {
+          "description": "ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ClusterLifecycleStatusImage": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "latestImage": {
+          "type": "string"
         }
       }
     },
@@ -6828,6 +6967,10 @@
             "default": ""
           }
         },
+        "lifecycle": {
+          "default": {},
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
         "order": {
           "type": "array",
           "items": {
@@ -6864,6 +7007,27 @@
         "tag": {
           "type": "string",
           "default": ""
+        }
+      }
+    },
+    "kpack.build.v1alpha2.ResolvedClusterLifecycle": {
+      "type": "object",
+      "properties": {
+        "api": {
+          "description": "Deprecated: Use `LifecycleAPIs` instead",
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPI"
+        },
+        "apis": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.LifecycleAPIs"
+        },
+        "image": {
+          "default": {},
+          "$ref": "#/definitions/kpack.build.v1alpha2.ClusterLifecycleStatusImage"
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
@@ -7340,6 +7504,9 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "type": "string"
+        },
         "stripComponents": {
           "type": "integer",
           "format": "int64"

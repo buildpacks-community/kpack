@@ -371,15 +371,16 @@ func testImageBuilds(t *testing.T, when spec.G, it spec.S) {
 }
 
 type TestBuilderResource struct {
-	BuilderReady     bool
-	BuilderUpToDate  bool
-	BuilderMetadata  []corev1alpha1.BuildpackMetadata
-	ImagePullSecrets []corev1.LocalObjectReference
-	Kind             string
-	LatestImage      string
-	LatestRunImage   string
-	Name             string
-	Namespace        string
+	BuilderReady           bool
+	BuilderUpToDate        bool
+	BuilderMetadata        []corev1alpha1.BuildpackMetadata
+	ImagePullSecrets       []corev1.LocalObjectReference
+	Kind                   string
+	LatestImage            string
+	LatestRunImage         string
+	LatestLifecycleVersion string
+	Name                   string
+	Namespace              string
 }
 
 func (t TestBuilderResource) ConditionReadyMessage() string {
@@ -407,6 +408,10 @@ func (t TestBuilderResource) BuildpackMetadata() corev1alpha1.BuildpackMetadataL
 
 func (t TestBuilderResource) RunImage() string {
 	return t.LatestRunImage
+}
+
+func (t TestBuilderResource) LifecycleVersion() string {
+	return t.LatestLifecycleVersion
 }
 
 func (t TestBuilderResource) GetName() string {

@@ -34,6 +34,8 @@ type Interface interface {
 	ClusterBuilders() ClusterBuilderInformer
 	// ClusterBuildpacks returns a ClusterBuildpackInformer.
 	ClusterBuildpacks() ClusterBuildpackInformer
+	// ClusterLifecycles returns a ClusterLifecycleInformer.
+	ClusterLifecycles() ClusterLifecycleInformer
 	// ClusterStacks returns a ClusterStackInformer.
 	ClusterStacks() ClusterStackInformer
 	// ClusterStores returns a ClusterStoreInformer.
@@ -78,6 +80,11 @@ func (v *version) ClusterBuilders() ClusterBuilderInformer {
 // ClusterBuildpacks returns a ClusterBuildpackInformer.
 func (v *version) ClusterBuildpacks() ClusterBuildpackInformer {
 	return &clusterBuildpackInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterLifecycles returns a ClusterLifecycleInformer.
+func (v *version) ClusterLifecycles() ClusterLifecycleInformer {
+	return &clusterLifecycleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterStacks returns a ClusterStackInformer.

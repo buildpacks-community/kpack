@@ -59,6 +59,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&SourceResolverList{},
 		&ClusterStack{},
 		&ClusterStackList{},
+		&ClusterLifecycle{},
+		&ClusterLifecycleList{},
 		&ClusterStore{},
 		&ClusterStoreList{},
 		&ClusterBuildpack{},

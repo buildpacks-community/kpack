@@ -24,10 +24,6 @@ const (
 	MediaTypeJSON             = "application/json"
 )
 
-type LifecycleProvider interface {
-	Metadata() (cnb.LifecycleMetadata, error)
-}
-
 type ImageReader interface {
 	Read(keychain authn.Keychain, repoName string) (string, string, map[string]string, error)
 }
@@ -35,8 +31,7 @@ type ImageReader interface {
 type Attester struct {
 	Version string
 
-	ImageReader       ImageReader
-	LifecycleProvider LifecycleProvider
+	ImageReader ImageReader
 
 	Images   config.Images
 	Features config.FeatureFlags
@@ -60,11 +55,6 @@ func (a *Attester) AttestBuild(build *buildv1alpha2.Build, buildMetadata *cnb.Bu
 	}
 
 	start, stop := getStartStopTime(pod)
-
-	lifecycle, err := a.LifecycleProvider.Metadata()
-	if err != nil {
-		return intoto.Statement{}, fmt.Errorf("failed to read lifecycle metadata: %v", err)
-	}
 
 	builderDeps := make([]slsav1.ResourceDescriptor, 0)
 	for i, fn := range depFns {
@@ -102,7 +92,7 @@ func (a *Attester) AttestBuild(build *buildv1alpha2.Build, buildMetadata *cnb.Bu
 				ID: string(builderId),
 				Version: map[string]string{
 					"kpack":     a.Version,
-					"lifecycle": lifecycle.Version,
+					"lifecycle": buildMetadata.LifecycleVersion,
 				},
 				BuilderDependencies: builderDeps,
 			},
