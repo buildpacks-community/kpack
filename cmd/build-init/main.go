@@ -100,7 +100,7 @@ func main() {
 			logger.Fatal(err)
 		}
 
-		for domain := range dockerCfgCreds {
+		for domain := range dockerCfgCreds.CredMap {
 			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 
@@ -110,7 +110,7 @@ func main() {
 		}
 	}
 
-	if len(creds) == 0 {
+	if len(creds.CredMap) == 0 {
 		logger.Println("No registry credentials were loaded from service account secrets")
 	}
 
