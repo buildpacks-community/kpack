@@ -1,8 +1,6 @@
 module github.com/pivotal/kpack
 
-go 1.24
-
-toolchain go1.24.1
+go 1.23.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
