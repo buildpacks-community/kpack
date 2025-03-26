@@ -11,9 +11,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/imgutil/remote"
-	"github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/cmd"
+	"github.com/buildpacks/lifecycle/phase"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/pkg/errors"
@@ -114,7 +114,7 @@ func rebase(tags []string, logger *log.Logger) error {
 		return errors.Errorf("could not access run image: %s", *runImage)
 	}
 
-	rebaser := lifecycle.Rebaser{
+	rebaser := phase.Rebaser{
 		Logger:      cmd.DefaultLogger,
 		PlatformAPI: api.MustParse("0.9"),
 	}

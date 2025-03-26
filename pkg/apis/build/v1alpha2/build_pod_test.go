@@ -2237,8 +2237,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			it("only uses allowed app armor values", func() {
 				validateAppArmor := func(pod *corev1.Pod) {
 					for key, value := range pod.Annotations {
-						if strings.HasPrefix(key, corev1.AppArmorBetaContainerAnnotationKeyPrefix) {
-							assert.Equal(t, corev1.AppArmorBetaProfileRuntimeDefault, value)
+						if strings.HasPrefix(key, corev1.DeprecatedAppArmorBetaContainerAnnotationKeyPrefix) {
+							assert.Equal(t, corev1.DeprecatedAppArmorBetaProfileRuntimeDefault, value)
 						}
 					}
 				}

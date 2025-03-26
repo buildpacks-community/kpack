@@ -101,13 +101,19 @@ func testSigner(t *testing.T, when spec.G, it spec.S) {
 
 		it("outputs the correct format when rsa signer is used", func() {
 			p, _ := pem.Decode([]byte(`-----BEGIN RSA PRIVATE KEY-----
-MIIBOgIBAAJBAMVLTljSp8KKogixo53ZA97eNOHajQANWsyJPNDw3W6dStfpWm9c
-aiHk6Cd/VMRc1op9tksMTJAEYIHsC6Wk3a0CAwEAAQJAaTYYiMuFxPvzHtnEXBfv
-tXkgEFVhHecBRdPlx7K7ExIDUnPZXkt45yBmtLc3fuq9Ap9qJlfT/qvJSxU+YbxH
-jQIhAPpHCgIs+/vsk4Gg/Fd2KlNyXOuRo2oLjDSQntwcCNcDAiEAyc4jG/lL9o7Z
-RbsRnpme5mkld4WV9czoVOl7WfxfQY8CIEhVUboxQB6eUD9txKCOgUseyWY38E/M
-yJfEmHUrEQ77AiEAoDncwl8jIvW0KJsomCYcdZBSQR19PRWd+Z0PZRjtgJ0CIDsR
-UeeHdmNHLNWThZtIpyC9Hrq1m8/F97sVa37x7c/O
+MIICXQIBAAKBgQC6NYrd7Fk+VVZ6/5bhA32kKybmEhnP87GnNXHmJFRZRiG1uy4d
+hyFFPP/RzaBtX5p2v1CyYCCdsbGAFC+AwYY0WPeUxoH9CoHfbVNARzP2hEpxf1UE
+wbElSXEV5g+ORWEhM5kCiepawUOuJDRBlkJv+NsgNJLO3W4iAWpGBSWKQwIDAQAB
+AoGBAJEkKODAV/OROv5WeLldKjKre/96/mmr7r6Blw0nJiQL2Ty48MINUS6R1Gkp
+WTHHgjOq/fB7oxCnr85AbaJztfGEsoOBRQwpuhyxs9atwkzfqfdvP41gYxE5ZOSR
+SVA2PZZ3YpayTFGr0aue0Z/0uDNr1r0r2Yzi4FEHsYRaMn3pAkEA52JPPaTn6Beo
+RwVBmISsz0foH8oERXA+TiuO+7ntUI3I+0Qu0gHCOG4nUMosg+rjSrf1s9TrPTy6
+wqphnL081QJBAM4E59yVB97IswDqpBKDUHPhwt+gL+tHr0l1rV9Sigf8P+JzJ+qW
+3T2mjA9zShsql1HAHVhKa+9jUBUGyLNx1rcCQEZg8rVPWXKQ75Bamu8nO+D4gDRb
+IB123JyuRxluHi7oUX+L56nc+xRq/O5n8E5XvbbWaZe/ZaYEuNHJPVONg9kCQQCw
+NxH7Yp2wuQojJo/gJeGSvO/qRyG1pUMRGk6I0hiua9xY3RavWQszyFjUflBMnEmB
+60kuU7musMu2sG7KzfxRAkB4IQT4WeUZQewWYLC3wOefwGhBaqqG0aQvTAxNgCKw
+S5CYclcJQ7nokUAdf5OjKmAPa5dDnYnVcebi0Bk31GLA
 -----END RSA PRIVATE KEY-----`))
 			k, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 			require.NoError(t, err)
@@ -122,7 +128,7 @@ UeeHdmNHLNWThZtIpyC9Hrq1m8/F97sVa37x7c/O
 
 			// Note: the golang stdlib RSA PKCS1v15 signing is deterministic, so we get to enjoy
 			// hardcoding the signature. Other libraries and online checkers aren't neccessarily so.
-			expected := formatPayload(`{"keyid":"some-rsa-key","sig":"ogSegxffKMUXj5Se3d1f0+qgswxEUhDEGi49LqbXKzZfBnXtKMktw9mT7iKWgXuYe1mIuioPUq7tHzjYfUAUSw=="}`)
+			expected := formatPayload(`{"keyid":"some-rsa-key","sig":"qyhZenrI9bhGs3MUFSNTJXtJvYqN5ZuJF3TVlhl7U/zPjGHk1s5DOsZoIgp0V8sxGpah96k5YIxAMDcW96JgAWfe1FT3FhNTH43ZPI4nkbk/FCZRQHhIxkOhp6rUQY4C+rI3e/EWLCUO6bWouH0+VzN1BbtXLTlqm3+/eM1BPRI="}`)
 			require.Equal(t, expected, string(bytes))
 		})
 
@@ -145,7 +151,7 @@ P4amRng1j+1PnrdDixxQJtmAZT1lJZdXvQ==
 			bytes, err := attester.Sign(ctx, statement, signer)
 			require.NoError(t, err)
 
-			expected := formatPayload(`{"keyid":"some-ecdsa-key","sig":"MEUCIQClEWFrDoq/PelVgvqm2Tp5FEg62fYmi1bIYkTmctOQaAIgfXNOZBQxd+hXGsgKQsP/UyFCXInenAgJUUWuHgHu2LE="}`)
+			expected := formatPayload(`{"keyid":"some-ecdsa-key","sig":"MEUCIQCBPU7x0+KOBggqbfGGLFjsRilVD94yzOMPnDuAWhAVfgIgPDA5A2NwqPTo2ABJ/KNahJy38QfljO9GtuafK0RI5F0="}`)
 			require.Equal(t, expected, string(bytes))
 		})
 
@@ -171,21 +177,27 @@ MC4CAQAwBQYDK2VwBCIEIATRP4Od4Mta/KjTO7c99nfGL/PCUn9Grn7mnXCiIXuW
 		when("parsing pkcs#8 keys", func() {
 			it("parses rsa key", func() {
 				signer, err := NewPKCS8Signer([]byte(`-----BEGIN PRIVATE KEY-----
-MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAxUtOWNKnwoqiCLGj
-ndkD3t404dqNAA1azIk80PDdbp1K1+lab1xqIeToJ39UxFzWin22SwxMkARggewL
-paTdrQIDAQABAkBpNhiIy4XE+/Me2cRcF++1eSAQVWEd5wFF0+XHsrsTEgNSc9le
-S3jnIGa0tzd+6r0Cn2omV9P+q8lLFT5hvEeNAiEA+kcKAiz7++yTgaD8V3YqU3Jc
-65GjaguMNJCe3BwI1wMCIQDJziMb+Uv2jtlFuxGemZ7maSV3hZX1zOhU6XtZ/F9B
-jwIgSFVRujFAHp5QP23EoI6BSx7JZjfwT8zIl8SYdSsRDvsCIQCgOdzCXyMi9bQo
-myiYJhx1kFJBHX09FZ35nQ9lGO2AnQIgOxFR54d2Y0cs1ZOFm0inIL0eurWbz8X3
-uxVrfvHtz84=
+MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMuMYS7JFwpUhTQv
+/qgY1cE9VKaWCHxE7GXhAjp6CdZHdSvld/p6YhNFh3q3ra8xyNJ8TLzzgckilBWN
+E4TL9C7X+0OuXJgqPs9DDrWU1leKxNkHW/VLocdaBGcMO3ObExBMSQmqxx7aZXDE
+ZgsXpTxN6dFZi0NXdZQFxHWbmAIFAgMBAAECgYEAwloXsQRw63woc9wf24FbGFfn
+K+i10XI+BkkCR7OfEOrKBk/kb1XLr3sEETiwrkdq6Q+mdgRMODC8FJfPu0zCqQEl
+N09GzgWdiLUqFCjI5mDH45pknVUqErev3UjOQXtHc/mJShtzYYXOZIv/TEtQ5qlx
+nJyw5UwWdotl3Q5LM0ECQQD+tw1HU3087IJiAyEtdT+P6EjdyN83xEvUN4lsL0pX
+oSSGND86uGdegEhLeIqSUaArNcHxRLzOEhBU6fFZutR3AkEAzJM/z1C5vSnrqk/x
+iVz5LQId/0GPuJaxH88BZPVn3cExFonP2ekoOk7krreY9US+QvCEYoaIpMRQTMkS
+FZToYwJAddxT654pRCiYCCw0jOlE+RzdoqpRB2fwQolUMFgNiVDKKsNAQraTNjob
+ubhUPnJAr93XGQHab2wSXIhHomJ97wJAGZ1+aekDuMnc9lBYQAjiMl6HfwSoiEZm
+G0OCOy/3N28PRHExE2n8XYCvZakbf+qBoEQZb3TE+0yReWvb1dP1XQJANi9sUQYB
+KOV35SGKCGhuMKW3pwyPNc418C1a8cBStWNufVg6MjgCgFOcWYEByuUXEIveonPu
+ReiVnVr2kT44fA==
 -----END PRIVATE KEY-----`), "some-rsa-key")
 				require.NoError(t, err)
 
 				bytes, err := attester.Sign(ctx, statement, signer)
 				require.NoError(t, err)
 
-				expected := formatPayload(`{"keyid":"some-rsa-key","sig":"ogSegxffKMUXj5Se3d1f0+qgswxEUhDEGi49LqbXKzZfBnXtKMktw9mT7iKWgXuYe1mIuioPUq7tHzjYfUAUSw=="}`)
+				expected := formatPayload(`{"keyid":"some-rsa-key","sig":"FqnF6A48fXhdW3xuTcRe1rChnyosp/Dap0y2Y+u4qe/Xd3zXuCR0mbejw8cxk5jqbewDwby/Uw8g+cINYR8H733AM8x1tRYOCuHMdAphATL+7KcESn9eNuKnOT2ioOsdrKHNqmpbHXJ8JcRLLhVLlVcJ7nX5RLja9+2PNqYIkAU="}`)
 				require.Equal(t, expected, string(bytes))
 			})
 

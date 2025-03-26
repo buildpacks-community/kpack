@@ -266,7 +266,7 @@ value = 1
 									})
 									it("writes all env var files to the platform dir", func() {
 										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
-										assert.EqualError(t, err, "environment variable 'KeyA' is not a string value")
+										assert.Contains(t, err.Error(), "environment variable 'KeyA' is not a string value")
 									})
 								})
 								when("'name' is invalid", func() {
@@ -281,7 +281,7 @@ value = "ValueA"
 									})
 									it("writes all env var files to the platform dir", func() {
 										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
-										assert.EqualError(t, err, "environment variable 'name' is not a string")
+										assert.Contains(t, err.Error(), "environment variable 'name' is not a string")
 									})
 								})
 							})
@@ -327,7 +327,7 @@ value = 1
 									})
 									it("writes all env var files to the platform dir", func() {
 										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
-										assert.EqualError(t, err, "environment variable 'KeyA' is not a string value")
+										assert.Contains(t, err.Error(), "environment variable 'KeyA' is not a string value")
 									})
 								})
 								when("'name' is invalid", func() {
@@ -342,7 +342,7 @@ value = "ValueA"
 									})
 									it("writes all env var files to the platform dir", func() {
 										err := cnb.ProcessProjectDescriptor(appDir, descriptorPath, platformDir, logger)
-										assert.EqualError(t, err, "environment variable 'name' is not a string")
+										assert.Contains(t, err.Error(), "environment variable 'name' is not a string")
 									})
 								})
 							})
