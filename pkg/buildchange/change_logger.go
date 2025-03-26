@@ -76,7 +76,7 @@ func (c *changeLogger) logChanges() error {
 		}
 
 		changeHeader := fmt.Sprintf("%s:\n", change.Reason)
-		c.logger.Printf(changeHeader)
+		c.logger.Print(changeHeader)
 		c.logger.Print(diff)
 	}
 	return nil
