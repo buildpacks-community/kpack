@@ -13,7 +13,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
 	github.com/buildpacks/imgutil v0.0.0-20240605145725-186f89b2d168
-	github.com/buildpacks/lifecycle v0.20.3
+	github.com/buildpacks/lifecycle v0.20.7
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.2
@@ -134,7 +134,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v28.0.4+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v26.1.5+incompatible // indirect
+	github.com/docker/docker v27.0.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
@@ -214,7 +214,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mmcloughlin/avo v0.6.0 // indirect
-	github.com/moby/buildkit v0.13.2 // indirect
+	github.com/moby/buildkit v0.14.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
