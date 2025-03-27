@@ -60,6 +60,15 @@ func (t *Client) Save(keychain authn.Keychain, tag string, image v1.Image) (stri
 	return identifier, remote.Tag(ref.Context().Tag(timestampTag()), image, remote.WithAuthFromKeychain(keychain))
 }
 
+func (t *Client) Delete(keychain authn.Keychain, repoName string) error {
+	reference, err := name.ParseReference(repoName)
+	if err != nil {
+		return err
+	}
+
+	return remote.Delete(reference, remote.WithAuthFromKeychain(keychain))
+}
+
 func timestampTag() string {
 	now := time.Now()
 	return fmt.Sprintf("%s%02d%02d%02d", now.Format("20060102"), now.Hour(), now.Minute(), now.Second())

@@ -101,6 +101,7 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 			SuccessBuildHistoryLimit: limit(10),
 			ImageTaggingStrategy:     corev1alpha1.None,
 			Build:                    &buildapi.ImageBuild{},
+			CascadeDelete:            true,
 		},
 		Status: buildapi.ImageStatus{
 			Status: corev1alpha1.Status{
@@ -902,7 +903,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1007,7 +1009,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1100,7 +1103,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
@@ -1193,7 +1197,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1287,7 +1292,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: clusterBuilder.Status.LatestImage,
 								},
@@ -1383,7 +1389,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1533,7 +1540,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1663,7 +1671,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
@@ -1837,7 +1846,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
@@ -2010,7 +2020,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: updatedBuilderImage,
 								},
@@ -2327,7 +2338,8 @@ func testImageReconciler(t *testing.T, when spec.G, it spec.S) {
 								},
 							},
 							Spec: buildapi.BuildSpec{
-								Tags: []string{imageWithBuilder.Spec.Tag},
+								CascadeDelete: true,
+								Tags:          []string{imageWithBuilder.Spec.Tag},
 								Builder: corev1alpha1.BuildBuilderSpec{
 									Image: builder.Status.LatestImage,
 								},
