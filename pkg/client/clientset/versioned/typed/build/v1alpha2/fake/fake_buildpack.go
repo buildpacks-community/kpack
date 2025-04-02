@@ -24,7 +24,6 @@ import (
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeBuildpacks struct {
 	ns   string
 }
 
-var buildpacksResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha2", Resource: "buildpacks"}
+var buildpacksResource = v1alpha2.SchemeGroupVersion.WithResource("buildpacks")
 
-var buildpacksKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha2", Kind: "Buildpack"}
+var buildpacksKind = v1alpha2.SchemeGroupVersion.WithKind("Buildpack")
 
 // Get takes name of the buildpack, and returns the corresponding buildpack object, and an error if there is any.
 func (c *FakeBuildpacks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.Buildpack, err error) {

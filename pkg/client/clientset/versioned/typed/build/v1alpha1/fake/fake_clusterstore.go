@@ -24,7 +24,6 @@ import (
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeClusterStores struct {
 	Fake *FakeKpackV1alpha1
 }
 
-var clusterstoresResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "clusterstores"}
+var clusterstoresResource = v1alpha1.SchemeGroupVersion.WithResource("clusterstores")
 
-var clusterstoresKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "ClusterStore"}
+var clusterstoresKind = v1alpha1.SchemeGroupVersion.WithKind("ClusterStore")
 
 // Get takes name of the clusterStore, and returns the corresponding clusterStore object, and an error if there is any.
 func (c *FakeClusterStores) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterStore, err error) {

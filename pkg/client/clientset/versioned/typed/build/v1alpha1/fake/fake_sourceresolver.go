@@ -24,7 +24,6 @@ import (
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeSourceResolvers struct {
 	ns   string
 }
 
-var sourceresolversResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha1", Resource: "sourceresolvers"}
+var sourceresolversResource = v1alpha1.SchemeGroupVersion.WithResource("sourceresolvers")
 
-var sourceresolversKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha1", Kind: "SourceResolver"}
+var sourceresolversKind = v1alpha1.SchemeGroupVersion.WithKind("SourceResolver")
 
 // Get takes name of the sourceResolver, and returns the corresponding sourceResolver object, and an error if there is any.
 func (c *FakeSourceResolvers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.SourceResolver, err error) {
