@@ -5704,8 +5704,7 @@
     "kpack.build.v1alpha2.BuildStatus": {
       "type": "object",
       "required": [
-        "lifecycleVersion",
-        "lifecycleCommit"
+        "lifecycleVersion"
       ],
       "properties": {
         "buildMetadata": {
@@ -5733,10 +5732,6 @@
         },
         "latestImage": {
           "type": "string"
-        },
-        "lifecycleCommit": {
-          "type": "string",
-          "default": ""
         },
         "lifecycleVersion": {
           "type": "string",
