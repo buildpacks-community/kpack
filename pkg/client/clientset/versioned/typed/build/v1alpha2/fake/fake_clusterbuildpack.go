@@ -24,7 +24,6 @@ import (
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeClusterBuildpacks struct {
 	Fake *FakeKpackV1alpha2
 }
 
-var clusterbuildpacksResource = schema.GroupVersionResource{Group: "kpack.io", Version: "v1alpha2", Resource: "clusterbuildpacks"}
+var clusterbuildpacksResource = v1alpha2.SchemeGroupVersion.WithResource("clusterbuildpacks")
 
-var clusterbuildpacksKind = schema.GroupVersionKind{Group: "kpack.io", Version: "v1alpha2", Kind: "ClusterBuildpack"}
+var clusterbuildpacksKind = v1alpha2.SchemeGroupVersion.WithKind("ClusterBuildpack")
 
 // Get takes name of the clusterBuildpack, and returns the corresponding clusterBuildpack object, and an error if there is any.
 func (c *FakeClusterBuildpacks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ClusterBuildpack, err error) {
