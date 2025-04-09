@@ -5,6 +5,7 @@ on:
     branches:
     - main
     - release/**
+    - migrate-ghcr
     tags:
     - v[0-9]+.[0-9]+.[0-9]+-?**
   pull_request:
@@ -16,8 +17,8 @@ defaults:
     shell: bash
 
 env:
-  PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
-  PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
+  PUBLIC_IMAGE_DEV_REPO: ghcr.io/buildpacks-community/kpack-dev
+  PUBLIC_IMAGE_REPO: ghcr.io/buildpacks-community/kpack
   PACK_VERSION: ${{ vars.PACK_VERSION }}
   LIFECYCLE_IMAGE_REF: buildpacksio/lifecycle
 
@@ -49,9 +50,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -68,9 +69,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -87,9 +88,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -106,9 +107,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -125,9 +126,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -144,9 +145,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -356,7 +357,9 @@ jobs:
         export IMAGE_REGISTRY_USERNAME=${{ env.REGISTRY_USER }}
         export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
 
-        export GIT_PRIVATE_REPO=${{ vars.E2E_PRIVATE_REPO }}
+        # TODO: FIXME
+        # export GIT_PRIVATE_REPO=${{ vars.E2E_PRIVATE_REPO }}
+        export GIT_PRIVATE_REPO=github.com/buildpacks-community/kpack-private-testing
         export GIT_BASIC_USERNAME="${{ secrets.E2E_PRIVATE_REPO_USERNAME }}"
         export GIT_BASIC_PASSWORD="${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}"
         export GIT_SSH_PRIVATE_KEY="${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}"
@@ -397,7 +400,9 @@ jobs:
         export IMAGE_REGISTRY_PASSWORD=${{ env.REGISTRY_PASS }}
         export KPACK_TEST_NAMESPACE_LABELS="istio-injection=enabled"
 
-        export GIT_PRIVATE_REPO=${{ vars.E2E_PRIVATE_REPO }}
+        # TODO: FIXME
+        # export GIT_PRIVATE_REPO=${{ vars.E2E_PRIVATE_REPO }}
+        export GIT_PRIVATE_REPO=github.com/buildpacks-community/kpack-private-testing
         export GIT_BASIC_USERNAME="${{ secrets.E2E_PRIVATE_REPO_USERNAME }}"
         export GIT_BASIC_PASSWORD="${{ secrets.E2E_PRIVATE_REPO_PASSWORD }}"
         export GIT_SSH_PRIVATE_KEY="${{ secrets.E2E_PRIVATE_REPO_PRIVATE_KEY }}"
@@ -446,9 +451,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Parse tag name
       run: |
