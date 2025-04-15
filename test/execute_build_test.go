@@ -269,7 +269,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 				Name: clusterLifecycleName,
 			},
 			Spec: buildapi.ClusterLifecycleSpec{
-				ImageSource: corev1alpha1.ImageSource{Image: "buildpacksio/lifecycle"},
+				ImageSource: corev1alpha1.ImageSource{Image: lifecycleImage},
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)

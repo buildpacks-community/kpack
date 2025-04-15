@@ -35,6 +35,10 @@ type dockerConfigJson struct {
 	Auths dockerCredentials `json:"auths"`
 }
 
+const (
+	lifecycleImage = "mirror.gcr.io/buildpacksio/lifecycle"
+)
+
 func loadConfig(t *testing.T) config {
 	gitPrivateRepo, _ := os.LookupEnv("GIT_PRIVATE_REPO")
 	gitUsername, _ := os.LookupEnv("GIT_BASIC_USERNAME")

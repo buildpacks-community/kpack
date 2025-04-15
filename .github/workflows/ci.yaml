@@ -19,7 +19,7 @@ env:
   PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
   PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
   PACK_VERSION: ${{ vars.PACK_VERSION }}
-  LIFECYCLE_IMAGE_REF: buildpacksio/lifecycle
+  LIFECYCLE_IMAGE_REF: mirror.gcr.io/buildpacksio/lifecycle
 
 jobs:
   unit:
