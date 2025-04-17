@@ -47,6 +47,13 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
+		// register a cleanup function that dumps crds only if the test fails
+		t.Cleanup(func() {
+			if t.Failed() {
+				dumpK8s(t, ctx, clients, testNamespace)
+			}
+		})
+
 		cfg = loadConfig(t)
 		builtImages = map[string]struct{}{}
 
@@ -187,7 +194,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 				Name: clusterLifecycleName,
 			},
 			Spec: buildapi.ClusterLifecycleSpec{
-				ImageSource: corev1alpha1.ImageSource{Image: "buildpacksio/lifecycle"},
+				ImageSource: corev1alpha1.ImageSource{Image: lifecycleImage},
 			},
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)

@@ -19,7 +19,7 @@ env:
   PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
   PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
   PACK_VERSION: ${{ vars.PACK_VERSION }}
-  LIFECYCLE_IMAGE_REF: buildpacksio/lifecycle
+  LIFECYCLE_IMAGE_REF: mirror.gcr.io/buildpacksio/lifecycle
 
 jobs:
   unit:
@@ -49,9 +49,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -68,9 +68,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -87,9 +87,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -106,9 +106,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -125,9 +125,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -144,9 +144,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
       uses: ./.github/actions/pack-build
       with:
@@ -446,9 +446,9 @@ jobs:
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
-        registry: ${{ secrets.REGISTRY_HOST }}
-        username: ${{ secrets.REGISTRY_USER }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Parse tag name
       run: |

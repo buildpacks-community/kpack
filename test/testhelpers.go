@@ -36,6 +36,12 @@ func printObject(t *testing.T, obj interface{}) {
 
 func dumpK8s(t *testing.T, ctx context.Context, clients *clients, namespace string) {
 	const header = "=================%v=================\n"
+	t.Logf(header, "ClusterLifecycles")
+	clusterLifecycles, err := clients.client.KpackV1alpha2().ClusterLifecycles().List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	for _, cl := range clusterLifecycles.Items {
+		printObject(t, cl)
+	}
 
 	t.Logf(header, "ClusterBuilders")
 	clusterBuilders, err := clients.client.KpackV1alpha2().ClusterBuilders().List(ctx, metav1.ListOptions{})
