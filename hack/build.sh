@@ -68,6 +68,9 @@ function generate_kbld_config_pack() {
       build:
         builder: paketobuildpacks/builder-jammy-tiny
         rawOptions: [${completion_args// /,}]
+  overrides:
+    - image: lifecycle
+      newImage: mirror.gcr.io/buildpacksio/lifecycle
   destinations:
   - image: controller
     newImage: $controller_image
@@ -127,6 +130,9 @@ function generate_kbld_config_ko() {
     ko:
       build:
         rawOptions: [${args// /,}]
+  overrides:
+  - image: lifecycle
+    newImage: mirror.gcr.io/buildpacksio/lifecycle
   destinations:
   - image: controller
     newImage: $controller_image
