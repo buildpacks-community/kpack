@@ -13,8 +13,9 @@ Builds and generates a deployment yaml for kpack. This only builds linux images.
 
 Prerequisites:
 - pack or ko installed
-- kubectl installed
+- kubectl installed (recommended)
 - docker login to your registry
+- kbld and kapp (https://carvel.dev/#install)
 
 OPTIONS
   --help                          -h  prints the command usage
@@ -102,7 +103,7 @@ function main() {
 
  if "${apply}"; then
   echo "Applying $output to cluster"
-  kubectl apply -f $output
+  kapp deploy -a kpack -f $output -y
  fi
 
 }

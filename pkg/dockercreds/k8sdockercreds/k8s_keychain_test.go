@@ -220,7 +220,7 @@ func testK8sSecretKeychainFactory(t *testing.T, when spec.G, it spec.S) {
 			keychain, err := keychainFactory.KeychainForSecretRef(context.TODO(), registry.SecretRef{
 				ServiceAccount:   serviceAccountName,
 				Namespace:        testNamespace,
-				ImagePullSecrets: []corev1.LocalObjectReference{{"image-pull-secret"}},
+				ImagePullSecrets: []corev1.LocalObjectReference{{Name: "image-pull-secret"}},
 			})
 			require.NoError(t, err)
 

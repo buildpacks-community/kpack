@@ -5,13 +5,48 @@ import (
 	"fmt"
 	"regexp"
 
-	"knative.dev/pkg/apis"
-
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pivotal/kpack/pkg/apis/validate"
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
 )
 
 func (bbs *BuildBuilderSpec) Validate(ctx context.Context) *apis.FieldError {
-	return validate.Image(bbs.Image)
+	return validateBuilderOrImagePresent(bbs).
+		Also(validateBuilderRefAndImageMutuallyExclusive(bbs)).
+		Also(validateBuilderRef(bbs.Ref).ViaField("ref")).
+		Also(validateImage(bbs.Image))
+}
+
+func validateImage(value string) *apis.FieldError {
+	if value != "" {
+		_, err := name.ParseReference(value, name.WeakValidation)
+		if err != nil {
+			return apis.ErrInvalidValue(value, "image")
+		}
+	}
+
+	return nil
+}
+
+func validateBuilderRef(ref *corev1.ObjectReference) *apis.FieldError {
+	if ref != nil {
+		return validate.FieldNotEmpty(ref.Name, "name").Also(validate.FieldNotEmpty(ref.Kind, "kind"))
+	}
+	return nil
+}
+
+func validateBuilderRefAndImageMutuallyExclusive(bbs *BuildBuilderSpec) *apis.FieldError {
+	if bbs.Image != "" && bbs.Ref != nil {
+		return apis.ErrMultipleOneOf("image", "ref")
+	}
+	return nil
+}
+func validateBuilderOrImagePresent(bbs *BuildBuilderSpec) *apis.FieldError {
+	if bbs.Image == "" && bbs.Ref == nil {
+		return apis.ErrMissingField("image", "ref")
+	}
+	return nil
 }
 
 func (bs CNBBindings) Validate(ctx context.Context) *apis.FieldError {

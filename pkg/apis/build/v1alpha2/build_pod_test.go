@@ -249,11 +249,12 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 
 	buildContext := buildapi.BuildContext{
 		BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
-			StackID:      "com.builder.stack.io",
-			RunImage:     "builderregistry.io/run",
-			Uid:          2000,
-			Gid:          3000,
-			PlatformAPIs: []string{"0.7", "0.8", "0.9"},
+			StackID:       "com.builder.stack.io",
+			RunImage:      "builderregistry.io/run",
+			Uid:           2000,
+			Gid:           3000,
+			PlatformAPIs:  []string{"0.7", "0.8", "0.9"},
+			ResolvedImage: builderImage,
 		},
 		Secrets:  secrets,
 		Bindings: serviceBindings,

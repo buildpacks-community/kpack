@@ -9,6 +9,7 @@ import (
 	"github.com/buildpacks/lifecycle/platform"
 	"github.com/google/go-containerregistry/pkg/authn"
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -44,6 +45,7 @@ type Generator struct {
 	MaximumPlatformApiVersion *semver.Version
 	InjectedSidecarSupport    bool
 	SSHTrustUnknownHost       bool
+	KpackClient               versioned.Interface
 }
 
 type BuildPodable interface {
@@ -206,23 +208,18 @@ func (g *Generator) fetchBuildSecrets(ctx context.Context, build BuildPodable) (
 			imagePullSecrets = append(imagePullSecrets, secretRef)
 			secretSet[secretRef.Name] = struct{}{}
 		}
-
 	}
 
 	return secrets, imagePullSecrets, nil
 }
 
 func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) (buildapi.BuildPodBuilderConfig, error) {
-	keychain, err := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
-		Namespace:        build.GetNamespace(),
-		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
-		ServiceAccount:   build.ServiceAccount(),
-	})
+	builderImageRef, keychain, err := g.resolveBuilder(ctx, build)
 	if err != nil {
-		return buildapi.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to create builder image keychain")
+		return buildapi.BuildPodBuilderConfig{}, err
 	}
 
-	image, _, err := g.ImageFetcher.Fetch(keychain, build.BuilderSpec().Image)
+	image, _, err := g.ImageFetcher.Fetch(keychain, builderImageRef)
 	if err != nil {
 		return buildapi.BuildPodBuilderConfig{}, errors.Wrap(err, "unable to fetch remote builder image")
 	}
@@ -258,12 +255,65 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 	}
 
 	return buildapi.BuildPodBuilderConfig{
-		StackID:      stackId,
-		RunImage:     metadata.Stack.RunImage.Image,
-		PlatformAPIs: append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
-		Uid:          uid,
-		Gid:          gid,
+		StackID:       stackId,
+		RunImage:      metadata.Stack.RunImage.Image,
+		PlatformAPIs:  append(metadata.Lifecycle.APIs.Platform.Deprecated, metadata.Lifecycle.APIs.Platform.Supported...),
+		Uid:           uid,
+		Gid:           gid,
+		ResolvedImage: builderImageRef,
 	}, nil
+}
+
+func (g *Generator) resolveBuilderRef(ctx context.Context, ref *corev1.ObjectReference) (string, authn.Keychain, error) {
+	switch ref.Kind {
+	case buildapi.ClusterBuilderKind:
+		clusterBuilder, err := g.KpackClient.KpackV1alpha2().ClusterBuilders().Get(ctx, ref.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", nil, errors.Wrap(err, "unable to resolve cluster builder image")
+		}
+		keychain, keychainErr := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			ServiceAccount: clusterBuilder.Spec.ServiceAccountRef.Name,
+			Namespace:      clusterBuilder.Spec.ServiceAccountRef.Namespace,
+		})
+		if keychainErr != nil {
+			return "", nil, errors.Wrap(keychainErr, "unable to create builder image keychain")
+		}
+		return clusterBuilder.Status.LatestImage, keychain, nil
+	case buildapi.BuilderKind:
+		builder, err := g.KpackClient.KpackV1alpha2().Builders(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", nil, errors.Wrap(err, "unable to resolve builder image")
+		}
+		keychain, keychainErr := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+			Namespace:      builder.Namespace,
+			ServiceAccount: builder.Spec.ServiceAccountName,
+		})
+		if keychainErr != nil {
+			return "", nil, keychainErr
+		}
+		return builder.Status.LatestImage, keychain, nil
+	default:
+		return "", nil, errors.Errorf("unable to parse builder kind %q", ref.Kind)
+	}
+}
+
+func (g *Generator) resolveBuilderImage(ctx context.Context, build BuildPodable) (string, authn.Keychain, error) {
+	keychain, err := g.KeychainFactory.KeychainForSecretRef(ctx, registry.SecretRef{
+		Namespace:        build.GetNamespace(),
+		ImagePullSecrets: build.BuilderSpec().ImagePullSecrets,
+		ServiceAccount:   build.ServiceAccount(),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return build.BuilderSpec().Image, keychain, nil
+}
+
+func (g *Generator) resolveBuilder(ctx context.Context, build BuildPodable) (string, authn.Keychain, error) {
+	if build.BuilderSpec().Ref != nil {
+		return g.resolveBuilderRef(ctx, build.BuilderSpec().Ref)
+	}
+	return g.resolveBuilderImage(ctx, build)
 }
 
 func parseCNBID(image ggcrv1.Image, env string) (int64, error) {

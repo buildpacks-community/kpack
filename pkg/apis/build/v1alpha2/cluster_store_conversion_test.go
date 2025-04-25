@@ -24,7 +24,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 				Annotations: map[string]string{"some-key": "some-value"},
 			},
 			Spec: ClusterStoreSpec{
-				Sources: []corev1alpha1.ImageSource{{"some-image"}, {"another-image"}},
+				Sources: []corev1alpha1.ImageSource{{Image: "some-image"}, {Image: "another-image"}},
 				ServiceAccountRef: &corev1.ObjectReference{
 					Namespace: "some-namespace",
 					Name:      "some-service-account",
@@ -65,7 +65,7 @@ func testClusterStoreConversion(t *testing.T, when spec.G, it spec.S) {
 				},
 			},
 			Spec: v1alpha1.ClusterStoreSpec{
-				Sources: []corev1alpha1.ImageSource{{"some-image"}, {"another-image"}},
+				Sources: []corev1alpha1.ImageSource{{Image: "some-image"}, {Image: "another-image"}},
 			},
 			Status: v1alpha1.ClusterStoreStatus{
 				Status: corev1alpha1.Status{},

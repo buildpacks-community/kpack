@@ -169,6 +169,7 @@ func main() {
 		MaximumPlatformApiVersion: maxPlatformApi,
 		InjectedSidecarSupport:    featureFlags.InjectedSidecarSupport,
 		SSHTrustUnknownHost:       cfg.SshTrustUnknownHosts,
+		KpackClient:               client,
 	}
 
 	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts)

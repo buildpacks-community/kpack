@@ -10,6 +10,7 @@ import (
 	ggcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamicfakes "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/kubernetes/fake"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
@@ -32,7 +33,7 @@ import (
 
 var (
 	scheme             = runtime.NewScheme()
-	schemeGroupVersion = schema.GroupVersion{Group: "fake.kpack.io", Version: "v1"}
+	schemeGroupVersion = schema.GroupVersion{Group: "k8sfake.kpack.io", Version: "v1"}
 	schemeBuilder      = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(schemeGroupVersion,
 			&psfakes.FakeProvisionedService{},
@@ -51,10 +52,12 @@ func TestGenerator(t *testing.T) {
 func testGenerator(t *testing.T, when spec.G, it spec.S) {
 	when("Generate", func() {
 		const (
-			serviceAccountName  = "serviceAccountName"
-			namespace           = "some-namespace"
-			linuxBuilderImage   = "builder/linux"
-			windowsBuilderImage = "builder/windows"
+			serviceAccountName   = "serviceAccountName"
+			namespace            = "some-namespace"
+			linuxBuilderImage    = "builder/linux"
+			windowsBuilderImage  = "builder/windows"
+			clusterBuilderName   = "some-cluster-builder"
+			namespaceBuilderName = "some-namespace-builder"
 		)
 
 		var (
@@ -159,7 +162,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 		ps := &psfakes.FakeProvisionedService{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "fake.kpack.io/v1",
+				APIVersion: "k8sfake.kpack.io/v1",
 				Kind:       "FakeProvisionedService",
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -171,13 +174,62 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			},
 		}
 
+		clusterBuilder := &buildapi.ClusterBuilder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterBuilderName,
+			},
+			Spec: buildapi.ClusterBuilderSpec{
+				BuilderSpec: buildapi.BuilderSpec{
+					Tag: linuxBuilderImage,
+					Stack: corev1.ObjectReference{
+						Kind: "ClusterStack",
+						Name: "some-stack-ref",
+					},
+					Order: nil, // No order validation
+				},
+				ServiceAccountRef: corev1.ObjectReference{
+					Name:      serviceAccountName,
+					Namespace: namespace,
+				},
+			},
+			Status: buildapi.BuilderStatus{
+				LatestImage: linuxBuilderImage,
+			},
+		}
+
+		namespaceBuilder := &buildapi.Builder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      namespaceBuilderName,
+				Namespace: namespace,
+			},
+			Spec: buildapi.NamespacedBuilderSpec{
+				ServiceAccountName: serviceAccountName,
+				BuilderSpec: buildapi.BuilderSpec{
+					Tag: linuxBuilderImage,
+					Stack: corev1.ObjectReference{
+						Kind: "ClusterStack",
+						Name: "some-stack-ref",
+					},
+					Order: nil, // No order validation
+				},
+			},
+			Status: buildapi.BuilderStatus{
+				LatestImage: linuxBuilderImage,
+			},
+		}
+
 		keychain := &registryfakes.FakeKeychain{}
 		secretRef := registry.SecretRef{
 			ServiceAccount:   serviceAccountName,
 			Namespace:        namespace,
 			ImagePullSecrets: builderPullSecrets,
 		}
-		fakeK8sClient := fake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret)
+		secretRefWithoutImagePullSecret := registry.SecretRef{
+			ServiceAccount: serviceAccountName,
+			Namespace:      namespace,
+		}
+		fakeK8sClient := k8sfake.NewSimpleClientset(serviceAccount, dockerSecret, gitSecret, ignoredSecret, bindingSecret, psBindingSecret)
+		fakeKpackClient := fake.NewSimpleClientset(clusterBuilder, namespaceBuilder)
 		buildPodConfig := buildapi.BuildPodImages{}
 		fakeDynamicClient := dynamicfakes.NewSimpleDynamicClient(scheme, ps)
 
@@ -187,6 +239,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 			KeychainFactory: keychainFactory,
 			ImageFetcher:    imageFetcher,
 			DynamicClient:   fakeDynamicClient,
+			KpackClient:     fakeKpackClient,
 		}
 
 		it.Before(func() {
@@ -194,7 +247,6 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 
 			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
 			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)
-
 		})
 
 		it("invokes the BuildPod with the builder and env config", func() {
@@ -219,11 +271,103 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						*dockerSecret,
 					},
 					BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
-						StackID:      "some.stack.id",
-						RunImage:     "some-registry.io/run-image",
-						Uid:          1234,
-						Gid:          5678,
-						PlatformAPIs: []string{"0.4", "0.5", "0.6"},
+						StackID:       "some.stack.id",
+						RunImage:      "some-registry.io/run-image",
+						Uid:           1234,
+						Gid:           5678,
+						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
+						ResolvedImage: linuxBuilderImage,
+					},
+					Bindings: []buildapi.ServiceBinding{},
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{
+							Name: "image-pull-1",
+						},
+						{
+							Name: "image-pull-2",
+						},
+					},
+				},
+			}}, build.buildPodCalls)
+		})
+
+		it("invokes the BuildPod with cluster builder ref", func() {
+			keychainFactory.AddKeychainForSecretRef(t, secretRefWithoutImagePullSecret, keychain)
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Ref: &corev1.ObjectReference{
+						Kind: buildapi.ClusterBuilderKind,
+						Name: clusterBuilderName,
+					},
+				},
+			}
+
+			pod, err := generator.Generate(context.TODO(), build)
+			require.NoError(t, err)
+			assert.NotNil(t, pod)
+
+			assert.Equal(t, []buildPodCall{{
+				BuildPodImages: buildPodConfig,
+				BuildContext: buildapi.BuildContext{
+					Secrets: []corev1.Secret{
+						*gitSecret,
+						*dockerSecret,
+					},
+					BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
+						StackID:       "some.stack.id",
+						RunImage:      "some-registry.io/run-image",
+						Uid:           1234,
+						Gid:           5678,
+						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
+						ResolvedImage: linuxBuilderImage,
+					},
+					Bindings: []buildapi.ServiceBinding{},
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{
+							Name: "image-pull-1",
+						},
+						{
+							Name: "image-pull-2",
+						},
+					},
+				},
+			}}, build.buildPodCalls)
+		})
+
+		it("invokes the BuildPod with namespaced builder ref", func() {
+			keychainFactory.AddKeychainForSecretRef(t, secretRefWithoutImagePullSecret, keychain)
+			var build = &testBuildPodable{
+				serviceAccount: serviceAccountName,
+				namespace:      namespace,
+				buildBuilderSpec: corev1alpha1.BuildBuilderSpec{
+					Ref: &corev1.ObjectReference{
+						Kind:      buildapi.BuilderKind,
+						Name:      namespaceBuilderName,
+						Namespace: namespace,
+					},
+				},
+			}
+
+			pod, err := generator.Generate(context.TODO(), build)
+			require.NoError(t, err)
+			assert.NotNil(t, pod)
+
+			assert.Equal(t, []buildPodCall{{
+				BuildPodImages: buildPodConfig,
+				BuildContext: buildapi.BuildContext{
+					Secrets: []corev1.Secret{
+						*gitSecret,
+						*dockerSecret,
+					},
+					BuildPodBuilderConfig: buildapi.BuildPodBuilderConfig{
+						StackID:       "some.stack.id",
+						RunImage:      "some-registry.io/run-image",
+						Uid:           1234,
+						Gid:           5678,
+						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
+						ResolvedImage: linuxBuilderImage,
 					},
 					Bindings: []buildapi.ServiceBinding{},
 					ImagePullSecrets: []corev1.LocalObjectReference{
@@ -327,7 +471,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 					},
 					{
 						Kind:       "FakeProvisionedService",
-						APIVersion: "fake.kpack.io/v1",
+						APIVersion: "k8sfake.kpack.io/v1",
 						Name:       ps.Name,
 					},
 				},

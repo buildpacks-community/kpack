@@ -19,6 +19,9 @@ type BuildBuilderSpec struct {
 	// +patchStrategy=merge
 	// +listType
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+
+	// Ref reference to an existing Builder/ClusterBuilder
+	Ref *corev1.ObjectReference `json:"ref,omitempty"`
 }
 
 // +k8s:openapi-gen=true

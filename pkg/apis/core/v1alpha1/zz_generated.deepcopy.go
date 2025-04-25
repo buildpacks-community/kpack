@@ -49,6 +49,11 @@ func (in *BuildBuilderSpec) DeepCopyInto(out *BuildBuilderSpec) {
 		*out = make([]v1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
+	if in.Ref != nil {
+		in, out := &in.Ref, &out.Ref
+		*out = new(v1.ObjectReference)
+		**out = **in
+	}
 	return
 }
 

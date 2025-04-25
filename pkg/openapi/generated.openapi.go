@@ -5119,11 +5119,17 @@ func schema_pkg_apis_core_v1alpha1_BuildBuilderSpec(ref common.ReferenceCallback
 							},
 						},
 					},
+					"ref": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Ref reference to an existing Builder/ClusterBuilder",
+							Ref:         ref("k8s.io/api/core/v1.ObjectReference"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
+			"k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.ObjectReference"},
 	}
 }
 
