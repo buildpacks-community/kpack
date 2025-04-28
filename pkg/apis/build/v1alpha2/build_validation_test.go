@@ -38,6 +38,27 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			},
 		},
 	}
+	buildUsingRef := &Build{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "buildWithRef-name",
+		},
+		Spec: BuildSpec{
+			Tags: []string{"some/image"},
+			Builder: corev1alpha1.BuildBuilderSpec{
+				Ref: &corev1.ObjectReference{
+					Name: "default",
+					Kind: "ClusterBuilder",
+				},
+			},
+			ServiceAccountName: "some/service-account",
+			Source: corev1alpha1.SourceConfig{
+				Git: &corev1alpha1.Git{
+					URL:      "http://github.com/repo",
+					Revision: "master",
+				},
+			},
+		},
+	}
 	when("Default", func() {
 		it("does not modify already set fields", func() {
 			oldBuild := build.DeepCopy()
@@ -81,12 +102,30 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("missing builder name", func() {
 			build.Spec.Builder.Image = ""
-			assertValidationError(build, context.TODO(), apis.ErrMissingField("image").ViaField("spec", "builder"))
+			assertValidationError(build, context.TODO(), apis.ErrMissingField("image", "ref").ViaField("spec", "builder"))
 		})
 
 		it("invalid builder name", func() {
 			build.Spec.Builder.Image = "foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh"
 			assertValidationError(build, context.TODO(), apis.ErrInvalidValue("foo.ioo/builder-but-not-a-builder@sha256:alksdifhjalsouidfh", "image").ViaField("spec", "builder"))
+		})
+
+		it("valid cluster builder by ref", func() {
+			assert.Nil(t, buildUsingRef.Validate(context.TODO()))
+		})
+
+		it("both image and builder by ref present", func() {
+			buildUsingRef.Spec.Builder.Image = "builder/bionic-builder@sha256:e431a4f94fb84854fd081da62762192f36fd093fdfb85ad3bc009b9309524e2d"
+			assertValidationError(buildUsingRef, context.TODO(), apis.ErrMultipleOneOf("image", "ref").ViaField("spec", "builder"))
+		})
+
+		it("validate namespaced builder by ref", func() {
+			buildUsingRef.Spec.Builder.Ref = &corev1.ObjectReference{
+				Kind:      "Builder",
+				Name:      "namespaced-builder",
+				Namespace: "default",
+			}
+			assert.Nil(t, buildUsingRef.Validate(context.TODO()))
 		})
 
 		it("multiple sources", func() {
@@ -331,7 +370,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Builder.Image = ""
 			assertValidationError(build, context.TODO(),
 				apis.ErrMissingField("tags").ViaField("spec").
-					Also(apis.ErrMissingField("image").ViaField("spec", "builder")))
+					Also(apis.ErrMissingField("image", "ref").ViaField("spec", "builder")))
 		})
 
 		it("validates spec is immutable", func() {

@@ -80,7 +80,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("missing builder name", func() {
 			build.Spec.Builder.Image = ""
-			assertValidationError(build, apis.ErrMissingField("image").ViaField("spec", "builder"))
+			assertValidationError(build, apis.ErrMissingField("image", "ref").ViaField("spec", "builder"))
 		})
 
 		it("invalid builder name", func() {
@@ -217,7 +217,7 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.Builder.Image = ""
 			assertValidationError(build,
 				apis.ErrMissingField("tags").ViaField("spec").
-					Also(apis.ErrMissingField("image").ViaField("spec", "builder")))
+					Also(apis.ErrMissingField("image", "ref").ViaField("spec", "builder")))
 		})
 
 		it("validates spec is immutable", func() {

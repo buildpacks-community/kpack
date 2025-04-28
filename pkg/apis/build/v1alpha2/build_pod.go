@@ -104,11 +104,12 @@ type BuildContext struct {
 }
 
 type BuildPodBuilderConfig struct {
-	StackID      string
-	RunImage     string
-	Uid          int64
-	Gid          int64
-	PlatformAPIs []string
+	StackID       string
+	RunImage      string
+	Uid           int64
+	Gid           int64
+	PlatformAPIs  []string
+	ResolvedImage string
 }
 
 var (
@@ -240,7 +241,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 
 	analyzeContainer := corev1.Container{
 		Name:      AnalyzeContainerName,
-		Image:     b.Spec.Builder.Image,
+		Image:     buildContext.BuildPodBuilderConfig.ResolvedImage,
 		Command:   []string{AnalyzeCommand},
 		Resources: b.Spec.Resources,
 		Args: args(
@@ -282,7 +283,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 
 	detectContainer := corev1.Container{
 		Name:      DetectContainerName,
-		Image:     b.Spec.Builder.Image,
+		Image:     buildContext.BuildPodBuilderConfig.ResolvedImage,
 		Command:   []string{DetectCommand},
 		Resources: b.Spec.Resources,
 		Args: []string{
@@ -432,7 +433,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:            RestoreContainerName,
-						Image:           b.Spec.Builder.Image,
+						Image:           buildContext.BuildPodBuilderConfig.ResolvedImage,
 						Command:         []string{RestoreCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(),
@@ -456,7 +457,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:            BuildContainerName,
-						Image:           b.Spec.Builder.Image,
+						Image:           buildContext.BuildPodBuilderConfig.ResolvedImage,
 						Command:         []string{BuildCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(),
@@ -481,7 +482,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				step(
 					corev1.Container{
 						Name:            ExportContainerName,
-						Image:           b.Spec.Builder.Image,
+						Image:           buildContext.BuildPodBuilderConfig.ResolvedImage,
 						Command:         []string{ExportCommand},
 						Resources:       b.Spec.Resources,
 						SecurityContext: containerSecurityContext(),
@@ -919,7 +920,7 @@ func (b *Build) setupSecretVolumesAndArgs(secrets []corev1.Secret, filter func(s
 			annotatedUrl := secret.Annotations[BlobSecretAnnotationPrefix]
 			args = append(args, fmt.Sprintf("-blob=%s=%s", secret.Name, annotatedUrl))
 		default:
-			//ignoring secret
+			// ignoring secret
 			continue
 		}
 
