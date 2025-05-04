@@ -124,8 +124,10 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
      image: buildpacksio/lifecycle
    ```
 
+   Apply this lifecycle to the cluster
+
    ```bash
-   kubectl apply -f builder.yaml
+   kubectl apply -f lifecycle.yaml
    ```
 
 6. Create a Builder configuration
