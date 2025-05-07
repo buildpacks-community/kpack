@@ -5,9 +5,9 @@ go 1.24
 toolchain go1.24.1
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azfile v1.5.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/semver/v3 v3.3.1
@@ -34,10 +34,10 @@ require (
 	github.com/vdemeester/k8s-pkg-credentialprovider v1.22.4
 	github.com/whilp/git-urls v1.0.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0
+	golang.org/x/crypto v0.37.0
+	golang.org/x/net v0.39.0
 	golang.org/x/oauth2 v0.28.0
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.13.0
 	k8s.io/api v0.30.11
 	k8s.io/apimachinery v0.30.11
 	k8s.io/client-go v0.30.11
@@ -59,7 +59,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/alibabacloudsdkgo/helper v0.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.30 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.2 // indirect
 	github.com/Azure/go-autorest/logger v0.2.2 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.1 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.3.3 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/ProtonMail/go-crypto v1.1.4 // indirect
@@ -287,9 +287,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.31.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
