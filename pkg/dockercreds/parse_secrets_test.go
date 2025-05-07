@@ -1,16 +1,15 @@
 package dockercreds
 
 import (
-	"os"
-	"path"
-	"path/filepath"
-	"testing"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
 )
 
 func TestParseDockerConfigSecret(t *testing.T) {
@@ -48,13 +47,15 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 		creds, err := ParseDockerConfigSecret(testSecretsDir)
 		require.NoError(t, err)
-
+		info, err := os.Stat(filepath.Join(testSecretsDir, ".dockerconfigjson"))
 		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": authn.AuthConfig{
+			map[string]authn.AuthConfig{"https://index.docker.io/v1/": {
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
 				Username: "testusername",
 				Password: "testpasswordsilliness\n",
-			},
+			}},
+			info.ModTime(),
+			filepath.Join(testSecretsDir, ".dockerconfigjson"),
 		}
 		require.Equal(t, expectedCreds, creds)
 	})
@@ -73,13 +74,14 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 		creds, err := ParseDockerConfigSecret(testSecretsDir)
 		require.NoError(t, err)
-
-		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": authn.AuthConfig{
-				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
-				Username: "testusername",
-				Password: "testpassword",
-			},
+		info, err := os.Stat(filepath.Join(testSecretsDir, ".dockerconfigjson"))
+		expectedCreds := DockerCreds{map[string]authn.AuthConfig{"https://index.docker.io/v1/": {
+			Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
+			Username: "testusername",
+			Password: "testpassword",
+		}},
+			info.ModTime(),
+			filepath.Join(testSecretsDir, ".dockerconfigjson"),
 		}
 		require.Equal(t, expectedCreds, creds)
 	})
@@ -97,13 +99,14 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 		creds, err := ParseDockerConfigSecret(testSecretsDir)
 		require.NoError(t, err)
-
-		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": authn.AuthConfig{
-				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-				Username: "testusername",
-				Password: "testpasswordsilliness\n",
-			},
+		info, err := os.Stat(filepath.Join(testSecretsDir, ".dockercfg"))
+		expectedCreds := DockerCreds{map[string]authn.AuthConfig{"https://index.docker.io/v1/": {
+			Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+			Username: "testusername",
+			Password: "testpasswordsilliness\n",
+		}},
+			info.ModTime(),
+			filepath.Join(testSecretsDir, ".dockercfg"),
 		}
 		require.Equal(t, expectedCreds, creds)
 	})
@@ -120,29 +123,22 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 
 		creds, err := ParseDockerConfigSecret(testSecretsDir)
 		require.NoError(t, err)
+		info, err := os.Stat(filepath.Join(testSecretsDir, ".dockercfg"))
 
-		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": authn.AuthConfig{
-				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
-				Username: "testusername",
-				Password: "testpassword",
-			},
+		expectedCreds := DockerCreds{map[string]authn.AuthConfig{"https://index.docker.io/v1/": {
+			Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
+			Username: "testusername",
+			Password: "testpassword",
+		}},
+			info.ModTime(),
+			filepath.Join(testSecretsDir, ".dockercfg"),
 		}
 		require.Equal(t, expectedCreds, creds)
 	})
 
 	it("parses .dockercfg and .dockerconfigjson", func() {
-		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
-  "auths": {
-    "https://index.docker.io/v1/": {
-      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
-    }
-  }
-}`,
-		), os.ModePerm)
-		require.NoError(t, err)
 
-		err = os.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
+		err := os.WriteFile(filepath.Join(testSecretsDir, ".dockercfg"), []byte(`{
   "gcr.io": {
     "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
     "username": "testusername",
@@ -152,20 +148,31 @@ func parseDockerConfigSecret(t *testing.T, when spec.G, it spec.S) {
 		), os.ModePerm)
 		require.NoError(t, err)
 
+		err = os.WriteFile(filepath.Join(testSecretsDir, ".dockerconfigjson"), []byte(`{
+  "auths": {
+    "https://index.docker.io/v1/": {
+      "auth": "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo="
+    }
+  }
+}`,
+		), os.ModePerm)
+		require.NoError(t, err)
 		creds, err := ParseDockerConfigSecret(testSecretsDir)
 		require.NoError(t, err)
+		info, err := os.Stat(filepath.Join(testSecretsDir, ".dockerconfigjson"))
 
-		expectedCreds := DockerCreds{
-			"https://index.docker.io/v1/": authn.AuthConfig{
-				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
-				Username: "testusername",
-				Password: "testpasswordsilliness\n",
-			},
-			"gcr.io": authn.AuthConfig{
+		expectedCreds := DockerCreds{map[string]authn.AuthConfig{"https://index.docker.io/v1/": {
+			Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHNpbGxpbmVzcwo=",
+			Username: "testusername",
+			Password: "testpasswordsilliness\n",
+		},
+			"gcr.io": {
 				Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
 				Username: "testusername",
 				Password: "testpassword",
-			},
+			}},
+			info.ModTime(),
+			filepath.Join(testSecretsDir, ".dockerconfigjson"),
 		}
 		require.Equal(t, expectedCreds, creds)
 	})
@@ -207,15 +214,19 @@ func testParseBasicAuthSecrets(t *testing.T, when spec.G, it spec.S) {
 				)
 				require.NoError(t, err)
 
+				fileInfo, _ := os.Stat(testDir)
+
 				assert.Equal(t, DockerCreds{
-					"gcr.io": {
+					map[string]authn.AuthConfig{"gcr.io": {
 						Username: "gcr-username",
 						Password: "gcr-password",
 					},
-					"index.docker.io": {
-						Username: "dockerhub-username",
-						Password: "dockerhub-password",
-					},
+						"index.docker.io": {
+							Username: "dockerhub-username",
+							Password: "dockerhub-password",
+						}},
+					fileInfo.ModTime(),
+					"",
 				}, creds)
 			})
 
