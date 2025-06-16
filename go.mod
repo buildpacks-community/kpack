@@ -16,7 +16,7 @@ require (
 	github.com/buildpacks/lifecycle v0.20.3
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-containerregistry v0.20.2
+	github.com/google/go-containerregistry v0.20.3
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20230822174451-190ad0e4d556
 	github.com/in-toto/in-toto-golang v0.9.0
 	github.com/matthewmcnew/archtest v0.0.0-20191104172020-f1b53a45c22d
@@ -24,9 +24,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sclevine/spec v1.4.0
-	github.com/secure-systems-lab/go-securesystemslib v0.8.0
+	github.com/secure-systems-lab/go-securesystemslib v0.9.0
 	github.com/sigstore/cosign/v2 v2.2.4
-	github.com/sigstore/sigstore v1.8.3
+	github.com/sigstore/sigstore v1.9.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
@@ -36,7 +36,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.37.0
-	golang.org/x/oauth2 v0.28.0
+	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.12.0
 	k8s.io/api v0.30.11
 	k8s.io/apimachinery v0.30.11
@@ -124,7 +124,7 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
-	github.com/coreos/go-oidc/v3 v3.10.0 // indirect
+	github.com/coreos/go-oidc/v3 v3.14.1 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20231011164504-785e29786b46 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -134,7 +134,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v28.0.4+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v26.1.5+incompatible // indirect
+	github.com/docker/docker v27.5.0+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
@@ -204,7 +204,7 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/letsencrypt/boulder v0.0.0-20231026200631-000cd05d5491 // indirect
+	github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -249,6 +249,7 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sigstore/fulcio v1.4.5 // indirect
+	github.com/sigstore/protobuf-specs v0.4.1 // indirect
 	github.com/sigstore/rekor v1.3.6 // indirect
 	github.com/sigstore/timestamp-authority v1.2.2 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
@@ -298,7 +299,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250207221924-e9438ea467c6 // indirect
 	google.golang.org/grpc v1.71.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
