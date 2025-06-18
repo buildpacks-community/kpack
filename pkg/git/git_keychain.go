@@ -6,11 +6,11 @@ import (
 	"sort"
 	"strings"
 
+	giturls "github.com/chainguard-dev/git-urls"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/pkg/errors"
-	giturls "github.com/whilp/git-urls"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/pivotal/kpack/pkg/secret"
