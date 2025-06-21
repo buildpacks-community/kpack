@@ -74,8 +74,8 @@ This tutorial will walk through creating a kpack [builder](builders.md) resource
       name: default
     spec:
       sources:
-      - image: gcr.io/paketo-buildpacks/java
-      - image: gcr.io/paketo-buildpacks/nodejs
+      - image: paketobuildpacks/java
+      - image: paketobuildpacks/nodejs
     ```
    
     Apply this store to the cluster 
