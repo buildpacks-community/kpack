@@ -2,6 +2,8 @@ module github.com/pivotal/kpack
 
 go 1.24.3
 
+replace github.com/docker/docker v28.2.2+incompatible => github.com/docker/docker v28.1.1+incompatible
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
@@ -39,7 +41,7 @@ require (
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.1
-	k8s.io/code-generator v0.31.4
+	k8s.io/code-generator v0.33.1
 	k8s.io/kube-openapi v0.0.0-20250610211856-8b98d1ed966a
 	knative.dev/pkg v0.0.0-20250211185550-c8bea7c326ff
 	sigs.k8s.io/yaml v1.4.0
@@ -119,8 +121,6 @@ require (
 	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
-	github.com/containerd/errdefs v1.0.0 // indirect
-	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
