@@ -57,6 +57,13 @@ func dumpK8s(t *testing.T, ctx context.Context, clients *clients, namespace stri
 		printObject(t, b)
 	}
 
+	t.Logf(header, "ClusterStacks")
+	clusterStacks, err := clients.client.KpackV1alpha2().ClusterStacks().List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	for _, cs := range clusterStacks.Items {
+		printObject(t, cs)
+	}
+
 	t.Logf(header, "Images")
 	images, err := clients.client.KpackV1alpha2().Images(namespace).List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)

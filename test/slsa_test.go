@@ -165,13 +165,13 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: buildapi.ClusterStoreSpec{
 				Sources: []corev1alpha1.ImageSource{
-					{Image: "gcr.io/paketo-buildpacks/bellsoft-liberica"},
-					{Image: "gcr.io/paketo-buildpacks/gradle"},
-					{Image: "gcr.io/paketo-buildpacks/syft"},
-					{Image: "gcr.io/paketo-buildpacks/executable-jar"},
-					{Image: "gcr.io/paketo-buildpacks/dist-zip"},
-					{Image: "gcr.io/paketo-buildpacks/spring-boot"},
-					{Image: "gcr.io/paketo-buildpacks/go"},
+					{Image: "mirror.gcr.io/paketobuildpacks/bellsoft-liberica"},
+					{Image: "mirror.gcr.io/paketobuildpacks/gradle"},
+					{Image: "mirror.gcr.io/paketobuildpacks/syft"},
+					{Image: "mirror.gcr.io/paketobuildpacks/executable-jar"},
+					{Image: "mirror.gcr.io/paketobuildpacks/dist-zip"},
+					{Image: "mirror.gcr.io/paketobuildpacks/spring-boot"},
+					{Image: "mirror.gcr.io/paketobuildpacks/go"},
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -183,7 +183,7 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: buildapi.BuildpackSpec{
 				ImageSource: corev1alpha1.ImageSource{
-					Image: "gcr.io/paketo-buildpacks/bellsoft-liberica",
+					Image: "mirror.gcr.io/paketobuildpacks/bellsoft-liberica",
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -195,7 +195,7 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 			},
 			Spec: buildapi.ClusterBuildpackSpec{
 				ImageSource: corev1alpha1.ImageSource{
-					Image: "gcr.io/paketo-buildpacks/nodejs",
+					Image: "mirror.gcr.io/paketobuildpacks/nodejs",
 				},
 			},
 		}, metav1.CreateOptions{})
@@ -208,10 +208,10 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 			Spec: buildapi.ClusterStackSpec{
 				Id: "io.buildpacks.stacks.jammy",
 				BuildImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/build-jammy-base",
+					Image: "mirror.gcr.io/paketobuildpacks/build-jammy-base",
 				},
 				RunImage: buildapi.ClusterStackSpecImage{
-					Image: "gcr.io/paketo-buildpacks/run-jammy-base",
+					Image: "mirror.gcr.io/paketobuildpacks/run-jammy-base",
 				},
 			},
 		}, metav1.CreateOptions{})
