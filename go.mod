@@ -1,6 +1,6 @@
 module github.com/pivotal/kpack
 
-go 1.24.3
+go 1.24.4
 
 replace github.com/docker/docker v28.2.2+incompatible => github.com/docker/docker v28.1.1+incompatible
 
@@ -13,7 +13,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b
 	github.com/buildpacks/imgutil v0.0.0-20250528145909-f0ef71ed9081
-	github.com/buildpacks/lifecycle v0.20.10
+	github.com/buildpacks/lifecycle v0.20.11
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-cmp v0.7.0
