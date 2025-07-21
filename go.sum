@@ -224,8 +224,6 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a h1:pv34s756C4pEXnjgPfGYgdhg/ZdajGhyOvzx8k+23nw=
-github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
 github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b h1:uUXgbcPDK3KpW29o4iy7GtuappbWT0l5NaMo9H9pJDw=
 github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
@@ -304,10 +302,10 @@ github.com/buildkite/interpolate v0.1.5 h1:v2Ji3voik69UZlbfoqzx+qfcsOKLA61nHdU79
 github.com/buildkite/interpolate v0.1.5/go.mod h1:dHnrwHew5O8VNOAgMDpwRlFnhL5VSN6M1bHVmRZ9Ccc=
 github.com/buildkite/roko v1.3.1 h1:t7K30ceLLYn6k7hQP4oq1c7dVlhgD5nRcuSRDEEnY1s=
 github.com/buildkite/roko v1.3.1/go.mod h1:23R9e6nHxgedznkwwfmqZ6+0VJZJZ2Sg/uVcp2cP46I=
-github.com/buildpacks/imgutil v0.0.0-20250528145909-f0ef71ed9081 h1:SfRgE+AaAjy+49XfTvzpWvOa98eHk7RgbY17aznZz0w=
-github.com/buildpacks/imgutil v0.0.0-20250528145909-f0ef71ed9081/go.mod h1:KFNpYUseR1qxT09nKwchPxmPV2yV0jm7sEIKCVZFnHg=
-github.com/buildpacks/lifecycle v0.20.10 h1:Li9DihJq9aUqwZlkoIRoFEBwx8PNHBLu19zVHNtLZYA=
-github.com/buildpacks/lifecycle v0.20.10/go.mod h1:QtRlcSMqpZr0rxpVSgvtuZBqjqYHMXo0/GE0PFxzpNo=
+github.com/buildpacks/imgutil v0.0.0-20250626173435-7c19c278f3d2 h1:31i47pC9YE898vRkFDlubgX9UwxSy8cX/YSXtfPcRLA=
+github.com/buildpacks/imgutil v0.0.0-20250626173435-7c19c278f3d2/go.mod h1:UH4th60x/wM1DdH7+eSgzbp0kgsJMhVgngWzXoF21cs=
+github.com/buildpacks/lifecycle v0.20.12 h1:bxSArz6n6L4LaYobAQIRvyyyRxLlBZJ5g+a2OkFe3E0=
+github.com/buildpacks/lifecycle v0.20.12/go.mod h1:qbA30XUdhEUV99HnZIwItoZlx4Pk0HeNU48Nd0tjTnU=
 github.com/bytecodealliance/wasmtime-go/v3 v3.0.2 h1:3uZCA/BLTIu+DqCfguByNMJa2HVHpXvjfy0Dy7g6fuA=
 github.com/bytecodealliance/wasmtime-go/v3 v3.0.2/go.mod h1:RnUjnIXxEJcL6BgCvNyzCCRzZcxCgsZCi+RNlvYor5Q=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
@@ -352,6 +350,10 @@ github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb h1:EDmT6Q9Zs+SbUo
 github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb/go.mod h1:ZjrT6AXHbDs86ZSdt/osfBi5qfexBrKUdONk989Wnk4=
 github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be h1:J5BL2kskAlV9ckgEsNQXscjIaLiOYiZ75d4e94E6dcQ=
 github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be/go.mod h1:mk5IQ+Y0ZeO87b858TlA645sVcEcbiX6YqP98kt+7+w=
+github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=
+github.com/containerd/errdefs v1.0.0/go.mod h1:+YBYIdtsnF4Iw6nWZhJcqGSg/dwvV7tyJ/kCkyJ2k+M=
+github.com/containerd/errdefs/pkg v0.3.0 h1:9IKJ06FvyNlexW690DXuQNx2KA2cUJXx151Xdx3ZPPE=
+github.com/containerd/errdefs/pkg v0.3.0/go.mod h1:NJw6s9HwNuRhnjJhM7pylWwMyAkmCQvQ4GpJHEqRLVk=
 github.com/containerd/log v0.1.0 h1:TCJt7ioM2cr/tfR8GPbGf9/VRAX8D2B4PjzCpfX540I=
 github.com/containerd/log v0.1.0/go.mod h1:VRRf09a7mHDIRezVKTRCrOq78v577GXq3bSa3EhrzVo=
 github.com/containerd/stargz-snapshotter/estargz v0.16.3 h1:7evrXtoh1mSbGj/pfRccTampEyKpjpOnS3CyiV1Ebr8=
@@ -412,8 +414,8 @@ github.com/docker/cli v28.2.2+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvM
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/distribution v2.8.3+incompatible h1:AtKxIZ36LoNK51+Z6RpzLpddBirtxJnzDrHLEKxTAYk=
 github.com/docker/distribution v2.8.3+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
-github.com/docker/docker v28.1.1+incompatible h1:49M11BFLsVO1gxY9UX9p/zwkE/rswggs8AdFmXQw51I=
-github.com/docker/docker v28.1.1+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/docker v28.3.1+incompatible h1:20+BmuA9FXlCX4ByQ0vYJcUEnOmRM6XljDnFWR+jCyY=
+github.com/docker/docker v28.3.1+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker-credential-helpers v0.9.3 h1:gAm/VtF9wgqJMoxzT3Gj5p4AqIjCBS4wrsOh9yRqcz8=
 github.com/docker/docker-credential-helpers v0.9.3/go.mod h1:x+4Gbw9aGmChi3qTLZj8Dfn0TD20M/fuWy0E5+WDeCo=
 github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c h1:lzqkGL9b3znc+ZUgi7FlLnqjQhcXxkNM/quxIjBVMD0=
