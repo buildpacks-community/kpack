@@ -1,6 +1,6 @@
 module github.com/pivotal/kpack
 
-go 1.24.3
+go 1.24.5
 
 replace github.com/docker/docker v28.2.2+incompatible => github.com/docker/docker v28.1.1+incompatible
 
@@ -12,8 +12,8 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b
-	github.com/buildpacks/imgutil v0.0.0-20250528145909-f0ef71ed9081
-	github.com/buildpacks/lifecycle v0.20.10
+	github.com/buildpacks/imgutil v0.0.0-20250626173435-7c19c278f3d2
+	github.com/buildpacks/lifecycle v0.20.12
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-cmp v0.7.0
@@ -121,6 +121,8 @@ require (
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
@@ -134,7 +136,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v28.2.2+incompatible // indirect
+	github.com/docker/docker v28.3.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
