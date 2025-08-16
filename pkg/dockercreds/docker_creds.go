@@ -6,15 +6,32 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 )
 
-type DockerCreds map[string]authn.AuthConfig
+type DockerAuthConfig map[string]authn.AuthConfig
+
+type DockerCreds struct {
+	CredMap        DockerAuthConfig
+	LastModified   time.Time
+	DockerCredPath string
+}
 
 func (c DockerCreds) Resolve(reg authn.Resource) (authn.Authenticator, error) {
-	for registry, entry := range c {
+
+	fileInfo, err := os.Stat(c.DockerCredPath)
+
+	if err == nil && fileInfo.ModTime().After(c.LastModified) {
+		newDockerCreds, _ := ParseDockerConfigSecret(c.DockerCredPath)
+
+		c.CredMap = newDockerCreds.CredMap
+		c.LastModified = newDockerCreds.LastModified
+	}
+
+	for registry, entry := range c.CredMap {
 		matcher := RegistryMatcher{Registry: registry}
 		if matcher.Match(reg.RegistryStr()) {
 			return authn.FromConfig(entry), nil
@@ -32,7 +49,7 @@ func (c DockerCreds) Save(path string) error {
 	}
 
 	configJson := dockerConfigJson{
-		Auths: c,
+		Auths: c.CredMap,
 	}
 
 	fh, err := os.Create(path)
@@ -44,21 +61,30 @@ func (c DockerCreds) Save(path string) error {
 }
 
 func (c DockerCreds) Append(a DockerCreds) (DockerCreds, error) {
-	if c == nil {
+	if c.CredMap == nil {
 		return a, nil
-	} else if a == nil {
+	} else if a.CredMap == nil {
 		return c, nil
 	}
 
-	for k, v := range a {
+	for k, v := range a.CredMap {
 		if contains, err := c.contains(k); err != nil {
-			return nil, err
+			return DockerCreds{}, err
 		} else if !contains {
-			c[k] = v
+			c.CredMap[k] = v
 		}
 	}
 
-	return c, nil
+	lastModified := a.LastModified
+	dockerCredPath := a.DockerCredPath
+	if c.LastModified.After(a.LastModified) {
+		lastModified = c.LastModified
+		dockerCredPath = c.DockerCredPath
+	}
+
+	creds := DockerCreds{c.CredMap, lastModified, dockerCredPath}
+
+	return creds, nil
 }
 
 func (c DockerCreds) contains(reg string) (bool, error) {
@@ -71,7 +97,7 @@ func (c DockerCreds) contains(reg string) (bool, error) {
 		return false, err
 	}
 
-	for existingRegistry := range c {
+	for existingRegistry := range c.CredMap {
 		matcher := RegistryMatcher{Registry: existingRegistry}
 		if matcher.Match(u.Host) {
 			return true, nil
@@ -82,5 +108,5 @@ func (c DockerCreds) contains(reg string) (bool, error) {
 }
 
 type dockerConfigJson struct {
-	Auths DockerCreds `json:"auths"`
+	Auths DockerAuthConfig `json:"auths"`
 }
