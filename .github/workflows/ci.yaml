@@ -47,7 +47,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -66,7 +66,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -85,7 +85,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -104,7 +104,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -123,7 +123,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -142,7 +142,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -321,7 +321,7 @@ jobs:
         config: kind.yaml
 
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ${{ env.REGISTRY_URL }}
         username: ${{ env.REGISTRY_USER }}
@@ -444,7 +444,7 @@ jobs:
         merge-multiple: true
 
     - name: Docker Login
-      uses: docker/login-action@v3.3.0
+      uses: docker/login-action@v3.5.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
