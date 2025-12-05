@@ -2,7 +2,7 @@
 
 # kpack
 [![Build Status](https://github.com/buildpacks-community/kpack/workflows/ci/badge.svg)](https://github.com/buildpacks-community/kpack/actions)
-[![codecov](https://codecov.io/gh/pivotal/kpack/branch/master/graph/badge.svg)](https://codecov.io/gh/pivotal/kpack)
+[![codecov](https://codecov.io/gh/buildpacks-community/kpack/branch/master/graph/badge.svg)](https://codecov.io/gh/pivotal/kpack)
 
 Kubernetes Native Container Build Service
 
