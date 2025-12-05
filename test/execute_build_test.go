@@ -477,8 +477,7 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 		waitUntilCondition(t, ctx, clients, buildapi.ConditionUpToDate, builder, clusterBuilder)
 	})
 
-	//skipping until nodejs-source is relocated to a new registry
-	it.Pend("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
+	it("builds and rebases git, blob, and registry images from unauthenticated sources", func() {
 
 		imageSources := map[string]corev1alpha1.SourceConfig{
 			"git-image": {
@@ -487,16 +486,17 @@ func testCreateImage(t *testing.T, _ spec.G, it spec.S) {
 					Revision: "master",
 				},
 			},
-			"blob-image": {
-				Blob: &corev1alpha1.Blob{
-					URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
-				},
-			},
-			"registry-image": {
-				Registry: &corev1alpha1.Registry{
-					Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
-				},
-			},
+			//skipping until new blobstore and registry can be acquired - tk 12/05/2025
+			// "blob-image": {
+			// 	Blob: &corev1alpha1.Blob{
+			// 		URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+			// 	},
+			// },
+			// "registry-image": {
+			// 	Registry: &corev1alpha1.Registry{
+			// 		Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
+			// 	},
+			// },
 		}
 
 		for imageType, imageSource := range imageSources {
