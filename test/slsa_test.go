@@ -510,22 +510,23 @@ func testSlsaBuild(t *testing.T, when spec.G, it spec.S) {
 						},
 					},
 				},
-				{
-					name: "blob",
-					source: corev1alpha1.SourceConfig{
-						Blob: &corev1alpha1.Blob{
-							URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
-						},
-					},
-				},
-				{
-					name: "registry",
-					source: corev1alpha1.SourceConfig{
-						Registry: &corev1alpha1.Registry{
-							Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
-						},
-					},
-				},
+				// commenting out until a new registry/blob store can be procured - tk 12/05/2025
+				// {
+				// 	name: "blob",
+				// 	source: corev1alpha1.SourceConfig{
+				// 		Blob: &corev1alpha1.Blob{
+				// 			URL: "https://storage.googleapis.com/build-service/sample-apps/spring-petclinic-2.1.0.BUILD-SNAPSHOT.jar",
+				// 		},
+				// 	},
+				// },
+				// {
+				// 	name: "registry",
+				// 	source: corev1alpha1.SourceConfig{
+				// 		Registry: &corev1alpha1.Registry{
+				// 			Image: "gcr.io/cf-build-service-public/fixtures/nodejs-source@sha256:76cb2e087b6f1355caa8ed4a5eebb1ad7376e26995a8d49a570cdc10e4976e44",
+				// 		},
+				// 	},
+				// },
 			}
 
 			for _, r := range table {

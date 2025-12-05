@@ -178,7 +178,7 @@ func testSignBuilder(t *testing.T, _ spec.G, it spec.S) {
 				Name: clusterStackName,
 			},
 			Spec: buildapi.ClusterStackSpec{
-				Id: "io.buildpacks.stacks.bionic",
+				Id: "io.buildpacks.stacks.jammy",
 				BuildImage: buildapi.ClusterStackSpecImage{
 					Image: "mirror.gcr.io/paketobuildpacks/build-jammy-base",
 				},
