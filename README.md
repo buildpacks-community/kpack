@@ -30,7 +30,7 @@ kpack also provides a build type to execute a single Cloud Native Buildpack OCI 
     - [Builds](docs/build.md)
     - [Service Bindings](docs/legacy-cnb-servicebindings.md)
 
-- Interact with kpack using [kpack CLI](https://github.com/vmware-tanzu/kpack-cli/blob/main/docs/kp.md)
+- Interact with kpack using [kpack CLI](https://github.com/buildpacks-community/kpack-cli/blob/main/docs/kp.md)
 
 - Tailing logs with the kpack [log utility](docs/logs.md)
 
