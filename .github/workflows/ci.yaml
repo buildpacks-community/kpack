@@ -52,13 +52,6 @@ jobs:
         docker-images: true
         haskell: true
         dotnet: true
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
