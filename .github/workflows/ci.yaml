@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
      - release/**
+  workflow_dispatch:
 
 defaults:
   run:
@@ -44,6 +45,13 @@ jobs:
   controller-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -63,6 +71,13 @@ jobs:
   webhook-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -82,6 +97,13 @@ jobs:
   completion-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -101,6 +123,13 @@ jobs:
   build-init-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -120,6 +149,13 @@ jobs:
   build-waiter-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -139,6 +175,13 @@ jobs:
   rebase-image:
     runs-on: ubuntu-latest
     steps:
+    - name: Free Up Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        docker-images: true
+        haskell: true
+        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
