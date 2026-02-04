@@ -138,10 +138,28 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *buildapi.SourceR
 		return err
 	}
 
+	if c.FeatureFlags.GitResolverUseShallowClone {
+		c.retainCommitIfTreeUnchanged(original.Status, &desired.Status)
+	}
+
 	if equality.Semantic.DeepEqual(original.Status, desired.Status) {
 		return nil
 	}
 
 	_, err = c.Client.KpackV1alpha2().SourceResolvers(desired.Namespace).UpdateStatus(ctx, desired, v1.UpdateOptions{})
 	return err
+}
+
+func (*Reconciler) retainCommitIfTreeUnchanged(original buildapi.SourceResolverStatus, desired *buildapi.SourceResolverStatus) {
+	if original.Source.Git == nil || desired.Source.Git == nil {
+		return
+	}
+
+	if original.Source.Git.Tree == "" || desired.Source.Git.Tree == "" {
+		return
+	}
+
+	if original.Source.Git.Revision != desired.Source.Git.Revision && original.Source.Git.Tree == desired.Source.Git.Tree {
+		desired.Source.Git.Revision = original.Source.Git.Revision
+	}
 }

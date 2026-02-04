@@ -194,7 +194,8 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
         "completionImage": "completion-image",
         "rebaseImage": "rebase-image",
         "injectedSidecarSupport": false,
-        "generateSlsaAttestation": false
+        "generateSlsaAttestation": false,
+        "gitResolverUseShallowClone": false
       },
       "resolvedDependencies": [
         {

@@ -90,6 +90,7 @@ func main() {
 
 	flag.BoolVar(&featureFlags.InjectedSidecarSupport, "injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
 	flag.BoolVar(&featureFlags.GenerateSlsaAttestation, "experimental-generate-slsa-attestation", flaghelpers.GetEnvBool("EXPERIMENTAL_GENERATE_SLSA_ATTESTATION", false), "if set to true, SLSA attestations will be generated for each build")
+	flag.BoolVar(&featureFlags.GitResolverUseShallowClone, "git-resolver-use-shallow-clone", flaghelpers.GetEnvBool("GIT_RESOLVER_USE_SHALLOW_CLONE", false), "if set to true, git source resolvers will use shallow clones instead of ls-remote")
 
 	flag.Parse()
 

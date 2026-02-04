@@ -7537,6 +7537,9 @@
         "subPath": {
           "type": "string"
         },
+        "tree": {
+          "type": "string"
+        },
         "type": {
           "type": "string",
           "default": ""

@@ -186,6 +186,7 @@ type ResolvedGitSource struct {
 	URL                  string        `json:"url"`
 	Revision             string        `json:"revision"`
 	SubPath              string        `json:"subPath,omitempty"`
+	Tree                 string        `json:"tree,omitempty"`
 	Type                 GitSourceKind `json:"type"`
 	InitializeSubmodules bool          `json:"initializeSubmodules,omitempty"`
 }
