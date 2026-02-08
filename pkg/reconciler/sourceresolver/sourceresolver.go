@@ -17,6 +17,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	buildinformers "github.com/pivotal/kpack/pkg/client/informers/externalversions/build/v1alpha2"
 	buildlisters "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/reconciler"
 )
 
@@ -37,6 +38,7 @@ func NewController(
 	gitResolver Resolver,
 	blobResolver Resolver,
 	registryResolver Resolver,
+	featureflags config.FeatureFlags,
 ) *controller.Impl {
 	c := &Reconciler{
 		GitResolver:          gitResolver,
@@ -44,6 +46,7 @@ func NewController(
 		RegistryResolver:     registryResolver,
 		Client:               opt.Client,
 		SourceResolverLister: sourceResolverInformer.Lister(),
+		FeatureFlags:         featureflags,
 	}
 
 	logger := opt.Logger.With(
@@ -77,6 +80,7 @@ type Reconciler struct {
 	Enqueuer             Enqueuer
 	Client               versioned.Interface
 	SourceResolverLister buildlisters.SourceResolverLister
+	FeatureFlags         config.FeatureFlags
 }
 
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
