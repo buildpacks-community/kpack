@@ -8,13 +8,16 @@ import (
 	"github.com/go-git/go-git/v6/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/config"
 )
 
 const defaultRemote = "origin"
 
-type remoteGitResolver struct{}
+type remoteGitResolver struct {
+	featureFlags config.FeatureFlags
+}
 
-func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
+func (r *remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
 	remote := gogit.NewRemote(memory.NewStorage(), &gogitconfig.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},

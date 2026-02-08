@@ -172,7 +172,7 @@ func main() {
 		KpackClient:               client,
 	}
 
-	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts)
+	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts, featureFlags)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
@@ -216,7 +216,7 @@ func main() {
 
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
-	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
+	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver, featureFlags)
 	builderController := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
 	clusterBuilderController := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
