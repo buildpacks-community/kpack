@@ -1,11 +1,11 @@
 package git
 
 import (
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/storage/memory"
+	gogit "github.com/go-git/go-git/v6"
+	gogitconfig "github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/transport"
+	"github.com/go-git/go-git/v6/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 )
@@ -15,7 +15,7 @@ const defaultRemote = "origin"
 type remoteGitResolver struct{}
 
 func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+	remote := gogit.NewRemote(memory.NewStorage(), &gogitconfig.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},
 	})

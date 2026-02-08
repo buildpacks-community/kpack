@@ -9,7 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v6/plumbing/transport"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/require"
 )
@@ -79,7 +79,7 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns error on non-existent ref", func() {
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", metadataDir)
-			require.EqualError(t, err, "unable to fetch references for repository: couldn't find remote ref \"doesnotexist\"")
+			require.EqualError(t, err, "unable to fetch references for repository: couldn't find remote ref: doesnotexist")
 		})
 
 		it("preserves symbolic links", func() {
