@@ -7,17 +7,21 @@ import (
 
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/config"
 )
 
 type Resolver struct {
 	remoteGitResolver remoteGitResolver
 	gitKeychain       *k8sGitKeychain
+	featureFlags      config.FeatureFlags
 }
 
-func NewResolver(k8sClient k8sclient.Interface, sshTrustUnknownHosts bool) *Resolver {
+func NewResolver(k8sClient k8sclient.Interface, sshTrustUnknownHosts bool, featureFlags config.FeatureFlags) *Resolver {
 	return &Resolver{
-		remoteGitResolver: remoteGitResolver{},
-		gitKeychain:       newK8sGitKeychain(k8sClient, sshTrustUnknownHosts),
+		remoteGitResolver: remoteGitResolver{
+			featureFlags: featureFlags,
+		},
+		gitKeychain: newK8sGitKeychain(k8sClient, sshTrustUnknownHosts),
 	}
 }
 

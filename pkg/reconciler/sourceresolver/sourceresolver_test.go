@@ -17,6 +17,7 @@ import (
 	buildapi "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver"
 	"github.com/pivotal/kpack/pkg/reconciler/sourceresolver/sourceresolverfakes"
 	"github.com/pivotal/kpack/pkg/reconciler/testhelpers"
@@ -58,6 +59,9 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 				Enqueuer:             fakeEnqueuer,
 				Client:               fakeClient,
 				SourceResolverLister: listers.GetSourceResolverLister(),
+				FeatureFlags: config.FeatureFlags{
+					GitResolverUseShallowClone: true,
+				},
 			}
 
 			rtesting.PrependGenerateNameReactor(&fakeClient.Fake)
@@ -142,6 +146,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      "https://example.com/something",
 						Revision: "abcdef",
+						Tree:     "09876",
 						Type:     corev1alpha1.Branch,
 					},
 				}
@@ -179,6 +184,7 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 											Git: &corev1alpha1.ResolvedGitSource{
 												URL:      "https://example.com/something",
 												Revision: "abcdef",
+												Tree:     "09876",
 												Type:     corev1alpha1.Branch,
 											},
 										},
@@ -192,6 +198,66 @@ func testSourceResolver(t *testing.T, when spec.G, it spec.S) {
 					enquedSourceResolver := fakeEnqueuer.EnqueueArgsForCall(0)
 					require.Equal(t, sourceResolver.Name, enquedSourceResolver.Name)
 					require.Equal(t, sourceResolver.Namespace, enquedSourceResolver.Namespace)
+				})
+
+				it("does not update the resource when the tree is unchanged", func() {
+					sourceResolver := resolvedSourceResolver(sourceResolver, resolvedSource)
+					sourceResolver.Status.Source = *resolvedSource.DeepCopy()
+					sourceResolver.Status.Source.Git.Revision = "some-other"
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+					})
+				})
+
+				it("updates the resource when the tree is changes", func() {
+					sourceResolver := resolvedSourceResolver(sourceResolver, resolvedSource)
+					sourceResolver.Status.Source = *resolvedSource.DeepCopy()
+					sourceResolver.Status.Source.Git.Revision = "some-other"
+					sourceResolver.Status.Source.Git.Tree = "some-other-tree"
+
+					rt.Test(rtesting.TableRow{
+						Key: key,
+						Objects: []runtime.Object{
+							sourceResolver,
+						},
+						WantErr: false,
+						WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+							{
+								Object: &buildapi.SourceResolver{
+									ObjectMeta: sourceResolver.ObjectMeta,
+									Spec:       sourceResolver.Spec,
+									Status: buildapi.SourceResolverStatus{
+										Status: corev1alpha1.Status{
+											ObservedGeneration: originalGeneration,
+											Conditions: corev1alpha1.Conditions{
+												{
+													Type:   corev1alpha1.ConditionReady,
+													Status: corev1.ConditionTrue,
+												},
+												{
+													Type:   buildapi.ActivePolling,
+													Status: corev1.ConditionTrue,
+												},
+											},
+										},
+										Source: corev1alpha1.ResolvedSourceConfig{
+											Git: &corev1alpha1.ResolvedGitSource{
+												URL:      "https://example.com/something",
+												Revision: "abcdef",
+												Tree:     "09876",
+												Type:     corev1alpha1.Branch,
+											},
+										},
+									},
+								},
+							},
+						},
+					})
 				})
 			})
 

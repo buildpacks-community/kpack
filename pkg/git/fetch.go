@@ -1,17 +1,17 @@
 package git
 
 import (
-	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"log"
 	"os"
 	"path"
 
+	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+
 	"github.com/BurntSushi/toml"
-	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
-	"github.com/go-git/go-git/v5/plumbing/transport"
+	gogit "github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/transport"
 	"github.com/pkg/errors"
 )
 
@@ -23,9 +23,9 @@ type Fetcher struct {
 
 func init() {
 	//remove multi_ack and multi_ack_detailed from unsupported capabilities to enable Azure DevOps git support
-	transport.UnsupportedCapabilities = []capability.Capability{
-		capability.ThinPack,
-	}
+	//	transport.UnsupportedCapabilities = []capability.Capability{
+	//		capability.ThinPack,
+	//	}
 }
 
 func (f Fetcher) Fetch(dir, gitURL, gitRevision, metadataDir string) error {
