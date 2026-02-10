@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterBuilderLister helps list ClusterBuilders.
@@ -30,39 +30,19 @@ import (
 type ClusterBuilderLister interface {
 	// List lists all ClusterBuilders in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.ClusterBuilder, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.ClusterBuilder, err error)
 	// Get retrieves the ClusterBuilder from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.ClusterBuilder, error)
+	Get(name string) (*buildv1alpha2.ClusterBuilder, error)
 	ClusterBuilderListerExpansion
 }
 
 // clusterBuilderLister implements the ClusterBuilderLister interface.
 type clusterBuilderLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.ClusterBuilder]
 }
 
 // NewClusterBuilderLister returns a new ClusterBuilderLister.
 func NewClusterBuilderLister(indexer cache.Indexer) ClusterBuilderLister {
-	return &clusterBuilderLister{indexer: indexer}
-}
-
-// List lists all ClusterBuilders in the indexer.
-func (s *clusterBuilderLister) List(selector labels.Selector) (ret []*v1alpha2.ClusterBuilder, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.ClusterBuilder))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterBuilder from the index for a given name.
-func (s *clusterBuilderLister) Get(name string) (*v1alpha2.ClusterBuilder, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("clusterbuilder"), name)
-	}
-	return obj.(*v1alpha2.ClusterBuilder), nil
+	return &clusterBuilderLister{listers.New[*buildv1alpha2.ClusterBuilder](indexer, buildv1alpha2.Resource("clusterbuilder"))}
 }

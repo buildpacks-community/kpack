@@ -19,123 +19,32 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeBuilders implements BuilderInterface
-type FakeBuilders struct {
+// fakeBuilders implements BuilderInterface
+type fakeBuilders struct {
+	*gentype.FakeClientWithList[*v1alpha1.Builder, *v1alpha1.BuilderList]
 	Fake *FakeKpackV1alpha1
-	ns   string
 }
 
-var buildersResource = v1alpha1.SchemeGroupVersion.WithResource("builders")
-
-var buildersKind = v1alpha1.SchemeGroupVersion.WithKind("Builder")
-
-// Get takes name of the builder, and returns the corresponding builder object, and an error if there is any.
-func (c *FakeBuilders) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Builder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(buildersResource, c.ns, name), &v1alpha1.Builder{})
-
-	if obj == nil {
-		return nil, err
+func newFakeBuilders(fake *FakeKpackV1alpha1, namespace string) buildv1alpha1.BuilderInterface {
+	return &fakeBuilders{
+		gentype.NewFakeClientWithList[*v1alpha1.Builder, *v1alpha1.BuilderList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("builders"),
+			v1alpha1.SchemeGroupVersion.WithKind("Builder"),
+			func() *v1alpha1.Builder { return &v1alpha1.Builder{} },
+			func() *v1alpha1.BuilderList { return &v1alpha1.BuilderList{} },
+			func(dst, src *v1alpha1.BuilderList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.BuilderList) []*v1alpha1.Builder { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1alpha1.BuilderList, items []*v1alpha1.Builder) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.Builder), err
-}
-
-// List takes label and field selectors, and returns the list of Builders that match those selectors.
-func (c *FakeBuilders) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BuilderList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(buildersResource, buildersKind, c.ns, opts), &v1alpha1.BuilderList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.BuilderList{ListMeta: obj.(*v1alpha1.BuilderList).ListMeta}
-	for _, item := range obj.(*v1alpha1.BuilderList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested builders.
-func (c *FakeBuilders) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(buildersResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a builder and creates it.  Returns the server's representation of the builder, and an error, if there is any.
-func (c *FakeBuilders) Create(ctx context.Context, builder *v1alpha1.Builder, opts v1.CreateOptions) (result *v1alpha1.Builder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(buildersResource, c.ns, builder), &v1alpha1.Builder{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.Builder), err
-}
-
-// Update takes the representation of a builder and updates it. Returns the server's representation of the builder, and an error, if there is any.
-func (c *FakeBuilders) Update(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (result *v1alpha1.Builder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(buildersResource, c.ns, builder), &v1alpha1.Builder{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.Builder), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeBuilders) UpdateStatus(ctx context.Context, builder *v1alpha1.Builder, opts v1.UpdateOptions) (*v1alpha1.Builder, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(buildersResource, "status", c.ns, builder), &v1alpha1.Builder{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.Builder), err
-}
-
-// Delete takes name of the builder and deletes it. Returns an error if one occurs.
-func (c *FakeBuilders) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(buildersResource, c.ns, name, opts), &v1alpha1.Builder{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeBuilders) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(buildersResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.BuilderList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched builder.
-func (c *FakeBuilders) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Builder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(buildersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Builder{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.Builder), err
 }

@@ -19,13 +19,13 @@
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	apisbuildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // ClusterBuildpacks.
 type ClusterBuildpackInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.ClusterBuildpackLister
+	Lister() buildv1alpha2.ClusterBuildpackLister
 }
 
 type clusterBuildpackInformer struct {
@@ -61,16 +61,28 @@ func NewFilteredClusterBuildpackInformer(client versioned.Interface, resyncPerio
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().ClusterBuildpacks().List(context.TODO(), options)
+				return client.KpackV1alpha2().ClusterBuildpacks().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().ClusterBuildpacks().Watch(context.TODO(), options)
+				return client.KpackV1alpha2().ClusterBuildpacks().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().ClusterBuildpacks().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().ClusterBuildpacks().Watch(ctx, options)
 			},
 		},
-		&buildv1alpha2.ClusterBuildpack{},
+		&apisbuildv1alpha2.ClusterBuildpack{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,9 +93,9 @@ func (f *clusterBuildpackInformer) defaultInformer(client versioned.Interface, r
 }
 
 func (f *clusterBuildpackInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha2.ClusterBuildpack{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisbuildv1alpha2.ClusterBuildpack{}, f.defaultInformer)
 }
 
-func (f *clusterBuildpackInformer) Lister() v1alpha2.ClusterBuildpackLister {
-	return v1alpha2.NewClusterBuildpackLister(f.Informer().GetIndexer())
+func (f *clusterBuildpackInformer) Lister() buildv1alpha2.ClusterBuildpackLister {
+	return buildv1alpha2.NewClusterBuildpackLister(f.Informer().GetIndexer())
 }

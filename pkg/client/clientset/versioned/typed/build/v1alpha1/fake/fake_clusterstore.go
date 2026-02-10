@@ -19,114 +19,34 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeClusterStores implements ClusterStoreInterface
-type FakeClusterStores struct {
+// fakeClusterStores implements ClusterStoreInterface
+type fakeClusterStores struct {
+	*gentype.FakeClientWithList[*v1alpha1.ClusterStore, *v1alpha1.ClusterStoreList]
 	Fake *FakeKpackV1alpha1
 }
 
-var clusterstoresResource = v1alpha1.SchemeGroupVersion.WithResource("clusterstores")
-
-var clusterstoresKind = v1alpha1.SchemeGroupVersion.WithKind("ClusterStore")
-
-// Get takes name of the clusterStore, and returns the corresponding clusterStore object, and an error if there is any.
-func (c *FakeClusterStores) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ClusterStore, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(clusterstoresResource, name), &v1alpha1.ClusterStore{})
-	if obj == nil {
-		return nil, err
+func newFakeClusterStores(fake *FakeKpackV1alpha1) buildv1alpha1.ClusterStoreInterface {
+	return &fakeClusterStores{
+		gentype.NewFakeClientWithList[*v1alpha1.ClusterStore, *v1alpha1.ClusterStoreList](
+			fake.Fake,
+			"",
+			v1alpha1.SchemeGroupVersion.WithResource("clusterstores"),
+			v1alpha1.SchemeGroupVersion.WithKind("ClusterStore"),
+			func() *v1alpha1.ClusterStore { return &v1alpha1.ClusterStore{} },
+			func() *v1alpha1.ClusterStoreList { return &v1alpha1.ClusterStoreList{} },
+			func(dst, src *v1alpha1.ClusterStoreList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.ClusterStoreList) []*v1alpha1.ClusterStore {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha1.ClusterStoreList, items []*v1alpha1.ClusterStore) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.ClusterStore), err
-}
-
-// List takes label and field selectors, and returns the list of ClusterStores that match those selectors.
-func (c *FakeClusterStores) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ClusterStoreList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(clusterstoresResource, clusterstoresKind, opts), &v1alpha1.ClusterStoreList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.ClusterStoreList{ListMeta: obj.(*v1alpha1.ClusterStoreList).ListMeta}
-	for _, item := range obj.(*v1alpha1.ClusterStoreList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested clusterStores.
-func (c *FakeClusterStores) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(clusterstoresResource, opts))
-}
-
-// Create takes the representation of a clusterStore and creates it.  Returns the server's representation of the clusterStore, and an error, if there is any.
-func (c *FakeClusterStores) Create(ctx context.Context, clusterStore *v1alpha1.ClusterStore, opts v1.CreateOptions) (result *v1alpha1.ClusterStore, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(clusterstoresResource, clusterStore), &v1alpha1.ClusterStore{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.ClusterStore), err
-}
-
-// Update takes the representation of a clusterStore and updates it. Returns the server's representation of the clusterStore, and an error, if there is any.
-func (c *FakeClusterStores) Update(ctx context.Context, clusterStore *v1alpha1.ClusterStore, opts v1.UpdateOptions) (result *v1alpha1.ClusterStore, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(clusterstoresResource, clusterStore), &v1alpha1.ClusterStore{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.ClusterStore), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterStores) UpdateStatus(ctx context.Context, clusterStore *v1alpha1.ClusterStore, opts v1.UpdateOptions) (*v1alpha1.ClusterStore, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(clusterstoresResource, "status", clusterStore), &v1alpha1.ClusterStore{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.ClusterStore), err
-}
-
-// Delete takes name of the clusterStore and deletes it. Returns an error if one occurs.
-func (c *FakeClusterStores) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(clusterstoresResource, name, opts), &v1alpha1.ClusterStore{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeClusterStores) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterstoresResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.ClusterStoreList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched clusterStore.
-func (c *FakeClusterStores) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ClusterStore, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(clusterstoresResource, name, pt, data, subresources...), &v1alpha1.ClusterStore{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.ClusterStore), err
 }

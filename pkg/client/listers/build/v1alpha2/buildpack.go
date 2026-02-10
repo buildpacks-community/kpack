@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // BuildpackLister helps list Buildpacks.
@@ -30,7 +30,7 @@ import (
 type BuildpackLister interface {
 	// List lists all Buildpacks in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.Buildpack, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.Buildpack, err error)
 	// Buildpacks returns an object that can list and get Buildpacks.
 	Buildpacks(namespace string) BuildpackNamespaceLister
 	BuildpackListerExpansion
@@ -38,25 +38,17 @@ type BuildpackLister interface {
 
 // buildpackLister implements the BuildpackLister interface.
 type buildpackLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.Buildpack]
 }
 
 // NewBuildpackLister returns a new BuildpackLister.
 func NewBuildpackLister(indexer cache.Indexer) BuildpackLister {
-	return &buildpackLister{indexer: indexer}
-}
-
-// List lists all Buildpacks in the indexer.
-func (s *buildpackLister) List(selector labels.Selector) (ret []*v1alpha2.Buildpack, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.Buildpack))
-	})
-	return ret, err
+	return &buildpackLister{listers.New[*buildv1alpha2.Buildpack](indexer, buildv1alpha2.Resource("buildpack"))}
 }
 
 // Buildpacks returns an object that can list and get Buildpacks.
 func (s *buildpackLister) Buildpacks(namespace string) BuildpackNamespaceLister {
-	return buildpackNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return buildpackNamespaceLister{listers.NewNamespaced[*buildv1alpha2.Buildpack](s.ResourceIndexer, namespace)}
 }
 
 // BuildpackNamespaceLister helps list and get Buildpacks.
@@ -64,36 +56,15 @@ func (s *buildpackLister) Buildpacks(namespace string) BuildpackNamespaceLister 
 type BuildpackNamespaceLister interface {
 	// List lists all Buildpacks in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.Buildpack, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.Buildpack, err error)
 	// Get retrieves the Buildpack from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.Buildpack, error)
+	Get(name string) (*buildv1alpha2.Buildpack, error)
 	BuildpackNamespaceListerExpansion
 }
 
 // buildpackNamespaceLister implements the BuildpackNamespaceLister
 // interface.
 type buildpackNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Buildpacks in the indexer for a given namespace.
-func (s buildpackNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.Buildpack, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.Buildpack))
-	})
-	return ret, err
-}
-
-// Get retrieves the Buildpack from the indexer for a given namespace and name.
-func (s buildpackNamespaceLister) Get(name string) (*v1alpha2.Buildpack, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("buildpack"), name)
-	}
-	return obj.(*v1alpha2.Buildpack), nil
+	listers.ResourceIndexer[*buildv1alpha2.Buildpack]
 }

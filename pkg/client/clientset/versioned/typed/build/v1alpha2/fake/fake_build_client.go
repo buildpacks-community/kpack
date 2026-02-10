@@ -29,43 +29,43 @@ type FakeKpackV1alpha2 struct {
 }
 
 func (c *FakeKpackV1alpha2) Builds(namespace string) v1alpha2.BuildInterface {
-	return &FakeBuilds{c, namespace}
+	return newFakeBuilds(c, namespace)
 }
 
 func (c *FakeKpackV1alpha2) Builders(namespace string) v1alpha2.BuilderInterface {
-	return &FakeBuilders{c, namespace}
+	return newFakeBuilders(c, namespace)
 }
 
 func (c *FakeKpackV1alpha2) Buildpacks(namespace string) v1alpha2.BuildpackInterface {
-	return &FakeBuildpacks{c, namespace}
+	return newFakeBuildpacks(c, namespace)
 }
 
 func (c *FakeKpackV1alpha2) ClusterBuilders() v1alpha2.ClusterBuilderInterface {
-	return &FakeClusterBuilders{c}
+	return newFakeClusterBuilders(c)
 }
 
 func (c *FakeKpackV1alpha2) ClusterBuildpacks() v1alpha2.ClusterBuildpackInterface {
-	return &FakeClusterBuildpacks{c}
+	return newFakeClusterBuildpacks(c)
 }
 
 func (c *FakeKpackV1alpha2) ClusterLifecycles() v1alpha2.ClusterLifecycleInterface {
-	return &FakeClusterLifecycles{c}
+	return newFakeClusterLifecycles(c)
 }
 
 func (c *FakeKpackV1alpha2) ClusterStacks() v1alpha2.ClusterStackInterface {
-	return &FakeClusterStacks{c}
+	return newFakeClusterStacks(c)
 }
 
 func (c *FakeKpackV1alpha2) ClusterStores() v1alpha2.ClusterStoreInterface {
-	return &FakeClusterStores{c}
+	return newFakeClusterStores(c)
 }
 
 func (c *FakeKpackV1alpha2) Images(namespace string) v1alpha2.ImageInterface {
-	return &FakeImages{c, namespace}
+	return newFakeImages(c, namespace)
 }
 
 func (c *FakeKpackV1alpha2) SourceResolvers(namespace string) v1alpha2.SourceResolverInterface {
-	return &FakeSourceResolvers{c, namespace}
+	return newFakeSourceResolvers(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

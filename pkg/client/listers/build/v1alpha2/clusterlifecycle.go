@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterLifecycleLister helps list ClusterLifecycles.
@@ -30,39 +30,19 @@ import (
 type ClusterLifecycleLister interface {
 	// List lists all ClusterLifecycles in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.ClusterLifecycle, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.ClusterLifecycle, err error)
 	// Get retrieves the ClusterLifecycle from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.ClusterLifecycle, error)
+	Get(name string) (*buildv1alpha2.ClusterLifecycle, error)
 	ClusterLifecycleListerExpansion
 }
 
 // clusterLifecycleLister implements the ClusterLifecycleLister interface.
 type clusterLifecycleLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.ClusterLifecycle]
 }
 
 // NewClusterLifecycleLister returns a new ClusterLifecycleLister.
 func NewClusterLifecycleLister(indexer cache.Indexer) ClusterLifecycleLister {
-	return &clusterLifecycleLister{indexer: indexer}
-}
-
-// List lists all ClusterLifecycles in the indexer.
-func (s *clusterLifecycleLister) List(selector labels.Selector) (ret []*v1alpha2.ClusterLifecycle, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.ClusterLifecycle))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterLifecycle from the index for a given name.
-func (s *clusterLifecycleLister) Get(name string) (*v1alpha2.ClusterLifecycle, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("clusterlifecycle"), name)
-	}
-	return obj.(*v1alpha2.ClusterLifecycle), nil
+	return &clusterLifecycleLister{listers.New[*buildv1alpha2.ClusterLifecycle](indexer, buildv1alpha2.Resource("clusterlifecycle"))}
 }

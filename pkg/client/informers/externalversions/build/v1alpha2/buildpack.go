@@ -19,13 +19,13 @@
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	apisbuildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // Buildpacks.
 type BuildpackInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.BuildpackLister
+	Lister() buildv1alpha2.BuildpackLister
 }
 
 type buildpackInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredBuildpackInformer(client versioned.Interface, namespace string, 
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().Buildpacks(namespace).List(context.TODO(), options)
+				return client.KpackV1alpha2().Buildpacks(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().Buildpacks(namespace).Watch(context.TODO(), options)
+				return client.KpackV1alpha2().Buildpacks(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().Buildpacks(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().Buildpacks(namespace).Watch(ctx, options)
 			},
 		},
-		&buildv1alpha2.Buildpack{},
+		&apisbuildv1alpha2.Buildpack{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *buildpackInformer) defaultInformer(client versioned.Interface, resyncPe
 }
 
 func (f *buildpackInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha2.Buildpack{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisbuildv1alpha2.Buildpack{}, f.defaultInformer)
 }
 
-func (f *buildpackInformer) Lister() v1alpha2.BuildpackLister {
-	return v1alpha2.NewBuildpackLister(f.Informer().GetIndexer())
+func (f *buildpackInformer) Lister() buildv1alpha2.BuildpackLister {
+	return buildv1alpha2.NewBuildpackLister(f.Informer().GetIndexer())
 }

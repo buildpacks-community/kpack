@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SourceResolverLister helps list SourceResolvers.
@@ -30,7 +30,7 @@ import (
 type SourceResolverLister interface {
 	// List lists all SourceResolvers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.SourceResolver, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.SourceResolver, err error)
 	// SourceResolvers returns an object that can list and get SourceResolvers.
 	SourceResolvers(namespace string) SourceResolverNamespaceLister
 	SourceResolverListerExpansion
@@ -38,25 +38,17 @@ type SourceResolverLister interface {
 
 // sourceResolverLister implements the SourceResolverLister interface.
 type sourceResolverLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.SourceResolver]
 }
 
 // NewSourceResolverLister returns a new SourceResolverLister.
 func NewSourceResolverLister(indexer cache.Indexer) SourceResolverLister {
-	return &sourceResolverLister{indexer: indexer}
-}
-
-// List lists all SourceResolvers in the indexer.
-func (s *sourceResolverLister) List(selector labels.Selector) (ret []*v1alpha2.SourceResolver, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.SourceResolver))
-	})
-	return ret, err
+	return &sourceResolverLister{listers.New[*buildv1alpha2.SourceResolver](indexer, buildv1alpha2.Resource("sourceresolver"))}
 }
 
 // SourceResolvers returns an object that can list and get SourceResolvers.
 func (s *sourceResolverLister) SourceResolvers(namespace string) SourceResolverNamespaceLister {
-	return sourceResolverNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return sourceResolverNamespaceLister{listers.NewNamespaced[*buildv1alpha2.SourceResolver](s.ResourceIndexer, namespace)}
 }
 
 // SourceResolverNamespaceLister helps list and get SourceResolvers.
@@ -64,36 +56,15 @@ func (s *sourceResolverLister) SourceResolvers(namespace string) SourceResolverN
 type SourceResolverNamespaceLister interface {
 	// List lists all SourceResolvers in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.SourceResolver, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.SourceResolver, err error)
 	// Get retrieves the SourceResolver from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.SourceResolver, error)
+	Get(name string) (*buildv1alpha2.SourceResolver, error)
 	SourceResolverNamespaceListerExpansion
 }
 
 // sourceResolverNamespaceLister implements the SourceResolverNamespaceLister
 // interface.
 type sourceResolverNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all SourceResolvers in the indexer for a given namespace.
-func (s sourceResolverNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.SourceResolver, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.SourceResolver))
-	})
-	return ret, err
-}
-
-// Get retrieves the SourceResolver from the indexer for a given namespace and name.
-func (s sourceResolverNamespaceLister) Get(name string) (*v1alpha2.SourceResolver, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("sourceresolver"), name)
-	}
-	return obj.(*v1alpha2.SourceResolver), nil
+	listers.ResourceIndexer[*buildv1alpha2.SourceResolver]
 }

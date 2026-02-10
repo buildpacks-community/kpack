@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // BuilderLister helps list Builders.
@@ -30,7 +30,7 @@ import (
 type BuilderLister interface {
 	// List lists all Builders in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.Builder, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.Builder, err error)
 	// Builders returns an object that can list and get Builders.
 	Builders(namespace string) BuilderNamespaceLister
 	BuilderListerExpansion
@@ -38,25 +38,17 @@ type BuilderLister interface {
 
 // builderLister implements the BuilderLister interface.
 type builderLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.Builder]
 }
 
 // NewBuilderLister returns a new BuilderLister.
 func NewBuilderLister(indexer cache.Indexer) BuilderLister {
-	return &builderLister{indexer: indexer}
-}
-
-// List lists all Builders in the indexer.
-func (s *builderLister) List(selector labels.Selector) (ret []*v1alpha2.Builder, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.Builder))
-	})
-	return ret, err
+	return &builderLister{listers.New[*buildv1alpha2.Builder](indexer, buildv1alpha2.Resource("builder"))}
 }
 
 // Builders returns an object that can list and get Builders.
 func (s *builderLister) Builders(namespace string) BuilderNamespaceLister {
-	return builderNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return builderNamespaceLister{listers.NewNamespaced[*buildv1alpha2.Builder](s.ResourceIndexer, namespace)}
 }
 
 // BuilderNamespaceLister helps list and get Builders.
@@ -64,36 +56,15 @@ func (s *builderLister) Builders(namespace string) BuilderNamespaceLister {
 type BuilderNamespaceLister interface {
 	// List lists all Builders in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.Builder, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.Builder, err error)
 	// Get retrieves the Builder from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.Builder, error)
+	Get(name string) (*buildv1alpha2.Builder, error)
 	BuilderNamespaceListerExpansion
 }
 
 // builderNamespaceLister implements the BuilderNamespaceLister
 // interface.
 type builderNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Builders in the indexer for a given namespace.
-func (s builderNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.Builder, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.Builder))
-	})
-	return ret, err
-}
-
-// Get retrieves the Builder from the indexer for a given namespace and name.
-func (s builderNamespaceLister) Get(name string) (*v1alpha2.Builder, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("builder"), name)
-	}
-	return obj.(*v1alpha2.Builder), nil
+	listers.ResourceIndexer[*buildv1alpha2.Builder]
 }

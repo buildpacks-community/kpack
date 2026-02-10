@@ -19,13 +19,13 @@
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	apisbuildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	versioned "github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/pivotal/kpack/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/listers/build/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // SourceResolvers.
 type SourceResolverInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.SourceResolverLister
+	Lister() buildv1alpha2.SourceResolverLister
 }
 
 type sourceResolverInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredSourceResolverInformer(client versioned.Interface, namespace str
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().SourceResolvers(namespace).List(context.TODO(), options)
+				return client.KpackV1alpha2().SourceResolvers(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KpackV1alpha2().SourceResolvers(namespace).Watch(context.TODO(), options)
+				return client.KpackV1alpha2().SourceResolvers(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().SourceResolvers(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KpackV1alpha2().SourceResolvers(namespace).Watch(ctx, options)
 			},
 		},
-		&buildv1alpha2.SourceResolver{},
+		&apisbuildv1alpha2.SourceResolver{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *sourceResolverInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *sourceResolverInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&buildv1alpha2.SourceResolver{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisbuildv1alpha2.SourceResolver{}, f.defaultInformer)
 }
 
-func (f *sourceResolverInformer) Lister() v1alpha2.SourceResolverLister {
-	return v1alpha2.NewSourceResolverLister(f.Informer().GetIndexer())
+func (f *sourceResolverInformer) Lister() buildv1alpha2.SourceResolverLister {
+	return buildv1alpha2.NewSourceResolverLister(f.Informer().GetIndexer())
 }
