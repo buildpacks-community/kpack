@@ -19,114 +19,34 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeClusterBuilders implements ClusterBuilderInterface
-type FakeClusterBuilders struct {
+// fakeClusterBuilders implements ClusterBuilderInterface
+type fakeClusterBuilders struct {
+	*gentype.FakeClientWithList[*v1alpha2.ClusterBuilder, *v1alpha2.ClusterBuilderList]
 	Fake *FakeKpackV1alpha2
 }
 
-var clusterbuildersResource = v1alpha2.SchemeGroupVersion.WithResource("clusterbuilders")
-
-var clusterbuildersKind = v1alpha2.SchemeGroupVersion.WithKind("ClusterBuilder")
-
-// Get takes name of the clusterBuilder, and returns the corresponding clusterBuilder object, and an error if there is any.
-func (c *FakeClusterBuilders) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ClusterBuilder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(clusterbuildersResource, name), &v1alpha2.ClusterBuilder{})
-	if obj == nil {
-		return nil, err
+func newFakeClusterBuilders(fake *FakeKpackV1alpha2) buildv1alpha2.ClusterBuilderInterface {
+	return &fakeClusterBuilders{
+		gentype.NewFakeClientWithList[*v1alpha2.ClusterBuilder, *v1alpha2.ClusterBuilderList](
+			fake.Fake,
+			"",
+			v1alpha2.SchemeGroupVersion.WithResource("clusterbuilders"),
+			v1alpha2.SchemeGroupVersion.WithKind("ClusterBuilder"),
+			func() *v1alpha2.ClusterBuilder { return &v1alpha2.ClusterBuilder{} },
+			func() *v1alpha2.ClusterBuilderList { return &v1alpha2.ClusterBuilderList{} },
+			func(dst, src *v1alpha2.ClusterBuilderList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha2.ClusterBuilderList) []*v1alpha2.ClusterBuilder {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha2.ClusterBuilderList, items []*v1alpha2.ClusterBuilder) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha2.ClusterBuilder), err
-}
-
-// List takes label and field selectors, and returns the list of ClusterBuilders that match those selectors.
-func (c *FakeClusterBuilders) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ClusterBuilderList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(clusterbuildersResource, clusterbuildersKind, opts), &v1alpha2.ClusterBuilderList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha2.ClusterBuilderList{ListMeta: obj.(*v1alpha2.ClusterBuilderList).ListMeta}
-	for _, item := range obj.(*v1alpha2.ClusterBuilderList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested clusterBuilders.
-func (c *FakeClusterBuilders) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(clusterbuildersResource, opts))
-}
-
-// Create takes the representation of a clusterBuilder and creates it.  Returns the server's representation of the clusterBuilder, and an error, if there is any.
-func (c *FakeClusterBuilders) Create(ctx context.Context, clusterBuilder *v1alpha2.ClusterBuilder, opts v1.CreateOptions) (result *v1alpha2.ClusterBuilder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(clusterbuildersResource, clusterBuilder), &v1alpha2.ClusterBuilder{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuilder), err
-}
-
-// Update takes the representation of a clusterBuilder and updates it. Returns the server's representation of the clusterBuilder, and an error, if there is any.
-func (c *FakeClusterBuilders) Update(ctx context.Context, clusterBuilder *v1alpha2.ClusterBuilder, opts v1.UpdateOptions) (result *v1alpha2.ClusterBuilder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(clusterbuildersResource, clusterBuilder), &v1alpha2.ClusterBuilder{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuilder), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterBuilders) UpdateStatus(ctx context.Context, clusterBuilder *v1alpha2.ClusterBuilder, opts v1.UpdateOptions) (*v1alpha2.ClusterBuilder, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(clusterbuildersResource, "status", clusterBuilder), &v1alpha2.ClusterBuilder{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuilder), err
-}
-
-// Delete takes name of the clusterBuilder and deletes it. Returns an error if one occurs.
-func (c *FakeClusterBuilders) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(clusterbuildersResource, name, opts), &v1alpha2.ClusterBuilder{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeClusterBuilders) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterbuildersResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha2.ClusterBuilderList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched clusterBuilder.
-func (c *FakeClusterBuilders) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ClusterBuilder, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(clusterbuildersResource, name, pt, data, subresources...), &v1alpha2.ClusterBuilder{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuilder), err
 }

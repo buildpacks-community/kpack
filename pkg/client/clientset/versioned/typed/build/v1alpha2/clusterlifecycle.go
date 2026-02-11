@@ -19,15 +19,14 @@
 package v1alpha2
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
 	scheme "github.com/pivotal/kpack/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // ClusterLifecyclesGetter has a method to return a ClusterLifecycleInterface.
@@ -38,147 +37,34 @@ type ClusterLifecyclesGetter interface {
 
 // ClusterLifecycleInterface has methods to work with ClusterLifecycle resources.
 type ClusterLifecycleInterface interface {
-	Create(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.CreateOptions) (*v1alpha2.ClusterLifecycle, error)
-	Update(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (*v1alpha2.ClusterLifecycle, error)
-	UpdateStatus(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (*v1alpha2.ClusterLifecycle, error)
+	Create(ctx context.Context, clusterLifecycle *buildv1alpha2.ClusterLifecycle, opts v1.CreateOptions) (*buildv1alpha2.ClusterLifecycle, error)
+	Update(ctx context.Context, clusterLifecycle *buildv1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (*buildv1alpha2.ClusterLifecycle, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, clusterLifecycle *buildv1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (*buildv1alpha2.ClusterLifecycle, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.ClusterLifecycle, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.ClusterLifecycleList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*buildv1alpha2.ClusterLifecycle, error)
+	List(ctx context.Context, opts v1.ListOptions) (*buildv1alpha2.ClusterLifecycleList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ClusterLifecycle, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *buildv1alpha2.ClusterLifecycle, err error)
 	ClusterLifecycleExpansion
 }
 
 // clusterLifecycles implements ClusterLifecycleInterface
 type clusterLifecycles struct {
-	client rest.Interface
+	*gentype.ClientWithList[*buildv1alpha2.ClusterLifecycle, *buildv1alpha2.ClusterLifecycleList]
 }
 
 // newClusterLifecycles returns a ClusterLifecycles
 func newClusterLifecycles(c *KpackV1alpha2Client) *clusterLifecycles {
 	return &clusterLifecycles{
-		client: c.RESTClient(),
+		gentype.NewClientWithList[*buildv1alpha2.ClusterLifecycle, *buildv1alpha2.ClusterLifecycleList](
+			"clusterlifecycles",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			"",
+			func() *buildv1alpha2.ClusterLifecycle { return &buildv1alpha2.ClusterLifecycle{} },
+			func() *buildv1alpha2.ClusterLifecycleList { return &buildv1alpha2.ClusterLifecycleList{} },
+		),
 	}
-}
-
-// Get takes name of the clusterLifecycle, and returns the corresponding clusterLifecycle object, and an error if there is any.
-func (c *clusterLifecycles) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	result = &v1alpha2.ClusterLifecycle{}
-	err = c.client.Get().
-		Resource("clusterlifecycles").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of ClusterLifecycles that match those selectors.
-func (c *clusterLifecycles) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ClusterLifecycleList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha2.ClusterLifecycleList{}
-	err = c.client.Get().
-		Resource("clusterlifecycles").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested clusterLifecycles.
-func (c *clusterLifecycles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Resource("clusterlifecycles").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a clusterLifecycle and creates it.  Returns the server's representation of the clusterLifecycle, and an error, if there is any.
-func (c *clusterLifecycles) Create(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.CreateOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	result = &v1alpha2.ClusterLifecycle{}
-	err = c.client.Post().
-		Resource("clusterlifecycles").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterLifecycle).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a clusterLifecycle and updates it. Returns the server's representation of the clusterLifecycle, and an error, if there is any.
-func (c *clusterLifecycles) Update(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	result = &v1alpha2.ClusterLifecycle{}
-	err = c.client.Put().
-		Resource("clusterlifecycles").
-		Name(clusterLifecycle.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterLifecycle).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *clusterLifecycles) UpdateStatus(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	result = &v1alpha2.ClusterLifecycle{}
-	err = c.client.Put().
-		Resource("clusterlifecycles").
-		Name(clusterLifecycle.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterLifecycle).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the clusterLifecycle and deletes it. Returns an error if one occurs.
-func (c *clusterLifecycles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Resource("clusterlifecycles").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *clusterLifecycles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Resource("clusterlifecycles").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched clusterLifecycle.
-func (c *clusterLifecycles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ClusterLifecycle, err error) {
-	result = &v1alpha2.ClusterLifecycle{}
-	err = c.client.Patch(pt).
-		Resource("clusterlifecycles").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

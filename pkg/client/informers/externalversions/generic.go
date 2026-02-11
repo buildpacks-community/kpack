@@ -19,7 +19,7 @@
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"

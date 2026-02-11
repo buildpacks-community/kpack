@@ -19,10 +19,10 @@
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterStackLister helps list ClusterStacks.
@@ -30,39 +30,19 @@ import (
 type ClusterStackLister interface {
 	// List lists all ClusterStacks in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.ClusterStack, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha2.ClusterStack, err error)
 	// Get retrieves the ClusterStack from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.ClusterStack, error)
+	Get(name string) (*buildv1alpha2.ClusterStack, error)
 	ClusterStackListerExpansion
 }
 
 // clusterStackLister implements the ClusterStackLister interface.
 type clusterStackLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha2.ClusterStack]
 }
 
 // NewClusterStackLister returns a new ClusterStackLister.
 func NewClusterStackLister(indexer cache.Indexer) ClusterStackLister {
-	return &clusterStackLister{indexer: indexer}
-}
-
-// List lists all ClusterStacks in the indexer.
-func (s *clusterStackLister) List(selector labels.Selector) (ret []*v1alpha2.ClusterStack, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha2.ClusterStack))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterStack from the index for a given name.
-func (s *clusterStackLister) Get(name string) (*v1alpha2.ClusterStack, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha2.Resource("clusterstack"), name)
-	}
-	return obj.(*v1alpha2.ClusterStack), nil
+	return &clusterStackLister{listers.New[*buildv1alpha2.ClusterStack](indexer, buildv1alpha2.Resource("clusterstack"))}
 }

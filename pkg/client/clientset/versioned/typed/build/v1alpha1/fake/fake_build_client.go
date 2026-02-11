@@ -29,31 +29,31 @@ type FakeKpackV1alpha1 struct {
 }
 
 func (c *FakeKpackV1alpha1) Builds(namespace string) v1alpha1.BuildInterface {
-	return &FakeBuilds{c, namespace}
+	return newFakeBuilds(c, namespace)
 }
 
 func (c *FakeKpackV1alpha1) Builders(namespace string) v1alpha1.BuilderInterface {
-	return &FakeBuilders{c, namespace}
+	return newFakeBuilders(c, namespace)
 }
 
 func (c *FakeKpackV1alpha1) ClusterBuilders() v1alpha1.ClusterBuilderInterface {
-	return &FakeClusterBuilders{c}
+	return newFakeClusterBuilders(c)
 }
 
 func (c *FakeKpackV1alpha1) ClusterStacks() v1alpha1.ClusterStackInterface {
-	return &FakeClusterStacks{c}
+	return newFakeClusterStacks(c)
 }
 
 func (c *FakeKpackV1alpha1) ClusterStores() v1alpha1.ClusterStoreInterface {
-	return &FakeClusterStores{c}
+	return newFakeClusterStores(c)
 }
 
 func (c *FakeKpackV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
-	return &FakeImages{c, namespace}
+	return newFakeImages(c, namespace)
 }
 
 func (c *FakeKpackV1alpha1) SourceResolvers(namespace string) v1alpha1.SourceResolverInterface {
-	return &FakeSourceResolvers{c, namespace}
+	return newFakeSourceResolvers(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

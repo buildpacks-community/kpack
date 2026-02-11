@@ -19,10 +19,10 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	buildv1alpha1 "github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterStoreLister helps list ClusterStores.
@@ -30,39 +30,19 @@ import (
 type ClusterStoreLister interface {
 	// List lists all ClusterStores in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ClusterStore, err error)
+	List(selector labels.Selector) (ret []*buildv1alpha1.ClusterStore, err error)
 	// Get retrieves the ClusterStore from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.ClusterStore, error)
+	Get(name string) (*buildv1alpha1.ClusterStore, error)
 	ClusterStoreListerExpansion
 }
 
 // clusterStoreLister implements the ClusterStoreLister interface.
 type clusterStoreLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*buildv1alpha1.ClusterStore]
 }
 
 // NewClusterStoreLister returns a new ClusterStoreLister.
 func NewClusterStoreLister(indexer cache.Indexer) ClusterStoreLister {
-	return &clusterStoreLister{indexer: indexer}
-}
-
-// List lists all ClusterStores in the indexer.
-func (s *clusterStoreLister) List(selector labels.Selector) (ret []*v1alpha1.ClusterStore, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ClusterStore))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterStore from the index for a given name.
-func (s *clusterStoreLister) Get(name string) (*v1alpha1.ClusterStore, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("clusterstore"), name)
-	}
-	return obj.(*v1alpha1.ClusterStore), nil
+	return &clusterStoreLister{listers.New[*buildv1alpha1.ClusterStore](indexer, buildv1alpha1.Resource("clusterstore"))}
 }

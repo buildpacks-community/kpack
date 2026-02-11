@@ -19,114 +19,34 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeClusterLifecycles implements ClusterLifecycleInterface
-type FakeClusterLifecycles struct {
+// fakeClusterLifecycles implements ClusterLifecycleInterface
+type fakeClusterLifecycles struct {
+	*gentype.FakeClientWithList[*v1alpha2.ClusterLifecycle, *v1alpha2.ClusterLifecycleList]
 	Fake *FakeKpackV1alpha2
 }
 
-var clusterlifecyclesResource = v1alpha2.SchemeGroupVersion.WithResource("clusterlifecycles")
-
-var clusterlifecyclesKind = v1alpha2.SchemeGroupVersion.WithKind("ClusterLifecycle")
-
-// Get takes name of the clusterLifecycle, and returns the corresponding clusterLifecycle object, and an error if there is any.
-func (c *FakeClusterLifecycles) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(clusterlifecyclesResource, name), &v1alpha2.ClusterLifecycle{})
-	if obj == nil {
-		return nil, err
+func newFakeClusterLifecycles(fake *FakeKpackV1alpha2) buildv1alpha2.ClusterLifecycleInterface {
+	return &fakeClusterLifecycles{
+		gentype.NewFakeClientWithList[*v1alpha2.ClusterLifecycle, *v1alpha2.ClusterLifecycleList](
+			fake.Fake,
+			"",
+			v1alpha2.SchemeGroupVersion.WithResource("clusterlifecycles"),
+			v1alpha2.SchemeGroupVersion.WithKind("ClusterLifecycle"),
+			func() *v1alpha2.ClusterLifecycle { return &v1alpha2.ClusterLifecycle{} },
+			func() *v1alpha2.ClusterLifecycleList { return &v1alpha2.ClusterLifecycleList{} },
+			func(dst, src *v1alpha2.ClusterLifecycleList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha2.ClusterLifecycleList) []*v1alpha2.ClusterLifecycle {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha2.ClusterLifecycleList, items []*v1alpha2.ClusterLifecycle) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha2.ClusterLifecycle), err
-}
-
-// List takes label and field selectors, and returns the list of ClusterLifecycles that match those selectors.
-func (c *FakeClusterLifecycles) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ClusterLifecycleList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(clusterlifecyclesResource, clusterlifecyclesKind, opts), &v1alpha2.ClusterLifecycleList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha2.ClusterLifecycleList{ListMeta: obj.(*v1alpha2.ClusterLifecycleList).ListMeta}
-	for _, item := range obj.(*v1alpha2.ClusterLifecycleList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested clusterLifecycles.
-func (c *FakeClusterLifecycles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(clusterlifecyclesResource, opts))
-}
-
-// Create takes the representation of a clusterLifecycle and creates it.  Returns the server's representation of the clusterLifecycle, and an error, if there is any.
-func (c *FakeClusterLifecycles) Create(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.CreateOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(clusterlifecyclesResource, clusterLifecycle), &v1alpha2.ClusterLifecycle{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterLifecycle), err
-}
-
-// Update takes the representation of a clusterLifecycle and updates it. Returns the server's representation of the clusterLifecycle, and an error, if there is any.
-func (c *FakeClusterLifecycles) Update(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (result *v1alpha2.ClusterLifecycle, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(clusterlifecyclesResource, clusterLifecycle), &v1alpha2.ClusterLifecycle{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterLifecycle), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterLifecycles) UpdateStatus(ctx context.Context, clusterLifecycle *v1alpha2.ClusterLifecycle, opts v1.UpdateOptions) (*v1alpha2.ClusterLifecycle, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(clusterlifecyclesResource, "status", clusterLifecycle), &v1alpha2.ClusterLifecycle{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterLifecycle), err
-}
-
-// Delete takes name of the clusterLifecycle and deletes it. Returns an error if one occurs.
-func (c *FakeClusterLifecycles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(clusterlifecyclesResource, name, opts), &v1alpha2.ClusterLifecycle{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeClusterLifecycles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterlifecyclesResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha2.ClusterLifecycleList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched clusterLifecycle.
-func (c *FakeClusterLifecycles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ClusterLifecycle, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(clusterlifecyclesResource, name, pt, data, subresources...), &v1alpha2.ClusterLifecycle{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterLifecycle), err
 }

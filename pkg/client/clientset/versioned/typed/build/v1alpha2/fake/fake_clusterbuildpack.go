@@ -19,114 +19,34 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha2 "github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	buildv1alpha2 "github.com/pivotal/kpack/pkg/client/clientset/versioned/typed/build/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeClusterBuildpacks implements ClusterBuildpackInterface
-type FakeClusterBuildpacks struct {
+// fakeClusterBuildpacks implements ClusterBuildpackInterface
+type fakeClusterBuildpacks struct {
+	*gentype.FakeClientWithList[*v1alpha2.ClusterBuildpack, *v1alpha2.ClusterBuildpackList]
 	Fake *FakeKpackV1alpha2
 }
 
-var clusterbuildpacksResource = v1alpha2.SchemeGroupVersion.WithResource("clusterbuildpacks")
-
-var clusterbuildpacksKind = v1alpha2.SchemeGroupVersion.WithKind("ClusterBuildpack")
-
-// Get takes name of the clusterBuildpack, and returns the corresponding clusterBuildpack object, and an error if there is any.
-func (c *FakeClusterBuildpacks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.ClusterBuildpack, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(clusterbuildpacksResource, name), &v1alpha2.ClusterBuildpack{})
-	if obj == nil {
-		return nil, err
+func newFakeClusterBuildpacks(fake *FakeKpackV1alpha2) buildv1alpha2.ClusterBuildpackInterface {
+	return &fakeClusterBuildpacks{
+		gentype.NewFakeClientWithList[*v1alpha2.ClusterBuildpack, *v1alpha2.ClusterBuildpackList](
+			fake.Fake,
+			"",
+			v1alpha2.SchemeGroupVersion.WithResource("clusterbuildpacks"),
+			v1alpha2.SchemeGroupVersion.WithKind("ClusterBuildpack"),
+			func() *v1alpha2.ClusterBuildpack { return &v1alpha2.ClusterBuildpack{} },
+			func() *v1alpha2.ClusterBuildpackList { return &v1alpha2.ClusterBuildpackList{} },
+			func(dst, src *v1alpha2.ClusterBuildpackList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha2.ClusterBuildpackList) []*v1alpha2.ClusterBuildpack {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha2.ClusterBuildpackList, items []*v1alpha2.ClusterBuildpack) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha2.ClusterBuildpack), err
-}
-
-// List takes label and field selectors, and returns the list of ClusterBuildpacks that match those selectors.
-func (c *FakeClusterBuildpacks) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.ClusterBuildpackList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(clusterbuildpacksResource, clusterbuildpacksKind, opts), &v1alpha2.ClusterBuildpackList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha2.ClusterBuildpackList{ListMeta: obj.(*v1alpha2.ClusterBuildpackList).ListMeta}
-	for _, item := range obj.(*v1alpha2.ClusterBuildpackList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested clusterBuildpacks.
-func (c *FakeClusterBuildpacks) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(clusterbuildpacksResource, opts))
-}
-
-// Create takes the representation of a clusterBuildpack and creates it.  Returns the server's representation of the clusterBuildpack, and an error, if there is any.
-func (c *FakeClusterBuildpacks) Create(ctx context.Context, clusterBuildpack *v1alpha2.ClusterBuildpack, opts v1.CreateOptions) (result *v1alpha2.ClusterBuildpack, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(clusterbuildpacksResource, clusterBuildpack), &v1alpha2.ClusterBuildpack{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuildpack), err
-}
-
-// Update takes the representation of a clusterBuildpack and updates it. Returns the server's representation of the clusterBuildpack, and an error, if there is any.
-func (c *FakeClusterBuildpacks) Update(ctx context.Context, clusterBuildpack *v1alpha2.ClusterBuildpack, opts v1.UpdateOptions) (result *v1alpha2.ClusterBuildpack, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(clusterbuildpacksResource, clusterBuildpack), &v1alpha2.ClusterBuildpack{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuildpack), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeClusterBuildpacks) UpdateStatus(ctx context.Context, clusterBuildpack *v1alpha2.ClusterBuildpack, opts v1.UpdateOptions) (*v1alpha2.ClusterBuildpack, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(clusterbuildpacksResource, "status", clusterBuildpack), &v1alpha2.ClusterBuildpack{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuildpack), err
-}
-
-// Delete takes name of the clusterBuildpack and deletes it. Returns an error if one occurs.
-func (c *FakeClusterBuildpacks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(clusterbuildpacksResource, name, opts), &v1alpha2.ClusterBuildpack{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeClusterBuildpacks) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(clusterbuildpacksResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha2.ClusterBuildpackList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched clusterBuildpack.
-func (c *FakeClusterBuildpacks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.ClusterBuildpack, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(clusterbuildpacksResource, name, pt, data, subresources...), &v1alpha2.ClusterBuildpack{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha2.ClusterBuildpack), err
 }
