@@ -5768,6 +5768,12 @@ func schema_pkg_apis_core_v1alpha1_ResolvedGitSource(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
+					"tree": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"type": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",

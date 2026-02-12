@@ -90,6 +90,7 @@ func main() {
 
 	flag.BoolVar(&featureFlags.InjectedSidecarSupport, "injected-sidecar-support", flaghelpers.GetEnvBool("INJECTED_SIDECAR_SUPPORT", false), "if set to true, all builds will execute in standard containers instead of init containers to support injected sidecars")
 	flag.BoolVar(&featureFlags.GenerateSlsaAttestation, "experimental-generate-slsa-attestation", flaghelpers.GetEnvBool("EXPERIMENTAL_GENERATE_SLSA_ATTESTATION", false), "if set to true, SLSA attestations will be generated for each build")
+	flag.BoolVar(&featureFlags.GitResolverUseShallowClone, "git-resolver-use-shallow-clone", flaghelpers.GetEnvBool("GIT_RESOLVER_USE_SHALLOW_CLONE", false), "if set to true, git source resolvers will use shallow clones instead of ls-remote")
 
 	flag.Parse()
 
@@ -172,7 +173,7 @@ func main() {
 		KpackClient:               client,
 	}
 
-	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts)
+	gitResolver := git.NewResolver(k8sClient, cfg.SshTrustUnknownHosts, featureFlags)
 	blobResolver := &blob.Resolver{}
 	registryResolver := &registry.Resolver{}
 
@@ -216,7 +217,7 @@ func main() {
 
 	buildController := build.NewController(ctx, options, k8sClient, buildInformer, podInformer, metadataRetriever, buildpodGenerator, podProgressLogger, keychainFactory, &slsaAttester, secretFetcher, featureFlags)
 	imageController := image.NewController(ctx, options, k8sClient, imageInformer, buildInformer, duckBuilderInformer, sourceResolverInformer, pvcInformer, cfg.EnablePriorityClasses)
-	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver)
+	sourceResolverController := sourceresolver.NewController(ctx, options, sourceResolverInformer, gitResolver, blobResolver, registryResolver, featureFlags)
 	builderController := builder.NewController(ctx, options, builderInformer, builderCreator, keychainFactory, clusterStoreInformer, buildpackInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)
 	buildpackController := buildpack.NewController(ctx, options, keychainFactory, buildpackInformer, remoteStoreReader)
 	clusterBuilderController := clusterbuilder.NewController(ctx, options, clusterBuilderInformer, builderCreator, keychainFactory, clusterStoreInformer, clusterBuildpackInformer, clusterStackInformer, clusterLifecycleInformer, secretFetcher)

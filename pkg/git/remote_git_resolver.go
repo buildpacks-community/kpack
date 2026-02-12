@@ -2,20 +2,31 @@ package git
 
 import (
 	gogit "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
+	gogitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/config"
 )
 
 const defaultRemote = "origin"
 
-type remoteGitResolver struct{}
+type remoteGitResolver struct {
+	featureFlags config.FeatureFlags
+}
 
-func (*remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+func (r *remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
+	if r.featureFlags.GitResolverUseShallowClone {
+		return r.ResolveByCloning(auth, sourceConfig)
+	}
+
+	return r.ResolveByListingRemote(auth, sourceConfig)
+}
+
+func (r *remoteGitResolver) ResolveByListingRemote(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
+	remote := gogit.NewRemote(memory.NewStorage(), &gogitconfig.RemoteConfig{
 		Name: defaultRemote,
 		URLs: []string{sourceConfig.Git.URL},
 	})

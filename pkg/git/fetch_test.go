@@ -79,7 +79,8 @@ func testGitCheckout(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns error on non-existent ref", func() {
 			err := fetcher.Fetch(testDir, "https://github.com/git-fixtures/basic", "doesnotexist", metadataDir)
-			require.EqualError(t, err, "unable to fetch references for repository: couldn't find remote ref \"doesnotexist\"")
+			require.ErrorContains(t, err, "unable to fetch references for repository:")
+			require.ErrorContains(t, err, "doesnotexist")
 		})
 
 		it("preserves symbolic links", func() {

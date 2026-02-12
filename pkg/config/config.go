@@ -13,8 +13,9 @@ type Config struct {
 }
 
 type FeatureFlags struct {
-	InjectedSidecarSupport  bool `json:"injectedSidecarSupport"`
-	GenerateSlsaAttestation bool `json:"generateSlsaAttestation"`
+	InjectedSidecarSupport     bool `json:"injectedSidecarSupport"`
+	GenerateSlsaAttestation    bool `json:"generateSlsaAttestation"`
+	GitResolverUseShallowClone bool `json:"gitResolverUseShallowClone"`
 }
 
 type Images struct {

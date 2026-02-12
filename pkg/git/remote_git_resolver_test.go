@@ -3,16 +3,22 @@ package git
 import (
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/sclevine/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
+	"github.com/pivotal/kpack/pkg/config"
 )
 
+var featureFlags config.FeatureFlags
+
 func TestRemoteGitResolver(t *testing.T) {
-	spec.Run(t, "TestRemoteGitResolver", testRemoteGitResolver)
+	featureFlags.GitResolverUseShallowClone = false
+	spec.Run(t, "TestRemoteGitResolverFetch", testRemoteGitResolver)
+	featureFlags.GitResolverUseShallowClone = true
+	spec.Run(t, "TestRemoteGitResolverClone", testRemoteGitResolver)
 }
 
 func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
@@ -22,12 +28,13 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 		fixtureHEADMasterCommit = "6ecf0ef2c2dffb796033e5a02219af86ec6584e5"
 		tag                     = "commit-tag"
 		tagCommit               = "ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"
+		goSubPathTree           = "a39771a7651f97faf5c72e08224d857fc35133db"
 	)
 
 	when("#Resolve", func() {
 		when("source is a commit", func() {
 			it("returns type commit", func() {
-				gitResolver := remoteGitResolver{}
+				gitResolver := remoteGitResolver{featureFlags}
 
 				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
@@ -51,23 +58,29 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("source is a branch", func() {
 			it("returns branch with resolved commit", func() {
-				gitResolver := remoteGitResolver{}
+				gitResolver := remoteGitResolver{featureFlags}
 
 				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      url,
 						Revision: "master",
 					},
-					SubPath: "/foo/bar",
+					SubPath: "/go",
 				})
 				require.NoError(t, err)
+
+				expectedTree := ""
+				if featureFlags.GitResolverUseShallowClone {
+					expectedTree = goSubPathTree
+				}
 
 				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      url,
 						Revision: fixtureHEADMasterCommit,
 						Type:     corev1alpha1.Branch,
-						SubPath:  "/foo/bar",
+						SubPath:  "/go",
+						Tree:     expectedTree,
 					},
 				}, resolvedGitSource)
 			})
@@ -77,14 +90,14 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 			it("returns tag with resolved commit", func() {
 				tagsUrl := "https://github.com/git-fixtures/tags.git"
 
-				gitResolver := remoteGitResolver{}
+				gitResolver := remoteGitResolver{featureFlags}
 
 				resolvedGitSource, err := gitResolver.Resolve(anonymousAuth, corev1alpha1.SourceConfig{
 					Git: &corev1alpha1.Git{
 						URL:      tagsUrl,
 						Revision: tag,
 					},
-					SubPath: "/foo/bar",
+					SubPath: "/tree",
 				})
 				require.NoError(t, err)
 
@@ -93,7 +106,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 						URL:      tagsUrl,
 						Revision: tagCommit,
 						Type:     corev1alpha1.Tag,
-						SubPath:  "/foo/bar",
+						SubPath:  "/tree",
 					},
 				}, resolvedGitSource)
 			})
@@ -101,7 +114,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 
 		when("authentication fails", func() {
 			it("returns an unknown type", func() {
-				gitResolver := remoteGitResolver{}
+				gitResolver := remoteGitResolver{featureFlags}
 
 				resolvedGitSource, _ := gitResolver.Resolve(&http.BasicAuth{
 					Username: "bad-username",
