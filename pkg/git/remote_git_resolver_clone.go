@@ -8,6 +8,7 @@ import (
 
 	gogit "github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v6/plumbing/transport"
 	"github.com/go-git/go-git/v6/storage/memory"
 
@@ -26,6 +27,8 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 		RemoteName:    defaultRemote,
 		ReferenceName: plumbing.ReferenceName(sourceConfig.Git.Revision),
 		Depth:         1,
+		Bare:          true,
+		Filter:        packp.FilterBlobNone(),
 	})
 
 	var resolvedRef *plumbing.Reference
