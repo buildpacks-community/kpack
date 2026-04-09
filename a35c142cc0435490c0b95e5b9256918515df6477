@@ -1,35 +1,7 @@
-cmd/webhook/main.go
-  53093705fb689507 29
-pkg/slsa/sign_test.go
-  53093705fb689507 91,131,154,173,200,216
-pkg/logs/wait_for_image_test.go
-  53093705fb689507 22
-pkg/duckbuilder/informer_test.go
-  53093705fb689507 19
-pkg/slsa/attest_test.go
-  53093705fb689507 230
-pkg/compat/features.go
-  53093705fb689507 1-11
-cmd/controller/main.go
-  53093705fb689507 39
 ---
 {
   "schema_version": "authorship/3.0.0",
   "git_ai_version": "1.2.6",
   "base_commit_sha": "a35c142cc0435490c0b95e5b9256918515df6477",
-  "prompts": {
-    "53093705fb689507": {
-      "agent_id": {
-        "tool": "cursor",
-        "id": "a8aa227c-e9fb-42e6-a937-7d336c617869",
-        "model": "gemini-3.1-pro-preview"
-      },
-      "human_author": "Tom Kennedy",
-      "messages": [],
-      "total_additions": 22,
-      "total_deletions": 7,
-      "accepted_lines": 22,
-      "overriden_lines": 0
-    }
-  }
+  "prompts": {}
 }
