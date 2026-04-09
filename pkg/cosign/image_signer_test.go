@@ -235,7 +235,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-0")
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-0"), 0700)
-				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
+				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: signing digest: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
 				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)
@@ -261,7 +261,7 @@ func testImageSigner(t *testing.T, when spec.G, it spec.S) {
 
 				emptyKey := filepath.Join(secretLocation, "secret-name-3")
 				os.Mkdir(filepath.Join(secretLocation, "secret-name-3"), 0700)
-				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
+				expectedErrorMessage := fmt.Sprintf("unable to sign image with %s/cosign.key: signing digest: getting signer: reading key: open %s/cosign.key: no such file or directory", emptyKey, emptyKey)
 
 				signer := NewImageSigner(cliSignCmd, fetchSignatureFunc)
 				err := signer.Sign(ro, report, secretLocation, nil, nil, nil)

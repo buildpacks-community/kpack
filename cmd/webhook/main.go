@@ -26,6 +26,7 @@ import (
 
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+	_ "github.com/pivotal/kpack/pkg/compat"
 )
 
 const defaultWebhookPort = 8443
