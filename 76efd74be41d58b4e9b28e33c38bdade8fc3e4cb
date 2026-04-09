@@ -1,0 +1,23 @@
+cmd/controller/main.go
+  53093705fb689507 103,298,314
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.6",
+  "base_commit_sha": "76efd74be41d58b4e9b28e33c38bdade8fc3e4cb",
+  "prompts": {
+    "53093705fb689507": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a8aa227c-e9fb-42e6-a937-7d336c617869",
+        "model": "gemini-3.1-pro-preview"
+      },
+      "human_author": "Tom Kennedy",
+      "messages": [],
+      "total_additions": 25,
+      "total_deletions": 12,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    }
+  }
+}
