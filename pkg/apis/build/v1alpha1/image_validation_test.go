@@ -229,7 +229,7 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		it("image name is too long", func() {
 			image.ObjectMeta.Name = "this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4"
-			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a a valid label: metadata.name\nmust be no more than 63 characters"))
+			assertValidationError(image, ctx, errors.New("invalid image name: this-image-name-that-is-too-long-some-sha-that-is-long-82cb521d636b282340378d80a6307a08e3d4a4c4, name must be a a valid label: metadata.name\nmust be no more than 63 bytes"))
 		})
 
 		it("invalid image name format", func() {

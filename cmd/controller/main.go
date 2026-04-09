@@ -36,6 +36,7 @@ import (
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
 	"github.com/pivotal/kpack/pkg/cnb"
+	_ "github.com/pivotal/kpack/pkg/compat"
 	"github.com/pivotal/kpack/pkg/config"
 	"github.com/pivotal/kpack/pkg/cosign"
 	"github.com/pivotal/kpack/pkg/dockercreds/k8sdockercreds"
@@ -99,9 +100,8 @@ func main() {
 	}
 
 	ctx := signals.NewContext()
-	logger, configMapWatcher, profilingServer, cleanup := genericControllerSetup(ctx, clusterConfig)
+	logger, configMapWatcher, profilingServer := genericControllerSetup(ctx, clusterConfig)
 	defer logger.Sync()
-	defer cleanup()
 
 	client, err := versioned.NewForConfig(clusterConfig)
 	if err != nil {
@@ -295,7 +295,7 @@ func runGroup(ctx context.Context, fns ...func(ctx context.Context) error) error
 const controllerCount = 7
 
 // lifted from knative.dev/pkg/injection/sharedmain
-func genericControllerSetup(ctx context.Context, restCfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *k8sruntime.ProfilingServer, func()) {
+func genericControllerSetup(ctx context.Context, restCfg *rest.Config) (*zap.SugaredLogger, *informer.InformedWatcher, *k8sruntime.ProfilingServer) {
 	// Adjust our client's rate limits based on the number of controllers we are running.
 	restCfg.QPS = float32(controllerCount) * rest.DefaultQPS * float32(cfg.ScalingFactor)
 	restCfg.Burst = controllerCount * rest.DefaultBurst * cfg.ScalingFactor
@@ -307,15 +307,11 @@ func genericControllerSetup(ctx context.Context, restCfg *rest.Config) (*zap.Sug
 
 	sharedmain.CheckK8sClientMinimumVersionOrDie(ctx, logger)
 	cmw := sharedmain.SetupConfigMapWatchOrDie(ctx, logger)
-	mp, tp := sharedmain.SetupObservabilityOrDie(ctx, component, logger, profilingServer)
 	
 	sharedmain.WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)
 	sharedmain.WatchObservabilityConfigOrDie(ctx, cmw, profilingServer, logger, component)
 
-	return logger, cmw, profilingServer, func() {
-		mp.Shutdown(context.Background())
-		tp.Shutdown(context.Background())
-	}
+	return logger, cmw, profilingServer
 }
 
 func waitForSync(stopCh <-chan struct{}, indexFormers ...cache.SharedIndexInformer) {

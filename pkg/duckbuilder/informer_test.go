@@ -16,6 +16,7 @@ import (
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
 	"github.com/pivotal/kpack/pkg/client/informers/externalversions"
+	_ "github.com/pivotal/kpack/pkg/compat"
 )
 
 func TestDuckBuilderInformer(t *testing.T) {
