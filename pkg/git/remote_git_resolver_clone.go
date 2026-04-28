@@ -31,6 +31,18 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 		Filter:        packp.FilterBlobNone(),
 	})
 
+	if err != nil {
+		return corev1alpha1.ResolvedSourceConfig{
+			Git: &corev1alpha1.ResolvedGitSource{
+				URL:                  sourceConfig.Git.URL,
+				Revision:             sourceConfig.Git.Revision,
+				Type:                 corev1alpha1.Unknown,
+				SubPath:              sourceConfig.SubPath,
+				InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
+			},
+		}, fmt.Errorf("cloning repository: %w", err)
+	}
+
 	var resolvedRef *plumbing.Reference
 	var hash plumbing.Hash
 	var kind corev1alpha1.GitSourceKind
