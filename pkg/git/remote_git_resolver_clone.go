@@ -22,13 +22,11 @@ var commitSHAValidator = regexp.MustCompile(commitSHARegex)
 func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
 	// git clone
 	repository, err := gogit.Clone(memory.NewStorage(), nil, &gogit.CloneOptions{
-		URL:           sourceConfig.Git.URL,
-		Auth:          auth,
-		RemoteName:    defaultRemote,
-		ReferenceName: plumbing.ReferenceName(sourceConfig.Git.Revision),
-		Depth:         1,
-		Bare:          true,
-		Filter:        packp.FilterBlobNone(),
+		URL:        sourceConfig.Git.URL,
+		Auth:       auth,
+		RemoteName: defaultRemote,
+		Bare:       true,
+		Filter:     packp.FilterBlobNone(),
 	})
 
 	if err != nil {
@@ -58,6 +56,7 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 		}
 	}
 
+	// errs could contain errors from some resolvers, only one of them needs to be successful.
 	if resolvedRef == nil {
 		return corev1alpha1.ResolvedSourceConfig{
 			Git: &corev1alpha1.ResolvedGitSource{
