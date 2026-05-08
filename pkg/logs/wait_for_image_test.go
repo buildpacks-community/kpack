@@ -19,6 +19,7 @@ import (
 	"github.com/pivotal/kpack/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/pivotal/kpack/pkg/apis/core/v1alpha1"
 	"github.com/pivotal/kpack/pkg/client/clientset/versioned/fake"
+	_ "github.com/pivotal/kpack/pkg/compat"
 )
 
 func TestWaitForImage(t *testing.T) {

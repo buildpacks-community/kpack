@@ -19,7 +19,7 @@ type cosignSigner struct {
 // NewCosignSigner loads a cosign private key into a dsse signer. The main difference between this signer and the one
 // provided by sigstore's dsse.WrappedSigner is that this signer doesn't compute the PAE when signing
 func NewCosignSigner(key, pass []byte, id string) (*cosignSigner, error) {
-	sv, err := cosign.LoadPrivateKey(key, pass)
+	sv, err := cosign.LoadPrivateKey(key, pass, cosign.GetDefaultLoadOptions(nil))
 	if err != nil {
 		return nil, err
 	}
