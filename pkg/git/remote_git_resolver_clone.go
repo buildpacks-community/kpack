@@ -44,19 +44,22 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 		return emptyResult, fmt.Errorf("creating remote: %w", err)
 	}
 
-	var resolvedRef *plumbing.Reference
-	var hash plumbing.Hash
-	var kind corev1alpha1.GitSourceKind
+	input := remoteGitCloneResolverInput{
+		repository: repository,
+		auth:       auth,
+		revision:   sourceConfig.Git.Revision,
+	}
+	var output *remoteGitCloneResolverOutput
 	errs := []error{}
 
 	for _, resolver := range resolvers {
-		resolvedRef, hash, kind, err = resolver(repository, auth, sourceConfig.Git.Revision)
+		output, err = resolver(input)
 		if err != nil {
 			errs = append(errs, err)
 			fmt.Printf("resolver %T failed: %v\n", resolver, err)
 			continue
 		}
-		if resolvedRef != nil {
+		if output != nil {
 			errs = nil
 			break
 		}
@@ -79,9 +82,9 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 	return corev1alpha1.ResolvedSourceConfig{
 		Git: &corev1alpha1.ResolvedGitSource{
 			URL:                  sourceConfig.Git.URL,
-			Revision:             hash.String(),
-			Tree:                 hashOfSubpath(sourceConfig.SubPath, hash, repository),
-			Type:                 kind,
+			Revision:             output.hash.String(),
+			Tree:                 hashOfSubpath(sourceConfig.SubPath, output.hash, repository),
+			Type:                 output.kind,
 			SubPath:              sourceConfig.SubPath,
 			InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
 		},
@@ -113,18 +116,29 @@ func hashOfSubpath(subPath string, hash plumbing.Hash, repository *gogit.Reposit
 
 }
 
-type resolverFunc func(repository *gogit.Repository, auth transport.AuthMethod, revision string) (*plumbing.Reference, plumbing.Hash, corev1alpha1.GitSourceKind, error)
+type remoteGitCloneResolverInput struct {
+	repository *gogit.Repository
+	auth       transport.AuthMethod
+	revision   string
+}
+type remoteGitCloneResolverOutput struct {
+	reference *plumbing.Reference
+	hash      plumbing.Hash
+	kind      corev1alpha1.GitSourceKind
+}
+
+type resolverFunc func(remoteGitCloneResolverInput) (*remoteGitCloneResolverOutput, error)
 
 var resolvers = []resolverFunc{resolveBranch, resolveTag, resolveRevision, looksLikeACommit}
 
-func resolveBranch(repository *gogit.Repository, auth transport.AuthMethod, branch string) (*plumbing.Reference, plumbing.Hash, corev1alpha1.GitSourceKind, error) {
+func resolveBranch(input remoteGitCloneResolverInput) (*remoteGitCloneResolverOutput, error) {
+	branch := input.revision
 	if !strings.HasPrefix(branch, "refs/heads/") {
 		branch = "refs/heads/" + branch
 	}
-	fmt.Println("fetching branch", branch)
-	err := repository.Fetch(&gogit.FetchOptions{
+	err := input.repository.Fetch(&gogit.FetchOptions{
 		RemoteName: defaultRemote,
-		Auth:       auth,
+		Auth:       input.auth,
 		RefSpecs: []gogitconfig.RefSpec{
 			gogitconfig.RefSpec(branch + ":" + branch),
 		},
@@ -132,29 +146,34 @@ func resolveBranch(repository *gogit.Repository, auth transport.AuthMethod, bran
 		Filter: packp.FilterBlobNone(),
 	})
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("fetching: %w", err)
+		return nil, fmt.Errorf("fetching: %w", err)
 	}
 
-	hash, err := repository.ResolveRevision(plumbing.Revision(branch))
+	hash, err := input.repository.ResolveRevision(plumbing.Revision(branch))
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("resolving: %w", err)
+		return nil, fmt.Errorf("resolving: %w", err)
 	}
 
-	resolvedRef, err := repository.Reference(plumbing.ReferenceName(branch), true)
+	resolvedRef, err := input.repository.Reference(plumbing.ReferenceName(branch), true)
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("referencing: %w", err)
+		return nil, fmt.Errorf("referencing: %w", err)
 	}
 
-	return resolvedRef, *hash, corev1alpha1.Branch, nil
+	return &remoteGitCloneResolverOutput{
+		reference: resolvedRef,
+		hash:      *hash,
+		kind:      corev1alpha1.Branch,
+	}, nil
 }
 
-func resolveTag(repository *gogit.Repository, auth transport.AuthMethod, tag string) (*plumbing.Reference, plumbing.Hash, corev1alpha1.GitSourceKind, error) {
+func resolveTag(input remoteGitCloneResolverInput) (*remoteGitCloneResolverOutput, error) {
+	tag := input.revision
 	if !strings.HasPrefix(tag, "refs/tags/") {
 		tag = "refs/tags/" + tag
 	}
-	err := repository.Fetch(&gogit.FetchOptions{
+	err := input.repository.Fetch(&gogit.FetchOptions{
 		RemoteName: defaultRemote,
-		Auth:       auth,
+		Auth:       input.auth,
 		RefSpecs: []gogitconfig.RefSpec{
 			gogitconfig.RefSpec(tag + ":" + tag),
 		},
@@ -162,38 +181,52 @@ func resolveTag(repository *gogit.Repository, auth transport.AuthMethod, tag str
 		Filter: packp.FilterBlobNone(),
 	})
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("fetching: %w", err)
+		return nil, fmt.Errorf("fetching: %w", err)
 	}
 
-	hash, err := repository.ResolveRevision(plumbing.Revision(tag))
+	hash, err := input.repository.ResolveRevision(plumbing.Revision(tag))
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("resolving: %w", err)
+		return nil, fmt.Errorf("resolving: %w", err)
 	}
 
-	resolvedTag, err := repository.Reference(plumbing.ReferenceName(tag), true)
+	resolvedTag, err := input.repository.Reference(plumbing.ReferenceName(tag), true)
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, fmt.Errorf("referencing: %w", err)
+		return nil, fmt.Errorf("referencing: %w", err)
 	}
 
-	return resolvedTag, *hash, corev1alpha1.Tag, nil
+	return &remoteGitCloneResolverOutput{
+		reference: resolvedTag,
+		hash:      *hash,
+		kind:      corev1alpha1.Tag,
+	}, nil
 }
 
-func resolveRevision(repository *gogit.Repository, auth transport.AuthMethod, revision string) (*plumbing.Reference, plumbing.Hash, corev1alpha1.GitSourceKind, error) {
-	h := plumbing.NewHash(revision)
-	_, err := repository.Object(plumbing.AnyObject, h)
+func resolveRevision(input remoteGitCloneResolverInput) (*remoteGitCloneResolverOutput, error) {
+	commitHash := input.revision
+	h := plumbing.NewHash(commitHash)
+	_, err := input.repository.Object(plumbing.AnyObject, h)
 	if err != nil {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, err
+		return nil, fmt.Errorf("resolving revision: %w", err)
 	}
 
-	return plumbing.NewHashReference(plumbing.ReferenceName(revision), h), h, corev1alpha1.Commit, nil
+	return &remoteGitCloneResolverOutput{
+		reference: plumbing.NewHashReference(plumbing.ReferenceName(commitHash), h),
+		hash:      h,
+		kind:      corev1alpha1.Commit,
+	}, nil
 }
 
-func looksLikeACommit(_ *gogit.Repository, auth transport.AuthMethod, revision string) (*plumbing.Reference, plumbing.Hash, corev1alpha1.GitSourceKind, error) {
+func looksLikeACommit(input remoteGitCloneResolverInput) (*remoteGitCloneResolverOutput, error) {
+	revision := input.revision
 	if !commitSHAValidator.MatchString(revision) {
-		return nil, plumbing.Hash{}, corev1alpha1.Unknown, nil
+		return nil, nil
 	}
 
 	hash := plumbing.NewHash(revision)
 
-	return plumbing.NewHashReference(plumbing.ReferenceName(revision), hash), hash, corev1alpha1.Commit, nil
+	return &remoteGitCloneResolverOutput{
+		reference: plumbing.NewHashReference(plumbing.ReferenceName(revision), hash),
+		hash:      hash,
+		kind:      corev1alpha1.Commit,
+	}, nil
 }
