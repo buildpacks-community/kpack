@@ -466,6 +466,22 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 
 		})
 
+		it("disallows secretKeyRef in build env", func() {
+			image.Spec.Build.Env = []corev1.EnvVar{
+				{
+					Name: "SECRET_TOKEN",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "victim-secret"},
+							Key:                  "token",
+						},
+					},
+				},
+			}
+
+			assertValidationError(image, ctx, apis.ErrGeneric("secretKeyRef is not supported for build environment variables", "spec.build.env[0].valueFrom.secretKeyRef"))
+		})
+
 		when("validating cnb bindings if they have been created by the kpack controller", func() {
 			ctx := apis.WithUserInfo(ctx, &authv1.UserInfo{Username: kpackControllerServiceAccountUsername})
 			it("validates cnb bindings have a name", func() {

@@ -128,6 +128,22 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			assert.Nil(t, buildUsingRef.Validate(context.TODO()))
 		})
 
+		it("disallows secretKeyRef in build env", func() {
+			build.Spec.Env = []corev1.EnvVar{
+				{
+					Name: "SECRET_TOKEN",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "victim-secret"},
+							Key:                  "token",
+						},
+					},
+				},
+			}
+
+			assertValidationError(build, context.TODO(), apis.ErrGeneric("secretKeyRef is not supported for build environment variables", "spec.env[0].valueFrom.secretKeyRef"))
+		})
+
 		it("multiple sources", func() {
 			build.Spec.Source.Git = &corev1alpha1.Git{
 				URL:      "http://github.com/repo",
