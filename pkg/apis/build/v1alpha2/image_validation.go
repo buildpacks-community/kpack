@@ -176,7 +176,8 @@ func (ib *ImageBuild) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return ib.Services.Validate(ctx).ViaField("services").
-		Also(validateCnbBindings(ctx, ib.CNBBindings).ViaField("cnbBindings"))
+		Also(validateCnbBindings(ctx, ib.CNBBindings).ViaField("cnbBindings")).
+		Also(validateBuildEnvSecretKeyRefs(ib.Env).ViaField("env"))
 }
 
 func validateBuilder(builder v1.ObjectReference) *apis.FieldError {

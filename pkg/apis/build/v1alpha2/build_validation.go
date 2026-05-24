@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	authv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 
@@ -35,6 +36,7 @@ func (bs *BuildSpec) Validate(ctx context.Context) *apis.FieldError {
 		Also(bs.validateImmutableFields(ctx)).
 		Also(validateCnbBindings(ctx, bs.CNBBindings).ViaField("cnbBindings")).
 		Also(bs.validateNodeSelector(ctx)).
+		Also(validateBuildEnvSecretKeyRefs(bs.Env).ViaField("env")).
 		Also(validateNotary(ctx, bs.Notary).ViaField("notary"))
 }
 
@@ -78,6 +80,16 @@ func (bs *BuildSpec) validateNodeSelector(_ context.Context) *apis.FieldError {
 	}
 	return nil
 
+}
+
+func validateBuildEnvSecretKeyRefs(env []corev1.EnvVar) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, envVar := range env {
+		if envVar.ValueFrom != nil && envVar.ValueFrom.SecretKeyRef != nil {
+			errs = errs.Also(apis.ErrGeneric("secretKeyRef is not supported for build environment variables", fmt.Sprintf("[%d].valueFrom.secretKeyRef", i)))
+		}
+	}
+	return errs
 }
 
 func (lb *LastBuild) Validate(context context.Context) *apis.FieldError {
