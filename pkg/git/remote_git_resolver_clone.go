@@ -204,15 +204,27 @@ func resolveTag(input fetchResolverInput) (*fetchResolverOutput, error) {
 
 func resolveRevision(input fetchResolverInput) (*fetchResolverOutput, error) {
 	commitHash := input.revision
-	h := plumbing.NewHash(commitHash)
-	_, err := input.repository.Object(plumbing.AnyObject, h)
+	err := input.repository.Fetch(&gogit.FetchOptions{
+		RemoteName: defaultRemote,
+		Auth:       input.auth,
+		RefSpecs: []gogitconfig.RefSpec{
+			gogitconfig.RefSpec(commitHash + ":refs/heads/reference"),
+		},
+		Depth:  1,
+		Filter: packp.FilterBlobNone(),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("resolving revision: %w", err)
+		return nil, fmt.Errorf("fetching: %w", err)
+	}
+
+	reference, err := input.repository.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, fmt.Errorf("tag: %w", err)
 	}
 
 	return &fetchResolverOutput{
-		reference: plumbing.NewHashReference(plumbing.ReferenceName(commitHash), h),
-		hash:      h,
+		reference: plumbing.NewHashReference(plumbing.ReferenceName(commitHash), reference.Hash),
+		hash:      reference.Hash,
 		kind:      corev1alpha1.Commit,
 	}, nil
 }
