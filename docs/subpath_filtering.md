@@ -22,15 +22,16 @@ reference (only metadata) in-memory, and then the equivalent of a `git ls-tree
 and its subdirectories. Any change, even to the file modes, will yield a
 different tree value.
 
-When the feature flag is enabled, this method of checking out is used regardless
-of the value of `subPath`. In other words, enabling this experiment changes how
-kpack resolves all sources, and this can exhert a higher "clone" load on your
-git servers.
-
 * If the previous build resulted in a different tree value, a new build will be
   scheduled.
 * If the previous build resulted in the same tree value, no new build will be
   scheduled
+
+## Scope of the experiment
+
+When the feature flag is enabled, this method of checking out is only used when
+the `subPath` field is set. In other words, enabling this experiment does not
+change how kpack resolves other sources.
 
 ## Annotated tags
 

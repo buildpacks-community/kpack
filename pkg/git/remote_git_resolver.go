@@ -18,7 +18,7 @@ type remoteGitResolver struct {
 }
 
 func (r *remoteGitResolver) Resolve(auth transport.AuthMethod, sourceConfig corev1alpha1.SourceConfig) (corev1alpha1.ResolvedSourceConfig, error) {
-	if r.featureFlags.GitResolverUseShallowClone {
+	if r.featureFlags.GitResolverUseShallowClone && sourceConfig.SubPath != "" {
 		return r.ResolveByCloning(auth, sourceConfig)
 	}
 
