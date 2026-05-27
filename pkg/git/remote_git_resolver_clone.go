@@ -219,7 +219,7 @@ func resolveRevision(input fetchResolverInput) (*fetchResolverOutput, error) {
 
 	reference, err := input.repository.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
-		return nil, fmt.Errorf("tag: %w", err)
+		return nil, fmt.Errorf("lookup: %w", err)
 	}
 
 	return &fetchResolverOutput{

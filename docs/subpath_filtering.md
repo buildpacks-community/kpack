@@ -40,3 +40,7 @@ If you are tracking tags, and use annotated tags with subpath filtering and the
 inhibit new builds, when the subpath is unchanged. If you use this tag metadata
 in builds, or expect the tag object sha to be stamped into the image, then you
 might want to avoid this combination.
+
+## Commit source revisions
+
+If you use a commit sha as the revision, subpath filtering does not work.
