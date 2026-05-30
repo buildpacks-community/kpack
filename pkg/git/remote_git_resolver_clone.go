@@ -52,7 +52,7 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 	var output *fetchResolverOutput
 	errs := []error{}
 
-	for _, resolver := range fetchResolvers {
+	for _, resolver := range relevantFetchResolversFor(sourceConfig.Git.Revision) {
 		output, err = resolver(input)
 		if err != nil {
 			errs = append(errs, err)
@@ -134,7 +134,23 @@ type fetchResolverOutput struct {
 
 type fetchResolver func(fetchResolverInput) (*fetchResolverOutput, error)
 
-var fetchResolvers = []fetchResolver{resolveBranch, resolveTag, resolveRevision, looksLikeACommit}
+var allFetchResolvers = []fetchResolver{resolveBranch, resolveTag, resolveRevision, looksLikeACommit}
+
+func relevantFetchResolversFor(revision string) []fetchResolver {
+	if strings.HasPrefix(revision, "refs/heads/") {
+		return []fetchResolver{resolveBranch}
+	}
+
+	if strings.HasPrefix(revision, "refs/tags/") {
+		return []fetchResolver{resolveTag}
+	}
+
+	if commitSHAValidator.MatchString(revision) {
+		return []fetchResolver{resolveRevision, looksLikeACommit}
+	}
+
+	return allFetchResolvers
+}
 
 func resolveBranch(input fetchResolverInput) (*fetchResolverOutput, error) {
 	branch := input.revision
