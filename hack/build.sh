@@ -87,10 +87,28 @@ function generate_kbld_config_pack() {
 EOT
 }
 
+function generate_ko_config() {
+  ko_config_path=$1
+
+  prefix="github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+  cat <<EOT > $ko_config_path
+  defaultBaseImage: paketobuildpacks/run-jammy-tiny
+
+  builds:
+  - id: controller
+    ldflags:
+    - -X ${prefix}.CompletionCommand=/ko-app/completion
+    - -X ${prefix}.PrepareCommand=/ko-app/build-init
+    - -X ${prefix}.RebaseCommand=/ko-app/rebase
+EOT
+}
+
 function generate_kbld_config_ko() {
   kbld_config_path=$1
   ko_config_path=$2
   registry=$3
+
+  generate_ko_config $ko_config_path
 
   args=("--disable-optimizations")
   args+=($buildArgs)
@@ -147,19 +165,62 @@ function generate_kbld_config_ko() {
   - image: completion
     newImage: $completion_image
 EOT
+}
 
-  prefix="github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
-  cat <<EOT > $ko_config_path
-  defaultBaseImage: paketobuildpacks/run-jammy-tiny
+# generate_kbld_config_ko_multiarch builds each binary into a genuine multi-arch
+# image index by invoking ko directly, then records the resulting index digests
+# as kbld overrides.
+#
+# kbld's ko integration builds for the host platform only (it collapses ko's
+# multi-platform build down to a single, host-arch manifest), so the published
+# images don't run on other architectures (e.g. arm64 clusters fail with
+# "exec format error"). Calling `ko build --platform=...` ourselves produces a
+# real OCI image index covering every requested platform; feeding those refs to
+# kbld as overrides keeps the rest of the release pipeline (manifest rewriting,
+# digest pinning) unchanged.
+function generate_kbld_config_ko_multiarch() {
+  kbld_config_path=$1
+  ko_config_path=$2
+  registry=$3
+  platforms=$4
 
-  builds:
-  - id: controller
-    ldflags:
-    - -X ${prefix}.CompletionCommand=/ko-app/completion
-    - -X ${prefix}.PrepareCommand=/ko-app/build-init
-    - -X ${prefix}.RebaseCommand=/ko-app/rebase
+  generate_ko_config $ko_config_path
+
+  # Each entry is "kbld-image-name:cmd-dir:destination-image-ref".
+  images=(
+    "controller:cmd/controller:$controller_image"
+    "webhook:cmd/webhook:$webhook_image"
+    "build-init:cmd/build-init:$build_init_image"
+    "build-waiter:cmd/build-waiter:$build_waiter_image"
+    "rebase:cmd/rebase:$rebase_image"
+    "completion:cmd/completion:$completion_image"
+  )
+
+  cat <<EOT > $kbld_config_path
+  apiVersion: kbld.k14s.io/v1alpha1
+  kind: Config
+  overrides:
+  - image: lifecycle
+    newImage: mirror.gcr.io/buildpacksio/lifecycle
 EOT
 
+  for entry in "${images[@]}"; do
+    name=${entry%%:*}
+    rest=${entry#*:}
+    dir=${rest%%:*}
+    dest=${rest#*:}
+
+    echo "Building multi-arch image ($platforms) for $name via ko" >&2
+    # ko pushes the built index to KO_DOCKER_REPO (with --bare, the repo is
+    # used verbatim) and prints the resulting digest-pinned index ref.
+    ref=$(KO_DOCKER_REPO="$dest" KO_CONFIG_PATH="$ko_config_path" \
+      ko build --bare --platform="$platforms" --disable-optimizations "./$dir")
+
+    cat <<EOT >> $kbld_config_path
+  - image: $name
+    newImage: $ref
+EOT
+  done
 }
 
 function compile() {
@@ -181,8 +242,15 @@ function compile() {
   temp_dir=$(mktemp -d)
   kbld_config_path="${temp_dir}/kbld-config"
   ko_config_path="${temp_dir}/.ko.yaml"
+  # PLATFORMS optionally requests a multi-arch (e.g. "linux/amd64,linux/arm64")
+  # build. When unset, the native, single-arch behavior is preserved.
+  PLATFORMS=${PLATFORMS:-}
   if [ $type = "ko" ]; then
-    generate_kbld_config_ko $kbld_config_path $ko_config_path $registry
+    if [ -n "$PLATFORMS" ]; then
+      generate_kbld_config_ko_multiarch $kbld_config_path $ko_config_path $registry $PLATFORMS
+    else
+      generate_kbld_config_ko $kbld_config_path $ko_config_path $registry
+    fi
   elif [ $type = "pack" ]; then
     generate_kbld_config_pack $kbld_config_path $registry
   else
