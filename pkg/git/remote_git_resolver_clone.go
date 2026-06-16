@@ -66,15 +66,7 @@ func (r *remoteGitResolver) ResolveByCloning(auth transport.AuthMethod, sourceCo
 
 	err = errors.Join(errs...)
 	if err != nil {
-		return corev1alpha1.ResolvedSourceConfig{
-			Git: &corev1alpha1.ResolvedGitSource{
-				URL:                  sourceConfig.Git.URL,
-				Revision:             sourceConfig.Git.Revision,
-				Type:                 corev1alpha1.Unknown,
-				SubPath:              sourceConfig.SubPath,
-				InitializeSubmodules: sourceConfig.Git.InitializeSubmodules,
-			},
-		}, fmt.Errorf("revision \"%s\": unable to fetch references for repository: %w", sourceConfig.Git.Revision, err)
+		return emptyResult, fmt.Errorf("revision \"%s\": unable to fetch references for repository: %w", sourceConfig.Git.Revision, err)
 	}
 
 	return corev1alpha1.ResolvedSourceConfig{
