@@ -180,11 +180,8 @@ func resolveBranch(input fetchResolverInput) (*fetchResolverOutput, error) {
 }
 
 func resolveTag(input fetchResolverInput) (*fetchResolverOutput, error) {
-	tag := input.revision
-	ref := tag
-	if !strings.HasPrefix(ref, "refs/tags/") {
-		ref = "refs/tags/" + ref
-	}
+	tag := strings.TrimPrefix(input.revision, "refs/tags/")
+	ref := "refs/tags/" + tag
 	err := input.repository.Fetch(&gogit.FetchOptions{
 		RemoteName: defaultRemote,
 		Auth:       input.auth,
