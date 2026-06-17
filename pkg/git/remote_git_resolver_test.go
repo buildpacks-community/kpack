@@ -29,6 +29,7 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 		tag                     = "commit-tag"
 		tagCommit               = "ad7897c0fb8e7d9a9ba41fa66072cf06095a6cfc"
 		goSubPathTree           = "a39771a7651f97faf5c72e08224d857fc35133db"
+		tagSubPathTree          = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 	)
 
 	when("#Resolve", func() {
@@ -100,15 +101,20 @@ func testRemoteGitResolver(t *testing.T, when spec.G, it spec.S) {
 					SubPath: "/tree",
 				})
 				require.NoError(t, err)
-
-				assert.Equal(t, corev1alpha1.ResolvedSourceConfig{
+				expected := corev1alpha1.ResolvedSourceConfig{
 					Git: &corev1alpha1.ResolvedGitSource{
 						URL:      tagsUrl,
 						Revision: tagCommit,
 						Type:     corev1alpha1.Tag,
 						SubPath:  "/tree",
 					},
-				}, resolvedGitSource)
+				}
+
+				if featureFlags.GitResolverUseShallowClone {
+					expected.Git.Tree = tagSubPathTree
+				}
+
+				assert.Equal(t, expected, resolvedGitSource)
 			})
 		})
 
