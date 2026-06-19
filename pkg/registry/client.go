@@ -3,6 +3,7 @@ package registry
 import (
 	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -14,6 +15,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+var currentPlatform = remote.WithPlatform(v1.Platform{
+	Architecture: runtime.GOARCH,
+	OS:           "linux",
+})
+
 type Client struct {
 }
 
@@ -23,7 +29,7 @@ func (t *Client) Fetch(keychain authn.Keychain, repoName string) (v1.Image, stri
 		return nil, "", err
 	}
 
-	image, err := remote.Image(reference, remote.WithAuthFromKeychain(keychain))
+	image, err := remote.Image(reference, remote.WithAuthFromKeychain(keychain), currentPlatform)
 	if err != nil {
 		return nil, "", handleError(err)
 	}
@@ -74,7 +80,7 @@ func getIdentifier(image v1.Image, ref name.Reference) (string, error) {
 }
 
 func previousDigest(keychain authn.Keychain, ref name.Reference) string {
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(keychain))
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(keychain), currentPlatform)
 	if err != nil {
 		return ""
 	}
