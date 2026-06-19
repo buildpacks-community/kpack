@@ -255,6 +255,7 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Gid:           3000,
 			PlatformAPIs:  []string{"0.7", "0.8", "0.9"},
 			ResolvedImage: builderImage,
+			Arch:          "arm64",
 		},
 		Secrets:  secrets,
 		Bindings: serviceBindings,
@@ -364,13 +365,26 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 		})
 
-		it("sets the pod tolerations and affinity from the build and merges the os node selector", func() {
+		it("sets the pod tolerations and affinity from the build and merges the builder arch node selector", func() {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
-			assert.Equal(t, map[string]string{"foo": "bar"}, pod.Spec.NodeSelector)
+			assert.Equal(t, map[string]string{
+				"foo":                "bar",
+				"kubernetes.io/arch": "arm64",
+			}, pod.Spec.NodeSelector)
 			assert.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 			assert.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
+		})
+
+		it("leaves the node selector untouched when the builder config has no arch", func() {
+			ctx := buildContext
+			ctx.BuildPodBuilderConfig.Arch = ""
+
+			pod, err := build.BuildPod(config, ctx)
+			require.NoError(t, err)
+
+			assert.Equal(t, map[string]string{"foo": "bar"}, pod.Spec.NodeSelector)
 		})
 
 		it("configures the pod security context to match the builder config user and group", func() {
@@ -1284,9 +1298,10 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 				require.Equal(t, build.Spec.ServiceAccountName, pod.Spec.ServiceAccountName)
 				require.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 				require.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
-				require.Equal(t, build.Spec.NodeSelector, map[string]string{
+				// a rebase is architecture independent, so os/arch is not injected.
+				require.Equal(t, map[string]string{
 					"foo": "bar",
-				})
+				}, pod.Spec.NodeSelector)
 				require.Equal(t, pod.Spec.Volumes, []corev1.Volume{
 					{
 						Name: "secret-volume-2",

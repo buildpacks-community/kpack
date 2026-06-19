@@ -5,7 +5,7 @@ metadata:
 spec:
   tag: buildingbuilder/cluster-builder
   stack:
-    name: bionic-stack
+    name: default
     kind: ClusterStack
   store:
     name: sample-cluster-store

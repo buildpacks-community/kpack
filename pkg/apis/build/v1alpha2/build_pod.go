@@ -36,8 +36,9 @@ const (
 	defaultSecretPath                = "/var/build-secrets/%s"
 	ReportTOMLPath                   = "/var/report/report.toml"
 
-	BuildLabel = "kpack.io/build"
-	k8sOSLabel = "kubernetes.io/os"
+	BuildLabel   = "kpack.io/build"
+	k8sOSLabel   = "kubernetes.io/os"
+	k8sArchLabel = "kubernetes.io/arch"
 
 	cosignDockerMediaTypesAnnotationPrefix = "kpack.io/cosign.docker-media-types"
 	cosignRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
@@ -110,6 +111,20 @@ type BuildPodBuilderConfig struct {
 	Gid           int64
 	PlatformAPIs  []string
 	ResolvedImage string
+	Arch          string
+}
+
+// nodeSelector pins the build pod to a node matching the builder image's architecture.
+func (c BuildPodBuilderConfig) nodeSelector(userSelector map[string]string) map[string]string {
+	if c.Arch == "" {
+		return userSelector
+	}
+	selector := make(map[string]string, len(userSelector)+1)
+	for k, v := range userSelector {
+		selector[k] = v
+	}
+	selector[k8sArchLabel] = c.Arch
+	return selector
 }
 
 var (
@@ -531,7 +546,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 			}),
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.Spec.NodeSelector,
+			NodeSelector:       buildContext.BuildPodBuilderConfig.nodeSelector(b.Spec.NodeSelector),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
@@ -762,12 +777,13 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.Spec.NodeSelector,
-			Tolerations:        b.Spec.Tolerations,
-			Affinity:           b.Spec.Affinity,
-			RuntimeClassName:   b.Spec.RuntimeClassName,
-			SchedulerName:      b.Spec.SchedulerName,
-			PriorityClassName:  b.PriorityClassName(),
+			// a rebase only rewrites registry manifests, so it is architecture independent.
+			NodeSelector:      b.Spec.NodeSelector,
+			Tolerations:       b.Spec.Tolerations,
+			Affinity:          b.Spec.Affinity,
+			RuntimeClassName:  b.Spec.RuntimeClassName,
+			SchedulerName:     b.Spec.SchedulerName,
+			PriorityClassName: b.PriorityClassName(),
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot:   boolPointer(true),
 				SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},

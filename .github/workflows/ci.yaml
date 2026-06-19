@@ -19,8 +19,8 @@ defaults:
 env:
   PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
   PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
-  PACK_VERSION: ${{ vars.PACK_VERSION }}
   LIFECYCLE_IMAGE_REF: mirror.gcr.io/buildpacksio/lifecycle
+  IMAGE_PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   unit:
@@ -61,11 +61,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
-        bp_go_targets: "./cmd/controller"
+        command_dir: "./cmd/controller"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: controller-image
 
   webhook-image:
@@ -87,11 +87,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/webhook
-        bp_go_targets: "./cmd/webhook"
+        command_dir: "./cmd/webhook"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: webhook-image
 
   completion-image:
@@ -113,11 +113,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion
-        bp_go_targets: "./cmd/completion"
+        command_dir: "./cmd/completion"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: completion-image
 
   build-init-image:
@@ -139,11 +139,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
-        bp_go_targets: "./cmd/build-init"
+        command_dir: "./cmd/build-init"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: build-init-image
 
   build-waiter-image:
@@ -165,11 +165,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
-        bp_go_targets: "./cmd/build-waiter"
+        command_dir: "./cmd/build-waiter"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: build-waiter-image
 
   rebase-image:
@@ -191,11 +191,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/pack-build
+      uses: ./.github/actions/ko-build
       with:
-        pack_version: ${{ env.PACK_VERSION }}
         tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/rebase
-        bp_go_targets: "./cmd/rebase"
+        command_dir: "./cmd/rebase"
+        platforms: ${{ env.IMAGE_PLATFORMS }}
         artifact_name: rebase-image
 
 
