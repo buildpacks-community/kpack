@@ -1,0 +1,77 @@
+name: 'Ko Build'
+description: 'Build a kpack image as a genuine multi-arch (amd64+arm64) OCI index via ko'
+
+inputs:
+  tag:
+    description: 'location to write image (destination repo ref)'
+    required: true
+  command_dir:
+    description: 'go command directory to build (e.g. ./cmd/controller)'
+    required: true
+  platforms:
+    description: 'comma separated list of platforms to build (e.g. linux/amd64,linux/arm64)'
+    required: true
+    default: 'linux/amd64,linux/arm64'
+  ko_version:
+    description: 'version of ko to use'
+    required: true
+    default: 'v0.18.1'
+  artifact_name:
+    description: 'name of the artifact to upload'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - name: Set up Go
+    uses: actions/setup-go@v5
+    with:
+      go-version-file: 'go.mod'
+  - name: Setup ko
+    uses: ko-build/setup-ko@v0.9
+    with:
+      version: ${{ inputs.ko_version }}
+  - name: build
+    shell: bash
+    env:
+      KPACK_TAG: ${{ inputs.tag }}
+      KPACK_COMMAND_DIR: ${{ inputs.command_dir }}
+      KPACK_PLATFORMS: ${{ inputs.platforms }}
+    run: |
+      [[ $GITHUB_REF =~ ^refs\/tags\/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+
+      export KPACK_VERSION=$version
+      export KPACK_COMMIT=$GITHUB_SHA
+
+      name=$(basename "$KPACK_COMMAND_DIR")
+      prefix="github.com/pivotal/kpack/pkg/apis/build/v1alpha2"
+
+      # the controller needs its command paths baked in; ko reads the config
+      # format from the file extension, so it must be named .ko.yaml.
+      ko_config="$(mktemp -d)/.ko.yaml"
+      {
+        echo "defaultBaseImage: paketobuildpacks/run-jammy-tiny"
+        echo "builds:"
+        echo "- id: ${name}"
+        echo "  main: ${KPACK_COMMAND_DIR}"
+        echo "  ldflags:"
+        echo "  - -X 'github.com/pivotal/kpack/cmd.Version={{.Env.KPACK_VERSION}}'"
+        echo "  - -X 'github.com/pivotal/kpack/cmd.Commit={{.Env.KPACK_COMMIT}}'"
+        if [ "$name" = "controller" ]; then
+          echo "  - -X ${prefix}.CompletionCommand=/ko-app/completion"
+          echo "  - -X ${prefix}.PrepareCommand=/ko-app/build-init"
+          echo "  - -X ${prefix}.RebaseCommand=/ko-app/rebase"
+        fi
+      } > "$ko_config"
+
+      ref=$(KO_DOCKER_REPO="$KPACK_TAG" KO_CONFIG_PATH="$ko_config" \
+        ko build --bare --platform="$KPACK_PLATFORMS" --disable-optimizations "$KPACK_COMMAND_DIR")
+
+      mkdir images
+      echo "$ref" > "images/$name"
+      cat "images/$name"
+  - name: Upload Image Artifacts
+    uses: actions/upload-artifact@v4
+    with:
+      name: ${{ inputs.artifact_name }}
+      path: images/

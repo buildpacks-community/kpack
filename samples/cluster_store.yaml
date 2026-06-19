@@ -7,5 +7,5 @@ spec:
     name: default
     namespace: default
   sources:
-  - image: gcr.io/paketo-buildpacks/java
-  - image: gcr.io/paketo-buildpacks/nodejs
+  - image: paketobuildpacks/java
+  - image: paketobuildpacks/nodejs

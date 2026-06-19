@@ -47,3 +47,11 @@ The stack resource will not poll for updates. A CI/CD tool is needed to update t
 ### Suggested stacks
 
 The [pack CLI](https://github.com/buildpacks/pack) command: `pack stack suggest` will display a list of recommended stacks that can be used. We recommend starting with the `io.buildpacks.stacks.jammy` base stack.
+
+### Building for arm64
+
+kpack builds on the architecture of the stack's images. To build for `arm64`, both the `buildImage` and `runImage` must provide a `linux/arm64` variant. The `io.buildpacks.stacks.jammy` stack images (e.g. `paketobuildpacks/build-jammy-base` and `paketobuildpacks/run-jammy-base`) are published as multi-arch images and support `arm64`.
+
+The buildpacks referenced by the [builder](builders.md) must also support `arm64`. Not every buildpack publishes an `arm64` variant, so confirm support for the buildpacks you depend on before building.
+
+kpack resolves the architecture from the builder image and schedules the build pod onto a node matching that architecture (`kubernetes.io/arch`), so an `arm64` builder requires at least one `arm64` node in the cluster.

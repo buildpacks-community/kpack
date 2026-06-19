@@ -3,11 +3,11 @@ kind: ClusterStack
 metadata:
   name: default
 spec:
-  id: "io.buildpacks.stacks.bionic"
+  id: "io.buildpacks.stacks.jammy"
   serviceAccountRef:
     name: default
     namespace: default
   buildImage:
-    image: "paketobuildpacks/build:base-cnb"
+    image: "paketobuildpacks/build-jammy-base"
   runImage:
-    image: "paketobuildpacks/run:base-cnb"
+    image: "paketobuildpacks/run-jammy-base"

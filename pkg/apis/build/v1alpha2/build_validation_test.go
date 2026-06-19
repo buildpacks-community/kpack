@@ -403,5 +403,10 @@ func testBuildValidation(t *testing.T, when spec.G, it spec.S) {
 			build.Spec.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
 			assertValidationError(build, context.TODO(), apis.ErrInvalidKeyName(k8sOSLabel, "spec.nodeSelector", "os is determined automatically"))
 		})
+
+		it("validates kubernetes.io/arch node selector is unset", func() {
+			build.Spec.NodeSelector = map[string]string{k8sArchLabel: "some-arch"}
+			assertValidationError(build, context.TODO(), apis.ErrInvalidKeyName(k8sArchLabel, "spec.nodeSelector", "arch is determined automatically"))
+		})
 	})
 }

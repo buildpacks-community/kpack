@@ -245,8 +245,8 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			keychainFactory.AddKeychainForSecretRef(t, secretRef, keychain)
 
-			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux"), keychain)
-			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows"), keychain)
+			imageFetcher.AddImage(linuxBuilderImage, createImage(t, "linux", "amd64"), keychain)
+			imageFetcher.AddImage(windowsBuilderImage, createImage(t, "windows", "amd64"), keychain)
 		})
 
 		it("invokes the BuildPod with the builder and env config", func() {
@@ -277,6 +277,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						Gid:           5678,
 						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
 						ResolvedImage: linuxBuilderImage,
+						Arch:          "amd64",
 					},
 					Bindings: []buildapi.ServiceBinding{},
 					ImagePullSecrets: []corev1.LocalObjectReference{
@@ -322,6 +323,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						Gid:           5678,
 						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
 						ResolvedImage: linuxBuilderImage,
+						Arch:          "amd64",
 					},
 					Bindings: []buildapi.ServiceBinding{},
 					ImagePullSecrets: []corev1.LocalObjectReference{
@@ -368,6 +370,7 @@ func testGenerator(t *testing.T, when spec.G, it spec.S) {
 						Gid:           5678,
 						PlatformAPIs:  []string{"0.4", "0.5", "0.6"},
 						ResolvedImage: linuxBuilderImage,
+						Arch:          "amd64",
 					},
 					Bindings: []buildapi.ServiceBinding{},
 					ImagePullSecrets: []corev1.LocalObjectReference{
@@ -761,7 +764,7 @@ func (tb *testBuildPodable) Services() buildapi.Services {
 	return tb.services
 }
 
-func createImage(t *testing.T, os string) ggcrv1.Image {
+func createImage(t *testing.T, os, arch string) ggcrv1.Image {
 	image := randomImage(t)
 	var err error
 
@@ -769,6 +772,7 @@ func createImage(t *testing.T, os string) ggcrv1.Image {
 	require.NoError(t, err)
 
 	config.OS = os
+	config.Architecture = arch
 	image, err = mutate.ConfigFile(image, config)
 	require.NoError(t, err)
 
