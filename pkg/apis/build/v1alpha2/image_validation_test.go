@@ -562,5 +562,10 @@ func testImageValidation(t *testing.T, when spec.G, it spec.S) {
 			image.Spec.Build.NodeSelector = map[string]string{k8sOSLabel: "some-os"}
 			assertValidationError(image, ctx, apis.ErrInvalidKeyName(k8sOSLabel, "spec.build.nodeSelector", "os is determined automatically"))
 		})
+
+		it("validates kubernetes.io/arch node selector is unset", func() {
+			image.Spec.Build.NodeSelector = map[string]string{k8sArchLabel: "some-arch"}
+			assertValidationError(image, ctx, apis.ErrInvalidKeyName(k8sArchLabel, "spec.build.nodeSelector", "arch is determined automatically"))
+		})
 	})
 }

@@ -78,6 +78,9 @@ func (bs *BuildSpec) validateNodeSelector(_ context.Context) *apis.FieldError {
 	if _, ok := bs.NodeSelector[k8sOSLabel]; ok {
 		return apis.ErrInvalidKeyName(k8sOSLabel, "nodeSelector", "os is determined automatically")
 	}
+	if _, ok := bs.NodeSelector[k8sArchLabel]; ok {
+		return apis.ErrInvalidKeyName(k8sArchLabel, "nodeSelector", "arch is determined automatically")
+	}
 	return nil
 
 }

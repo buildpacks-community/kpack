@@ -255,6 +255,8 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			Gid:           3000,
 			PlatformAPIs:  []string{"0.7", "0.8", "0.9"},
 			ResolvedImage: builderImage,
+			OS:            "linux",
+			Arch:          "arm64",
 		},
 		Secrets:  secrets,
 		Bindings: serviceBindings,
@@ -364,11 +366,15 @@ func testBuildPod(t *testing.T, when spec.G, it spec.S) {
 			assert.Equal(t, serviceAccount, pod.Spec.ServiceAccountName)
 		})
 
-		it("sets the pod tolerations and affinity from the build and merges the os node selector", func() {
+		it("sets the pod tolerations and affinity from the build and merges the builder os/arch node selector", func() {
 			pod, err := build.BuildPod(config, buildContext)
 			require.NoError(t, err)
 
-			assert.Equal(t, map[string]string{"foo": "bar"}, pod.Spec.NodeSelector)
+			assert.Equal(t, map[string]string{
+				"foo":                "bar",
+				"kubernetes.io/os":   "linux",
+				"kubernetes.io/arch": "arm64",
+			}, pod.Spec.NodeSelector)
 			assert.Equal(t, build.Spec.Tolerations, pod.Spec.Tolerations)
 			assert.Equal(t, build.Spec.Affinity, pod.Spec.Affinity)
 		})

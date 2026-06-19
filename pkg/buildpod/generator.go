@@ -261,6 +261,8 @@ func (g *Generator) fetchBuilderConfig(ctx context.Context, build BuildPodable) 
 		Uid:           uid,
 		Gid:           gid,
 		ResolvedImage: builderImageRef,
+		OS:            config.OS,
+		Arch:          config.Architecture,
 	}, nil
 }
 

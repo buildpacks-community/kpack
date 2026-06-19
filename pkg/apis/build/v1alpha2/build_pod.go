@@ -36,8 +36,9 @@ const (
 	defaultSecretPath                = "/var/build-secrets/%s"
 	ReportTOMLPath                   = "/var/report/report.toml"
 
-	BuildLabel = "kpack.io/build"
-	k8sOSLabel = "kubernetes.io/os"
+	BuildLabel   = "kpack.io/build"
+	k8sOSLabel   = "kubernetes.io/os"
+	k8sArchLabel = "kubernetes.io/arch"
 
 	cosignDockerMediaTypesAnnotationPrefix = "kpack.io/cosign.docker-media-types"
 	cosignRespositoryAnnotationPrefix      = "kpack.io/cosign.repository"
@@ -110,6 +111,30 @@ type BuildPodBuilderConfig struct {
 	Gid           int64
 	PlatformAPIs  []string
 	ResolvedImage string
+	OS            string
+	Arch          string
+}
+
+// nodeSelector merges the user-supplied node selector with the os/arch of the
+// builder image, so the build pod is scheduled onto a node whose platform
+// matches the builder it executes. The os/arch values are determined
+// automatically from the builder image and cannot be overridden by the user
+// (enforced by build/image validation).
+func (c BuildPodBuilderConfig) nodeSelector(userSelector map[string]string) map[string]string {
+	if c.OS == "" && c.Arch == "" {
+		return userSelector
+	}
+	selector := make(map[string]string, len(userSelector)+2)
+	for k, v := range userSelector {
+		selector[k] = v
+	}
+	if c.OS != "" {
+		selector[k8sOSLabel] = c.OS
+	}
+	if c.Arch != "" {
+		selector[k8sArchLabel] = c.Arch
+	}
+	return selector
 }
 
 var (
@@ -531,7 +556,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 				)
 			}),
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.Spec.NodeSelector,
+			NodeSelector:       buildContext.BuildPodBuilderConfig.nodeSelector(b.Spec.NodeSelector),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
@@ -762,7 +787,7 @@ func (b *Build) rebasePod(buildContext BuildContext, images BuildPodImages) (*co
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: b.Spec.ServiceAccountName,
-			NodeSelector:       b.Spec.NodeSelector,
+			NodeSelector:       buildContext.BuildPodBuilderConfig.nodeSelector(b.Spec.NodeSelector),
 			Tolerations:        b.Spec.Tolerations,
 			Affinity:           b.Spec.Affinity,
 			RuntimeClassName:   b.Spec.RuntimeClassName,
