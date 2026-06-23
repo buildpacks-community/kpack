@@ -253,7 +253,7 @@ jobs:
         only: ytt, kapp
 
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         pattern: '*-image'
         path: images
@@ -307,7 +307,7 @@ jobs:
         only: ytt, kapp
 
     - name: Download release
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: prerelease
 
@@ -480,7 +480,7 @@ jobs:
         only: ytt
 
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         pattern: '*-image'
         path: images
