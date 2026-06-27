@@ -19,8 +19,8 @@ defaults:
 env:
   PUBLIC_IMAGE_DEV_REPO: ${{ vars.PUBLIC_IMAGE_DEV_REPO }}
   PUBLIC_IMAGE_REPO: ${{ vars.PUBLIC_IMAGE_REPO }}
+  PACK_VERSION: ${{ vars.PACK_VERSION }}
   LIFECYCLE_IMAGE_REF: mirror.gcr.io/buildpacksio/lifecycle
-  IMAGE_PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   unit:
@@ -42,16 +42,33 @@ jobs:
     - name: Report coverage
       uses: codecov/codecov-action@v4.5.0
 
-  controller-image:
-    runs-on: ubuntu-latest
+  component-image:
+    name: Build ${{ matrix.component.name }} (${{ matrix.platform.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+        - name: controller
+          command_dir: ./cmd/controller
+        - name: webhook
+          command_dir: ./cmd/webhook
+        - name: completion
+          command_dir: ./cmd/completion
+        - name: build-init
+          command_dir: ./cmd/build-init
+        - name: build-waiter
+          command_dir: ./cmd/build-waiter
+        - name: rebase
+          command_dir: ./cmd/rebase
+        platform:
+        - name: linux/amd64
+          architecture: amd64
+          runner: ubuntu-24.04
+        - name: linux/arm64
+          architecture: arm64
+          runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.platform.runner }}
     steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
     - name: Checkout
       uses: actions/checkout@v4
     - name: Docker Login
@@ -61,142 +78,95 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      uses: ./.github/actions/ko-build
+      uses: ./.github/actions/pack-build
       with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/controller
-        command_dir: "./cmd/controller"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: controller-image
+        pack_version: ${{ env.PACK_VERSION }}
+        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/${{ matrix.component.name }}:${{ github.sha }}-${{ matrix.platform.architecture }}
+        command_dir: ${{ matrix.component.command_dir }}
+        platform: ${{ matrix.platform.name }}
+        cache_image: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/${{ matrix.component.name }}-cache-${{ matrix.platform.architecture }}
+        artifact_name: ${{ matrix.component.name }}-image-${{ matrix.platform.architecture }}
 
-  webhook-image:
-    runs-on: ubuntu-latest
+  component-images:
+    needs: component-image
+    runs-on: ubuntu-24.04
     steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
-    - name: Checkout
-      uses: actions/checkout@v4
+    - name: Setup crane
+      uses: imjasonh/setup-crane@v0.4
     - name: Docker Login
       uses: docker/login-action@v3.3.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      uses: ./.github/actions/ko-build
+    - name: Download architecture-specific image references
+      uses: actions/download-artifact@v4
       with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/webhook
-        command_dir: "./cmd/webhook"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: webhook-image
+        pattern: '*-image-*'
+        path: image-refs
+        merge-multiple: true
+    - name: Assemble and verify image indexes
+      run: |
+        set -euo pipefail
+        mkdir images
 
-  completion-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      uses: ./.github/actions/ko-build
-      with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/completion
-        command_dir: "./cmd/completion"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: completion-image
+        for name in controller webhook completion build-init build-waiter rebase; do
+          destination="${PUBLIC_IMAGE_DEV_REPO}/${name}:${GITHUB_SHA}"
+          crane index append \
+            -m "$(cat "image-refs/${name}-amd64")" \
+            -m "$(cat "image-refs/${name}-arm64")" \
+            -t "$destination"
 
-  build-init-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      uses: ./.github/actions/ko-build
-      with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-init
-        command_dir: "./cmd/build-init"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: build-init-image
+          ref="${destination}@$(crane digest "$destination")"
+          manifest=$(crane manifest "$ref")
+          metadata_file=$(mktemp)
 
-  build-waiter-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      uses: ./.github/actions/ko-build
-      with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/build-waiter
-        command_dir: "./cmd/build-waiter"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: build-waiter-image
+          for platform in linux/amd64 linux/arm64; do
+            jq -e --arg platform "$platform" \
+              '[.manifests[].platform | "\(.os)/\(.architecture)"] | index($platform) != null' \
+              <<< "$manifest"
 
-  rebase-image:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Free Up Disk Space
-      uses: jlumbroso/free-disk-space@main
+            crane config --platform "$platform" "$ref" > "$metadata_file"
+            jq -e '
+              .config.Labels["io.buildpacks.build.metadata"]
+              | fromjson
+              | any(.buildpacks[]; .id == "paketo-buildpacks/ca-certificates")
+            ' "$metadata_file"
+          done
+
+          echo "$ref" > "images/$name"
+          cat "images/$name"
+        done
+    - name: Upload controller image
+      uses: actions/upload-artifact@v4
       with:
-        android: true
-        docker-images: true
-        haskell: true
-        dotnet: true
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Docker Login
-      uses: docker/login-action@v3.3.0
+        name: controller-image
+        path: images/controller
+    - name: Upload webhook image
+      uses: actions/upload-artifact@v4
       with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      uses: ./.github/actions/ko-build
+        name: webhook-image
+        path: images/webhook
+    - name: Upload completion image
+      uses: actions/upload-artifact@v4
       with:
-        tag: ${{ env.PUBLIC_IMAGE_DEV_REPO }}/rebase
-        command_dir: "./cmd/rebase"
-        platforms: ${{ env.IMAGE_PLATFORMS }}
-        artifact_name: rebase-image
+        name: completion-image
+        path: images/completion
+    - name: Upload build-init image
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-init-image
+        path: images/build-init
+    - name: Upload build-waiter image
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-waiter-image
+        path: images/build-waiter
+    - name: Upload rebase image
+      uses: actions/upload-artifact@v4
+      with:
+        name: rebase-image
+        path: images/rebase
 
 
   lifecycle-image:
@@ -230,12 +200,7 @@ jobs:
   generate-pre-release-yaml:
     runs-on: ubuntu-latest
     needs:
-    - controller-image
-    - webhook-image
-    - completion-image
-    - rebase-image
-    - build-init-image
-    - build-waiter-image
+    - component-images
     - lifecycle-image
     steps:
     - name: Checkout
@@ -281,12 +246,7 @@ jobs:
   e2e:
     needs:
       - generate-pre-release-yaml
-      - controller-image
-      - webhook-image
-      - completion-image
-      - rebase-image
-      - build-init-image
-      - build-waiter-image
+      - component-images
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -452,12 +412,7 @@ jobs:
       - unit
       - e2e
       - generate-pre-release-yaml
-      - controller-image
-      - webhook-image
-      - completion-image
-      - rebase-image
-      - build-init-image
-      - build-waiter-image
+      - component-images
       - lifecycle-image
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
