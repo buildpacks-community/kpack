@@ -1,0 +1,66 @@
+name: 'Pack Build'
+description: 'Build one architecture of a kpack component image with Cloud Native Buildpacks'
+
+inputs:
+  tag:
+    description: 'architecture-specific image tag to publish'
+    required: true
+  command_dir:
+    description: 'Go command directory to build (for example ./cmd/controller)'
+    required: true
+  platform:
+    description: 'target platform (for example linux/arm64)'
+    required: true
+  cache_image:
+    description: 'architecture-specific cache image'
+    required: true
+  pack_version:
+    description: 'version of pack to use'
+    required: true
+  artifact_name:
+    description: 'name of the artifact to upload'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - name: Set up Go
+    uses: actions/setup-go@v5
+    with:
+      go-version-file: 'go.mod'
+  - name: Setup pack
+    uses: buildpacks/github-actions/setup-pack@v5.12.5
+    with:
+      pack-version: ${{ inputs.pack_version }}
+  - name: Build
+    shell: bash
+    env:
+      KPACK_TAG: ${{ inputs.tag }}
+      KPACK_COMMAND_DIR: ${{ inputs.command_dir }}
+      KPACK_PLATFORM: ${{ inputs.platform }}
+      KPACK_CACHE_IMAGE: ${{ inputs.cache_image }}
+    run: |
+      [[ $GITHUB_REF =~ ^refs/tags/v(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+
+      pack build "$KPACK_TAG" \
+        --builder paketobuildpacks/builder-jammy-buildpackless-tiny \
+        --buildpack docker://paketobuildpacks/go \
+        --env BP_GO_LDFLAGS="-X 'github.com/pivotal/kpack/cmd.Version=${version}' -X 'github.com/pivotal/kpack/cmd.Commit=${GITHUB_SHA}'" \
+        --env BP_GO_TARGETS="$KPACK_COMMAND_DIR" \
+        --report-output-dir . \
+        --cache-image "$KPACK_CACHE_IMAGE" \
+        --platform "$KPACK_PLATFORM" \
+        --publish
+
+      digest=$(go run .github/actions/pack-build/report.go -path ./report.toml)
+      name=$(basename "$KPACK_COMMAND_DIR")
+      architecture=${KPACK_PLATFORM##*/}
+
+      mkdir -p image-refs
+      echo "${KPACK_TAG}@${digest}" > "image-refs/${name}-${architecture}"
+      cat "image-refs/${name}-${architecture}"
+  - name: Upload image reference
+    uses: actions/upload-artifact@v4
+    with:
+      name: ${{ inputs.artifact_name }}
+      path: image-refs/
