@@ -9,7 +9,7 @@
 
 ## Installing-kpack
 
-1. Download the most recent [github release](https://github.com/pivotal/kpack/releases). The release.yaml is an asset on the release. 
+1. Download the most recent [github release](https://github.com/buildpacks-community/kpack/releases). The release.yaml is an asset on the release. 
 
    ```bash
    kubectl apply  --filename release-<version>.yaml
