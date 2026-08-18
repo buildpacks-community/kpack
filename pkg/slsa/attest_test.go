@@ -227,7 +227,7 @@ func testAttester(t *testing.T, when spec.G, it spec.S) {
         }
       },
       "metadata": {
-        "invocationID": "https://kpack.io/default/test-build-1/test-build-1-build-pod@some-node",
+        "invocationId": "https://kpack.io/default/test-build-1/test-build-1-build-pod@some-node",
         "startedOn": "2023-01-01T00:00:00Z",
         "finishedOn": "2023-01-01T02:00:00Z"
       }
