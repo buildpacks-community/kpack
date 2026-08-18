@@ -314,6 +314,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Env: []corev1.EnvVar{
 			platformApiVersionEnvVar,
+			serviceBindingRootEnv,
 		},
 		SecurityContext: containerSecurityContext(),
 	}
@@ -352,6 +353,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							homeEnv,
 							{Name: CacheTagEnvVar, Value: b.Spec.RegistryCacheTag()},
 							{Name: TerminationMessagePathEnvVar, Value: completionTerminationMessagePath},
+							serviceBindingRootEnv,
 						},
 						Args: args(
 							b.notaryArgs(),
@@ -370,6 +372,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								reportMount,
 								notaryV1Mount,
 							},
+							bindingVolumeMounts,
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: containerSecurityContext(),
@@ -427,6 +430,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								Name:  "INSECURE_SSH_TRUST_UNKNOWN_HOSTS",
 								Value: strconv.FormatBool(buildContext.SSHTrustUnknownHost),
 							},
+							serviceBindingRootEnv,
 						),
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						WorkingDir:      "/workspace",
@@ -440,6 +444,7 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 								homeMount,
 								projectMetadataMount,
 							},
+							bindingVolumeMounts,
 						),
 					},
 				)
@@ -523,7 +528,8 @@ func (b *Build) BuildPod(images BuildPodImages, buildContext BuildContext) (*cor
 							workspaceVolume,
 							homeMount,
 							reportMount,
-						}, cacheVolumes),
+						},
+							cacheVolumes),
 						Env: envs(
 							[]corev1.EnvVar{
 								homeEnv,
