@@ -84,7 +84,7 @@ func rebase(tags []string, logger *log.Logger) error {
 			return err
 		}
 
-		for domain := range dockerCfgCreds {
+		for domain := range dockerCfgCreds.CredMap {
 			logger.Printf("Loading secret for %q from secret %q at location %q", domain, c, credPath)
 		}
 

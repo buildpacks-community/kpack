@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -32,11 +33,13 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 	when("#Save", func() {
 		it("saves secrets to the provided path in json", func() {
 			creds := DockerCreds{
-				"gcr.io": authn.AuthConfig{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZA==",
 					Username: "testusername",
 					Password: "testpassword",
-				},
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
 			expectedConfigJsonContents := `{
@@ -60,89 +63,124 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Append", func() {
 		it("creates a new Dockercreds with both creds appended", func() {
-			creds := DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			cred1 := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
 					Password: "testpassword",
-				},
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
-			newCreds, err := creds.Append(DockerCreds{
-				"appendedcreds.io": authn.AuthConfig{
+			cred2 := DockerCreds{
+				map[string]authn.AuthConfig{"appendedcreds.io": {
 					Auth:     "AppendedCreds=",
 					Username: "appendedUser",
 					Password: "appendedPassword",
-				},
-			})
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			newCreds, err := cred1.Append(cred2)
 			require.NoError(t, err)
 
-			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			assertedNewCreds := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth:     "dGVzdHVzZXJuYW1lOnRlc3RwYXNzd29yZHRoYXR3aWxsbm90d29yawo=",
 					Username: "testusername",
 					Password: "testpassword",
 				},
-				"appendedcreds.io": authn.AuthConfig{
-					Auth:     "AppendedCreds=",
-					Username: "appendedUser",
-					Password: "appendedPassword",
-				},
-			})
+					"appendedcreds.io": {
+						Auth:     "AppendedCreds=",
+						Username: "appendedUser",
+						Password: "appendedPassword",
+					}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			assert.Equal(t, newCreds, assertedNewCreds)
 		})
 
 		it("does not overwrite registries in the appended creds if they already exist", func() {
-			creds := DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			cred1 := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth: "dontOverwriteMe=",
-				},
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
-			newCreds, err := creds.Append(DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			cred2 := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth: "ToNotBeOverwritten=",
-				},
-			})
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			newCreds, err := cred1.Append(cred2)
+
 			require.NoError(t, err)
 
-			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			assertCred := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth: "dontOverwriteMe=",
-				},
-			})
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			assert.Equal(t, newCreds, assertCred)
 		})
 
 		it("does not overwrite registries if they already exist in a different format", func() {
-			creds := DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			cred1 := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth: "dontOverwriteMe=",
-				},
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
-			newCreds, err := creds.Append(DockerCreds{
-				"https://gcr.io": authn.AuthConfig{
+			cred2 := DockerCreds{
+				map[string]authn.AuthConfig{"https://gcr.io": {
 					Auth: "ToNotOverwrite=",
-				},
-			})
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			newCreds, err := cred1.Append(cred2)
 			require.NoError(t, err)
 
-			assert.Equal(t, newCreds, DockerCreds{
-				"gcr.io": authn.AuthConfig{
+			assertCred := DockerCreds{
+				map[string]authn.AuthConfig{"gcr.io": {
 					Auth: "dontOverwriteMe=",
-				},
-			})
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
+			}
+
+			assert.Equal(t, newCreds, assertCred)
 		})
 	})
 
 	when("#Resolve", func() {
 		it("returns auth for matching registry", func() {
-			creds := DockerCreds{
-				"non.match": authn.AuthConfig{
-					Auth: "no-match=",
-				},
-				"some.reg": authn.AuthConfig{
+			credMap := map[string]authn.AuthConfig{"non.match": {
+				Auth: "no-match=",
+			},
+				"some.reg": {
 					Auth: "match-Auth=",
-				},
+				}}
+
+			creds := DockerCreds{
+				credMap,
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
 			reference, err := name.ParseReference("some.reg/name", name.WeakValidation)
@@ -157,14 +195,18 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("returns auth for matching registry with only username and password", func() {
-			creds := DockerCreds{
-				"non.match": authn.AuthConfig{
-					Auth: "no-match=",
-				},
-				"some.reg": authn.AuthConfig{
+			credMap := map[string]authn.AuthConfig{"non.match": {
+				Auth: "no-match=",
+			},
+				"some.reg": {
 					Username: "testusername",
 					Password: "testpassword",
-				},
+				}}
+
+			creds := DockerCreds{
+				credMap,
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
 			reference, err := name.ParseReference("some.reg/name", name.WeakValidation)
@@ -181,9 +223,11 @@ func testDockerCreds(t *testing.T, when spec.G, it spec.S) {
 
 		it("returns Anonymous for no matching registry", func() {
 			creds := DockerCreds{
-				"non.match": authn.AuthConfig{
+				map[string]authn.AuthConfig{"non.match": {
 					Auth: "no-match=",
-				},
+				}},
+				time.Date(2000, 10, 10, 10, 10, 10, 10, time.UTC),
+				"",
 			}
 
 			reference, err := name.ParseReference("some.reg/name", name.WeakValidation)
